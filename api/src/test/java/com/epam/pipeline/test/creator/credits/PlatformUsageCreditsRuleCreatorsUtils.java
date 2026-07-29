@@ -54,7 +54,7 @@ public interface PlatformUsageCreditsRuleCreatorsUtils {
         expression.setField(FIELD_NAME);
         expression.setValue(FIELD_VALUE);
         expression.setOperand(FIELD_OPERAND);
-        expression.setConditionType(ConditionType.LOGICAL);
+        expression.setType(ConditionType.LOGICAL);
         return expression;
     }
 

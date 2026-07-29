@@ -35,6 +35,8 @@ public interface PlatformUsageCreditsUserBalanceRepository
             + "ON CONFLICT (user_id) DO UPDATE "
             + "SET current_value = EXCLUDED.current_value, modified_date = EXCLUDED.modified_date";
 
+    String LOCK_USER_ID ="SELECT 1 FROM (SELECT pg_advisory_xact_lock(:userId)) lock";
+
     // 'old' CTE captures the pre-update value before the UPSERT runs.
     // In RETURNING, all column references refer to post-update state, so reading
     // the old value in a separate CTE is the only way to compute the actual delta.
@@ -88,4 +90,7 @@ public interface PlatformUsageCreditsUserBalanceRepository
     @Modifying
     @Query(value = BATCH_RESET, nativeQuery = true)
     void resetAll(@Param("value") int value);
+
+    @Query(value = LOCK_USER_ID, nativeQuery = true)
+    int lockBalance(@Param("userId") Long userId);
 }

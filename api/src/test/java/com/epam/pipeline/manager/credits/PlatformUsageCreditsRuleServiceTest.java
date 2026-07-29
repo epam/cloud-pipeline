@@ -301,7 +301,7 @@ public class PlatformUsageCreditsRuleServiceTest {
         final ConditionExpression unknown = leafExpression("unknown.field", "=", null);
         final ConditionExpression valid = leafExpression("run.tag", "=", null);
         final ConditionExpression and = new ConditionExpression();
-        and.setConditionType(ConditionType.AND);
+        and.setType(ConditionType.AND);
         and.setExpressions(Arrays.asList(valid, unknown));
         rule.setStatement(and);
 
@@ -344,7 +344,7 @@ public class PlatformUsageCreditsRuleServiceTest {
         final ConditionExpression leaf1 = leafExpression("RUN.OWNER", "=", null);
         final ConditionExpression leaf2 = leafExpression("RUN.SPOT", "=", null);
         final ConditionExpression and = new ConditionExpression();
-        and.setConditionType(ConditionType.AND);
+        and.setType(ConditionType.AND);
         and.setExpressions(Arrays.asList(leaf1, leaf2));
         rule.setStatement(and);
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
@@ -362,7 +362,7 @@ public class PlatformUsageCreditsRuleServiceTest {
                                                       final String operand,
                                                       final Integer duration) {
         final ConditionExpression expr = new ConditionExpression();
-        expr.setConditionType(ConditionType.LOGICAL);
+        expr.setType(ConditionType.LOGICAL);
         expr.setField(field);
         expr.setOperand(operand);
         expr.setValue("someValue");

@@ -188,7 +188,7 @@ public class PlatformUsageCreditsRuleService {
         if (Objects.isNull(expression)) {
             return;
         }
-        if (ConditionType.LOGICAL.equals(expression.getConditionType())) {
+        if (ConditionType.LOGICAL.equals(expression.getType())) {
             if (StringUtils.isNotBlank(expression.getField())) {
                 expression.setField(expression.getField().toLowerCase());
             }
@@ -203,7 +203,7 @@ public class PlatformUsageCreditsRuleService {
         if (Objects.isNull(expression)) {
             return;
         }
-        if (ConditionType.LOGICAL.equals(expression.getConditionType())) {
+        if (ConditionType.LOGICAL.equals(expression.getType())) {
             validateLeafExpression(expression, displayNames);
         } else {
             ListUtils.emptyIfNull(expression.getExpressions())

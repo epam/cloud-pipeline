@@ -193,6 +193,9 @@ public class PlatformUsageCreditsUserBalanceService {
         final int delta = ActionType.INCREASE.equals(event.getIncidentType())
                 ? event.getValue() : -event.getValue();
 
+        // Prevent lost-update: concurrent transactions must not read and modify the same balance row simultaneously.
+        repository.lockBalance(userId);
+
         final List<Object[]> rows = repository.atomicUpdateBalance(
                 userId, delta, defaultBalance, minBalance, maxBalance);
         if (CollectionUtils.isEmpty(rows)) {

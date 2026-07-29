@@ -1693,6 +1693,11 @@ public class SystemPreferences {
             "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
     public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
             "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_PLATFORM_USAGE_CREDITS_DELAY = new IntPreference(
+            "monitoring.platform.usage.credits.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP,
+            isGreaterThan(0));
+    public static final BooleanPreference MONITORING_PLATFORM_USAGE_CREDITS_ENABLE = new BooleanPreference(
+            "monitoring.platform.usage.credits.enable", false, MONITORING_GROUP, pass);
     public static final ObjectPreference<List<String>> MONITORING_POOL_REQUEST_NAMES = new ObjectPreference<>(
         "monitoring.node.pool.request.names", Arrays.asList("cpu", "memory", "nvidia.com/gpu"),
             new TypeReference<List<String>>() {}, MONITORING_GROUP,

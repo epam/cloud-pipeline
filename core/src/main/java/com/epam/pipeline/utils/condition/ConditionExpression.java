@@ -44,7 +44,7 @@ public class ConditionExpression {
     private String field;
     private String value;
     private String operand;
-    private ConditionType conditionType;
+    private ConditionType type;
     private List<ConditionExpression> expressions;
 
     /**
