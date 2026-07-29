@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,7 +41,7 @@ public class DtsRegistryDaoTest extends AbstractJdbcTest {
     private static final String TEST_URL = "token";
     private static final String TEST_PREFIX_1 = "prefix_1";
     private static final String TEST_PREFIX_2 = "prefix_2";
-    private static final LocalDateTime TEST_DATETIME = LocalDateTime.now();
+    private static final LocalDateTime TEST_DATETIME = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
     private static final DtsStatus TEST_DTS_STATUS = DtsStatus.OFFLINE;
     private static final DtsStatus TEST_DTS_ANOTHER_STATUS = DtsStatus.ONLINE;
     private static final String DTS = "DTS";

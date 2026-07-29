@@ -547,8 +547,6 @@ public class AspectTestBeans {
 
     @MockBean
     public CommonAuditClient auditClient;
-    @MockBean
-    private PipelineRunMetricsDao runMetricsDao;
 
     @MockBean
     protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
