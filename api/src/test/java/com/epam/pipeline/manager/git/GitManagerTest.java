@@ -158,10 +158,13 @@ public class GitManagerTest extends AbstractManagerTest {
 
     @AfterEach
     public void removeWorkingDirectory() throws IOException {
-        Files.walk(Paths.get(workingDirPath))
-             .map(Path::toFile)
-             .sorted(reverseOrder())
-             .forEach(File::delete);
+        final Path workDir = Paths.get(workingDirPath);
+        if (Files.exists(workDir)) {
+            Files.walk(workDir)
+                 .map(Path::toFile)
+                 .sorted(reverseOrder())
+                 .forEach(File::delete);
+        }
     }
 
     @BeforeEach

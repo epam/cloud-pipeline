@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +49,7 @@ public class StopServerlessRunDaoTest extends AbstractJdbcTest {
         final PipelineRun pipelineRun = pipelineRun();
         pipelineRunDao.createPipelineRun(pipelineRun);
 
-        final LocalDateTime firstUpdate = LocalDateTime.now();
+        final LocalDateTime firstUpdate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         final StopServerlessRun stopServerlessRun = StopServerlessRun.builder()
                 .runId(pipelineRun.getId())
                 .lastUpdate(firstUpdate)

@@ -78,6 +78,8 @@ bootJar {
 
 // >>>>> Exclude tests through property defined in the build.gradle file
 test {
+    // GitHub runner has 2 cores
+    maxParallelForks = Math.max(2, Runtime.runtime.availableProcessors().intdiv(2))
     if (project.hasProperty('excludeTests')) {
         exclude project.property('excludeTests')
     }
@@ -225,7 +227,7 @@ dependencies {
     implementation 'org.quartz-scheduler:quartz:2.3.2'
 
     // LDAP
-    implementation 'org.springframework.ldap:spring-ldap-core:2.3.2.RELEASE'
+    implementation 'org.springframework.ldap:spring-ldap-core:3.2.13'
 
     // Tests
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.13'

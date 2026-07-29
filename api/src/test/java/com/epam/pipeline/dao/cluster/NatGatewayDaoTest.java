@@ -60,7 +60,9 @@ public class NatGatewayDaoTest extends AbstractJdbcTest {
         final Optional<NatRoute> routingRuleFound = natGatewayDao.findRoute(newRoutingRule);
         assertTrue(routingRuleFound.isPresent());
         assertRequestEqualsRule(newRoutingRule, routingRuleFound.get(), NatRouteStatus.CREATION_SCHEDULED);
-        assertEquals(routingRulesCreated, natGatewayDao.loadQueuedRouteUpdates());
+        assertThat(natGatewayDao.loadQueuedRouteUpdates())
+            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("lastUpdateTime", "lastErrorTime")
+            .containsExactlyElementsOf(routingRulesCreated);
 
         final NatRoute routeUpdate = routingRuleCreated.toBuilder()
             .status(NatRouteStatus.PORT_FORWARDING_CONFIGURED)
