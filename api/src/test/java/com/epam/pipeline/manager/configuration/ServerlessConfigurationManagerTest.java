@@ -294,7 +294,8 @@ public class ServerlessConfigurationManagerTest {
 
     private MockHttpServletRequest mockRequest() {
         final MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setPathInfo(String.format("/serverless/%d/%s/%s", CONFIGURATION_ID, TEST_NAME, TEST_APP_PATH));
+        final String path = String.format("/serverless/%d/%s/%s", CONFIGURATION_ID, TEST_NAME, TEST_APP_PATH);
+        request.setRequestURI(path);
         request.setQueryString(TEST_QUERY);
         return request;
     }
