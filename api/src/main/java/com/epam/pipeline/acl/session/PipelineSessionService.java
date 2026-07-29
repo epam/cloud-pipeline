@@ -24,6 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.OR;
@@ -31,6 +36,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.USER_ADMIN_ONLY;
 
 @Service
 public class PipelineSessionService {
+
     @Autowired
     private JdbcIndexedSessionRepository jdbcIndexedSessionRepository;
 
@@ -39,19 +45,24 @@ public class PipelineSessionService {
 
     @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public void invalidateSession(final SidImpl sid) {
-        if (sid == null || StringUtils.isBlank(sid.getName())) {
-            return;
-        }
+        Assert.isTrue(sid != null && StringUtils.isNotBlank(sid.getName()),
+                "Sid object should be provided correctly.");
+        resolveUsers(sid).forEach(this::deleteSessions);
+    }
+
+    private List<String> resolveUsers(final SidImpl sid) {
         if (sid.isPrincipal()) {
-            deleteSessions(sid.getName().trim().toUpperCase());
-            return;
+            final String principalName = sid.getName().trim().toUpperCase();
+            Assert.notNull(userManager.loadUserByName(principalName),
+                    String.format("User with name '%s' not found.", principalName));
+            return Collections.singletonList(principalName);
         }
-        userManager.loadUsersByGroupOrRole(sid.getName()).stream()
+        return userManager.loadUsersByGroupOrRole(sid.getName()).stream()
                 .map(PipelineUser::getUserName)
                 .filter(StringUtils::isNotBlank)
                 .map(name -> name.trim().toUpperCase())
                 .distinct()
-                .forEach(this::deleteSessions);
+                .collect(Collectors.toList());
     }
 
     private void deleteSessions(final String principalName) {
