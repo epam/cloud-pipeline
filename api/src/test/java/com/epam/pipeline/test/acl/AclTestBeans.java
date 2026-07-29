@@ -159,7 +159,6 @@ import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
-import com.epam.pipeline.acl.session.PipelineSessionService;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
