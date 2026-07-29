@@ -88,6 +88,7 @@ import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.acl.user.RoleApiService;
 import com.epam.pipeline.acl.user.UserApiService;
+import com.epam.pipeline.acl.session.PipelineSessionService;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -194,6 +195,9 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UserApiService userApiService;
+
+    @MockBean
+    protected PipelineSessionService pipelineSessionService;
 
     @MockBean
     protected PreferenceManager preferenceManager;

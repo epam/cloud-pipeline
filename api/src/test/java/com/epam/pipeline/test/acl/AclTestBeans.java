@@ -19,6 +19,7 @@ package com.epam.pipeline.test.acl;
 import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.plugin.PluginAssignmentService;
 import com.epam.pipeline.acl.plugin.PluginService;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -158,6 +159,7 @@ import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.JsonService;
 import com.epam.pipeline.manager.utils.UtilsManager;
+import com.epam.pipeline.acl.session.PipelineSessionService;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
@@ -568,6 +570,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected JdbcIndexedSessionRepository mockJdbcIndexedSessionRepository;
 
     @MockBean
     protected PipelineRunAsManager mockPipelineRunAsManager;
