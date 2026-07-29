@@ -176,8 +176,9 @@ public class UserController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<PipelineUser> loadUser(@PathVariable Long id,
-                                         @RequestParam(defaultValue = FALSE) final boolean quotas) {
-        return Result.success(userApiService.loadUser(id, quotas));
+                                         @RequestParam(defaultValue = FALSE) final boolean quotas,
+                                         @RequestParam(defaultValue = FALSE) final boolean credits) {
+        return Result.success(userApiService.loadUser(id, quotas, credits));
     }
 
     @GetMapping(value = "/user")
@@ -230,10 +231,11 @@ public class UserController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<PipelineUser>> loadUsers(@RequestParam(defaultValue = FALSE) final boolean activity,
-                                                @RequestParam(defaultValue = FALSE) final boolean quotas) {
+                                                @RequestParam(defaultValue = FALSE) final boolean quotas,
+                                                @RequestParam(defaultValue = FALSE) final boolean credits) {
         return Result.success(activity
-                ? userApiService.loadUsersWithActivityStatus(quotas)
-                : userApiService.loadUsers(quotas));
+                ? userApiService.loadUsersWithActivityStatus(quotas, credits)
+                : userApiService.loadUsers(quotas, credits));
     }
 
     @GetMapping(value = "/users/info")

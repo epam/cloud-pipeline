@@ -22,6 +22,9 @@ import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
+import com.epam.pipeline.mapper.credits.PlatformUsageCreditsRuleMapper;
+import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
@@ -159,5 +162,20 @@ public class MappersConfiguration {
     @Bean
     public RunnerSidMapper runnerSidMapper() {
         return Mappers.getMapper(RunnerSidMapper.class);
+    }
+
+    @Bean
+    public PlatformUsageCreditsRuleMapper platformUsageCreditsRuleMapper() {
+        return Mappers.getMapper(PlatformUsageCreditsRuleMapper.class);
+    }
+
+    @Bean
+    public PlatformUsageCreditsUserBalanceMapper platformUsageCreditsUserBalanceMapper() {
+        return Mappers.getMapper(PlatformUsageCreditsUserBalanceMapper.class);
+    }
+
+    @Bean
+    public PlatformUsageCreditsEventMapper platformUsageCreditsEventMapper() {
+        return Mappers.getMapper(PlatformUsageCreditsEventMapper.class);
     }
 }

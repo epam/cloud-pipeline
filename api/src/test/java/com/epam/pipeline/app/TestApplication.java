@@ -27,6 +27,9 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.ldap.LdapManager;
@@ -198,6 +201,15 @@ public class TestApplication {
 
     @MockBean
     public AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    public PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    public PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    public PlatformUsageCreditsEventService platformUsageCreditsEventService;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

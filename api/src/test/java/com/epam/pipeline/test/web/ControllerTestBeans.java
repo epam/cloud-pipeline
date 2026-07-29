@@ -29,6 +29,9 @@ import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.acl.credits.PlatformUsageCreditsEventApiService;
+import com.epam.pipeline.acl.credits.PlatformUsageCreditsRuleApiService;
+import com.epam.pipeline.acl.credits.PlatformUsageCreditsUserBalanceApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -244,6 +247,15 @@ public class ControllerTestBeans {
 
     @MockBean
     protected QuotaApiService quotaApiService;
+
+    @MockBean
+    protected PlatformUsageCreditsRuleApiService platformUsageCreditsRuleApiService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceApiService platformUsageCreditsUserBalanceApiService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventApiService platformUsageCreditsEventApiService;
 
     @MockBean
     protected ReportApiService reportApiService;

@@ -161,6 +161,15 @@ public class NotificationParameterManager {
         return parameters;
     }
 
+    public Map<String, Object> build(final NotificationType type,
+                                     final PipelineUser user,
+                                     final int creditsBalance) {
+        final Map<String, Object> parameters = build(type);
+        parameters.put("user", UserMapper.map(user, Collections.emptyMap()));
+        parameters.put("creditsBalance", creditsBalance);
+        return parameters;
+    }
+
     public Map<String, Object> build(final NotificationType type, final List<NodePool> pools) {
         final Map<String, Object> parameters = build(type);
         parameters.putAll(buildEntities(NotificationEntityClass.NODE_POOL, pools.stream()

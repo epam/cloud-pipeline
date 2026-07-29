@@ -853,6 +853,24 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
+    // Platform usage credits
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
+            "error.platform.usage.credits.rule.not.found";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
+            "error.platform.usage.credits.rule.name.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
+            "error.platform.usage.credits.rule.filter.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
+            "error.platform.usage.credits.rule.action.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
+            "error.platform.usage.credits.rule.unknown.field";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
+            "error.platform.usage.credits.rule.unsupported.operand";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
+            "error.platform.usage.credits.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
+            "error.platform.usage.credits.rule.time.window.invalid";
+
     private MessageConstants() {
         // no-op
     }
