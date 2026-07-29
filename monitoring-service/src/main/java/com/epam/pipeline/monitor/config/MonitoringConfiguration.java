@@ -18,6 +18,7 @@ package com.epam.pipeline.monitor.config;
 
 import com.epam.pipeline.monitor.monitoring.SchedulingService;
 import com.epam.pipeline.monitor.monitoring.node.GpuUsageMonitoringService;
+import com.epam.pipeline.monitor.monitoring.credits.PlatformUsageCreditsMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolUsageCleanerService;
 import com.epam.pipeline.monitor.monitoring.run.ArchiveRunsMonitoringService;
@@ -98,5 +99,17 @@ public class MonitoringConfiguration {
                                                 final PreferencesService preferencesService) {
         return new SchedulingService(scheduler, monitoringService, client, monitorDelayPreferenceName,
                 preferencesService, "ArchiveRunsMonitor");
+    }
+
+    @Bean
+    public SchedulingService platformUsageCreditMonitor(
+            final TaskScheduler scheduler,
+            final PlatformUsageCreditsMonitoringService monitoringService,
+            final CloudPipelineAPIClient client,
+            @Value("${preference.name.platform.usage.credits.monitor.delay}")
+                final String monitorDelayPreferenceName,
+            final PreferencesService preferencesService) {
+        return new SchedulingService(scheduler, monitoringService, client,
+                monitorDelayPreferenceName, preferencesService, "PlatformUsageCreditMonitor");
     }
 }

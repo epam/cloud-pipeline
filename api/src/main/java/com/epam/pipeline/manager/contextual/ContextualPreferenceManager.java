@@ -164,6 +164,24 @@ public class ContextualPreferenceManager {
     }
 
     /**
+     * Searches for a contextual preference using an already-loaded user as the lookup context.
+     * Prefer this overload when the caller has already loaded the user to avoid a redundant DB call.
+     *
+     * @param preferences list of preference key names to search
+     * @param user        the user whose USER- and ROLE-level overrides should be consulted
+     * @throws IllegalArgumentException if no preference is found
+     */
+    public ContextualPreference search(final List<String> preferences, final PipelineUser user) {
+        validateNames(preferences);
+        final List<ContextualPreferenceExternalResource> allResources = new ArrayList<>();
+        allResources.add(userResource(user));
+        allResources.addAll(rolesResources(user.getRoles()));
+        return contextualPreferenceHandler.search(preferences, allResources)
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, user.getId())));
+    }
+
+    /**
      * Searches for a contextual preference with the given parameters
      *
      * Returns a first found preference from the list of preferences.
