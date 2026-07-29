@@ -17,6 +17,7 @@
 package com.epam.pipeline.vo;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -30,7 +31,9 @@ public final class SecuredEntityVO {
     @JsonProperty("class")
     private final String entityClass;
 
-    private SecuredEntityVO(long entityId, String entityClass) {
+    @JsonCreator
+    private SecuredEntityVO(@JsonProperty("id") long entityId,
+                            @JsonProperty("class") String entityClass) {
         this.entityId = entityId;
         this.entityClass = entityClass;
     }
