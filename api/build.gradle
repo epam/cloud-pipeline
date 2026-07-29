@@ -227,7 +227,7 @@ dependencies {
     implementation 'org.quartz-scheduler:quartz:2.3.2'
 
     // LDAP
-    implementation 'org.springframework.ldap:spring-ldap-core:2.3.2.RELEASE'
+    implementation 'org.springframework.ldap:spring-ldap-core:3.2.13'
 
     // Tests
     testImplementation 'org.springframework.boot:spring-boot-starter-test:3.3.13'
