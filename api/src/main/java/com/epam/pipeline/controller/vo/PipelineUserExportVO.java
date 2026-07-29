@@ -37,6 +37,7 @@ public class PipelineUserExportVO {
     private boolean includeFirstLoginDate;
     private boolean includeHeader;
     private boolean includeAttributes;
+    private boolean includeCredits;
     private List<String> metadataColumns;
     private LocalDate from;
     private LocalDate to;

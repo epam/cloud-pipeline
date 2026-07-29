@@ -162,6 +162,9 @@ public class PipelineVersionManager implements InitializingBean {
             throws GitClientException {
         Assert.isTrue(configuration.checkConfigComplete(),
                 messageHelper.getMessage(MessageConstants.ERROR_CONFIG_INVALID));
+        if (configuration.getConfiguration() != null) {
+            validateFallbackInstanceTypesCount(configuration.getConfiguration());
+        }
         String configurationName = configuration.getName();
         Pipeline pipeline = pipelineManager.load(id, true);
         List<ConfigurationEntry> currentConfigurations = getCurrentConfigurations(pipeline);
@@ -362,5 +365,17 @@ public class PipelineVersionManager implements InitializingBean {
                 }
             });
         }
+    }
+
+    private void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
+        final List<String> fallbackTypes = configuration.getFallbackInstanceTypes();
+        if (CollectionUtils.isEmpty(fallbackTypes)) {
+            return;
+        }
+        final int maxCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        Assert.isTrue(fallbackTypes.size() <= maxCount,
+                messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
+                        fallbackTypes.size(), maxCount));
     }
 }

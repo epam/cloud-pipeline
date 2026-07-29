@@ -173,7 +173,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         // Mock getProcMountsPath() to return a nonexistent path so isMounted() falls back to File.exists().
         NFSStorageMounter spyMounter = spy(nfsStorageMounter);
         doReturn("/nonexistent/proc/mounts").when(spyMounter).getProcMountsPath();
-        Whitebox.setInternalState(nfsProvider, "nfsStorageMounter", spyMounter);
+        ReflectionTestUtils.setField(nfsProvider, "nfsStorageMounter", spyMounter);
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 

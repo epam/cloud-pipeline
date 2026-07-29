@@ -72,7 +72,10 @@ import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
@@ -86,6 +89,7 @@ import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
@@ -547,5 +551,20 @@ public class AspectTestBeans {
     private PipelineRunMetricsDao runMetricsDao;
 
     @MockBean
+    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
+
+    @MockBean
     protected GlobalSearchElasticHelper globalSearchElasticHelper;
+
+    @MockBean
+    protected PipelineRunMetricsDao pipelineRunMetricsDao;
+
+    @MockBean
+    protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
 }

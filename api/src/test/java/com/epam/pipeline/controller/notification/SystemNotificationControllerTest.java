@@ -59,7 +59,7 @@ public class SystemNotificationControllerTest extends AbstractControllerTest {
     private static final String CONFIRM_URL = NOTIFICATION_URL + "/confirm";
     private static final String AFTER = "after";
     private static final Date DATE = new Date(ONE_SECOND);
-    private static final String DATE_AS_STRING = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(DATE);
+    private static final String DATE_AS_STRING = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(DATE);
     private final SystemNotification systemNotification = getSystemNotification();
     private final List<SystemNotification> systemNotificationList = Collections.singletonList(systemNotification);
     private final SystemNotificationFilterVO systemNotificationFilterVO = getSystemNotificationFilterVO();
