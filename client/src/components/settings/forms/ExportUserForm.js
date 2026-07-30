@@ -38,7 +38,7 @@ const Keys = [
   {label: 'Groups', value: 'includeGroups'},
   {label: 'Blocked', value: 'includeStatus'},
   {label: 'Default data storage', value: 'includeDataStorage'},
-  // {label: 'Usage credits', value: 'includeUsageCredits'} // TODO: wait for API
+  {label: 'Usage credits', value: 'includeUsageCredits'}
 ];
 
 const DefaultValues = Keys.map(k => k.value);

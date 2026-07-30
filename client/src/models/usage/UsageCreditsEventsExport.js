@@ -16,24 +16,11 @@
 
 import RemotePost from '../basic/RemotePost';
 
-function buildUrl (from, to) {
-  const query = [];
-  if (from !== undefined && from !== null && from !== '') {
-    query.push(`from=${encodeURIComponent(from)}`);
-  }
-  if (to !== undefined && to !== null && to !== '') {
-    query.push(`to=${encodeURIComponent(to)}`);
-  }
-  return query.length
-    ? `/usage/credits/events/export?${query.join('&')}`
-    : '/usage/credits/events/export';
-}
-
 export default class UsageCreditsEventsExport extends RemotePost {
   static isJson = false;
 
-  constructor (from, to) {
+  constructor () {
     super();
-    this.url = buildUrl(from, to);
+    this.url = '/usage/credits/events/export';
   }
 }

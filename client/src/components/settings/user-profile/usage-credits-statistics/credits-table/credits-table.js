@@ -16,15 +16,13 @@
 
 import React from 'react';
 import {message, Table} from 'antd';
-import UsageCreditsEventsFilterMock from '../../../../../models/usage/UsageCreditsEventsFilterMock';
-import UsageCreditsRulesMock from '../../../../../models/usage/UsageCreditsRulesMock';
+import UsageCreditsEventsFilter from '../../../../../models/usage/UsageCreditsEventsFilter';
+import UsageCreditsRules from '../../../../../models/usage/UsageCreditsRules';
 import {
-  applyClientEntityFilters,
   DEFAULT_PAGE_SIZE,
   EMPTY_DRAFT_FILTERS,
   EMPTY_FILTERS,
   exportCreditsEventsToCSV,
-  formatDate,
   getEventsFilterPayload,
   hasActiveCreditsDetailsFilters
 } from './utils';
@@ -37,7 +35,7 @@ export default class CreditsTable extends React.Component {
     filters: {...EMPTY_FILTERS},
     draftFilters: {...EMPTY_DRAFT_FILTERS},
     filterDropdownVisible: {
-      timestamp: false,
+      createdDate: false,
       ruleId: false,
       entity: false,
       incidentType: false
@@ -68,7 +66,7 @@ export default class CreditsTable extends React.Component {
   }
 
   loadRules = async () => {
-    const request = new UsageCreditsRulesMock();
+    const request = new UsageCreditsRules();
     await request.fetch();
     if (request.loaded && request.value) {
       const rules = request.value || [];
@@ -80,16 +78,11 @@ export default class CreditsTable extends React.Component {
     }
   };
 
-
   loadEvents = async () => {
     const {user} = this.props;
     const {filters, page} = this.state;
-    const {from, to, showEmpty} = filters;
     this.setState({pending: true});
-    const request = new UsageCreditsEventsFilterMock(
-      formatDate(from),
-      formatDate(to)
-    );
+    const request = new UsageCreditsEventsFilter();
     await request.send(getEventsFilterPayload({
       user,
       filters,
@@ -97,10 +90,12 @@ export default class CreditsTable extends React.Component {
       pageSize: this.pageSize
     }));
     if (request.loaded && request.value) {
-      const elements = applyClientEntityFilters(request.value.elements || [], showEmpty)
+      const elements = (request.value.elements || [])
         .map((item, index) => ({
           ...item,
-          key: `${item.ruleId}-${item.entity && item.entity.id}-${index}`
+          key: item.id !== undefined && item.id !== null
+            ? item.id
+            : `${item.ruleId}-${item.entity && item.entity.id}-${index}`
         }));
       this.setState({
         elements,
@@ -122,7 +117,6 @@ export default class CreditsTable extends React.Component {
         const {user} = this.props;
         const {filters} = this.state;
         await exportCreditsEventsToCSV({
-          filters,
           payload: getEventsFilterPayload({
             user,
             filters
@@ -142,7 +136,7 @@ export default class CreditsTable extends React.Component {
       filters: {...EMPTY_FILTERS},
       draftFilters: {...EMPTY_DRAFT_FILTERS},
       filterDropdownVisible: {
-        timestamp: false,
+        createdDate: false,
         ruleId: false,
         entity: false,
         incidentType: false
@@ -159,8 +153,7 @@ export default class CreditsTable extends React.Component {
   };
 
   onFilterDropdownVisibleChange = (key, getDraftPatch) => (visible) => {
-    // DatePicker calendar is a portal; ignore outside-click close while it is open
-    if (key === 'timestamp' && !visible && this._datePickerOpen) {
+    if (key === 'createdDate' && !visible && this._datePickerOpen) {
       return;
     }
     const {filters, filterDropdownVisible, draftFilters} = this.state;
@@ -240,7 +233,7 @@ export default class CreditsTable extends React.Component {
       },
       filterDropdownVisible: {
         ...filterDropdownVisible,
-        timestamp: false
+        createdDate: false
       },
       page: 1
     }, this.loadEvents);
@@ -251,13 +244,13 @@ export default class CreditsTable extends React.Component {
     this.setState({
       filters: {
         ...filters,
-        entityId: '',
-        showEmpty: true
+        entityIds: [],
+        onlyEmpty: false
       },
       draftFilters: {
         ...draftFilters,
-        entityId: '',
-        showEmpty: true
+        entityIds: [],
+        onlyEmpty: false
       },
       filterDropdownVisible: {
         ...filterDropdownVisible,

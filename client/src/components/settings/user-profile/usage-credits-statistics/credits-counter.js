@@ -16,7 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import UsageCreditsUsersMock from '../../../../models/usage/UsageCreditsUsersMock';
+import UsageCreditsUsers from '../../../../models/usage/UsageCreditsUsers';
 import styles from './credits-counter.css';
 
 export default class UsageCreditsCounter extends React.Component {
@@ -26,7 +26,7 @@ export default class UsageCreditsCounter extends React.Component {
   };
 
   get isControlled () {
-    return this.props.credits !== undefined;
+    return Object.prototype.hasOwnProperty.call(this.props, 'credits');
   }
 
   componentDidMount () {
@@ -52,13 +52,17 @@ export default class UsageCreditsCounter extends React.Component {
       return;
     }
     this.setState({pending: true});
-    const request = new UsageCreditsUsersMock();
-    await request.send({userIds: [user.id]});
+    const request = new UsageCreditsUsers();
+    await request.send({
+      userIds: [user.id],
+      page: 1,
+      pageSize: 1
+    });
     if (request.loaded && request.value && request.value.elements) {
       const [element] = request.value.elements;
       this.setState({
-        credits: element && element.creditsBalance
-          ? element.creditsBalance.current
+        credits: element && element.currentValue !== undefined
+          ? element.currentValue
           : undefined,
         pending: false
       });

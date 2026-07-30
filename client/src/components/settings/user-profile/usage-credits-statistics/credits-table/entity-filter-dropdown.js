@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
-import {Checkbox, Input, Row} from 'antd';
+import {Checkbox, Row, Select} from 'antd';
 import classNames from 'classnames';
+import {normalizeRunIds} from './utils';
 import styles from './credits-table.css';
 
 function FilterActionLink ({disabled, onClick, children}) {
@@ -34,13 +35,15 @@ function FilterActionLink ({disabled, onClick, children}) {
 }
 
 export default function EntityFilterDropdown ({
-  entityId,
-  showEmpty,
+  entityIds,
+  onlyEmpty,
   onChange,
   onOk,
   onClear,
   clearDisabled
 }) {
+  // The API rejects an entity id together with the empty-entity filter,
+  // so selecting one control resets the other
   return (
     <div
       className={classNames(
@@ -50,21 +53,33 @@ export default function EntityFilterDropdown ({
     >
       <div className={styles.entityFilter}>
         <div className={styles.filter}>
-          <span className={styles.label}>ID:</span>
-          <Input
-            placeholder="Run ID"
-            className={styles.filterControl}
-            value={entityId}
-            onChange={(e) => onChange({entityId: e.target.value})}
-            onPressEnter={onOk}
+          <span className={styles.label}>IDs:</span>
+          <Select
+            mode="tags"
+            placeholder="Run IDs"
+            className={styles.tagsFilterControl}
+            value={entityIds}
+            tokenSeparators={[',', ' ', ';']}
+            dropdownStyle={{display: 'none'}}
+            getPopupContainer={(triggerNode) => triggerNode.parentNode}
+            onChange={(values) => {
+              const runIds = normalizeRunIds(values);
+              onChange({
+                entityIds: runIds,
+                ...(runIds.length ? {onlyEmpty: false} : {})
+              });
+            }}
           />
         </div>
         <div className={styles.filter}>
           <Checkbox
-            checked={showEmpty}
-            onChange={(e) => onChange({showEmpty: e.target.checked})}
+            checked={onlyEmpty}
+            onChange={(e) => onChange({
+              onlyEmpty: e.target.checked,
+              ...(e.target.checked ? {entityIds: []} : {})
+            })}
           >
-            Show empty
+            Not linked to a run
           </Checkbox>
         </div>
       </div>

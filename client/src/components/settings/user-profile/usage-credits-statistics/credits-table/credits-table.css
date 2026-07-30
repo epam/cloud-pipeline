@@ -60,6 +60,11 @@
   width: 180px;
 }
 
+.tags-filter-control {
+  min-width: 220px;
+  max-width: 100%;
+}
+
 .filter-popover-container {
   padding: 5px;
   border-radius: 4px;

@@ -16,15 +16,18 @@
 
 import React from 'react';
 import {Link} from 'react-router';
+import moment from 'moment';
 import FileSaver from 'file-saver';
 import UsageCreditsEventsExport from '../../../../../models/usage/UsageCreditsEventsExport';
 import checkBlob from '../../../../../utils/check-blob';
 
 export const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss';
 
-export const ENTITY_CLASS_PIPELINE_RUN = 'PIPELINE_RUN';
+export const API_DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
-export const INCIDENT_TYPES = ['INCREASE', 'DEDUCTION'];
+export const ENTITY_CLASS_PIPELINE_RUN = 'PipelineRun';
+
+export const INCIDENT_TYPES = ['INCREASE', 'DEDUCTION', 'RESET'];
 
 export const DEFAULT_PAGE_SIZE = 15;
 
@@ -33,8 +36,8 @@ export const EMPTY_FILTERS = {
   to: undefined,
   ruleIds: [],
   incidentTypes: [],
-  entityId: '',
-  showEmpty: true
+  entityIds: [],
+  onlyEmpty: false
 };
 
 export const EMPTY_DRAFT_FILTERS = {
@@ -42,23 +45,22 @@ export const EMPTY_DRAFT_FILTERS = {
   to: undefined,
   ruleIds: [],
   incidentTypes: [],
-  entityId: '',
-  showEmpty: true
+  entityIds: [],
+  onlyEmpty: false
 };
 
 export function formatDate (value) {
-  return value ? value.format(DATE_FORMAT) : undefined;
+  return value ? moment(value).utc().format(API_DATE_FORMAT) : undefined;
 }
 
-export function isEmptyEntity (entity) {
-  return !entity || (entity.id == null && !entity.class);
+export function normalizeRunIds (values = []) {
+  return values
+    .map((value) => String(value).trim())
+    .filter((value) => /^\d+$/.test(value));
 }
 
 export function hasActiveEntityFilter (filters = {}) {
-  const entityId = filters.entityId != null
-    ? String(filters.entityId).trim()
-    : '';
-  return !!(entityId || filters.showEmpty === false);
+  return !!(normalizeRunIds(filters.entityIds).length || filters.onlyEmpty);
 }
 
 export function hasActiveCreditsDetailsFilters (filters = {}) {
@@ -72,17 +74,12 @@ export function hasActiveCreditsDetailsFilters (filters = {}) {
 }
 
 export function getEntitiesFilterPayload (filters = {}) {
-  const entityId = filters.entityId != null
-    ? String(filters.entityId).trim()
-    : '';
-  if (!entityId) {
-    return undefined;
-  }
-  const id = Number(entityId);
-  return [{
-    id: Number.isNaN(id) ? entityId : id,
-    class: ENTITY_CLASS_PIPELINE_RUN
-  }];
+  const entities = normalizeRunIds(filters.entityIds)
+    .map((entityId) => ({
+      id: Number(entityId),
+      class: ENTITY_CLASS_PIPELINE_RUN
+    }));
+  return entities.length ? entities : undefined;
 }
 
 export function getEventsFilterPayload ({
@@ -93,24 +90,31 @@ export function getEventsFilterPayload ({
 } = {}) {
   const {
     ruleIds,
-    incidentTypes
+    incidentTypes,
+    onlyEmpty
   } = filters;
   const entities = getEntitiesFilterPayload(filters);
+  const ruleId = ruleIds && ruleIds.length
+    ? Number(ruleIds[0])
+    : undefined;
+  const withoutEntityLink = !entities && onlyEmpty
+    ? true
+    : undefined;
   return {
     userIds: user && user.id ? [user.id] : [],
-    ruleIds,
     incidentTypes,
+    ...(ruleId !== undefined && !Number.isNaN(ruleId) ? {ruleId} : {}),
+    ...(withoutEntityLink !== undefined ? {withoutEntityLink} : {}),
     ...(entities ? {entities} : {}),
-    ...(page !== undefined ? {page: page - 1} : {}),
+    ...(filters.from ? {from: formatDate(filters.from)} : {}),
+    ...(filters.to ? {to: formatDate(filters.to)} : {}),
+    ...(page !== undefined ? {page} : {}),
     ...(pageSize !== undefined ? {pageSize} : {})
   };
 }
 
-export async function exportCreditsEventsToCSV ({filters = {}, payload} = {}) {
-  const request = new UsageCreditsEventsExport(
-    formatDate(filters.from),
-    formatDate(filters.to)
-  );
+export async function exportCreditsEventsToCSV ({payload} = {}) {
+  const request = new UsageCreditsEventsExport();
   await request.send(payload);
   if (request.value instanceof Blob) {
     const error = await checkBlob(request.value, 'Error exporting usage credits');
@@ -121,13 +125,6 @@ export async function exportCreditsEventsToCSV ({filters = {}, payload} = {}) {
     return;
   }
   throw new Error(request.error || 'Error exporting usage credits');
-}
-
-export function applyClientEntityFilters (elements = [], showEmpty) {
-  if (showEmpty !== false) {
-    return elements;
-  }
-  return elements.filter((item) => !isEmptyEntity(item.entity));
 }
 
 export function formatEntity (entity) {
@@ -142,6 +139,18 @@ export function formatEntity (entity) {
     );
   }
   return `${entity.class}:${entity.id}`;
+}
+
+export function formatIncidentValue (value, incidentType) {
+  if (value === undefined || value === null || value === '') {
+    return '';
+  }
+  const numeric = Number(value);
+  if (Number.isNaN(numeric) || numeric === 0 || incidentType === 'RESET') {
+    return `${value}`;
+  }
+  const sign = incidentType === 'DEDUCTION' ? '-' : '+';
+  return `${sign}${Math.abs(numeric)}`;
 }
 
 export function getIncidentTypeClassName (incidentType) {

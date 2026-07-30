@@ -47,7 +47,7 @@ import displayDate from '../../../utils/displayDate';
 import {QuotasDisclaimerComponent} from './quota-info';
 import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
 import UsageCreditsCounter from '../user-profile/usage-credits-statistics/credits-counter';
-import UsageCreditsUsersMock from '../../../models/usage/UsageCreditsUsersMock';
+import UsageCreditsUsers from '../../../models/usage/UsageCreditsUsers';
 
 const PAGE_SIZE = 20;
 
@@ -92,31 +92,27 @@ export default class UsersManagement extends React.Component {
     userDataToExport: [],
     metadataKeys: [],
     filterUsers: USERS_FILTERS.all,
+    usersTableSortOrder: undefined,
     usersCredits: {}
   };
 
   componentDidMount () {
+    this.props.users.fetch();
     this.loadUsersCredits();
   }
 
-  componentDidUpdate (prevProps, prevState) {
-    const pageChanged = prevState.usersTableCurrentPage !== this.state.usersTableCurrentPage;
-    const filtersChanged = prevState.userSearchText !== this.state.userSearchText ||
-      prevState.filterUsers !== this.state.filterUsers;
-    const usersWerePending = prevProps.users && prevProps.users.pending;
-    const usersLoaded = this.props.users &&
-      this.props.users.loaded &&
-      !this.props.users.pending;
-    const usersJustLoaded = usersWerePending && usersLoaded;
-    if (pageChanged || filtersChanged || usersJustLoaded) {
-      this.loadUsersCredits();
-    }
+  componentDidUpdate () {
+    this.loadUsersCredits();
+  }
+
+  componentWillUnmount () {
+    this.props.usersStore.fetch();
   }
 
   get currentPageUserIds () {
     const {usersTableCurrentPage} = this.state;
     const start = (usersTableCurrentPage - 1) * PAGE_SIZE;
-    return this.filteredUsers
+    return this.sortedUsers
       .slice(start, start + PAGE_SIZE)
       .map((user) => user.id)
       .filter((id) => id !== undefined && id !== null);
@@ -125,25 +121,35 @@ export default class UsersManagement extends React.Component {
   loadUsersCredits = async () => {
     const userIds = this.currentPageUserIds;
     const requestKey = userIds.join(',');
+    if (requestKey === this._creditsRequestKey) {
+      return;
+    }
     this._creditsRequestKey = requestKey;
     if (!userIds.length) {
       this.setState({usersCredits: {}});
       return;
     }
-    const request = new UsageCreditsUsersMock();
-    await request.send({userIds});
+    const request = new UsageCreditsUsers();
+    await request.send({
+      userIds,
+      page: 1,
+      pageSize: userIds.length
+    });
     if (this._creditsRequestKey !== requestKey) {
       return;
     }
-    if (request.loaded && request.value && request.value.elements) {
-      const usersCredits = {};
-      (request.value.elements || []).forEach((element) => {
-        if (element && element.userId != null && element.creditsBalance) {
-          usersCredits[element.userId] = element.creditsBalance.current;
-        }
-      });
-      this.setState({usersCredits});
+    if (!request.loaded) {
+      console.warn(`Usage credits are not available: ${request.error || 'unknown error'}`);
+      return;
     }
+    const elements = (request.value || {}).elements || [];
+    const usersCredits = elements.reduce((acc, element) => {
+      if (element && element.userId != null && element.currentValue !== undefined) {
+        acc[element.userId] = element.currentValue;
+      }
+      return acc;
+    }, {});
+    this.setState({usersCredits});
   };
 
   get isAdmin () {
@@ -181,10 +187,11 @@ export default class UsersManagement extends React.Component {
     });
   };
 
-  handleUserTableChange = (pagination) => {
+  handleUserTableChange = (pagination, filters, sorter) => {
     const {current} = pagination;
     this.setState({
-      usersTableCurrentPage: current
+      usersTableCurrentPage: current,
+      usersTableSortOrder: sorter ? sorter.order : undefined
     });
   };
 
@@ -290,6 +297,14 @@ export default class UsersManagement extends React.Component {
           }
         }
       });
+  }
+
+  get sortedUsers () {
+    const {usersTableSortOrder} = this.state;
+    const users = this.filteredUsers;
+    return usersTableSortOrder === 'descend'
+      ? users.slice().reverse()
+      : users;
   }
 
   onUserSearchChanged = (e) => {
@@ -817,13 +832,5 @@ export default class UsersManagement extends React.Component {
         />
       </div>
     );
-  }
-
-  componentDidMount () {
-    this.props.users.fetch();
-  }
-
-  componentWillUnmount () {
-    this.props.usersStore.fetch();
   }
 }

@@ -39,7 +39,8 @@ export default function CheckboxFilterDropdown ({
   onChange,
   onOk,
   onClear,
-  clearDisabled
+  clearDisabled,
+  single = false
 }) {
   const selectedSet = new Set(selected || []);
   return (
@@ -59,7 +60,7 @@ export default function CheckboxFilterDropdown ({
               checked={selectedSet.has(option.value)}
               onChange={(e) => {
                 if (e.target.checked) {
-                  onChange([...selectedSet, option.value]);
+                  onChange(single ? [option.value] : [...selectedSet, option.value]);
                 } else {
                   onChange([...selectedSet].filter((value) => value !== option.value));
                 }

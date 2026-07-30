@@ -16,22 +16,9 @@
 
 import RemotePost from '../basic/RemotePost';
 
-function buildUrl (from, to) {
-  const query = [];
-  if (from !== undefined && from !== null && from !== '') {
-    query.push(`from=${encodeURIComponent(from)}`);
-  }
-  if (to !== undefined && to !== null && to !== '') {
-    query.push(`to=${encodeURIComponent(to)}`);
-  }
-  return query.length
-    ? `/usage/credits/events/filter?${query.join('&')}`
-    : '/usage/credits/events/filter';
-}
-
 export default class UsageCreditsEventsFilter extends RemotePost {
-  constructor (from, to) {
+  constructor () {
     super();
-    this.url = buildUrl(from, to);
+    this.url = '/usage/credits/events/filter';
   }
 }

@@ -18,9 +18,11 @@ import React from 'react';
 import displayDate from '../../../../../utils/displayDate';
 import {
   formatEntity,
+  formatIncidentValue,
   getIncidentTypeClassName,
   hasActiveEntityFilter,
-  INCIDENT_TYPES
+  INCIDENT_TYPES,
+  normalizeRunIds
 } from './utils';
 import CheckboxFilterDropdown from './checkbox-filter-dropdown';
 import DateRangeFilterDropdown from './date-range-filter-dropdown';
@@ -36,7 +38,8 @@ function getCheckboxFilterProps ({
   onFilterDropdownVisibleChange,
   onDraftFiltersChange,
   onApplyFilter,
-  onClearColumnFilter
+  onClearColumnFilter,
+  single = false
 }) {
   const selected = filters[filterKey] || [];
   const filtered = selected.length > 0;
@@ -45,6 +48,7 @@ function getCheckboxFilterProps ({
       <CheckboxFilterDropdown
         options={options}
         selected={draftFilters[filterKey] || []}
+        single={single}
         onChange={(values) => onDraftFiltersChange({[filterKey]: values})}
         onOk={onApplyFilter(key, (draft) => ({
           [filterKey]: (draft[filterKey] || []).slice()
@@ -60,7 +64,6 @@ function getCheckboxFilterProps ({
         [filterKey]: (appliedFilters[filterKey] || []).slice()
       })
     ),
-    // antd 2 highlights the icon from filteredValue/selectedKeys, not `filtered` alone
     filtered,
     filteredValue: filtered ? ['filtered'] : []
   };
@@ -83,7 +86,7 @@ function getDateRangeFilterProps ({
         from={draftFilters.from}
         to={draftFilters.to}
         onChange={onDraftFiltersChange}
-        onOk={onApplyFilter('timestamp', (draft) => ({
+        onOk={onApplyFilter('createdDate', (draft) => ({
           from: draft.from,
           to: draft.to
         }))}
@@ -92,9 +95,9 @@ function getDateRangeFilterProps ({
         onPickerOpenChange={onDatePickerOpenChange}
       />
     ),
-    filterDropdownVisible: filterDropdownVisible.timestamp,
+    filterDropdownVisible: filterDropdownVisible.createdDate,
     onFilterDropdownVisibleChange: onFilterDropdownVisibleChange(
-      'timestamp',
+      'createdDate',
       (appliedFilters) => ({
         from: appliedFilters.from,
         to: appliedFilters.to
@@ -118,14 +121,12 @@ function getEntityFilterProps ({
   return {
     filterDropdown: (
       <EntityFilterDropdown
-        entityId={draftFilters.entityId}
-        showEmpty={draftFilters.showEmpty}
+        entityIds={draftFilters.entityIds}
+        onlyEmpty={draftFilters.onlyEmpty}
         onChange={onDraftFiltersChange}
         onOk={onApplyFilter('entity', (draft) => ({
-          entityId: draft.entityId != null
-            ? String(draft.entityId).trim()
-            : '',
-          showEmpty: draft.showEmpty !== false
+          entityIds: normalizeRunIds(draft.entityIds),
+          onlyEmpty: draft.onlyEmpty === true
         }))}
         onClear={onClearEntityFilter}
         clearDisabled={!filtered}
@@ -135,8 +136,8 @@ function getEntityFilterProps ({
     onFilterDropdownVisibleChange: onFilterDropdownVisibleChange(
       'entity',
       (appliedFilters) => ({
-        entityId: appliedFilters.entityId || '',
-        showEmpty: appliedFilters.showEmpty !== false
+        entityIds: (appliedFilters.entityIds || []).slice(),
+        onlyEmpty: appliedFilters.onlyEmpty === true
       })
     ),
     filtered,
@@ -169,8 +170,8 @@ export function getCreditsDetailsColumns ({
   };
   return [
     {
-      key: 'timestamp',
-      dataIndex: 'timestamp',
+      key: 'createdDate',
+      dataIndex: 'createdDate',
       title: 'Event time',
       ...getDateRangeFilterProps({
         filters,
@@ -182,7 +183,7 @@ export function getCreditsDetailsColumns ({
         onClearDateFilter,
         onDatePickerOpenChange
       }),
-      render: (timestamp) => displayDate(timestamp)
+      render: (createdDate) => displayDate(createdDate)
     },
     {
       key: 'ruleId',
@@ -192,6 +193,7 @@ export function getCreditsDetailsColumns ({
         ...filterHandlers,
         key: 'ruleId',
         filterKey: 'ruleIds',
+        single: true,
         options: rules.map((rule) => ({
           text: rule.name,
           value: rule.id
@@ -247,7 +249,7 @@ export function getCreditsDetailsColumns ({
       title: 'Value',
       render: (value, record) => (
         <span className={getIncidentTypeClassName(record.incidentType)}>
-          {value}
+          {formatIncidentValue(value, record.incidentType)}
         </span>
       )
     }
