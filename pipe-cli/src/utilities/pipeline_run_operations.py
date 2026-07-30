@@ -56,7 +56,7 @@ class PipelineRunOperations(object):
             status_notifications=False,
             status_notifications_status=None, status_notifications_recipient=None,
             status_notifications_subject=None, status_notifications_body=None,
-            run_as_user=None, output_format=None):
+            run_as_user=None, output_format=None, fallback_instance_types=None):
         if output_format and not yes:
             click.echo('Output in json format supported with -y (--yes) option only.', err=True)
             sys.exit(1)
@@ -227,7 +227,8 @@ class PipelineRunOperations(object):
                                                                       status_notifications_subject=status_notifications_subject,
                                                                       status_notifications_body=status_notifications_body,
                                                                       run_as_user=run_as_user,
-                                                                      pod_assign_policy=pod_assign_policy)
+                                                                      pod_assign_policy=pod_assign_policy,
+                                                                      fallback_instance_types=fallback_instance_types)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
@@ -297,7 +298,8 @@ class PipelineRunOperations(object):
                                                              status_notifications_subject=status_notifications_subject,
                                                              status_notifications_body=status_notifications_body,
                                                              run_as_user=run_as_user,
-                                                             pod_assign_policy=pod_assign_policy)
+                                                             pod_assign_policy=pod_assign_policy,
+                                                             fallback_instance_types=fallback_instance_types)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))
