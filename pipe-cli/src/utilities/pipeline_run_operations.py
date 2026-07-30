@@ -54,7 +54,7 @@ class PipelineRunOperations(object):
             status_notifications=False,
             status_notifications_status=None, status_notifications_recipient=None,
             status_notifications_subject=None, status_notifications_body=None,
-            run_as_user=None):
+            run_as_user=None, fallback_instance_types=None):
 
         all_user_roles = UserOperationsManager().get_all_user_roles()
         # Preserving old style impersonation for admin users. Specified user token is generated and used
@@ -214,7 +214,8 @@ class PipelineRunOperations(object):
                                                                       status_notifications_subject=status_notifications_subject,
                                                                       status_notifications_body=status_notifications_body,
                                                                       run_as_user=run_as_user,
-                                                                      pod_assign_policy=pod_assign_policy)
+                                                                      pod_assign_policy=pod_assign_policy,
+                                                                      fallback_instance_types=fallback_instance_types)
                         pipeline_run_id = pipeline_run_model.identifier
                         if not quiet:
                             click.echo('"{}" pipeline run scheduled with RunId: {}'.format(
@@ -282,7 +283,8 @@ class PipelineRunOperations(object):
                                                              status_notifications_subject=status_notifications_subject,
                                                              status_notifications_body=status_notifications_body,
                                                              run_as_user=run_as_user,
-                                                             pod_assign_policy=pod_assign_policy)
+                                                             pod_assign_policy=pod_assign_policy,
+                                                             fallback_instance_types=fallback_instance_types)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))

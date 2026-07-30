@@ -113,7 +113,7 @@ class Pipeline(API):
                         status_notifications=False,
                         status_notifications_status=None, status_notifications_recipient=None,
                         status_notifications_subject=None, status_notifications_body=None,
-                        run_as_user=None, pod_assign_policy=None):
+                        run_as_user=None, pod_assign_policy=None, fallback_instance_types=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -125,6 +125,8 @@ class Pipeline(API):
             payload['hddSize'] = instance_disk
         if instance_type is not None:
             payload['instanceType'] = instance_type
+        if fallback_instance_types:
+            payload['fallbackInstanceTypes'] = list(fallback_instance_types)
         if docker_image is not None:
             payload['dockerImage'] = docker_image
         if cmd_template is not None:
@@ -174,13 +176,15 @@ class Pipeline(API):
                        status_notifications=False,
                        status_notifications_status=None, status_notifications_recipient=None,
                        status_notifications_subject=None, status_notifications_body=None,
-                       run_as_user=None, pod_assign_policy=None):
+                       run_as_user=None, pod_assign_policy=None, fallback_instance_types=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
             payload['hddSize'] = instance_disk
         if instance_type is not None:
             payload['instanceType'] = instance_type
+        if fallback_instance_types:
+            payload['fallbackInstanceTypes'] = list(fallback_instance_types)
         if docker_image is not None:
             payload['dockerImage'] = docker_image
         if cmd_template is not None:
