@@ -674,7 +674,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details, tags_detai
         else:
             click.echo('No tasks are available for the run')
         click.echo()
-    
+
     if tags_details:
         echo_title('Tags:')
         if len(run_model.tags) > 0:
@@ -827,6 +827,10 @@ def view_cluster_for_node(node_name):
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @click.option('-id', '--instance-disk', help='Instance disk size', type=int)
 @click.option('-it', '--instance-type', help='Instance disk type', type=str)
+@click.option('-fit', '--fallback-instance-type', 'fallback_instance_types', multiple=True, type=str,
+              required=False,
+              help='Fallback instance type to try if the primary instance type has no capacity. '
+                   'The option can be specified several times. Order is preserved.')
 @click.option('-di', '--docker-image', help='Docker image', type=str)
 @click.option('-cmd', '--cmd-template', help='Command template', type=str)
 @click.option('-t', '--timeout', help='Timeout (in minutes), when elapsed - run will be stopped', type=int)
@@ -885,6 +889,7 @@ def run(pipeline,
         run_params,
         instance_disk,
         instance_type,
+        fallback_instance_types,
         docker_image,
         cmd_template,
         timeout,
@@ -946,7 +951,8 @@ def run(pipeline,
                               status_notifications,
                               status_notifications_status, status_notifications_recipient,
                               status_notifications_subject, status_notifications_body,
-                              user)
+                              user,
+                              fallback_instance_types=fallback_instance_types)
 
 
 @cli.command(name='stop')
