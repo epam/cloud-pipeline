@@ -15,60 +15,75 @@
  */
 
 import React from 'react';
+import {observer, inject} from 'mobx-react';
 import classNames from 'classnames';
-import UsageCreditsUsers from '../../../../models/usage/UsageCreditsUsers';
+import User from '../../../../models/user/User';
 import styles from './credits-counter.css';
 
+function getCredits (user) {
+  const {usageCredits} = user || {};
+  return usageCredits ? usageCredits.currentValue : undefined;
+}
+
+@inject('authenticatedUserInfo')
+@observer
 export default class UsageCreditsCounter extends React.Component {
   state = {
     credits: undefined,
     pending: false
   };
 
-  get isControlled () {
-    return Object.prototype.hasOwnProperty.call(this.props, 'credits');
+  get user () {
+    const {user, authenticatedUserInfo} = this.props;
+    if (user) {
+      return user;
+    }
+    return authenticatedUserInfo && authenticatedUserInfo.loaded
+      ? authenticatedUserInfo.value
+      : undefined;
+  }
+
+  get credits () {
+    const credits = getCredits(this.user);
+    return credits === undefined ? this.state.credits : credits;
   }
 
   componentDidMount () {
-    if (!this.isControlled) {
-      this.loadCredits();
-    }
+    this.loadCreditsIfNeeded();
   }
 
   componentDidUpdate (prevProps) {
-    if (this.isControlled) {
-      return;
-    }
-    const prevUserId = prevProps.user && prevProps.user.id;
-    const userId = this.props.user && this.props.user.id;
+    const prevUserId = prevProps.user ? prevProps.user.id : undefined;
+    const userId = this.props.user ? this.props.user.id : undefined;
     if (prevUserId !== userId) {
-      this.loadCredits();
+      this.loadCreditsIfNeeded();
     }
   }
 
-  loadCredits = async () => {
+  // `/users` and `/whoami` conditionally include the credits,
+  // so a request is only needed for a user passed in without them
+  loadCreditsIfNeeded = () => {
     const {user} = this.props;
-    if (!user || !user.id) {
+    if (!user || user.id === undefined || user.id === null) {
       return;
     }
-    this.setState({pending: true});
-    const request = new UsageCreditsUsers();
-    await request.send({
-      userIds: [user.id],
-      page: 1,
-      pageSize: 1
+    if (getCredits(user) === undefined) {
+      this.loadCredits(user.id);
+    }
+  };
+
+  loadCredits = async (userId) => {
+    this.setState({credits: undefined, pending: true});
+    const request = new User(userId, true);
+    await request.fetch();
+    const {user} = this.props;
+    if (!user || user.id !== userId) {
+      return;
+    }
+    this.setState({
+      credits: request.loaded ? getCredits(request.value) : undefined,
+      pending: false
     });
-    if (request.loaded && request.value && request.value.elements) {
-      const [element] = request.value.elements;
-      this.setState({
-        credits: element && element.currentValue !== undefined
-          ? element.currentValue
-          : undefined,
-        pending: false
-      });
-      return;
-    }
-    this.setState({pending: false});
   };
 
   render () {
@@ -77,13 +92,8 @@ export default class UsageCreditsCounter extends React.Component {
       className = {},
       style = {}
     } = this.props;
-    const credits = this.isControlled
-      ? this.props.credits
-      : this.state.credits;
-    const pending = this.isControlled
-      ? false
-      : this.state.pending;
-    if (pending || credits === undefined) {
+    const {credits} = this;
+    if (this.state.pending || credits === undefined) {
       return null;
     }
     return (

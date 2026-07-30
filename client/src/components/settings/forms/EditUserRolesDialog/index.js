@@ -75,7 +75,7 @@ const RESTRICTED_METADATA_KEYS = [
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation', 'preferences')
 @inject((common, params) => ({
-  userInfo: params.user ? new User(params.user.id) : null,
+  userInfo: params.user ? new User(params.user.id, true) : null,
   userId: params.user ? params.user.id : null,
   roles: new Roles(),
   credentialProfiles: params.user

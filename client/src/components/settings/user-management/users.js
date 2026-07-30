@@ -47,7 +47,6 @@ import displayDate from '../../../utils/displayDate';
 import {QuotasDisclaimerComponent} from './quota-info';
 import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
 import UsageCreditsCounter from '../user-profile/usage-credits-statistics/credits-counter';
-import UsageCreditsUsers from '../../../models/usage/UsageCreditsUsers';
 
 const PAGE_SIZE = 20;
 
@@ -91,66 +90,16 @@ export default class UsersManagement extends React.Component {
     operationInProgress: false,
     userDataToExport: [],
     metadataKeys: [],
-    filterUsers: USERS_FILTERS.all,
-    usersTableSortOrder: undefined,
-    usersCredits: {}
+    filterUsers: USERS_FILTERS.all
   };
 
   componentDidMount () {
     this.props.users.fetch();
-    this.loadUsersCredits();
-  }
-
-  componentDidUpdate () {
-    this.loadUsersCredits();
   }
 
   componentWillUnmount () {
     this.props.usersStore.fetch();
   }
-
-  get currentPageUserIds () {
-    const {usersTableCurrentPage} = this.state;
-    const start = (usersTableCurrentPage - 1) * PAGE_SIZE;
-    return this.sortedUsers
-      .slice(start, start + PAGE_SIZE)
-      .map((user) => user.id)
-      .filter((id) => id !== undefined && id !== null);
-  }
-
-  loadUsersCredits = async () => {
-    const userIds = this.currentPageUserIds;
-    const requestKey = userIds.join(',');
-    if (requestKey === this._creditsRequestKey) {
-      return;
-    }
-    this._creditsRequestKey = requestKey;
-    if (!userIds.length) {
-      this.setState({usersCredits: {}});
-      return;
-    }
-    const request = new UsageCreditsUsers();
-    await request.send({
-      userIds,
-      page: 1,
-      pageSize: userIds.length
-    });
-    if (this._creditsRequestKey !== requestKey) {
-      return;
-    }
-    if (!request.loaded) {
-      console.warn(`Usage credits are not available: ${request.error || 'unknown error'}`);
-      return;
-    }
-    const elements = (request.value || {}).elements || [];
-    const usersCredits = elements.reduce((acc, element) => {
-      if (element && element.userId != null && element.currentValue !== undefined) {
-        acc[element.userId] = element.currentValue;
-      }
-      return acc;
-    }, {});
-    this.setState({usersCredits});
-  };
 
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
@@ -187,11 +136,10 @@ export default class UsersManagement extends React.Component {
     });
   };
 
-  handleUserTableChange = (pagination, filters, sorter) => {
+  handleUserTableChange = (pagination) => {
     const {current} = pagination;
     this.setState({
-      usersTableCurrentPage: current,
-      usersTableSortOrder: sorter ? sorter.order : undefined
+      usersTableCurrentPage: current
     });
   };
 
@@ -297,14 +245,6 @@ export default class UsersManagement extends React.Component {
           }
         }
       });
-  }
-
-  get sortedUsers () {
-    const {usersTableSortOrder} = this.state;
-    const users = this.filteredUsers;
-    return usersTableSortOrder === 'descend'
-      ? users.slice().reverse()
-      : users;
   }
 
   onUserSearchChanged = (e) => {
@@ -606,7 +546,6 @@ export default class UsersManagement extends React.Component {
                 <Row>
                   <UsageCreditsCounter
                     user={user}
-                    credits={this.state.usersCredits[user.id]}
                     style={{
                       container: {fontSize: 'smaller'},
                       label: {fontWeight: 'normal'}
@@ -637,7 +576,6 @@ export default class UsersManagement extends React.Component {
               <Row>
                 <UsageCreditsCounter
                   user={user}
-                  credits={this.state.usersCredits[user.id]}
                   style={{
                     container: {fontSize: 'smaller'},
                     label: {fontWeight: 'normal'}
