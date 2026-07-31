@@ -44,7 +44,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -90,7 +90,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
 
     @BeforeEach
     public void setup() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         ReflectionTestUtils.setField(logManager, "consoleLogTask", CONSOLE_LOG_TASK);
         ReflectionTestUtils.setField(logManager, "initTaskName", INIT_TASK_NAME);
         ReflectionTestUtils.setField(logManager, "self", logManager);

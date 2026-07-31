@@ -33,7 +33,7 @@ import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.Test;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -743,7 +743,7 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
 
         //checking empty facet request
         Map<String, Facet> facetMap = metadataEntityDao.groupFacets(filter);
-        Assert.assertTrue(facetMap.isEmpty());
+        Assertions.assertTrue(facetMap.isEmpty());
 
         //checking facet request
         filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
@@ -754,29 +754,29 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Collections.emptyList());
         facetMap = metadataEntityDao.groupFacets(filter);
 
-        Assert.assertFalse(facetMap.isEmpty());
-        Assert.assertEquals(3, facetMap.size());
-        Assert.assertTrue(facetMap.containsKey(key1));
+        Assertions.assertFalse(facetMap.isEmpty());
+        Assertions.assertEquals(3, facetMap.size());
+        Assertions.assertTrue(facetMap.containsKey(key1));
 
         Facet facet = facetMap.get(key1);
-        Assert.assertEquals(0, facet.getEmpty().intValue());
-        Assert.assertEquals(1, facet.getCounts().size());
-        Assert.assertTrue(facet.getCounts().containsKey(value1));
-        Assert.assertEquals(3, facet.getCounts().get(value1).intValue());
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value1));
+        Assertions.assertEquals(3, facet.getCounts().get(value1).intValue());
 
-        Assert.assertTrue(facetMap.containsKey(key2));
+        Assertions.assertTrue(facetMap.containsKey(key2));
         facet = facetMap.get(key2);
-        Assert.assertEquals(2, facet.getCounts().size());
-        Assert.assertTrue(facet.getCounts().containsKey(value21));
-        Assert.assertTrue(facet.getCounts().containsKey(value22));
-        Assert.assertEquals(1, facet.getCounts().get(value21).intValue());
-        Assert.assertEquals(1, facet.getCounts().get(value22).intValue());
-        Assert.assertEquals(1, facet.getEmpty().intValue());
+        Assertions.assertEquals(2, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value21));
+        Assertions.assertTrue(facet.getCounts().containsKey(value22));
+        Assertions.assertEquals(1, facet.getCounts().get(value21).intValue());
+        Assertions.assertEquals(1, facet.getCounts().get(value22).intValue());
+        Assertions.assertEquals(1, facet.getEmpty().intValue());
 
-        Assert.assertTrue(facetMap.containsKey(key3));
+        Assertions.assertTrue(facetMap.containsKey(key3));
         facet = facetMap.get(key3);
-        Assert.assertEquals(0, facet.getCounts().size());
-        Assert.assertEquals(3, facet.getEmpty().intValue());
+        Assertions.assertEquals(0, facet.getCounts().size());
+        Assertions.assertEquals(3, facet.getEmpty().intValue());
 
         //checking facet request with filters
         filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
@@ -787,23 +787,23 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Collections.emptyList());
         facetMap = metadataEntityDao.groupFacets(filter);
 
-        Assert.assertFalse(facetMap.isEmpty());
-        Assert.assertEquals(2, facetMap.size());
-        Assert.assertTrue(facetMap.containsKey(key1));
+        Assertions.assertFalse(facetMap.isEmpty());
+        Assertions.assertEquals(2, facetMap.size());
+        Assertions.assertTrue(facetMap.containsKey(key1));
 
         facet = facetMap.get(key1);
-        Assert.assertEquals(0, facet.getEmpty().intValue());
-        Assert.assertEquals(1, facet.getCounts().size());
-        Assert.assertTrue(facet.getCounts().containsKey(value1));
-        Assert.assertEquals(2, facet.getCounts().get(value1).intValue());
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value1));
+        Assertions.assertEquals(2, facet.getCounts().get(value1).intValue());
 
-        Assert.assertTrue(facetMap.containsKey(key4));
+        Assertions.assertTrue(facetMap.containsKey(key4));
 
         facet = facetMap.get(key4);
-        Assert.assertEquals(1, facet.getEmpty().intValue());
-        Assert.assertEquals(1, facet.getCounts().size());
-        Assert.assertTrue(facet.getCounts().containsKey(value4));
-        Assert.assertEquals(1, facet.getCounts().get(value4).intValue());
+        Assertions.assertEquals(1, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value4));
+        Assertions.assertEquals(1, facet.getCounts().get(value4).intValue());
 
         //checking facet request with search queries
         filter = createFilterWithFacet(folder1.getId(), metadataClass.getName(),
@@ -814,23 +814,23 @@ public class MetadataEntityDaoTest extends AbstractJdbcTest {
                 Collections.singletonList(value4));
         facetMap = metadataEntityDao.groupFacets(filter);
 
-        Assert.assertFalse(facetMap.isEmpty());
-        Assert.assertEquals(2, facetMap.size());
-        Assert.assertTrue(facetMap.containsKey(key1));
+        Assertions.assertFalse(facetMap.isEmpty());
+        Assertions.assertEquals(2, facetMap.size());
+        Assertions.assertTrue(facetMap.containsKey(key1));
 
         facet = facetMap.get(key1);
-        Assert.assertEquals(0, facet.getEmpty().intValue());
-        Assert.assertEquals(1, facet.getCounts().size());
-        Assert.assertTrue(facet.getCounts().containsKey(value1));
-        Assert.assertEquals(1, facet.getCounts().get(value1).intValue());
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value1));
+        Assertions.assertEquals(1, facet.getCounts().get(value1).intValue());
 
-        Assert.assertTrue(facetMap.containsKey(key4));
+        Assertions.assertTrue(facetMap.containsKey(key4));
 
         facet = facetMap.get(key4);
-        Assert.assertEquals(0, facet.getEmpty().intValue());
-        Assert.assertEquals(1, facet.getCounts().size());
-        Assert.assertTrue(facet.getCounts().containsKey(value4));
-        Assert.assertEquals(1, facet.getCounts().get(value4).intValue());
+        Assertions.assertEquals(0, facet.getEmpty().intValue());
+        Assertions.assertEquals(1, facet.getCounts().size());
+        Assertions.assertTrue(facet.getCounts().containsKey(value4));
+        Assertions.assertEquals(1, facet.getCounts().get(value4).intValue());
     }
 
     private MetadataField getDataField(String key) {

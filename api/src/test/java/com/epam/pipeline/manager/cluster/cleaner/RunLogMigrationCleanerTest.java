@@ -23,8 +23,8 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.RunLogStorageManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -68,9 +68,9 @@ public class RunLogMigrationCleanerTest {
 
     private RunLogMigrationCleaner cleaner;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         cleaner = new RunLogMigrationCleaner(runLogManager, runLogDao,
                 runLogStorageManager, runCRUDService, messageHelper);
         ReflectionTestUtils.setField(cleaner, "consoleLogTask", CONSOLE_LOG_TASK);

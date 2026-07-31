@@ -64,7 +64,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.apache.commons.io.FileUtils;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -164,7 +164,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     @BeforeEach
     public void setUp() throws Exception {
 
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         ReflectionTestUtils.setField(nfsStorageMounter, "dataStorageDao", dataStorageDao);
         ReflectionTestUtils.setField(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
         ReflectionTestUtils.setField(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
@@ -570,9 +570,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
                 .filter(cmd -> cmd.contains("chown"))
                 .reduce((first, second) -> second)
                 .orElse(null);
-        Assert.assertNotNull("Expected chown command to be executed", chownCmd);
-        Assert.assertTrue("Expected uid " + expectedUid + " in command: " + chownCmd,
-                chownCmd.contains(expectedUid + ":" + expectedGid));
+        Assertions.assertNotNull(chownCmd, "Expected chown command to be executed");
+        Assertions.assertTrue(chownCmd.contains(expectedUid + ":" + expectedGid),
+                "Expected uid " + expectedUid + " in command: " + chownCmd);
     }
 
     private void mockUserMetadata(final String key, final String value) {

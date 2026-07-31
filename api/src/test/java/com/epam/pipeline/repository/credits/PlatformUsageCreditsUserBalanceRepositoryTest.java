@@ -22,8 +22,8 @@ import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
@@ -67,7 +67,7 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
     private PipelineUser user1;
     private PipelineUser user2;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         user1 = userDao.createUser(getPipelineUser(USER1), Collections.emptyList());
         user2 = userDao.createUser(getPipelineUser(USER2), Collections.emptyList());

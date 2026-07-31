@@ -31,8 +31,8 @@ import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
 import com.opencsv.CSVReader;
 import lombok.SneakyThrows;
-import org.junit.Test;
-import org.junit.Before;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -83,7 +84,7 @@ public class PlatformUsageCreditsEventServiceTest {
             new PlatformUsageCreditsEventService(repository, mapper, authManager, userManager, messageHelper,
                     userBalanceService);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doAnswer(invocation -> invocation.getArguments()[0])
                 .when(userBalanceService).updateByEvent(any(PlatformUsageCreditsUpdateEvent.class));
@@ -216,14 +217,15 @@ public class PlatformUsageCreditsEventServiceTest {
         verify(userManager).loadUserByName(USERNAME);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void filterRejectsWithoutEntityLinkCombinedWithEntities() {
         doReturn(true).when(authManager).isAdmin();
 
-        service.filter(PlatformUsageCreditsEventFilterVO.builder()
-                .entities(Collections.singletonList(new SecuredEntityVO()))
-                .withoutEntityLink(true)
-                .page(1).pageSize(10).build());
+        assertThrows(IllegalArgumentException.class,
+            () -> service.filter(PlatformUsageCreditsEventFilterVO.builder()
+                    .entities(Collections.singletonList(new SecuredEntityVO()))
+                    .withoutEntityLink(true)
+                    .page(1).pageSize(10).build()));
     }
 
     @Test
