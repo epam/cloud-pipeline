@@ -160,6 +160,9 @@ public class PipelineConfigurationManager {
         }
         final int maxCount = preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxCount == -1) {
+            return;
+        }
         Assert.isTrue(fallbackTypes.size() <= maxCount,
                 messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
                         fallbackTypes.size(), maxCount));

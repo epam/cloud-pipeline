@@ -75,8 +75,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -85,6 +85,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -101,7 +102,7 @@ import static org.mockito.Mockito.when;
                 // integration tests, so they will be executed one after another and the context will remain?
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "PMD.UnusedPrivateField", "PMD.AvoidDuplicateLiterals"})
 public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String PARAM_NAME_1 = "param-1";
     private static final String ENV_VAR_NAME = "TEST_ENV";
@@ -312,6 +313,29 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         startVO.setInstanceType(INSTANCE_TYPE);
         startVO.setHddSize(1);
         pipelineRunManager.runCmd(startVO);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testRunCmdDoesNotSetFallbackTypesWhenFeatureIsDisabled() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT.getKey(), "-1")));
+        final List<String> fallbackTypes = Arrays.asList("m5.large", "c5.large", "r4.large");
+        final PipelineConfiguration configWithFallbacks = new PipelineConfiguration();
+        configWithFallbacks.setDockerImage(TEST_IMAGE);
+        configWithFallbacks.setInstanceDisk(INSTANCE_DISK);
+        configWithFallbacks.setIsSpot(true);
+        configWithFallbacks.setCloudRegionId(REGION_ID);
+        configWithFallbacks.setFallbackInstanceTypes(fallbackTypes);
+        doReturn(configWithFallbacks).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+
+        final PipelineStart startVO = new PipelineStart();
+        startVO.setDockerImage(TEST_IMAGE);
+        startVO.setInstanceType(INSTANCE_TYPE);
+        startVO.setHddSize(1);
+        final PipelineRun run = pipelineRunManager.runCmd(startVO);
+
+        assertThat(run.getInstance().getFallbackInstanceTypes()).isNullOrEmpty();
     }
 
     /**

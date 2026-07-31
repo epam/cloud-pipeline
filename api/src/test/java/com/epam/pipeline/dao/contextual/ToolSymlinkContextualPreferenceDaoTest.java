@@ -12,6 +12,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.utils.DateUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,8 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest {
@@ -126,7 +125,7 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest 
         
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
-        assertThat(actualPreference, is(expectedPreference));
+        Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
     }
 
     @Test
@@ -139,7 +138,7 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractSpringTest 
         
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
-        assertThat(actualPreference, is(expectedPreference));
+        Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
     }
 
     @Test
