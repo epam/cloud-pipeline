@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.docker;
 import com.epam.pipeline.entity.docker.HistoryEntryV2;
 import com.epam.pipeline.entity.docker.RawImageDescriptionV2;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
@@ -76,7 +77,14 @@ public final class DockerParsingUtils {
     }
 
     public static Map<String, String> getLabels(final RawImageDescriptionV2 rawImage) {
-        return rawImage.getContainerConfig().getLabels();
+        // `config` is the authoritative accumulated runtime config, while `container_config` is a legacy
+        // Docker field, omitted by BuildKit and other OCI-compliant builders
+        final Map<String, String> labels = getLabels(rawImage.getConfig());
+        return MapUtils.isNotEmpty(labels) ? labels : getLabels(rawImage.getContainerConfig());
+    }
+
+    private static Map<String, String> getLabels(final RawImageDescriptionV2.Config config) {
+        return config == null ? null : config.getLabels();
     }
 
     public static List<String> processCommands(final String from, final List<String> commands,
@@ -84,12 +92,13 @@ public final class DockerParsingUtils {
         final List<String> result = new ArrayList<>();
 
         result.add(String.format(FROM_TEMPLATE, from));
-        // ONLY THE FIRST "ADD file:... / " or "COPY file:... / " line in the file has to be changed to "FROM <from>"
-        final int startIndex = prettifyCommand(commands.get(0)).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
 
         if (CollectionUtils.isEmpty(commands)) {
             return result;
         }
+
+        // ONLY THE FIRST "ADD file:... / " or "COPY file:... / " line in the file has to be changed to "FROM <from>"
+        final int startIndex = prettifyCommand(commands.get(0)).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
 
         String lastCmd = StringUtils.EMPTY;
         String lastEntrypoint = StringUtils.EMPTY;

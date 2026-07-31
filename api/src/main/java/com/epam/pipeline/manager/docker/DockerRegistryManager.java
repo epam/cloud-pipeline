@@ -291,7 +291,8 @@ public class DockerRegistryManager implements SecuredEntityManager {
         return events.getEvents()
                 .stream()
                 .filter(registryEvent ->  !registryEvent.getAction().equals(DockerRegistryAction.PULL.getAction())
-                        && StringUtils.isNotBlank(registryEvent.getActor().getName()))
+                        && StringUtils.isNotBlank(registryEvent.getActor().getName())
+                        && StringUtils.isNotBlank(registryEvent.getTarget().getTag()))
                 .map(registryEvent -> {
                     LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_DOCKER_REGISTRY_AUTO_ENABLE,
                             registryEvent.getTarget().getRepository()));
