@@ -526,7 +526,7 @@ public class PipelineRunManager {
                                                final Pipeline pipeline,
                                                final AbstractCloudRegion region,
                                                final String instanceType) {
-        validateFallbackInstanceTypesCount(configuration);
+        configurationManager.validateFallbackInstanceTypesCount(configuration);
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
@@ -537,10 +537,6 @@ public class PipelineRunManager {
             validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
                                               isMaster);
         }
-    }
-
-    private void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
-        configurationManager.validateFallbackInstanceTypesCount(configuration);
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
@@ -1555,7 +1551,16 @@ public class PipelineRunManager {
         instance.setEffectiveNodeDisk(Optional.ofNullable(configuration.getEffectiveDiskSize())
                 .orElse(instance.getNodeDisk()));
         instance.setNodeType(configuration.getInstanceType());
-        instance.setFallbackInstanceTypes(configuration.getFallbackInstanceTypes());
+        final int maxFallbackCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxFallbackCount == -1) {
+            if (CollectionUtils.isNotEmpty(configuration.getFallbackInstanceTypes())) {
+                log.warn("Fallback instance types are provided but will not be applied: " +
+                        "'cluster.fallback.instance.types.max.count' is set to -1 (feature is disabled).");
+            }
+        } else {
+            instance.setFallbackInstanceTypes(configuration.getFallbackInstanceTypes());
+        }
         instance.setNodeImage(configuration.getInstanceImage());
         Optional.ofNullable(region).map(AbstractCloudRegion::getId).ifPresent(instance::setCloudRegionId);
         Optional.ofNullable(region).map(AbstractCloudRegion::getProvider).ifPresent(instance::setCloudProvider);
