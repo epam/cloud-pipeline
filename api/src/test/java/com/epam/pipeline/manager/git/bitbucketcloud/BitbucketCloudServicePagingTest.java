@@ -23,9 +23,9 @@ import com.epam.pipeline.entity.git.bitbucketcloud.BitbucketCloudSource;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -58,9 +58,9 @@ public class BitbucketCloudServicePagingTest {
 
     private BitbucketCloudService service;
 
-    @Before
+    @BeforeEach
     public void setup() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         service = new BitbucketCloudService(mapper, messageHelper, preferenceManager) {
             @Override
             protected BitbucketCloudClient buildClient(final String repositoryPath, final String token) {
@@ -77,7 +77,7 @@ public class BitbucketCloudServicePagingTest {
         final List<GitRepositoryEntry> result = service.getRepositoryContents(
                 pipeline(), PATH, VERSION, true, false);
 
-        Assert.assertEquals(2, result.size());
+        Assertions.assertEquals(2, result.size());
         verify(mockClient, times(1)).getFiles(any(), any(), any(), any());
     }
 
@@ -92,7 +92,7 @@ public class BitbucketCloudServicePagingTest {
         final List<GitRepositoryEntry> result = service.getRepositoryContents(
                 pipeline(), PATH, VERSION, true, false);
 
-        Assert.assertEquals(2, result.size());
+        Assertions.assertEquals(2, result.size());
         verify(mockClient).getFiles(PATH, VERSION, "cursor2", MAX_DEPTH);
     }
 
@@ -108,7 +108,7 @@ public class BitbucketCloudServicePagingTest {
         final List<GitRepositoryEntry> result = service.getRepositoryContents(
                 pipeline(), PATH, VERSION, true, false);
 
-        Assert.assertEquals(2, result.size());
+        Assertions.assertEquals(2, result.size());
         verify(mockClient).getFiles(PATH, VERSION, "cursor123", MAX_DEPTH);
     }
 
@@ -121,7 +121,7 @@ public class BitbucketCloudServicePagingTest {
         final List<GitRepositoryEntry> result = service.getRepositoryContents(
                 pipeline(), PATH, VERSION, true, false);
 
-        Assert.assertEquals(1, result.size());
+        Assertions.assertEquals(1, result.size());
         verify(mockClient, times(1)).getFiles(any(), any(), any(), any());
     }
 

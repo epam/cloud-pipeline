@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.common.MessageConstants.ERROR_ENTITY_NOT_FOUND;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -151,7 +151,7 @@ public class PluginServiceTest {
         when(messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, PLUGIN_ID, UIPluginEntity.class.getSimpleName()))
                 .thenReturn(ERROR_MESSAGE);
 
-        assertThrows(ERROR_MESSAGE, ObjectNotFoundException.class, () -> pluginService.getPlugin(PLUGIN_ID));
+        assertThrows(ObjectNotFoundException.class, () -> pluginService.getPlugin(PLUGIN_ID), ERROR_MESSAGE);
     }
 
     @Test
@@ -239,16 +239,14 @@ public class PluginServiceTest {
         when(messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, PLUGIN_ID, UIPluginEntity.class.getSimpleName()))
                 .thenReturn(ERROR_MESSAGE);
 
-        assertThrows("", ObjectNotFoundException.class,
-            () -> pluginService.deletePlugin(PLUGIN_ID));
+        assertThrows(ObjectNotFoundException.class, () -> pluginService.deletePlugin(PLUGIN_ID));
     }
 
     @Test
     public void testGetPluginFileContentInvalidPluginId() {
         when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.empty());
 
-        assertThrows("", ObjectNotFoundException.class,
-            () -> pluginService.getPluginFileContent(PLUGIN_ID, FILE_PATH));
+        assertThrows(ObjectNotFoundException.class, () -> pluginService.getPluginFileContent(PLUGIN_ID, FILE_PATH));
     }
 
     @Test
@@ -257,7 +255,7 @@ public class PluginServiceTest {
         when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(entity));
         when(preferenceManager.getPreference(SystemPreferences.UI_PLUGIN_ROOT_FOLDER_PATH)).thenReturn(PLUGINS_FOLDER);
 
-        assertThrows("", IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> pluginService.getPluginFileContent(PLUGIN_ID, maliciousPath));
     }
 
@@ -267,8 +265,7 @@ public class PluginServiceTest {
         when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(entity));
         when(preferenceManager.getPreference(SystemPreferences.UI_PLUGIN_ROOT_FOLDER_PATH)).thenReturn(PLUGINS_FOLDER);
 
-        assertThrows("", ObjectNotFoundException.class,
-            () -> pluginService.getPluginFileContent(PLUGIN_ID, filePath));
+        assertThrows(ObjectNotFoundException.class, () -> pluginService.getPluginFileContent(PLUGIN_ID, filePath));
     }
 
 }

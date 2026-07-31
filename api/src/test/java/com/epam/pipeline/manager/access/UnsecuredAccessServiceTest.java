@@ -27,7 +27,7 @@ import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.security.access.AccessDeniedException;
 import java.time.LocalDateTime;
@@ -35,9 +35,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

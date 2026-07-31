@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 
@@ -64,12 +65,13 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
                 .id(1L)
                 .userId(USER_ID)
                 .currentValue(BALANCE_VALUE)
-                .modifiedDate(LocalDateTime.now())
+                .modifiedDate(LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS))
                 .build();
     }
 
     static PlatformUsageCreditsUserBalance balanceDto() {
-        return new PlatformUsageCreditsUserBalance(USER_ID, BALANCE_VALUE, LocalDateTime.now());
+        return new PlatformUsageCreditsUserBalance(USER_ID, BALANCE_VALUE,
+            LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
     }
 
     static PlatformUsageCreditsUserBalanceFilterVO filterVO() {

@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.access.AccessCodeEntity;
 import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 

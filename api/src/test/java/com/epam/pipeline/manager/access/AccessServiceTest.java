@@ -25,7 +25,7 @@ import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Collections;

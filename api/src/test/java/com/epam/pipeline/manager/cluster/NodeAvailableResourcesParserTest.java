@@ -21,8 +21,8 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeResources;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import joptsimple.internal.Strings;
-import org.junit.Assert;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -71,28 +71,28 @@ public class NodeAvailableResourcesParserTest {
         final List<PodInstance> pods = Arrays.asList(pod1, pod2, new PodInstance());
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, false);
-        Assert.assertThat(actual.getNodeName(), is(NODE_NAME));
-        Assert.assertThat(actual.getUsed().getCpu(), is(4L));
-        Assert.assertThat(actual.getUsed().getGpu(), is(1L));
-        Assert.assertThat(actual.getUsed().getMemory(), is(TWO_GB_IN_BYTES));
-        Assert.assertThat(actual.getTotal().getCpu(), is(7L));
-        Assert.assertThat(actual.getTotal().getGpu(), is(1L));
-        Assert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
-        Assert.assertThat(actual.getDetails(), is(nullValue()));
+        MatcherAssert.assertThat(actual.getNodeName(), is(NODE_NAME));
+        MatcherAssert.assertThat(actual.getUsed().getCpu(), is(4L));
+        MatcherAssert.assertThat(actual.getUsed().getGpu(), is(1L));
+        MatcherAssert.assertThat(actual.getUsed().getMemory(), is(TWO_GB_IN_BYTES));
+        MatcherAssert.assertThat(actual.getTotal().getCpu(), is(7L));
+        MatcherAssert.assertThat(actual.getTotal().getGpu(), is(1L));
+        MatcherAssert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
+        MatcherAssert.assertThat(actual.getDetails(), is(nullValue()));
     }
 
     @Test
     public void shouldProceedIfNoPodsAllocated() {
         final NodeResources actual = NodeAvailableResourcesParser.parse(node(), null, false);
 
-        Assert.assertThat(actual.getNodeName(), is(NODE_NAME));
-        Assert.assertThat(actual.getUsed().getCpu(), is(0L));
-        Assert.assertThat(actual.getUsed().getGpu(), is(0L));
-        Assert.assertThat(actual.getUsed().getMemory(), is(0L));
-        Assert.assertThat(actual.getTotal().getCpu(), is(7L));
-        Assert.assertThat(actual.getTotal().getGpu(), is(1L));
-        Assert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
-        Assert.assertThat(actual.getDetails(), is(nullValue()));
+        MatcherAssert.assertThat(actual.getNodeName(), is(NODE_NAME));
+        MatcherAssert.assertThat(actual.getUsed().getCpu(), is(0L));
+        MatcherAssert.assertThat(actual.getUsed().getGpu(), is(0L));
+        MatcherAssert.assertThat(actual.getUsed().getMemory(), is(0L));
+        MatcherAssert.assertThat(actual.getTotal().getCpu(), is(7L));
+        MatcherAssert.assertThat(actual.getTotal().getGpu(), is(1L));
+        MatcherAssert.assertThat(actual.getTotal().getMemory(), is(FOUR_GB_IN_BYTES));
+        MatcherAssert.assertThat(actual.getDetails(), is(nullValue()));
     }
 
     @Test
@@ -108,13 +108,13 @@ public class NodeAvailableResourcesParserTest {
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, true);
 
-        Assert.assertThat(actual.getDetails().size(), is(1));
+        MatcherAssert.assertThat(actual.getDetails().size(), is(1));
         final NodeResources.RunDetails runDetails = actual.getDetails().get(0);
-        Assert.assertThat(runDetails.getRunId(), is(RUN_ID));
-        Assert.assertThat(runDetails.getOwner(), is(nullValue()));
-        Assert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
-        Assert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
-        Assert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
+        MatcherAssert.assertThat(runDetails.getRunId(), is(RUN_ID));
+        MatcherAssert.assertThat(runDetails.getOwner(), is(nullValue()));
+        MatcherAssert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
+        MatcherAssert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
+        MatcherAssert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
     }
 
     @Test
@@ -131,13 +131,13 @@ public class NodeAvailableResourcesParserTest {
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, true);
 
-        Assert.assertThat(actual.getDetails().size(), is(1));
+        MatcherAssert.assertThat(actual.getDetails().size(), is(1));
         final NodeResources.RunDetails runDetails = actual.getDetails().get(0);
-        Assert.assertThat(runDetails.getRunId(), is(RUN_ID));
-        Assert.assertThat(runDetails.getOwner(), is(OWNER));
-        Assert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
-        Assert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
-        Assert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
+        MatcherAssert.assertThat(runDetails.getRunId(), is(RUN_ID));
+        MatcherAssert.assertThat(runDetails.getOwner(), is(OWNER));
+        MatcherAssert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
+        MatcherAssert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
+        MatcherAssert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
     }
 
     @Test
@@ -160,13 +160,13 @@ public class NodeAvailableResourcesParserTest {
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, true);
 
-        Assert.assertThat(actual.getDetails().size(), is(2));
+        MatcherAssert.assertThat(actual.getDetails().size(), is(2));
         actual.getDetails().forEach(runDetails -> {
-            Assert.assertThat(runDetails.getRunId(), isIn(Arrays.asList(RUN_ID, RUN_ID_2).toArray()));
-            Assert.assertThat(runDetails.getOwner(), is(nullValue()));
-            Assert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
-            Assert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
-            Assert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
+            MatcherAssert.assertThat(runDetails.getRunId(), isIn(Arrays.asList(RUN_ID, RUN_ID_2).toArray()));
+            MatcherAssert.assertThat(runDetails.getOwner(), is(nullValue()));
+            MatcherAssert.assertThat(runDetails.getAllocated().getCpu(), is(2L));
+            MatcherAssert.assertThat(runDetails.getAllocated().getGpu(), is(1L));
+            MatcherAssert.assertThat(runDetails.getAllocated().getMemory(), is(ONE_GB_IN_BYTES));
         });
     }
 
@@ -180,7 +180,7 @@ public class NodeAvailableResourcesParserTest {
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, true);
 
-        Assert.assertThat(actual.getDetails(), is(empty()));
+        MatcherAssert.assertThat(actual.getDetails(), is(empty()));
     }
 
     @Test
@@ -195,7 +195,7 @@ public class NodeAvailableResourcesParserTest {
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, true);
 
-        Assert.assertThat(actual.getDetails(), is(empty()));
+        MatcherAssert.assertThat(actual.getDetails(), is(empty()));
     }
 
     @Test
@@ -210,7 +210,7 @@ public class NodeAvailableResourcesParserTest {
 
         final NodeResources actual = NodeAvailableResourcesParser.parse(node, pods, true);
 
-        Assert.assertThat(actual.getDetails(), is(empty()));
+        MatcherAssert.assertThat(actual.getDetails(), is(empty()));
     }
 
     private static PodInstance pod(final List<ContainerInstance> containers) {
