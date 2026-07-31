@@ -564,6 +564,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
                 docker_image: vsPayload.dockerImage,
                 is_spot: vsPayload.isSpot,
                 instance_size: vsPayload.instanceType,
+                fallback_instance_types: vsPayload.fallbackInstanceTypes,
                 instance_disk: vsPayload.hddSize,
                 node_count: vsPayload.nodeCount,
                 timeout: vsPayload.timeout,

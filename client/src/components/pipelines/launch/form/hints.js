@@ -74,6 +74,13 @@ const instanceTypeHint = (localizedStringFn) => (
   </Row>
 );
 
+const fallbackInstanceTypesHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    Specify one or more <b>fallback instance types</b> that will be used to launch the job
+    if the selected <b>node type</b> is not available.
+  </Row>
+);
+
 const diskHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     Define <b>disk storage</b> for the selected calculation instance type.
@@ -188,6 +195,7 @@ const hints = {
   pipelineHint,
   dockerImageHint,
   instanceTypeHint,
+  fallbackInstanceTypesHint,
   awsRegionHint,
   runCapabilitiesHint,
   awsRegionRestrictedByToolSettingsHint,
