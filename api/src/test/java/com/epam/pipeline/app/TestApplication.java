@@ -24,11 +24,15 @@ import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.manager.access.AccessCodeCleaner;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.ldap.LdapManager;
@@ -202,10 +206,22 @@ public class TestApplication {
     public AccessCodeRepository accessCodeRepository;
 
     @MockBean
+    public ClusterCommandService clusterCommandService;
+
+    @MockBean
     public AccessCodeCleaner accessCodeCleaner;
 
     @MockBean
     public GlobalSearchElasticHelper elasticHelper;
+
+    @MockBean
+    public PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    public PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    public PlatformUsageCreditsEventService platformUsageCreditsEventService;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

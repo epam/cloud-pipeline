@@ -149,6 +149,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+    private static final String USAGE_CREDITS_GROUP = "Usage Credits";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
@@ -546,6 +547,9 @@ public class SystemPreferences {
         "cluster.node.extra.mem.min.mib", 512, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX_MIB = new IntPreference(
         "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
+
+    public static final IntPreference CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT = new IntPreference(
+        "cluster.fallback.instance.types.max.count", 5, CLUSTER_GROUP, isGreaterThan(0));
 
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
@@ -1553,6 +1557,29 @@ public class SystemPreferences {
             "billing.quotas.clear.period.seconds", Constants.SECONDS_IN_DAY * 30,
             BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
+    // Usage Credits
+    /** Starting balance assigned to every new user (must be within [min, max]). Default: 2000 credits. */
+    public static final IntPreference USAGE_CREDITS_DEFAULT = new IntPreference(
+            "usage.credits.default", 2000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Hard floor for any user's balance — no event can push it below this value. Default: 24 credits. */
+    public static final IntPreference USAGE_CREDITS_MIN = new IntPreference(
+            "usage.credits.min", 24, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Hard ceiling for any user's balance — no event can push it above this value. Default: 3000 credits. */
+    public static final IntPreference USAGE_CREDITS_MAX = new IntPreference(
+            "usage.credits.max", 3000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Credits cost per single unit of each resource type. Default: CPU=1, GPU=100. */
+    public static final ObjectPreference<Map<String, Integer>> USAGE_CREDITS_RESOURCE_WEIGHTS =
+            new ObjectPreference<>("usage.credits.resource.weights",
+                    CommonUtils.toMap(Pair.of("CPU", 1), Pair.of("GPU", 100)),
+                    new TypeReference<Map<String, Integer>>() {}, USAGE_CREDITS_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}));
+    /**
+     * Percentage of the [min, max] range above min below which a low-balance notification is sent.
+     * E.g. 25 means notify when balance drops below {@code min + 0.25 * (max - min)}. Default: 25.
+     */
+    public static final IntPreference USAGE_CREDITS_NOTIFICATION_THRESHOLD = new IntPreference(
+            "usage.credits.notification.threshold", 25, USAGE_CREDITS_GROUP, isGreaterThan(0));
+
     // Lustre FS
     public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(
             "lustre.fs.scale.enabled", false, LUSTRE_GROUP, pass);
@@ -1669,6 +1696,11 @@ public class SystemPreferences {
             "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
     public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
             "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_PLATFORM_USAGE_CREDITS_DELAY = new IntPreference(
+            "monitoring.platform.usage.credits.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP,
+            isGreaterThan(0));
+    public static final BooleanPreference MONITORING_PLATFORM_USAGE_CREDITS_ENABLE = new BooleanPreference(
+            "monitoring.platform.usage.credits.enable", false, MONITORING_GROUP, pass);
     public static final ObjectPreference<List<String>> MONITORING_POOL_REQUEST_NAMES = new ObjectPreference<>(
         "monitoring.node.pool.request.names", Arrays.asList("cpu", "memory", "nvidia.com/gpu"),
             new TypeReference<List<String>>() {}, MONITORING_GROUP,

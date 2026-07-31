@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import joptsimple.internal.Strings;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -77,6 +78,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
+@Slf4j
 public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private Pattern wherePattern = Pattern.compile("@WHERE@");
@@ -1113,6 +1115,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         POD_ID,
         PIPELINE_NAME,
         NODE_TYPE,
+        INSTANCE_FALLBACK_TYPES,
         NODE_IP,
         NODE_ID,
         NODE_DISK,
@@ -1260,6 +1263,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
             params.addValue(NODE_PLATFORM.name(), instance.map(RunInstance::getNodePlatform).orElse(null));
             params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
+            params.addValue(INSTANCE_FALLBACK_TYPES.name(), instance
+                    .map(RunInstance::getFallbackInstanceTypes)
+                    .map(JsonMapper::convertListToJsonStringForQuery)
+                    .orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -1352,6 +1359,16 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             instance.setNodeId(rs.getString(NODE_ID.name()));
             instance.setNodeIP(rs.getString(NODE_IP.name()));
             instance.setNodeType(rs.getString(NODE_TYPE.name()));
+
+            final String fallbackInstanceTypesJson = rs.getString(INSTANCE_FALLBACK_TYPES.name());
+            if (fallbackInstanceTypesJson != null) {
+                final List<String> fallbackInstanceList =
+                        JsonMapper.parseData(fallbackInstanceTypesJson, new TypeReference<List<String>>() {});
+                if (CollectionUtils.isNotEmpty(fallbackInstanceList)) {
+                    instance.setFallbackInstanceTypes(fallbackInstanceList);
+                }
+            }
+
             instance.setNodeImage(rs.getString(NODE_IMAGE.name()));
             instance.setNodeName(rs.getString(NODE_NAME.name()));
             instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));

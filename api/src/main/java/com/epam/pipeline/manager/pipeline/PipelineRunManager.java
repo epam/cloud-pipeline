@@ -606,6 +606,7 @@ public class PipelineRunManager {
                                                final Pipeline pipeline,
                                                final AbstractCloudRegion region,
                                                final String instanceType) {
+        validateFallbackInstanceTypesCount(configuration);
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
@@ -616,6 +617,10 @@ public class PipelineRunManager {
             validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
                                               isMaster);
         }
+    }
+
+    private void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
+        configurationManager.validateFallbackInstanceTypesCount(configuration);
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
@@ -1677,6 +1682,7 @@ public class PipelineRunManager {
         instance.setEffectiveNodeDisk(Optional.ofNullable(configuration.getEffectiveDiskSize())
                 .orElse(instance.getNodeDisk()));
         instance.setNodeType(configuration.getInstanceType());
+        instance.setFallbackInstanceTypes(configuration.getFallbackInstanceTypes());
         instance.setNodeImage(configuration.getInstanceImage());
         Optional.ofNullable(region).map(AbstractCloudRegion::getId).ifPresent(instance::setCloudRegionId);
         Optional.ofNullable(region).map(AbstractCloudRegion::getProvider).ifPresent(instance::setCloudProvider);

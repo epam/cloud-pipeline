@@ -31,9 +31,15 @@ spec:
           volumeMounts:
             - name: monitoring-srv-logs
               mountPath: /opt/monitoring/logs
+            - name: monitoring-srv-last-execution
+              mountPath: /opt/monitoring/lastPlatformUsageCreditsMonitorTime.txt
       volumes:
         - name: monitoring-srv-logs
           hostPath:
             path: /opt/monitoring/logs
+        - name: monitoring-srv-last-execution
+          hostPath:
+            path: /opt/monitoring/lastPlatformUsageCreditsMonitorTime.txt
+            type: FileOrCreate
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

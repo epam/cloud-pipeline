@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
@@ -79,6 +80,9 @@ public class UserApiService {
 
     @Autowired
     private JwtTokenRevocationManager jwtTokenRevocationManager;
+
+    @Autowired
+    private PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
 
     /**
      * Registers a new user
@@ -137,8 +141,8 @@ public class UserApiService {
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_ADMIN_ONLY + OR + USER_READ_PERMISSION)
     @AclMask
-    public PipelineUser loadUser(Long id, final boolean quotas) {
-        return userManager.load(id, quotas);
+    public PipelineUser loadUser(final Long id, final boolean quotas, final boolean loadCredits) {
+        return userManager.load(id, quotas, loadCredits);
     }
 
     @PostAuthorize(ADMIN_ONLY+ OR + USER_ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
@@ -159,14 +163,14 @@ public class UserApiService {
 
     @PostFilter(USER_READ_FILTER)
     @AclMaskList
-    public List<PipelineUser> loadUsers(final boolean loadQuotas) {
-        return new ArrayList<>(userManager.loadAllUsers(loadQuotas));
+    public List<PipelineUser> loadUsers(final boolean loadQuotas, final boolean loadCredits) {
+        return new ArrayList<>(userManager.loadAllUsers(loadQuotas, loadCredits));
     }
 
     @PostFilter(USER_READ_FILTER)
     @AclMaskList
-    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
-        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas));
+    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas, final boolean loadCredits) {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas, loadCredits));
     }
 
     //TODO
@@ -176,7 +180,12 @@ public class UserApiService {
     }
 
     public PipelineUser getCurrentUser() {
-        return userManager.getCurrentUser();
+        final PipelineUser user = userManager.getCurrentUser();
+        if (user != null) {
+            platformUsageCreditsUserBalanceService.findByUserId(user.getId())
+                    .ifPresent(user::setUsageCredits);
+        }
+        return user;
     }
 
     /**

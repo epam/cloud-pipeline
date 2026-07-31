@@ -431,6 +431,8 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED = "instance.type.not.allowed";
     public static final String ERROR_PRICE_TYPE_IS_NOT_ALLOWED = "price.type.not.allowed";
     public static final String ERROR_INSTANCE_DISK_IS_INVALID = "instance.disk.invalid";
+    public static final String ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT =
+            "fallback.instance.types.exceed.limit";
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
@@ -932,6 +934,24 @@ public final class MessageConstants {
     public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
     public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
     public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
+
+    // Platform usage credits
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
+            "error.platform.usage.credits.rule.not.found";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
+            "error.platform.usage.credits.rule.name.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
+            "error.platform.usage.credits.rule.filter.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
+            "error.platform.usage.credits.rule.action.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
+            "error.platform.usage.credits.rule.unknown.field";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
+            "error.platform.usage.credits.rule.unsupported.operand";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
+            "error.platform.usage.credits.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
+            "error.platform.usage.credits.rule.time.window.invalid";
 
     private MessageConstants() {
         // no-op
