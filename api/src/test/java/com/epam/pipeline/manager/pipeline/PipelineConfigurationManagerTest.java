@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -33,6 +34,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -83,6 +85,10 @@ public class PipelineConfigurationManagerTest {
     public static final String INHERITED_PARAM_VALUE1 = "test1";
     public static final String INHERITED_PARAM_VALUE2 = "test2";
     public static final String PARENT_ID = "1";
+
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private MessageHelper messageHelper;
 
     @Mock
     private PipelineVersionManager pipelineVersionManager;
@@ -294,6 +300,27 @@ public class PipelineConfigurationManagerTest {
                 PARENT_ID, new PipelineStart(), configuration, false, true);
 
         assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
+    }
+
+    @Test
+    public void shouldSkipFallbackTypesCountValidationWhenFeatureIsDisabled() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT))
+                .thenReturn(-1);
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large",
+                "r5.large", "c4.large", "t3.large"));
+        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration);
+    }
+
+    @Test
+    public void shouldFailFallbackTypesCountValidationWhenLimitExceeded() {
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT))
+                .thenReturn(2);
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large"));
+        assertThrows(IllegalArgumentException.class,
+                () -> pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration));
+
     }
 
     private PipelineConfiguration buildConfigWithParams(final Map<String, PipeConfValueVO> parameters) {

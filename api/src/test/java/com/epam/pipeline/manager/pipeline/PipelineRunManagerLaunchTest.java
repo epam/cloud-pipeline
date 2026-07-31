@@ -64,6 +64,7 @@ import java.util.*;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
@@ -220,6 +221,7 @@ public class PipelineRunManagerLaunchTest {
         //initMocks(this);
 
         mock(CLUSTER_DOCKER_EXTRA_MULTI);
+        mock(CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
         mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
         mock(CLUSTER_SPOT);
         mock(COMMIT_TIMEOUT);

@@ -187,6 +187,7 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
         super(WebDavClient, self).__init__(protocol=url.scheme, host=url.hostname, port=url.port,
                                            path=url.path.lstrip('/'), verify_ssl=False)
         self.session.cookies.set_cookie(cookies.create_cookie(name='bearer', value=bearer))
+        self.session.verify = False
         self.host_url = url.scheme + '://' + url.netloc
         self.root_path = url.path if url.path.startswith(self.cwd) else self.cwd + url.path
 

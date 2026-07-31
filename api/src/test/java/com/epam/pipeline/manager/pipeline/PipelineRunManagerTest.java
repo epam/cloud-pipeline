@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
@@ -235,6 +237,29 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         startVO.setInstanceType(INSTANCE_TYPE);
         startVO.setHddSize(1);
         pipelineRunManager.runCmd(startVO);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testRunCmdDoesNotSetFallbackTypesWhenFeatureIsDisabled() {
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT.getKey(), "-1")));
+        final List<String> fallbackTypes = Arrays.asList("m5.large", "c5.large", "r4.large");
+        final PipelineConfiguration configWithFallbacks = new PipelineConfiguration();
+        configWithFallbacks.setDockerImage(TEST_IMAGE);
+        configWithFallbacks.setInstanceDisk(INSTANCE_DISK);
+        configWithFallbacks.setIsSpot(true);
+        configWithFallbacks.setCloudRegionId(REGION_ID);
+        configWithFallbacks.setFallbackInstanceTypes(fallbackTypes);
+        doReturn(configWithFallbacks).when(pipelineConfigurationManager).getPipelineConfiguration(any(), any());
+
+        final PipelineStart startVO = new PipelineStart();
+        startVO.setDockerImage(TEST_IMAGE);
+        startVO.setInstanceType(INSTANCE_TYPE);
+        startVO.setHddSize(1);
+        final PipelineRun run = pipelineRunManager.runCmd(startVO);
+
+        Assertions.assertThat(run.getInstance().getFallbackInstanceTypes()).isNullOrEmpty();
     }
 
     /**
