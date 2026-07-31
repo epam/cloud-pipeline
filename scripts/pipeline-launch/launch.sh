@@ -400,8 +400,26 @@ function configure_package_manager_pip {
 }
 
 function run_pre_common_commands {
+      # Allowed values: pre_init, pre_exec
+      # If left empty - will try to use unsectioned commands
+      local section="$1"
       preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
-      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      
+      if [ -z "$section" ]; then
+            section_commands="$preference_value"
+      else
+            section_commands=$(echo "$preference_value" | jq -r ".${section}" | grep -v "^null$")
+            # Backward compatability - if pre_init is requested but no such section - try to use unsectioned commands
+            if [ -z "$section_commands" ] && [ "$section" == "pre_init" ]; then
+                  section_commands="$preference_value"
+            fi
+      fi
+      if [ -z "$section_commands" ]; then
+        echo "Additional commands for section ${section:-<unsectioned>} were not found."
+        return
+      fi
+
+      linux_commands=$(echo "$section_commands" | jq -r '.linux' | grep -v "^null$")
       if [ -z "$linux_commands" ]; then
         echo "Additional commands for Linux distribution were not found."
         return
@@ -1387,7 +1405,7 @@ fi
 define_distro_name_and_version
 
 # Invoke any additional commands for the distribution
-run_pre_common_commands
+run_pre_common_commands "pre_init"
 
 # Perform any distro/version specific package manage configuration
 configure_package_manager
@@ -2860,6 +2878,9 @@ custom_fixes
 
 # Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
 custom_cap_setup
+
+# Run "pre_exec" commands
+run_pre_common_commands "pre_exec"
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
