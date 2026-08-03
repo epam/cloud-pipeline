@@ -56,7 +56,7 @@ export default function DateRangeFilterDropdown ({
     >
       <div className={styles.dateRangeFilter}>
         <div className={styles.filter}>
-          <span className={styles.label}>From:</span>
+          <span className={styles.label} style={{width: 75}}>From:</span>
           <DatePicker
             showTime
             allowClear
@@ -71,7 +71,7 @@ export default function DateRangeFilterDropdown ({
           />
         </div>
         <div className={styles.filter}>
-          <span className={styles.label}>To:</span>
+          <span className={styles.label} style={{width: 75}}>To:</span>
           <DatePicker
             showTime
             allowClear
