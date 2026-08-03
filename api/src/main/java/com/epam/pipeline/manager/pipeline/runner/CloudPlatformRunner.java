@@ -21,17 +21,23 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
+import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.credits.ClusterReplicaGroup;
+import com.epam.pipeline.manager.credits.CreditsCheckResult;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +49,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.entity.configuration.RunConfigurationUtils.getNodeCount;
@@ -64,6 +71,8 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
     private final PipelineRunManager pipelineRunManager;
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
+    private final AuthManager authManager;
+    private final InstanceOfferManager instanceOfferManager;
 
     @Override
     public List<PipelineRun> runAnalysis(AnalysisConfiguration<RunConfigurationEntry> configuration) {
@@ -126,6 +135,8 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         log.debug("Running total {} nodes", totalNodes + 1);
         mainConfiguration.setNodeCount(totalNodes);
 
+        checkHeterogeneousClusterCredits(mainConfiguration, masterNodeCount, childConfigurations, childEntries);
+
         //create master run
         List<PipelineRun> masterRun =
                 runConfigurationEntry(mainEntry, mainConfiguration, 1, null,
@@ -182,6 +193,37 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
                     null, entityIds, configurationId, startVO.getRunSids(), startVO.getNotifications()));
         }
         return result;
+    }
+
+    private void checkHeterogeneousClusterCredits(final PipelineConfiguration mainConfiguration,
+                                                  final int masterNodeCount,
+                                                  final List<PipelineConfiguration> childConfigurations,
+                                                  final List<RunConfigurationEntry> childEntries) {
+        final List<ClusterReplicaGroup> groups = new ArrayList<>();
+        // Master + master workers (same instance type)
+        final Optional<InstanceOffer> masterOffer = instanceOfferManager.findOffer(
+                mainConfiguration.getInstanceType(), mainConfiguration.getCloudRegionId());
+        masterOffer.ifPresent(o -> groups.add(new ClusterReplicaGroup(o, masterNodeCount + 1)));
+        // Child worker groups (potentially different instance types)
+        for (int i = 0; i < childConfigurations.size(); i++) {
+            final PipelineConfiguration childConfig = childConfigurations.get(i);
+            final PipelineStart childStart = childEntries.get(i).toPipelineStart();
+            final Optional<InstanceOffer> childOffer = instanceOfferManager.findOffer(
+                    childStart.getInstanceType(), childConfig.getCloudRegionId());
+            childOffer.ifPresent(o -> groups.add(
+                    new ClusterReplicaGroup(o, getNodeCount(childConfig.getNodeCount(), 1))));
+        }
+        if (groups.isEmpty()) {
+            return;
+        }
+        final CreditsCheckResult result = pipelineRunManager.checkClusterLaunchCredits(
+                authManager.getAuthorizedUser(), groups);
+        if (!result.isOk()) {
+            throw new InsufficientUsageCreditsException(
+                    messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT,
+                            result.getRequired(), result.getBalance() - result.getAllocated(),
+                            result.getBalance(), result.getAllocated()));
+        }
     }
 
     private PipelineConfiguration buildRunConfiguration(final RunConfigurationEntry entry,

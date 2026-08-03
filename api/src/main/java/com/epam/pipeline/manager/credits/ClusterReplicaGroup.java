@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.credits;
+package com.epam.pipeline.manager.credits;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
+import lombok.Value;
 
-import java.time.LocalDateTime;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PlatformUsageCreditsUserBalance {
-
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
-    private Integer allocated;
+/**
+ * A single instance-type group within a cluster launch: one offer and how many replicas of it are requested.
+ * Used to compute the total credit cost for heterogeneous clusters where different node groups may use
+ * different instance types.
+ */
+@Value
+public class ClusterReplicaGroup {
+    InstanceOffer offer;
+    int replicas;
 }

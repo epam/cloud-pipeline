@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.credits;
+package com.epam.pipeline.manager.credits;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
-import java.time.LocalDateTime;
+@Value
+public class CreditsCheckResult {
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PlatformUsageCreditsUserBalance {
+    boolean ok;
+    int required;
+    int balance;
+    int allocated;
 
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
-    private Integer allocated;
+    public static CreditsCheckResult allowed() {
+        return new CreditsCheckResult(true, 0, 0, 0);
+    }
 }

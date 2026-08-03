@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -94,6 +95,10 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
+import com.epam.pipeline.manager.credits.ClusterReplicaGroup;
+import com.epam.pipeline.manager.credits.CreditsCheckResult;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -273,6 +278,9 @@ public class PipelineRunManager {
     private RunLimitsService runLimitsService;
 
     @Autowired
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Autowired
     private MetadataEntityManager metadataEntityManager;
 
     @Autowired
@@ -312,6 +320,9 @@ public class PipelineRunManager {
         runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
+        if (clusterRun) {
+            checkHomogeneousClusterCredits(authManager.getAuthorizedUser(), configuration);
+        }
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids(),
@@ -389,6 +400,9 @@ public class PipelineRunManager {
         runVO.setRunSids(mergeRunSidsWithParents(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
+        if (isClusterRun) {
+            checkHomogeneousClusterCredits(authManager.getAuthorizedUser(), configuration);
+        }
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
@@ -450,6 +464,7 @@ public class PipelineRunManager {
         final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
         checkGPUInstance(configuration, instance);
         checkCapacityRequirements(configuration, instance);
+        checkCreditsForLaunch(authManager.getAuthorizedUser(), instance);
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -1081,6 +1096,120 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    /**
+     * Checks whether {@code owner} has enough credits to start a single node described by
+     * {@code requiredInstance}, optionally excluding one run from the active-allocation count.
+     *
+     * <p>Resolves the {@link com.epam.pipeline.entity.cluster.InstanceOffer} for the requested
+     * instance type and region, loads the owner's active-run offers (minus {@code excludeRunId}
+     * if provided), and delegates the arithmetic to
+     * {@link PlatformUsageCreditsLaunchService#checkCreditsForRunLaunch}.
+     *
+     * <p>If no matching offer is found in the catalogue the check is skipped and
+     * {@link CreditsCheckResult#allowed()} is returned — the assumption is that an unknown
+     * instance type should not block the launch.
+     *
+     * <p>Primary caller: {@code AutoscaleManager}, which passes the run's own ID as
+     * {@code excludeRunId} to avoid counting the run being scheduled against itself.
+     *
+     * @param owner            username of the run owner
+     * @param requiredInstance instance type and cloud region of the node to be created
+     * @param excludeRunId     run ID to exclude from active-allocation counting, or {@code null}
+     *                         to include all active runs
+     * @return a {@link CreditsCheckResult} with {@code ok=true} if the node creation is allowed
+     */
+    public CreditsCheckResult checkLaunchCredits(final String owner, final InstanceRequest requiredInstance,
+                                                 final Long excludeRunId) {
+        final String instanceType = requiredInstance.getInstance().getNodeType();
+        final Long regionId = requiredInstance.getInstance().getCloudRegionId();
+        final Optional<InstanceOffer> offer = instanceOfferManager.findOffer(instanceType, regionId);
+        return offer.map(o -> platformUsageCreditsLaunchService.checkCreditsForRunLaunch(
+                        owner, o, loadActiveRunsOffers(owner, excludeRunId)))
+                .orElseGet(CreditsCheckResult::allowed);
+    }
+
+    /**
+     * Returns the resolved {@link com.epam.pipeline.entity.cluster.InstanceOffer} for each of the
+     * owner's currently active (RUNNING or PAUSED) runs that have a known node type.
+     *
+     * <p>Runs whose node type is missing or whose offer cannot be found in the instance catalogue
+     * are silently omitted — they contribute zero credits to the allocation total.
+     *
+     * @param owner username whose active runs should be queried
+     * @return list of offers for active runs; never {@code null}, may be empty
+     */
+    public List<InstanceOffer> loadActiveRunsOffers(final String owner) {
+        return loadActiveRunsOffers(owner, null);
+    }
+
+    public List<InstanceOffer> loadActiveRunsOffers(final String owner, final Long excludeRunId) {
+        final List<TaskStatus> activeStatuses = Arrays.asList(TaskStatus.RUNNING, TaskStatus.PAUSED);
+        return pipelineRunDao.loadRunsByStatusesAndOwner(activeStatuses, owner).stream()
+                .filter(r -> excludeRunId == null || !excludeRunId.equals(r.getId()))
+                .filter(r -> r.getInstance() != null && r.getInstance().getNodeType() != null)
+                .map(r -> instanceOfferManager
+                        .findOffer(r.getInstance().getNodeType(), r.getInstance().getCloudRegionId()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Checks whether {@code owner} has enough credits to launch the full heterogeneous cluster
+     * described by {@code groups}.
+     *
+     * <p>Loads the owner's active-run offers (all, no exclusion) and delegates to
+     * {@link PlatformUsageCreditsLaunchService#checkCreditsForClusterLaunch(String, List, List)}.
+     * An empty {@code groups} list (e.g. when no instance offers could be resolved) is passed
+     * through as-is; the service treats it as a no-op and returns {@link CreditsCheckResult#allowed()}.
+     *
+     * <p>Primary caller: {@code CloudPlatformRunner}, which resolves one
+     * {@link ClusterReplicaGroup} per distinct instance type before calling this method.
+     *
+     * @param owner  username of the run owner
+     * @param groups one entry per distinct instance type in the cluster, each carrying the resolved
+     *               {@link com.epam.pipeline.entity.cluster.InstanceOffer} and replica count
+     * @return a {@link CreditsCheckResult} with {@code ok=true} if the cluster launch is allowed
+     */
+    public CreditsCheckResult checkClusterLaunchCredits(final String owner, final List<ClusterReplicaGroup> groups) {
+        return platformUsageCreditsLaunchService.checkCreditsForClusterLaunch(
+                owner, groups, loadActiveRunsOffers(owner));
+    }
+
+    private void checkCreditsForLaunch(final String owner, final Optional<InstanceOffer> instance) {
+        if (!instance.isPresent()) {
+            return;
+        }
+        final CreditsCheckResult result = platformUsageCreditsLaunchService.checkCreditsForRunLaunch(
+                owner, instance.get(), loadActiveRunsOffers(owner));
+        if (!result.isOk()) {
+            throw new InsufficientUsageCreditsException(
+                    messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT,
+                            result.getRequired(), result.getBalance() - result.getAllocated(),
+                            result.getBalance(), result.getAllocated()));
+        }
+    }
+
+    private void checkHomogeneousClusterCredits(final String owner, final PipelineConfiguration configuration) {
+        if (configuration.getNodeCount() == null || configuration.getNodeCount() <= 0) {
+            return;
+        }
+        final Optional<InstanceOffer> offer = instanceOfferManager.findOffer(
+                configuration.getInstanceType(), configuration.getCloudRegionId());
+        offer.ifPresent(o -> throwIfInsufficientClusterCredits(
+                platformUsageCreditsLaunchService.checkCreditsForClusterLaunch(
+                        owner, o, configuration.getNodeCount() + 1, loadActiveRunsOffers(owner))));
+    }
+
+    private void throwIfInsufficientClusterCredits(final CreditsCheckResult result) {
+        if (!result.isOk()) {
+            throw new InsufficientUsageCreditsException(
+                    messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT,
+                            result.getRequired(), result.getBalance() - result.getAllocated(),
+                            result.getBalance(), result.getAllocated()));
+        }
     }
 
     private List<PipelineRunParameter> mapPipeConfValuesToRunParameters(final PipelineConfiguration configuration) {

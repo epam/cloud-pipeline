@@ -42,7 +42,7 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.keypair.SshKeyPair;
@@ -151,7 +151,7 @@ public class UserManager implements SecuredEntityManager {
     private QuotaService quotaService;
 
     @Autowired
-    private PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+    private PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceService;
 
     @Autowired
     private SshKeyPairManager sshKeyPairManager;

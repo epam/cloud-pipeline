@@ -30,4 +30,5 @@ public class PlatformUsageCreditsUserBalance {
     private Long userId;
     private int currentValue;
     private LocalDateTime modifiedDate;
+    private Integer allocated;
 }

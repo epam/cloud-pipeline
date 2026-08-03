@@ -16,26 +16,21 @@
 
 package com.epam.pipeline.manager.credits;
 
-import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction.ActionType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
-import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
-import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
-import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
-import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceSpecification;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -46,11 +41,7 @@ import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.Objects;
 
 /**
  * Business-logic layer for platform usage credits user balances.
@@ -61,73 +52,15 @@ import java.util.stream.StreamSupport;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class PlatformUsageCreditsUserBalanceService {
 
-    private final PlatformUsageCreditsUserBalanceRepository repository;
-    private final PlatformUsageCreditsUserBalanceMapper mapper;
     private final ContextualPreferenceManager contextualPreferenceManager;
     private final NotificationManager notificationManager;
     private final UserManager userManager;
-
-    public PlatformUsageCreditsUserBalanceService(
-            final PlatformUsageCreditsUserBalanceRepository repository,
-            final PlatformUsageCreditsUserBalanceMapper mapper,
-            final ContextualPreferenceManager contextualPreferenceManager,
-            @Lazy final NotificationManager notificationManager,
-            @Lazy final UserManager userManager) {
-        this.repository = repository;
-        this.mapper = mapper;
-        this.contextualPreferenceManager = contextualPreferenceManager;
-        this.notificationManager = notificationManager;
-        this.userManager = userManager;
-    }
-
-    /**
-     * Returns a paged, optionally filtered list of user balances.
-     * This method supports three optional predicates, all
-     * translated to SQL so that paging counts are always accurate:
-     * <ul>
-     *   <li>{@code userIds} — restrict results to a specific set of users</li>
-     *   <li>{@code value} + {@code operation} ({@code "<"}, {@code ">"}, {@code "="}) — compare
-     *       the stored {@code current_value} against the given threshold at the database level</li>
-     * </ul>
-     * @param filter filter criteria; {@code page} and {@code pageSize} are always applied
-     * @return paged result containing matching balance DTOs and the total count
-     */
-    public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
-            final PlatformUsageCreditsUserBalanceFilterVO filter) {
-        Assert.isTrue(filter.getPage() >= 1, "Page index must be >= 1");
-        Assert.isTrue(filter.getPageSize() > 0, "Page size must be > 0");
-        final Page<PlatformUsageCreditsUserBalanceEntity> page =
-                repository.findAll(PlatformUsageCreditsUserBalanceSpecification.build(filter),
-                        new PageRequest(filter.getPage() - 1, filter.getPageSize()));
-        final List<PlatformUsageCreditsUserBalance> elements = page.getContent().stream()
-                .map(mapper::toDto)
-                .collect(Collectors.toList());
-        return new PagedResult<>(elements, (int) page.getTotalElements());
-    }
-
-    /**
-     * Returns the credits balance for a single user, or empty if no record exists yet.
-     *
-     * @param userId the user whose balance to look up
-     * @return the balance DTO, or {@link Optional#empty()} if no row exists for the user
-     */
-    public Optional<PlatformUsageCreditsUserBalance> findByUserId(final Long userId) {
-        return repository.findByUserId(userId).map(mapper::toDto);
-    }
-
-    /**
-     * Returns all recorded balances keyed by {@code userId}.
-     * Intended for bulk enrichment to avoid N+1 queries.
-     *
-     * @return map from userId to the corresponding balance DTO
-     */
-    public Map<Long, PlatformUsageCreditsUserBalance> findAllAsMap() {
-        return StreamSupport.stream(repository.findAll().spliterator(), false)
-                .map(mapper::toDto)
-                .collect(Collectors.toMap(PlatformUsageCreditsUserBalance::getUserId, Function.identity()));
-    }
+    private final PlatformUsageCreditsUserBalanceCRUDService crudService;
+    private final PlatformUsageCreditsLaunchService launchService;
+    private final PipelineRunManager pipelineRunManager;
 
     /**
      * Resets the credits balance to {@code value} for each user in {@code userIds}.
@@ -154,11 +87,9 @@ public class PlatformUsageCreditsUserBalanceService {
                 final int max = getIntPreference(SystemPreferences.USAGE_CREDITS_MAX, user);
                 validateResetValue(value, min, max, userId);
             });
-            userIds.forEach(userId -> upsertBalance(value, now, userId));
+            userIds.forEach(userId -> crudService.upsertBalance(value, now, userId));
         } else {
-            log.debug("Resetting credits balance to {} for all users", value);
-            repository.resetAll(value);
-            log.debug("Credits balance reset to {} completed for all users", value);
+            crudService.resetAll(value);
         }
     }
 
@@ -193,22 +124,16 @@ public class PlatformUsageCreditsUserBalanceService {
         final int delta = ActionType.INCREASE.equals(event.getIncidentType())
                 ? event.getValue() : -event.getValue();
 
-        // Prevent lost-update: concurrent transactions must not read and modify the same balance row simultaneously.
-        repository.lockBalance(userId);
+        final Pair<Integer, Integer> newBalanceAndActualDelta = crudService.updateByEvent(userId, minBalance,
+                maxBalance, defaultBalance, delta);
 
-        final List<Object[]> rows = repository.atomicUpdateBalance(
-                userId, delta, defaultBalance, minBalance, maxBalance);
-        if (CollectionUtils.isEmpty(rows)) {
+        if (Objects.isNull(newBalanceAndActualDelta)) {
             log.warn("atomicUpdateBalance returned no rows for user {}, skipping event", userId);
             return event;
         }
-        final Object[] row = rows.get(0);
-        Assert.isTrue(row.length == 2,
-                "atomicUpdateBalance row must contain 2 columns but got " + row.length);
-        final int newBalance = ((Number) row[0]).intValue();
-        final int actualDelta = ((Number) row[1]).intValue();
-        final int oldBalance = newBalance - actualDelta;
-        final int actualValue = Math.abs(actualDelta);
+        final int actualValue = Math.abs(newBalanceAndActualDelta.getValue());
+        final int newBalance = newBalanceAndActualDelta.getKey();
+        final int oldBalance = newBalance - newBalanceAndActualDelta.getValue();
         event.setValue(actualValue);
 
         if (actualValue == 0) {
@@ -233,6 +158,21 @@ public class PlatformUsageCreditsUserBalanceService {
         return event;
     }
 
+    /**
+     * Returns the balance for the given user enriched with currently allocated credits.
+     */
+    public PlatformUsageCreditsUserBalance getBalanceWithAllocated(final Long userId) {
+        final PipelineUser currentUser = userManager.getCurrentUser();
+        Assert.isTrue(currentUser.isAdmin() || currentUser.getId().equals(userId),
+                "Access denied: you can only view your own credits balance.");
+        final PipelineUser user = userManager.load(userId);
+        final List<InstanceOffer> offers = pipelineRunManager.loadActiveRunsOffers(user.getUserName());
+        final PlatformUsageCreditsUserBalance balance = crudService.findByUserId(userId)
+                .orElse(getDefaultBalance(user));
+        balance.setAllocated(launchService.getAllocatedCredits(offers));
+        return balance;
+    }
+
     private int getIntPreference(final AbstractSystemPreference.IntPreference intPreference,
                                   final PipelineUser user) {
         return Integer.parseInt(contextualPreferenceManager.search(
@@ -246,21 +186,15 @@ public class PlatformUsageCreditsUserBalanceService {
         }
     }
 
-    private void upsertBalance(final int value, final LocalDateTime now, final Long userId) {
-        final PlatformUsageCreditsUserBalanceEntity entity = repository.findByUserId(userId)
-                .orElseGet(() -> {
-                    log.debug("No existing balance row for user {}, creating new", userId);
-                    return PlatformUsageCreditsUserBalanceEntity.builder().userId(userId).build();
-                });
-        entity.setCurrentValue(value);
-        entity.setModifiedDate(now);
-        repository.save(entity);
-        log.debug("Saved credits balance {} for user {}", value, userId);
-    }
-
     private boolean isBelowNotificationThreshold(final int currentValue, final int min, final int max,
                                                   final int threshold) {
         final double absoluteValue = min + (threshold / 100.0) * (max - min);
         return currentValue < absoluteValue;
+    }
+
+    private PlatformUsageCreditsUserBalance getDefaultBalance(final PipelineUser user) {
+        return PlatformUsageCreditsUserBalance.builder()
+                .currentValue(getIntPreference(SystemPreferences.USAGE_CREDITS_DEFAULT, user))
+                .build();
     }
 }

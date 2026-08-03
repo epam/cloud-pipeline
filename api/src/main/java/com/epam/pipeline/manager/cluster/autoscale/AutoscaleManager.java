@@ -381,6 +381,12 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 if (!hasFreeNodeUpThreads(maxNodeUpThreads)) {
                     return;
                 }
+                if (!pipelineRunManager.checkLaunchCredits(run.getOwner(), requiredInstance, longId).isOk()) {
+                    log.debug("Insufficient usage credits for user {} run {}. Postponing node creation.",
+                            run.getOwner(), runId);
+                    labelPendingRun(run);
+                    return;
+                }
                 scheduledRuns.add(runId);
                 unLabelPendingRun(run);
                 createNodeForRun(tasks, runId, requiredInstance);
