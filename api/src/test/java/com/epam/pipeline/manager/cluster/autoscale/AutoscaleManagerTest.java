@@ -24,7 +24,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
-import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -110,6 +110,8 @@ public class AutoscaleManagerTest {
     private RunRegionShiftHandler runRegionShiftHandler;
     @Mock
     private MetadataManager metadataManager;
+    @Mock
+    private PlatformUsageCreditsLaunchService creditsLaunchService;
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
@@ -122,7 +124,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager);
+                runRegionShiftHandler, metadataManager, creditsLaunchService);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -181,7 +183,7 @@ public class AutoscaleManagerTest {
         when(pipelineRunManager.loadPipelineRuns(eq(Collections.singletonList(TEST_RUN_ID))))
                 .thenReturn(Collections.singletonList(testRun));
         when(pipelineRunManager.findRun(eq(TEST_RUN_ID))).thenReturn(Optional.of(testRun));
-        when(pipelineRunManager.checkLaunchCredits(any(), any(), any())).thenReturn(PlatformUsageCreditsCheckResult.allowed());
+        when(creditsLaunchService.hasCreditsToLaunchRun(any(), any(), any())).thenReturn(true);
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
         when(cloudFacade.instanceScalingSupported(any())).thenReturn(true);
@@ -228,8 +230,7 @@ public class AutoscaleManagerTest {
     @Test
     public void testNodeCreationPostponedWhenInsufficientCredits() {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
-        when(pipelineRunManager.checkLaunchCredits(any(), any(), any()))
-                .thenReturn(new PlatformUsageCreditsCheckResult(false, 100, 50, 10));
+        when(creditsLaunchService.hasCreditsToLaunchRun(any(), any(), any())).thenReturn(false);
 
         autoscaleManagerCore.runAutoscaling();
 

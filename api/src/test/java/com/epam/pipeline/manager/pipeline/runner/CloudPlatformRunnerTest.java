@@ -16,24 +16,19 @@
 
 package com.epam.pipeline.manager.pipeline.runner;
 
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
 import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
-import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.entity.credits.ClusterReplicaGroup;
-import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -43,25 +38,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class CloudPlatformRunnerTest {
 
-    private static final String OWNER = "user1";
     private static final String MASTER_INSTANCE = "m5.large";
     private static final String WORKER_INSTANCE = "p3.xlarge";
     private static final long MASTER_RUN_ID = 1L;
+    private static final int LAUNCH_MAX_SCHEDULED_NUMBER = 100;
 
     private final ParameterMapper parameterMapper = mock(ParameterMapper.class);
     private final PipelineConfigurationManager configManager = mock(PipelineConfigurationManager.class);
@@ -69,17 +63,17 @@ public class CloudPlatformRunnerTest {
     private final PipelineRunManager runManager = mock(PipelineRunManager.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final AuthManager authManager = mock(AuthManager.class);
-    private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
+    private final PlatformUsageCreditsLaunchService creditsLaunchService =
+            mock(PlatformUsageCreditsLaunchService.class);
 
     private final CloudPlatformRunner runner = new CloudPlatformRunner(
             parameterMapper, configManager, pipelineManager, runManager,
-            preferenceManager, messageHelper, authManager, instanceOfferManager);
+            preferenceManager, messageHelper, creditsLaunchService);
 
     @Before
     public void setUp() {
-        doReturn(OWNER).when(authManager).getAuthorizedUser();
-        doReturn(100).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
+        doReturn(LAUNCH_MAX_SCHEDULED_NUMBER).when(preferenceManager)
+                .getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
         doReturn("credits message").when(messageHelper).getMessage(anyString());
         doReturn("credits message").when(messageHelper).getMessage(anyString(), any(Object[].class));
 
@@ -92,6 +86,9 @@ public class CloudPlatformRunnerTest {
         doReturn(new PipelineConfiguration()).when(configManager).generateMasterConfiguration(any(), anyBoolean());
         doReturn(new PipelineConfiguration()).when(configManager)
                 .generateWorkerConfiguration(any(), any(), any(), anyBoolean(), anyBoolean());
+
+        doNothing().when(creditsLaunchService)
+                .checkHeterogeneousClusterCredits(any(), any(int.class), any(), any());
     }
 
     private void mockResolvedConfig(final List<RunConfigurationEntry> entries) {
@@ -106,13 +103,7 @@ public class CloudPlatformRunnerTest {
     // --- heterogeneous cluster credit checks ---
 
     @Test
-    public void heterogeneousClusterAllowedWhenSufficientCredits() {
-        final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 4, 0);
-        final InstanceOffer workerOffer = offer(WORKER_INSTANCE, 0, 1);
-        doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
-        doReturn(Optional.of(workerOffer)).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
-
+    public void heterogeneousClusterCallsCreditsServiceWithCorrectOwner() {
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);
         final List<RunConfigurationEntry> entries = Arrays.asList(masterEntry, workerEntry);
@@ -120,19 +111,30 @@ public class CloudPlatformRunnerTest {
 
         runner.runAnalysis(analysisConfig(entries));
 
-        verify(runManager).checkClusterLaunchCredits(eq(OWNER), any());
+        verify(creditsLaunchService).checkHeterogeneousClusterCredits(any(), any(int.class), any(), any());
+    }
+
+    @Test
+    public void heterogeneousClusterPassesCorrectMasterNodeCount() {
+        // masterEntry.workerCount=1 → masterNodeCount=1 passed to service
+        final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 1, true);
+        final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);
+        final List<RunConfigurationEntry> entries = Arrays.asList(masterEntry, workerEntry);
+        mockResolvedConfig(entries);
+
+        runner.runAnalysis(analysisConfig(entries));
+
+        final ArgumentCaptor<Integer> masterNodeCountCaptor = ArgumentCaptor.forClass(Integer.class);
+        verify(creditsLaunchService).checkHeterogeneousClusterCredits(
+                any(), masterNodeCountCaptor.capture(), any(), any());
+        assertThat(masterNodeCountCaptor.getValue(), is(1));
     }
 
     @Test(expected = InsufficientUsageCreditsException.class)
     public void heterogeneousClusterBlockedWhenInsufficientCredits() {
-        final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 2, 0);
-        final InstanceOffer workerOffer = offer(WORKER_INSTANCE, 0, 1);
-        doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
-        doReturn(Optional.of(workerOffer)).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(new PlatformUsageCreditsCheckResult(false, 302, 200, 0))
-                .when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
-        doReturn("Insufficient credits").when(messageHelper)
-                .getMessage(eq(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT), any(Object[].class));
+        doThrow(new InsufficientUsageCreditsException("Insufficient credits"))
+                .when(creditsLaunchService)
+                .checkHeterogeneousClusterCredits(any(), any(int.class), any(), any());
 
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 3, false);
@@ -143,101 +145,20 @@ public class CloudPlatformRunnerTest {
     }
 
     @Test
-    public void heterogeneousClusterGroupsContainCorrectCounts() {
-        // masterNodeCount=1 → master group replicas = 1+1 = 2
-        // child nodeCount=2 → copies = getNodeCount(2,1) = 3 → worker group replicas = 3
-        final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 4, 0);
-        final InstanceOffer workerOffer = offer(WORKER_INSTANCE, 0, 1);
-        doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
-        doReturn(Optional.of(workerOffer)).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
-
-        final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 1, true);
-        final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);
-        final List<RunConfigurationEntry> entries = Arrays.asList(masterEntry, workerEntry);
-        mockResolvedConfig(entries);
-
-        runner.runAnalysis(analysisConfig(entries));
-
-        final ArgumentCaptor<List<ClusterReplicaGroup>> groupsCaptor = ArgumentCaptor.forClass(
-                (Class<List<ClusterReplicaGroup>>) (Class<?>) List.class);
-        verify(runManager).checkClusterLaunchCredits(eq(OWNER), groupsCaptor.capture());
-
-        final List<ClusterReplicaGroup> groups = groupsCaptor.getValue();
-        final ClusterReplicaGroup masterGroup = groups.stream()
-                .filter(g -> g.getOffer().equals(masterOffer))
-                .findFirst().orElseThrow(AssertionError::new);
-        assertThat(masterGroup.getReplicas(), is(2)); // masterNodeCount(1) + 1
-
-        final ClusterReplicaGroup workerGroup = groups.stream()
-                .filter(g -> g.getOffer().equals(workerOffer))
-                .findFirst().orElseThrow(AssertionError::new);
-        assertThat(workerGroup.getReplicas(), is(3)); // getNodeCount(nodeCount=2, basicValue=1) = 2+1 = 3
-    }
-
-    @Test
-    public void singleEntryHasOneMasterGroup() {
-        final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 4, 0);
-        doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
-        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
-
+    public void singleEntryCallsCreditsServiceWithZeroMasterNodeCount() {
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final List<RunConfigurationEntry> entries = Collections.singletonList(masterEntry);
         mockResolvedConfig(entries);
 
         runner.runAnalysis(analysisConfig(entries));
 
-        final ArgumentCaptor<List<ClusterReplicaGroup>> groupsCaptor = ArgumentCaptor.forClass(
-                (Class<List<ClusterReplicaGroup>>) (Class<?>) List.class);
-        verify(runManager).checkClusterLaunchCredits(eq(OWNER), groupsCaptor.capture());
-        assertThat(groupsCaptor.getValue().size(), is(1));
-        assertThat(groupsCaptor.getValue().get(0).getReplicas(), is(1)); // masterNodeCount=0 → 0+1
-    }
-
-    @Test
-    public void missingChildOfferGroupSkipped() {
-        // Master offer found, child offer not found → only 1 group passed to checkClusterLaunchCredits
-        final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 4, 0);
-        doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
-        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
-
-        final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
-        final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);
-        final List<RunConfigurationEntry> entries = Arrays.asList(masterEntry, workerEntry);
-        mockResolvedConfig(entries);
-
-        runner.runAnalysis(analysisConfig(entries));
-
-        final ArgumentCaptor<List<ClusterReplicaGroup>> groupsCaptor = ArgumentCaptor.forClass(
-                (Class<List<ClusterReplicaGroup>>) (Class<?>) List.class);
-        verify(runManager).checkClusterLaunchCredits(eq(OWNER), groupsCaptor.capture());
-        assertThat(groupsCaptor.getValue().size(), is(1));
-    }
-
-    @Test
-    public void noOfferAtAllSkipsCreditsCheck() {
-        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(anyString(), any());
-
-        final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
-        final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 1, false);
-        final List<RunConfigurationEntry> entries = Arrays.asList(masterEntry, workerEntry);
-        mockResolvedConfig(entries);
-
-        runner.runAnalysis(analysisConfig(entries));
-
-        verify(runManager, never()).checkClusterLaunchCredits(any(), any());
+        final ArgumentCaptor<Integer> masterNodeCountCaptor = ArgumentCaptor.forClass(Integer.class);
+        verify(creditsLaunchService).checkHeterogeneousClusterCredits(
+                any(), masterNodeCountCaptor.capture(), any(), any());
+        assertThat(masterNodeCountCaptor.getValue(), is(0));
     }
 
     // --- helpers ---
-
-    private static InstanceOffer offer(final String instanceType, final int vcpu, final int gpu) {
-        final InstanceOffer o = new InstanceOffer();
-        o.setInstanceType(instanceType);
-        o.setVCPU(vcpu);
-        o.setGpu(gpu);
-        return o;
-    }
 
     private static RunConfigurationEntry entry(final String instanceType, final int workerCount,
                                                final boolean isDefault) {

@@ -27,6 +27,21 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Service;
 
+/**
+ * AOP aspect that enforces the platform usage credits feature gate.
+ *
+ * <p>Intercepts all methods annotated with {@link CreditsFeatureCheck} and throws
+ * {@link UnsupportedOperationException} before the method body runs when the
+ * {@code platform.usage.credits.mode} preference equals
+ * {@link com.epam.pipeline.dto.credits.PlatformUsageCreditsMode#OFF}.
+ *
+ * <p>This prevents credits API endpoints from returning empty or misleading results
+ * while the feature is disabled, and surfaces a clear error message to callers.
+ * When the mode is {@code BALANCE_ONLY} or {@code ON} the intercepted method executes
+ * normally without any interference from this aspect.
+ *
+ * @see CreditsFeatureCheck
+ */
 @Service
 @Aspect
 @Slf4j

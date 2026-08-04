@@ -19,12 +19,10 @@ package com.epam.pipeline.manager.credits;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction.ActionType;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
-import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -60,7 +58,6 @@ public class PlatformUsageCreditsUserBalanceService {
     private final UserManager userManager;
     private final PlatformUsageCreditsUserBalanceCRUDService crudService;
     private final PlatformUsageCreditsLaunchService launchService;
-    private final PipelineRunManager pipelineRunManager;
 
     /**
      * Resets the credits balance to {@code value} for each user in {@code userIds}.
@@ -169,10 +166,9 @@ public class PlatformUsageCreditsUserBalanceService {
         final PipelineUser user = Objects.equals(currentUser.getId(), userId)
                 ? currentUser
                 : userManager.load(userId);
-        final List<InstanceOffer> offers = pipelineRunManager.loadActiveRunsOffers(user.getUserName());
         final PlatformUsageCreditsUserBalance balance = crudService.findByUserId(userId)
                 .orElse(getDefaultBalance(user));
-        balance.setAllocated(launchService.getAllocatedCredits(offers));
+        balance.setAllocated(launchService.getAllocatedCredits(user.getUserName()));
         return balance;
     }
 

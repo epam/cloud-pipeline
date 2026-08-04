@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -120,6 +121,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
         private final MetadataManager metadataManager;
+        private final PlatformUsageCreditsLaunchService creditsLaunchService;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -141,7 +143,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
-                             final MetadataManager metadataManager) {
+                             final MetadataManager metadataManager,
+                             final PlatformUsageCreditsLaunchService creditsLaunchService) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -157,6 +160,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
+            this.creditsLaunchService = creditsLaunchService;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -381,7 +385,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 if (!hasFreeNodeUpThreads(maxNodeUpThreads)) {
                     return;
                 }
-                if (!pipelineRunManager.checkLaunchCredits(run.getOwner(), requiredInstance, longId).isOk()) {
+                if (!creditsLaunchService.hasCreditsToLaunchRun(run.getOwner(), requiredInstance, longId)) {
                     log.debug("Insufficient usage credits for user {} run {}. Postponing node creation.",
                             run.getOwner(), runId);
                     labelPendingRun(run);

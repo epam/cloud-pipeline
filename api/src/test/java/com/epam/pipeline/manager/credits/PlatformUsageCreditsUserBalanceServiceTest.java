@@ -21,10 +21,8 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.manager.credits.BalanceUpdateResult;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -68,12 +66,10 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
             mock(PlatformUsageCreditsUserBalanceCRUDService.class);
     private final PlatformUsageCreditsLaunchService launchService =
             mock(PlatformUsageCreditsLaunchService.class);
-    private final PipelineRunManager pipelineRunManager =
-            mock(PipelineRunManager.class);
     private final PlatformUsageCreditsUserBalanceService service =
             new PlatformUsageCreditsUserBalanceService(
                     contextualPreferenceManager, notificationManager, userManager,
-                    crudService, launchService, pipelineRunManager);
+                    crudService, launchService);
 
     @Test
     public void shouldUpsertBalanceOnResetForUser() {

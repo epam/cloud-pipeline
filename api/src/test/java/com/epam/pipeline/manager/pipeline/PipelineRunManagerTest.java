@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -115,6 +116,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     @MockBean
     private CheckPermissionHelper permissionHelper;
+
+    @MockBean
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
 
     @MockBean
     private ToolScanInfoManager toolScanInfoManager;

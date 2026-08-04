@@ -22,6 +22,24 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Marks a method that requires the platform usage credits feature to be active.
+ *
+ * <p>When applied to a method, {@link CreditsFeatureAspect} intercepts the call before
+ * it executes and throws {@link UnsupportedOperationException} if the
+ * {@code platform.usage.credits.mode} preference is set to
+ * {@link com.epam.pipeline.dto.credits.PlatformUsageCreditsMode#OFF}.
+ *
+ * <p>Annotate API-facing methods that expose credits data or management operations
+ * (balance queries, manual adjustments, etc.) with this annotation to ensure they
+ * fail fast and clearly when the feature is turned off, rather than returning
+ * misleading empty results.
+ *
+ * <p>The annotation is {@link Inherited}, so it propagates through class hierarchies
+ * when placed on an overridable method.
+ *
+ * @see CreditsFeatureAspect
+ */
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

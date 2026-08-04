@@ -19,6 +19,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -103,6 +104,10 @@ public class PipelineRunCRUDService {
 
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         return pipelineRunDao.loadRunsByPoolId(poolId);
+    }
+
+    public List<PipelineRun> loadRunsByStatusesAndOwner(final List<TaskStatus> statuses, final String owner) {
+        return pipelineRunDao.loadRunsByStatusesAndOwner(statuses, owner);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
