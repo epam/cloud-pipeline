@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_VALUE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.DEFAULT_BALANCE;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.USER_ID;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceDto;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceEntity;
@@ -50,6 +51,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 @SuppressWarnings("unchecked")
 public class PlatformUsageCreditsUserBalanceCRUDServiceTest {
@@ -160,5 +162,44 @@ public class PlatformUsageCreditsUserBalanceCRUDServiceTest {
 
         assertTrue(result.isEmpty());
         verify(repository, never()).findAll();
+    }
+
+    @Test
+    public void shouldSkipCreateDefaultBalanceWhenModeIsOff() {
+        doReturn(PlatformUsageCreditsMode.OFF)
+                .when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_MODE);
+
+        service.createDefaultBalance(USER_ID);
+
+        verify(repository, never()).findByUserId(any());
+        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
+    }
+
+    @Test
+    public void shouldSkipCreateDefaultBalanceWhenBalanceAlreadyExists() {
+        doReturn(PlatformUsageCreditsMode.BALANCE_ONLY)
+                .when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_MODE);
+        doReturn(Optional.of(balanceEntity())).when(repository).findByUserId(USER_ID);
+
+        service.createDefaultBalance(USER_ID);
+
+        verify(repository, never()).save(any(PlatformUsageCreditsUserBalanceEntity.class));
+    }
+
+    @Test
+    public void shouldCreateDefaultBalanceWithDefaultPreferenceValue() {
+        doReturn(PlatformUsageCreditsMode.BALANCE_ONLY)
+                .when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_MODE);
+        doReturn(DEFAULT_BALANCE)
+                .when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_DEFAULT);
+        doReturn(Optional.empty()).when(repository).findByUserId(USER_ID);
+
+        service.createDefaultBalance(USER_ID);
+
+        final ArgumentCaptor<PlatformUsageCreditsUserBalanceEntity> captor =
+                ArgumentCaptor.forClass(PlatformUsageCreditsUserBalanceEntity.class);
+        verify(repository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getCurrentValue(), is(DEFAULT_BALANCE));
+        assertThat(captor.getValue().getUserId(), is(USER_ID));
     }
 }

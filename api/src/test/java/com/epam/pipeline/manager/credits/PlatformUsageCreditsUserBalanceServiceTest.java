@@ -24,7 +24,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
-import org.apache.commons.lang3.tuple.Pair;
+import com.epam.pipeline.manager.credits.BalanceUpdateResult;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -256,7 +256,7 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
     }
 
     private void mockCrudUpdate(final int newBalance, final int actualDelta) {
-        doReturn(Pair.of(newBalance, actualDelta)).when(crudService)
+        doReturn(new BalanceUpdateResult(newBalance, actualDelta)).when(crudService)
                 .updateByEvent(any(), anyInt(), anyInt(), anyInt(), anyInt());
     }
 }

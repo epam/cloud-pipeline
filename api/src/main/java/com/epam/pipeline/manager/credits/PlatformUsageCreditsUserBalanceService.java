@@ -30,7 +30,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,16 +124,15 @@ public class PlatformUsageCreditsUserBalanceService {
         final int delta = ActionType.INCREASE.equals(event.getIncidentType())
                 ? event.getValue() : -event.getValue();
 
-        final Pair<Integer, Integer> newBalanceAndActualDelta = crudService.updateByEvent(userId, minBalance,
+        final BalanceUpdateResult result = crudService.updateByEvent(userId, minBalance,
                 maxBalance, defaultBalance, delta);
 
-        if (Objects.isNull(newBalanceAndActualDelta)) {
-            log.warn("atomicUpdateBalance returned no rows for user {}, skipping event", userId);
+        if (Objects.isNull(result)) {
             return event;
         }
-        final int actualValue = Math.abs(newBalanceAndActualDelta.getValue());
-        final int newBalance = newBalanceAndActualDelta.getKey();
-        final int oldBalance = newBalance - newBalanceAndActualDelta.getValue();
+        final int actualValue = Math.abs(result.getActualDelta());
+        final int newBalance = result.getNewBalance();
+        final int oldBalance = newBalance - result.getActualDelta();
         event.setValue(actualValue);
 
         if (actualValue == 0) {

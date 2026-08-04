@@ -160,7 +160,6 @@ public class UserManager implements SecuredEntityManager {
     private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManager;
 
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser create(final String name, final List<Long> roles,
                                final List<String> groups,
@@ -170,6 +169,7 @@ public class UserManager implements SecuredEntityManager {
                 .map(user -> configureUserDefaultStorage(user, defaultStorageId))
                 .map(this::configureUserDefaultMetadata)
                 .map(this::configureUserPrivateDockerRegistryGroup)
+                .map(this::configureDefaultCreditsBalance)
                 .get();
     }
 
@@ -799,5 +799,10 @@ public class UserManager implements SecuredEntityManager {
                 platformUsageCreditsUserBalanceService.findAllAsMap();
         pipelineUsers.forEach(user -> Optional.ofNullable(balances.get(user.getId()))
                 .ifPresent(user::setUsageCredits));
+    }
+
+    private PipelineUser configureDefaultCreditsBalance(final PipelineUser user) {
+        platformUsageCreditsUserBalanceService.createDefaultBalance(user.getId());
+        return user;
     }
 }

@@ -21,6 +21,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
@@ -34,7 +35,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -45,6 +45,14 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+/**
+ * Low-level CRUD service for {@link PlatformUsageCreditsUserBalanceEntity}.
+ *
+ * <p>This service owns all direct reads and writes to the user-balance table and is the
+ * single place that enforces the {@link PlatformUsageCreditsMode#OFF} short-circuit: read
+ * methods return empty results and write methods are no-ops when the feature is disabled,
+ * so callers do not need to repeat that check.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -103,6 +111,12 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
                   .collect(Collectors.toMap(PlatformUsageCreditsUserBalance::getUserId, Function.identity()));
     }
 
+    /**
+     * Sets every user's balance to {@code value} in a single bulk UPDATE.
+     * Intended for periodic resets (e.g. monthly quota refresh or initial set).
+     *
+     * @param value the new balance to assign to all users
+     */
     @Transactional
     public void resetAll(final int value) {
         log.debug("Resetting credits balance to {} for all users", value);
@@ -110,12 +124,26 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
         log.debug("Credits balance reset to {} completed for all users", value);
     }
 
+    /**
+     * Applies a signed {@code delta} to the user's balance atomically, clamping the result
+     * to [{@code minBalance}, {@code maxBalance}] and defaulting to {@code defaultBalance} if
+     * no row exists yet. Uses a pessimistic row-level lock to prevent lost updates under
+     * concurrent transactions.
+     *
+     * @param userId         the user whose balance to update
+     * @param minBalance     the lower bound the balance must not fall below
+     * @param maxBalance     the upper bound the balance must not exceed
+     * @param defaultBalance the starting balance if no row exists for the user
+     * @param delta          signed amount to add (negative for deductions)
+     * @return a {@link BalanceUpdateResult} containing the new balance and the signed delta
+     *         actually applied, or {@code null} if the atomic update produced no rows
+     */
     @Transactional
-    public Pair<Integer, Integer> updateByEvent(final Long userId,
-                                                final int minBalance,
-                                                final int maxBalance,
-                                                final int defaultBalance,
-                                                final int delta) {
+    public BalanceUpdateResult updateByEvent(final Long userId,
+                                             final int minBalance,
+                                             final int maxBalance,
+                                             final int defaultBalance,
+                                             final int delta) {
         // Prevent lost-update: concurrent transactions must not read and modify the same balance row simultaneously.
         repository.lockBalance(userId);
 
@@ -130,11 +158,18 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
                 "atomicUpdateBalance row must contain 2 columns but got " + row.length);
         final int newBalance = ((Number) row[0]).intValue();
         final int actualDelta = ((Number) row[1]).intValue();
-        final int actualValue = Math.abs(actualDelta);
 
-        return Pair.of(newBalance, actualValue);
+        return new BalanceUpdateResult(newBalance, actualDelta);
     }
 
+    /**
+     * Creates or updates the balance row for {@code userId}, setting its value to {@code value}
+     * and its modification timestamp to {@code now}. If no row exists, a new one is inserted.
+     *
+     * @param value  the balance value to store
+     * @param now    the modification timestamp to record
+     * @param userId the user whose balance to create or update
+     */
     @Transactional
     public void upsertBalance(final int value, final LocalDateTime now, final Long userId) {
         final PlatformUsageCreditsUserBalanceEntity entity = repository.findByUserId(userId)
@@ -146,6 +181,34 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
         entity.setModifiedDate(now);
         repository.save(entity);
         log.debug("Saved credits balance {} for user {}", value, userId);
+    }
+
+    /**
+     * Inserts a default balance row for a newly created user using the value from the
+     * {@code usage.credits.default} system preference.
+     *
+     * <p>The method is a no-op when:
+     * <ul>
+     *   <li>the credits feature mode is {@link PlatformUsageCreditsMode#OFF}, or</li>
+     *   <li>a balance row already exists for {@code userId} (idempotent).</li>
+     * </ul>
+     *
+     * @param userId the ID of the newly created user
+     */
+    @Transactional
+    public void createDefaultBalance(final Long userId) {
+        if (isOffMode()) {
+            return;
+        }
+        if (repository.findByUserId(userId).isPresent()) {
+            return;
+        }
+        final int defaultValue = preferenceManager.getPreference(SystemPreferences.USAGE_CREDITS_DEFAULT);
+        repository.save(PlatformUsageCreditsUserBalanceEntity.builder()
+                .userId(userId)
+                .currentValue(defaultValue)
+                .modifiedDate(DateUtils.nowUTC())
+                .build());
     }
 
     private boolean isOffMode() {
