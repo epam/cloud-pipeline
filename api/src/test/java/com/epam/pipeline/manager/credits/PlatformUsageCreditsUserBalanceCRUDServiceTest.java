@@ -17,9 +17,12 @@
 package com.epam.pipeline.manager.credits;
 
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
 import org.junit.Test;
@@ -30,16 +33,22 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.BALANCE_VALUE;
+import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.USER_ID;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceDto;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.balanceEntity;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.filterVO;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("unchecked")
@@ -49,8 +58,10 @@ public class PlatformUsageCreditsUserBalanceCRUDServiceTest {
             mock(PlatformUsageCreditsUserBalanceRepository.class);
     private final PlatformUsageCreditsUserBalanceMapper mapper =
             mock(PlatformUsageCreditsUserBalanceMapper.class);
+    private final PreferenceManager preferenceManager =
+            mock(PreferenceManager.class);
     private final PlatformUsageCreditsUserBalanceCRUDService service =
-            new PlatformUsageCreditsUserBalanceCRUDService(repository, mapper);
+            new PlatformUsageCreditsUserBalanceCRUDService(repository, mapper, preferenceManager);
 
     @Test
     public void shouldReturnPagedBalancesOnFilter() {
@@ -127,5 +138,27 @@ public class PlatformUsageCreditsUserBalanceCRUDServiceTest {
         service.filter(filter);
 
         verify(repository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    public void shouldReturnEmptyOptionalFromFindByUserIdWhenModeIsOff() {
+        doReturn(PlatformUsageCreditsMode.OFF)
+                .when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_MODE);
+
+        final Optional<PlatformUsageCreditsUserBalance> result = service.findByUserId(USER_ID);
+
+        assertFalse(result.isPresent());
+        verify(repository, never()).findByUserId(any());
+    }
+
+    @Test
+    public void shouldReturnEmptyMapFromFindAllAsMapWhenModeIsOff() {
+        doReturn(PlatformUsageCreditsMode.OFF)
+                .when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_MODE);
+
+        final Map<Long, PlatformUsageCreditsUserBalance> result = service.findAllAsMap();
+
+        assertTrue(result.isEmpty());
+        verify(repository, never()).findAll();
     }
 }

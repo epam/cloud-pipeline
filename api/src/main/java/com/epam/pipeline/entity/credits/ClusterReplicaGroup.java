@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.credits;
+package com.epam.pipeline.entity.credits;
 
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import lombok.Value;
 
+/**
+ * A single instance-type group within a cluster launch: one offer and how many replicas of it are requested.
+ * Used to compute the total credit cost for heterogeneous clusters where different node groups may use
+ * different instance types.
+ */
 @Value
-public class CreditsCheckResult {
-
-    boolean ok;
-    int required;
-    int balance;
-    int allocated;
-
-    public static CreditsCheckResult allowed() {
-        return new CreditsCheckResult(true, 0, 0, 0);
-    }
+public class ClusterReplicaGroup {
+    InstanceOffer offer;
+    int replicas;
 }

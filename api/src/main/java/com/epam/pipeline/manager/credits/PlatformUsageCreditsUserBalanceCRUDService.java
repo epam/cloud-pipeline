@@ -17,9 +17,12 @@
 package com.epam.pipeline.manager.credits;
 
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUserBalanceEntity;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsUserBalanceMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceRepository;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsUserBalanceSpecification;
@@ -34,6 +37,7 @@ import org.springframework.util.Assert;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +52,7 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
 
     private final PlatformUsageCreditsUserBalanceRepository repository;
     private final PlatformUsageCreditsUserBalanceMapper mapper;
+    private final PreferenceManager preferenceManager;
 
     /**
      * Returns a paged, optionally filtered list of user balances.
@@ -81,7 +86,7 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
      * @return the balance DTO, or {@link Optional#empty()} if no row exists for the user
      */
     public Optional<PlatformUsageCreditsUserBalance> findByUserId(final Long userId) {
-        return repository.findByUserId(userId).map(mapper::toDto);
+        return isOffMode() ? Optional.empty() : repository.findByUserId(userId).map(mapper::toDto);
     }
 
     /**
@@ -91,9 +96,11 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
      * @return map from userId to the corresponding balance DTO
      */
     public Map<Long, PlatformUsageCreditsUserBalance> findAllAsMap() {
-        return StreamSupport.stream(repository.findAll().spliterator(), false)
-                .map(mapper::toDto)
-                .collect(Collectors.toMap(PlatformUsageCreditsUserBalance::getUserId, Function.identity()));
+        return isOffMode()
+                ? Collections.emptyMap()
+                : StreamSupport.stream(repository.findAll().spliterator(), false)
+                  .map(mapper::toDto)
+                  .collect(Collectors.toMap(PlatformUsageCreditsUserBalance::getUserId, Function.identity()));
     }
 
     @Transactional
@@ -139,5 +146,10 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
         entity.setModifiedDate(now);
         repository.save(entity);
         log.debug("Saved credits balance {} for user {}", value, userId);
+    }
+
+    private boolean isOffMode() {
+        return PlatformUsageCreditsMode.OFF.equals(
+                preferenceManager.getPreference(SystemPreferences.USAGE_CREDITS_MODE));
     }
 }

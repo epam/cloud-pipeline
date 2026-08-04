@@ -16,8 +16,11 @@
 
 package com.epam.pipeline.manager.credits;
 
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.credits.ClusterReplicaGroup;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -38,7 +41,7 @@ import java.util.Map;
  * <p>This service is intentionally kept as a <em>leaf</em> in the dependency graph — it does not
  * depend on {@code PipelineRunManager} or {@code InstanceOfferManager}. Callers are responsible
  * for resolving {@link InstanceOffer} objects and loading the list of active-run offers before
- * invoking these methods; the service only performs the credit arithmetic and the admin/feature-flag
+ * invoking these methods; the service only performs the credit arithmetic and the admin/mode
  * short-circuits.
  *
  * <p>The credit cost of a single node is:
@@ -48,9 +51,9 @@ import java.util.Map;
  * where weights come from the {@code usage.credits.resource.weights} system preference
  * (default: CPU=1, GPU=100).
  *
- * <p>All checks return {@link CreditsCheckResult#allowed()} when:
+ * <p>All checks return {@link PlatformUsageCreditsCheckResult#allowed()} when:
  * <ul>
- *   <li>the {@code monitoring.platform.usage.credits.enable} feature flag is {@code false}, or</li>
+ *   <li>the {@code platform.usage.credits.mode} preference is not {@link PlatformUsageCreditsMode#ON}, or</li>
  *   <li>the requesting user has the {@code ADMIN} or {@code ROLE_RUN_ADMIN} role.</li>
  * </ul>
  */
@@ -75,11 +78,11 @@ public class PlatformUsageCreditsLaunchService {
      * @param currentRunOffer  instance offer describing the node to be launched
      * @param activeRunsOffers offers of the owner's currently active (RUNNING / PAUSED) runs,
      *                         used to compute already-allocated credits
-     * @return a {@link CreditsCheckResult} with {@code ok=true} if the launch is allowed
+     * @return a {@link PlatformUsageCreditsCheckResult} with {@code ok=true} if the launch is allowed
      */
-    public CreditsCheckResult checkCreditsForRunLaunch(final String owner,
-                                                       final InstanceOffer currentRunOffer,
-                                                       final List<InstanceOffer> activeRunsOffers) {
+    public PlatformUsageCreditsCheckResult checkCreditsForRunLaunch(final String owner,
+                                                                    final InstanceOffer currentRunOffer,
+                                                                    final List<InstanceOffer> activeRunsOffers) {
         return checkCreditsForGroups(owner,
                 Collections.singletonList(new ClusterReplicaGroup(currentRunOffer, 1)),
                 activeRunsOffers);
@@ -96,12 +99,12 @@ public class PlatformUsageCreditsLaunchService {
      * @param offer            instance offer shared by all nodes in the cluster
      * @param replicas         total node count (master + workers)
      * @param activeRunsOffers offers of the owner's currently active runs
-     * @return a {@link CreditsCheckResult} with {@code ok=true} if the launch is allowed
+     * @return a {@link PlatformUsageCreditsCheckResult} with {@code ok=true} if the launch is allowed
      */
-    public CreditsCheckResult checkCreditsForClusterLaunch(final String owner,
-                                                           final InstanceOffer offer,
-                                                           final int replicas,
-                                                           final List<InstanceOffer> activeRunsOffers) {
+    public PlatformUsageCreditsCheckResult checkCreditsForClusterLaunch(final String owner,
+                                                                        final InstanceOffer offer,
+                                                                        final int replicas,
+                                                                        final List<InstanceOffer> activeRunsOffers) {
         return checkCreditsForGroups(owner,
                 Collections.singletonList(new ClusterReplicaGroup(offer, replicas)),
                 activeRunsOffers);
@@ -114,17 +117,17 @@ public class PlatformUsageCreditsLaunchService {
      * <p>Used by {@code CloudPlatformRunner} for multi-entry {@code RunConfiguration} launches.
      * Required credits = Σ (group.replicas × cost(group.offer)).
      * Groups whose offer could not be resolved should be omitted by the caller; an empty
-     * {@code groups} list is treated as no-op (returns {@link CreditsCheckResult#allowed()}).
+     * {@code groups} list is treated as no-op (returns {@link PlatformUsageCreditsCheckResult#allowed()}).
      *
      * @param owner            username of the run owner
      * @param groups           one entry per distinct instance type in the cluster, each carrying
      *                         its resolved {@link InstanceOffer} and the number of replicas
      * @param activeRunsOffers offers of the owner's currently active runs
-     * @return a {@link CreditsCheckResult} with {@code ok=true} if the launch is allowed
+     * @return a {@link PlatformUsageCreditsCheckResult} with {@code ok=true} if the launch is allowed
      */
-    public CreditsCheckResult checkCreditsForClusterLaunch(final String owner,
-                                                           final List<ClusterReplicaGroup> groups,
-                                                           final List<InstanceOffer> activeRunsOffers) {
+    public PlatformUsageCreditsCheckResult checkCreditsForClusterLaunch(final String owner,
+                                                                        final List<ClusterReplicaGroup> groups,
+                                                                        final List<InstanceOffer> activeRunsOffers) {
         return checkCreditsForGroups(owner, groups, activeRunsOffers);
     }
 
@@ -141,15 +144,15 @@ public class PlatformUsageCreditsLaunchService {
         return computeUsedCredits(activeRunsOffers, weights());
     }
 
-    private CreditsCheckResult checkCreditsForGroups(final String owner,
-                                                     final List<ClusterReplicaGroup> groups,
-                                                     final List<InstanceOffer> activeRunsOffers) {
-        if (!preferenceManager.getPreference(SystemPreferences.MONITORING_PLATFORM_USAGE_CREDITS_ENABLE)) {
-            return CreditsCheckResult.allowed();
+    private PlatformUsageCreditsCheckResult checkCreditsForGroups(final String owner,
+                                                                  final List<ClusterReplicaGroup> groups,
+                                                                  final List<InstanceOffer> activeRunsOffers) {
+        if (!PlatformUsageCreditsMode.ON.equals(getMode())) {
+            return PlatformUsageCreditsCheckResult.allowed();
         }
         final PipelineUser user = userManager.loadByNameOrId(owner);
         if (user.isAdmin() || user.hasRole(DefaultRoles.ROLE_RUN_ADMIN.getRole())) {
-            return CreditsCheckResult.allowed();
+            return PlatformUsageCreditsCheckResult.allowed();
         }
         final Map<String, Integer> weights = weights();
         final int required = groups.stream()
@@ -159,7 +162,7 @@ public class PlatformUsageCreditsLaunchService {
         final int allocated = computeUsedCredits(activeRunsOffers, weights);
         log.debug("Credits check for user {}: balance={}, allocated={}, required={} (groups={})",
                 user.getUserName(), balance, allocated, required, groups.size());
-        return new CreditsCheckResult((balance - allocated) >= required, required, balance, allocated);
+        return new PlatformUsageCreditsCheckResult((balance - allocated) >= required, required, balance, allocated);
     }
 
     private int computeUsedCredits(final List<InstanceOffer> offers, final Map<String, Integer> weights) {
@@ -182,5 +185,9 @@ public class PlatformUsageCreditsLaunchService {
     private Map<String, Integer> weights() {
         return MapUtils.emptyIfNull(
                 preferenceManager.getPreference(SystemPreferences.USAGE_CREDITS_RESOURCE_WEIGHTS));
+    }
+
+    private PlatformUsageCreditsMode getMode() {
+        return preferenceManager.getPreference(SystemPreferences.USAGE_CREDITS_MODE);
     }
 }

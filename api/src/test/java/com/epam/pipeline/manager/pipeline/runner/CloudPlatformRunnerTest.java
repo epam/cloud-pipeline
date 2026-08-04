@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
 import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.credits.ClusterReplicaGroup;
-import com.epam.pipeline.manager.credits.CreditsCheckResult;
+import com.epam.pipeline.entity.credits.ClusterReplicaGroup;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -55,7 +55,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class CloudPlatformRunnerTest {
 
@@ -112,7 +111,7 @@ public class CloudPlatformRunnerTest {
         final InstanceOffer workerOffer = offer(WORKER_INSTANCE, 0, 1);
         doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
         doReturn(Optional.of(workerOffer)).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(CreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
+        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
 
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);
@@ -130,7 +129,7 @@ public class CloudPlatformRunnerTest {
         final InstanceOffer workerOffer = offer(WORKER_INSTANCE, 0, 1);
         doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
         doReturn(Optional.of(workerOffer)).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(new CreditsCheckResult(false, 302, 200, 0))
+        doReturn(new PlatformUsageCreditsCheckResult(false, 302, 200, 0))
                 .when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
         doReturn("Insufficient credits").when(messageHelper)
                 .getMessage(eq(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT), any(Object[].class));
@@ -151,7 +150,7 @@ public class CloudPlatformRunnerTest {
         final InstanceOffer workerOffer = offer(WORKER_INSTANCE, 0, 1);
         doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
         doReturn(Optional.of(workerOffer)).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(CreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
+        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
 
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 1, true);
         final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);
@@ -180,7 +179,7 @@ public class CloudPlatformRunnerTest {
     public void singleEntryHasOneMasterGroup() {
         final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 4, 0);
         doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
-        doReturn(CreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
+        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
 
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final List<RunConfigurationEntry> entries = Collections.singletonList(masterEntry);
@@ -201,7 +200,7 @@ public class CloudPlatformRunnerTest {
         final InstanceOffer masterOffer = offer(MASTER_INSTANCE, 4, 0);
         doReturn(Optional.of(masterOffer)).when(instanceOfferManager).findOffer(eq(MASTER_INSTANCE), any());
         doReturn(Optional.empty()).when(instanceOfferManager).findOffer(eq(WORKER_INSTANCE), any());
-        doReturn(CreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
+        doReturn(PlatformUsageCreditsCheckResult.allowed()).when(runManager).checkClusterLaunchCredits(eq(OWNER), any());
 
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 2, false);

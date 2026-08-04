@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.manager.credits;
 
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
-import com.epam.pipeline.manager.credits.ClusterReplicaGroup;
+import com.epam.pipeline.entity.credits.ClusterReplicaGroup;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -56,11 +58,20 @@ public class PlatformUsageCreditsLaunchServiceTest {
     private final PlatformUsageCreditsLaunchService service = new PlatformUsageCreditsLaunchService(
             preferenceManager, crudService, userManager);
 
-    // --- enable-flag short-circuit ---
+    // --- mode short-circuit ---
 
     @Test
-    public void checkCreditsReturnsTrueWhenCreditsDisabled() {
-        doReturn(false).when(preferenceManager).getPreference(SystemPreferences.MONITORING_PLATFORM_USAGE_CREDITS_ENABLE);
+    public void checkCreditsReturnsTrueWhenModeIsOff() {
+        doReturn(PlatformUsageCreditsMode.OFF).when(preferenceManager)
+                .getPreference(SystemPreferences.USAGE_CREDITS_MODE);
+
+        assertThat(service.checkCreditsForRunLaunch(OWNER, offer(4, 0), Collections.emptyList()).isOk(), is(true));
+    }
+
+    @Test
+    public void checkCreditsReturnsTrueWhenModeIsBalanceOnly() {
+        doReturn(PlatformUsageCreditsMode.BALANCE_ONLY).when(preferenceManager)
+                .getPreference(SystemPreferences.USAGE_CREDITS_MODE);
 
         assertThat(service.checkCreditsForRunLaunch(OWNER, offer(4, 0), Collections.emptyList()).isOk(), is(true));
     }
@@ -71,7 +82,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
     public void checkCreditsReturnsTrueForAdmin() {
         final PipelineUser admin = regularUser();
         admin.setAdmin(true);
-        mockCreditsEnabled();
+        mockCreditsEnforced();
         doReturn(admin).when(userManager).loadByNameOrId(OWNER);
 
         assertThat(service.checkCreditsForRunLaunch(OWNER, offer(4, 0), Collections.emptyList()).isOk(), is(true));
@@ -81,7 +92,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
     public void checkCreditsReturnsTrueForRunAdmin() {
         final PipelineUser runAdmin = regularUser();
         runAdmin.setRoles(Collections.singletonList(DefaultRoles.ROLE_RUN_ADMIN.getRole()));
-        mockCreditsEnabled();
+        mockCreditsEnforced();
         doReturn(runAdmin).when(userManager).loadByNameOrId(OWNER);
 
         assertThat(service.checkCreditsForRunLaunch(OWNER, offer(4, 0), Collections.emptyList()).isOk(), is(true));
@@ -121,7 +132,6 @@ public class PlatformUsageCreditsLaunchServiceTest {
 
     @Test
     public void checkCreditsUsesDefaultWhenNoBalanceRow() {
-        mockCreditsEnabled();
         mockUser();
         mockWeights();
         doReturn(Optional.empty()).when(crudService).findByUserId(USER_ID);
@@ -148,7 +158,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(100);
 
-        final CreditsCheckResult result = service.checkCreditsForRunLaunch(OWNER, offer(50, 0),
+        final PlatformUsageCreditsCheckResult result = service.checkCreditsForRunLaunch(OWNER, offer(50, 0),
                 Collections.singletonList(offer(60, 0)));
 
         assertThat(result.isOk(), is(false));
@@ -188,7 +198,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(100);
 
-        final CreditsCheckResult result = service.checkCreditsForClusterLaunch(OWNER, offer(10, 0), 3,
+        final PlatformUsageCreditsCheckResult result = service.checkCreditsForClusterLaunch(OWNER, offer(10, 0), 3,
                 Collections.emptyList());
 
         assertThat(result.isOk(), is(true));
@@ -242,7 +252,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
                 new ClusterReplicaGroup(offer(10, 0), 1),
                 new ClusterReplicaGroup(offer(5, 0), 2));
 
-        final CreditsCheckResult result = service.checkCreditsForClusterLaunch(OWNER, groups, Collections.emptyList());
+        final PlatformUsageCreditsCheckResult result = service.checkCreditsForClusterLaunch(OWNER, groups, Collections.emptyList());
 
         assertThat(result.isOk(), is(true));
         assertThat(result.getRequired(), is(20));
@@ -283,13 +293,13 @@ public class PlatformUsageCreditsLaunchServiceTest {
 
     // --- helpers ---
 
-    private void mockCreditsEnabled() {
-        doReturn(true).when(preferenceManager)
-                .getPreference(SystemPreferences.MONITORING_PLATFORM_USAGE_CREDITS_ENABLE);
+    private void mockCreditsEnforced() {
+        doReturn(PlatformUsageCreditsMode.ON).when(preferenceManager)
+                .getPreference(SystemPreferences.USAGE_CREDITS_MODE);
     }
 
     private void mockUser() {
-        mockCreditsEnabled();
+        mockCreditsEnforced();
         doReturn(regularUser()).when(userManager).loadByNameOrId(OWNER);
     }
 

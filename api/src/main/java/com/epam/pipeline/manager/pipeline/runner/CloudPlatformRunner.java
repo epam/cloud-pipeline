@@ -29,8 +29,8 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.credits.ClusterReplicaGroup;
-import com.epam.pipeline.manager.credits.CreditsCheckResult;
+import com.epam.pipeline.entity.credits.ClusterReplicaGroup;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -216,7 +216,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         if (groups.isEmpty()) {
             return;
         }
-        final CreditsCheckResult result = pipelineRunManager.checkClusterLaunchCredits(
+        final PlatformUsageCreditsCheckResult result = pipelineRunManager.checkClusterLaunchCredits(
                 authManager.getAuthorizedUser(), groups);
         if (!result.isOk()) {
             throw new InsufficientUsageCreditsException(

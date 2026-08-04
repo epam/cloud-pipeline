@@ -31,6 +31,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -162,10 +163,14 @@ public class PlatformUsageCreditsUserBalanceService {
      * Returns the balance for the given user enriched with currently allocated credits.
      */
     public PlatformUsageCreditsUserBalance getBalanceWithAllocated(final Long userId) {
+        Assert.notNull(userId, "User id must not be null");
         final PipelineUser currentUser = userManager.getCurrentUser();
-        Assert.isTrue(currentUser.isAdmin() || currentUser.getId().equals(userId),
-                "Access denied: you can only view your own credits balance.");
-        final PipelineUser user = userManager.load(userId);
+        if (!currentUser.isAdmin() && !Objects.equals(currentUser.getId(), userId)) {
+            throw new AccessDeniedException("Access denied: you can only view your own credits balance.");
+        }
+        final PipelineUser user = Objects.equals(currentUser.getId(), userId)
+                ? currentUser
+                : userManager.load(userId);
         final List<InstanceOffer> offers = pipelineRunManager.loadActiveRunsOffers(user.getUserName());
         final PlatformUsageCreditsUserBalance balance = crudService.findByUserId(userId)
                 .orElse(getDefaultBalance(user));

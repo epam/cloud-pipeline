@@ -24,7 +24,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
-import com.epam.pipeline.manager.credits.CreditsCheckResult;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -181,7 +181,7 @@ public class AutoscaleManagerTest {
         when(pipelineRunManager.loadPipelineRuns(eq(Collections.singletonList(TEST_RUN_ID))))
                 .thenReturn(Collections.singletonList(testRun));
         when(pipelineRunManager.findRun(eq(TEST_RUN_ID))).thenReturn(Optional.of(testRun));
-        when(pipelineRunManager.checkLaunchCredits(any(), any(), any())).thenReturn(CreditsCheckResult.allowed());
+        when(pipelineRunManager.checkLaunchCredits(any(), any(), any())).thenReturn(PlatformUsageCreditsCheckResult.allowed());
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
         when(cloudFacade.instanceScalingSupported(any())).thenReturn(true);
@@ -229,7 +229,7 @@ public class AutoscaleManagerTest {
     public void testNodeCreationPostponedWhenInsufficientCredits() {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
         when(pipelineRunManager.checkLaunchCredits(any(), any(), any()))
-                .thenReturn(new CreditsCheckResult(false, 100, 50, 10));
+                .thenReturn(new PlatformUsageCreditsCheckResult(false, 100, 50, 10));
 
         autoscaleManagerCore.runAutoscaling();
 

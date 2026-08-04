@@ -26,7 +26,6 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
-
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -486,6 +485,7 @@ public class UserApiServiceTest extends AbstractAclTest {
 
     @Test
     public void shouldLeaveUsageCreditsNullWhenNoBalanceExists() {
+        pipelineUser.setUsageCredits(null);
         doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
         doReturn(Optional.empty())
                 .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());

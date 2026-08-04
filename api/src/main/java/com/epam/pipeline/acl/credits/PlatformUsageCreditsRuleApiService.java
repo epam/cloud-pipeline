@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.credits;
 
+import com.epam.pipeline.aspect.credits.CreditsFeatureCheck;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRule;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
@@ -34,26 +35,31 @@ public class PlatformUsageCreditsRuleApiService {
 
     private final PlatformUsageCreditsRuleService manager;
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public List<PlatformUsageCreditsUpdateRule> loadAll() {
         return manager.loadAll();
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public PlatformUsageCreditsUpdateRule create(final PlatformUsageCreditsUpdateRule rule) {
         return manager.create(rule);
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public PlatformUsageCreditsUpdateRule update(final Long id, final PlatformUsageCreditsUpdateRule rule) {
         return manager.update(id, rule);
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public void delete(final Long id) {
         manager.delete(id);
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public Map<String, List<FilterFieldVO>> getKeywords() {
         return manager.getKeywords();

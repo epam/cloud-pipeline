@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.credits;
+package com.epam.pipeline.aspect.credits;
 
-import com.epam.pipeline.entity.cluster.InstanceOffer;
-import lombok.Value;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * A single instance-type group within a cluster launch: one offer and how many replicas of it are requested.
- * Used to compute the total credit cost for heterogeneous clusters where different node groups may use
- * different instance types.
- */
-@Value
-public class ClusterReplicaGroup {
-    InstanceOffer offer;
-    int replicas;
+@Inherited
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface CreditsFeatureCheck {
 }

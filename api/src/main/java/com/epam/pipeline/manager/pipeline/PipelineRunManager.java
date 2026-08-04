@@ -96,8 +96,8 @@ import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
-import com.epam.pipeline.manager.credits.ClusterReplicaGroup;
-import com.epam.pipeline.manager.credits.CreditsCheckResult;
+import com.epam.pipeline.entity.credits.ClusterReplicaGroup;
+import com.epam.pipeline.entity.credits.PlatformUsageCreditsCheckResult;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -1108,7 +1108,7 @@ public class PipelineRunManager {
      * {@link PlatformUsageCreditsLaunchService#checkCreditsForRunLaunch}.
      *
      * <p>If no matching offer is found in the catalogue the check is skipped and
-     * {@link CreditsCheckResult#allowed()} is returned — the assumption is that an unknown
+     * {@link PlatformUsageCreditsCheckResult#allowed()} is returned — the assumption is that an unknown
      * instance type should not block the launch.
      *
      * <p>Primary caller: {@code AutoscaleManager}, which passes the run's own ID as
@@ -1118,16 +1118,16 @@ public class PipelineRunManager {
      * @param requiredInstance instance type and cloud region of the node to be created
      * @param excludeRunId     run ID to exclude from active-allocation counting, or {@code null}
      *                         to include all active runs
-     * @return a {@link CreditsCheckResult} with {@code ok=true} if the node creation is allowed
+     * @return a {@link PlatformUsageCreditsCheckResult} with {@code ok=true} if the node creation is allowed
      */
-    public CreditsCheckResult checkLaunchCredits(final String owner, final InstanceRequest requiredInstance,
-                                                 final Long excludeRunId) {
+    public PlatformUsageCreditsCheckResult checkLaunchCredits(final String owner, final InstanceRequest requiredInstance,
+                                                              final Long excludeRunId) {
         final String instanceType = requiredInstance.getInstance().getNodeType();
         final Long regionId = requiredInstance.getInstance().getCloudRegionId();
         final Optional<InstanceOffer> offer = instanceOfferManager.findOffer(instanceType, regionId);
         return offer.map(o -> platformUsageCreditsLaunchService.checkCreditsForRunLaunch(
                         owner, o, loadActiveRunsOffers(owner, excludeRunId)))
-                .orElseGet(CreditsCheckResult::allowed);
+                .orElseGet(PlatformUsageCreditsCheckResult::allowed);
     }
 
     /**
@@ -1163,7 +1163,7 @@ public class PipelineRunManager {
      * <p>Loads the owner's active-run offers (all, no exclusion) and delegates to
      * {@link PlatformUsageCreditsLaunchService#checkCreditsForClusterLaunch(String, List, List)}.
      * An empty {@code groups} list (e.g. when no instance offers could be resolved) is passed
-     * through as-is; the service treats it as a no-op and returns {@link CreditsCheckResult#allowed()}.
+     * through as-is; the service treats it as a no-op and returns {@link PlatformUsageCreditsCheckResult#allowed()}.
      *
      * <p>Primary caller: {@code CloudPlatformRunner}, which resolves one
      * {@link ClusterReplicaGroup} per distinct instance type before calling this method.
@@ -1171,9 +1171,9 @@ public class PipelineRunManager {
      * @param owner  username of the run owner
      * @param groups one entry per distinct instance type in the cluster, each carrying the resolved
      *               {@link com.epam.pipeline.entity.cluster.InstanceOffer} and replica count
-     * @return a {@link CreditsCheckResult} with {@code ok=true} if the cluster launch is allowed
+     * @return a {@link PlatformUsageCreditsCheckResult} with {@code ok=true} if the cluster launch is allowed
      */
-    public CreditsCheckResult checkClusterLaunchCredits(final String owner, final List<ClusterReplicaGroup> groups) {
+    public PlatformUsageCreditsCheckResult checkClusterLaunchCredits(final String owner, final List<ClusterReplicaGroup> groups) {
         return platformUsageCreditsLaunchService.checkCreditsForClusterLaunch(
                 owner, groups, loadActiveRunsOffers(owner));
     }
@@ -1182,7 +1182,7 @@ public class PipelineRunManager {
         if (!instance.isPresent()) {
             return;
         }
-        final CreditsCheckResult result = platformUsageCreditsLaunchService.checkCreditsForRunLaunch(
+        final PlatformUsageCreditsCheckResult result = platformUsageCreditsLaunchService.checkCreditsForRunLaunch(
                 owner, instance.get(), loadActiveRunsOffers(owner));
         if (!result.isOk()) {
             throw new InsufficientUsageCreditsException(
@@ -1203,7 +1203,7 @@ public class PipelineRunManager {
                         owner, o, configuration.getNodeCount() + 1, loadActiveRunsOffers(owner))));
     }
 
-    private void throwIfInsufficientClusterCredits(final CreditsCheckResult result) {
+    private void throwIfInsufficientClusterCredits(final PlatformUsageCreditsCheckResult result) {
         if (!result.isOk()) {
             throw new InsufficientUsageCreditsException(
                     messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT,
