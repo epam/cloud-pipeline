@@ -161,7 +161,7 @@ public class JWTSecurityConfiguration {
         final List<String> paths = Arrays.asList(
                 "/restapi/swagger-resources/**",
                 "/restapi/swagger-ui.html",
-                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/swagger-ui/**",
                 "/restapi/v2/api-docs/**",
                 "/restapi/v3/api-docs/**"
                 );

@@ -71,10 +71,6 @@ dependencies {
     // Jackson
     implementation "com.fasterxml.jackson.core:jackson-databind:$jaksonVersion"
 
-    // Swagger
-    implementation "io.springfox:springfox-swagger2:$swaggerVersion"
-    implementation "io.springfox:springfox-swagger-ui:$swaggerVersion"
-
     //Tests
     testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
     testImplementation "org.projectlombok:lombok:$lombokVersion"
