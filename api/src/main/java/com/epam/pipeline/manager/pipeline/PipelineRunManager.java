@@ -60,6 +60,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
@@ -739,6 +740,21 @@ public class PipelineRunManager {
             pipelineRunDao.updateRunInstance(pipelineRun);
         }
         return pipelineRun;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void applyResumeRunVO(final Long runId, final RunInstanceConfigVO vo) {
+        Assert.notNull(vo, "RunInstanceConfigVO must not be null");
+        final PipelineRun pipelineRun = loadPipelineRun(runId);
+        configurationManager.validateFallbackInstanceTypesCount(vo.getFallbackInstanceTypes());
+        final RunInstance instance = pipelineRun.getInstance();
+        if (StringUtils.isNotEmpty(vo.getInstanceType())) {
+            instance.setNodeType(vo.getInstanceType());
+        }
+        if (vo.getFallbackInstanceTypes() != null) {
+            instance.setFallbackInstanceTypes(vo.getFallbackInstanceTypes());
+        }
+        updateRunInstance(pipelineRun.getId(), instance);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
