@@ -178,8 +178,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockActiveRuns(plainRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID));
         doReturn(Optional.of(offer(activeRunUsesCpus, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
                         Collections.emptyMap()));
     }
 
@@ -203,8 +203,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(currentBalance);
         mockNoActiveRuns();
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(NO_VCPU, ONE_GPU)),
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(NO_VCPU, ONE_GPU)),
                         Collections.emptyMap()));
     }
 
@@ -252,9 +252,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(currentBalance);
         mockNoActiveRuns();
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER,
-                        Optional.of(offer(offerRequestedCpus, offerRequestedGpus)), params(cpuRequest, gpuRequest)));
+        assertThrows(InsufficientUsageCreditsException.class, () -> service.checkCreditsForRunLaunch(OWNER,
+                Optional.of(offer(offerRequestedCpus, offerRequestedGpus)), params(cpuRequest, gpuRequest)));
     }
 
     @Test
@@ -297,8 +296,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(currentBalance);
         mockNoActiveRuns();
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(offerRequestedCpus, NO_GPU)),
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(offerRequestedCpus, NO_GPU)),
                         Collections.emptyMap()));
     }
 
@@ -317,8 +316,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(currentBalance);
         mockActiveRuns(cbRun(RUN_ID_1, activeRunCpuRequest, null));
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
                         Collections.emptyMap()));
     }
 
@@ -333,8 +332,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(currentBalance);
         mockActiveRuns(cbRun(RUN_ID_1, null, activeRunGpuRequest));
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
                         Collections.emptyMap()));
     }
 
@@ -383,8 +382,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
                 cbRun(RUN_ID_2, cbRunCpuRequest, null));
         doReturn(Optional.of(offer(plainRunAllocatedCpus, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRunLaunch(OWNER, Optional.of(offer(requiredCpus, NO_GPU)),
                         Collections.emptyMap()));
     }
 
@@ -497,8 +496,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockNoActiveRuns();
         doReturn(Optional.of(offer(requiredCpus, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRestartRun(plainRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID)));
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRestartRun(plainRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID)));
     }
 
     @Test
@@ -532,8 +531,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockWeights();
         mockBalance(currentBalance);
         mockNoActiveRuns();
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkCreditsForRestartRun(cbRun(RUN_ID_1, cpuRequest, gpuRequest)));
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkCreditsForRestartRun(cbRun(RUN_ID_1, cpuRequest, gpuRequest)));
     }
 
     @Test
@@ -579,8 +578,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockNoActiveRuns();
         doReturn(Optional.of(offer(requestedCpus, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class,
-                () -> service.checkHomogeneousClusterCredits(OWNER, config(INSTANCE_TYPE, REGION_ID, 2)));
+        assertThrows(InsufficientUsageCreditsException.class, () ->
+                service.checkHomogeneousClusterCredits(OWNER, config(INSTANCE_TYPE, REGION_ID, 2)));
     }
 
     @Test
