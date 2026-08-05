@@ -39,12 +39,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -166,7 +166,7 @@ public class PipelineRunDockerOperationManager {
      * @param runId {@link PipelineRun} id for pipeline run to be resumed
      * @return resumed {@link PipelineRun}
      */
-    public PipelineRun resumeRun(Long runId) {
+    public PipelineRun resumeRun(final Long runId) {
         checkAbilityToPerformOperation();
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,

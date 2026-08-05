@@ -41,8 +41,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -59,7 +58,6 @@ public class PipelineRunDockerOperationManagerTest {
     private static final Date DATE_1 = new Date();
     private static final Date DATE_2 = DateUtils.addMinutes(DATE_1, 1);
     private static final Date DATE_3 = DateUtils.addMinutes(DATE_2, 1);
-
     private final DockerContainerOperationManager dockerContainerOperationManager =
             mock(DockerContainerOperationManager.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
@@ -133,7 +131,7 @@ public class PipelineRunDockerOperationManagerTest {
         pipelineRunDockerOperationManager.rerunPauseAndResume();
 
         verify(toolManager).loadByNameOrId(TEST_NAME);
-        verify(dockerContainerOperationManager).resumeRun(run, TEST_NAMES);
+        verify(dockerContainerOperationManager).resumeRun(eq(run), eq(TEST_NAMES));
         verify(dockerContainerOperationManager, never()).pauseRun(any(), anyBoolean());
     }
 
@@ -156,7 +154,7 @@ public class PipelineRunDockerOperationManagerTest {
 
         verify(dockerContainerOperationManager).pauseRun(any(), anyBoolean());
         verify(toolManager).loadByNameOrId(TEST_NAME);
-        verify(dockerContainerOperationManager).resumeRun(runToResume, TEST_NAMES);
+        verify(dockerContainerOperationManager).resumeRun(eq(runToResume), eq(TEST_NAMES));
     }
 
     @Test
@@ -277,4 +275,5 @@ public class PipelineRunDockerOperationManagerTest {
                 pausingRunStatus(convertDateToLocalDateTime(DATE_1))));
         when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
     }
+
 }
