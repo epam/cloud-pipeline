@@ -76,6 +76,8 @@ public class DockerContainerOperationManagerTest {
     private static final String NODE_NAME = "node-1";
     private static final String NODE_ID = "node-id";
     private static final String NODE_TYPE = "m5.large";
+    private static final String FALLBACK_NODE_TYPE = "m5.xlarge";
+    private static final String FALLBACK_NODE_TYPE_2 = "m5.2xlarge";
     private static final String POD_ID = "pipeline";
     private static final String TEST_TAG = "tag";
     private static final long REGION_ID = 1L;
@@ -272,7 +274,6 @@ public class DockerContainerOperationManagerTest {
 
     @Test
     public void resumeRunShouldUseFirstFallbackTypeOnCapacityError() throws InterruptedException {
-        final String fallbackType = "m5.xlarge";
         when(regionManager.load(REGION_ID)).thenReturn(region());
         when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
         when(cloudFacade.startInstance(REGION_ID, NODE_ID))
@@ -282,14 +283,14 @@ public class DockerContainerOperationManagerTest {
 
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
-        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(fallbackType));
+        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(FALLBACK_NODE_TYPE));
 
         operationManager.resumeRun(run, Collections.emptyList());
 
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
-        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, fallbackType);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
         verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
-        assertEquals(fallbackType, run.getInstance().getNodeType());
+        assertEquals(FALLBACK_NODE_TYPE, run.getInstance().getNodeType());
         verify(runManager).updateRunInstance(RUN_ID, run.getInstance());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
@@ -303,7 +304,7 @@ public class DockerContainerOperationManagerTest {
 
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
-        run.getInstance().setFallbackInstanceTypes(Collections.singletonList("m5.xlarge"));
+        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(FALLBACK_NODE_TYPE));
 
         operationManager.resumeRun(run, Collections.emptyList());
 
@@ -322,7 +323,7 @@ public class DockerContainerOperationManagerTest {
 
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
-        run.getInstance().setFallbackInstanceTypes(Collections.singletonList("m5.xlarge"));
+        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(FALLBACK_NODE_TYPE));
 
         operationManager.resumeRun(run, Collections.emptyList());
 
@@ -362,13 +363,13 @@ public class DockerContainerOperationManagerTest {
 
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
-        run.getInstance().setFallbackInstanceTypes(java.util.Arrays.asList("m5.xlarge", "m5.2xlarge"));
+        run.getInstance().setFallbackInstanceTypes(java.util.Arrays.asList(FALLBACK_NODE_TYPE, FALLBACK_NODE_TYPE_2));
 
         operationManager.resumeRun(run, Collections.emptyList());
 
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
-        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, "m5.xlarge");
-        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, "m5.2xlarge");
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE_2);
         verify(cloudFacade, times(3)).startInstance(REGION_ID, NODE_ID);
     }
 
@@ -383,13 +384,13 @@ public class DockerContainerOperationManagerTest {
 
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
-        // NODE_TYPE duplicate is filtered out, only "m5.xlarge" remains as fallback
-        run.getInstance().setFallbackInstanceTypes(java.util.Arrays.asList(NODE_TYPE, "m5.xlarge"));
+        // NODE_TYPE duplicate is filtered out, only FALLBACK_NODE_TYPE remains as fallback
+        run.getInstance().setFallbackInstanceTypes(java.util.Arrays.asList(NODE_TYPE, FALLBACK_NODE_TYPE));
 
         operationManager.resumeRun(run, Collections.emptyList());
 
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
-        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, "m5.xlarge");
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
         verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
     }
 
