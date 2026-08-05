@@ -92,6 +92,14 @@ public class CloudPipelineAPIClient {
         return Boolean.parseBoolean(preference.getValue());
     }
 
+    public String getStringPreference(final String preferenceName) {
+        final Preference preference = executor.execute(cloudPipelineAPI.loadPreference(preferenceName));
+        if (Objects.isNull(preference) || StringUtils.isBlank(preference.getValue())) {
+            return null;
+        }
+        return preference.getValue();
+    }
+
     public <T> T getObjectPreference(final String preferenceName) {
         final Preference preference = executor.execute(cloudPipelineAPI.loadPreference(preferenceName));
         if (Objects.isNull(preference) || StringUtils.isBlank(preference.getValue())) {

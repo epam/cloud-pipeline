@@ -46,6 +46,7 @@ class PlatformUsageCreditsMonitoringServiceTest {
 
     private static final String UNCHECKED = "unchecked";
     private static final String ENABLE_PREF = "enable.pref";
+    private static final String MODE_PREF = "mode.pref";
     private static final Long RULE_ID = 1L;
     private static final int ACTION_VALUE = 50;
     private static final String ACTION_MESSAGE = "Test deduction";
@@ -63,8 +64,9 @@ class PlatformUsageCreditsMonitoringServiceTest {
         tempDir = Files.createTempDirectory("credit-monitor-test");
         lastExecFile = tempDir.resolve("last_exec.txt");
         when(handler.getRuleType()).thenReturn(PlatformUsageCreditsUpdateRuleType.RUN_STATE);
+        when(client.getStringPreference(MODE_PREF)).thenReturn("ON");
         monitor = new PlatformUsageCreditsMonitoringService(
-                ENABLE_PREF, lastExecFile.toString(), client, Collections.singletonList(handler));
+                ENABLE_PREF, MODE_PREF, lastExecFile.toString(), client, Collections.singletonList(handler));
     }
 
     @AfterEach
@@ -76,6 +78,17 @@ class PlatformUsageCreditsMonitoringServiceTest {
     @Test
     void monitorDisabled() {
         when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(false);
+
+        monitor.monitor();
+
+        verify(client, never()).loadAllPlatformUsageCreditsRules();
+        verify(handler, never()).process(any(), any(), any());
+    }
+
+    @Test
+    void monitorSkipsWhenCreditsModeIsOff() {
+        when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
+        when(client.getStringPreference(MODE_PREF)).thenReturn("OFF");
 
         monitor.monitor();
 
@@ -124,7 +137,7 @@ class PlatformUsageCreditsMonitoringServiceTest {
     void skipsRuleTypeWithNoRegisteredHandler() {
         final PlatformUsageCreditsMonitoringService monitorWithNoHandlers =
                 new PlatformUsageCreditsMonitoringService(
-                        ENABLE_PREF, lastExecFile.toString(), client, Collections.emptyList());
+                        ENABLE_PREF, MODE_PREF, lastExecFile.toString(), client, Collections.emptyList());
         when(client.getBooleanPreference(ENABLE_PREF)).thenReturn(true);
         when(client.loadAllPlatformUsageCreditsRules())
                 .thenReturn(Collections.singletonList(runStateRule()));

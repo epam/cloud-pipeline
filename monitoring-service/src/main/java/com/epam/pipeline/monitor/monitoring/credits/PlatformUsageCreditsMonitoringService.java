@@ -39,19 +39,25 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PlatformUsageCreditsMonitoringService implements MonitoringService {
 
+    private static final String CREDITS_MODE_OFF = "OFF";
+
     private final CloudPipelineAPIClient client;
     private final String monitorEnabledPreference;
+    private final String creditsModePreference;
     private final ExecutionTimestampFile executionTimestampFile;
     private final Map<PlatformUsageCreditsUpdateRuleType, PlatformUsageCreditsRuleHandler> handlers;
 
     public PlatformUsageCreditsMonitoringService(
             @Value("${preference.name.platform.usage.credits.monitor.enable:-monitoring.platform.usage.credits.enable}")
                 final String monitorEnabledPreference,
+            @Value("${preference.name.platform.usage.credits.mode:-platform.usage.credits.mode}")
+                final String creditsModePreference,
             @Value("${platform.usage.credits.monitor.execution.timestamp.file}")
                 final String lastExecutionFilePath,
             final CloudPipelineAPIClient client,
             final List<PlatformUsageCreditsRuleHandler> handlers) {
         this.monitorEnabledPreference = monitorEnabledPreference;
+        this.creditsModePreference = creditsModePreference;
         this.executionTimestampFile = new ExecutionTimestampFile(lastExecutionFilePath);
         this.client = client;
         this.handlers = handlers.stream()
@@ -62,6 +68,10 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
     public void monitor() {
         if (!client.getBooleanPreference(monitorEnabledPreference)) {
             log.debug("Platform usage credits monitor is not enabled");
+            return;
+        }
+        if (CREDITS_MODE_OFF.equalsIgnoreCase(client.getStringPreference(creditsModePreference))) {
+            log.info("Skipping platform usage credits monitoring: credits feature is disabled (mode=OFF)");
             return;
         }
 
