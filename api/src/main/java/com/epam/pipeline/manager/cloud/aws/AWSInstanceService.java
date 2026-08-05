@@ -179,6 +179,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
+    public void changeInstanceType(final AwsRegion region, final String instanceId, final String instanceType) {
+        log.debug("Changing AWS instance {} type to {}", instanceId, instanceType);
+        ec2Helper.changeInstanceType(instanceId, instanceType, region);
+    }
+
+    @Override
     public CloudInstanceOperationResult startInstance(final AwsRegion region, final String instanceId) {
         log.debug("Starting AWS instance {}", instanceId);
         return ec2Helper.startInstance(instanceId, region);

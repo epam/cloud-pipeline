@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -310,7 +311,10 @@ public class RunApiService {
     @QuotaLaunchCheck
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun resumeRun(Long runId) {
+    public PipelineRun resumeRun(final Long runId, final RunInstanceConfigVO resumeRunVO) {
+        if (resumeRunVO != null) {
+            runManager.applyResumeRunVO(runId, resumeRunVO);
+        }
         return pipelineRunDockerOperationManager.resumeRun(runId);
     }
 

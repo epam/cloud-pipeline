@@ -170,6 +170,12 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
+    public void changeInstanceType(final Long regionId, final String instanceId, final String instanceType) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).changeInstanceType(region, instanceId, instanceType);
+    }
+
+    @Override
     public CloudInstanceOperationResult startInstance(final Long regionId, final String instanceId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstanceService(region).startInstance(region, instanceId);

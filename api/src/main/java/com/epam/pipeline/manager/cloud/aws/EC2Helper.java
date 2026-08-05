@@ -228,6 +228,13 @@ public class EC2Helper implements EC2GpuHelper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
+    public void changeInstanceType(final String instanceId, final String instanceType, final AwsRegion awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        client.modifyInstanceAttribute(new ModifyInstanceAttributeRequest()
+                .withInstanceId(instanceId)
+                .withInstanceType(instanceType));
+    }
+
     public CloudInstanceOperationResult startInstance(String instanceId, AwsRegion awsRegion) {
         try {
             AmazonEC2 client = getEC2Client(awsRegion);

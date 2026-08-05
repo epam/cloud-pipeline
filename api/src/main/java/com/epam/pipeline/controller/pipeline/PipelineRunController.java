@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -443,8 +444,9 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Resumes paused run.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun> resumeRun(@PathVariable(value = RUN_ID) Long runId) {
-        return Result.success(runApiService.resumeRun(runId));
+    public Result<PipelineRun> resumeRun(@PathVariable(value = RUN_ID) Long runId,
+                                         @RequestBody(required = false) RunInstanceConfigVO resumeRunVO) {
+        return Result.success(runApiService.resumeRun(runId, resumeRunVO));
     }
 
     @PostMapping(value = "/run/{runId}/updateSids")

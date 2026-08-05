@@ -69,6 +69,8 @@ public interface CloudFacade {
 
     void stopInstance(Long regionId, String instanceId);
 
+    void changeInstanceType(Long regionId, String instanceId, String instanceType);
+
     CloudInstanceOperationResult startInstance(Long regionId, String instanceId);
 
     void terminateInstance(Long regionId, String instanceId);
