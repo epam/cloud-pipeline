@@ -1293,6 +1293,7 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun restartRun(final PipelineRun run) {
+        platformUsageCreditsLaunchService.checkCreditsForRestartRun(run);
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final PipelineRun restartedRun = createRestartRun(run);
         final Tool tool = getToolForRun(configuration);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.exception.quota;
+package com.epam.pipeline.exception.credits;
 
 public class InsufficientUsageCreditsException extends RuntimeException {
 

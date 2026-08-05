@@ -32,7 +32,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
+import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -96,10 +96,6 @@ public class PlatformUsageCreditsLaunchService {
     /** Run parameter carrying the requested GPU count for a capacity block run. */
     public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
 
-    // -------------------------------------------------------------------------
-    // Inner types
-    // -------------------------------------------------------------------------
-
     /**
      * Immutable result of a credits check.
      *
@@ -160,6 +156,29 @@ public class PlatformUsageCreditsLaunchService {
         instance.ifPresent(offer -> throwIfInsufficient(
                 checkGroups(owner, singleRunGroup(resolveEffectiveOffer(offer, parameters)),
                         loadActiveOffers(owner))));
+    }
+
+    /**
+     * Enforces credits for a run restart (spot-retry or region-shift).
+     *
+     * <p>Resolves the effective instance offer from the run's stored instance and
+     * parameters — capacity-block runs contribute only their requested slice, plain
+     * runs use the catalogue offer. Delegates to the standard credits check.
+     *
+     * <p>Uses {@code run.getOwner()} as the owner because restart callers run in
+     * scheduled threads with no security principal set.
+     *
+     * <p>Short-circuits to a no-op when the offer cannot be resolved or mode is not
+     * {@link PlatformUsageCreditsMode#ON}.
+     *
+     * @param run the run being restarted
+     * @throws InsufficientUsageCreditsException if the owner cannot afford the restart
+     */
+    public void checkCreditsForRestartRun(final PipelineRun run) {
+        offerForActiveRun(run).ifPresent(offer ->
+                throwIfInsufficient(checkGroups(run.getOwner(),
+                        singleRunGroup(offer),
+                        loadActiveOffers(run.getOwner(), run.getId()))));
     }
 
     /**

@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
-import com.epam.pipeline.exception.quota.InsufficientUsageCreditsException;
+import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;

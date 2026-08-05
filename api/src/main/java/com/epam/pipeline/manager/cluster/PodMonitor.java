@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.notification.NotificationSettings;
@@ -408,7 +409,12 @@ public class PodMonitor extends AbstractSchedulingManager {
                 pipelineRunManager.updateStateReasonMessage(run, reason.getStateMessage());
                 if (allowRestart && shouldRerunBatchRun(run, reason.getStateCode())) {
                     LOGGER.debug("Restarting run {}", run.getId());
-                    pipelineRunManager.restartRun(run);
+                    try {
+                        pipelineRunManager.restartRun(run);
+                    } catch (InsufficientUsageCreditsException e) {
+                        LOGGER.warn("Cancelling restart for run {}: {}", run.getId(), e.getMessage());
+                        pipelineRunManager.updateStateReasonMessage(run, e.getMessage());
+                    }
                 }
             });
 
