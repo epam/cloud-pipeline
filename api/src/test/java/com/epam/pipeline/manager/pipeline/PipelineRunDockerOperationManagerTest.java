@@ -40,9 +40,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import org.mockito.ArgumentCaptor;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
@@ -61,10 +58,6 @@ public class PipelineRunDockerOperationManagerTest {
     private static final Date DATE_1 = new Date();
     private static final Date DATE_2 = DateUtils.addMinutes(DATE_1, 1);
     private static final Date DATE_3 = DateUtils.addMinutes(DATE_2, 1);
-    private static final String M_5_XLARGE = "m5.xlarge";
-    private static final String M_5_LARGE = "m5.large";
-    private static final String M_5_2_XLARGE = "m5.2xlarge";
-
     private final DockerContainerOperationManager dockerContainerOperationManager =
             mock(DockerContainerOperationManager.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
@@ -106,7 +99,7 @@ public class PipelineRunDockerOperationManagerTest {
         pipelineRunDockerOperationManager.rerunPauseAndResume();
 
         verify(dockerContainerOperationManager).pauseRun(run, true);
-        verify(dockerContainerOperationManager, never()).resumeRun(any(), any(), any());
+        verify(dockerContainerOperationManager, never()).resumeRun(any(), any());
     }
 
     @Test
@@ -138,7 +131,7 @@ public class PipelineRunDockerOperationManagerTest {
         pipelineRunDockerOperationManager.rerunPauseAndResume();
 
         verify(toolManager).loadByNameOrId(TEST_NAME);
-        verify(dockerContainerOperationManager).resumeRun(eq(run), eq(TEST_NAMES), any());
+        verify(dockerContainerOperationManager).resumeRun(eq(run), eq(TEST_NAMES));
         verify(dockerContainerOperationManager, never()).pauseRun(any(), anyBoolean());
     }
 
@@ -161,63 +154,7 @@ public class PipelineRunDockerOperationManagerTest {
 
         verify(dockerContainerOperationManager).pauseRun(any(), anyBoolean());
         verify(toolManager).loadByNameOrId(TEST_NAME);
-        verify(dockerContainerOperationManager).resumeRun(eq(runToResume), eq(TEST_NAMES), any());
-    }
-
-    @Test
-    public void buildCandidateTypesShouldReturnPrimaryOnlyWhenNoFallbacks() {
-        final PipelineRun run = runWithNodeType(M_5_LARGE, null);
-        run.setDockerImage(TEST_NAME);
-
-        when(pipelineRunManager.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
-                .thenReturn(Collections.emptyList());
-        when(pipelineRunManager.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
-                .thenReturn(Collections.singletonList(run));
-        when(toolManager.loadByNameOrId(TEST_NAME)).thenReturn(tool());
-
-        pipelineRunDockerOperationManager.rerunPauseAndResume();
-
-        final ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-        verify(dockerContainerOperationManager).resumeRun(any(), any(), captor.capture());
-        Assert.assertEquals(Collections.singletonList(M_5_LARGE), captor.getValue());
-    }
-
-    @Test
-    public void buildCandidateTypesShouldIncludeFallbacksAfterPrimary() {
-        final PipelineRun run = runWithNodeType(M_5_LARGE,
-                Arrays.asList(M_5_XLARGE, M_5_2_XLARGE));
-        run.setDockerImage(TEST_NAME);
-
-        when(pipelineRunManager.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
-                .thenReturn(Collections.emptyList());
-        when(pipelineRunManager.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
-                .thenReturn(Collections.singletonList(run));
-        when(toolManager.loadByNameOrId(TEST_NAME)).thenReturn(tool());
-
-        pipelineRunDockerOperationManager.rerunPauseAndResume();
-
-        final ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-        verify(dockerContainerOperationManager).resumeRun(any(), any(), captor.capture());
-        Assert.assertEquals(Arrays.asList(M_5_LARGE, M_5_XLARGE, M_5_2_XLARGE), captor.getValue());
-    }
-
-    @Test
-    public void buildCandidateTypesShouldDeduplicateFallbacksAgainstPrimary() {
-        final PipelineRun run = runWithNodeType(M_5_LARGE,
-                Arrays.asList(M_5_LARGE, M_5_XLARGE));
-        run.setDockerImage(TEST_NAME);
-
-        when(pipelineRunManager.loadRunsByStatuses(Collections.singletonList(TaskStatus.PAUSING)))
-                .thenReturn(Collections.emptyList());
-        when(pipelineRunManager.loadRunsByStatuses(Collections.singletonList(TaskStatus.RESUMING)))
-                .thenReturn(Collections.singletonList(run));
-        when(toolManager.loadByNameOrId(TEST_NAME)).thenReturn(tool());
-
-        pipelineRunDockerOperationManager.rerunPauseAndResume();
-
-        final ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-        verify(dockerContainerOperationManager).resumeRun(any(), any(), captor.capture());
-        Assert.assertEquals(Arrays.asList(M_5_LARGE, M_5_XLARGE), captor.getValue());
+        verify(dockerContainerOperationManager).resumeRun(eq(runToResume), eq(TEST_NAMES));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -339,12 +276,4 @@ public class PipelineRunDockerOperationManagerTest {
         when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
     }
 
-    private PipelineRun runWithNodeType(final String nodeType, final List<String> fallbackTypes) {
-        final PipelineRun run = pipelineRun();
-        final RunInstance instance = run.getInstance();
-        instance.setNodeType(nodeType);
-        instance.setFallbackInstanceTypes(fallbackTypes);
-        run.setStatus(TaskStatus.RESUMING);
-        return run;
-    }
 }

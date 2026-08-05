@@ -47,7 +47,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -176,7 +175,6 @@ public class PipelineRunDockerOperationManager {
             throw new IllegalArgumentException(messageHelper.getMessage(
                     MessageConstants.ERROR_ACTUAL_CMD_NOT_FOUND, runId));
         }
-        final List<String> candidateInstanceTypes = buildCandidateTypes(pipelineRun.getInstance());
         final Integer totalRunInstances = 1 + Optional.ofNullable(pipelineRun.getNodeCount()).orElse(0);
         runLimitsService.checkRunLaunchLimits(totalRunInstances);
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
@@ -184,17 +182,8 @@ public class PipelineRunDockerOperationManager {
         // prolong the run here in order to get rid off idle notification right after resume
         pipelineRunManager.prolongIdleRun(pipelineRun.getId());
         runCRUDService.updateRunStatus(pipelineRun);
-        dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints(), candidateInstanceTypes);
+        dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
         return pipelineRun;
-    }
-
-    private List<String> buildCandidateTypes(final RunInstance instance) {
-        final List<String> candidates = new ArrayList<>();
-        candidates.add(instance.getNodeType());
-        ListUtils.emptyIfNull(instance.getFallbackInstanceTypes()).stream()
-                .filter(t -> !candidates.contains(t))
-                .forEach(candidates::add);
-        return candidates;
     }
 
     /**
@@ -271,8 +260,7 @@ public class PipelineRunDockerOperationManager {
         try {
             log.debug("Resume run operation will be relaunched for run '{}'", run.getId());
             final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
-            dockerContainerOperationManager.resumeRun(run, tool.getEndpoints(),
-                    buildCandidateTypes(run.getInstance()));
+            dockerContainerOperationManager.resumeRun(run, tool.getEndpoints());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

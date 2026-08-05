@@ -51,7 +51,9 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +64,7 @@ import org.springframework.util.Assert;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -372,11 +375,11 @@ public class DockerContainerOperationManager {
     }
 
     @Async("pauseRunExecutor")
-    public void resumeRun(final PipelineRun run, final List<String> endpoints, final List<String> candidateTypes) {
+    public void resumeRun(final PipelineRun run, final List<String> endpoints) {
         try {
             final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            final Optional<String> maybeRunInstanceType = startInstanceWithFallback(run, run.getInstance().getNodeId(),
-                    cloudRegion.getId(), candidateTypes);
+            final Optional<String> maybeRunInstanceType = startInstanceIfNeed(run, run.getInstance().getNodeId(),
+                    cloudRegion.getId());
             if (!maybeRunInstanceType.isPresent()) {
                 return;
             }
@@ -450,7 +453,7 @@ public class DockerContainerOperationManager {
     private void rollbackRunToPausedState(final PipelineRun run,
                                           final CloudInstanceOperationResult startInstanceResult) {
         final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
-                startInstanceResult.getMessage());
+                startInstanceResult != null ? startInstanceResult.getMessage(): StringUtils.EMPTY);
         addRunLog(run, msg, RESUME_RUN_TASK);
         log.warn(msg);
         run.setStatus(TaskStatus.PAUSED);
@@ -538,42 +541,50 @@ public class DockerContainerOperationManager {
         }
     }
 
-    private Optional<String> startInstanceWithFallback(final PipelineRun run, final String nodeId,
-                                                        final Long regionId, final List<String> candidateTypes) {
+    private Optional<String> startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
         try {
             final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
             validateInstanceState(cloudInstanceState);
-            if (cloudInstanceState == CloudInstanceState.STOPPING) {
-                rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
-                        messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
-                return Optional.empty();
+            switch (cloudInstanceState) {
+                case STOPPING:
+                    rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
+                            messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
+                    return Optional.empty();
+                case TERMINATED:
+                    throw new IllegalStateException(messageHelper
+                            .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+                case STOPPED:
+                    CloudInstanceOperationResult lastFailResult = null;
+                    for (final String candidateType : buildCandidateTypes(run.getInstance())) {
+                        log.debug("Attempting to start run {} instance with type {}", run.getId(), candidateType);
+                        cloudFacade.changeInstanceType(regionId, nodeId, candidateType);
+                        final CloudInstanceOperationResult result = cloudFacade.startInstance(regionId, nodeId);
+                        if (result.getStatus() == CloudInstanceOperationResult.Status.OK) {
+                            return Optional.of(candidateType);
+                        }
+                        log.warn("Failed to start run {} instance with type {}: {}", run.getId(), candidateType,
+                                result.getMessage());
+                        lastFailResult = result;
+                    }
+                    rollbackRunToPausedState(run, lastFailResult);
+                    return Optional.empty();
+                default:
+                    return Optional.of(run.getInstance().getNodeType());
             }
-            if (cloudInstanceState == CloudInstanceState.TERMINATED) {
-                throw new IllegalStateException(messageHelper
-                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
-            }
-            if (cloudInstanceState != CloudInstanceState.STOPPED) {
-                return Optional.of(run.getInstance().getNodeType());
-            }
-            CloudInstanceOperationResult lastFailResult = null;
-            for (final String candidateType : candidateTypes) {
-                log.debug("Attempting to start run {} instance with type {}", run.getId(), candidateType);
-                cloudFacade.changeInstanceType(regionId, nodeId, candidateType);
-                final CloudInstanceOperationResult result = cloudFacade.startInstance(regionId, nodeId);
-                if (result.getStatus() == CloudInstanceOperationResult.Status.OK) {
-                    return Optional.of(candidateType);
-                }
-                log.warn("Failed to start run {} instance with type {}: {}", run.getId(), candidateType,
-                        result.getMessage());
-                lastFailResult = result;
-            }
-            rollbackRunToPausedState(run, lastFailResult);
-            return Optional.empty();
         } catch (Exception e) {
             log.error("An error occurred during cloud instance start: " + e.getMessage(), e);
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             return Optional.empty();
         }
+    }
+
+    private List<String> buildCandidateTypes(final RunInstance instance) {
+        final List<String> candidates = new ArrayList<>();
+        candidates.add(instance.getNodeType());
+        ListUtils.emptyIfNull(instance.getFallbackInstanceTypes()).stream()
+                .filter(t -> !candidates.contains(t))
+                .forEach(candidates::add);
+        return candidates;
     }
 
     private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
