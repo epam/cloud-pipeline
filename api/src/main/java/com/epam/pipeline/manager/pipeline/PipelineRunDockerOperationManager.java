@@ -39,14 +39,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -166,7 +167,7 @@ public class PipelineRunDockerOperationManager {
      * @param runId {@link PipelineRun} id for pipeline run to be resumed
      * @return resumed {@link PipelineRun}
      */
-    public PipelineRun resumeRun(Long runId) {
+    public PipelineRun resumeRun(final Long runId) {
         checkAbilityToPerformOperation();
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
@@ -175,6 +176,7 @@ public class PipelineRunDockerOperationManager {
             throw new IllegalArgumentException(messageHelper.getMessage(
                     MessageConstants.ERROR_ACTUAL_CMD_NOT_FOUND, runId));
         }
+        final List<String> candidateInstanceTypes = buildCandidateTypes(pipelineRun.getInstance());
         final Integer totalRunInstances = 1 + Optional.ofNullable(pipelineRun.getNodeCount()).orElse(0);
         runLimitsService.checkRunLaunchLimits(totalRunInstances);
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
@@ -182,8 +184,17 @@ public class PipelineRunDockerOperationManager {
         // prolong the run here in order to get rid off idle notification right after resume
         pipelineRunManager.prolongIdleRun(pipelineRun.getId());
         runCRUDService.updateRunStatus(pipelineRun);
-        dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
+        dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints(), candidateInstanceTypes);
         return pipelineRun;
+    }
+
+    private List<String> buildCandidateTypes(final RunInstance instance) {
+        final List<String> candidates = new ArrayList<>();
+        candidates.add(instance.getNodeType());
+        ListUtils.emptyIfNull(instance.getFallbackInstanceTypes()).stream()
+                .filter(t -> !candidates.contains(t))
+                .forEach(candidates::add);
+        return candidates;
     }
 
     /**
@@ -260,7 +271,8 @@ public class PipelineRunDockerOperationManager {
         try {
             log.debug("Resume run operation will be relaunched for run '{}'", run.getId());
             final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
-            dockerContainerOperationManager.resumeRun(run, tool.getEndpoints());
+            dockerContainerOperationManager.resumeRun(run, tool.getEndpoints(),
+                    buildCandidateTypes(run.getInstance()));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }

@@ -372,13 +372,18 @@ public class DockerContainerOperationManager {
     }
 
     @Async("pauseRunExecutor")
-    public void resumeRun(PipelineRun run, List<String> endpoints) {
+    public void resumeRun(final PipelineRun run, final List<String> endpoints, final List<String> candidateTypes) {
         try {
             final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            final boolean instanceStartedSuccessfully = startInstanceIfNeed(run, run.getInstance().getNodeId(),
-                    cloudRegion.getId());
-            if (!instanceStartedSuccessfully) {
+            final Optional<String> maybeRunInstanceType = startInstanceWithFallback(run, run.getInstance().getNodeId(),
+                    cloudRegion.getId(), candidateTypes);
+            if (!maybeRunInstanceType.isPresent()) {
                 return;
+            }
+            final String runInstanceType = maybeRunInstanceType.get();
+            if (!runInstanceType.equals(run.getInstance().getNodeType())) {
+                run.getInstance().setNodeType(runInstanceType);
+                runManager.updateRunInstance(run.getId(), run.getInstance());
             }
 
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
@@ -533,34 +538,41 @@ public class DockerContainerOperationManager {
         }
     }
 
-    private boolean startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
+    private Optional<String> startInstanceWithFallback(final PipelineRun run, final String nodeId,
+                                                        final Long regionId, final List<String> candidateTypes) {
         try {
             final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
             validateInstanceState(cloudInstanceState);
-            switch (cloudInstanceState) {
-                case STOPPED:
-                    final CloudInstanceOperationResult startInstanceResult =
-                            cloudFacade.startInstance(regionId, nodeId);
-                    if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                        rollbackRunToPausedState(run, startInstanceResult);
-                        return false;
-                    }
-                    break;
-                case STOPPING:
-                    rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
-                            messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
-                    return false;
-                case TERMINATED:
-                    throw new IllegalStateException(messageHelper
-                            .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
-                default:
-                    break;
+            if (cloudInstanceState == CloudInstanceState.STOPPING) {
+                rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
+                        messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
+                return Optional.empty();
             }
-            return true;
+            if (cloudInstanceState == CloudInstanceState.TERMINATED) {
+                throw new IllegalStateException(messageHelper
+                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+            }
+            if (cloudInstanceState != CloudInstanceState.STOPPED) {
+                return Optional.of(run.getInstance().getNodeType());
+            }
+            CloudInstanceOperationResult lastFailResult = null;
+            for (final String candidateType : candidateTypes) {
+                log.debug("Attempting to start run {} instance with type {}", run.getId(), candidateType);
+                cloudFacade.changeInstanceType(regionId, nodeId, candidateType);
+                final CloudInstanceOperationResult result = cloudFacade.startInstance(regionId, nodeId);
+                if (result.getStatus() == CloudInstanceOperationResult.Status.OK) {
+                    return Optional.of(candidateType);
+                }
+                log.warn("Failed to start run {} instance with type {}: {}", run.getId(), candidateType,
+                        result.getMessage());
+                lastFailResult = result;
+            }
+            rollbackRunToPausedState(run, lastFailResult);
+            return Optional.empty();
         } catch (Exception e) {
             log.error("An error occurred during cloud instance start: " + e.getMessage(), e);
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
-            return false;
+            return Optional.empty();
         }
     }
 

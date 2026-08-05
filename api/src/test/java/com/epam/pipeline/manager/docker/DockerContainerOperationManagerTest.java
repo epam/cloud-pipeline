@@ -75,6 +75,7 @@ public class DockerContainerOperationManagerTest {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String NODE_NAME = "node-1";
     private static final String NODE_ID = "node-id";
+    private static final String NODE_TYPE = "m5.large";
     private static final String POD_ID = "pipeline";
     private static final String TEST_TAG = "tag";
     private static final long REGION_ID = 1L;
@@ -141,7 +142,7 @@ public class DockerContainerOperationManagerTest {
         doReturn(CloudInstanceState.STOPPED).when(cloudFacade).getInstanceState(anyLong());
 
         final PipelineRun run = pipelineRun();
-        operationManager.resumeRun(run, Collections.emptyList());
+        operationManager.resumeRun(run, Collections.emptyList(), Collections.singletonList(NODE_TYPE));
 
         assertEquals(run.getStatus(), TaskStatus.PAUSED);
     }
@@ -208,7 +209,7 @@ public class DockerContainerOperationManagerTest {
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
 
-        operationManager.resumeRun(run, Collections.emptyList());
+        operationManager.resumeRun(run, Collections.emptyList(), Collections.singletonList(NODE_TYPE));
 
         verifyResumeProcessing(1);
         verify(cloudFacade).startInstance(REGION_ID, NODE_ID);
@@ -242,7 +243,7 @@ public class DockerContainerOperationManagerTest {
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
 
-        operationManager.resumeRun(run, Collections.emptyList());
+        operationManager.resumeRun(run, Collections.emptyList(), Collections.singletonList(NODE_TYPE));
 
         verifyResumeProcessing(1);
         verify(cloudFacade, never()).startInstance(REGION_ID, NODE_ID);
@@ -260,12 +261,75 @@ public class DockerContainerOperationManagerTest {
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
 
-        operationManager.resumeRun(run, Collections.emptyList());
+        operationManager.resumeRun(run, Collections.emptyList(), Collections.singletonList(NODE_TYPE));
 
         verifyResumeProcessing(1);
         verify(pipelineLauncher, never())
                 .launch(any(), any(), any(), anyBoolean(), anyString(), anyString(), any());
         verify(runManager).updatePipelineStatus(any());
+        assertEquals(TaskStatus.RUNNING, run.getStatus());
+    }
+
+    @Test
+    public void resumeRunShouldUseFirstFallbackTypeOnCapacityError() throws InterruptedException {
+        final String fallbackType = "m5.xlarge";
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+
+        operationManager.resumeRun(run, Collections.emptyList(),
+                java.util.Arrays.asList(NODE_TYPE, fallbackType));
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, fallbackType);
+        verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(fallbackType, run.getInstance().getNodeType());
+        verify(runManager).updateRunInstance(RUN_ID, run.getInstance());
+        assertEquals(TaskStatus.RUNNING, run.getStatus());
+    }
+
+    @Test
+    public void resumeRunShouldRollbackIfAllFallbackTypesFail() {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY));
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+
+        operationManager.resumeRun(run, Collections.emptyList(),
+                java.util.Arrays.asList(NODE_TYPE, "m5.xlarge"));
+
+        verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(TaskStatus.PAUSED, run.getStatus());
+        verify(runManager, never()).updateRunInstance(any(), any());
+    }
+
+    @Test
+    public void resumeRunShouldNotUpdateNodeTypeWhenPrimaryTypeSucceeds() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+
+        operationManager.resumeRun(run, Collections.emptyList(),
+                java.util.Arrays.asList(NODE_TYPE, "m5.xlarge"));
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade, times(1)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(NODE_TYPE, run.getInstance().getNodeType());
+        verify(runManager, never()).updateRunInstance(any(), any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
 
@@ -292,6 +356,7 @@ public class DockerContainerOperationManagerTest {
         final RunInstance instance = new RunInstance();
         instance.setNodeName(NODE_NAME);
         instance.setNodeId(NODE_ID);
+        instance.setNodeType(NODE_TYPE);
         instance.setCloudRegionId(REGION_ID);
         run.setInstance(instance);
         return run;
