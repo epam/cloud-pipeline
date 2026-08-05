@@ -166,6 +166,7 @@ public class PipelineRunDockerOperationManager {
      * @param runId {@link PipelineRun} id for pipeline run to be resumed
      * @return resumed {@link PipelineRun}
      */
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun resumeRun(final Long runId) {
         checkAbilityToPerformOperation();
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
