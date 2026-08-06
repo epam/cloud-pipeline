@@ -59,6 +59,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.dao.metadata.MetadataDao.MetadataParameters.parseData;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class FolderDao extends NamedParameterJdbcDaoSupport {
 
@@ -374,6 +376,21 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             return folder;
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(folderSequence, "Required query folderSequence is not set");
+        Assert.notNull(createFolderQuery, "Required query createFolderQuery is not set");
+        Assert.notNull(updateFolderQuery, "Required query updateFolderQuery is not set");
+        Assert.notNull(loadAllFoldersQuery, "Required query loadAllFoldersQuery is not set");
+        Assert.notNull(deleteFolderQuery, "Required query deleteFolderQuery is not set");
+        Assert.notNull(loadFolderByIdQuery, "Required query loadFolderByIdQuery is not set");
+        Assert.notNull(loadFolderByNameQuery, "Required query loadFolderByNameQuery is not set");
+        Assert.notNull(loadFolderByNameAndParentIdQuery, "Required query loadFolderByNameAndParentIdQuery is not set");
+        Assert.notNull(loadParentFoldersQuery, "Required query loadParentFoldersQuery is not set");
+        Assert.notNull(updateFolderLocksQuery, "Required query updateFolderLocksQuery is not set");
+        Assert.notNull(loadAllProjectsQuery, "Required query loadAllProjectsQuery is not set");
+    }
+
 
     public void setFolderSequence(String folderSequence) {
         this.folderSequence = folderSequence;

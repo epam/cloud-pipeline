@@ -45,6 +45,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.dao.DaoHelper.mapListToSqlArray;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
 
@@ -133,6 +135,17 @@ public class DtsRegistryDao extends NamedParameterJdbcDaoSupport {
                 .update(updateDtsRegistryStatusQuery,
                         DtsRegistryParameters.getStatusParameters(registryId, status));
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(dtsRegistrySequence, "Required query dtsRegistrySequence is not set");
+        Assert.notNull(loadAllDtsRegistriesQuery, "Required query loadAllDtsRegistriesQuery is not set");
+        Assert.notNull(loadDtsRegistryByIdQuery, "Required query loadDtsRegistryByIdQuery is not set");
+        Assert.notNull(loadDtsRegistryByNameQuery, "Required query loadDtsRegistryByNameQuery is not set");
+        Assert.notNull(createDtsRegistryQuery, "Required query createDtsRegistryQuery is not set");
+        Assert.notNull(updateDtsRegistryQuery, "Required query updateDtsRegistryQuery is not set");
+        Assert.notNull(deleteDtsRegistryQuery, "Required query deleteDtsRegistryQuery is not set");
+    }
+
 
     public void setDtsRegistrySequence(String dtsRegistrySequence) {
         this.dtsRegistrySequence = dtsRegistrySequence;

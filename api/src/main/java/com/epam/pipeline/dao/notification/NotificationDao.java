@@ -33,6 +33,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class NotificationDao extends NamedParameterJdbcDaoSupport {
     private Pattern wherePattern = Pattern.compile("@WHERE@");
@@ -180,6 +182,17 @@ public class NotificationDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(notificationSequence, "Required query notificationSequence is not set");
+        Assert.notNull(createNotificationQuery, "Required query createNotificationQuery is not set");
+        Assert.notNull(updateNotificationQuery, "Required query updateNotificationQuery is not set");
+        Assert.notNull(deleteNotificationQuery, "Required query deleteNotificationQuery is not set");
+        Assert.notNull(listNotificationsQuery, "Required query listNotificationsQuery is not set");
+        Assert.notNull(filterNotificationsQuery, "Required query filterNotificationsQuery is not set");
+        Assert.notNull(loadNotificationQuery, "Required query loadNotificationQuery is not set");
+    }
+
 
     public void setNotificationSequence(String notificationSequence) {
         this.notificationSequence = notificationSequence;

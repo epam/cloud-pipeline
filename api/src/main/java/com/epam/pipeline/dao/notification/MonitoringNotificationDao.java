@@ -43,6 +43,8 @@ import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.fasterxml.jackson.core.type.TypeReference;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Autowired
@@ -209,6 +211,22 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
 
         return Stream.of(userIds.split(",")).map(Long::parseLong).collect(Collectors.toList());
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(notificationQueueSequence, "Required query notificationQueueSequence is not set");
+        Assert.notNull(createMonitoringNotificationQuery,
+                "Required query createMonitoringNotificationQuery is not set");
+        Assert.notNull(loadMonitoringNotificationQuery, "Required query loadMonitoringNotificationQuery is not set");
+        Assert.notNull(deleteNotificationsByTemplateIdQuery,
+                "Required query deleteNotificationsByTemplateIdQuery is not set");
+        Assert.notNull(loadAllMonitoringNotificationsQuery,
+                "Required query loadAllMonitoringNotificationsQuery is not set");
+        Assert.notNull(updateNotificationTimestampQuery, "Required query updateNotificationTimestampQuery is not set");
+        Assert.notNull(loadNotificationTimestampQuery, "Required query loadNotificationTimestampQuery is not set");
+        Assert.notNull(deleteNotificationTimestampsByRunIdQuery,
+                "Required query deleteNotificationTimestampsByRunIdQuery is not set");
+    }
+
 
     public void setNotificationQueueSequence(String notificationQueueSequence) {
         this.notificationQueueSequence = notificationQueueSequence;

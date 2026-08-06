@@ -25,6 +25,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DocumentGenerationPropertyDao extends NamedParameterJdbcDaoSupport {
 
@@ -95,6 +97,22 @@ public class DocumentGenerationPropertyDao extends NamedParameterJdbcDaoSupport 
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createDocumentGenerationPropertyQuery,
+                "Required query createDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(updateDocumentGenerationPropertyQuery,
+                "Required query updateDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(deleteDocumentGenerationPropertyQuery,
+                "Required query deleteDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(loadDocumentGenerationPropertyQuery,
+                "Required query loadDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(loadAllDocumentGenerationPropertiesQuery,
+                "Required query loadAllDocumentGenerationPropertiesQuery is not set");
+        Assert.notNull(loadDocumentGenerationPropertiesByPipelineIdQuery,
+                "Required query loadDocumentGenerationPropertiesByPipelineIdQuery is not set");
+    }
+
 
     public void setCreateDocumentGenerationPropertyQuery(String query) {
         this.createDocumentGenerationPropertyQuery = query;

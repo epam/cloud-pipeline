@@ -37,6 +37,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class RunConfigurationDao extends NamedParameterJdbcDaoSupport {
 
@@ -184,6 +186,20 @@ public class RunConfigurationDao extends NamedParameterJdbcDaoSupport {
         }
 
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(configSequence, "Required query configSequence is not set");
+        Assert.notNull(createConfigQuery, "Required query createConfigQuery is not set");
+        Assert.notNull(updateConfigQuery, "Required query updateConfigQuery is not set");
+        Assert.notNull(deleteConfigQuery, "Required query deleteConfigQuery is not set");
+        Assert.notNull(loadConfigQuery, "Required query loadConfigQuery is not set");
+        Assert.notNull(loadAllConfigsQuery, "Required query loadAllConfigsQuery is not set");
+        Assert.notNull(loadAllRootConfigsQuery, "Required query loadAllRootConfigsQuery is not set");
+        Assert.notNull(updateConfigLocksQuery, "Required query updateConfigLocksQuery is not set");
+        Assert.notNull(loadConfigurationWithParentsQuery,
+                "Required query loadConfigurationWithParentsQuery is not set");
+    }
+
 
     public void setConfigSequence(String configSequence) {
         this.configSequence = configSequence;

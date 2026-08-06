@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
@@ -106,6 +108,18 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(loadMetadataClassQuery, "Required query loadMetadataClassQuery is not set");
+        Assert.notNull(metadataClassSequence, "Required query metadataClassSequence is not set");
+        Assert.notNull(createMetadataClassQuery, "Required query createMetadataClassQuery is not set");
+        Assert.notNull(updateMetadataClassExternalNameQuery,
+                "Required query updateMetadataClassExternalNameQuery is not set");
+        Assert.notNull(loadAllMetadataClassesQuery, "Required query loadAllMetadataClassesQuery is not set");
+        Assert.notNull(deleteMetadataClassQuery, "Required query deleteMetadataClassQuery is not set");
+        Assert.notNull(loadMetadataClassByNameQuery, "Required query loadMetadataClassByNameQuery is not set");
+    }
+
 
     public void setLoadMetadataClassQuery(String loadMetadataClassQuery) {
         this.loadMetadataClassQuery = loadMetadataClassQuery;

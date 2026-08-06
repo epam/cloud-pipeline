@@ -76,6 +76,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 @Slf4j
@@ -1569,6 +1571,47 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         run.setServiceUrl(loadServiceUrlByRunId(run.getId()));
         return Optional.of(run);
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(pipelineRunSequence, "Required query pipelineRunSequence is not set");
+        Assert.notNull(createPipelineRunQuery, "Required query createPipelineRunQuery is not set");
+        Assert.notNull(loadAllRunsByVersionIdQuery, "Required query loadAllRunsByVersionIdQuery is not set");
+        Assert.notNull(updateRunStatusQuery, "Required query updateRunStatusQuery is not set");
+        Assert.notNull(updateRunCommitStatusQuery, "Required query updateRunCommitStatusQuery is not set");
+        Assert.notNull(loadRunByIdQuery, "Required query loadRunByIdQuery is not set");
+        Assert.notNull(loadPipelineRunsWithPipelineByIdsQuery,
+                "Required query loadPipelineRunsWithPipelineByIdsQuery is not set");
+        Assert.notNull(loadAllRunsByPipelineIdQuery, "Required query loadAllRunsByPipelineIdQuery is not set");
+        Assert.notNull(loadAllRunsByPipelineIdAndVersionQuery,
+                "Required query loadAllRunsByPipelineIdAndVersionQuery is not set");
+        Assert.notNull(loadRunningAndTerminatedPipelineRunsQuery,
+                "Required query loadRunningAndTerminatedPipelineRunsQuery is not set");
+        Assert.notNull(loadActiveServicesQuery, "Required query loadActiveServicesQuery is not set");
+        Assert.notNull(countActiveServicesQuery, "Required query countActiveServicesQuery is not set");
+        Assert.notNull(loadTerminatingPipelineRunsQuery, "Required query loadTerminatingPipelineRunsQuery is not set");
+        Assert.notNull(searchPipelineRunsBaseQuery, "Required query searchPipelineRunsBaseQuery is not set");
+        Assert.notNull(countFilteredPipelineRunsBaseQuery,
+                "Required query countFilteredPipelineRunsBaseQuery is not set");
+        Assert.notNull(updateRunInstanceQuery, "Required query updateRunInstanceQuery is not set");
+        Assert.notNull(updateRunInstanceStartDateQuery, "Required query updateRunInstanceStartDateQuery is not set");
+        Assert.notNull(updatePodIPQuery, "Required query updatePodIPQuery is not set");
+        Assert.notNull(loadSshPasswordQuery, "Required query loadSshPasswordQuery is not set");
+        Assert.notNull(loadRunsGroupingQuery, "Required query loadRunsGroupingQuery is not set");
+        Assert.notNull(loadRunsCountGroupingQuery, "Required query loadRunsCountGroupingQuery is not set");
+        Assert.notNull(createPipelineRunSidsQuery, "Required query createPipelineRunSidsQuery is not set");
+        Assert.notNull(deleteRunSidsByRunIdQuery, "Required query deleteRunSidsByRunIdQuery is not set");
+        Assert.notNull(loadRunSidsQuery, "Required query loadRunSidsQuery is not set");
+        Assert.notNull(countRunGroupsQuery, "Required query countRunGroupsQuery is not set");
+        Assert.notNull(updatePodStatusQuery, "Required query updatePodStatusQuery is not set");
+        Assert.notNull(loadEnvVarsQuery, "Required query loadEnvVarsQuery is not set");
+        Assert.notNull(updateLastNotificationQuery, "Required query updateLastNotificationQuery is not set");
+        Assert.notNull(updateRunQuery, "Required query updateRunQuery is not set");
+        Assert.notNull(loadRunByPrettyUrlQuery, "Required query loadRunByPrettyUrlQuery is not set");
+        Assert.notNull(loadRunningPipelineRunsQuery, "Required query loadRunningPipelineRunsQuery is not set");
+        Assert.notNull(updateProlongedAtTimeAndLastIdleNotificationTimeQuery,
+                "Required query updateProlongedAtTimeAndLastIdleNotificationTimeQuery is not set");
+    }
+
 
     public void setPipelineRunSequence(String pipelineRunSequence) {
         this.pipelineRunSequence = pipelineRunSequence;

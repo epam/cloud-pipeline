@@ -46,6 +46,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class PipelineDao extends NamedParameterJdbcDaoSupport {
     private Pattern limitPattern = Pattern.compile("@LIMIT@");
@@ -285,6 +287,23 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             return StringUtils.isNotBlank(rawVisibility) ? RunVisibilityPolicy.valueOf(rawVisibility) : null;
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(pipelineSequence, "Required query pipelineSequence is not set");
+        Assert.notNull(createPipelineQuery, "Required query createPipelineQuery is not set");
+        Assert.notNull(updatePipelineQuery, "Required query updatePipelineQuery is not set");
+        Assert.notNull(loadAllPipelinesQuery, "Required query loadAllPipelinesQuery is not set");
+        Assert.notNull(deletePipelineQuery, "Required query deletePipelineQuery is not set");
+        Assert.notNull(loadPipelineByIdQuery, "Required query loadPipelineByIdQuery is not set");
+        Assert.notNull(loadPipelineByNameQuery, "Required query loadPipelineByNameQuery is not set");
+        Assert.notNull(loadPipelineByRepoUrlQuery, "Required query loadPipelineByRepoUrlQuery is not set");
+        Assert.notNull(loadRootPipelinesQuery, "Required query loadRootPipelinesQuery is not set");
+        Assert.notNull(updatePipelineLocksQuery, "Required query updatePipelineLocksQuery is not set");
+        Assert.notNull(loadAllPipelinesWithParentsQuery, "Required query loadAllPipelinesWithParentsQuery is not set");
+        Assert.notNull(loadPipelinesCountQuery, "Required query loadPipelinesCountQuery is not set");
+        Assert.notNull(loadPipelineWithParentsQuery, "Required query loadPipelineWithParentsQuery is not set");
+    }
+
 
     public void setPipelineSequence(String pipelineSequence) {
         this.pipelineSequence = pipelineSequence;

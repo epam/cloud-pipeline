@@ -28,6 +28,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class FilterDao extends NamedParameterJdbcDaoSupport {
 
@@ -80,6 +82,13 @@ public class FilterDao extends NamedParameterJdbcDaoSupport {
                 .replaceFirst(filterExpression.toSQLStatement());
         return getNamedParameterJdbcTemplate().queryForObject(query, params, Integer.class);
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(filterPipelineRunsBaseQuery, "Required query filterPipelineRunsBaseQuery is not set");
+        Assert.notNull(countFilteredPipelineRunsBaseQuery,
+                "Required query countFilteredPipelineRunsBaseQuery is not set");
+    }
+
 
     public void setFilterPipelineRunsBaseQuery(String filterPipelineRunsBaseQuery) {
         this.filterPipelineRunsBaseQuery = filterPipelineRunsBaseQuery;

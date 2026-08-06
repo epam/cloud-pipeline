@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
@@ -222,6 +224,25 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         params.addValue(LIST_PARAMETER, sensitiveKeysList);
         return params;
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(loadMetadataItemsWithIssuesQuery, "Required query loadMetadataItemsWithIssuesQuery is not set");
+        Assert.notNull(uploadMetadataItemKeyQuery, "Required query uploadMetadataItemKeyQuery is not set");
+        Assert.notNull(loadMetadataItemQuery, "Required query loadMetadataItemQuery is not set");
+        Assert.notNull(loadMetadataItemsQuery, "Required query loadMetadataItemsQuery is not set");
+        Assert.notNull(createMetadataItemQuery, "Required query createMetadataItemQuery is not set");
+        Assert.notNull(deleteMetadataItemQuery, "Required query deleteMetadataItemQuery is not set");
+        Assert.notNull(deleteMetadataItemKeyQuery, "Required query deleteMetadataItemKeyQuery is not set");
+        Assert.notNull(uploadMetadataItemQuery, "Required query uploadMetadataItemQuery is not set");
+        Assert.notNull(searchMetadataByClassAndKeyValueQuery,
+                "Required query searchMetadataByClassAndKeyValueQuery is not set");
+        Assert.notNull(searchMetadataByClassAndKeyQuery, "Required query searchMetadataByClassAndKeyQuery is not set");
+        Assert.notNull(searchMetadataEntriesByClassAndKeyValueQuery,
+                "Required query searchMetadataEntriesByClassAndKeyValueQuery is not set");
+        Assert.notNull(searchMetadataEntriesByClassAndKeyQuery,
+                "Required query searchMetadataEntriesByClassAndKeyQuery is not set");
+    }
+
 
     public void setLoadMetadataItemsWithIssuesQuery(String loadMetadataItemsWithIssuesQuery) {
         this.loadMetadataItemsWithIssuesQuery = loadMetadataItemsWithIssuesQuery;

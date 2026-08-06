@@ -34,6 +34,8 @@ import org.springframework.util.CollectionUtils;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.issue.Attachment;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class AttachmentDao extends NamedParameterJdbcDaoSupport {
     private static final String LIST_PARAMETER = "list";
@@ -195,6 +197,24 @@ public class AttachmentDao extends NamedParameterJdbcDaoSupport {
             return attachment;
         };
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createAttachmentQuery, "Required query createAttachmentQuery is not set");
+        Assert.notNull(deleteAttachmentQuery, "Required query deleteAttachmentQuery is not set");
+        Assert.notNull(loadAttachmentsByIssueIdQuery, "Required query loadAttachmentsByIssueIdQuery is not set");
+        Assert.notNull(loadAttachmentIdsByIssueIdsQuery, "Required query loadAttachmentIdsByIssueIdsQuery is not set");
+        Assert.notNull(loadAttachmentsByCommentIdsQuery, "Required query loadAttachmentsByCommentIdsQuery is not set");
+        Assert.notNull(deleteAttachmentsByCommentIdsQuery,
+                "Required query deleteAttachmentsByCommentIdsQuery is not set");
+        Assert.notNull(deleteAttachmentsByIssueIdQuery, "Required query deleteAttachmentsByIssueIdQuery is not set");
+        Assert.notNull(attachmentSequenceName, "Required query attachmentSequenceName is not set");
+        Assert.notNull(updateAttachmentIssueIdQuery, "Required query updateAttachmentIssueIdQuery is not set");
+        Assert.notNull(updateAttachmentCommentIdQuery, "Required query updateAttachmentCommentIdQuery is not set");
+        Assert.notNull(loadAttachmentQuery, "Required query loadAttachmentQuery is not set");
+        Assert.notNull(deleteAttachmentsQuery, "Required query deleteAttachmentsQuery is not set");
+        Assert.notNull(loadAttachmentByNameQuery, "Required query loadAttachmentByNameQuery is not set");
+    }
+
 
     public void setCreateAttachmentQuery(String createAttachmentQuery) {
         this.createAttachmentQuery = createAttachmentQuery;

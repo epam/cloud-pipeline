@@ -32,6 +32,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import jakarta.annotation.PostConstruct;
 
 @RequiredArgsConstructor
 public class RestartRunDao extends DryRunJdbcDaoSupport {
@@ -108,6 +109,17 @@ public class RestartRunDao extends DryRunJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createPipelineRestartRunQuery, "Required query createPipelineRestartRunQuery is not set");
+        Assert.notNull(countPipelineRestartRunQuery, "Required query countPipelineRestartRunQuery is not set");
+        Assert.notNull(loadPipelineRestartedRunForParentRunQuery,
+                "Required query loadPipelineRestartedRunForParentRunQuery is not set");
+        Assert.notNull(loadAllRestartedRunsQuery, "Required query loadAllRestartedRunsQuery is not set");
+        Assert.notNull(loadAllRestartedRunsForInitialRunQuery,
+                "Required query loadAllRestartedRunsForInitialRunQuery is not set");
+    }
+
 
     public void setCreatePipelineRestartRunQuery(String createPipelineRestartRunQuery) {
         this.createPipelineRestartRunQuery = createPipelineRestartRunQuery;

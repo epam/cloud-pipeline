@@ -48,6 +48,8 @@ import java.util.Map;
 
 import static com.epam.pipeline.dao.DaoHelper.mapListToSqlArray;
 import static com.epam.pipeline.dao.user.RoleDao.RoleParameters;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class UserDao extends NamedParameterJdbcDaoSupport {
 
@@ -427,6 +429,28 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             return JsonMapper.convertDataToJsonStringForQuery(data);
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createUserQuery, "Required query createUserQuery is not set");
+        Assert.notNull(addRoleToUserQuery, "Required query addRoleToUserQuery is not set");
+        Assert.notNull(loadUserByNameQuery, "Required query loadUserByNameQuery is not set");
+        Assert.notNull(loadUserByIdQuery, "Required query loadUserByIdQuery is not set");
+        Assert.notNull(deleteUserRolesQuery, "Required query deleteUserRolesQuery is not set");
+        Assert.notNull(deleteUserQuery, "Required query deleteUserQuery is not set");
+        Assert.notNull(userSequence, "Required query userSequence is not set");
+        Assert.notNull(updateUserQuery, "Required query updateUserQuery is not set");
+        Assert.notNull(loadAllUsersQuery, "Required query loadAllUsersQuery is not set");
+        Assert.notNull(findUsersByPrefixQuery, "Required query findUsersByPrefixQuery is not set");
+        Assert.notNull(findUsersByAttributeQuery, "Required query findUsersByAttributeQuery is not set");
+        Assert.notNull(loadUserListQuery, "Required query loadUserListQuery is not set");
+        Assert.notNull(deleteRoleFromUserQuery, "Required query deleteRoleFromUserQuery is not set");
+        Assert.notNull(loadUsersByGroupQuery, "Required query loadUsersByGroupQuery is not set");
+        Assert.notNull(loadUserByGroupQuery, "Required query loadUserByGroupQuery is not set");
+        Assert.notNull(findGroupsByPrefixQuery, "Required query findGroupsByPrefixQuery is not set");
+        Assert.notNull(loadAllGroupsQuery, "Required query loadAllGroupsQuery is not set");
+        Assert.notNull(loadUsersByNamesQuery, "Required query loadUsersByNamesQuery is not set");
+    }
+
 
     public void setCreateUserQuery(String createUserQuery) {
         this.createUserQuery = createUserQuery;

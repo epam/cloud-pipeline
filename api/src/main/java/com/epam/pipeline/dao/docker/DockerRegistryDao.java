@@ -39,6 +39,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
 
@@ -315,6 +317,26 @@ public class DockerRegistryDao extends NamedParameterJdbcDaoSupport {
             return registry;
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(loadAllDockerRegistriesQuery, "Required query loadAllDockerRegistriesQuery is not set");
+        Assert.notNull(loadDockerRegistryByIdQuery, "Required query loadDockerRegistryByIdQuery is not set");
+        Assert.notNull(dockerRegistrySequence, "Required query dockerRegistrySequence is not set");
+        Assert.notNull(createDockerRegistryQuery, "Required query createDockerRegistryQuery is not set");
+        Assert.notNull(deleteDockerRegistryQuery, "Required query deleteDockerRegistryQuery is not set");
+        Assert.notNull(updateDockerRegistryQuery, "Required query updateDockerRegistryQuery is not set");
+        Assert.notNull(loadDockerRegistryByNameQuery, "Required query loadDockerRegistryByNameQuery is not set");
+        Assert.notNull(loadDockerRegistriesWithCertsQuery,
+                "Required query loadDockerRegistriesWithCertsQuery is not set");
+        Assert.notNull(loadDockerRegistryByExtUrlQuery, "Required query loadDockerRegistryByExtUrlQuery is not set");
+        Assert.notNull(loadDockerRegistryWithContentQuery,
+                "Required query loadDockerRegistryWithContentQuery is not set");
+        Assert.notNull(loadDockerRegistriesWithContentQuery,
+                "Required query loadDockerRegistriesWithContentQuery is not set");
+        Assert.notNull(loadDockerRegistriesWithSecurityScanEnabledQuery,
+                "Required query loadDockerRegistriesWithSecurityScanEnabledQuery is not set");
+    }
+
     public void setLoadAllDockerRegistriesQuery(String loadAllDockerRegistriesQuery) {
         this.loadAllDockerRegistriesQuery = loadAllDockerRegistriesQuery;
     }

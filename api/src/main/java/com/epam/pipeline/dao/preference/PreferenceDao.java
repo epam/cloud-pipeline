@@ -31,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 @Slf4j
 public class PreferenceDao extends NamedParameterJdbcDaoSupport {
@@ -112,6 +114,14 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(upsertPreferenceQuery, "Required query upsertPreferenceQuery is not set");
+        Assert.notNull(loadPreferenceByNameQuery, "Required query loadPreferenceByNameQuery is not set");
+        Assert.notNull(loadAllPreferencesQuery, "Required query loadAllPreferencesQuery is not set");
+        Assert.notNull(deletePreferenceQuery, "Required query deletePreferenceQuery is not set");
+    }
+
 
     public void setUpsertPreferenceQuery(String upsertPreferenceQuery) {
         this.upsertPreferenceQuery = upsertPreferenceQuery;

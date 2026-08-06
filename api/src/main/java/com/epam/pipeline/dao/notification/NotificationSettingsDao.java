@@ -34,6 +34,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
 
 public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
 
@@ -73,6 +74,15 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteNotificationSettingsById(long id) {
         getJdbcTemplate().update(deleteNotificationSettingsQuery, id);
+    }
+
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createNotificationSettingsQuery, "Required query createNotificationSettingsQuery is not set");
+        Assert.notNull(loadNotificationSettingsQuery, "Required query loadNotificationSettingsQuery is not set");
+        Assert.notNull(loadAllNotificationSettingsQuery, "Required query loadAllNotificationSettingsQuery is not set");
+        Assert.notNull(deleteNotificationSettingsQuery, "Required query deleteNotificationSettingsQuery is not set");
+        Assert.notNull(updateNotificationSettingsQuery, "Required query updateNotificationSettingsQuery is not set");
     }
 
     public void setCreateNotificationSettingsQuery(String createNotificationSettingsQuery) {

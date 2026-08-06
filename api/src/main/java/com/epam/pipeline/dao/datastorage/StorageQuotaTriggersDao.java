@@ -36,6 +36,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
 
@@ -141,6 +143,11 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
     public void setLoadAllQuotaTriggersQuery(final String loadAllQuotaTriggersQuery) {
         this.loadAllQuotaTriggersQuery = loadAllQuotaTriggersQuery;
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(deleteQuotaTriggerQuery, "Required query deleteQuotaTriggerQuery is not set");
+    }
+
 
     public void setDeleteQuotaTriggerQuery(String deleteQuotaTriggerQuery) {
         this.deleteQuotaTriggerQuery = deleteQuotaTriggerQuery;

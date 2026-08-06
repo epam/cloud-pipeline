@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class IssueCommentDao extends NamedParameterJdbcDaoSupport {
 
@@ -119,6 +121,18 @@ public class IssueCommentDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().update(deleteCommentsForIssuesListQuery,
                 Collections.singletonMap("ISSUES_IDS", issuesIds));
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(issueCommentSequence, "Required query issueCommentSequence is not set");
+        Assert.notNull(createIssueCommentQuery, "Required query createIssueCommentQuery is not set");
+        Assert.notNull(loadIssueCommentByIdQuery, "Required query loadIssueCommentByIdQuery is not set");
+        Assert.notNull(loadAllCommentsForIssueQuery, "Required query loadAllCommentsForIssueQuery is not set");
+        Assert.notNull(updateIssueCommentQuery, "Required query updateIssueCommentQuery is not set");
+        Assert.notNull(deleteIssueCommentQuery, "Required query deleteIssueCommentQuery is not set");
+        Assert.notNull(deleteAllCommentsForIssueQuery, "Required query deleteAllCommentsForIssueQuery is not set");
+        Assert.notNull(loadAllCommentsForIssuesQuery, "Required query loadAllCommentsForIssuesQuery is not set");
+    }
+
 
     public void setIssueCommentSequence(String issueCommentSequence) {
         this.issueCommentSequence = issueCommentSequence;

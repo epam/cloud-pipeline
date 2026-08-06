@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
 
@@ -195,6 +197,21 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
             return JsonMapper.parseData(data, new TypeReference<List<ConfigurationEntry>>() {});
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(toolVersionSequenceQuery, "Required query toolVersionSequenceQuery is not set");
+        Assert.notNull(createToolVersionQuery, "Required query createToolVersionQuery is not set");
+        Assert.notNull(updateToolVersionQuery, "Required query updateToolVersionQuery is not set");
+        Assert.notNull(deleteToolVersionsQuery, "Required query deleteToolVersionsQuery is not set");
+        Assert.notNull(deleteToolVersionQuery, "Required query deleteToolVersionQuery is not set");
+        Assert.notNull(loadToolVersionQuery, "Required query loadToolVersionQuery is not set");
+        Assert.notNull(loadToolVersionSettingsQuery, "Required query loadToolVersionSettingsQuery is not set");
+        Assert.notNull(createToolVersionWithSettingsQuery,
+                "Required query createToolVersionWithSettingsQuery is not set");
+        Assert.notNull(updateToolVersionWithSettingsQuery,
+                "Required query updateToolVersionWithSettingsQuery is not set");
+    }
+
 
     public void setToolVersionSequenceQuery(String toolVersionSequenceQuery) {
         this.toolVersionSequenceQuery = toolVersionSequenceQuery;

@@ -26,6 +26,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
 
@@ -104,6 +106,17 @@ public class DataStorageRuleDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createDataStorageRuleQuery, "Required query createDataStorageRuleQuery is not set");
+        Assert.notNull(deleteDataStorageRuleQuery, "Required query deleteDataStorageRuleQuery is not set");
+        Assert.notNull(loadAllDataStorageRulesQuery, "Required query loadAllDataStorageRulesQuery is not set");
+        Assert.notNull(loadDataStorageRulesForPipelineQuery,
+                "Required query loadDataStorageRulesForPipelineQuery is not set");
+        Assert.notNull(loadDataStorageRuleQuery, "Required query loadDataStorageRuleQuery is not set");
+        Assert.notNull(deleteRulesByPipelineQuery, "Required query deleteRulesByPipelineQuery is not set");
+    }
+
 
     public void setCreateDataStorageRuleQuery(String createDataStorageRuleQuery) {
         this.createDataStorageRuleQuery = createDataStorageRuleQuery;

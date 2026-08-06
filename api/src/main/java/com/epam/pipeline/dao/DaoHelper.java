@@ -42,6 +42,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import jakarta.annotation.PostConstruct;
 
 public class DaoHelper extends NamedParameterJdbcDaoSupport {
 
@@ -206,6 +207,12 @@ public class DaoHelper extends NamedParameterJdbcDaoSupport {
         final int integer = rs.getInt(parameter);
         return !rs.wasNull() ? integer : null;
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createIdQuery, "Required query createIdQuery is not set");
+        Assert.notNull(createIdsQuery, "Required query createIdsQuery is not set");
+    }
+
 
     public void setCreateIdQuery(String createIdQuery) {
         this.createIdQuery = createIdQuery;

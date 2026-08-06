@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
+import jakarta.annotation.PostConstruct;
 
 public class ToolDao extends NamedParameterJdbcDaoSupport {
     private static final String LIST_PARAMETER = "list";
@@ -360,6 +361,29 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         }
         return tool;
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(toolSequence, "Required query toolSequence is not set");
+        Assert.notNull(toolIconSequence, "Required query toolIconSequence is not set");
+        Assert.notNull(createToolQuery, "Required query createToolQuery is not set");
+        Assert.notNull(loadAllToolsQuery, "Required query loadAllToolsQuery is not set");
+        Assert.notNull(deleteToolQuery, "Required query deleteToolQuery is not set");
+        Assert.notNull(loadToolByRegistryAndImageQuery, "Required query loadToolByRegistryAndImageQuery is not set");
+        Assert.notNull(updateToolQuery, "Required query updateToolQuery is not set");
+        Assert.notNull(updateOwnerQuery, "Required query updateOwnerQuery is not set");
+        Assert.notNull(loadToolQuery, "Required query loadToolQuery is not set");
+        Assert.notNull(loadToolsByGroupQuery, "Required query loadToolsByGroupQuery is not set");
+        Assert.notNull(loadToolByGroupAndImageQuery, "Required query loadToolByGroupAndImageQuery is not set");
+        Assert.notNull(loadToolsFromOtherRegistriesByImageQuery,
+                "Required query loadToolsFromOtherRegistriesByImageQuery is not set");
+        Assert.notNull(loadToolsWithIssueCountByGroupQuery,
+                "Required query loadToolsWithIssueCountByGroupQuery is not set");
+        Assert.notNull(updateToolIconQuery, "Required query updateToolIconQuery is not set");
+        Assert.notNull(updateToolIconIdQuery, "Required query updateToolIconIdQuery is not set");
+        Assert.notNull(loadToolIconQuery, "Required query loadToolIconQuery is not set");
+        Assert.notNull(deleteToolIconQuery, "Required query deleteToolIconQuery is not set");
+    }
+
 
     public void setToolSequence(String toolSequence) {
         this.toolSequence = toolSequence;

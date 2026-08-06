@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
@@ -343,6 +345,25 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createAttributeQuery, "Required query createAttributeQuery is not set");
+        Assert.notNull(insertAttributeValueQuery, "Required query insertAttributeValueQuery is not set");
+        Assert.notNull(loadAllAttributesValuesQuery, "Required query loadAllAttributesValuesQuery is not set");
+        Assert.notNull(loadAllAttributesValuesWithoutLinksQuery,
+                "Required query loadAllAttributesValuesWithoutLinksQuery is not set");
+        Assert.notNull(loadAttributeValuesQuery, "Required query loadAttributeValuesQuery is not set");
+        Assert.notNull(loadAttributesValuesQuery, "Required query loadAttributesValuesQuery is not set");
+        Assert.notNull(deleteAttributeValuesQuery, "Required query deleteAttributeValuesQuery is not set");
+        Assert.notNull(deleteAttributeValueQuery, "Required query deleteAttributeValueQuery is not set");
+        Assert.notNull(insertAttributeValueLinkQuery, "Required query insertAttributeValueLinkQuery is not set");
+        Assert.notNull(deleteAttributeValueLinkQuery, "Required query deleteAttributeValueLinkQuery is not set");
+        Assert.notNull(updateAttributeQuery, "Required query updateAttributeQuery is not set");
+        Assert.notNull(loadAttributeValuesByAttributeIdQuery,
+                "Required query loadAttributeValuesByAttributeIdQuery is not set");
+        Assert.notNull(categoricalAttributeSequence, "Required query categoricalAttributeSequence is not set");
+    }
+
 
     public void setCreateAttributeQuery(String createAttributeQuery) {
         this.createAttributeQuery = createAttributeQuery;

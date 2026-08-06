@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.dao.user.UserDao.UserParameters;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class RoleDao extends NamedParameterJdbcDaoSupport {
 
@@ -213,6 +215,21 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createRoleQuery, "Required query createRoleQuery is not set");
+        Assert.notNull(deleteRoleQuery, "Required query deleteRoleQuery is not set");
+        Assert.notNull(loadRoleQuery, "Required query loadRoleQuery is not set");
+        Assert.notNull(loadAllRolesQuery, "Required query loadAllRolesQuery is not set");
+        Assert.notNull(roleSequence, "Required query roleSequence is not set");
+        Assert.notNull(loadRoleListQuery, "Required query loadRoleListQuery is not set");
+        Assert.notNull(loadRolesWithUsersQuery, "Required query loadRolesWithUsersQuery is not set");
+        Assert.notNull(deleteRolesReferencesQuery, "Required query deleteRolesReferencesQuery is not set");
+        Assert.notNull(loadRoleWithUsersQuery, "Required query loadRoleWithUsersQuery is not set");
+        Assert.notNull(loadRoleByNameQuery, "Required query loadRoleByNameQuery is not set");
+        Assert.notNull(loadUserDefaultRolesQuery, "Required query loadUserDefaultRolesQuery is not set");
+    }
+
 
     public void setCreateRoleQuery(String createRoleQuery) {
         this.createRoleQuery = createRoleQuery;

@@ -25,6 +25,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class NotificationTemplateDao extends NamedParameterJdbcDaoSupport {
 
@@ -92,6 +94,16 @@ public class NotificationTemplateDao extends NamedParameterJdbcDaoSupport {
         }
 
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createNotificationTemplateQuery, "Required query createNotificationTemplateQuery is not set");
+        Assert.notNull(loadNotificationTemplateQuery, "Required query loadNotificationTemplateQuery is not set");
+        Assert.notNull(loadAllNotificationTemplatesQuery,
+                "Required query loadAllNotificationTemplatesQuery is not set");
+        Assert.notNull(updateNotificationTemplateQuery, "Required query updateNotificationTemplateQuery is not set");
+        Assert.notNull(deleteNotificationTemplateQuery, "Required query deleteNotificationTemplateQuery is not set");
+    }
+
 
     public void setCreateNotificationTemplateQuery(String createNotificationTemplateQuery) {
         this.createNotificationTemplateQuery = createNotificationTemplateQuery;

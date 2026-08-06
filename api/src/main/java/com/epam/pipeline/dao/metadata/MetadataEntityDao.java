@@ -62,6 +62,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.lang.String.format;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
 
@@ -656,6 +658,42 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             return metadataClass;
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(metadataEntitySequence, "Required query metadataEntitySequence is not set");
+        Assert.notNull(createMetadataEntityQuery, "Required query createMetadataEntityQuery is not set");
+        Assert.notNull(updateMetadataEntityQuery, "Required query updateMetadataEntityQuery is not set");
+        Assert.notNull(updateMetadataEntityDataKeyQuery, "Required query updateMetadataEntityDataKeyQuery is not set");
+        Assert.notNull(loadAllMetadataEntitiesQuery, "Required query loadAllMetadataEntitiesQuery is not set");
+        Assert.notNull(loadMetadataEntityByIdQuery, "Required query loadMetadataEntityByIdQuery is not set");
+        Assert.notNull(loadRootMetadataEntityQuery, "Required query loadRootMetadataEntityQuery is not set");
+        Assert.notNull(loadMetadataEntityByClassNameAndFolderIdQuery,
+                "Required query loadMetadataEntityByClassNameAndFolderIdQuery is not set");
+        Assert.notNull(deleteMetadataEntityDataKeyQuery, "Required query deleteMetadataEntityDataKeyQuery is not set");
+        Assert.notNull(deleteMetadataEntityItemQuery, "Required query deleteMetadataEntityItemQuery is not set");
+        Assert.notNull(recursiveFilterQuery, "Required query recursiveFilterQuery is not set");
+        Assert.notNull(baseFilterQuery, "Required query baseFilterQuery is not set");
+        Assert.notNull(baseFacetQuery, "Required query baseFacetQuery is not set");
+        Assert.notNull(searchClauseQuery, "Required query searchClauseQuery is not set");
+        Assert.notNull(recursiveFilterCountQuery, "Required query recursiveFilterCountQuery is not set");
+        Assert.notNull(baseFilterCountQuery, "Required query baseFilterCountQuery is not set");
+        Assert.notNull(loadMetadataKeysQuery, "Required query loadMetadataKeysQuery is not set");
+        Assert.notNull(loadByExternalIdsQuery, "Required query loadByExternalIdsQuery is not set");
+        Assert.notNull(loadBylIdsQuery, "Required query loadBylIdsQuery is not set");
+        Assert.notNull(loadAllReferencesQuery, "Required query loadAllReferencesQuery is not set");
+        Assert.notNull(loadMetadataKeysRecursiveQuery, "Required query loadMetadataKeysRecursiveQuery is not set");
+        Assert.notNull(loadEntitiesInProjectQuery, "Required query loadEntitiesInProjectQuery is not set");
+        Assert.notNull(deleteMetadataInFolderQuery, "Required query deleteMetadataInFolderQuery is not set");
+        Assert.notNull(externalIdClauseQuery, "Required query externalIdClauseQuery is not set");
+        Assert.notNull(insertCopiesOfExistentMetadataEntitiesQuery,
+                "Required query insertCopiesOfExistentMetadataEntitiesQuery is not set");
+        Assert.notNull(deleteMetadataEntitiesQuery, "Required query deleteMetadataEntitiesQuery is not set");
+        Assert.notNull(deleteMetadataClassInProjectQuery,
+                "Required query deleteMetadataClassInProjectQuery is not set");
+        Assert.notNull(loadMetadataEntityWithParentsQuery,
+                "Required query loadMetadataEntityWithParentsQuery is not set");
+    }
+
 
     public void setMetadataEntitySequence(String metadataEntitySequence) {
         this.metadataEntitySequence = metadataEntitySequence;
