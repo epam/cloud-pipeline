@@ -75,6 +75,9 @@ public class DockerContainerOperationManagerTest {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String NODE_NAME = "node-1";
     private static final String NODE_ID = "node-id";
+    private static final String NODE_TYPE = "m5.large";
+    private static final String FALLBACK_NODE_TYPE = "m5.xlarge";
+    private static final String FALLBACK_NODE_TYPE_2 = "m5.2xlarge";
     private static final String POD_ID = "pipeline";
     private static final String TEST_TAG = "tag";
     private static final long REGION_ID = 1L;
@@ -269,6 +272,128 @@ public class DockerContainerOperationManagerTest {
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
 
+    @Test
+    public void resumeRunShouldUseFirstFallbackTypeOnCapacityError() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(FALLBACK_NODE_TYPE));
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
+        verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(FALLBACK_NODE_TYPE, run.getInstance().getNodeType());
+        verify(runManager).updateRunInstance(RUN_ID, run.getInstance());
+        assertEquals(TaskStatus.RUNNING, run.getStatus());
+    }
+
+    @Test
+    public void resumeRunShouldRollbackIfAllFallbackTypesFail() {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY));
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(FALLBACK_NODE_TYPE));
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(TaskStatus.PAUSED, run.getStatus());
+        verify(runManager, never()).updateRunInstance(any(), any());
+    }
+
+    @Test
+    public void resumeRunShouldNotUpdateNodeTypeWhenPrimaryTypeSucceeds() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.getInstance().setFallbackInstanceTypes(Collections.singletonList(FALLBACK_NODE_TYPE));
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade, times(1)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(NODE_TYPE, run.getInstance().getNodeType());
+        verify(runManager, never()).updateRunInstance(any(), any());
+        assertEquals(TaskStatus.RUNNING, run.getStatus());
+    }
+
+    @Test
+    public void buildCandidateTypesShouldReturnPrimaryOnlyWhenNoFallbacks() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade, times(1)).startInstance(REGION_ID, NODE_ID);
+    }
+
+    @Test
+    public void buildCandidateTypesShouldIncludeFallbacksAfterPrimary() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.getInstance().setFallbackInstanceTypes(java.util.Arrays.asList(FALLBACK_NODE_TYPE, FALLBACK_NODE_TYPE_2));
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE_2);
+        verify(cloudFacade, times(3)).startInstance(REGION_ID, NODE_ID);
+    }
+
+    @Test
+    public void buildCandidateTypesShouldDeduplicateFallbacksAgainstPrimary() throws InterruptedException {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
+        when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        // NODE_TYPE duplicate is filtered out, only FALLBACK_NODE_TYPE remains as fallback
+        run.getInstance().setFallbackInstanceTypes(java.util.Arrays.asList(NODE_TYPE, FALLBACK_NODE_TYPE));
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
+        verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
+        verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
+    }
+
     private void assertRunStateAfterPause(final PipelineRun run, final String... expectedTags) {
         final Map<String, String> updatedTags = run.getTags();
         assertEquals(expectedTags.length, updatedTags.size());
@@ -292,6 +417,7 @@ public class DockerContainerOperationManagerTest {
         final RunInstance instance = new RunInstance();
         instance.setNodeName(NODE_NAME);
         instance.setNodeId(NODE_ID);
+        instance.setNodeType(NODE_TYPE);
         instance.setCloudRegionId(REGION_ID);
         run.setInstance(instance);
         return run;

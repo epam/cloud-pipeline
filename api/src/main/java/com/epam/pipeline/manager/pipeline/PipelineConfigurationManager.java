@@ -154,12 +154,18 @@ public class PipelineConfigurationManager {
     }
 
     public void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
-        final List<String> fallbackTypes = configuration.getFallbackInstanceTypes();
+        validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
+    }
+
+    public void validateFallbackInstanceTypesCount(final List<String> fallbackTypes) {
         if (CollectionUtils.isEmpty(fallbackTypes)) {
             return;
         }
         final int maxCount = preferenceManager.getPreference(
                 SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxCount == -1) {
+            return;
+        }
         Assert.isTrue(fallbackTypes.size() <= maxCount,
                 messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
                         fallbackTypes.size(), maxCount));

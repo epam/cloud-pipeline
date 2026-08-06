@@ -88,6 +88,14 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     void terminateNode(T region, String internalIp, String nodeName);
 
     /**
+     * Changes instance type of a previously stopped cloud instance.
+     * Default implementation is a no-op for providers that do not support this operation.
+     */
+    default void changeInstanceType(T region, String instanceId, String instanceType) {
+        log.warn("changeInstanceType is not supported for provider {}", region.getProvider());
+    }
+
+    /**
      * Starts previously stopped cloud instance
      * @param instanceId
      * @return CloudInstanceOperationResult object as result of operation. This object contains status and massage.
