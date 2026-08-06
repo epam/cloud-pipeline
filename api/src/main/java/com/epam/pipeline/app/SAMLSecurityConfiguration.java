@@ -237,7 +237,6 @@ public class SAMLSecurityConfiguration {
                 "/restapi/swagger-resources/**",
                 "/restapi/swagger-ui.html",
                 "/restapi/swagger-ui/**",
-                "/restapi/v2/api-docs/**",
                 "/restapi/v3/api-docs/**"
         );
         return paths.toArray(new String[0]);
