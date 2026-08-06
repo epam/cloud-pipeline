@@ -31,6 +31,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.saml2.core.Saml2Error;
+import org.springframework.security.saml2.core.Saml2ErrorCodes;
+import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
 import org.springframework.security.saml2.provider.service.authentication.DefaultSaml2AuthenticatedPrincipal;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
@@ -48,6 +51,7 @@ import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuc
 import org.springframework.lang.Nullable;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.CLOCK_SKEW;
 import static org.opensaml.saml.saml2.assertion.SAML2AssertionValidationParameters.STMT_AUTHN_MAX_TIME;
@@ -116,6 +120,7 @@ public class SecurityConfiguration {
                         .authenticationManager(samlAuthenticationProviderManager(samlAuthenticationProvider()))
                         .loginProcessingUrl("/saml/SSO")
                 )
+                .saml2Metadata(saml2 -> saml2.metadataUrl("/saml/metadata"))
                 .logout(logout -> logout
                         .logoutSuccessHandler(logoutSuccessHandler())
                         .logoutUrl("/saml/logout")
@@ -155,6 +160,21 @@ public class SecurityConfiguration {
                     params.put(CLOCK_SKEW, Duration.ofSeconds(RESPONSE_SKEW));
                     params.put(STMT_AUTHN_MAX_TIME, Duration.ofSeconds(maxAuthentificationAge));
                 }));
+        // Allow IdP-initiated SSO: filter out INVALID_IN_RESPONSE_TO, keep all other validation errors
+        authenticationProvider.setResponseValidator(responseToken -> {
+            final Saml2ResponseValidatorResult result = OpenSaml4AuthenticationProvider
+                    .createDefaultResponseValidator()
+                    .convert(responseToken);
+            if (result == null || result.getErrors().isEmpty()) {
+                return Saml2ResponseValidatorResult.success();
+            }
+            final var remainingErrors = result.getErrors().stream()
+                    .filter(e -> !Saml2ErrorCodes.INVALID_IN_RESPONSE_TO.equals(e.getErrorCode()))
+                    .collect(Collectors.toList());
+            return remainingErrors.isEmpty()
+                    ? Saml2ResponseValidatorResult.success()
+                    : Saml2ResponseValidatorResult.failure(remainingErrors.toArray(new Saml2Error[0]));
+        });
         return authenticationProvider;
     }
 
