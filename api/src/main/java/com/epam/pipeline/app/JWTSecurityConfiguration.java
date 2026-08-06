@@ -38,13 +38,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,6 +68,9 @@ public class JWTSecurityConfiguration {
 
     @Value("${api.security.redirected.urls:/restapi/route,/restapi/**/prolong**,/restapi/static-resources/**}")
     private String[] redirectedResources;
+
+    @Value("${saml.sso.registration-id:SSO}")
+    private String samlRegistrationId;
     
     @Getter
     @Value("${api.security.anonymous.urls:/restapi/route}")
@@ -97,6 +100,10 @@ public class JWTSecurityConfiguration {
     public SecurityFilterChain jwtSecurityFilterChain(final HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
             .exceptionHandling(exceptions -> exceptions
+                .defaultAuthenticationEntryPointFor(
+                    new LoginUrlAuthenticationEntryPoint(
+                        "/saml2/authenticate/" + samlRegistrationId),
+                    getRedirectRequestMatcher())
                 .defaultAuthenticationEntryPointFor(
                     new RestAuthenticationEntryPoint(),
                     new AntPathRequestMatcher(getSecuredResources())))
