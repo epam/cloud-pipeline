@@ -118,11 +118,11 @@ jacocoTestReport {
     }
 }
 
-def jreURL = "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/"
-def windowsJre = "OpenJDK8U-jre_x64_windows_hotspot_8u292b10.zip"
-def windowsJrePath = "jdk8u292-b10-jre"
-def linuxJre = "openjdk-1.8.0_222_linux-x64_bin.tar.gz"
-def linuxJrePath = "openjdk-8u222-b10"
+def jreURL = "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/java/"
+def windowsJre = "amazon-corretto-21.0.12.8.1-windows-x64-jdk.zip"
+def windowsJrePath = "jdk21.0.12_8"
+def linuxJre = "amazon-corretto-21.0.12.8.1-linux-x64.tar.gz"
+def linuxJrePath = "amazon-corretto-21.0.12.8.1-linux-x64"
 
 task customStartScriptsWin(type: CreateStartScripts) {
     applicationName = 'dts'
