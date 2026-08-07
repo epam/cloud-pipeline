@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -45,11 +46,11 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -129,6 +130,7 @@ public class PlatformUsageCreditsLaunchService {
     private static final int GPU_DEFAULT_WEIGHT = 100;
 
     private final PreferenceManager preferenceManager;
+    private final ContextualPreferenceManager contextualPreferenceManager;
     private final PlatformUsageCreditsUserBalanceCRUDService userBalanceService;
     private final UserManager userManager;
     private final PipelineRunCRUDService pipelineRunCRUDService;
@@ -308,12 +310,12 @@ public class PlatformUsageCreditsLaunchService {
         final Optional<InstanceOffer> primaryOffer = resolvePrimaryOffer(instance,
                 MapUtils.emptyIfNull(run.convertParamsToMap()));
 
-        if (instance == null || instance.getNodeType() == null || !primaryOffer.isPresent()) {
+        if (Objects.isNull(instance) || StringUtils.isBlank(instance.getNodeType()) || !primaryOffer.isPresent()) {
             return Optional.empty();
         }
 
         // node already provisioned — use the actual instance type
-        if (instance.getNodeId() != null) {
+        if (StringUtils.isNotBlank(instance.getNodeId())) {
             return primaryOffer;
         }
 
@@ -342,7 +344,7 @@ public class PlatformUsageCreditsLaunchService {
     // for instance
     private Optional<InstanceOffer> resolvePrimaryOffer(final RunInstance instance,
                                                         final Map<String, PipeConfValueVO> params) {
-        if (instance == null || instance.getNodeType() == null) {
+        if (Objects.isNull(instance) || StringUtils.isBlank(instance.getNodeType())) {
             return Optional.empty();
         }
 
@@ -398,7 +400,9 @@ public class PlatformUsageCreditsLaunchService {
     private int userBalance(final PipelineUser user) {
         return userBalanceService.findByUserId(user.getId())
                 .map(PlatformUsageCreditsUserBalance::getCurrentValue)
-                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.USAGE_CREDITS_DEFAULT));
+                .orElseGet(() -> Integer.parseInt(contextualPreferenceManager.search(
+                        Collections.singletonList(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey()),
+                        user).getValue()));
     }
 
     private Map<String, Integer> weights() {

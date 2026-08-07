@@ -22,6 +22,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -29,6 +30,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -95,6 +97,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
     private static final int ZERO_WORKERS = 0;
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final ContextualPreferenceManager contextualPreferenceManager =
+            mock(ContextualPreferenceManager.class);
     private final PlatformUsageCreditsUserBalanceCRUDService crudService =
             mock(PlatformUsageCreditsUserBalanceCRUDService.class);
     private final UserManager userManager = mock(UserManager.class);
@@ -102,8 +106,8 @@ public class PlatformUsageCreditsLaunchServiceTest {
     private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final PlatformUsageCreditsLaunchService service = new PlatformUsageCreditsLaunchService(
-            preferenceManager, crudService, userManager, pipelineRunCRUDService,
-            instanceOfferManager, messageHelper);
+            preferenceManager, contextualPreferenceManager, crudService, userManager,
+            pipelineRunCRUDService, instanceOfferManager, messageHelper);
 
     // =========================================================================
     // checkCreditsForRunLaunch
@@ -208,8 +212,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
     public void runLaunchUsesDefaultBalanceWhenNoBalanceRow() {
         mockUser();
         mockWeights();
-        doReturn(Optional.empty()).when(crudService).findByUserId(USER_ID);
-        doReturn(DEFAULT_BALANCE).when(preferenceManager).getPreference(SystemPreferences.USAGE_CREDITS_DEFAULT);
+        mockDefaultBalance(DEFAULT_BALANCE);
         mockNoActiveRuns();
         // default=2000, required=4 → allowed
         service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
@@ -859,6 +862,13 @@ public class PlatformUsageCreditsLaunchServiceTest {
         final PlatformUsageCreditsUserBalance balance = new PlatformUsageCreditsUserBalance();
         balance.setCurrentValue(value);
         doReturn(Optional.of(balance)).when(crudService).findByUserId(USER_ID);
+    }
+
+    private void mockDefaultBalance(final int value) {
+        doReturn(Optional.empty()).when(crudService).findByUserId(USER_ID);
+        doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey(),
+                String.valueOf(value)))
+                .when(contextualPreferenceManager).search(any(), any(PipelineUser.class));
     }
 
     private void mockNoActiveRuns() {
