@@ -607,48 +607,63 @@ public class PipelineRunManager {
                                                final Pipeline pipeline,
                                                final AbstractCloudRegion region,
                                                final String instanceType) {
-        configurationManager.validateFallbackInstanceTypesCount(configuration);
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
         final boolean isMaster = PipelineConfigurationManager.isClusterConfiguration(configuration);
-        if (pipeline != null) {
-            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId(), isMaster);
+        validateInstanceAndPriceTypes(instanceType, configuration.getFallbackInstanceTypes(), priceType,
+                region.getId(), configuration.getDockerImage(), pipeline != null, isMaster);
+    }
+
+    private void validateInstanceAndPriceTypes(final String instanceType,
+                                               final List<String> fallbackInstanceTypes,
+                                               final PriceType priceType,
+                                               final Long regionId,
+                                               final String dockerImage,
+                                               final boolean isPipeline,
+                                               final boolean isMasterNode) {
+        configurationManager.validateFallbackInstanceTypesCount(fallbackInstanceTypes);
+        if (isPipeline) {
+            validatePipelineInstanceAndPriceTypes(instanceType, fallbackInstanceTypes, priceType, regionId,
+                    isMasterNode);
         } else {
-            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
-                                              isMaster);
+            validateToolInstanceAndPriceTypes(instanceType, fallbackInstanceTypes, priceType, regionId, dockerImage,
+                    isMasterNode);
         }
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
+                                                       final List<String> fallbackInstanceTypes,
                                                        final PriceType priceType,
                                                        final Long regionId,
                                                        final boolean isMasterNode) {
         final List<ContextualPreferenceExternalResource> resources = Collections.singletonList(
                 getRegionContextualPreference(regionId));
-
-        Assert.isTrue(StringUtils.isBlank(instanceType) || instanceOfferManager
-                        .isInstanceAllowed(instanceType, resources, regionId, priceType == PriceType.SPOT),
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
+        final boolean isSpot = priceType == PriceType.SPOT;
+        Stream.concat(Stream.of(instanceType), CollectionUtils.emptyIfNull(fallbackInstanceTypes).stream())
+                .filter(StringUtils::isNotBlank)
+                .forEach(type -> Assert.isTrue(instanceOfferManager.isInstanceAllowed(type, resources, regionId,
+                        isSpot), messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, type)));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), resources, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
     private void validateToolInstanceAndPriceTypes(final String instanceType,
+                                                   final List<String> fallbackInstanceTypes,
                                                    final PriceType priceType,
                                                    final Long regionId,
                                                    final String dockerImage,
                                                    final boolean isMasterNode) {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
-
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
         final ContextualPreferenceExternalResource regionResource = getRegionContextualPreference(regionId);
         final List<ContextualPreferenceExternalResource> resources = Arrays.asList(toolResource, regionResource);
-
-        Assert.isTrue(StringUtils.isBlank(instanceType) || instanceOfferManager
-                        .isToolInstanceAllowed(instanceType, resources, regionId, priceType == PriceType.SPOT),
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
+        final boolean isSpot = priceType == PriceType.SPOT;
+        Stream.concat(Stream.of(instanceType), CollectionUtils.emptyIfNull(fallbackInstanceTypes).stream())
+                .filter(StringUtils::isNotBlank)
+                .forEach(type -> Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(type, resources, regionId,
+                        isSpot), messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, type)));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), resources, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
@@ -743,10 +758,9 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void applyResumeRunVO(final Long runId, final RunInstanceConfigVO vo) {
+    public void applyRunInstanceConfig(final Long runId, final RunInstanceConfigVO vo) {
         Assert.notNull(vo, "RunInstanceConfigVO must not be null");
         final PipelineRun pipelineRun = loadPipelineRun(runId);
-        configurationManager.validateFallbackInstanceTypesCount(vo.getFallbackInstanceTypes());
         final RunInstance instance = pipelineRun.getInstance();
         if (StringUtils.isNotEmpty(vo.getInstanceType())) {
             instance.setNodeType(vo.getInstanceType());
@@ -754,6 +768,15 @@ public class PipelineRunManager {
         if (vo.getFallbackInstanceTypes() != null) {
             instance.setFallbackInstanceTypes(vo.getFallbackInstanceTypes());
         }
+        validateInstanceAndPriceTypes(
+                instance.getNodeType(),
+                instance.getFallbackInstanceTypes(),
+                Boolean.TRUE.equals(instance.getSpot()) ? PriceType.SPOT : PriceType.ON_DEMAND,
+                instance.getCloudRegionId(),
+                pipelineRun.getDockerImage(),
+                pipelineRun.getPipelineId() != null,
+                true
+        );
         updateRunInstance(pipelineRun.getId(), instance);
     }
 
