@@ -2,10 +2,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
-import {Button, message, Modal} from 'antd';
+import {Button, message} from 'antd';
 import roleModel from '../../../../../../utils/roleModel';
 import {canPauseRun} from '../../../../actions';
 import confirmPause from '../../../../actions/pause-confirmation';
+import confirmResume from '../../../../actions/resume-confirmation';
 import PausePipeline from '../../../../../../models/pipelines/PausePipeline';
 // eslint-disable-next-line max-len
 import getMaintenanceDisabledButton from '../../../../controls/get-maintenance-mode-disabled-button';
@@ -49,34 +50,24 @@ class RunPauseResumeButton extends React.Component {
     }
   };
 
-  resumePipeline = async (e) => {
-    if (e) {
-      e.stopPropagation();
-    }
+  resumePipeline = async (payload) => {
     const {run} = this.props;
     const resumePipeline = new ResumePipeline(run.id);
-    await resumePipeline.send({});
+    await resumePipeline.send(payload || {});
     if (resumePipeline.error) {
       message.error(resumePipeline.error);
     }
     this.refreshRunInfo();
   };
 
-  showResumeConfirmDialog = () => {
+  showResumeConfirmDialog = async () => {
     const {run} = this.props;
-    if (run) {
-      const toolAndVersion = (run.dockerImage || '').split('/').pop();
-      const [imageName] = toolAndVersion.split(':');
-      const pipelineName = run.pipelineName || imageName || this.localizedString('pipeline');
-      Modal.confirm({
-        title: `Do you want to resume ${pipelineName}?`,
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk: () => this.resumePipeline(),
-        okText: 'RESUME',
-        cancelText: 'CANCEL'
-      });
+    if (!run) {
+      return;
+    }
+    const payload = await confirmResume({id: run.id, run});
+    if (payload) {
+      await this.resumePipeline(payload);
     }
   };
 
