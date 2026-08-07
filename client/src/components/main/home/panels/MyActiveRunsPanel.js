@@ -33,6 +33,7 @@ import roleModel from '../../../../utils/roleModel';
 import pipelineRunSSHCache from '../../../../models/pipelines/PipelineRunSSHCache';
 import VSActions from '../../../versioned-storages/vs-actions';
 import confirmPause from '../../../runs/actions/pause-confirmation';
+import confirmResume from '../../../runs/actions/resume-confirmation';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
@@ -89,6 +90,13 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
     }
   };
 
+  confirmResume = async (run, warning) => {
+    const payload = await confirmResume({id: run.id, run, title: warning});
+    if (payload) {
+      await this.resumeRun(run, payload);
+    }
+  };
+
   pauseRun = async (run) => {
     const hide = message.loading('Pausing...', -1);
     const request = new PausePipeline(run.id);
@@ -102,10 +110,10 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
     }
   };
 
-  resumeRun = async (run) => {
+  resumeRun = async (run, payload) => {
     const hide = message.loading('Resuming...', -1);
     const request = new ResumePipeline(run.id);
-    await request.send({});
+    await request.send(payload || {});
     if (request.error) {
       hide();
       message.error(request.error);
@@ -144,10 +152,9 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                     'PAUSE',
                     () => this.pauseRun(run)
                   ),
-                  resume: run => this.confirm(
-                    `Are you sure you want to resume run ${run.podId}?`,
-                    'RESUME',
-                    () => this.resumeRun(run)
+                  resume: run => this.confirmResume(
+                    run,
+                    `Are you sure you want to resume run ${run.podId}?`
                   ),
                   stop: stopRun(this, this.props.refresh),
                   terminate: terminateRun(this, this.props.refresh),

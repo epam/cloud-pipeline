@@ -32,6 +32,7 @@ import {openReRunForm} from '../../../runs/actions';
 import roleModel from '../../../../utils/roleModel';
 import moment from 'moment-timezone';
 import styles from './Panel.css';
+import confirmResume from '../../../runs/actions/resume-confirmation';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
@@ -94,16 +95,23 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     }
   };
 
-  resumeRun = async (run) => {
+  resumeRun = async (run, payload) => {
     const hide = message.loading('Resuming...', -1);
     const request = new ResumePipeline(run.id);
-    await request.send({});
+    await request.send(payload || {});
     if (request.error) {
       hide();
       message.error(request.error);
     } else {
       this.props.refresh && await this.props.refresh();
       hide();
+    }
+  };
+
+  confirmResume = async (run, warning) => {
+    const payload = await confirmResume({id: run.id, run, title: warning});
+    if (payload) {
+      await this.resumeRun(run, payload);
     }
   };
 
@@ -135,10 +143,9 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
                     'PAUSE',
                     () => this.pauseRun(run)
                   ),
-                  resume: run => this.confirm(
-                    `Are you sure you want to resume run ${run.podId}?`,
-                    'RESUME',
-                    () => this.resumeRun(run)
+                  resume: run => this.confirmResume(
+                    run,
+                    `Are you sure you want to resume run ${run.podId}?`
                   ),
                   stop: run => this.confirm(
                     `Are you sure you want to stop run ${run.podId}?`,

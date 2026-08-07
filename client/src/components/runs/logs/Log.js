@@ -92,6 +92,7 @@ import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 import confirmPause from '../actions/pause-confirmation';
+import confirmResume from '../actions/resume-confirmation';
 import getRunDurationInfo from '../../../utils/run-duration';
 import RunTimelineInfo from './misc/run-timeline-info';
 import evaluateRunPrice from '../../../utils/evaluate-run-price';
@@ -371,21 +372,17 @@ class Logs extends localization.LocalizedReactComponent {
     }
   };
 
-  showResumeConfirmDialog = () => {
+  showResumeConfirmDialog = async () => {
     const {run} = this.state;
-    if (run) {
-      const dockerImageParts = (run.dockerImage || '').split('/');
-      const imageName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
-      const pipelineName = run.pipelineName || imageName || this.localizedString('pipeline');
-      Modal.confirm({
-        title: `Do you want to resume ${pipelineName}?`,
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk: () => this.resumePipeline(),
-        okText: 'RESUME',
-        cancelText: 'CANCEL'
-      });
+    if (!run) {
+      return;
+    }
+    const payload = await confirmResume({
+      id: this.props.runId,
+      run
+    });
+    if (payload) {
+      await this.resumePipeline(payload);
     }
   };
 
@@ -402,13 +399,10 @@ class Logs extends localization.LocalizedReactComponent {
     this.refreshRunInfo();
   };
 
-  resumePipeline = async (e) => {
-    if (e) {
-      e.stopPropagation();
-    }
+  resumePipeline = async (payload) => {
     const {runId: id} = this.props;
     const resumePipeline = new ResumePipeline(id);
-    await resumePipeline.send({});
+    await resumePipeline.send(payload || {});
     if (resumePipeline.error) {
       message.error(resumePipeline.error);
     }
