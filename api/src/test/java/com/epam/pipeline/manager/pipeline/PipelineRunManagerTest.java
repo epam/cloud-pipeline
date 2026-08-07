@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -261,6 +262,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         parentRun.setOwner("owner");
         parentRun.setLastChangeCommitTime(DateUtils.now());
         pipelineRunDao.createPipelineRun(parentRun);
+
+        preferenceManager.update(Collections.singletonList(new Preference(
+                SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_DENY_NOT_SCANNED.getKey(), Boolean.toString(false))));
     }
 
     /**
@@ -336,6 +340,65 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         final PipelineRun run = pipelineRunManager.runCmd(startVO);
 
         assertThat(run.getInstance().getFallbackInstanceTypes()).isNullOrEmpty();
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test(expected = IllegalArgumentException.class)
+    public void testApplyRunInstanceConfigFailsWhenInstanceTypeNotAllowed() {
+        when(instanceOfferManager.isToolInstanceAllowed(eq("r4.large"), any(), eq(REGION_ID), eq(false)))
+                .thenReturn(false);
+        final PipelineRun run = savedToolRun();
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setInstanceType("r4.large");
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test(expected = IllegalArgumentException.class)
+    public void testApplyRunInstanceConfigFailsWhenFallbackTypeNotAllowed() {
+        when(instanceOfferManager.isToolInstanceAllowed(eq("r4.large"), any(), eq(REGION_ID), eq(false)))
+                .thenReturn(false);
+        final PipelineRun run = savedToolRun();
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setFallbackInstanceTypes(Arrays.asList(INSTANCE_TYPE, "r4.large"));
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testApplyRunInstanceConfigSucceedsForToolRun() {
+        final PipelineRun run = savedToolRun();
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setInstanceType(INSTANCE_TYPE);
+        vo.setFallbackInstanceTypes(Arrays.asList("m5.xlarge", "c5.large"));
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testApplyRunInstanceConfigUsesIsInstanceAllowedForPipelineRun() {
+        when(instanceOfferManager.isInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(false))).thenReturn(true);
+        final PipelineRun run = savedToolRun();
+        run.setPipelineId(1L);
+        pipelineRunDao.updateRun(run);
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setInstanceType(INSTANCE_TYPE);
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(false));
+    }
+
+    private PipelineRun savedToolRun() {
+        final PipelineRun run = ObjectCreatorUtils.createPipelineRun(null, null, null, REGION_ID);
+        run.setDockerImage(TEST_IMAGE);
+        run.getInstance().setSpot(false);
+        run.getInstance().setNodeType(INSTANCE_TYPE);
+        pipelineRunDao.createPipelineRun(run);
+        return run;
     }
 
     /**
