@@ -574,6 +574,9 @@ public class DockerContainerOperationManager {
                                 result.getMessage());
                         addResumeRunLog(run, failMsg, log::warn);
                         lastFailResult = result;
+                        if (result.getStatus() == CloudInstanceOperationResult.Status.ERROR) {
+                            break;
+                        }
                     }
                     rollbackRunToPausedState(run, lastFailResult);
                     return Optional.empty();

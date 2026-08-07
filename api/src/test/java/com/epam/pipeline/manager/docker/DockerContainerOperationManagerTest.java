@@ -127,7 +127,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         region.setId(1L);
         when(regionManager.load(any())).thenReturn(region);
         when(cloudFacade.startInstance(Mockito.anyLong(), anyString()))
-                .thenReturn(CloudInstanceOperationResult.builder().status(Status.ERROR)
+                .thenReturn(CloudInstanceOperationResult.builder().status(Status.RETRYABLE_ERROR)
                         .message(INSUFFICIENT_INSTANCE_CAPACITY).build());
 
         PipelineRun run = pipelineRun();
@@ -260,7 +260,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         when(regionManager.load(REGION_ID)).thenReturn(region());
         when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
         when(cloudFacade.startInstance(REGION_ID, NODE_ID))
-                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.failToRetry(INSUFFICIENT_INSTANCE_CAPACITY))
                 .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
         when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
 
@@ -283,7 +283,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         when(regionManager.load(REGION_ID)).thenReturn(region());
         when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
         when(cloudFacade.startInstance(REGION_ID, NODE_ID))
-                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY));
+                .thenReturn(CloudInstanceOperationResult.failToRetry(INSUFFICIENT_INSTANCE_CAPACITY));
 
         final PipelineRun run = pipelineRun();
         run.setId(RUN_ID);
@@ -339,8 +339,8 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         when(regionManager.load(REGION_ID)).thenReturn(region());
         when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
         when(cloudFacade.startInstance(REGION_ID, NODE_ID))
-                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
-                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.failToRetry(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.failToRetry(INSUFFICIENT_INSTANCE_CAPACITY))
                 .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
         when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
 
@@ -361,7 +361,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         when(regionManager.load(REGION_ID)).thenReturn(region());
         when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
         when(cloudFacade.startInstance(REGION_ID, NODE_ID))
-                .thenReturn(CloudInstanceOperationResult.fail(INSUFFICIENT_INSTANCE_CAPACITY))
+                .thenReturn(CloudInstanceOperationResult.failToRetry(INSUFFICIENT_INSTANCE_CAPACITY))
                 .thenReturn(CloudInstanceOperationResult.success(TEST_TAG));
         when(pipelineConfigurationManager.getConfigurationFromRun(any())).thenReturn(new PipelineConfiguration());
 
@@ -375,6 +375,25 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
         verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
+    }
+
+    @Test
+    public void resumeRunShouldStopFallbackIterationOnUnexpectedError() {
+        when(regionManager.load(REGION_ID)).thenReturn(region());
+        when(cloudFacade.getInstanceState(RUN_ID)).thenReturn(CloudInstanceState.STOPPED);
+        when(cloudFacade.startInstance(REGION_ID, NODE_ID))
+                .thenReturn(CloudInstanceOperationResult.fail("UnauthorizedOperation"));
+
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.getInstance().setFallbackInstanceTypes(
+                java.util.Arrays.asList(FALLBACK_NODE_TYPE, FALLBACK_NODE_TYPE_2));
+
+        operationManager.resumeRun(run, Collections.emptyList());
+
+        verify(cloudFacade, times(1)).startInstance(REGION_ID, NODE_ID);
+        assertEquals(TaskStatus.PAUSED, run.getStatus());
+        verify(runManager, never()).updateRunInstance(any(), any());
     }
 
     private void assertRunStateAfterPause(final PipelineRun run, final String... expectedTags) {
