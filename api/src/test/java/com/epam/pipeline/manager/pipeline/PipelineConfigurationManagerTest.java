@@ -309,7 +309,7 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large",
                 "r5.large", "c4.large", "t3.large"));
-        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration);
+        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
     }
 
     @Test
@@ -319,7 +319,10 @@ public class PipelineConfigurationManagerTest {
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setFallbackInstanceTypes(Arrays.asList("m5.large", "c5.large", "r4.large"));
         assertThrows(IllegalArgumentException.class,
-                () -> pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration));
+                () -> pipelineConfigurationManager.validateFallbackInstanceTypesCount(
+                        configuration.getFallbackInstanceTypes()
+                )
+        );
 
     }
 

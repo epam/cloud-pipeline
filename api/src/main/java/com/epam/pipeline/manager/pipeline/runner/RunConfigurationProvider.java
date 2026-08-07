@@ -142,7 +142,7 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
     }
 
     private void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
-        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration);
+        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
     }
 
     private List<ContextualPreferenceExternalResource> retrieveResource(final PipelineConfiguration configuration) {
