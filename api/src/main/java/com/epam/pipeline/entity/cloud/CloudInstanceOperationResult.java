@@ -19,7 +19,7 @@ public class CloudInstanceOperationResult {
 
 
     public enum Status {
-        OK, ERROR
+        OK, ERROR, RETRYABLE_ERROR
     }
 
     public static CloudInstanceOperationResult success(String message) {
@@ -28,5 +28,9 @@ public class CloudInstanceOperationResult {
 
     public static CloudInstanceOperationResult fail(String message) {
         return CloudInstanceOperationResult.builder().status(Status.ERROR).message(message).build();
+    }
+
+    public static CloudInstanceOperationResult failToRetry(String message) {
+        return CloudInstanceOperationResult.builder().status(Status.RETRYABLE_ERROR).message(message).build();
     }
 }
