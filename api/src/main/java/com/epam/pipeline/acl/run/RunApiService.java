@@ -329,9 +329,9 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun resumeRun(final Long runId, final RunInstanceConfigVO resumeRunVO) {
-        if (resumeRunVO != null) {
-            runManager.applyResumeRunVO(runId, resumeRunVO);
+    public PipelineRun resumeRun(final Long runId, final RunInstanceConfigVO runInstanceConfig) {
+        if (runInstanceConfig != null) {
+            runManager.applyRunInstanceConfig(runId, runInstanceConfig);
         }
         return pipelineRunDockerOperationManager.resumeRun(runId);
     }
