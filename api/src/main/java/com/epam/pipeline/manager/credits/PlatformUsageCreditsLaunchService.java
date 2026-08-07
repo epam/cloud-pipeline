@@ -21,15 +21,12 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
-import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfigurationUtils;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
@@ -43,16 +40,19 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Credits enforcement service for all run-launch paths.
@@ -82,8 +82,6 @@ import java.util.stream.Collectors;
  *
  * <p>Methods whose names start with {@code check*} throw
  * {@link InsufficientUsageCreditsException} directly on failure.
- * {@link #hasCreditsToLaunchRun} returns a boolean and is intended for the autoscale path
- * where the caller controls the rejection response.
  */
 @Slf4j
 @Service
@@ -138,75 +136,65 @@ public class PlatformUsageCreditsLaunchService {
     private final MessageHelper messageHelper;
 
     /**
-     * Enforces credits for a single-node run launch.
+     * Enforces credits for a single-node run launch, also checking every fallback primaryInstance type.
      *
-     * <p>Capacity block runs are detected via {@code CP_CAP_REQUESTS_CPU} /
+     * <p>All types — primary and each fallback — must individually pass the credits check.
+     * The active-offer snapshot is loaded once and reused for every type check.
+     * Capacity block runs are detected via {@code CP_CAP_REQUESTS_CPU} /
      * {@code CP_CAP_REQUESTS_GPU} in {@code parameters}; a synthetic offer is used for
-     * them so only the requested slice is charged.
+     * them so only the requested slice is charged (fallback types are ignored for capacity
+     * block runs).
      *
-     * @param owner      username of the run owner
-     * @param instance   resolved catalogue offer for the selected instance type;
-     *                   an empty {@code Optional} is a no-op (check is skipped)
-     * @param parameters the run's full parameter map; used for capacity-block detection
-     * @throws InsufficientUsageCreditsException if the owner cannot afford this launch
+     * @param primaryInstance       resolved catalogue offer for the primary instance type;
+     *                              an empty {@code Optional} skips the primary check
+     * @param fallbackInstanceTypes fallback primaryInstance type names to check in addition to primary
+     * @param regionId              cloud region used to resolve fallback offers
+     * @param parameters            the run's full parameter map; used for capacity-block detection
+     * @throws InsufficientUsageCreditsException if the owner cannot afford any of the types
      */
-    public void checkCreditsForRunLaunch(final String owner,
-                                         final Optional<InstanceOffer> instance,
+    public void checkCreditsForRunLaunch(final Optional<InstanceOffer> primaryInstance,
+                                         final List<String> fallbackInstanceTypes,
+                                         final Long regionId,
                                          final Map<String, PipeConfValueVO> parameters) {
-        instance.ifPresent(offer -> throwIfInsufficient(
-                checkGroups(owner, singleRunGroup(resolveEffectiveOffer(offer, parameters)),
-                        loadActiveOffers(owner))));
+        final PipelineUser user = userManager.getCurrentUser();
+
+        if (checksNotRequired(user)) {
+            return;
+        }
+
+        final Map<String, Integer> weights = weights();
+        findAppropriateOffer(regionId, resolvePrimaryOffer(primaryInstance, parameters), fallbackInstanceTypes, weights)
+                .ifPresent(offer -> throwIfInsufficient(
+                        checkGroups(user, singleRunGroup(offer),
+                                loadActiveOffers(user.getUserName(), weights), weights)));
     }
 
     /**
-     * Enforces credits for a run restart (spot-retry or region-shift).
+     * Enforces credits for resuming a previously paused run.
      *
-     * <p>Resolves the effective instance offer from the run's stored instance and
-     * parameters — capacity-block runs contribute only their requested slice, plain
-     * runs use the catalogue offer. Delegates to the standard credits check.
+     * <p>Checks the primary instance type and every fallback type stored on the run;
+     * all types must individually pass.
+     * PAUSED runs are excluded from the active-offer sum (see {@link #loadActiveOffers}),
+     * so there is no need to exclude the run's own ID here.
      *
-     * <p>Uses {@code run.getOwner()} as the owner because restart callers run in
-     * scheduled threads with no security principal set.
+     * <p>Short-circuits to a no-op when mode is not {@link PlatformUsageCreditsMode#ON}
+     * or the user is an admin.
      *
-     * <p>Short-circuits to a no-op when the offer cannot be resolved or mode is not
-     * {@link PlatformUsageCreditsMode#ON}.
-     *
-     * @param run the run being restarted
-     * @throws InsufficientUsageCreditsException if the owner cannot afford the restart
+     * @param run the run being resumed
+     * @throws InsufficientUsageCreditsException if the owner cannot afford the resume
      */
-    public void checkCreditsForRestartRun(final PipelineRun run) {
-        offerForActiveRun(run).ifPresent(offer ->
-                throwIfInsufficient(checkGroups(run.getOwner(),
-                        singleRunGroup(offer),
-                        loadActiveOffers(run.getOwner(), run.getId()))));
-    }
+    public void checkCreditsForResumeRun(final PipelineRun run) {
+        final String owner = run.getOwner();
+        final PipelineUser user = userManager.loadByNameOrId(owner);
 
-    /**
-     * Returns {@code true} when {@code owner} has enough credits to provision the node
-     * described by {@code requiredInstance}, optionally excluding one run from the
-     * allocation count.
-     *
-     * <p>Returns {@code true} (allowed) when the offer cannot be resolved in the
-     * catalogue — an unknown instance type should not block autoscaling.
-     *
-     * <p>Primary caller: {@code AutoscaleManager}, which passes the run's own ID as
-     * {@code excludeRunId} to avoid double-counting it.
-     *
-     * @param owner            username of the run owner
-     * @param requiredInstance instance type and cloud region of the node to be created
-     * @param excludeRunId     run ID to exclude from the allocation sum, or {@code null}
-     * @return {@code true} if the node may be provisioned
-     */
-    public boolean hasCreditsToLaunchRun(final String owner,
-                                         final InstanceRequest requiredInstance,
-                                         final Long excludeRunId) {
-        final String instanceType = requiredInstance.getInstance().getNodeType();
-        final Long regionId = requiredInstance.getInstance().getCloudRegionId();
-        return instanceOfferManager.findOffer(instanceType, regionId)
-                .map(offer -> checkGroups(owner, singleRunGroup(offer),
-                        loadActiveOffers(owner, excludeRunId)))
-                .orElseGet(CheckResult::allowed)
-                .isOk();
+        if (checksNotRequired(user)) {
+            return;
+        }
+
+        final Map<String, Integer> weights = weights();
+        resolveOfferForRun(run, weights)
+                .ifPresent(offer -> throwIfInsufficient(
+                        checkGroups(user, singleRunGroup(offer), loadActiveOffers(owner, weights), weights)));
     }
 
     /**
@@ -215,74 +203,87 @@ public class PlatformUsageCreditsLaunchService {
      *
      * <p>The check is skipped when {@code configuration.nodeCount} is null or ≤ 0.
      *
-     * @param owner         username of the run owner
      * @param configuration pipeline configuration carrying the instance type, region,
      *                      and worker node count
      * @throws InsufficientUsageCreditsException if the owner cannot afford this cluster
      */
-    public void checkHomogeneousClusterCredits(final String owner,
-                                               final PipelineConfiguration configuration) {
-        if (configuration.getNodeCount() == null || configuration.getNodeCount() <= 0) {
+    public void checkCreditsForCluster(final PipelineConfiguration configuration) {
+        if (Objects.isNull(configuration.getNodeCount()) || configuration.getNodeCount() <= 0) {
             return;
         }
-        instanceOfferManager.findOffer(configuration.getInstanceType(), configuration.getCloudRegionId())
+
+        final PipelineUser user = userManager.getCurrentUser();
+
+        if (checksNotRequired(user)) {
+            return;
+        }
+
+        final Map<String, Integer> weights = weights();
+        findOfferByConfiguration(configuration, weights)
                 .ifPresent(offer -> throwIfInsufficient(
-                        checkGroups(owner,
-                                homogeneousGroup(offer, configuration.getNodeCount()),
-                                loadActiveOffers(owner))));
+                        checkGroups(user, homogeneousGroup(offer, configuration.getNodeCount()),
+                                loadActiveOffers(user.getUserName(), weights), weights)));
     }
 
     /**
-     * Enforces credits for a heterogeneous cluster described by a master configuration
+     * Enforces credits for a configuration described by a master configuration
      * and a list of child worker entries (each potentially using a different instance type).
      *
      * <p>The owner is resolved from the current security context.
      * Groups whose offer cannot be resolved are silently skipped; if no groups resolve
      * the check is treated as a no-op.
      *
+     * <p>Capacity block runs are detected via {@code CP_CAP_REQUESTS_CPU} /
+     * {@code CP_CAP_REQUESTS_GPU} in each node's parameter map; a synthetic offer is used so
+     * only the requested slice is charged.
+     *
+     * <p>Fallback instance types are read from each node's {@link PipelineConfiguration};
+     * the most expensive offer across primary and all fallbacks is used for the credit check,
+     * so the owner must be able to afford the worst-case type.
+     *
      * @param mainConfiguration   master node configuration
      * @param masterNodeCount     number of master-side worker replicas (excluding the master itself)
      * @param childConfigurations resolved configurations for each child entry
-     * @param childEntries        child entries parallel to {@code childConfigurations}
      * @throws InsufficientUsageCreditsException if the owner cannot afford this cluster
      */
-    public void checkHeterogeneousClusterCredits(final PipelineConfiguration mainConfiguration,
-                                                 final int masterNodeCount,
-                                                 final List<PipelineConfiguration> childConfigurations,
-                                                 final List<RunConfigurationEntry> childEntries) {
-        final String owner = userManager.getCurrentUser().getUserName();
+    public void checkCreditsForConfiguration(final PipelineConfiguration mainConfiguration,
+                                             final int masterNodeCount,
+                                             final List<PipelineConfiguration> childConfigurations) {
+        final PipelineUser user = userManager.getCurrentUser();
+
+        if (checksNotRequired(user)) {
+            return;
+        }
+
+        final Map<String, Integer> weights = weights();
         final List<ReplicaGroup> groups = heterogeneousGroups(mainConfiguration, masterNodeCount,
-                childConfigurations, childEntries);
-        throwIfInsufficient(groups.isEmpty()
-                ? CheckResult.allowed()
-                : checkGroups(owner, groups, loadActiveOffers(owner)));
+                childConfigurations, weights);
+
+        if (groups.isEmpty()) {
+            return;
+        }
+
+        throwIfInsufficient(checkGroups(user, groups, loadActiveOffers(user.getUserName(), weights), weights));
     }
 
     /**
-     * Returns the total credits currently allocated by the given owner's active
-     * (RUNNING or PAUSED) runs.
+     * Returns the total credits currently allocated by the given owner's RUNNING runs.
      *
-     * <p>Capacity block runs contribute only their requested slice; plain runs
-     * contribute the full cost of their instance offer.
+     * <p>PAUSED runs are intentionally excluded: {@link #checkCreditsForResumeRun} relies
+     * on this so that the run being resumed is not double-counted against its own balance.
      *
      * @param owner username whose active runs should be summed
      * @return total allocated credits; 0 when there are no active runs
      */
     public int getAllocatedCredits(final String owner) {
-        return computeUsedCredits(loadActiveOffers(owner), weights());
+        final Map<String, Integer> weights = weights();
+        return computeUsedCredits(loadActiveOffers(owner, weights), weights);
     }
 
-    private CheckResult checkGroups(final String owner,
+    private CheckResult checkGroups(final PipelineUser user,
                                     final List<ReplicaGroup> groups,
-                                    final List<InstanceOffer> activeOffers) {
-        if (!PlatformUsageCreditsMode.ON.equals(getMode())) {
-            return CheckResult.allowed();
-        }
-        final PipelineUser user = userManager.loadByNameOrId(owner);
-        if (user.isAdmin() || user.hasRole(DefaultRoles.ROLE_RUN_ADMIN.getRole())) {
-            return CheckResult.allowed();
-        }
-        final Map<String, Integer> weights = weights();
+                                    final List<InstanceOffer> activeOffers,
+                                    final Map<String, Integer> weights) {
         final int required = groups.stream()
                 .mapToInt(g -> g.getReplicas() * creditsForOffer(g.getOffer(), weights))
                 .sum();
@@ -293,56 +294,92 @@ public class PlatformUsageCreditsLaunchService {
         return new CheckResult((balance - allocated) >= required, required, balance, allocated);
     }
 
-    private List<InstanceOffer> loadActiveOffers(final String owner) {
-        return loadActiveOffers(owner, null);
-    }
-
-    private List<InstanceOffer> loadActiveOffers(final String owner, final Long excludeRunId) {
-        final List<TaskStatus> activeStatuses = Arrays.asList(TaskStatus.RUNNING, TaskStatus.PAUSED);
-        return pipelineRunCRUDService.loadRunsByStatusesAndOwner(activeStatuses, owner).stream()
-                .filter(r -> excludeRunId == null || !excludeRunId.equals(r.getId()))
-                .map(this::offerForActiveRun)
+    private List<InstanceOffer> loadActiveOffers(final String owner, final Map<String, Integer> weights) {
+        return pipelineRunCRUDService.loadRunsByStatusesAndOwner(
+                        Collections.singletonList(TaskStatus.RUNNING), owner).stream()
+                .map(run -> resolveOfferForRun(run, weights))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
     }
 
-    private Optional<InstanceOffer> offerForActiveRun(final PipelineRun run) {
-        final Map<String, String> params = toStringParamMap(run.getPipelineRunParameters());
-        if (params.containsKey(CP_CAP_REQUESTS_CPU) || params.containsKey(CP_CAP_REQUESTS_GPU)) {
-            final int cpu = parseIntFromStringMap(params, CP_CAP_REQUESTS_CPU);
-            final int gpu = parseIntFromStringMap(params, CP_CAP_REQUESTS_GPU);
-            return (cpu == 0 && gpu == 0) ? Optional.empty() : Optional.of(syntheticOffer(cpu, gpu));
-        }
-        if (run.getInstance() == null || run.getInstance().getNodeType() == null) {
+    private Optional<InstanceOffer> resolveOfferForRun(final PipelineRun run, final Map<String, Integer> weights) {
+        final RunInstance instance = run.getInstance();
+        final Optional<InstanceOffer> primaryOffer = resolvePrimaryOffer(instance,
+                MapUtils.emptyIfNull(run.convertParamsToMap()));
+
+        if (instance == null || instance.getNodeType() == null || !primaryOffer.isPresent()) {
             return Optional.empty();
         }
-        return instanceOfferManager.findOffer(
-                run.getInstance().getNodeType(), run.getInstance().getCloudRegionId());
+
+        // node already provisioned — use the actual instance type
+        if (instance.getNodeId() != null) {
+            return primaryOffer;
+        }
+
+        // node not yet provisioned — use the most expensive offer across primary + fallbacks
+        // so that in-flight runs conservatively hold credits for the worst-case type
+        return findAppropriateOffer(
+                instance.getCloudRegionId(), primaryOffer, instance.getFallbackInstanceTypes(), weights);
     }
 
-    private InstanceOffer resolveEffectiveOffer(final InstanceOffer catalogOffer,
-                                                final Map<String, PipeConfValueVO> params) {
+    // for configuration
+    private Optional<InstanceOffer> resolvePrimaryOffer(final PipelineConfiguration configuration) {
+        if (Objects.isNull(configuration) || StringUtils.isBlank(configuration.getInstanceType())) {
+            return Optional.empty();
+        }
+
+        final Map<String, PipeConfValueVO> params = MapUtils.emptyIfNull(configuration.getParameters());
         if (!params.containsKey(CP_CAP_REQUESTS_CPU) && !params.containsKey(CP_CAP_REQUESTS_GPU)) {
+            // not a capacity block
+            return instanceOfferManager.findOffer(configuration.getInstanceType(), configuration.getCloudRegionId());
+        }
+
+        // create artificial offer for capacity block
+        return syntheticOffer(params);
+    }
+
+    // for instance
+    private Optional<InstanceOffer> resolvePrimaryOffer(final RunInstance instance,
+                                                        final Map<String, PipeConfValueVO> params) {
+        if (instance == null || instance.getNodeType() == null) {
+            return Optional.empty();
+        }
+
+        if (!params.containsKey(CP_CAP_REQUESTS_CPU) && !params.containsKey(CP_CAP_REQUESTS_GPU)) {
+            // not a capacity block
+            return instanceOfferManager.findOffer(instance.getNodeType(), instance.getCloudRegionId());
+        }
+
+        // create artificial offer for capacity block
+        return syntheticOffer(params);
+    }
+
+    // for offer directly
+    private Optional<InstanceOffer> resolvePrimaryOffer(final Optional<InstanceOffer> catalogOffer,
+                                                        final Map<String, PipeConfValueVO> params) {
+        if (!catalogOffer.isPresent()) {
             return catalogOffer;
         }
-        return syntheticOffer(
-                parseIntFromConfMap(params, CP_CAP_REQUESTS_CPU),
-                parseIntFromConfMap(params, CP_CAP_REQUESTS_GPU));
+
+        if (!params.containsKey(CP_CAP_REQUESTS_CPU) && !params.containsKey(CP_CAP_REQUESTS_GPU)) {
+            // not a capacity block
+            return catalogOffer;
+        }
+
+        // create artificial offer for capacity block
+        return syntheticOffer(params);
     }
 
     private List<ReplicaGroup> heterogeneousGroups(final PipelineConfiguration mainConfiguration,
                                                    final int masterNodeCount,
                                                    final List<PipelineConfiguration> childConfigurations,
-                                                   final List<RunConfigurationEntry> childEntries) {
+                                                   final Map<String, Integer> weights) {
         final List<ReplicaGroup> groups = new ArrayList<>();
-        instanceOfferManager.findOffer(mainConfiguration.getInstanceType(),
-                        mainConfiguration.getCloudRegionId())
+        findOfferByConfiguration(mainConfiguration, weights)
                 .ifPresent(o -> groups.add(new ReplicaGroup(o, masterNodeCount + 1)));
-        for (int i = 0; i < childConfigurations.size(); i++) {
-            final PipelineConfiguration childConfig = childConfigurations.get(i);
-            final PipelineStart childStart = childEntries.get(i).toPipelineStart();
-            instanceOfferManager.findOffer(childStart.getInstanceType(), childConfig.getCloudRegionId())
+        for (final PipelineConfiguration childConfig : childConfigurations) {
+            findOfferByConfiguration(childConfig, weights)
                     .ifPresent(o -> groups.add(new ReplicaGroup(o,
                             RunConfigurationUtils.getNodeCount(childConfig.getNodeCount(), 1))));
         }
@@ -381,25 +418,13 @@ public class PlatformUsageCreditsLaunchService {
         return Collections.singletonList(new ReplicaGroup(offer, nodeCount + 1));
     }
 
-    private static InstanceOffer syntheticOffer(final int vcpu, final int gpu) {
-        final InstanceOffer o = new InstanceOffer();
-        o.setVCPU(vcpu);
-        o.setGpu(gpu);
-        return o;
-    }
-
-    private static Map<String, String> toStringParamMap(final List<PipelineRunParameter> parameters) {
-        return ListUtils.emptyIfNull(parameters).stream()
-                .filter(p -> p.getName() != null && p.getValue() != null)
-                .collect(Collectors.toMap(
-                        PipelineRunParameter::getName, PipelineRunParameter::getValue, (a, b) -> a));
-    }
-
-    private static int parseIntFromStringMap(final Map<String, String> params, final String key) {
-        return Optional.ofNullable(params.get(key))
-                .filter(NumberUtils::isNumber)
-                .map(Integer::parseInt)
-                .orElse(0);
+    private Optional<InstanceOffer> syntheticOffer(final Map<String, PipeConfValueVO> params) {
+        final int vcpu = parseIntFromConfMap(params, CP_CAP_REQUESTS_CPU);
+        final int gpu = parseIntFromConfMap(params, CP_CAP_REQUESTS_GPU);
+        final InstanceOffer offer = new InstanceOffer();
+        offer.setVCPU(vcpu);
+        offer.setGpu(gpu);
+        return Optional.of(offer);
     }
 
     private static int parseIntFromConfMap(final Map<String, PipeConfValueVO> params, final String key) {
@@ -417,5 +442,38 @@ public class PlatformUsageCreditsLaunchService {
                             result.getRequired(), result.getBalance() - result.getAllocated(),
                             result.getBalance(), result.getAllocated()));
         }
+    }
+
+    private Optional<InstanceOffer> findAppropriateOffer(final Long regionId,
+                                                         final Optional<InstanceOffer> primaryOffer,
+                                                         final List<String> fallbackInstanceTypes,
+                                                         final Map<String, Integer> weights) {
+        return Stream.concat(
+                Stream.of(primaryOffer),
+                        ListUtils.emptyIfNull(fallbackInstanceTypes).stream()
+                                .map(fallbackType -> instanceOfferManager.findOffer(fallbackType, regionId))
+                ).collect(Collectors.toList()).stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .max(Comparator.comparingInt(offer -> creditsForOffer(offer, weights)));
+    }
+
+    private Optional<InstanceOffer> findOfferByConfiguration(final PipelineConfiguration configuration,
+                                                             final Map<String, Integer> weights) {
+        return findAppropriateOffer(configuration.getCloudRegionId(),
+                resolvePrimaryOffer(configuration),
+                configuration.getFallbackInstanceTypes(), weights);
+    }
+
+    private boolean checksNotRequired(final PipelineUser user) {
+        if (!PlatformUsageCreditsMode.ON.equals(getMode())) {
+            log.debug("Platform usage credits checks disabled.");
+            return true;
+        }
+        if (user.isAdmin() || user.hasRole(DefaultRoles.ROLE_RUN_ADMIN.getRole())) {
+            log.debug("Platform usage credits checks disabled for admins.");
+            return true;
+        }
+        return false;
     }
 }

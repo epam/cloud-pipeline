@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -108,17 +107,11 @@ public class RunRegionShiftHandler {
 
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setCloudRegionId(nextRegionId));
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setSpot(false));
-        try {
-            final PipelineRun newRun = pipelineRunManager.restartRun(parentRun);
-            final String nextRegionName = availableRegions.get(nextRegionId).getName();
-            addRunLog(parentRun, messageHelper.getMessage(MessageConstants.INFO_RESTART_RUN_SUCCESS, newRun.getId(),
-                    nextRegionName), TaskStatus.STOPPED, currentRun);
-            return newRun;
-        } catch (InsufficientUsageCreditsException e) {
-            log.warn("Cancelling region-shift restart for run {}: {}", currentRunId, e.getMessage());
-            pipelineRunManager.updateStateReasonMessageById(currentRunId, e.getMessage());
-            return null;
-        }
+        final PipelineRun newRun = pipelineRunManager.restartRun(parentRun);
+        final String nextRegionName = availableRegions.get(nextRegionId).getName();
+        addRunLog(parentRun, messageHelper.getMessage(MessageConstants.INFO_RESTART_RUN_SUCCESS, newRun.getId(),
+                nextRegionName), TaskStatus.STOPPED, currentRun);
+        return newRun;
     }
 
     private boolean validate(final PipelineRun parentRun, final PipelineRun currentRun,

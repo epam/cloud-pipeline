@@ -24,7 +24,6 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -62,7 +61,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -110,9 +108,6 @@ public class AutoscaleManagerTest {
     private RunRegionShiftHandler runRegionShiftHandler;
     @Mock
     private MetadataManager metadataManager;
-    @Mock
-    private PlatformUsageCreditsLaunchService creditsLaunchService;
-
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
     @Before
@@ -124,7 +119,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, creditsLaunchService);
+                runRegionShiftHandler, metadataManager);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -183,7 +178,6 @@ public class AutoscaleManagerTest {
         when(pipelineRunManager.loadPipelineRuns(eq(Collections.singletonList(TEST_RUN_ID))))
                 .thenReturn(Collections.singletonList(testRun));
         when(pipelineRunManager.findRun(eq(TEST_RUN_ID))).thenReturn(Optional.of(testRun));
-        when(creditsLaunchService.hasCreditsToLaunchRun(any(), any(), any())).thenReturn(true);
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
         when(cloudFacade.instanceScalingSupported(any())).thenReturn(true);
@@ -227,14 +221,4 @@ public class AutoscaleManagerTest {
                 Matchers.hasProperty("spot", Matchers.is(false))), any(), any());
     }
 
-    @Test
-    public void testNodeCreationPostponedWhenInsufficientCredits() {
-        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
-        when(creditsLaunchService.hasCreditsToLaunchRun(any(), any(), any())).thenReturn(false);
-
-        autoscaleManagerCore.runAutoscaling();
-
-        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
-        verify(pipelineRunManager).updateTags(eq(TEST_RUN_ID), any(), eq(false));
-    }
 }

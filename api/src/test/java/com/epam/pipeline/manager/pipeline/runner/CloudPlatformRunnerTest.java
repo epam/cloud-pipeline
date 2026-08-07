@@ -88,7 +88,7 @@ public class CloudPlatformRunnerTest {
                 .generateWorkerConfiguration(any(), any(), any(), anyBoolean(), anyBoolean());
 
         doNothing().when(creditsLaunchService)
-                .checkHeterogeneousClusterCredits(any(), any(int.class), any(), any());
+                .checkCreditsForConfiguration(any(), any(int.class), any());
     }
 
     private void mockResolvedConfig(final List<RunConfigurationEntry> entries) {
@@ -111,7 +111,7 @@ public class CloudPlatformRunnerTest {
 
         runner.runAnalysis(analysisConfig(entries));
 
-        verify(creditsLaunchService).checkHeterogeneousClusterCredits(any(), any(int.class), any(), any());
+        verify(creditsLaunchService).checkCreditsForConfiguration(any(), any(int.class), any());
     }
 
     @Test
@@ -125,8 +125,8 @@ public class CloudPlatformRunnerTest {
         runner.runAnalysis(analysisConfig(entries));
 
         final ArgumentCaptor<Integer> masterNodeCountCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(creditsLaunchService).checkHeterogeneousClusterCredits(
-                any(), masterNodeCountCaptor.capture(), any(), any());
+        verify(creditsLaunchService).checkCreditsForConfiguration(
+                any(), masterNodeCountCaptor.capture(), any());
         assertThat(masterNodeCountCaptor.getValue(), is(1));
     }
 
@@ -134,7 +134,7 @@ public class CloudPlatformRunnerTest {
     public void heterogeneousClusterBlockedWhenInsufficientCredits() {
         doThrow(new InsufficientUsageCreditsException("Insufficient credits"))
                 .when(creditsLaunchService)
-                .checkHeterogeneousClusterCredits(any(), any(int.class), any(), any());
+                .checkCreditsForConfiguration(any(), any(int.class), any());
 
         final RunConfigurationEntry masterEntry = entry(MASTER_INSTANCE, 0, true);
         final RunConfigurationEntry workerEntry = entry(WORKER_INSTANCE, 3, false);
@@ -153,8 +153,8 @@ public class CloudPlatformRunnerTest {
         runner.runAnalysis(analysisConfig(entries));
 
         final ArgumentCaptor<Integer> masterNodeCountCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(creditsLaunchService).checkHeterogeneousClusterCredits(
-                any(), masterNodeCountCaptor.capture(), any(), any());
+        verify(creditsLaunchService).checkCreditsForConfiguration(
+                any(), masterNodeCountCaptor.capture(), any());
         assertThat(masterNodeCountCaptor.getValue(), is(0));
     }
 

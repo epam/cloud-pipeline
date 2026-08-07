@@ -318,8 +318,7 @@ public class PipelineRunManager {
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         if (clusterRun) {
-            platformUsageCreditsLaunchService.checkHomogeneousClusterCredits(authManager.getAuthorizedUser(),
-                    configuration);
+            platformUsageCreditsLaunchService.checkCreditsForCluster(configuration);
         }
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
@@ -399,8 +398,7 @@ public class PipelineRunManager {
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
         if (isClusterRun) {
-            platformUsageCreditsLaunchService.checkHomogeneousClusterCredits(authManager.getAuthorizedUser(),
-                    configuration);
+            platformUsageCreditsLaunchService.checkCreditsForCluster(configuration);
         }
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
@@ -463,7 +461,9 @@ public class PipelineRunManager {
         final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
         checkGPUInstance(configuration, instance);
         checkCapacityRequirements(configuration, instance);
-        platformUsageCreditsLaunchService.checkCreditsForRunLaunch(authManager.getAuthorizedUser(), instance,
+        platformUsageCreditsLaunchService.checkCreditsForRunLaunch(instance,
+                ListUtils.emptyIfNull(configuration.getFallbackInstanceTypes()),
+                region.getId(),
                 MapUtils.emptyIfNull(configuration.getParameters()));
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
@@ -1305,7 +1305,6 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun restartRun(final PipelineRun run) {
-        platformUsageCreditsLaunchService.checkCreditsForRestartRun(run);
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final PipelineRun restartedRun = createRestartRun(run);
         final Tool tool = getToolForRun(configuration);

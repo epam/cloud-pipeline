@@ -129,8 +129,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         log.debug("Running total {} nodes", totalNodes + 1);
         mainConfiguration.setNodeCount(totalNodes);
 
-        creditsLaunchService.checkHeterogeneousClusterCredits(mainConfiguration, masterNodeCount, childConfigurations,
-                childEntries);
+        creditsLaunchService.checkCreditsForConfiguration(mainConfiguration, masterNodeCount, childConfigurations);
 
         //create master run
         List<PipelineRun> masterRun =
