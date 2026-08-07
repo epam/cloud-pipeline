@@ -16,15 +16,15 @@
 
 import React from 'react';
 import {computed} from 'mobx';
-import {Icon, message, Modal, Popover} from 'antd';
+import {Icon, message, Popover} from 'antd';
 import {inject, observer} from 'mobx-react';
 import roleModel from '../../../../utils/roleModel';
 import {canPauseRun, runPipelineActions} from '../../actions';
 import getMaintenanceDisabledButton from '../../controls/get-maintenance-mode-disabled-button';
 import confirmPause from '../../actions/pause-confirmation';
+import confirmResume from '../../actions/resume-confirmation';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../../models/pipelines/ResumePipeline';
-import {renderPipelineName} from './utilities';
 import localization from '../../../../utils/localization';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
@@ -63,7 +63,7 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
     }
   };
 
-  resumePipeline = async () => {
+  resumePipeline = async (payload) => {
     const {
       run,
       reload
@@ -73,7 +73,7 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
     }
     const resumePipeline = new ResumePipeline(run.id);
     try {
-      await resumePipeline.send({});
+      await resumePipeline.send(payload || {});
       if (resumePipeline.error) {
         throw new Error(resumePipeline.error);
       }
@@ -99,7 +99,7 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
     }
   };
 
-  showResumeConfirmDialog = (event) => {
+  showResumeConfirmDialog = async (event) => {
     const {
       run
     } = this.props;
@@ -107,20 +107,10 @@ class PauseResumeButtonComponent extends localization.LocalizedReactComponent {
       return;
     }
     event.stopPropagation();
-    Modal.confirm({
-      title: (
-        <span>
-          {/* eslint-disable-next-line max-len */}
-          Do you want to resume {renderPipelineName(run, true, true) || this.localizedString('pipeline')}?
-        </span>
-      ),
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk: () => this.resumePipeline(),
-      okText: 'RESUME',
-      cancelText: 'CANCEL'
-    });
+    const payload = await confirmResume({id: run.id, run});
+    if (payload) {
+      await this.resumePipeline(payload);
+    }
   };
 
   render () {
