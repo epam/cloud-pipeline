@@ -248,9 +248,10 @@ public class EC2Helper implements EC2GpuHelper {
             final List<String> limitErrors = preferenceManager.getPreference(
                     SystemPreferences.INSTANCE_LIMIT_STATE_REASONS);
             if (ListUtils.emptyIfNull(limitErrors).stream().anyMatch(code -> code.equals(e.getErrorCode()))) {
+                return CloudInstanceOperationResult.failToRetry(e.getErrorCode());
+            } else {
                 return CloudInstanceOperationResult.fail(e.getErrorCode());
             }
-            throw e;
         }
         return CloudInstanceOperationResult.success(
                 messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)

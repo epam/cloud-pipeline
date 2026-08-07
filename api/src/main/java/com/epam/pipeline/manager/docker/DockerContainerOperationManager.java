@@ -565,6 +565,9 @@ public class DockerContainerOperationManager {
                         log.warn("Failed to start run {} instance with type {}: {}", run.getId(), candidateType,
                                 result.getMessage());
                         lastFailResult = result;
+                        if (result.getStatus() == CloudInstanceOperationResult.Status.ERROR) {
+                            break;
+                        }
                     }
                     rollbackRunToPausedState(run, lastFailResult);
                     return Optional.empty();
