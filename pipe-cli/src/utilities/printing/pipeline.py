@@ -131,13 +131,15 @@ class PrettyTablePipelinePrintService(PipelinePrintService):
             self._print_title('Storage rules', line=False)
             if len(pipeline_model.storage_rules) > 0:
                 storage_rules_table = prettytable.PrettyTable()
-                storage_rules_table.field_names = ["File mask", "Created", "Move to STS"]
+                storage_rules_table.field_names = ["Name", "File mask", "Created", "Move to STS", "Pipeline Results"]
                 storage_rules_table.align = "r"
                 for rule in pipeline_model.storage_rules:
                     storage_rules_table.add_row([
+                        rule.name,
                         rule.file_mask,
                         rule.created_date,
-                        rule.move_to_sts
+                        rule.move_to_sts,
+                        rule.is_result
                     ])
                 click.echo(storage_rules_table)
                 click.echo()
@@ -234,6 +236,8 @@ class JsonPipelinePrintService(PipelinePrintService):
             pipeline_dict['storageRules'] = []
             for rule in pipeline_model.storage_rules:
                 rule_dict = {
+                    'name': rule.name,
+                    'isResult': rule.is_result,
                     'fileMask': rule.file_mask,
                     'created': rule.created_date,
                     'moveToSts': rule.move_to_sts
