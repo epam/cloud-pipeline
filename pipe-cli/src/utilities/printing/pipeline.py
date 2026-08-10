@@ -135,7 +135,7 @@ class PrettyTablePipelinePrintService(PipelinePrintService):
                 storage_rules_table.align = "r"
                 for rule in pipeline_model.storage_rules:
                     storage_rules_table.add_row([
-                        rule.name,
+                        rule.name or '',
                         rule.file_mask,
                         rule.created_date,
                         rule.move_to_sts,
