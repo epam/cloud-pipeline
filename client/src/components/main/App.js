@@ -77,6 +77,7 @@ export default class App extends Component {
     const isExternalApp = [
       Pages.miew
     ].indexOf(activeTabPath) >= 0;
+    const isAIChat = [Pages.chat].indexOf(activeTabPath) >= 0;
     const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
     if (isExternalApp) {
@@ -112,7 +113,8 @@ export default class App extends Component {
           </Layout.Sider>
           <Layout.Content
             id="root-content"
-            className={`${styles.contentWrapper} ${searchStyle.join(' ')}`}>
+            className={`${styles.contentWrapper} ${searchStyle.join(' ')}`}
+            style={isAIChat ? {padding: 0} : {}}>
             <Provider displayInfo={this.info}>
               {this.props.children}
             </Provider>

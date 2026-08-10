@@ -149,14 +149,17 @@ export default class AIChat extends React.Component {
   render () {
     const {userInput} = this.state;
     return (
-      <div className={
-        classNames(
-          styles.chatContainer,
-          'cp-panel',
-          'cp-panel-no-hover',
-          'cp-panel-borderless'
-        )
-      }>
+      <div
+        className={
+          classNames(
+            styles.chatContainer,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+        style={{padding: 5}}
+      >
         <div className={styles.overflowContainer} ref={el => {
           this.scrollContainerRef = el;
         }}>
