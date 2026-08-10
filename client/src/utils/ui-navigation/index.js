@@ -250,8 +250,12 @@ class UINavigation {
       return false;
     }
     const {
-      api
+      api,
+      assistant_url: assistantUrl
     } = this.preferences.miscAIPreferences || {};
+    if (assistantUrl && assistantUrl.length > 0) {
+      return true;
+    }
     return !!api && api.length > 0;
   }
 
