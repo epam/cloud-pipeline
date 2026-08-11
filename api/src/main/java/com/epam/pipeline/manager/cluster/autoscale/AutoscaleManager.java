@@ -81,6 +81,9 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_POOL_PREFIX;
 
 @Service
 @Slf4j
@@ -251,7 +254,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             CompletableFuture.runAsync(
                 () -> {
                     Instant start = Instant.now();
-                    String nodeId = AutoscaleContants.NODE_POOL_PREFIX + nodesManager.getNextFreeNodeId();
+                    String nodeId = NODE_POOL_PREFIX + nodesManager.getNextFreeNodeId();
                     cloudFacade.scaleUpPoolNode(nodeId, node);
                     Instant end = Instant.now();
                     poolNodeUpTaskInProgress.merge(node.getId(), 0, (oldVal, newVal) -> oldVal - 1);
@@ -552,7 +555,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                                 Duration.between(start, end).getSeconds());
                         return;
                     } catch (CmdExecutionException ex) {
-                        if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, ex.getExitCode())) {
+                        Integer exitCode = ex.getExitCode();
+                        if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, exitCode)
+                                && !Objects.equals(NODEUP_LIMIT_EXCEEDED_EXIT_CODE, exitCode)
+                                && !Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, exitCode)) {
                             //before throwing an exception, we need to return a node type to its original value
                             requiredInstance.getInstance().setNodeType(initialInstanceType);
                             pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
@@ -573,12 +579,12 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 log.error(e.getMessage(), e);
 
                 if (e.getCause() instanceof CmdExecutionException &&
-                        Objects.equals(AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE,
+                        Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE,
                                 ((CmdExecutionException) e.getCause()).getExitCode())) {
                     spotNodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal + 1);
                 }
                 if (e.getCause() instanceof CmdExecutionException && Objects.equals(
-                        AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE,
+                        NODEUP_LIMIT_EXCEEDED_EXIT_CODE,
                         ((CmdExecutionException) e.getCause()).getExitCode())) {
                     // do not fail and do not change attempts count if instance quota exceeded
                     nodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal - 1);
