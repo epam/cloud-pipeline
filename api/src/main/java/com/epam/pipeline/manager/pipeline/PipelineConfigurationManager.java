@@ -153,10 +153,6 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
-    public void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
-        validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
-    }
-
     public void validateFallbackInstanceTypesCount(final List<String> fallbackTypes) {
         if (CollectionUtils.isEmpty(fallbackTypes)) {
             return;
