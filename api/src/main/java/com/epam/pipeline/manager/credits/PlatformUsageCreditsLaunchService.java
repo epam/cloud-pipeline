@@ -138,44 +138,10 @@ public class PlatformUsageCreditsLaunchService {
     private final MessageHelper messageHelper;
 
     /**
-     * Enforces credits for a single-node run launch, also checking every fallback primaryInstance type.
-     *
-     * <p>All types — primary and each fallback — must individually pass the credits check.
-     * The active-offer snapshot is loaded once and reused for every type check.
-     * Capacity block runs are detected via {@code CP_CAP_REQUESTS_CPU} /
-     * {@code CP_CAP_REQUESTS_GPU} in {@code parameters}; a synthetic offer is used for
-     * them so only the requested slice is charged (fallback types are ignored for capacity
-     * block runs).
-     *
-     * @param primaryInstance       resolved catalogue offer for the primary instance type;
-     *                              an empty {@code Optional} skips the primary check
-     * @param fallbackInstanceTypes fallback primaryInstance type names to check in addition to primary
-     * @param regionId              cloud region used to resolve fallback offers
-     * @param parameters            the run's full parameter map; used for capacity-block detection
-     * @throws InsufficientUsageCreditsException if the owner cannot afford any of the types
-     */
-    public void checkCreditsForRunLaunch(final Optional<InstanceOffer> primaryInstance,
-                                         final List<String> fallbackInstanceTypes,
-                                         final Long regionId,
-                                         final Map<String, PipeConfValueVO> parameters) {
-        final PipelineUser user = userManager.getCurrentUser();
-
-        if (checksNotRequired(user)) {
-            return;
-        }
-
-        final Map<String, Integer> weights = weights();
-        findAppropriateOffer(regionId, resolvePrimaryOffer(primaryInstance, parameters), fallbackInstanceTypes, weights)
-                .ifPresent(offer -> throwIfInsufficient(
-                        checkGroups(user, singleRunGroup(offer),
-                                loadActiveOffers(user.getUserName(), weights), weights)));
-    }
-
-    /**
      * Enforces credits for resuming a previously paused run.
      *
-     * <p>Checks the primary instance type and every fallback type stored on the run;
-     * all types must individually pass.
+     * <p>The most expensive offer across the primary instance type and every fallback type
+     * stored on the run is used for the check (worst-case cost).
      * PAUSED runs are excluded from the active-offer sum (see {@link #loadActiveOffers}),
      * so there is no need to exclude the run's own ID here.
      *
@@ -200,20 +166,17 @@ public class PlatformUsageCreditsLaunchService {
     }
 
     /**
-     * Enforces credits for a homogeneous cluster (master + {@code nodeCount} workers,
-     * all sharing the same instance type).
+     * Enforces credits for a single run or a homogeneous cluster (master + {@code nodeCount}
+     * workers, all sharing the same instance type).
      *
-     * <p>The check is skipped when {@code configuration.nodeCount} is null or ≤ 0.
+     * <p>When {@code configuration.nodeCount} is null or ≤ 0 the check is performed for a
+     * single node; otherwise the full cluster (nodeCount + 1 replicas) is checked.
      *
      * @param configuration pipeline configuration carrying the instance type, region,
      *                      and worker node count
-     * @throws InsufficientUsageCreditsException if the owner cannot afford this cluster
+     * @throws InsufficientUsageCreditsException if the owner cannot afford the launch
      */
-    public void checkCreditsForCluster(final PipelineConfiguration configuration) {
-        if (Objects.isNull(configuration.getNodeCount()) || configuration.getNodeCount() <= 0) {
-            return;
-        }
-
+    public void checkCreditsForRun(final PipelineConfiguration configuration) {
         final PipelineUser user = userManager.getCurrentUser();
 
         if (checksNotRequired(user)) {
@@ -221,9 +184,12 @@ public class PlatformUsageCreditsLaunchService {
         }
 
         final Map<String, Integer> weights = weights();
+        final Integer nodeCount = configuration.getNodeCount();
+        final boolean isClusterRun = Objects.nonNull(nodeCount) && nodeCount > 0;
+
         findOfferByConfiguration(configuration, weights)
                 .ifPresent(offer -> throwIfInsufficient(
-                        checkGroups(user, homogeneousGroup(offer, configuration.getNodeCount()),
+                        checkGroups(user, isClusterRun ? clusterGroup(offer, nodeCount) : singleRunGroup(offer),
                                 loadActiveOffers(user.getUserName(), weights), weights)));
     }
 
@@ -418,7 +384,7 @@ public class PlatformUsageCreditsLaunchService {
         return Collections.singletonList(new ReplicaGroup(offer, 1));
     }
 
-    private static List<ReplicaGroup> homogeneousGroup(final InstanceOffer offer, final int nodeCount) {
+    private static List<ReplicaGroup> clusterGroup(final InstanceOffer offer, final int nodeCount) {
         return Collections.singletonList(new ReplicaGroup(offer, nodeCount + 1));
     }
 

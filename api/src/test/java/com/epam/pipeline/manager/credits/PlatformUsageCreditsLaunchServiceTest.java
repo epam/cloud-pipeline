@@ -26,7 +26,6 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
-import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.credits.InsufficientUsageCreditsException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -71,21 +70,13 @@ public class PlatformUsageCreditsLaunchServiceTest {
     private static final int VCPU_4 = 4;
     private static final int VCPU_20 = 20;
     private static final int VCPU_60 = 60;
-    private static final int VCPU_96 = 96;
     private static final int NO_GPU = 0;
-    private static final int NO_VCPU = 0;
-    private static final int ONE_GPU = 1;
-    private static final int EIGHT_GPU = 8;
 
     // credit balances
     private static final int BALANCE_2000 = 2000;
-    private static final int DEFAULT_BALANCE = 2000;
     private static final int BALANCE_200 = 200;
-    private static final int BALANCE_150 = 150;
     private static final int BALANCE_100 = 100;
-    private static final int BALANCE_90 = 90;
     private static final int BALANCE_50 = 50;
-    private static final int BALANCE_30 = 30;
     private static final int BALANCE_10 = 10;
     private static final int BALANCE_0 = 0;
 
@@ -110,375 +101,119 @@ public class PlatformUsageCreditsLaunchServiceTest {
             pipelineRunCRUDService, instanceOfferManager, messageHelper);
 
     // =========================================================================
-    // checkCreditsForRunLaunch
+    // checkCreditsForRun
     // =========================================================================
 
-    // --- mode short-circuit ---
-
     @Test
-    public void runLaunchAllowedWhenModeIsOff() {
+    public void checkRunAllowedWhenModeIsOff() {
         doReturn(PlatformUsageCreditsMode.OFF).when(preferenceManager)
                 .getPreference(SystemPreferences.USAGE_CREDITS_MODE);
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
+        service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, null, null));
     }
 
     @Test
-    public void runLaunchAllowedWhenModeIsBalanceOnly() {
-        doReturn(PlatformUsageCreditsMode.BALANCE_ONLY).when(preferenceManager)
-                .getPreference(SystemPreferences.USAGE_CREDITS_MODE);
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
-    }
-
-    @Test
-    public void runLaunchSkippedWhenInstanceAbsent() {
-        mockCurrentUser(regularUser());
-        mockCreditsOn();
-        mockWeights();
-        mockNoActiveRuns();
-        service.checkCreditsForRunLaunch(Optional.empty(), Collections.emptyList(), null, Collections.emptyMap());
-    }
-
-    // --- admin bypass ---
-
-    @Test
-    public void runLaunchAllowedForAdmin() {
+    public void checkRunAllowedForAdmin() {
         final PipelineUser admin = regularUser();
         admin.setAdmin(true);
         mockCurrentUser(admin);
         mockCreditsOn();
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
+        service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, null, null));
     }
 
     @Test
-    public void runLaunchAllowedForRunAdmin() {
-        final PipelineUser runAdmin = regularUser();
-        runAdmin.setRoles(Collections.singletonList(DefaultRoles.ROLE_RUN_ADMIN.getRole()));
-        mockCurrentUser(runAdmin);
-        mockCreditsOn();
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
+    public void checkRunSkippedWhenInstanceNotInCatalogue() {
+        mockUser();
+        mockWeights();
+        mockNoActiveRuns();
+        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
+        service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, null, null));
     }
 
-    // --- plain run credits ---
-
     @Test
-    public void runLaunchAllowedWhenSufficient() {
+    public void checkRunPlainAllowedWhenSufficient() {
         mockUser();
         mockWeights();
         mockBalance(BALANCE_2000);
         mockNoActiveRuns();
-        // balance=2000, required=4 → allowed
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
-    }
-
-    @Test
-    public void runLaunchAllowedOnExactFit() {
-        // balance=100, active run uses 60, required=40 → 100-60=40 ≥ 40
-        final int activeRunCpus = 60;
-        final int requiredCpus = 40;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_100);
-        mockActiveRuns(provisionedRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID));
-        doReturn(Optional.of(offer(activeRunCpus, NO_GPU)))
+        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
+        service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, null, null));
     }
 
     @Test
-    public void runLaunchBlockedWhenInsufficient() {
-        // balance=100, active run uses 60, required=50 → 100-60=40 < 50
-        final int activeRunCpus = 60;
-        final int requiredCpus = 50;
-
+    public void checkRunPlainBlockedWhenInsufficient() {
+        // balance=10, required=20 CPUs → blocked
         mockUser();
         mockWeights();
-        mockBalance(BALANCE_100);
-        mockActiveRuns(provisionedRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID));
-        doReturn(Optional.of(offer(activeRunCpus, NO_GPU)))
+        mockBalance(BALANCE_10);
+        mockNoActiveRuns();
+        doReturn(Optional.of(offer(VCPU_20, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
         assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
+                service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, null, null)));
     }
 
     @Test
-    public void runLaunchUsesDefaultBalanceWhenNoBalanceRow() {
+    public void checkRunClusterAllowedWhenSufficient() {
+        // 3 replicas (1 master + 2 workers) * 4 CPUs = 12; balance=200 → allowed
         mockUser();
         mockWeights();
-        mockDefaultBalance(DEFAULT_BALANCE);
+        mockBalance(BALANCE_200);
         mockNoActiveRuns();
-        // default=2000, required=4 → allowed
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
+        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
+                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
+        service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS, null));
     }
 
     @Test
-    public void runLaunchBlockedByGpuWeight() {
-        // 1 GPU * 100 = 100 credits required; balance=90 → blocked
+    public void checkRunClusterBlockedWhenInsufficient() {
+        // 3 replicas * 20 CPUs = 60; balance=50 → blocked
         mockUser();
         mockWeights();
-        mockBalance(BALANCE_90);
+        mockBalance(BALANCE_50);
         mockNoActiveRuns();
+        doReturn(Optional.of(offer(VCPU_20, NO_GPU)))
+                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
         assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(NO_VCPU, ONE_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
+                service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS, null)));
     }
 
-    // --- fallback instance types ---
+    @Test
+    public void checkRunZeroNodeCountTreatedAsPlainRun() {
+        // nodeCount=0 → plain run, required=4, balance=200 → allowed
+        mockUser();
+        mockWeights();
+        mockBalance(BALANCE_200);
+        mockNoActiveRuns();
+        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
+                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
+        service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, ZERO_WORKERS, null));
+    }
 
     @Test
-    public void runLaunchAllowedWhenFallbackAffordable() {
-        // primary=4 CPUs (cost=4), fallback=4 CPUs (cost=4); balance=10 → allowed
+    public void checkRunFallbackMoreExpensiveBlocks() {
+        // primary=4 CPUs, fallback=60 CPUs; balance=10 → worst-case=60 → blocked
         mockUser();
         mockWeights();
         mockBalance(BALANCE_10);
         mockNoActiveRuns();
         doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(FALLBACK_INSTANCE_TYPE), eq(REGION_ID));
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)),
-                Collections.singletonList(FALLBACK_INSTANCE_TYPE), REGION_ID, Collections.emptyMap());
-    }
-
-    @Test
-    public void runLaunchBlockedWhenFallbackMoreExpensive() {
-        // primary=4 CPUs (cost=4), fallback=60 CPUs (cost=60); balance=10 → blocked by worst-case
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockNoActiveRuns();
+                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
         doReturn(Optional.of(offer(VCPU_60, NO_GPU)))
                 .when(instanceOfferManager).findOffer(eq(FALLBACK_INSTANCE_TYPE), eq(REGION_ID));
         assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)),
-                        Collections.singletonList(FALLBACK_INSTANCE_TYPE), REGION_ID, Collections.emptyMap()));
+                service.checkCreditsForRun(config(INSTANCE_TYPE, REGION_ID, null,
+                        Collections.singletonList(FALLBACK_INSTANCE_TYPE))));
     }
 
     @Test
-    public void runLaunchBlockedWhenPrimaryMoreExpensiveThanFallback() {
-        // primary=60 CPUs (cost=60 > balance=10) → blocked even though fallback is cheaper
+    public void checkRunCapacityBlockUsesRequestedCpu() {
+        // catalogue has 96 CPUs but run requests only 4 → cost=4, balance=10 → allowed
         mockUser();
         mockWeights();
         mockBalance(BALANCE_10);
         mockNoActiveRuns();
-        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(FALLBACK_INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_60, NO_GPU)),
-                        Collections.singletonList(FALLBACK_INSTANCE_TYPE), REGION_ID, Collections.emptyMap()));
-    }
-
-    @Test
-    public void runLaunchSkipsUnresolvableFallbackType() {
-        // fallback not in catalogue → absent → skipped; primary passes → allowed
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockNoActiveRuns();
-        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(eq(FALLBACK_INSTANCE_TYPE), eq(REGION_ID));
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)),
-                Collections.singletonList(FALLBACK_INSTANCE_TYPE), REGION_ID, Collections.emptyMap());
-    }
-
-    // --- capacity block params at launch ---
-
-    @Test
-    public void runLaunchUsesRequestedCpuForCapacityBlock() {
-        // catalogue offer has 96 CPUs but run requests only 4 → cost=4, balance=10 → allowed
-        final String requestedCpus = "4";
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockNoActiveRuns();
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_96, NO_GPU)),
-                Collections.emptyList(), null, params(requestedCpus, null));
-    }
-
-    @Test
-    public void runLaunchUsesRequestedGpuForCapacityBlock() {
-        // catalogue offer has 8 GPUs (cost=800) but run requests 1 GPU (cost=100); balance=150 → allowed
-        final String requestedGpus = "1";
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_150);
-        mockNoActiveRuns();
-        service.checkCreditsForRunLaunch(Optional.of(offer(NO_VCPU, EIGHT_GPU)),
-                Collections.emptyList(), null, params(null, requestedGpus));
-    }
-
-    @Test
-    public void runLaunchBlockedWhenCapacityBlockRequestExceedsBalance() {
-        // requests cpu=2 (cost=2) + gpu=1 (cost=100) = 102; balance=100 → blocked
-        final String requestedCpus = "2";
-        final String requestedGpus = "1";
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_100);
-        mockNoActiveRuns();
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_96, EIGHT_GPU)),
-                        Collections.emptyList(), null, params(requestedCpus, requestedGpus)));
-    }
-
-    @Test
-    public void runLaunchAllowedWhenCapacityBlockParamsBothZero() {
-        // both params present but value=0 → required=0 → always allowed even with balance=0
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_0);
-        mockNoActiveRuns();
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_96, EIGHT_GPU)),
-                Collections.emptyList(), null, params("0", "0"));
-    }
-
-    @Test
-    public void runLaunchTreatsNonNumericCapacityBlockParamAsZero() {
-        // non-numeric gpu → treated as 0; cpu=4 → required=4, balance=10 → allowed
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockNoActiveRuns();
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_96, EIGHT_GPU)),
-                Collections.emptyList(), null, params("4", "notanumber"));
-    }
-
-    @Test
-    public void runLaunchUsesFullOfferWhenNoCapacityBlockParams() {
-        // no CB params → full offer (96 CPUs = 96 credits), balance=10 → blocked
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockNoActiveRuns();
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_96, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
-    }
-
-    // --- active-run offer resolution ---
-
-    @Test
-    public void activeCapacityBlockRunContributesSyntheticCpuCost() {
-        // active CB run requests 4 CPUs → allocated=4; balance=10, required=8 → 10-4=6 < 8 → blocked
-        final String activeRunRequestedCpus = "4";
-        final int requiredCpus = 8;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockActiveRuns(cbRun(RUN_ID_1, activeRunRequestedCpus, null));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
-    }
-
-    @Test
-    public void activeCapacityBlockRunContributesSyntheticGpuCost() {
-        // active CB run requests 1 GPU → allocated=100; balance=150, required=60 → 150-100=50 < 60 → blocked
-        final String activeRunRequestedGpus = "1";
-        final int requiredCpus = 60;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_150);
-        mockActiveRuns(cbRun(RUN_ID_1, null, activeRunRequestedGpus));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
-    }
-
-    @Test
-    public void activeCapacityBlockRunWithZeroParamsContributesNothing() {
-        // CB run with cpu=0, gpu=0 → allocated=0; balance=10, required=4 → allowed
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockActiveRuns(cbRun(RUN_ID_1, "0", "0"));
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
-    }
-
-    @Test
-    public void activeRunWithNoInstanceIsIgnored() {
-        final PipelineRun runWithNoInstance = new PipelineRun();
-        runWithNoInstance.setId(RUN_ID_1);
-        runWithNoInstance.setOwner(OWNER);
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockActiveRuns(runWithNoInstance);
-        service.checkCreditsForRunLaunch(Optional.of(offer(VCPU_4, NO_GPU)), Collections.emptyList(),
-                null, Collections.emptyMap());
-    }
-
-    @Test
-    public void activeRunNotYetProvisionedUsesWorstCaseFallback() {
-        // unprovisioned run has primary=4 CPUs but fallback=60 CPUs → worst-case=60 → allocated=60
-        // balance=100, required=50 → 100-60=40 < 50 → blocked
-        final int fallbackCpus = 60;
-        final int requiredCpus = 50;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_100);
-        final PipelineRun unprovisionedRun = unprovisionedRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID,
-                Collections.singletonList(FALLBACK_INSTANCE_TYPE));
-        mockActiveRuns(unprovisionedRun);
-        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        doReturn(Optional.of(offer(fallbackCpus, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(FALLBACK_INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
-    }
-
-    @Test
-    public void activeRunProvisionedUsesActualInstanceType() {
-        // provisioned run: nodeId set → use actual offer (4 CPUs), ignore any fallbacks
-        // balance=10, required=4 → 10-4=6 ≥ 4... but required=8 → blocked
-        final int activeRunCpus = 4;
-        final int requiredCpus = 8;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_10);
-        mockActiveRuns(provisionedRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID));
-        doReturn(Optional.of(offer(activeRunCpus, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
-    }
-
-    @Test
-    public void mixedActiveRunsAreAllSummed() {
-        // plain run: 20 CPUs=20; CB run: requests 4 CPUs=4 → allocated=24
-        // balance=30, required=8 → 30-24=6 < 8 → blocked
-        final int plainRunCpus = 20;
-        final String cbRunRequestedCpus = "4";
-        final int requiredCpus = 8;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_30);
-        mockActiveRuns(
-                provisionedRun(RUN_ID_1, INSTANCE_TYPE, REGION_ID),
-                cbRun(RUN_ID_2, cbRunRequestedCpus, null));
-        doReturn(Optional.of(offer(plainRunCpus, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForRunLaunch(Optional.of(offer(requiredCpus, NO_GPU)),
-                        Collections.emptyList(), null, Collections.emptyMap()));
+        service.checkCreditsForRun(configWithParams(INSTANCE_TYPE, REGION_ID, params("4", null)));
     }
 
     // =========================================================================
@@ -568,79 +303,6 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockBalance(BALANCE_10);
         mockNoActiveRuns();
         service.checkCreditsForResumeRun(cbRun(RUN_ID_1, requestedCpus, null));
-    }
-
-    // =========================================================================
-    // checkCreditsForCluster
-    // =========================================================================
-
-    @Test
-    public void clusterAllowedWhenModeIsOff() {
-        doReturn(PlatformUsageCreditsMode.OFF).when(preferenceManager)
-                .getPreference(SystemPreferences.USAGE_CREDITS_MODE);
-        service.checkCreditsForCluster(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS, null));
-    }
-
-    @Test
-    public void clusterAllowedForAdmin() {
-        final PipelineUser admin = regularUser();
-        admin.setAdmin(true);
-        mockCurrentUser(admin);
-        mockCreditsOn();
-        service.checkCreditsForCluster(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS, null));
-    }
-
-    @Test
-    public void clusterSkippedWhenNodeCountIsZero() {
-        // nodeCount=0 → check skipped entirely regardless of balance
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_0);
-        mockNoActiveRuns();
-        service.checkCreditsForCluster(config(INSTANCE_TYPE, REGION_ID, ZERO_WORKERS, null));
-    }
-
-    @Test
-    public void clusterAllowedWhenSufficient() {
-        // 3 replicas (1 master + 2 workers) * 4 CPUs = 12 credits; balance=200 → allowed
-        final int instanceCpus = 4;
-
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_200);
-        mockNoActiveRuns();
-        doReturn(Optional.of(offer(instanceCpus, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        service.checkCreditsForCluster(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS, null));
-    }
-
-    @Test
-    public void clusterBlockedWhenInsufficient() {
-        // 3 replicas * 20 CPUs = 60; balance=50 → blocked
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_50);
-        mockNoActiveRuns();
-        doReturn(Optional.of(offer(VCPU_20, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForCluster(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS, null)));
-    }
-
-    @Test
-    public void clusterBlockedWhenFallbackMoreExpensive() {
-        // primary=4 CPUs (cost=4), fallback=60 CPUs (cost=60); 3 replicas * 60 = 180; balance=50 → blocked
-        mockUser();
-        mockWeights();
-        mockBalance(BALANCE_50);
-        mockNoActiveRuns();
-        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
-        doReturn(Optional.of(offer(VCPU_60, NO_GPU)))
-                .when(instanceOfferManager).findOffer(eq(FALLBACK_INSTANCE_TYPE), eq(REGION_ID));
-        assertThrows(InsufficientUsageCreditsException.class, () ->
-                service.checkCreditsForCluster(config(INSTANCE_TYPE, REGION_ID, TWO_WORKERS,
-                        Collections.singletonList(FALLBACK_INSTANCE_TYPE))));
     }
 
     // =========================================================================

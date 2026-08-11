@@ -317,9 +317,8 @@ public class PipelineRunManager {
         runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
-        if (clusterRun) {
-            platformUsageCreditsLaunchService.checkCreditsForCluster(configuration);
-        }
+        platformUsageCreditsLaunchService.checkCreditsForRun(configuration);
+
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
                 runVO.getParentRunId(), null, null, runVO.getRunSids(),
@@ -397,9 +396,8 @@ public class PipelineRunManager {
         runVO.setRunSids(mergeRunSidsWithParents(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
-        if (isClusterRun) {
-            platformUsageCreditsLaunchService.checkCreditsForCluster(configuration);
-        }
+        platformUsageCreditsLaunchService.checkCreditsForRun(configuration);
+
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
@@ -461,10 +459,6 @@ public class PipelineRunManager {
         final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
         checkGPUInstance(configuration, instance);
         checkCapacityRequirements(configuration, instance);
-        platformUsageCreditsLaunchService.checkCreditsForRunLaunch(instance,
-                ListUtils.emptyIfNull(configuration.getFallbackInstanceTypes()),
-                region.getId(),
-                MapUtils.emptyIfNull(configuration.getParameters()));
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
