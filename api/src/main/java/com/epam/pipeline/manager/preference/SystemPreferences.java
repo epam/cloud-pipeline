@@ -549,7 +549,9 @@ public class SystemPreferences {
         "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
 
     public static final IntPreference CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT = new IntPreference(
-        "cluster.fallback.instance.types.max.count", 5, CLUSTER_GROUP, isGreaterThan(0).or(isEquals(-1)));
+        "cluster.fallback.instance.types.max.count", 5,
+            CLUSTER_GROUP, isGreaterThan(0).or(isEquals(-1)), true
+    );
 
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));

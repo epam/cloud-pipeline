@@ -115,6 +115,7 @@ public class AutoscaleManagerTest {
     private MetadataManager metadataManager;
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
+    private PipelineRun testRun;
 
     @BeforeEach
     public void setUp() throws Exception {
@@ -170,7 +171,7 @@ public class AutoscaleManagerTest {
         status.setConditions(Collections.singletonList(condition));
         unscheduledPipelinePod.setStatus(status);
 
-        PipelineRun testRun = new PipelineRun();
+        testRun = new PipelineRun();
         testRun.setId(TEST_RUN_ID);
         testRun.setStatus(TaskStatus.RUNNING);
         testRun.setPipelineRunParameters(Collections.emptyList());
@@ -222,5 +223,47 @@ public class AutoscaleManagerTest {
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
                 hasProperty("spot", Matchers.is(false))), any(), any());
+    }
+
+    @Test
+    public void testFallbackInstanceTypeTriedOnSpotFailure() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
+        RunInstance instance = new RunInstance();
+        instance.setSpot(false);
+        instance.setNodeType("primary.type");
+        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        testRun.setInstance(instance);
+
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+            .thenThrow(new CmdExecutionException("", AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE, ""))
+            .thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager, org.mockito.Mockito.never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testFallbackInstanceTypeTriedOnLimitExceeded() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
+        RunInstance instance = new RunInstance();
+        instance.setSpot(false);
+        instance.setNodeType("primary.type");
+        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        testRun.setInstance(instance);
+
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+            .thenThrow(new CmdExecutionException("", AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE, ""))
+            .thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager, org.mockito.Mockito.never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 }
