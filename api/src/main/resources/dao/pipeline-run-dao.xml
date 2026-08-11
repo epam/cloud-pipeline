@@ -486,7 +486,8 @@
                         node_name = :NODE_NAME,
                         is_spot = :IS_SPOT,
                         node_real_disk = :NODE_REAL_DISK,
-                        node_pool_id = :NODE_POOL_ID
+                        node_pool_id = :NODE_POOL_ID,
+                        instance_fallback_types = to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb)
                     WHERE
                         run_id = :RUN_ID
                 ]]>
