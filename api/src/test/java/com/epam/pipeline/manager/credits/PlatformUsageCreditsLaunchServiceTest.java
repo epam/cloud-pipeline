@@ -22,7 +22,6 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -524,13 +523,6 @@ public class PlatformUsageCreditsLaunchServiceTest {
         final PlatformUsageCreditsUserBalance balance = new PlatformUsageCreditsUserBalance();
         balance.setCurrentValue(value);
         doReturn(Optional.of(balance)).when(crudService).findByUserId(USER_ID);
-    }
-
-    private void mockDefaultBalance(final int value) {
-        doReturn(Optional.empty()).when(crudService).findByUserId(USER_ID);
-        doReturn(new ContextualPreference(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey(),
-                String.valueOf(value)))
-                .when(contextualPreferenceManager).search(any(), any(PipelineUser.class));
     }
 
     private void mockNoActiveRuns() {
