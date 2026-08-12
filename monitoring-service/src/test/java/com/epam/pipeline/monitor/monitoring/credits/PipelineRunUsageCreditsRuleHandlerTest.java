@@ -234,6 +234,25 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     }
 
     @Test
+    void attributesEventToOriginalOwnerInRunAsScenario() {
+        final String targetUser = "targetUser";
+        final String initiator = "initiatorUser";
+        final Long initiatorId = 300L;
+        final PipelineRun run = run(RUN_ID_1, targetUser, initiator);
+
+        when(client.filterRuns(any())).thenReturn(Collections.singletonList(run));
+        when(client.loadUserByName(initiator)).thenReturn(user(initiatorId));
+        when(evaluator.matches(any(), any(), any())).thenReturn(true);
+        when(client.filterPlatformUsageCreditsEvents(any())).thenReturn(Collections.emptyList());
+
+        final List<PlatformUsageCreditsUpdateEvent> result =
+                handler.process(Collections.singletonList(runStateRule()), null, now);
+
+        assertEquals(1, result.size());
+        assertEquals(initiatorId, result.get(0).getUserId());
+    }
+
+    @Test
     void timeWindowCreatesOneEventRegardlessOfMatchingRunCount() {
         final PlatformUsageCreditsUpdateRule rule = timeWindowRule();
         final PipelineRun run1 = run(RUN_ID_1, OWNER);
@@ -322,9 +341,14 @@ class PipelineRunUsageCreditsRuleHandlerTest {
     }
 
     private static PipelineRun run(final Long id, final String owner) {
+        return run(id, owner, owner);
+    }
+
+    private static PipelineRun run(final Long id, final String owner, final String originalOwner) {
         final PipelineRun run = new PipelineRun();
         run.setId(id);
         run.setOwner(owner);
+        run.setOriginalOwner(originalOwner);
         return run;
     }
 

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.credits;
 
+import com.epam.pipeline.aspect.credits.CreditsFeatureCheck;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
@@ -36,17 +37,20 @@ public class PlatformUsageCreditsEventApiService {
 
     private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventService;
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
         return platformUsageCreditsUpdateEventService.process(events);
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
             final PlatformUsageCreditsEventFilterVO filter) {
         return platformUsageCreditsUpdateEventService.filter(filter);
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public void export(final PlatformUsageCreditsEventFilterVO filter, final OutputStream outputStream) {
         platformUsageCreditsUpdateEventService.export(filter, outputStream);

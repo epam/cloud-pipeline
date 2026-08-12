@@ -29,7 +29,7 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
@@ -82,7 +82,7 @@ public class UserApiService {
     private JwtTokenRevocationManager jwtTokenRevocationManager;
 
     @Autowired
-    private PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+    private PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceService;
 
     /**
      * Registers a new user

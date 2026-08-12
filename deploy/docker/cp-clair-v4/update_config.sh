@@ -16,6 +16,7 @@
 config_path=${1:-/config/config.yaml}
 
 export CP_CLAIR_DATABASE_POOL_SIZE=${CP_CLAIR_DATABASE_POOL_SIZE:-5}
+export CP_CLAIR_DISABLE_UPDATES=${CP_CLAIR_DISABLE_UPDATES:-false}
 
 # Setup certificates
 ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
@@ -53,6 +54,7 @@ matcher:
   max_conn_pool: $CP_CLAIR_DATABASE_POOL_SIZE
   migrations: true
   period: 24h
+  disable_updaters: $CP_CLAIR_DISABLE_UPDATES
 notifier:
   indexer_addr: localhost:8080
   matcher_addr: localhost:8080

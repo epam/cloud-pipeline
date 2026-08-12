@@ -62,7 +62,7 @@ public class UserExporterTest {
     public void shouldWriteCreditsValueWhenBalanceIsPresent() {
         final PipelineUserExportVO settings = exportSettingsWithCredits();
         final PipelineUser user = getPipelineUser("USER1", ID);
-        user.setUsageCredits(new PlatformUsageCreditsUserBalance(ID, CREDITS_VALUE, null));
+        user.setUsageCredits(new PlatformUsageCreditsUserBalance(ID, CREDITS_VALUE, null, null));
         final List<PipelineUserWithStoragePath> users = Collections.singletonList(wrap(user));
 
         final String csv = exporter.exportUsers(settings, users, Collections.emptyList());

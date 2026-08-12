@@ -113,7 +113,6 @@ public class AutoscaleManagerTest {
     private RunRegionShiftHandler runRegionShiftHandler;
     @Mock
     private MetadataManager metadataManager;
-
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
     private PipelineRun testRun;
 

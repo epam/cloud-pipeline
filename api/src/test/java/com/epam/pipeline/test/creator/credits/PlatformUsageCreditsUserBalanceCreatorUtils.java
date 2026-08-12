@@ -71,7 +71,7 @@ public interface PlatformUsageCreditsUserBalanceCreatorUtils {
 
     static PlatformUsageCreditsUserBalance balanceDto() {
         return new PlatformUsageCreditsUserBalance(USER_ID, BALANCE_VALUE,
-            LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+            LocalDateTime.now().truncatedTo(ChronoUnit.MILLIS), null);
     }
 
     static PlatformUsageCreditsUserBalanceFilterVO filterVO() {

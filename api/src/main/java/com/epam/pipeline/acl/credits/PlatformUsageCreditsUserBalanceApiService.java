@@ -16,11 +16,13 @@
 
 package com.epam.pipeline.acl.credits;
 
+import com.epam.pipeline.aspect.credits.CreditsFeatureCheck;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,22 +31,32 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
 @RequiredArgsConstructor
 public class PlatformUsageCreditsUserBalanceApiService {
 
+    private final PlatformUsageCreditsUserBalanceCRUDService userBalanceCRUD;
     private final PlatformUsageCreditsUserBalanceService userBalanceService;
     private final PlatformUsageCreditsEventService eventService;
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
             final PlatformUsageCreditsUserBalanceFilterVO filter) {
-        return userBalanceService.filter(filter);
+        return userBalanceCRUD.filter(filter);
     }
 
+    @CreditsFeatureCheck
     @PreAuthorize(ADMIN_ONLY)
     public void reset(final PlatformUsageCreditsResetRequest resetRequest) {
         eventService.reset(resetRequest);
+    }
+
+    @CreditsFeatureCheck
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public PlatformUsageCreditsUserBalance getBalanceWithAllocated(final Long userId) {
+        return userBalanceService.getBalanceWithAllocated(userId);
     }
 }

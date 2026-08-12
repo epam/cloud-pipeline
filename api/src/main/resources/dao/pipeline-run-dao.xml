@@ -2109,6 +2109,80 @@
                 ]]>
             </value>
         </property>
+        <property name="loadRunsByStatusesAndOriginalOwnerQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        instance_fallback_types,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        original_owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        last_network_consumption_notification_time,
+                        exec_preferences, pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        fs_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        pause_disabled,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name,
+                        cluster_price,
+                        node_pool_id,
+                        node_start_date,
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        status IN (:list)
+                        AND lower(original_owner) = :OWNER
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
         <property name="loadAllRunsByIdsQuery">
             <value>
                 <![CDATA[

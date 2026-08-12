@@ -31,6 +31,7 @@ import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.jupiter.api.Test;
@@ -38,16 +39,18 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.*;
 
 public class PipelineRunDockerOperationManagerTest {
     private static final Long RUN_ID = 1L;
@@ -71,6 +74,8 @@ public class PipelineRunDockerOperationManagerTest {
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
     private final RunLimitsService runLimitsService = mock(RunLimitsService.class);
+    private final PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService =
+            mock(PlatformUsageCreditsLaunchService.class);
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
             new PipelineRunDockerOperationManager(
                     dockerContainerOperationManager,
@@ -84,7 +89,8 @@ public class PipelineRunDockerOperationManagerTest {
                     runStatusManager,
                     messageHelper,
                     preferenceManager,
-                    runLimitsService);
+                    runLimitsService,
+                    platformUsageCreditsLaunchService);
 
     @Test
     public void pauseRunShouldBeRelaunched() {
