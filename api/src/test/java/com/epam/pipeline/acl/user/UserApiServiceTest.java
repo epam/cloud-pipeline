@@ -25,8 +25,7 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
-
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -85,7 +84,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     private RunLimitsService mockRunLimitsService;
 
     @Autowired
-    private PlatformUsageCreditsUserBalanceService mockPlatformUsageCreditsUserBalanceService;
+    private PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -466,7 +465,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     public void shouldGetCurrentUser() {
         doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
         doReturn(Optional.empty())
-                .when(mockPlatformUsageCreditsUserBalanceService).findByUserId(pipelineUser.getId());
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
 
         assertThat(userApiService.getCurrentUser()).isEqualTo(pipelineUser);
     }
@@ -474,10 +473,10 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     public void shouldSetUsageCreditsOnGetCurrentUser() {
         final PlatformUsageCreditsUserBalance balance =
-                new PlatformUsageCreditsUserBalance(pipelineUser.getId(), 1500, null);
+                new PlatformUsageCreditsUserBalance(pipelineUser.getId(), 1500, null, null);
         doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
         doReturn(Optional.of(balance))
-                .when(mockPlatformUsageCreditsUserBalanceService).findByUserId(pipelineUser.getId());
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
 
         final PipelineUser result = userApiService.getCurrentUser();
 
@@ -486,9 +485,10 @@ public class UserApiServiceTest extends AbstractAclTest {
 
     @Test
     public void shouldLeaveUsageCreditsNullWhenNoBalanceExists() {
+        pipelineUser.setUsageCredits(null);
         doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
         doReturn(Optional.empty())
-                .when(mockPlatformUsageCreditsUserBalanceService).findByUserId(pipelineUser.getId());
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
 
         assertThat(userApiService.getCurrentUser().getUsageCredits()).isNull();
     }

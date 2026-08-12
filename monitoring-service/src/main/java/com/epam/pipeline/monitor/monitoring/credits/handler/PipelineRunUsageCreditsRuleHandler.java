@@ -80,7 +80,7 @@ public class PipelineRunUsageCreditsRuleHandler implements PlatformUsageCreditsR
         }
 
         final Map<String, List<PipelineRun>> runsByOwner = runs.stream()
-                .collect(Collectors.groupingBy(PipelineRun::getOwner));
+                .collect(Collectors.groupingBy(PipelineRun::getOriginalOwner));
         log.info("Evaluating {} RUN_STATE rule(s) against {} run(s) across {} user(s)",
                 rules.size(), runs.size(), runsByOwner.size());
 

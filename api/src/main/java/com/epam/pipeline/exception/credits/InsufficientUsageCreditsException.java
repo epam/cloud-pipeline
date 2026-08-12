@@ -14,23 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.credits;
+package com.epam.pipeline.exception.credits;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public class InsufficientUsageCreditsException extends RuntimeException {
 
-import java.time.LocalDateTime;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PlatformUsageCreditsUserBalance {
-
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
-    private Integer allocated;
+    public InsufficientUsageCreditsException(final String message) {
+        super(message);
+    }
 }

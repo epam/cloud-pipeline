@@ -142,6 +142,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadAllRunsPossiblyActiveInPeriodQuery;
     private String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     private String loadAllRunsByStatusQuery;
+    private String loadRunsByStatusesAndOriginalOwnerQuery;
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
     private String loadRunsByNodeNameQuery;
@@ -481,6 +482,17 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 .collect(Collectors.toList()));
         return addServiceUrls(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
                 .query(loadAllRunsByStatusQuery, params, PipelineRunParameters.getRowMapper())));
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineRun> loadRunsByStatusesAndOriginalOwner(final List<TaskStatus> statuses, final String owner) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, statuses.stream()
+                .map(TaskStatus::getId)
+                .collect(Collectors.toList()));
+        params.addValue(PipelineRunParameters.OWNER.name(), owner.toLowerCase());
+        return addServiceUrls(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadRunsByStatusesAndOriginalOwnerQuery, params, PipelineRunParameters.getRowMapper())));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1756,6 +1768,11 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Required
     public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
         this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
+    }
+
+    @Required
+    public void setLoadRunsByStatusesAndOriginalOwnerQuery(final String loadRunsByStatusesAndOriginalOwnerQuery) {
+        this.loadRunsByStatusesAndOriginalOwnerQuery = loadRunsByStatusesAndOriginalOwnerQuery;
     }
 
     @Required

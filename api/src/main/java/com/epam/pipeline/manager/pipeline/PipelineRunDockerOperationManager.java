@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -73,6 +74,7 @@ public class PipelineRunDockerOperationManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final RunLimitsService runLimitsService;
+    private final PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
 
     /**
      * Commits docker image and push it to a docker registry from specified run
@@ -178,6 +180,7 @@ public class PipelineRunDockerOperationManager {
         }
         final Integer totalRunInstances = 1 + Optional.ofNullable(pipelineRun.getNodeCount()).orElse(0);
         runLimitsService.checkRunLaunchLimits(totalRunInstances);
+        platformUsageCreditsLaunchService.checkCreditsForResumeRun(pipelineRun);
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
         pipelineRun.setStatus(TaskStatus.RESUMING);
         // prolong the run here in order to get rid off idle notification right after resume

@@ -32,6 +32,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManag
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
@@ -219,6 +220,9 @@ public class TestApplication {
 
     @MockBean
     public PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    public PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
 
     @MockBean
     public PlatformUsageCreditsEventService platformUsageCreditsEventService;
