@@ -2108,7 +2108,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadRunsByStatusesAndOwnerQuery">
+        <property name="loadRunsByStatusesAndOriginalOwnerQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -2176,7 +2176,7 @@
                         pipeline.pipeline_run
                     WHERE
                         status IN (:list)
-                        AND lower(owner) = :OWNER
+                        AND lower(original_owner) = :OWNER
                     ORDER BY
                         start_date
                 ]]>

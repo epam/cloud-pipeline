@@ -53,7 +53,9 @@ import static org.mockito.Mockito.mock;
 public class PlatformUsageCreditsLaunchServiceTest {
 
     private static final String OWNER = "user1";
+    private static final String ORIGINAL_OWNER = "initiatorUser";
     private static final long USER_ID = 1L;
+    private static final long ORIGINAL_OWNER_ID = 2L;
     private static final long RUN_ID_1 = 10L;
     private static final long RUN_ID_2 = 11L;
     private static final String INSTANCE_TYPE = "m5.xlarge";
@@ -213,6 +215,36 @@ public class PlatformUsageCreditsLaunchServiceTest {
         mockBalance(BALANCE_10);
         mockNoActiveRuns();
         service.checkCreditsForRun(configWithParams(INSTANCE_TYPE, REGION_ID, params("4", null)));
+    }
+
+    @Test
+    public void checkRunUsesOriginalOwnerWhenRunAsParamPresent() {
+        // run-as: security context is targetUser, but ORIGINAL_OWNER param says initiatorUser
+        // credits must be checked against initiatorUser, not targetUser
+        final PipelineUser initiator = new PipelineUser();
+        initiator.setId(ORIGINAL_OWNER_ID);
+        initiator.setUserName(ORIGINAL_OWNER);
+        initiator.setAdmin(false);
+        initiator.setRoles(Collections.emptyList());
+
+        mockCreditsOn();
+        doReturn("ORIGINAL_OWNER").when(preferenceManager)
+                .getPreference(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+        doReturn(initiator).when(userManager).loadByNameOrId(ORIGINAL_OWNER);
+        mockWeights();
+        final PlatformUsageCreditsUserBalance balance = new PlatformUsageCreditsUserBalance();
+        balance.setCurrentValue(BALANCE_2000);
+        doReturn(Optional.of(balance)).when(crudService).findByUserId(ORIGINAL_OWNER_ID);
+        doReturn(Collections.emptyList()).when(pipelineRunCRUDService)
+                .loadRunsByStatusesAndOriginalOwner(any(), eq(ORIGINAL_OWNER));
+        doReturn(Optional.of(offer(VCPU_4, NO_GPU)))
+                .when(instanceOfferManager).findOffer(eq(INSTANCE_TYPE), eq(REGION_ID));
+
+        final Map<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put("ORIGINAL_OWNER", new PipeConfValueVO(ORIGINAL_OWNER));
+        final PipelineConfiguration config = configWithParams(INSTANCE_TYPE, REGION_ID, parameters);
+        config.setCloudRegionId(REGION_ID);
+        service.checkCreditsForRun(config);
     }
 
     // =========================================================================
@@ -527,12 +559,12 @@ public class PlatformUsageCreditsLaunchServiceTest {
 
     private void mockNoActiveRuns() {
         doReturn(Collections.emptyList()).when(pipelineRunCRUDService)
-                .loadRunsByStatusesAndOwner(any(), eq(OWNER));
+                .loadRunsByStatusesAndOriginalOwner(any(), eq(OWNER));
     }
 
     private void mockActiveRuns(final PipelineRun... runs) {
         doReturn(Arrays.asList(runs)).when(pipelineRunCRUDService)
-                .loadRunsByStatusesAndOwner(any(), eq(OWNER));
+                .loadRunsByStatusesAndOriginalOwner(any(), eq(OWNER));
     }
 
     // =========================================================================
@@ -543,6 +575,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
         final PipelineRun run = new PipelineRun();
         run.setId(id);
         run.setOwner(OWNER);
+        run.setOriginalOwner(OWNER);
         final RunInstance instance = new RunInstance();
         instance.setNodeType(instanceType);
         instance.setCloudRegionId(regionId);
@@ -557,6 +590,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
         final PipelineRun run = new PipelineRun();
         run.setId(id);
         run.setOwner(OWNER);
+        run.setOriginalOwner(OWNER);
         final RunInstance instance = new RunInstance();
         instance.setNodeType(instanceType);
         instance.setCloudRegionId(regionId);
@@ -571,6 +605,7 @@ public class PlatformUsageCreditsLaunchServiceTest {
         final PipelineRun run = new PipelineRun();
         run.setId(id);
         run.setOwner(OWNER);
+        run.setOriginalOwner(OWNER);
         final RunInstance instance = new RunInstance();
         instance.setNodeType(INSTANCE_TYPE);
         instance.setCloudRegionId(REGION_ID);

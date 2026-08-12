@@ -152,7 +152,7 @@ public class PlatformUsageCreditsLaunchService {
      * @throws InsufficientUsageCreditsException if the owner cannot afford the resume
      */
     public void checkCreditsForResumeRun(final PipelineRun run) {
-        final String owner = run.getOwner();
+        final String owner = run.getOriginalOwner();
         final PipelineUser user = userManager.loadByNameOrId(owner);
 
         if (checksNotRequired(user)) {
@@ -177,7 +177,7 @@ public class PlatformUsageCreditsLaunchService {
      * @throws InsufficientUsageCreditsException if the owner cannot afford the launch
      */
     public void checkCreditsForRun(final PipelineConfiguration configuration) {
-        final PipelineUser user = userManager.getCurrentUser();
+        final PipelineUser user = resolveRunUser(configuration);
 
         if (checksNotRequired(user)) {
             return;
@@ -197,7 +197,8 @@ public class PlatformUsageCreditsLaunchService {
      * Enforces credits for a configuration described by a master configuration
      * and a list of child worker entries (each potentially using a different instance type).
      *
-     * <p>The owner is resolved from the current security context.
+     * <p>The owner is resolved from the {@code ORIGINAL_OWNER} run parameter when present
+     * (set by the run-as feature), falling back to the current security context.
      * Groups whose offer cannot be resolved are silently skipped; if no groups resolve
      * the check is treated as a no-op.
      *
@@ -217,7 +218,7 @@ public class PlatformUsageCreditsLaunchService {
     public void checkCreditsForConfiguration(final PipelineConfiguration mainConfiguration,
                                              final int masterNodeCount,
                                              final List<PipelineConfiguration> childConfigurations) {
-        final PipelineUser user = userManager.getCurrentUser();
+        final PipelineUser user = resolveRunUser(mainConfiguration);
 
         if (checksNotRequired(user)) {
             return;
@@ -263,7 +264,7 @@ public class PlatformUsageCreditsLaunchService {
     }
 
     private List<InstanceOffer> loadActiveOffers(final String owner, final Map<String, Integer> weights) {
-        return pipelineRunCRUDService.loadRunsByStatusesAndOwner(
+        return pipelineRunCRUDService.loadRunsByStatusesAndOriginalOwner(
                         Collections.singletonList(TaskStatus.RUNNING), owner).stream()
                 .map(run -> resolveOfferForRun(run, weights))
                 .filter(Optional::isPresent)
@@ -433,6 +434,17 @@ public class PlatformUsageCreditsLaunchService {
         return findAppropriateOffer(configuration.getCloudRegionId(),
                 resolvePrimaryOffer(configuration),
                 configuration.getFallbackInstanceTypes(), weights);
+    }
+
+    private PipelineUser resolveRunUser(final PipelineConfiguration configuration) {
+        final String originalOwnerParameter = preferenceManager
+                .getPreference(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+        return Optional.ofNullable(configuration.getParameters())
+                .map(p -> p.get(originalOwnerParameter))
+                .map(PipeConfValueVO::getValue)
+                .filter(StringUtils::isNotBlank)
+                .map(userManager::loadByNameOrId)
+                .orElseGet(userManager::getCurrentUser);
     }
 
     private boolean checksNotRequired(final PipelineUser user) {

@@ -142,7 +142,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadAllRunsPossiblyActiveInPeriodQuery;
     private String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     private String loadAllRunsByStatusQuery;
-    private String loadRunsByStatusesAndOwnerQuery;
+    private String loadRunsByStatusesAndOriginalOwnerQuery;
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
     private String loadRunsByNodeNameQuery;
@@ -485,14 +485,14 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<PipelineRun> loadRunsByStatusesAndOwner(final List<TaskStatus> statuses, final String owner) {
+    public List<PipelineRun> loadRunsByStatusesAndOriginalOwner(final List<TaskStatus> statuses, final String owner) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, statuses.stream()
                 .map(TaskStatus::getId)
                 .collect(Collectors.toList()));
         params.addValue(PipelineRunParameters.OWNER.name(), owner.toLowerCase());
         return addServiceUrls(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
-                .query(loadRunsByStatusesAndOwnerQuery, params, PipelineRunParameters.getRowMapper())));
+                .query(loadRunsByStatusesAndOriginalOwnerQuery, params, PipelineRunParameters.getRowMapper())));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1771,8 +1771,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadRunsByStatusesAndOwnerQuery(final String loadRunsByStatusesAndOwnerQuery) {
-        this.loadRunsByStatusesAndOwnerQuery = loadRunsByStatusesAndOwnerQuery;
+    public void setLoadRunsByStatusesAndOriginalOwnerQuery(final String loadRunsByStatusesAndOriginalOwnerQuery) {
+        this.loadRunsByStatusesAndOriginalOwnerQuery = loadRunsByStatusesAndOriginalOwnerQuery;
     }
 
     @Required
