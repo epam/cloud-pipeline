@@ -21,7 +21,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,7 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     private PlatformUsageCreditsUserBalanceApiService apiService;
 
     @Autowired
-    private PlatformUsageCreditsUserBalanceService mockPlatformUsageCreditsUserBalanceService;
+    private PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
 
     @Autowired
     private PlatformUsageCreditsEventService mockPlatformUsageCreditsEventService;
@@ -56,10 +56,10 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     public void shouldFilterForAdmin() {
         final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO();
         final PagedResult<List<PlatformUsageCreditsUserBalance>> expected = pagedResult();
-        doReturn(expected).when(mockPlatformUsageCreditsUserBalanceService).filter(filter);
+        doReturn(expected).when(mockPlatformUsageCreditsUserBalanceCRUDService).filter(filter);
 
         assertThat(apiService.filter(filter)).isEqualTo(expected);
-        verify(mockPlatformUsageCreditsUserBalanceService).filter(filter);
+        verify(mockPlatformUsageCreditsUserBalanceCRUDService).filter(filter);
     }
 
     @Test

@@ -31,6 +31,7 @@ import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
@@ -71,6 +72,8 @@ public class PipelineRunDockerOperationManagerTest {
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
     private final RunLimitsService runLimitsService = mock(RunLimitsService.class);
+    private final PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService =
+            mock(PlatformUsageCreditsLaunchService.class);
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
             new PipelineRunDockerOperationManager(
                     dockerContainerOperationManager,
@@ -84,7 +87,8 @@ public class PipelineRunDockerOperationManagerTest {
                     runStatusManager,
                     messageHelper,
                     preferenceManager,
-                    runLimitsService);
+                    runLimitsService,
+                    platformUsageCreditsLaunchService);
 
     @Test
     public void pauseRunShouldBeRelaunched() {

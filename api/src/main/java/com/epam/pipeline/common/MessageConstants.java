@@ -870,6 +870,10 @@ public final class MessageConstants {
             "error.platform.usage.credits.rule.duration.not.supported";
     public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
             "error.platform.usage.credits.rule.time.window.invalid";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT =
+            "error.platform.usage.credits.insufficient";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
+            "error.platform.usage.credits.disabled";
 
     private MessageConstants() {
         // no-op

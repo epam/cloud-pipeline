@@ -41,7 +41,7 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -135,13 +135,12 @@ public class UserManager implements SecuredEntityManager {
     private QuotaService quotaService;
 
     @Autowired
-    private PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+    private PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceService;
 
     @Autowired
     private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManager;
 
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser create(final String name, final List<Long> roles,
                                final List<String> groups,
@@ -150,6 +149,7 @@ public class UserManager implements SecuredEntityManager {
         return Optional.of(create(name, roles, groups, attributes))
                 .map(user -> configureUserDefaultStorage(user, defaultStorageId))
                 .map(this::configureUserPrivateDockerRegistryGroup)
+                .map(this::configureDefaultCreditsBalance)
                 .get();
     }
 
@@ -722,5 +722,10 @@ public class UserManager implements SecuredEntityManager {
                 platformUsageCreditsUserBalanceService.findAllAsMap();
         pipelineUsers.forEach(user -> Optional.ofNullable(balances.get(user.getId()))
                 .ifPresent(user::setUsageCredits));
+    }
+
+    private PipelineUser configureDefaultCreditsBalance(final PipelineUser user) {
+        platformUsageCreditsUserBalanceService.createDefaultBalance(user.getId());
+        return user;
     }
 }

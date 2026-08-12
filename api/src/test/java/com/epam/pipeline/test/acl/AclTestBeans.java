@@ -52,6 +52,11 @@ import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -122,9 +127,6 @@ import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
-import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -537,7 +539,13 @@ public class AclTestBeans {
     protected PlatformUsageCreditsUserBalanceService mockPlatformUsageCreditsUserBalanceService;
 
     @MockBean
+    protected PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
+
+    @MockBean
     protected PlatformUsageCreditsEventService mockPlatformUsageCreditsEventService;
+
+    @MockBean
+    protected PlatformUsageCreditsLaunchService mockPlatformUsageCreditsLaunchService;
 
     @MockBean
     protected UsersUsageReportService usersUsageReportService;

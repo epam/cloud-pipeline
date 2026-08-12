@@ -20,6 +20,7 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -1335,6 +1336,13 @@ public class SystemPreferences {
      */
     public static final IntPreference USAGE_CREDITS_NOTIFICATION_THRESHOLD = new IntPreference(
             "usage.credits.notification.threshold", 25, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Controls enforcement level: <p>
+     * OFF disables API + population; <p>
+     * BALANCE_ONLY calculates and shows balances; <p>
+     * ON calculates and shows balances and blocks runs if insufficient. */
+    public static final EnumPreference<PlatformUsageCreditsMode> USAGE_CREDITS_MODE =
+            new EnumPreference<>("platform.usage.credits.mode",
+                    PlatformUsageCreditsMode.BALANCE_ONLY, USAGE_CREDITS_GROUP);
 
     // Lustre FS
     public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(

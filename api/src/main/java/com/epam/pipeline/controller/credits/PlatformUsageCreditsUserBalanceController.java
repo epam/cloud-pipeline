@@ -29,9 +29,11 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -63,5 +65,16 @@ public class PlatformUsageCreditsUserBalanceController extends AbstractRestContr
     public Result<Void> reset(@RequestBody final PlatformUsageCreditsResetRequest resetRequest) {
         apiService.reset(resetRequest);
         return Result.success(null);
+    }
+
+    @GetMapping("/balance")
+    @ApiOperation(
+            value = "Returns the credits balance for a specific user including currently allocated credits. "
+                    + "Admins can query any user; non-admins can only query their own balance.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PlatformUsageCreditsUserBalance> getBalanceWithAllocated(
+            @RequestParam final Long userId) {
+        return Result.success(apiService.getBalanceWithAllocated(userId));
     }
 }

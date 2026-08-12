@@ -16,21 +16,20 @@
 
 package com.epam.pipeline.dto.credits;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PlatformUsageCreditsUserBalance {
-
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
-    private Integer allocated;
+/**
+ * Controls the enforcement level of the platform usage credits feature.
+ *
+ * <ul>
+ *   <li>{@link #OFF} — feature is fully disabled; credits API methods throw, and the
+ *       {@code usageCredits} field is not populated on users.</li>
+ *   <li>{@link #BALANCE_ONLY} — balances are visible and the API works, but launch and autoscaling
+ *       checks are not enforced.</li>
+ *   <li>{@link #ON} — full enforcement: balance visibility, API, and launch / autoscaling checks
+ *       are all active.</li>
+ * </ul>
+ */
+public enum PlatformUsageCreditsMode {
+    OFF,
+    BALANCE_ONLY,
+    ON
 }

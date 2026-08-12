@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.credits;
+package com.epam.pipeline.manager.credits;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
-import java.time.LocalDateTime;
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class PlatformUsageCreditsUserBalance {
-
-    private Long userId;
-    private int currentValue;
-    private LocalDateTime modifiedDate;
-    private Integer allocated;
+/**
+ * Result of an atomic balance update returned by
+ * {@link PlatformUsageCreditsUserBalanceCRUDService#updateByEvent}.
+ *
+ * @param newBalance  the balance value after the update was applied
+ * @param actualDelta the signed delta that was actually applied (may differ from the
+ *                    requested delta when clamping to min/max occurred)
+ */
+@Value
+public class BalanceUpdateResult {
+    int newBalance;
+    int actualDelta;
 }

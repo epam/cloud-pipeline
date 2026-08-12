@@ -87,6 +87,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -232,6 +233,9 @@ public class PipelineRunManager {
     private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
 
     @Autowired
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Autowired
     private RunLimitsService runLimitsService;
 
     @Autowired
@@ -270,6 +274,8 @@ public class PipelineRunManager {
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
         runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
+
+        platformUsageCreditsLaunchService.checkCreditsForRun(configuration);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
@@ -347,6 +353,8 @@ public class PipelineRunManager {
                 .getPipelineConfigurationForPipeline(pipeline, runVO);
         runVO.setRunSids(mergeRunSidsWithParents(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
+
+        platformUsageCreditsLaunchService.checkCreditsForRun(configuration);
 
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
