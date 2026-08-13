@@ -43,6 +43,8 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -195,6 +197,9 @@ public class PipelineRunManagerLaunchTest {
 
     @Mock
     private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Mock
+    private RestartRunManager restartRunManager;
 
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
@@ -509,6 +514,32 @@ public class PipelineRunManagerLaunchTest {
         );
         pipelineRun = launchTool(configuration, INSTANCE_TYPE);
         assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+    }
+
+    @Test
+    public void restartRunShouldPreserveFallbackInstanceTypes() {
+        final String fallbackType = "fallback.type";
+        final RunInstance instance = new RunInstance();
+        instance.setCloudRegionId(REGION_ID);
+        instance.setCloudProvider(CloudProvider.AWS);
+        instance.setNodeType(INSTANCE_TYPE);
+        instance.setNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setEffectiveNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setFallbackInstanceTypes(singletonList(fallbackType));
+
+        final PipelineRun run = getPipelineRun(ID, TEST_USER);
+        run.setInstance(instance);
+        run.setDockerImage(IMAGE);
+        run.setActualDockerImage(IMAGE);
+
+        doReturn(configuration).when(pipelineConfigurationManager).getConfigurationFromRun(any());
+        doReturn(ID_2).when(pipelineRunDao).createRunId();
+        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(any(), any(), any(), any());
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNotNull(restartedRun.getInstance());
+        assertThat(restartedRun.getInstance().getFallbackInstanceTypes(), is(singletonList(fallbackType)));
     }
 
     private void mock(final InstancePrice price) {
