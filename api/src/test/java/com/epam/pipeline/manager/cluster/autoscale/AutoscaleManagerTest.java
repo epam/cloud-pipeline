@@ -54,12 +54,16 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -68,6 +72,8 @@ import static org.mockito.Mockito.when;
 public class AutoscaleManagerTest {
     private static final String TEST_KUBE_NAMESPACE = "testNamespace";
     private static final Long TEST_RUN_ID = 111L;
+    private static final String PRIMARY_INSTANCE_TYPE = "primary.type";
+    private static final String FALLBACK_INSTANCE_TYPE = "fallback.type";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -227,8 +233,8 @@ public class AutoscaleManagerTest {
 
         RunInstance instance = new RunInstance();
         instance.setSpot(false);
-        instance.setNodeType("primary.type");
-        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
         testRun.setInstance(instance);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
@@ -248,8 +254,8 @@ public class AutoscaleManagerTest {
 
         RunInstance instance = new RunInstance();
         instance.setSpot(false);
-        instance.setNodeType("primary.type");
-        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
         testRun.setInstance(instance);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
@@ -261,5 +267,32 @@ public class AutoscaleManagerTest {
         verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
         verify(pipelineRunManager, org.mockito.Mockito.never())
             .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testNodeTypeRestoredOnUnexpectedException() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
+        RunInstance instance = new RunInstance();
+        instance.setSpot(false);
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
+        testRun.setInstance(instance);
+
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+                .thenThrow(new CmdExecutionException("", AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, ""))
+                .thenThrow(new RuntimeException("unexpected error during fallback attempt"));
+
+        final List<String> capturedNodeTypes = new ArrayList<>();
+        doAnswer(invocation -> {
+            capturedNodeTypes.add(((RunInstance) invocation.getArguments()[1]).getNodeType());
+            return null;
+        }).when(pipelineRunManager).updateRunInstance(eq(TEST_RUN_ID), any(RunInstance.class));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        // primary tried, fallback tried (unexpected exception), finally must restore to primary
+        assertThat(capturedNodeTypes,
+                Matchers.contains(PRIMARY_INSTANCE_TYPE, FALLBACK_INSTANCE_TYPE, PRIMARY_INSTANCE_TYPE));
     }
 }
