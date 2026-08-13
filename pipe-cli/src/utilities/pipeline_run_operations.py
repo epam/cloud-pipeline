@@ -324,8 +324,9 @@ class PipelineRunOperations(object):
             sys.exit(0)
 
     @classmethod
-    def resume(cls, run_id, sync):
-        pipeline_run_model = Pipeline.resume_pipeline(run_id)
+    def resume(cls, run_id, sync, instance_type=None, fallback_instance_types=None):
+        pipeline_run_model = Pipeline.resume_pipeline(run_id, instance_type=instance_type,
+                                                      fallback_instance_types=fallback_instance_types)
         pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
         pipeline_version = pipeline_run_model.version
         image_name = cls.build_image_name(pipeline_name, pipeline_version)

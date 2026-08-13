@@ -274,7 +274,7 @@ public class AutoscaleManagerTest {
     }
 
     @Test
-    public void testNodeTypeRestoredOnUnexpectedException() {
+    public void testNodeTypeNotOverwrittenOnUnexpectedException() {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
 
         RunInstance instance = new RunInstance();
@@ -295,8 +295,8 @@ public class AutoscaleManagerTest {
 
         autoscaleManagerCore.runAutoscaling();
 
-        // primary tried, fallback tried (unexpected exception), finally must restore to primary
-        assertThat(capturedNodeTypes,
-                Matchers.contains(PRIMARY_INSTANCE_TYPE, FALLBACK_INSTANCE_TYPE, PRIMARY_INSTANCE_TYPE));
+        // DB is saved once with the primary type before the loop; fallback type is never written to DB
+        assertThat(capturedNodeTypes, Matchers.contains(PRIMARY_INSTANCE_TYPE));
+        verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
     }
 }

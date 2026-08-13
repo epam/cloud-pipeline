@@ -65,6 +65,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.function.Consumer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -454,8 +455,7 @@ public class DockerContainerOperationManager {
                                           final CloudInstanceOperationResult startInstanceResult) {
         final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
                 startInstanceResult != null ? startInstanceResult.getMessage(): StringUtils.EMPTY);
-        addRunLog(run, msg, RESUME_RUN_TASK);
-        log.warn(msg);
+        addResumeRunLog(run, msg, log::warn);
         run.setStatus(TaskStatus.PAUSED);
         // set stateReasonMessage here only for NotificationAspect, this status won't be persisted in DB,
         // but would be passed to aspect and used for RunStatus update
@@ -497,6 +497,11 @@ public class DockerContainerOperationManager {
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
         addRunLog(run, logMessage, taskName, null);
+    }
+
+    private void addResumeRunLog(final PipelineRun run, final String msg, final Consumer<String> logger) {
+        addRunLog(run, msg, RESUME_RUN_TASK);
+        logger.accept(msg);
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName,
@@ -556,14 +561,18 @@ public class DockerContainerOperationManager {
                 case STOPPED:
                     CloudInstanceOperationResult lastFailResult = null;
                     for (final String candidateType : buildCandidateTypes(run.getInstance())) {
-                        log.debug("Attempting to start run {} instance with type {}", run.getId(), candidateType);
+                        final String attemptMsg = messageHelper.getMessage(
+                                MessageConstants.INFO_ATTEMPT_START_INSTANCE, run.getId(), candidateType);
+                        addResumeRunLog(run, attemptMsg, log::debug);
                         cloudFacade.changeInstanceType(regionId, nodeId, candidateType);
                         final CloudInstanceOperationResult result = cloudFacade.startInstance(regionId, nodeId);
                         if (result.getStatus() == CloudInstanceOperationResult.Status.OK) {
                             return Optional.of(candidateType);
                         }
-                        log.warn("Failed to start run {} instance with type {}: {}", run.getId(), candidateType,
+                        final String failMsg = messageHelper.getMessage(
+                                MessageConstants.WARN_FAIL_START_INSTANCE, run.getId(), candidateType,
                                 result.getMessage());
+                        addResumeRunLog(run, failMsg, log::warn);
                         lastFailResult = result;
                         if (result.getStatus() == CloudInstanceOperationResult.Status.ERROR) {
                             break;
