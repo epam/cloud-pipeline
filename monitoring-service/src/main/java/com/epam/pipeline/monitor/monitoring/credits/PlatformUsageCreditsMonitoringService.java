@@ -48,9 +48,9 @@ public class PlatformUsageCreditsMonitoringService implements MonitoringService 
     private final Map<PlatformUsageCreditsUpdateRuleType, PlatformUsageCreditsRuleHandler> handlers;
 
     public PlatformUsageCreditsMonitoringService(
-            @Value("${preference.name.platform.usage.credits.monitor.enable:-monitoring.platform.usage.credits.enable}")
+            @Value("${preference.name.platform.usage.credits.monitor.enable:monitoring.platform.usage.credits.enable}")
                 final String monitorEnabledPreference,
-            @Value("${preference.name.platform.usage.credits.mode:-platform.usage.credits.mode}")
+            @Value("${preference.name.platform.usage.credits.mode:platform.usage.credits.mode}")
                 final String creditsModePreference,
             @Value("${platform.usage.credits.monitor.execution.timestamp.file}")
                 final String lastExecutionFilePath,
