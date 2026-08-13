@@ -792,11 +792,17 @@ def pause(run_id, check_size, sync):
 @cli.command(name='resume')
 @click.argument('run-id', required=True, type=int)
 @click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
+@click.option('-it', '--instance-type', help='Instance type to use on resume', type=str)
+@click.option('-fit', '--fallback-instance-type', 'fallback_instance_types', multiple=True, type=str,
+              required=False,
+              help='Fallback instance type to try if the primary instance type has no capacity. '
+                   'The option can be specified several times. Order is preserved.')
 @common_options
-def resume(run_id, sync):
+def resume(run_id, sync, instance_type, fallback_instance_types):
     """Resumes a paused pipeline
     """
-    PipelineRunOperations.resume(run_id, sync)
+    PipelineRunOperations.resume(run_id, sync, instance_type=instance_type,
+                                 fallback_instance_types=fallback_instance_types or None)
 
 
 @cli.command(name='terminate-node')
