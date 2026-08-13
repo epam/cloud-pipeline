@@ -427,6 +427,7 @@ public class PipelineConfigurationManager {
             configuration.setIsSpot(instance.getSpot());
             configuration.setInstanceImage(instance.getNodeImage());
             configuration.setCloudRegionId(instance.getCloudRegionId());
+            configuration.setFallbackInstanceTypes(instance.getFallbackInstanceTypes());
         }
 
         setEndpointsErasure(configuration);

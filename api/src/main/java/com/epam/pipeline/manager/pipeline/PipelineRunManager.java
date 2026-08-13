@@ -1814,6 +1814,7 @@ public class PipelineRunManager {
             runInstance.setEffectiveNodeDisk(i.getEffectiveNodeDisk());
             runInstance.setNodeImage(i.getNodeImage());
             runInstance.setNodeType(i.getNodeType());
+            runInstance.setFallbackInstanceTypes(i.getFallbackInstanceTypes());
             runInstance.setSpot(i.getSpot());
             runInstance.setCloudProvider(i.getCloudProvider());
             return runInstance;
