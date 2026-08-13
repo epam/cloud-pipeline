@@ -72,6 +72,8 @@ import static org.mockito.Mockito.when;
 public class AutoscaleManagerTest {
     private static final String TEST_KUBE_NAMESPACE = "testNamespace";
     private static final Long TEST_RUN_ID = 111L;
+    private static final String PRIMARY_INSTANCE_TYPE = "primary.type";
+    private static final String FALLBACK_INSTANCE_TYPE = "fallback.type";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -232,8 +234,8 @@ public class AutoscaleManagerTest {
 
         RunInstance instance = new RunInstance();
         instance.setSpot(false);
-        instance.setNodeType("primary.type");
-        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
         testRun.setInstance(instance);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
@@ -253,8 +255,8 @@ public class AutoscaleManagerTest {
 
         RunInstance instance = new RunInstance();
         instance.setSpot(false);
-        instance.setNodeType("primary.type");
-        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
         testRun.setInstance(instance);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
@@ -274,8 +276,8 @@ public class AutoscaleManagerTest {
 
         RunInstance instance = new RunInstance();
         instance.setSpot(false);
-        instance.setNodeType("primary.type");
-        instance.setFallbackInstanceTypes(Collections.singletonList("fallback.type"));
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
         testRun.setInstance(instance);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
@@ -291,6 +293,7 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling();
 
         // primary tried, fallback tried (unexpected exception), finally must restore to primary
-        assertThat(capturedNodeTypes, Matchers.contains("primary.type", "fallback.type", "primary.type"));
+        assertThat(capturedNodeTypes,
+                Matchers.contains(PRIMARY_INSTANCE_TYPE, FALLBACK_INSTANCE_TYPE, PRIMARY_INSTANCE_TYPE));
     }
 }
