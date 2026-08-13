@@ -336,5 +336,7 @@ public enum Primitive {
     ADD_ROLE,
     ADD_SCHEDULE,
     CALL,
-    GENERATE
+    GENERATE,
+    ADD_CALL,
+    RUNTIME
 }

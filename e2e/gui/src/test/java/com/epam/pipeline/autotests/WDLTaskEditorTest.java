@@ -17,12 +17,16 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineGraphTabAO;
+import com.epam.pipeline.autotests.ao.PipelineGraphTabAO.SectionRowAO;
+import com.epam.pipeline.autotests.ao.PipelineGraphTabAO.TaskPropertiesPopupAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+
 import java.util.function.Supplier;
+
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -35,9 +39,7 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.PipelineGraphTabAO.TypeCombobox.shouldContainTypes;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WDLTaskEditorTest
         extends AbstractBfxPipelineTest
@@ -49,7 +51,7 @@ public class WDLTaskEditorTest
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
     private final String pipeline1538 = "pipeline-1538-" + Utils.randomSuffix();
-    private final String defaultTask = "workflowTask";
+    private final String defaultTask = "Task";
     private final String aliasName = "task" + Utils.randomSuffix();
 
     @BeforeClass
@@ -82,29 +84,30 @@ public class WDLTaskEditorTest
     public void validateAddTaskPopup() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .openAddTaskDialog()
-                .parent()
-                .clickTask(defaultTask)
-                .ensureVisible(ALIAS, INPUT_ADD, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, ANOTHER_COMPUTE_NODE, COMMAND, DELETE);
+                .editWorkflow()
+                .createNewTask()
+                .ensureVisible(ALIAS, INPUT_ADD, OUTPUT_ADD, COMMAND, DELETE)
+                .click(RUNTIME)
+                .ensureVisible(ANOTHER_DOCKER_IMAGE, ANOTHER_COMPUTE_NODE);
     }
 
     @Test(dependsOnMethods = {"validateAddTaskPopup"})
     @TestCase({"EPMCMBIBPC-642"})
     public void validateAnotherDockerImageCausesDockerImagesListAppearing() {
-        taskAdditionDialog()
+        taskPropertiesDialog()
                 .enableAnotherDockerImage()
                 .openDockerImagesCombobox()
                 .ensureVisible(REGISTRY, GROUP, SEARCH, OK, CANCEL)
-                .click(CANCEL, taskAdditionPopupOf(pipelineName))
-                .disableAnotherDockerImage()
+                .click(CANCEL, taskPropertiesPopupOf(pipelineName))
+                .deleteAdditionalConfiguration("docker")
                 .enableAnotherComputeNode()
-                .selectValue(combobox("Instance type"), menuitem(C.DEFAULT_INSTANCE));
+                .selectValue(combobox("Compute node type or binding"), C.DEFAULT_INSTANCE);
     }
 
     @Test(dependsOnMethods = {"validateAnotherDockerImageCausesDockerImagesListAppearing"})
     @TestCase({"EPMCMBIBPC-610"})
     public void validateInputAddButton() {
-        taskAdditionDialog()
+        taskPropertiesDialog()
                 .clickInputSectionAddButton()
                 .ensureVisible(NAME, TYPE, VALUE, DELETE_ICON);
     }
@@ -112,9 +115,10 @@ public class WDLTaskEditorTest
     @Test(dependsOnMethods = {"validateInputAddButton"})
     @TestCase({"EPMCMBIBPC-614"})
     public void validateTypeDropDownList() {
-        sectionRowInTaskAdditionPopup()
+        sectionRowInTaskPropertiesPopup()
                 .openTypeCombobox()
-                .also(shouldContainTypes("String", "File", "Int", "Boolean", "Float", "Object", "ScatterItem"))
+                .also(shouldContainTypes("File", "String", "Int", "Boolean", "Float",
+                        "Array", "Object", "Pair", "Map"))
                 .close()
                 .dropCurrentRow();
     }
@@ -122,15 +126,16 @@ public class WDLTaskEditorTest
     @Test(dependsOnMethods = {"validateTypeDropDownList"})
     @TestCase({"EPMCMBIBPC-618"})
     public void validateAddingParameterInTask() {
-        taskAdditionDialog()
+        taskPropertiesDialog()
                 .setValue(ALIAS, aliasName)
                 .enter()
                 .click(INPUT_ADD);
-        sectionRowInTaskAdditionPopup()
+        sectionRowInTaskPropertiesPopup()
                 .setName("test_in")
                 .setType("Int")
                 .setValue("0")
                 .close()
+                .setCommand("pipe_log SUCCESS \"Running WDL pipeline\" \"test_in\"")
                 .parent()
                 .searchScatter("test_in")
                 .searchLabel(aliasName)
@@ -139,19 +144,21 @@ public class WDLTaskEditorTest
     }
 
     @Test(dependsOnMethods = {"validateAddingParameterInTask"})
-    @TestCase({"EPMCMBIBPC-620"})
+    @TestCase({"EPMCMBIBPC-620", "EPMCMBIBPC-1538"})
     public void checkThatDiagramChangingChangesCode() {
         String varName = "test_in";
         String varType = "Int";
         String varValue = "0";
-        taskAdditionDialog()
+        taskPropertiesDialog()
                 .parent()
                 .saveAndCommitWithMessage("commit by EPMCMBIBPC-620 test case")
+                .ensure(modalWithTitle("Commit"), disappear)
                 .codeTab()
                 .clickOnFile(fileInPipeline)
                 .ensureVisible(EDIT, CLOSE)
                 .shouldContainInCode(String.format("task %s", defaultTask))
-                .shouldContainInCode(String.format("%s %s = %s", varType, varName, varValue))
+                .shouldContainInCode(String.format("%s = %s", varName, varValue))
+                .shouldContainInCode(String.format("%s %s", varType, varName))
                 .shouldContainInCode(String.format("call %s as %s", defaultTask, aliasName))
                 .close();
     }
@@ -161,15 +168,16 @@ public class WDLTaskEditorTest
     public void checkCodeAfterChangingImage() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .openAddTaskDialog()
+                .editWorkflow()
                 .parent()
-                .clickTask(defaultTask)
+                .editTask(defaultTask)
+                .click(RUNTIME)
                 .enableAnotherDockerImage()
                 .openDockerImagesCombobox()
                 .selectRegistry(defaultRegistry)
                 .selectGroup(defaultGroup)
                 .selectTool(testingTool)
-                .click(OK, taskAdditionPopupOf(pipelineName))
+                .click(OK, taskPropertiesPopupOf(pipelineName))
                 .parent()
                 .saveAndCommitWithMessage("testing")
                 .codeTab()
@@ -178,31 +186,8 @@ public class WDLTaskEditorTest
                 .close();
     }
 
-    @Test(priority = 10)
-    @TestCase({"EPMCMBIBPC-1538"})
-    public void closingPopupAfterWdlPipelineCommit() {
-        open(C.ROOT_ADDRESS);
-        library()
-                .createPipeline(Template.WDL, pipeline1538)
-                .clickOnPipeline(pipeline1538)
-                .firstVersion()
-                .graphTab()
-                .openAddTaskDialog()
-                .parent()
-                .clickTask(defaultTask)
-                .clickInputSectionAddButton()
-                .setName("test_in")
-                .setType("Int")
-                .setValue("0")
-                .close()
-                .parent()
-                .saveAndCommitWithMessage("commit message")
-                .sleep(1, SECONDS)
-                .ensure(modalWithTitle("Commit"), disappear);
-    }
-
-    private Supplier<PipelineGraphTabAO.TaskAdditionPopupAO> taskAdditionPopupOf(final String pipelineName) {
-        return () -> new PipelineGraphTabAO.TaskAdditionPopupAO(new PipelineGraphTabAO(pipelineName));
+    private Supplier<TaskPropertiesPopupAO> taskPropertiesPopupOf(final String pipelineName) {
+        return () -> new TaskPropertiesPopupAO(new PipelineGraphTabAO(pipelineName));
     }
 
     private PipelineCodeTabAO getFirstVersion(String pipelineName) {
@@ -213,11 +198,11 @@ public class WDLTaskEditorTest
                 .codeTab();
     }
 
-    private PipelineGraphTabAO.TaskAdditionPopupAO taskAdditionDialog() {
-        return new PipelineGraphTabAO.TaskAdditionPopupAO(new PipelineGraphTabAO(pipelineName));
+    private TaskPropertiesPopupAO taskPropertiesDialog() {
+        return new TaskPropertiesPopupAO(new PipelineGraphTabAO(pipelineName));
     }
 
-    private PipelineGraphTabAO.SectionRowAO<PipelineGraphTabAO.TaskAdditionPopupAO> sectionRowInTaskAdditionPopup() {
-        return new PipelineGraphTabAO.SectionRowAO<>(new PipelineGraphTabAO.TaskAdditionPopupAO(new PipelineGraphTabAO(pipelineName)));
+    private SectionRowAO<TaskPropertiesPopupAO> sectionRowInTaskPropertiesPopup() {
+        return new SectionRowAO<>(new TaskPropertiesPopupAO(new PipelineGraphTabAO(pipelineName)));
     }
 }

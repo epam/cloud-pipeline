@@ -10,4 +10,7 @@ task HelloWorld_print {
 }
 
 task MyTask {
+  command {
+    pipe_log SUCCESS "Running WDL pipeline" "Task2"
+  }
 }

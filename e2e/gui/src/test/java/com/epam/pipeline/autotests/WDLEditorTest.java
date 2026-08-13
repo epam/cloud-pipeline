@@ -38,7 +38,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.INPUT_ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.INPUT_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.OUTPUT_ADD;
-import static com.epam.pipeline.autotests.ao.Primitive.PROPERTIES;
 import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
@@ -49,7 +48,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "wdl");
     private final String commitMessage = "testing";
     private final String taskName = "testing_task";
-    private final String defaultTask = "workflowTask";
+    private final String defaultTask = "Task";
 
     @BeforeClass
     public void createPipeline() {
@@ -71,15 +70,16 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void checkRevertButton() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .click(PROPERTIES)
-                .openAddTaskDialog()
+                .editWorkflow()
+                .createNewTask()
                 .parent()
-                .clickTask(defaultTask)
+                .editTask(defaultTask)
+                .setCommand("pipe_log SUCCESS \"Running WDL pipeline\" \"Task\"")
                 .setValue(ALIAS, taskName)
+                .enter()
                 .ensure(SAVE, visible, enabled)
                 .ensure(REVERT, visible, enabled)
                 .parent()
-                .clickLabel(taskName)
                 .revert()
                 .ensure(fieldWithLabel(taskName), hidden)
                 .ensure(SAVE, visible, disabled)
@@ -102,10 +102,11 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void validateAddTaskInScatter() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .openAddScatterDialog()
+                .editWorkflow()
+                .createNewScatter()
                 .parent()
-                .clickScatter("scatter")
-                .click(ADD_TASK)
+                .editScatter("scatter")
+                .createNewTask()
                 .parent()
                 .searchLabel("scatterTask")
                 .searchScatter("scatter")

@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineGraphTabAO;
+import com.epam.pipeline.autotests.ao.PipelineGraphTabAO.ScatterPropertiesPopupAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -62,9 +63,10 @@ public class WDLScatterEditorTest
     public void addScatterPopupValidation() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .openAddScatterDialog()
+                .editWorkflow()
+                .createNewScatter()
                 .parent()
-                .clickScatter("scatter")
+                .editScatter("scatter")
                 .ensureVisible(ADD_TASK, DELETE, INPUT_PANEL)
                 .cancel();
     }
@@ -74,9 +76,10 @@ public class WDLScatterEditorTest
     public void checkAddButtonForScatterMenu() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .openAddScatterDialog()
+                .editWorkflow()
+                .createNewScatter()
                 .parent()
-                .clickScatter("scatter")
+                .editScatter("scatter")
                 .clickInputSectionAddButton()
                 .ensure(NAME, visible, enabled)
                 .ensure(TYPE, visible, disabled)
@@ -93,9 +96,10 @@ public class WDLScatterEditorTest
         final String inputParameterName = "test_in";
         getFirstVersion(pipelineName)
                 .graphTab()
-                .openAddScatterDialog()
+                .editWorkflow()
+                .createNewScatter()
                 .parent()
-                .clickScatter("scatter")
+                .editScatter("scatter")
                 .clickInputSectionAddButton()
                 .setName(inputParameterName)
                 .close()
@@ -131,7 +135,7 @@ public class WDLScatterEditorTest
         return new PipelineGraphTabAO(pipelineName);
     }
 
-    private PipelineGraphTabAO.SectionRowAO<PipelineGraphTabAO.ScatterAdditionPopupAO> sectionRowInScatterAdditionPopup() {
-        return new PipelineGraphTabAO.SectionRowAO<>(new PipelineGraphTabAO.ScatterAdditionPopupAO(new PipelineGraphTabAO(pipelineName)));
-    }
+//    private PipelineGraphTabAO.SectionRowAO<ScatterPropertiesPopupAO> sectionRowInScatterAdditionPopup() {
+//        return new PipelineGraphTabAO.SectionRowAO<ScatterPropertiesPopupAO>(new ScatterPropertiesPopupAO(new PipelineGraphTabAO(pipelineName)));
+//    }
 }

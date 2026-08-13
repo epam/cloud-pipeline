@@ -15,12 +15,15 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Selectors.withText;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.ao.PipelineGraphTabAO.ScatterPropertiesPopupAO.SectionRowAO;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.openqa.selenium.By;
+
+import static java.lang.String.format;
 
 import static com.codeborne.selenide.ClickOptions.usingJavaScript;
 import static com.codeborne.selenide.Condition.enabled;
@@ -56,8 +59,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             entry(ADD_SCATTER, context().find(byId("wdl-graph-workflow-add-scatter-button"))),
             entry(CALL, $(byClassName("rc-menu-submenu-vertical"))),
             entry(PROPERTIES, context().find(button("PROPERTIES"))),
-            entry(ACTIONS, context().find(button("Actions"))),
-            entry(ADD_TASK, context().find(byId("wdl-graph-workflow-add-task-button"))),
+            entry(CREATE_PIPELINE, $(byClassName("create-pipeline-sub-menu-button"))),
             entry(EDIT_TASK, context().find(byId("wdl-graph-task-edit-button"))),
             entry(EDIT_WORKFLOW, context().find(byId("wdl-graph-workflow-edit-button"))),
             entry(CANVAS, context().find(tagName("canvas"))),
@@ -76,16 +78,22 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         return this;
     }
 
-    public TaskAdditionPopupAO openAddTaskDialog() {
-        $(byClassName("rc-menu-submenu-vertical")).hover();
-        $(By.xpath(".//b[.='new task']")).click();
-        return new TaskAdditionPopupAO(this);
+    public WorkflowPropertiesPopupAO editWorkflow() {
+        click(PROPERTIES);
+        $(byClassName("visual-workflow")).$(byClassName("v-line")).click();
+        return new WorkflowPropertiesPopupAO(this);
     }
 
-    public ScatterAdditionPopupAO openAddScatterDialog() {
-        click(PROPERTIES);
-        click(ADD_SCATTER);
-        return new ScatterAdditionPopupAO(this);
+    public TaskPropertiesPopupAO editTask(final String name) {
+        $$(byClassName("visual-call")).filter(text(name)).first()
+                .$(byClassName("v-line")).click();
+        return new TaskPropertiesPopupAO(this);
+    }
+
+    public ScatterPropertiesPopupAO editScatter(final String name) {
+        $$(byClassName("visual-call")).filter(text(name)).first()
+                .$(byClassName("v-line")).click();
+        return new ScatterPropertiesPopupAO(this);
     }
 
     public PipelineGraphTabAO revert() {
@@ -106,7 +114,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     }
 
     public PipelineGraphTabAO searchScatter(String labelText) {
-        $$(byClassName("port-label")).findBy(text(labelText)).shouldBe(visible);
+        $$(byClassName("joint-port-label")).findBy(text(labelText)).shouldBe(visible);
         return this;
     }
 
@@ -119,24 +127,9 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         return this;
     }
 
-    public TaskAdditionPopupAO clickTask(final String name) {
-        clickLabel(name);
-        return new TaskEditionPopupAO(this);
-    }
-
-    public ScatterAdditionPopupAO clickScatter(final String name) {
-        clickLabel(name);
-        return new ScatterAdditionPopupAO(this);
-    }
-
-    public TaskEditionPopupAO edit() {
+    public TaskPropertiesPopupAO edit() {
         click(PROPERTIES);
-        return new TaskEditionPopupAO(this);
-    }
-
-    public WorkflowEditionPopupAO editWorkflow() {
-        click(PROPERTIES);
-        return new WorkflowEditionPopupAO(this);
+        return new TaskPropertiesPopupAO(this);
     }
 
     public PipelineGraphTabAO saveAndCommitWithMessage(String message) {
@@ -174,29 +167,26 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         return elements;
     }
 
-    public static class TaskAdditionPopupAO extends PopupAO<TaskAdditionPopupAO, PipelineGraphTabAO> {
+    public static class TaskPropertiesPopupAO extends PopupAO<TaskPropertiesPopupAO, PipelineGraphTabAO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(NAME, context().find(byId("name"))),
-                entry(ALIAS, context().find(byId("alias"))),
-                entry(INPUT_PANEL, context()
-                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Inputs')]"))),
+                entry(ALIAS, context().$(withText("Alias")).parent().sibling(0)),
                 entry(INPUT_ADD, context()
-                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Inputs')]/button"))),
-                entry(OUTPUT_PANEL, context()
-                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Outputs')]"))),
+                        .$(withText("Inputs")).parent().find(button("ADD"))),
                 entry(OUTPUT_ADD, context()
-                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Outputs')]/button"))),
-                entry(ANOTHER_DOCKER_IMAGE, Utils.getFormRowByLabel(context(), "Use another docker image").find(byClassName("ant-checkbox-wrapper"))),
-                entry(ANOTHER_COMPUTE_NODE, Utils.getFormRowByLabel(context(), "Use another compute node").find(byClassName("ant-checkbox-wrapper"))),
-                entry(DOCKER_IMAGE_COMBOBOX, context().find(byId("docker-image-input"))),
-                entry(COMMAND, context().find(byClassName("w-d-l-item-properties__code-editor"))),
-                entry(ADD, context().find(byId("edit-wdl-form-add-button"))),
-                entry(CANCEL, context().find(byClassName("anticon-close"))),
-                entry(DELETE, context().find(byId("wdl-graph-task-delete-button")))
+                        .$(withText("Outputs")).parent().find(button("ADD"))),
+                entry(RUNTIME, context().$(withText("Runtime"))),
+                entry(ANOTHER_DOCKER_IMAGE, $(withText("add docker configuration"))),
+                entry(ANOTHER_COMPUTE_NODE, $(withText("add compute node configuration"))),
+                entry(DOCKER_IMAGE_COMBOBOX, context()
+                        .find(xpath(".//*[contains(@class, 'dl-properties-form__property-title') and contains(., 'docker')]"))
+                        .sibling(0).find(className("anticon-tool"))),
+                entry(COMMAND, context().find(byClassName("CodeMirror-code"))),
+                entry(DELETE, context().find(button("Remove")))
         );
 
-        public TaskAdditionPopupAO(final PipelineGraphTabAO parentAO) {
+        public TaskPropertiesPopupAO(final PipelineGraphTabAO parentAO) {
             super(parentAO);
         }
 
@@ -214,37 +204,40 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             return click(ADD).parent();
         }
 
-        public SectionRowAO<TaskAdditionPopupAO> clickInputSectionAddButton() {
+        public SectionRowAO<TaskPropertiesPopupAO> clickInputSectionAddButton() {
             click(INPUT_ADD);
             return new SectionRowAO<>(this);
         }
 
-        public SectionRowAO<TaskAdditionPopupAO> clickOutputSectionAddButton() {
+        public SectionRowAO<TaskPropertiesPopupAO> clickOutputSectionAddButton() {
             click(OUTPUT_PANEL);
             click(OUTPUT_ADD);
             return new SectionRowAO<>(this);
         }
 
-        public TaskAdditionPopupAO setName(String name) {
+        public TaskPropertiesPopupAO setName(String name) {
             return setValue(NAME, name);
         }
 
-        public TaskAdditionPopupAO setCommand(String command) {
+        public TaskPropertiesPopupAO setCommand(String command) {
             actions().moveToElement($(byClassName("CodeMirror-line"))).click().perform();
             Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), command);
             return this;
         }
 
-        public TaskAdditionPopupAO enableAnotherComputeNode() {
+        public TaskPropertiesPopupAO enableAnotherComputeNode() {
             return click(ANOTHER_COMPUTE_NODE);
         }
 
-        public TaskAdditionPopupAO enableAnotherDockerImage() {
+        public TaskPropertiesPopupAO enableAnotherDockerImage() {
             return click(ANOTHER_DOCKER_IMAGE);
         }
 
-        public TaskAdditionPopupAO disableAnotherDockerImage() {
-            return enableAnotherDockerImage();
+        public TaskPropertiesPopupAO deleteAdditionalConfiguration(String conf) {
+            context()
+                    .find(xpath(format(".//*[contains(@class, 'dl-properties-form__property-title') and contains(., '%s')]", conf)))
+                    .parent().find(className("anticon-delete")).shouldBe(visible, enabled).click();
+            return this;
         }
 
         public DockerImageSelection openDockerImagesCombobox() {
@@ -254,17 +247,29 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
     }
 
-    public static class TaskEditionPopupAO extends TaskAdditionPopupAO {
+    public static class WorkflowPropertiesPopupAO extends TaskPropertiesPopupAO {
 
         private Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(ALIAS, Utils.getFormRowByLabel(context(), "Alias").find(byId("alias"))),
-                entry(SAVE, context().find(byId("wdl-graph-save-button"))),
-                entry(REVERT, context().find(byId("wdl-graph-revert-button")))
+                entry(ACTIONS, context().find(button("Actions"))),
+                entry(ADD_CALL, context().$(byClassName("rc-menu-submenu-title"))),
+                entry(ADD_SCATTER, context()
+                        .$(xpath(".//*[contains(@class, 'rc-menu-item') and contains(., 'Add scatter')]")))
         );
 
-        public TaskEditionPopupAO(PipelineGraphTabAO parentAO) {
+        public WorkflowPropertiesPopupAO(PipelineGraphTabAO parentAO) {
             super(parentAO);
+        }
+
+        public TaskPropertiesPopupAO createNewTask() {
+            resetMouse().click(ACTIONS).hover(ADD_CALL);
+            $(byText("new task")).shouldBe(visible).click();
+            return new TaskPropertiesPopupAO(parent());
+        }
+
+        public ScatterPropertiesPopupAO createNewScatter() {
+            resetMouse().click(ACTIONS).click(ADD_SCATTER);
+            return new ScatterPropertiesPopupAO(parent());
         }
 
         @Override
@@ -278,36 +283,14 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
     }
 
-    public static class WorkflowEditionPopupAO extends TaskEditionPopupAO {
-
-        private Map<Primitive, SelenideElement> elements = initialiseElements(
-                super.elements()
-        );
-
-        public WorkflowEditionPopupAO(PipelineGraphTabAO parentAO) {
-            super(parentAO);
-        }
-
-        @Override
-        public Map<Primitive, SelenideElement> elements() {
-            return elements;
-        }
-
-        @Override
-        public PipelineGraphTabAO ok() {
-            return click(SAVE).parent();
-        }
-    }
-
-    public static class ScatterAdditionPopupAO extends PopupAO<ScatterAdditionPopupAO, PipelineGraphTabAO> {
+    public static class ScatterPropertiesPopupAO extends WorkflowPropertiesPopupAO {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(ADD_TASK, context().find(byId("wdl-graph-scatter-add-task-button"))),
-                entry(DELETE, context().find(byId("wdl-graph-scatter-delete-button"))),
+                entry(DELETE, context().find(button("Remove"))),
                 entry(INPUT_PANEL, context().find(byId("expand-panel-button")))
         );
 
-        public ScatterAdditionPopupAO(PipelineGraphTabAO parentAO) {
+        public ScatterPropertiesPopupAO(PipelineGraphTabAO parentAO) {
             super(parentAO);
         }
 
@@ -318,10 +301,16 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
 
         @Override
         public PipelineGraphTabAO ok() {
-            return click(ADD).parent();
+            return click(SAVE).parent();
         }
 
-        public SectionRowAO<ScatterAdditionPopupAO> clickInputSectionAddButton() {
+        public TaskPropertiesPopupAO createNewTask() {
+            resetMouse().click(ACTIONS).hover(ADD_CALL);
+            $(byText("new task")).shouldBe(visible).click();
+            return new TaskPropertiesPopupAO(parent());
+        }
+
+        public SectionRowAO<ScatterPropertiesPopupAO> clickInputSectionAddButton() {
             click(INPUT_PANEL);
             return new SectionRowAO<>(this);
         }
@@ -355,7 +344,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         public TypeCombobox openTypeCombobox() {
-            click(TYPE);
+            selectAllAndClearTextField(get(TYPE));
             return new TypeCombobox(this);
         }
 
