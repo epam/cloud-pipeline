@@ -535,45 +535,48 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 ).collect(Collectors.toList());
 
                 CmdExecutionException catchedCmdException = null;
-                for (String nodeType : allNodeTypesToTry) {
-                    try {
-                        Instant start = Instant.now();
-                        requiredInstance.getInstance().setNodeType(nodeType);
-                        //save required instance
-                        pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                        final RunInstance startedInstance = cloudFacade.scaleUpNode(
-                                longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
-                                requiredInstance.getTags()
-                        );
+                RunInstance startedInstance = null;
+                try {
+                    for (String nodeType : allNodeTypesToTry) {
+                        try {
+                            Instant start = Instant.now();
+                            requiredInstance.getInstance().setNodeType(nodeType);
+                            //save required instance
+                            pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
+                            startedInstance = cloudFacade.scaleUpNode(
+                                    longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
+                                    requiredInstance.getTags()
+                            );
+                            Instant end = Instant.now();
+                            log.debug("Time to create a node for run {} : {} s.", runId,
+                                    Duration.between(start, end).getSeconds());
+                            return;
+                        } catch (CmdExecutionException ex) {
+                            Integer exitCode = ex.getExitCode();
+                            if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, exitCode)
+                                    && !Objects.equals(NODEUP_LIMIT_EXCEEDED_EXIT_CODE, exitCode)
+                                    && !Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, exitCode)) {
+                                throw ex;
+                            }
+                            catchedCmdException = ex;
+                        }
+                    }
+                    throw Objects.requireNonNull(catchedCmdException,
+                            "catchedCmdException must be set after exhausting all node types!"
+                    );
+                } finally {
+                    if (startedInstance != null) {
                         //save instance ID and IP
                         pipelineRunManager.updateRunInstance(longId, startedInstance);
                         pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                         autoscalerService.registerDisks(longId, startedInstance);
-                        Instant end = Instant.now();
                         removeNodeUpTask(longId);
-                        log.debug("Time to create a node for run {} : {} s.", runId,
-                                Duration.between(start, end).getSeconds());
-                        return;
-                    } catch (CmdExecutionException ex) {
-                        Integer exitCode = ex.getExitCode();
-                        if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, exitCode)
-                                && !Objects.equals(NODEUP_LIMIT_EXCEEDED_EXIT_CODE, exitCode)
-                                && !Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, exitCode)) {
-                            //before throwing an exception, we need to return a node type to its original value
-                            requiredInstance.getInstance().setNodeType(initialInstanceType);
-                            pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                            throw ex;
-                        }
-                        catchedCmdException = ex;
+                    } else {
+                        // if exception - rollback
+                        requiredInstance.getInstance().setNodeType(initialInstanceType);
+                        pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
                     }
                 }
-
-                //all fallbackTypes tried, we need to return a node type to its original value
-                requiredInstance.getInstance().setNodeType(initialInstanceType);
-                pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                throw Objects.requireNonNull(catchedCmdException,
-                        "catchedCmdException must be set after exhausting all node types!"
-                );
 
             }, executorService.getExecutorService()).exceptionally(e -> {
                 log.error(e.getMessage(), e);
