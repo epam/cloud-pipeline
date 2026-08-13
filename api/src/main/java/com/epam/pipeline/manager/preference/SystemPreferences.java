@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
+import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
@@ -1189,6 +1190,7 @@ public class SystemPreferences {
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */
+    @Deprecated
     public static final IntPreference SYSTEM_IDLE_CPU_THRESHOLD_PERCENT =
             new IntPreference("system.idle.cpu.threshold", 10, SYSTEM_GROUP, isGreaterThan(0));
     /**
@@ -1209,20 +1211,34 @@ public class SystemPreferences {
     /**
      * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
      */
+    @Deprecated
     public static final IntPreference SYSTEM_MAX_IDLE_TIMEOUT_MINUTES =
             new IntPreference("system.max.idle.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
 
     /**
      * A timeout to wait before an idle action will be taken
      */
+    @Deprecated
     public static final IntPreference SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES =
             new IntPreference("system.idle.action.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls which action will be executed After idle and Action timeouts. Can take values from {@link IdleRunAction}
      */
+    @Deprecated
     // TODO: rewrite to an EnumPreference?
     public static final StringPreference SYSTEM_IDLE_ACTION = new StringPreference("system.idle.action",
                                    IdleRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidIdleAction);
+
+    /**
+     * Configures idle monitoring rules per metric type (CPU, GPU, ABSOLUTE).
+     * Replaces deprecated system.idle.* preferences with a unified JSON array config.
+     */
+    public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
+            new ObjectPreference<>(
+                    "system.idle.monitoring.config", Collections.emptyList(),
+                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {}));
+
     /**
      * Controls which action will be performed after action threshold for long paused runs.
      * Can take values from {@link LongPausedRunAction} only.

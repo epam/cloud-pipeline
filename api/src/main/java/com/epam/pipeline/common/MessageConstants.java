@@ -227,6 +227,7 @@ public final class MessageConstants {
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
     public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
+    public static final String DEBUG_GPU_RUN_METRICS_RECEIVED = "debug.gpu.run.metrics.received";
     public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
     public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
     public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";

@@ -20,9 +20,12 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
+
+import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_MONITORING_CONFIG;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -115,7 +118,7 @@ public class ResourceMonitoringManagerTest {
     private static final LocalDateTime HALF_AN_HOUR_BEFORE = DateUtils.nowUTC().minusSeconds(HALF_AN_HOUR);
     private static final String HIGH_CONSUMING_POD_ID = "high-consuming";
     private static final double PERCENTS = 100.0;
-    private static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    private static final String UTILIZATION_LEVEL_LOW = "IDLE_CPU";
     private static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     private static final String TRUE_VALUE_STRING = "true";
     private static final Map<String, String> IDLE_TAGS =
@@ -197,19 +200,14 @@ public class ResourceMonitoringManagerTest {
             .thenReturn(Observable.empty());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(TEST_RESOURCE_MONITORING_DELAY);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT))
-                .thenReturn(TEST_IDLE_THRESHOLD_PERCENT);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES)).thenReturn(1);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES))
-            .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT))
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT))
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-                .thenReturn(IdleRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SERVERLESS_STOP_TIMEOUT))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
@@ -332,8 +330,8 @@ public class ResourceMonitoringManagerTest {
     public void testNotifyOnce() {
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
 
         resourceMonitoringManager.monitorResourceUsage();
 
@@ -376,8 +374,8 @@ public class ResourceMonitoringManagerTest {
                 any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonMap(idleRunToProlong.getInstance().getNodeName(), 
                         TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-                .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
 
         //First time checks that notification is sent
         resourceMonitoringManager.monitorResourceUsage();
@@ -434,8 +432,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testNotifyTwice() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
 
         LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
 
@@ -472,8 +470,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testPauseOnDemand() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.PAUSE.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.PAUSE));
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
@@ -506,8 +504,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testSkipAutoscaleClusterNode() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-                .thenReturn(IdleRunAction.PAUSE.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.PAUSE));
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Collections.singletonList(autoscaleMasterRun));
 
@@ -524,8 +522,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testPauseOrStop() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.PAUSE_OR_STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.PAUSE_OR_STOP));
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         mockAlreadyNotifiedRuns();
@@ -557,8 +555,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testStop() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.STOP));
 
         mockAlreadyNotifiedRuns();
         Thread.sleep(10);
@@ -582,8 +580,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testRemoveLastNotificationTimeIfNotIdle() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.STOP));
 
         mockAlreadyNotifiedRuns();
         mockStats.put(idleSpotRun.getInstance().getNodeName(), NON_IDLE_CPU_LOAD); // mock not idle anymore
@@ -611,8 +609,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testNoActionIfActionTimeoutIsNotFulfilled() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.STOP));
 
         LocalDateTime now = DateUtils.nowUTC();
         idleOnDemandRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
@@ -764,5 +762,11 @@ public class ResourceMonitoringManagerTest {
         stats.put(highConsumingRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
         stats.put(okayRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
         return stats;
+    }
+
+    private static List<IdleMonitoringConfig> cpuIdleConfig(final IdleRunAction action) {
+        return Collections.singletonList(new IdleMonitoringConfig(
+                IdleMonitoringConfig.IdleMonitoringType.CPU, true,
+                (double) TEST_IDLE_THRESHOLD_PERCENT, TEST_MAX_IDLE_MONITORING_TIMEOUT, 1, action));
     }
 }
