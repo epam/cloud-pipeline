@@ -527,6 +527,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             addNodeUpTask(longId);
             tasks.add(CompletableFuture.runAsync(() -> {
 
+                //save required instance
+                pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
+
                 final String initialInstanceType = requiredInstance.getInstance().getNodeType();
 
                 final List<String> allNodeTypesToTry = Stream.concat(
@@ -535,49 +538,36 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 ).collect(Collectors.toList());
 
                 CmdExecutionException catchedCmdException = null;
-                RunInstance startedInstance = null;
-                try {
-                    for (String nodeType : allNodeTypesToTry) {
-                        try {
-                            Instant start = Instant.now();
-                            requiredInstance.getInstance().setNodeType(nodeType);
-                            //save required instance
-                            pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                            startedInstance = cloudFacade.scaleUpNode(
-                                    longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
-                                    requiredInstance.getTags()
-                            );
-                            Instant end = Instant.now();
-                            log.debug("Time to create a node for run {} : {} s.", runId,
-                                    Duration.between(start, end).getSeconds());
-                            return;
-                        } catch (CmdExecutionException ex) {
-                            Integer exitCode = ex.getExitCode();
-                            if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, exitCode)
-                                    && !Objects.equals(NODEUP_LIMIT_EXCEEDED_EXIT_CODE, exitCode)
-                                    && !Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, exitCode)) {
-                                throw ex;
-                            }
-                            catchedCmdException = ex;
-                        }
-                    }
-                    throw Objects.requireNonNull(catchedCmdException,
-                            "catchedCmdException must be set after exhausting all node types!"
-                    );
-                } finally {
-                    if (startedInstance != null) {
+                for (String nodeType : allNodeTypesToTry) {
+                    try {
+                        Instant start = Instant.now();
+                        requiredInstance.getInstance().setNodeType(nodeType);
+                        final RunInstance startedInstance = cloudFacade.scaleUpNode(
+                                longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
+                                requiredInstance.getTags()
+                        );
                         //save instance ID and IP
                         pipelineRunManager.updateRunInstance(longId, startedInstance);
                         pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                         autoscalerService.registerDisks(longId, startedInstance);
                         removeNodeUpTask(longId);
-                    } else {
-                        // if exception - rollback
-                        requiredInstance.getInstance().setNodeType(initialInstanceType);
-                        pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
+                        Instant end = Instant.now();
+                        log.debug("Time to create a node for run {} : {} s.", runId,
+                                Duration.between(start, end).getSeconds());
+                        return;
+                    } catch (CmdExecutionException ex) {
+                        Integer exitCode = ex.getExitCode();
+                        if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, exitCode)
+                                && !Objects.equals(NODEUP_LIMIT_EXCEEDED_EXIT_CODE, exitCode)
+                                && !Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, exitCode)) {
+                            throw ex;
+                        }
+                        catchedCmdException = ex;
                     }
                 }
-
+                throw Objects.requireNonNull(catchedCmdException,
+                        "catchedCmdException must be set after exhausting all node types!"
+                );
             }, executorService.getExecutorService()).exceptionally(e -> {
                 log.error(e.getMessage(), e);
 

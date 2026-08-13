@@ -238,9 +238,17 @@ class Pipeline(API):
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
-    def resume_pipeline(cls, run_id):
+    def resume_pipeline(cls, run_id, instance_type=None, fallback_instance_types=None):
         api = cls.instance()
-        response_data = api.call('/run/{}/resume'.format(run_id), None, http_method='post')
+        body = None
+        if instance_type is not None or fallback_instance_types is not None:
+            payload = {}
+            if instance_type is not None:
+                payload['instanceType'] = instance_type
+            if fallback_instance_types is not None:
+                payload['fallbackInstanceTypes'] = list(fallback_instance_types)
+            body = json.dumps(payload)
+        response_data = api.call('/run/{}/resume'.format(run_id), body, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
