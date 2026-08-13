@@ -86,11 +86,15 @@ DRIVER_VERSION=595.58.03
 curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
+rm -f ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
 
 # Fabric Manager for A100, H100, H200 and friends
-dnf install nvidia-release -y
-DRV_BRANCH="$(modinfo nvidia | grep "^version:" | tr -s ' ' | cut -d ' ' -f 2)"
-dnf install nvidia-fabricmanager-${DRV_BRANCH} -y
-dnf install nvidia-persistenced -y
+curl -k -L -O https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/nvidia-fabricmanager-${DRIVER_VERSION}.amzn2023.x86_64.rpm
+yum install ./nvidia-fabricmanager-${DRIVER_VERSION}.amzn2023.x86_64.rpm
+curl -k -L -O https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+yum install ./libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+curl -k -L -O https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+yum install ./nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+
 systemctl enable nvidia-fabricmanager
 systemctl enable nvidia-persistenced
