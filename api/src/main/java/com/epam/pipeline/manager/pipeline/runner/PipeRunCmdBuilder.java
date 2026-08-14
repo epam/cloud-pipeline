@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.run.OsType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -73,6 +74,13 @@ public class PipeRunCmdBuilder {
 
     public PipeRunCmdBuilder instanceType() {
         buildStringCmdArg("-it", runVO.getInstanceType());
+        return this;
+    }
+
+    public PipeRunCmdBuilder fallbackInstanceTypes() {
+        if (CollectionUtils.isNotEmpty(runVO.getFallbackInstanceTypes())) {
+            runVO.getFallbackInstanceTypes().forEach(type -> buildStringCmdArg("-fit", type));
+        }
         return this;
     }
 
