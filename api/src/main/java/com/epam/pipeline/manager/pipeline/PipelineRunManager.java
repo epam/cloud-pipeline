@@ -1411,6 +1411,7 @@ public class PipelineRunManager {
                 .yes()
                 .instanceDisk()
                 .instanceType()
+                .fallbackInstanceTypes()
                 .dockerImage()
                 .cmdTemplate()
                 .timeout()
