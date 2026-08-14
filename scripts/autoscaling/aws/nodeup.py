@@ -1108,7 +1108,8 @@ def get_spot_prices(ec2, aws_region, instance_type, hours=3):
 def exit_if_spot_unavailable(run_id, last_status):
     # will exit with code '5' if a spot request can't be fulfilled
     if last_status in ['capacity-not-available', 'capacity-oversubscribed',
-                       'constraint-not-fulfillable', "schedule-expired"]:
+                       'constraint-not-fulfillable', 'schedule-expired',
+                       'price-too-low', 'system-error']:
         pipe_log('[ERROR] Could not fulfill spot request for run {}, status: {}'.format(run_id, last_status),
                  status=TaskStatus.FAILURE)
         sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
