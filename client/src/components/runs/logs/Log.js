@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, isObservableArray, observable} from 'mobx';
 import {Link} from 'react-router';
 import FileSaver from 'file-saver';
 import {
@@ -261,6 +261,7 @@ class Logs extends localization.LocalizedReactComponent {
     if (run && preferences.loaded) {
       const payload = {
         instanceType: undefined,
+        fallbackInstanceTypes: undefined,
         hddSize: undefined,
         timeout: run.timeout,
         cmdTemplate: run.cmdTemplate,
@@ -281,6 +282,15 @@ class Logs extends localization.LocalizedReactComponent {
         payload.hddSize = run.instance.nodeDisk;
         payload.isSpot = run.instance.spot;
         payload.cloudRegionId = run.instance.cloudRegionId;
+        const fallbackInstanceTypes = run.instance.fallbackInstanceTypes;
+        if (
+          Array.isArray(fallbackInstanceTypes) ||
+          isObservableArray(fallbackInstanceTypes)
+        ) {
+          payload.fallbackInstanceTypes = fallbackInstanceTypes.length > 0
+            ? fallbackInstanceTypes.slice()
+            : undefined;
+        }
       }
       if (run.executionPreferences) {
         payload.executionEnvironment = run.executionPreferences.environment;
