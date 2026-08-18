@@ -246,7 +246,7 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling();
 
         verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
-        verify(pipelineRunManager, org.mockito.Mockito.never())
+        verify(pipelineRunManager, never())
             .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 
@@ -267,7 +267,7 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling();
 
         verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
-        verify(pipelineRunManager, org.mockito.Mockito.never())
+        verify(pipelineRunManager, never())
             .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 
