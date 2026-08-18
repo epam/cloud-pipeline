@@ -136,10 +136,11 @@ class ConfirmResumeContainer extends React.Component {
     } = options;
     const applyRun = (run) => {
       const instance = run && run.instance ? run.instance : {};
-      const allowedInstanceTypes = new AllowedInstanceTypes({
-        regionId: instance.cloudRegionId,
-        spot: instance.spot
-      });
+      const allowedInstanceTypes = new AllowedInstanceTypes(
+        undefined,
+        instance.cloudRegionId,
+        instance.spot
+      );
       this.setState({
         run,
         allowedInstanceTypes,
