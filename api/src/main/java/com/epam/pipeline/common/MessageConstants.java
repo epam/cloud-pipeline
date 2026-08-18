@@ -273,6 +273,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_VERSIONING_REQUIRED = "error.datastorage.versioning.required";
     public static final String ERROR_DATASTORAGE_CREATE_FAILED = "error.datastorage.create.failed";
     public static final String ERROR_DATASTORAGE_DELETE_FAILED = "error.datastorage.delete.failed";
+    public static final String ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES =
+            "error.datastorage.has.subfolder.storages";
     public static final String ERROR_DATASTORAGE_TYPE_NOT_SPECIFIED = "error.datastorage.type.not.specified";
     public static final String ERROR_DATASTORAGE_FORBIDDEN_MOUNT_POINT = "error.datastorage.forbidden.mount.point";
     public static final String ERROR_DATASTORAGE_IS_NOT_SHARED = "error.datastorage.is.not.shared";
