@@ -102,6 +102,7 @@ GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
 if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
   GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
 fi
+[[ "$GLOBAL_DISTRIBUTION_URL" != */ ]] && GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL}/"
 export GLOBAL_DISTRIBUTION_URL
 
 echo "> [$(date)] Download nvme"
