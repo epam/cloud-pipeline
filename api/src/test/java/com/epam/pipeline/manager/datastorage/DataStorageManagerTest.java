@@ -103,6 +103,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final String FORBIDDEN_MOUNT_POINT_2 = "/runs/run";
     private static final String FORBIDDEN_MOUNT_POINT_3 = "/runs/run/dir";
     private static final String SHARED_BASE_URL = "https://localhost:9999/shared/";
+    private static final String TEST_BUCKET_PREFIX = "bucket-";
     private static final String SHARED_BASE_URL_TEMPLATE = SHARED_BASE_URL + "%d";
     private static final String TEST_VERSION = "latest";
     private static final String TEST_IMAGE = "library/image";
@@ -723,6 +724,75 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         assertEquals(updateStorageVO.getName(), loaded.getName());
         assertEquals(updateStorageVO.getDescription(), loaded.getDescription());
         assertEquals(updateStorageVO.getParentFolderId(), loaded.getParentFolderId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDeleteStorageOnCloudSucceedsWhenNoSubfolderStoragesExist() {
+        final String uniquePath = TEST_BUCKET_PREFIX + UUID.randomUUID();
+        final DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(
+                NAME + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        final AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+        storageManager.delete(saved.getId(), true);
+        assertFalse(storageManager.exists(saved.getId()));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDeleteStorageOnCloudFailsWhenSubfolderStorageExists() {
+        final String uniquePath = TEST_BUCKET_PREFIX + UUID.randomUUID();
+        final DataStorageVO parentVO = ObjectCreatorUtils.constructDataStorageVO(
+                "parent-" + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        final AbstractDataStorage parent = storageManager.create(parentVO, false, false, false).getEntity();
+
+        final DataStorageVO subfolderVO = ObjectCreatorUtils.constructDataStorageVO(
+                "subfolder-" + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath + "/subdir", STS_DURATION, LTS_DURATION,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        storageManager.create(subfolderVO, false, false, false);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> storageManager.delete(parent.getId(), true));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDeleteStorageOnCloudFailsWhenPathStoredWithTrailingSlash() {
+        final String uniquePath = TEST_BUCKET_PREFIX + UUID.randomUUID();
+        final DataStorageVO parentVO = ObjectCreatorUtils.constructDataStorageVO(
+                "parent-" + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath + "/", STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        final AbstractDataStorage parent = storageManager.create(parentVO, false, false, false).getEntity();
+
+        final DataStorageVO subfolderVO = ObjectCreatorUtils.constructDataStorageVO(
+                "subfolder-" + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath + "/subdir", STS_DURATION, LTS_DURATION,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        storageManager.create(subfolderVO, false, false, false);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> storageManager.delete(parent.getId(), true));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDeleteStorageUnregisterSucceedsEvenWithSubfolderStorages() {
+        final String uniquePath = TEST_BUCKET_PREFIX + UUID.randomUUID();
+        final DataStorageVO parentVO = ObjectCreatorUtils.constructDataStorageVO(
+                "parent-" + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        final AbstractDataStorage parent = storageManager.create(parentVO, false, false, false).getEntity();
+
+        final DataStorageVO subfolderVO = ObjectCreatorUtils.constructDataStorageVO(
+                "subfolder-" + uniquePath, DESCRIPTION, DataStorageType.S3,
+                uniquePath + "/subdir", STS_DURATION, LTS_DURATION,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        storageManager.create(subfolderVO, false, false, false);
+
+        storageManager.delete(parent.getId(), false);
+        assertFalse(storageManager.exists(parent.getId()));
     }
 
     private void compareDataStorage(AbstractDataStorage saved, AbstractDataStorage loaded) {

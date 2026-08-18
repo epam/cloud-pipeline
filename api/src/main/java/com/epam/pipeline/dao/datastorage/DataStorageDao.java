@@ -87,6 +87,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStorageByNameQuery;
     private String loadDataStorageByNameAndParentIdQuery;
     private String loadDataStoragesByNFSRootPath;
+    private String loadDataStoragesByPathPrefixQuery;
     private String updateStorageLocksQuery;
     private String loadStorageCountQuery;
     private String loadAllStoragesWithParentsQuery;
@@ -339,6 +340,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .getRowMapper(), nfsRootPath + POSTGRES_LIKE_CHARACTER);
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByPathPrefix(String path) {
+        final String normalizedPath = StringUtils.stripEnd(path, SLASH);
+        return getJdbcTemplate().query(loadDataStoragesByPathPrefixQuery, DataStorageParameters
+                .getRowMapper(), normalizedPath + SLASH + POSTGRES_LIKE_CHARACTER);
+    }
+
     public List<AbstractDataStorage> loadDataStoragesByFileShareMountID(Long fileShareId) {
         return getJdbcTemplate().query(loadDataStoragesFileShareId, DataStorageParameters
                 .getRowMapper(), fileShareId);
@@ -396,11 +403,17 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(loadToolsToMountByIdsQuery, "Required query loadToolsToMountByIdsQuery is not set");
         Assert.notNull(loadDataStoragesByRootIdsQuery, "Required query loadDataStoragesByRootIdsQuery is not set");
         Assert.notNull(loadDataStoragesByMountIdQuery, "Required query loadDataStoragesByMountIdQuery is not set");
+        Assert.notNull(loadDataStoragesByPathPrefixQuery,
+                "Required query loadDataStoragesByPathPrefixQuery is not set");
     }
 
 
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
+    }
+
+    public void setLoadDataStoragesByPathPrefixQuery(String loadDataStoragesByPathPrefixQuery) {
+        this.loadDataStoragesByPathPrefixQuery = loadDataStoragesByPathPrefixQuery;
     }
     public void setDataStorageSequence(String dataStorageSequence) {
         this.dataStorageSequence = dataStorageSequence;
