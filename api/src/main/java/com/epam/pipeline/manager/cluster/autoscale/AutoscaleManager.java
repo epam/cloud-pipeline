@@ -578,12 +578,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
                 CmdExecutionException catchedCmdException = null;
                 for (String nodeType : allNodeTypesToTry) {
-                    if (StringUtils.equalsIgnoreCase(haDeployEnabled, Boolean.TRUE.toString())
-                            && !kubernetesManager.isMasterHost()) {
-                        log.warn("Cancelling scheduling node for run #{} since host is not master.", runId);
-                        // If this pod becomes a master again, a leftover in-progress task would still count toward
-                        // cluster size and nodeup tasks limit => this task shall be removed.
-                        removeNodeUpTask(longId, false);
+                    if (cancelNodeUpForNonMaster(longId, runId)) {
                         return;
                     }
                     try {
@@ -650,6 +645,18 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 removeNodeUpTask(longId, false);
                 return null;
             }));
+        }
+
+        private boolean cancelNodeUpForNonMaster(long longId, String runId) {
+            if (StringUtils.equalsIgnoreCase(haDeployEnabled, Boolean.TRUE.toString())
+                    && !kubernetesManager.isMasterHost()) {
+                log.warn("Cancelling scheduling node for run #{} since host is not master.", runId);
+                // If this pod becomes a master again, a leftover in-progress task would still count toward
+                // cluster size and nodeup tasks limit => this task shall be removed.
+                removeNodeUpTask(longId, false);
+                return true;
+            }
+            return false;
         }
 
         private void addNodeUpTask(long longId) {
