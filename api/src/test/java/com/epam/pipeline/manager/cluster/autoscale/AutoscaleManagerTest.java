@@ -69,6 +69,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -130,7 +131,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager);
+                runRegionShiftHandler, metadataManager, Boolean.FALSE.toString());
         ReflectionTestUtils.setField(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -248,7 +249,7 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling();
 
         verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
-        verify(pipelineRunManager, org.mockito.Mockito.never())
+        verify(pipelineRunManager, never())
             .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 
@@ -269,8 +270,45 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling();
 
         verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
-        verify(pipelineRunManager, org.mockito.Mockito.never())
+        verify(pipelineRunManager, never())
             .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testNodeUpSkippedWhenNotMasterInHaMode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(kubernetesManager.isMasterHost()).thenReturn(false);
+
+        AutoscaleManager.AutoscaleManagerCore haCoreNotMaster = new AutoscaleManager.AutoscaleManagerCore(
+                pipelineRunManager, executorService,
+                autoscalerService, nodesManager, kubernetesManager,
+                preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
+                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
+        ReflectionTestUtils.setField(haCoreNotMaster, "preferenceManager", preferenceManager);
+
+        haCoreNotMaster.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+    }
+
+    @Test
+    public void testNodeUpProceedsWhenMasterInHaMode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(kubernetesManager.isMasterHost()).thenReturn(true);
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+
+        AutoscaleManager.AutoscaleManagerCore haCoreIsMaster = new AutoscaleManager.AutoscaleManagerCore(
+                pipelineRunManager, executorService,
+                autoscalerService, nodesManager, kubernetesManager,
+                preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
+                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
+        ReflectionTestUtils.setField(haCoreIsMaster, "preferenceManager", preferenceManager);
+
+        haCoreIsMaster.runAutoscaling();
+
+        verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
     }
 
     @Test
