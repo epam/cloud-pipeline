@@ -330,6 +330,12 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_CAP_SHARE_FS_LUSTRE_VERSION",
+        "type": "string",
+        "description": "Allows to specify Lustre file system version (supported for Lustre FS only). Possible values are: [2.10, 2.12, 2.15]. If not set, AWS FSx default for the chosen deployment type is used",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_CAP_HW_ADDR",
         "type": "string",
         "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
