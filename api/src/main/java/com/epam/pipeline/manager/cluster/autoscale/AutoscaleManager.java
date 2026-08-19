@@ -123,6 +123,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
         private final MetadataManager metadataManager;
+        private final String haDeployEnabled;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -144,7 +145,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
-                             final MetadataManager metadataManager) {
+                             final MetadataManager metadataManager,
+                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -160,6 +162,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
+            this.haDeployEnabled = haDeployEnabled;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -575,6 +578,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
                 CmdExecutionException catchedCmdException = null;
                 for (String nodeType : allNodeTypesToTry) {
+                    if (cancelNodeUpForNonMaster(longId, runId)) {
+                        return;
+                    }
                     try {
                         Instant start = Instant.now();
                         requiredInstance.getInstance().setNodeType(nodeType);
@@ -639,6 +645,18 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 removeNodeUpTask(longId, false);
                 return null;
             }));
+        }
+
+        private boolean cancelNodeUpForNonMaster(long longId, String runId) {
+            if (StringUtils.equalsIgnoreCase(haDeployEnabled, Boolean.TRUE.toString())
+                    && !kubernetesManager.isMasterHost()) {
+                log.warn("Cancelling scheduling node for run #{} since host is not master.", runId);
+                // If this pod becomes a master again, a leftover in-progress task would still count toward
+                // cluster size and nodeup tasks limit => this task shall be removed.
+                removeNodeUpTask(longId, false);
+                return true;
+            }
+            return false;
         }
 
         private void addNodeUpTask(long longId) {
