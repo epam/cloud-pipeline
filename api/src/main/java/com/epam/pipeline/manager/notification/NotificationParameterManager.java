@@ -81,12 +81,17 @@ public class NotificationParameterManager {
     }
 
     public Map<String, Object> build(final NotificationType type, final PipelineRun run,
-                                     final double cpuRate, final double idleCpuLevel) {
+                                     final double processorUnitValue, final double idleProcessorUnitThreshold) {
         final Map<String, Object> parameters = build(type);
         parameters.putAll(buildEntities(NotificationEntityClass.RUN, run.getId()));
         parameters.putAll(PipelineRunMapper.map(run));
-        parameters.put("idleCpuLevel", idleCpuLevel);
-        parameters.put("cpuRate", cpuRate * PERCENT);
+
+        if (NotificationType.IDLE_GPU_RUN.equals(type)) {
+            parameters.put("idleGpuNumber", idleProcessorUnitThreshold);
+            parameters.put("activeGpuNumber", processorUnitValue);
+        }
+        parameters.put("idleCpuLevel", idleProcessorUnitThreshold);
+        parameters.put("cpuRate", processorUnitValue * PERCENT);
         return parameters;
     }
 

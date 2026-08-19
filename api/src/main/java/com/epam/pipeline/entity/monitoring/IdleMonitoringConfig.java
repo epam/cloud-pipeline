@@ -19,7 +19,7 @@ package com.epam.pipeline.entity.monitoring;
 public record IdleMonitoringConfig(IdleMonitoringType type,
                                    boolean enabled,
                                    Double thresholdPercent,
-                                   Integer maxTimeoutMinutes,
+                                   Integer gracePeriodMinutes,
                                    Integer actionTimeoutMinutes,
                                    IdleRunAction action) {
     public enum IdleMonitoringType {
