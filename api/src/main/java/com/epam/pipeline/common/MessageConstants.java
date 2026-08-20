@@ -224,6 +224,8 @@ public final class MessageConstants {
     public static final String ERROR_SAVE_RUN_METRICS = "error.save.run.metrics";
 
     // ResourceMonitoringManager messages
+    public static final String INFO_RUN_ABSOLUTE_IDLE_NOTIFY = "info.run.absolute.idle.notify";
+    public static final String INFO_RUN_ABSOLUTE_IDLE_ACTION = "info.run.absolute.idle.action";
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
     public static final String DEBUG_RUN_METRICS_RECEIVED = "debug.run.metrics.received";

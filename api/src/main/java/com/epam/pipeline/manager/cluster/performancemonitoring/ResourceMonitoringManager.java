@@ -76,6 +76,8 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 
+import static com.epam.pipeline.common.MessageConstants.INFO_RUN_ABSOLUTE_IDLE_NOTIFY;
+import static com.epam.pipeline.entity.monitoring.IdleMonitoringConfig.IdleMonitoringType.ABSOLUTE;
 import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_MONITORING_CONFIG;
 
 
@@ -99,6 +101,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
     public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
+
+    public static final List<String> IDLE_TAGS = List.of(UTILIZATION_LEVEL_LOW,
+            CPU_UTILIZATION_LEVEL_LOW, GPU_UTILIZATION_LEVEL_LOW);
 
     private final ResourceMonitoringManagerCore core;
 
@@ -172,8 +177,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
         @SchedulerLock(name = "ResourceMonitoringManager_monitorResourceUsage", lockAtMostForString = "PT10M")
         public void monitorResourceUsage() {
             List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
+            final Set<String> gpuInstanceTypes = gpuEnabledInstanceTypes();
             processIdleRuns(runs, IdleMonitoringConfig.IdleMonitoringType.CPU, ELKUsageMetric.CPU);
-            processIdleRuns(runs, IdleMonitoringConfig.IdleMonitoringType.GPU, ELKUsageMetric.GPU_AGGS);
+            processIdleRuns(filterGpuRuns(runs, gpuInstanceTypes), IdleMonitoringConfig.IdleMonitoringType.GPU,
+                    ELKUsageMetric.GPU_AGGS);
+            processAbsoluteIdleRuns(runs, gpuInstanceTypes);
             processHighNetworkConsumingRuns(runs);
             processOverloadedRuns(runs);
             processStuckRuns(runs);
@@ -368,14 +376,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
                                      final ELKUsageMetric usageMetric) {
             final Map<String, PipelineRun> running = groupedByNode(runs);
 
-            Map<IdleMonitoringConfig.IdleMonitoringType, IdleMonitoringConfig> enabledIdleConfigMap =
-                    ListUtils.emptyIfNull(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
-                            .stream()
-                            .filter(IdleMonitoringConfig::enabled)
-                            .filter(c -> c.type() == monitoringType)
-                            .collect(Collectors.toMap(IdleMonitoringConfig::type, Function.identity()));
-
-            final IdleMonitoringConfig processorUnitConf = enabledIdleConfigMap.get(monitoringType);
+            final IdleMonitoringConfig processorUnitConf = findEnabledIdleConfig(monitoringType);
             if (processorUnitConf == null) {
                 log.debug("{} idle monitoring config is not configured or disabled, skipping idle check.",
                         monitoringType.name());
@@ -466,6 +467,72 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
             pipelineRunManager.updateRunsTags(runsToUpdateTags);
         }
 
+        private IdleMonitoringConfig findEnabledIdleConfig(
+                final IdleMonitoringConfig.IdleMonitoringType monitoringType) {
+            return ListUtils.emptyIfNull(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                    .stream()
+                    .filter(IdleMonitoringConfig::enabled)
+                    .filter(config -> config.type() == monitoringType)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        private List<PipelineRun> filterGpuRuns(final List<PipelineRun> runs, final Set<String> gpuInstanceTypes) {
+            return ListUtils.emptyIfNull(runs).stream()
+                    .filter(run -> hasGpu(run, gpuInstanceTypes))
+                    .collect(Collectors.toList());
+        }
+
+        private void processAbsoluteIdleRuns(final List<PipelineRun> runs, final Set<String> gpuInstanceTypes) {
+            final IdleMonitoringConfig absoluteConf =
+                    findEnabledIdleConfig(ABSOLUTE);
+            if (absoluteConf == null) {
+                log.debug("ABSOLUTE idle monitoring config is not configured or disabled, skipping idle check.");
+                return;
+            }
+            if (Objects.isNull(absoluteConf.actionTimeoutMinutes())) {
+                log.warn("ABSOLUTE idle monitoring config misses action timeout, skipping idle check.");
+                return;
+            }
+
+            final int actionTimeout = absoluteConf.actionTimeoutMinutes();
+            final IdleRunAction action = absoluteConf.action();
+
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(runs.size());
+            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(runs.size());
+            for (final PipelineRun run : ListUtils.emptyIfNull(runs)) {
+                if (isAbsolutelyIdle(run, gpuInstanceTypes)) {
+                    processIdleRun(run, actionTimeout, action, runsToNotify, 0.0,
+                            runsToUpdateTags, ABSOLUTE, UTILIZATION_LEVEL_LOW);
+                } else if (isIdleTagged(run, UTILIZATION_LEVEL_LOW)) {
+                    processFormerIdleRun(run, runsToUpdateTags, UTILIZATION_LEVEL_LOW);
+                }
+            }
+            notificationManager.notifyIdleRuns(runsToNotify, NotificationType.IDLE_RUN);
+            pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private boolean isAbsolutelyIdle(final PipelineRun run, final Set<String> gpuInstanceTypes) {
+            if (!isIdleTagged(run, CPU_UTILIZATION_LEVEL_LOW)) {
+                return false;
+            }
+            return !hasGpu(run, gpuInstanceTypes) || isIdleTagged(run, GPU_UTILIZATION_LEVEL_LOW);
+        }
+
+        private boolean hasGpu(final PipelineRun run, final Set<String> gpuInstanceTypes) {
+            return Optional.ofNullable(run.getInstance())
+                    .map(RunInstance::getNodeType)
+                    .map(gpuInstanceTypes::contains)
+                    .orElse(false);
+        }
+
+        private Set<String> gpuEnabledInstanceTypes() {
+            return ListUtils.emptyIfNull(instanceOfferManager.getAllInstanceTypes()).stream()
+                    .filter(type -> type.getGpu() > 0)
+                    .map(InstanceType::getName)
+                    .collect(Collectors.toSet());
+        }
+
         private int instanceVCPU(final PipelineRun run, final Map<String, InstanceType> instanceTypeMap) {
             return instanceTypeMap.getOrDefault(run.getInstance().getNodeType(),
                     InstanceType.builder().vCPU(1).build()).getVCPU();
@@ -502,8 +569,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
                 runsToUpdateTags.add(run);
             }
             pipelinesToNotify.add(new ImmutablePair<>(run, usageRate));
-            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY,
-                    run.getPodId(), monitoringType.name(), usageRate));
+            if (ABSOLUTE.equals(monitoringType)) {
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_ABSOLUTE_IDLE_NOTIFY, run.getPodId()));
+            } else {
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY,
+                        run.getPodId(), monitoringType.name(), usageRate));
+            }
         }
 
         private boolean shouldPerformActionOnIdleRun(final PipelineRun run, final int actionTimeout,
@@ -533,8 +604,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
                                             final List<Pair<PipelineRun, Double>> pipelinesToNotify,
                                             final List<PipelineRun> runsToUpdateTags,
                                             final IdleMonitoringConfig.IdleMonitoringType monitoringType) {
-            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), monitoringType,
-                    processorUnitUsageRate, action));
+
+            if (ABSOLUTE.equals(monitoringType)) {
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_ABSOLUTE_IDLE_ACTION, run.getPodId()));
+            } else {
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), monitoringType,
+                        processorUnitUsageRate, action));
+            }
+
             switch (action) {
                 case PAUSE:
                     if (run.getInstance().getSpot()) {

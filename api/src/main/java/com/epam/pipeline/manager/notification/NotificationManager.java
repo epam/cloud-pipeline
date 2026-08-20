@@ -403,7 +403,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                                        final double cpuRate,
                                                        final double idleCpuLevel,
                                                        final NotificationType type) {
-        log.debug("Sending idle run notification for run '{}'.", run.getId());
+        log.debug("Sending '{}' notification for run '{}'.", type.name(), run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
         message.setTemplateParameters(parameterManager.build(type, run, cpuRate, idleCpuLevel));
