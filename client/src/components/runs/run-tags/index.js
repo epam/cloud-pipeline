@@ -27,6 +27,8 @@ const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 
 const KNOWN_TAG_NAMES = {
   idle: 'idle',
+  idle_cpu: 'idle_cpu',
+  idle_gpu: 'idle_gpu',
   pressure: 'pressure',
   sge_in_use: 'sge_in_use',
   slurm_in_use: 'slurm_in_use',
@@ -68,6 +70,12 @@ const KNOWN_TAG_VALUE_RENDER = {
 
 const PREDEFINED_TAGS = [{
   tag: KNOWN_TAG_NAMES.idle,
+  color: 'warning'
+},{
+  tag: KNOWN_TAG_NAMES.idle_cpu,
+  color: 'warning'
+}, {
+  tag: KNOWN_TAG_NAMES.idle_gpu,
   color: 'warning'
 }, {
   tag: KNOWN_TAG_NAMES.pressure,
