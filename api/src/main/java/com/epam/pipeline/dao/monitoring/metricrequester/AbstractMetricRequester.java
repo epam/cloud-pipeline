@@ -140,7 +140,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
             case MEM -> new MemoryRequester(client);
             case FS -> new FSRequester(client);
             case NETWORK -> new NetworkRequester(client);
-            case GPU_AGGS -> new GPURequester(client);
+            case GPU_AGGS -> new GPUAggregationRequester(client);
             default -> throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         };
     }

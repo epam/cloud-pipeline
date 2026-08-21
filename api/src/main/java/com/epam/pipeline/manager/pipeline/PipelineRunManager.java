@@ -415,7 +415,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void prolongIdleRun(Long runId) {
         PipelineRun run = loadPipelineRun(runId, false);
-        run.setLastIdleNotificationTime(null);
         run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
         removeIdleTags(run);

@@ -22,9 +22,4 @@ public record IdleMonitoringConfig(IdleMonitoringType type,
                                    Integer gracePeriodMinutes,
                                    Integer actionTimeoutMinutes,
                                    IdleRunAction action) {
-    public enum IdleMonitoringType {
-        CPU,
-        GPU,
-        ABSOLUTE
-    }
 }

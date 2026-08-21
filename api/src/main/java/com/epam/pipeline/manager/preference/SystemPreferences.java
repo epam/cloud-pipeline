@@ -38,10 +38,7 @@ import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
-import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
-import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
-import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
+import com.epam.pipeline.entity.monitoring.*;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
@@ -1188,12 +1185,6 @@ public class SystemPreferences {
             "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);
 
     /**
-     * Level of CPU load, below which a Run is considered `idle`
-     */
-    @Deprecated
-    public static final IntPreference SYSTEM_IDLE_CPU_THRESHOLD_PERCENT =
-            new IntPreference("system.idle.cpu.threshold", 10, SYSTEM_GROUP, isGreaterThan(0));
-    /**
      * Level of memory load, below which a Run is considered `overloaded`
      */
     public static final IntPreference SYSTEM_MEMORY_THRESHOLD_PERCENT =
@@ -1208,26 +1199,6 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_MONITORING_METRIC_TIME_RANGE =
             new IntPreference("system.monitoring.time.range", 30, SYSTEM_GROUP, isGreaterThan(0));
-    /**
-     * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
-     */
-    @Deprecated
-    public static final IntPreference SYSTEM_MAX_IDLE_TIMEOUT_MINUTES =
-            new IntPreference("system.max.idle.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
-
-    /**
-     * A timeout to wait before an idle action will be taken
-     */
-    @Deprecated
-    public static final IntPreference SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES =
-            new IntPreference("system.idle.action.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
-    /**
-     * Controls which action will be executed After idle and Action timeouts. Can take values from {@link IdleRunAction}
-     */
-    @Deprecated
-    // TODO: rewrite to an EnumPreference?
-    public static final StringPreference SYSTEM_IDLE_ACTION = new StringPreference("system.idle.action",
-                                   IdleRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidIdleAction);
 
     /**
      * Configures idle monitoring rules per metric type (CPU, GPU, ABSOLUTE).
@@ -1235,9 +1206,23 @@ public class SystemPreferences {
      */
     public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
             new ObjectPreference<>(
-                    "system.idle.monitoring.config", Collections.emptyList(),
-                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
-                    isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {}));
+                    "system.idle.monitoring.config",
+                    List.of(
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.CPU,
+                                true, 10.0, 30, 30, IdleRunAction.NOTIFY
+                        ),
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.GPU,
+                                true, 0.0, 30, 30, IdleRunAction.NOTIFY
+                        ),
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.ABSOLUTE,
+                                true, null, null, 30, IdleRunAction.NOTIFY
+                        )
+                    ),
+                    new TypeReference<>() {}, SYSTEM_GROUP,
+                    PreferenceValidators.isValidIdleMonitoringConfig);
 
     /**
      * Controls which action will be performed after action threshold for long paused runs.

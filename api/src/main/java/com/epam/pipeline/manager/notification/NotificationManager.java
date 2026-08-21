@@ -44,7 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
 import com.epam.pipeline.entity.notification.NotificationGroup;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
@@ -89,7 +88,6 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 
-import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_MONITORING_CONFIG;
 
 @Service
 @Slf4j
@@ -338,7 +336,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineRatePairs,
-                               final NotificationType type) {
+                               final NotificationType type, final double usageIdleLevel) {
         if (CollectionUtils.isEmpty(pipelineRatePairs)) {
             return;
         }
@@ -355,24 +353,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final List<Long> ccUserIds = getCCUsers(settings);
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineRatePairs);
 
-        final double idleLevel;
-
-        if (type == NotificationType.IDLE_CPU_RUN) {
-            IdleMonitoringConfig config =
-                ListUtils.emptyIfNull(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
-                    .stream()
-                    .filter(IdleMonitoringConfig::enabled)
-                    .filter(c -> c.type() == IdleMonitoringConfig.IdleMonitoringType.CPU)
-                    .findFirst().orElse(null);
-
-            if (config == null) {
-                return;
-            }
-            idleLevel = config.thresholdPercent();
-        } else {
-            idleLevel = 0.0;
-        }
-
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
         final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
@@ -381,11 +361,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), type, settings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
                 .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
-                .collect(Collectors.toList());
+                .toList();
 
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
-                        pair.getRight(), idleLevel, type))
+                        pair.getRight(), usageIdleLevel, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
 
@@ -400,13 +380,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                                        final List<Long> ccUserIds,
                                                        final Map<String, PipelineUser> pipelineOwners,
                                                        final PipelineRun run,
-                                                       final double cpuRate,
-                                                       final double idleCpuLevel,
+                                                       final double usageRate,
+                                                       final double usageIdleLevel,
                                                        final NotificationType type) {
         log.debug("Sending '{}' notification for run '{}'.", type.name(), run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run, cpuRate, idleCpuLevel));
+        message.setTemplateParameters(parameterManager.build(type, run, usageRate, usageIdleLevel));
         if (idleRunSettings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
         }
