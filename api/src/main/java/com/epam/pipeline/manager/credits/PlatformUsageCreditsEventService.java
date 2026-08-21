@@ -38,6 +38,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -197,11 +198,16 @@ public class PlatformUsageCreditsEventService {
         final String username = authManager.getAuthorizedUser();
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
-        final List<Long> requestedUserIds = filter.getUserIds();
-        if (!ListUtils.emptyIfNull(requestedUserIds).isEmpty()
-                && !(requestedUserIds.size() == 1 && requestedUserIds.get(0).equals(user.getId()))) {
-            log.warn("Non-admin user '{}' requested events for userIds {}; overriding to [{}]",
-                    username, requestedUserIds, user.getId());
+        final List<Long> requestedUserIds = ListUtils.emptyIfNull(filter.getUserIds());
+        if (!requestedUserIds.isEmpty()) {
+            if (!requestedUserIds.contains(user.getId())) {
+                throw new AccessDeniedException(
+                        "Non-admin user '" + username + "' is not allowed to query events for other users");
+            }
+            if (requestedUserIds.size() > 1) {
+                log.warn("Non-admin user '{}' requested events for userIds {}; restricting to [{}]",
+                        username, requestedUserIds, user.getId());
+            }
         }
         return filter.toBuilder()
                 .userIds(Collections.singletonList(user.getId()))
