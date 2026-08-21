@@ -26,7 +26,9 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
@@ -67,6 +69,7 @@ public class PlatformUsageCreditsEventService {
     private final PlatformUsageCreditsEventRepository usageCreditsEventRepository;
     private final PlatformUsageCreditsEventMapper mapper;
     private final AuthManager authManager;
+    private final CheckPermissionHelper permissionHelper;
     private final UserManager userManager;
     private final MessageHelper messageHelper;
     private final PlatformUsageCreditsUserBalanceService userBalanceService;
@@ -123,7 +126,8 @@ public class PlatformUsageCreditsEventService {
         Assert.isTrue(!Boolean.TRUE.equals(filter.getWithoutEntityLink())
                         || ListUtils.emptyIfNull(filter.getEntities()).isEmpty(),
                 "'entities' and 'withoutEntityLink' filters cannot be used simultaneously");
-        final PlatformUsageCreditsEventFilterVO effectiveFilter = authManager.isCreditsAdmin()
+        final PlatformUsageCreditsEventFilterVO effectiveFilter =
+                authManager.isAdmin() || permissionHelper.isScopedAdmin(AclClass.PIPELINE_USER)
                 ? filter
                 : restrictToCurrentUser(filter);
         Assert.isTrue(effectiveFilter.getPage() >= 1, "Page index must be >= 1");

@@ -25,6 +25,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
@@ -78,14 +79,15 @@ public class PlatformUsageCreditsEventServiceTest {
     private final PlatformUsageCreditsEventMapper mapper =
             Mappers.getMapper(PlatformUsageCreditsEventMapper.class);
     private final AuthManager authManager = mock(AuthManager.class);
+    private final CheckPermissionHelper permissionHelper = mock(CheckPermissionHelper.class);
     private final UserManager userManager = mock(UserManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final PlatformUsageCreditsUserBalanceService userBalanceService =
             mock(PlatformUsageCreditsUserBalanceService.class);
 
     private final PlatformUsageCreditsEventService service =
-            new PlatformUsageCreditsEventService(repository, mapper, authManager, userManager, messageHelper,
-                    userBalanceService);
+            new PlatformUsageCreditsEventService(repository, mapper, authManager, permissionHelper,
+                    userManager, messageHelper, userBalanceService);
 
     @Before
     public void setUp() {
@@ -176,7 +178,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterAdminPassesFilterUnchanged() {
-        doReturn(true).when(authManager).isCreditsAdmin();
+        doReturn(true).when(authManager).isAdmin();
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -192,7 +194,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithNoUserIdsDefaultsToCurrentUser() {
-        doReturn(false).when(authManager).isCreditsAdmin();
+        doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
         doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
@@ -206,7 +208,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithOnlyOtherUserIdsThrowsAccessDenied() {
-        doReturn(false).when(authManager).isCreditsAdmin();
+        doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
         doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
@@ -219,7 +221,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithSelfAndOtherUserIdsRestrictsToCurrentUser() {
-        doReturn(false).when(authManager).isCreditsAdmin();
+        doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
         doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
@@ -236,7 +238,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithOnlySelfUserIdSucceeds() {
-        doReturn(false).when(authManager).isCreditsAdmin();
+        doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
         doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
@@ -252,7 +254,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void filterRejectsWithoutEntityLinkCombinedWithEntities() {
-        doReturn(true).when(authManager).isCreditsAdmin();
+        doReturn(true).when(authManager).isAdmin();
 
         service.filter(PlatformUsageCreditsEventFilterVO.builder()
                 .entities(Collections.singletonList(new SecuredEntityVO()))
@@ -262,7 +264,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterWithoutEntityLinkPassesThrough() {
-        doReturn(true).when(authManager).isCreditsAdmin();
+        doReturn(true).when(authManager).isAdmin();
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -371,7 +373,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void exportWritesHeaderAndEvents() {
-        doReturn(true).when(authManager).isCreditsAdmin();
+        doReturn(true).when(authManager).isAdmin();
         doReturn(new PageImpl<>(Collections.singletonList(entity(USER_ID_1, VALUE))))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -387,7 +389,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void exportPaginatesUntilPartialPage() {
-        doReturn(true).when(authManager).isCreditsAdmin();
+        doReturn(true).when(authManager).isAdmin();
         final List<PlatformUsageCreditsUpdateEventEntity> fullPage =
                 Collections.nCopies(1000, entity(USER_ID_1, VALUE));
         doReturn(new PageImpl<>(fullPage))
@@ -401,7 +403,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void exportNonAdminRestrictsToCurrentUser() {
-        doReturn(false).when(authManager).isCreditsAdmin();
+        doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
         doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));

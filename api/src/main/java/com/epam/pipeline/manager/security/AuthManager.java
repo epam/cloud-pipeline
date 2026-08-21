@@ -104,19 +104,6 @@ public class AuthManager {
         }
     }
 
-    public boolean isCreditsAdmin() {
-        final Object principal = getPrincipal();
-        if (principal instanceof UserContext) {
-            return ((UserContext) principal).getRoles().stream()
-                    .anyMatch(role -> role.getName().equals(DefaultRoles.ROLE_ADMIN.getName())
-                            || role.getName().equals(DefaultRoles.ROLE_USER_ADMIN.getName()));
-        } else if (principal instanceof User) {
-            return ((User) principal).getAuthorities().stream()
-                    .anyMatch(role -> role.getAuthority().equals(DefaultRoles.ROLE_ADMIN.getName())
-                            || role.getAuthority().equals(DefaultRoles.ROLE_USER_ADMIN.getName()));
-        }
-        return false;
-    }
 
     public JwtRawToken issueTokenForCurrentUser() {
         return issueTokenForCurrentUser(null);
