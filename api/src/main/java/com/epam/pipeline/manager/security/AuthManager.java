@@ -104,7 +104,6 @@ public class AuthManager {
         }
     }
 
-
     public JwtRawToken issueTokenForCurrentUser() {
         return issueTokenForCurrentUser(null);
     }
