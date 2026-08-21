@@ -66,6 +66,16 @@ public class PlatformUsageCreditsRuleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldCreateForUserAdmin() {
+        final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
+        doReturn(rule).when(mockPlatformUsageCreditsRuleService).create(rule);
+
+        assertThat(platformUsageCreditsRuleApiService.create(rule)).isEqualTo(rule);
+        verify(mockPlatformUsageCreditsRuleService).create(rule);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyCreateForNonAdmin() {
         assertThrows(AccessDeniedException.class, () ->
@@ -83,6 +93,16 @@ public class PlatformUsageCreditsRuleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpdateForUserAdmin() {
+        final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
+        doReturn(rule).when(mockPlatformUsageCreditsRuleService).update(ID, rule);
+
+        assertThat(platformUsageCreditsRuleApiService.update(ID, rule)).isEqualTo(rule);
+        verify(mockPlatformUsageCreditsRuleService).update(ID, rule);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyUpdateForNonAdmin() {
         assertThrows(AccessDeniedException.class, () ->
@@ -92,6 +112,14 @@ public class PlatformUsageCreditsRuleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteForAdmin() {
+        platformUsageCreditsRuleApiService.delete(ID);
+
+        verify(mockPlatformUsageCreditsRuleService).delete(ID);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDeleteForUserAdmin() {
         platformUsageCreditsRuleApiService.delete(ID);
 
         verify(mockPlatformUsageCreditsRuleService).delete(ID);

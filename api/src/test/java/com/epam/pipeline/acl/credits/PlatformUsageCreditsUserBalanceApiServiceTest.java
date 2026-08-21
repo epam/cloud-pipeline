@@ -63,6 +63,17 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldFilterForUserAdmin() {
+        final PlatformUsageCreditsUserBalanceFilterVO filter = filterVO();
+        final PagedResult<List<PlatformUsageCreditsUserBalance>> expected = pagedResult();
+        doReturn(expected).when(mockPlatformUsageCreditsUserBalanceCRUDService).filter(filter);
+
+        assertThat(apiService.filter(filter)).isEqualTo(expected);
+        verify(mockPlatformUsageCreditsUserBalanceCRUDService).filter(filter);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyFilterForNonAdmin() {
         assertThrows(AccessDeniedException.class, () -> apiService.filter(filterVO()));
@@ -83,6 +94,16 @@ public class PlatformUsageCreditsUserBalanceApiServiceTest extends AbstractAclTe
     public void shouldResetForAllUsersForAdmin() {
         final PlatformUsageCreditsResetRequest request = PlatformUsageCreditsResetRequest.builder()
                 .value(RESET_VALUE).build();
+        apiService.reset(request);
+
+        verify(mockPlatformUsageCreditsEventService).reset(request);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldResetForUserAdmin() {
+        final PlatformUsageCreditsResetRequest request = PlatformUsageCreditsResetRequest.builder()
+                .value(RESET_VALUE).userIds(Collections.singletonList(USER_ID)).build();
         apiService.reset(request);
 
         verify(mockPlatformUsageCreditsEventService).reset(request);

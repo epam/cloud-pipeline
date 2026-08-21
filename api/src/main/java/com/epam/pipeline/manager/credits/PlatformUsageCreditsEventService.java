@@ -26,7 +26,9 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
 import com.epam.pipeline.repository.credits.PlatformUsageCreditsEventRepository;
@@ -38,6 +40,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -66,6 +69,7 @@ public class PlatformUsageCreditsEventService {
     private final PlatformUsageCreditsEventRepository usageCreditsEventRepository;
     private final PlatformUsageCreditsEventMapper mapper;
     private final AuthManager authManager;
+    private final CheckPermissionHelper permissionHelper;
     private final UserManager userManager;
     private final MessageHelper messageHelper;
     private final PlatformUsageCreditsUserBalanceService userBalanceService;
@@ -122,7 +126,8 @@ public class PlatformUsageCreditsEventService {
         Assert.isTrue(!Boolean.TRUE.equals(filter.getWithoutEntityLink())
                         || ListUtils.emptyIfNull(filter.getEntities()).isEmpty(),
                 "'entities' and 'withoutEntityLink' filters cannot be used simultaneously");
-        final PlatformUsageCreditsEventFilterVO effectiveFilter = authManager.isAdmin()
+        final PlatformUsageCreditsEventFilterVO effectiveFilter =
+                authManager.isAdmin() || permissionHelper.isScopedAdmin(AclClass.PIPELINE_USER)
                 ? filter
                 : restrictToCurrentUser(filter);
         Assert.isTrue(effectiveFilter.getPage() >= 1, "Page index must be >= 1");
@@ -197,11 +202,16 @@ public class PlatformUsageCreditsEventService {
         final String username = authManager.getAuthorizedUser();
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
-        final List<Long> requestedUserIds = filter.getUserIds();
-        if (!ListUtils.emptyIfNull(requestedUserIds).isEmpty()
-                && !(requestedUserIds.size() == 1 && requestedUserIds.get(0).equals(user.getId()))) {
-            log.warn("Non-admin user '{}' requested events for userIds {}; overriding to [{}]",
-                    username, requestedUserIds, user.getId());
+        final List<Long> requestedUserIds = ListUtils.emptyIfNull(filter.getUserIds());
+        if (!requestedUserIds.isEmpty()) {
+            if (!requestedUserIds.contains(user.getId())) {
+                throw new AccessDeniedException(
+                        "Non-admin user '" + username + "' is not allowed to query events for other users");
+            }
+            if (requestedUserIds.size() > 1) {
+                log.warn("Non-admin user '{}' requested events for userIds {}; restricting to [{}]",
+                        username, requestedUserIds, user.getId());
+            }
         }
         return filter.toBuilder()
                 .userIds(Collections.singletonList(user.getId()))

@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import org.junit.jupiter.api.Test;
 
@@ -63,6 +64,8 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
             mock(NotificationManager.class);
     private final UserManager userManager =
             mock(UserManager.class);
+    private final CheckPermissionHelper permissionHelper =
+            mock(CheckPermissionHelper.class);
     private final PlatformUsageCreditsUserBalanceCRUDService crudService =
             mock(PlatformUsageCreditsUserBalanceCRUDService.class);
     private final PlatformUsageCreditsLaunchService launchService =
@@ -70,7 +73,7 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
     private final PlatformUsageCreditsUserBalanceService service =
             new PlatformUsageCreditsUserBalanceService(
                     contextualPreferenceManager, notificationManager, userManager,
-                    crudService, launchService);
+                    permissionHelper, crudService, launchService);
 
     @Test
     public void shouldUpsertBalanceOnResetForUser() {
