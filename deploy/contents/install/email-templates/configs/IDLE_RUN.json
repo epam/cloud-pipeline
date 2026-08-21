@@ -4,5 +4,5 @@
     "enabled":true,
     "resendDelay": -1,
     "threshold": -1,
-    "subject":"Job #$templateParameters[\"id\"] is Idle for a long time"
+    "subject":"Job #$templateParameters[\"id\"] is ABSOLUTE Idle for a long time"
 }
