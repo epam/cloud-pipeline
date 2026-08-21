@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_USER_ADMIN;
 
 @Service
 @RequiredArgsConstructor
@@ -36,31 +36,31 @@ public class PlatformUsageCreditsRuleApiService {
     private final PlatformUsageCreditsRuleService manager;
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public List<PlatformUsageCreditsUpdateRule> loadAll() {
         return manager.loadAll();
     }
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public PlatformUsageCreditsUpdateRule create(final PlatformUsageCreditsUpdateRule rule) {
         return manager.create(rule);
     }
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public PlatformUsageCreditsUpdateRule update(final Long id, final PlatformUsageCreditsUpdateRule rule) {
         return manager.update(id, rule);
     }
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public void delete(final Long id) {
         manager.delete(id);
     }
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public Map<String, List<FilterFieldVO>> getKeywords() {
         return manager.getKeywords();
     }

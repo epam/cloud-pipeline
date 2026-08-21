@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import java.io.OutputStream;
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_USER_ADMIN;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
@@ -38,7 +38,7 @@ public class PlatformUsageCreditsEventApiService {
     private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventService;
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
         return platformUsageCreditsUpdateEventService.process(events);
     }

@@ -25,6 +25,7 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.entity.credits.PlatformUsageCreditsUpdateEventEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.vo.SecuredEntityVO;
 import com.epam.pipeline.mapper.credits.PlatformUsageCreditsEventMapper;
@@ -39,6 +40,8 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import org.springframework.security.access.AccessDeniedException;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
@@ -50,6 +53,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyListOf;
@@ -66,6 +70,7 @@ public class PlatformUsageCreditsEventServiceTest {
     private static final Long USER_ID_1 = 1L;
     private static final Long USER_ID_2 = 2L;
     private static final String USERNAME = "testUser";
+    private static final String ERROR_MESSAGE = "error message";
     private static final int VALUE = 100;
     private static final LocalDateTime DATE = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
 
@@ -74,14 +79,15 @@ public class PlatformUsageCreditsEventServiceTest {
     private final PlatformUsageCreditsEventMapper mapper =
             Mappers.getMapper(PlatformUsageCreditsEventMapper.class);
     private final AuthManager authManager = mock(AuthManager.class);
+    private final CheckPermissionHelper permissionHelper = mock(CheckPermissionHelper.class);
     private final UserManager userManager = mock(UserManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final PlatformUsageCreditsUserBalanceService userBalanceService =
             mock(PlatformUsageCreditsUserBalanceService.class);
 
     private final PlatformUsageCreditsEventService service =
-            new PlatformUsageCreditsEventService(repository, mapper, authManager, userManager, messageHelper,
-                    userBalanceService);
+            new PlatformUsageCreditsEventService(repository, mapper, authManager, permissionHelper,
+                    userManager, messageHelper, userBalanceService);
 
     @Before
     public void setUp() {
@@ -191,7 +197,7 @@ public class PlatformUsageCreditsEventServiceTest {
         doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -201,19 +207,49 @@ public class PlatformUsageCreditsEventServiceTest {
     }
 
     @Test
-    public void filterNonAdminOverridesOtherUserIdsToCurrentUser() {
+    public void filterNonAdminWithOnlyOtherUserIdsThrowsAccessDenied() {
         doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
+
+        assertThatThrownBy(() -> service.filter(PlatformUsageCreditsEventFilterVO.builder()
+                .userIds(Collections.singletonList(USER_ID_2))
+                .page(1).pageSize(10).build()))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    public void filterNonAdminWithSelfAndOtherUserIdsRestrictsToCurrentUser() {
+        doReturn(false).when(authManager).isAdmin();
+        doReturn(USERNAME).when(authManager).getAuthorizedUser();
+        doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
         service.filter(PlatformUsageCreditsEventFilterVO.builder()
-                .userIds(Collections.singletonList(USER_ID_2))
+                .userIds(Arrays.asList(USER_ID_1, USER_ID_2))
                 .page(1).pageSize(10).build());
 
         verify(userManager).loadUserByName(USERNAME);
+        verify(repository).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    public void filterNonAdminWithOnlySelfUserIdSucceeds() {
+        doReturn(false).when(authManager).isAdmin();
+        doReturn(USERNAME).when(authManager).getAuthorizedUser();
+        doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(new PageImpl<>(Collections.emptyList()))
+                .when(repository).findAll(any(Specification.class), any(Pageable.class));
+
+        service.filter(PlatformUsageCreditsEventFilterVO.builder()
+                .userIds(Collections.singletonList(USER_ID_1))
+                .page(1).pageSize(10).build());
+
+        verify(repository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -370,7 +406,7 @@ public class PlatformUsageCreditsEventServiceTest {
         doReturn(false).when(authManager).isAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
