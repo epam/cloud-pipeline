@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_USER_ADMIN;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
 @Service
@@ -42,14 +42,14 @@ public class PlatformUsageCreditsUserBalanceApiService {
     private final PlatformUsageCreditsEventService eventService;
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public PagedResult<List<PlatformUsageCreditsUserBalance>> filter(
             final PlatformUsageCreditsUserBalanceFilterVO filter) {
         return userBalanceCRUD.filter(filter);
     }
 
     @CreditsFeatureCheck
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
     public void reset(final PlatformUsageCreditsResetRequest resetRequest) {
         eventService.reset(resetRequest);
     }

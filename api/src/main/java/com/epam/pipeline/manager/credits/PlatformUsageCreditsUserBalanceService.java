@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +57,7 @@ public class PlatformUsageCreditsUserBalanceService {
     private final ContextualPreferenceManager contextualPreferenceManager;
     private final NotificationManager notificationManager;
     private final UserManager userManager;
+    private final AuthManager authManager;
     private final PlatformUsageCreditsUserBalanceCRUDService crudService;
     private final PlatformUsageCreditsLaunchService launchService;
 
@@ -160,7 +162,7 @@ public class PlatformUsageCreditsUserBalanceService {
     public PlatformUsageCreditsUserBalance getBalanceWithAllocated(final Long userId) {
         Assert.notNull(userId, "User id must not be null");
         final PipelineUser currentUser = userManager.getCurrentUser();
-        if (!currentUser.isAdmin() && !Objects.equals(currentUser.getId(), userId)) {
+        if (!authManager.isCreditsAdmin() && !Objects.equals(currentUser.getId(), userId)) {
             throw new AccessDeniedException("Access denied: you can only view your own credits balance.");
         }
         final PipelineUser user = Objects.equals(currentUser.getId(), userId)

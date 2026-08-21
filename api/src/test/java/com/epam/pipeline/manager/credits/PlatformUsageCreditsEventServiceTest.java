@@ -69,6 +69,7 @@ public class PlatformUsageCreditsEventServiceTest {
     private static final Long USER_ID_1 = 1L;
     private static final Long USER_ID_2 = 2L;
     private static final String USERNAME = "testUser";
+    private static final String ERROR_MESSAGE = "error message";
     private static final int VALUE = 100;
     private static final LocalDateTime DATE = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
 
@@ -175,7 +176,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterAdminPassesFilterUnchanged() {
-        doReturn(true).when(authManager).isAdmin();
+        doReturn(true).when(authManager).isCreditsAdmin();
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -191,10 +192,10 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithNoUserIdsDefaultsToCurrentUser() {
-        doReturn(false).when(authManager).isAdmin();
+        doReturn(false).when(authManager).isCreditsAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -205,10 +206,10 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithOnlyOtherUserIdsThrowsAccessDenied() {
-        doReturn(false).when(authManager).isAdmin();
+        doReturn(false).when(authManager).isCreditsAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
 
         assertThatThrownBy(() -> service.filter(PlatformUsageCreditsEventFilterVO.builder()
                 .userIds(Collections.singletonList(USER_ID_2))
@@ -218,10 +219,10 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithSelfAndOtherUserIdsRestrictsToCurrentUser() {
-        doReturn(false).when(authManager).isAdmin();
+        doReturn(false).when(authManager).isCreditsAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -235,10 +236,10 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterNonAdminWithOnlySelfUserIdSucceeds() {
-        doReturn(false).when(authManager).isAdmin();
+        doReturn(false).when(authManager).isCreditsAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -251,7 +252,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void filterRejectsWithoutEntityLinkCombinedWithEntities() {
-        doReturn(true).when(authManager).isAdmin();
+        doReturn(true).when(authManager).isCreditsAdmin();
 
         service.filter(PlatformUsageCreditsEventFilterVO.builder()
                 .entities(Collections.singletonList(new SecuredEntityVO()))
@@ -261,7 +262,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void filterWithoutEntityLinkPassesThrough() {
-        doReturn(true).when(authManager).isAdmin();
+        doReturn(true).when(authManager).isCreditsAdmin();
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 
@@ -370,7 +371,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void exportWritesHeaderAndEvents() {
-        doReturn(true).when(authManager).isAdmin();
+        doReturn(true).when(authManager).isCreditsAdmin();
         doReturn(new PageImpl<>(Collections.singletonList(entity(USER_ID_1, VALUE))))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -386,7 +387,7 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void exportPaginatesUntilPartialPage() {
-        doReturn(true).when(authManager).isAdmin();
+        doReturn(true).when(authManager).isCreditsAdmin();
         final List<PlatformUsageCreditsUpdateEventEntity> fullPage =
                 Collections.nCopies(1000, entity(USER_ID_1, VALUE));
         doReturn(new PageImpl<>(fullPage))
@@ -400,10 +401,10 @@ public class PlatformUsageCreditsEventServiceTest {
 
     @Test
     public void exportNonAdminRestrictsToCurrentUser() {
-        doReturn(false).when(authManager).isAdmin();
+        doReturn(false).when(authManager).isCreditsAdmin();
         doReturn(USERNAME).when(authManager).getAuthorizedUser();
         doReturn(user(USER_ID_1)).when(userManager).loadUserByName(USERNAME);
-        doReturn("error").when(messageHelper).getMessage(any(String.class), any(Object[].class));
+        doReturn(ERROR_MESSAGE).when(messageHelper).getMessage(any(String.class), any(Object[].class));
         doReturn(new PageImpl<>(Collections.emptyList()))
                 .when(repository).findAll(any(Specification.class), any(Pageable.class));
 

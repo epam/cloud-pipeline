@@ -123,7 +123,7 @@ public class PlatformUsageCreditsEventService {
         Assert.isTrue(!Boolean.TRUE.equals(filter.getWithoutEntityLink())
                         || ListUtils.emptyIfNull(filter.getEntities()).isEmpty(),
                 "'entities' and 'withoutEntityLink' filters cannot be used simultaneously");
-        final PlatformUsageCreditsEventFilterVO effectiveFilter = authManager.isAdmin()
+        final PlatformUsageCreditsEventFilterVO effectiveFilter = authManager.isCreditsAdmin()
                 ? filter
                 : restrictToCurrentUser(filter);
         Assert.isTrue(effectiveFilter.getPage() >= 1, "Page index must be >= 1");
