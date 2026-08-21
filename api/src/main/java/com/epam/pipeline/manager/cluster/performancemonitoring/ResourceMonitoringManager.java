@@ -16,39 +16,34 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
-import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.monitoring.*;
+import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import net.javacrumbs.shedlock.core.SchedulerLock;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,19 +57,23 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import com.epam.pipeline.common.MessageConstants;
-import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.dao.monitoring.MonitoringESDao;
-import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_MONITORING_CONFIG;
 
 
 /**
@@ -91,10 +90,13 @@ import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 @Slf4j
 public class ResourceMonitoringManager extends AbstractSchedulingManager implements InitializingBean {
 
-    public static final String UTILIZATION_LEVEL_LOW = "IDLE";
     public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
+
+    public static final List<String> IDLE_TAGS = Arrays.stream(IdleMonitoringType.values())
+            .map(IdleMonitoringType::getTag)
+            .collect(Collectors.toList());
 
     private final ResourceMonitoringManagerCore core;
 
@@ -123,6 +125,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
         private static final String WORK_FINISHED_TAG = "WORK_FINISHED";
         public static final String CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM =
                 "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
+        public static final double ZERO_USAGE_RATE = 0.0;
 
         private final PipelineRunManager pipelineRunManager;
         private final RunStatusManager runStatusManager;
@@ -135,6 +138,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
         private final InstanceOfferManager instanceOfferManager;
         private final NodesManager nodesManager;
 
+        private volatile Map<String, InstanceType> instanceTypes = Collections.emptyMap();
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
@@ -159,6 +163,16 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
             this.nodesManager = nodesManager;
         }
 
+        @PostConstruct
+        public void initInstanceTypes() {
+            refreshInstanceTypes();
+        }
+
+        @Scheduled(cron = "0 0 0 ? * *")
+        public void refreshInstanceTypes() {
+            instanceTypes = computeInstanceTypes();
+        }
+
         @Scheduled(cron = "0 0 0 ? * *")
         @SchedulerLock(name = "ResourceMonitoringManager_removeOldIndices", lockAtMostForString = "PT1H")
         public void removeOldIndices() {
@@ -169,7 +183,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
         @SchedulerLock(name = "ResourceMonitoringManager_monitorResourceUsage", lockAtMostForString = "PT10M")
         public void monitorResourceUsage() {
             List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
-            processIdleRuns(runs);
+            processCPUIdleRuns(runs);
+            processGPUIdleRuns(runs);
+            processAbsoluteIdleRuns(runs);
             processHighNetworkConsumingRuns(runs);
             processOverloadedRuns(runs);
             processStuckRuns(runs);
@@ -359,141 +375,272 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
             return result;
         }
 
-        private void processIdleRuns(final List<PipelineRun> runs) {
+        private void processCPUIdleRuns(final List<PipelineRun> runs) {
             final Map<String, PipelineRun> running = groupedByNode(runs);
+            final IdleMonitoringConfig conf = findEnabledIdleConfig(IdleMonitoringType.CPU);
+            if (!isIdleConfigReadyForProcessing(conf, IdleMonitoringType.CPU)) {
+                return;
+            }
 
-            final int idleTimeout = preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
-
-            final Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
-                    .filter(e -> Optional.ofNullable(e.getValue().getProlongedAtTime())
-                            .map(timestamp -> DateUtils.nowUTC()
-                                    .isAfter(timestamp.plusMinutes(idleTimeout)))
-                            .orElse(Boolean.FALSE))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
-                    "CPU", notProlongedRuns.size(), String.join(", ", notProlongedRuns.keySet())));
-
-            final LocalDateTime now = DateUtils.nowUTC();
-            final Map<String, Double> cpuMetrics = monitoringDao.loadMetrics(ELKUsageMetric.CPU,
-                    notProlongedRuns.keySet(), now.minusMinutes(idleTimeout + ONE), now);
-            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_CPU_RUN_METRICS_RECEIVED,
-                    cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
-                            .collect(Collectors.joining(", ")))
+            final double idleLevel = conf.thresholdPercent() / PERCENT;
+            final int idleGracePeriod = conf.gracePeriodMinutes();
+            final Map<String, PipelineRun> notProlongedRuns = filterNotProlongedRuns(running, idleGracePeriod);
+            final Map<String, Double> metrics = loadIdleMetrics(
+                    ELKUsageMetric.CPU, notProlongedRuns.keySet(), idleGracePeriod
             );
-
-            final double idleCpuLevel = preferenceManager.getPreference(
-                    SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT) / PERCENT;
-            final int actionTimeout = preferenceManager.getPreference(
-                    SystemPreferences.SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES);
-            final IdleRunAction action = IdleRunAction.valueOf(preferenceManager
-                    .getPreference(SystemPreferences.SYSTEM_IDLE_ACTION));
-
-            processRuns(notProlongedRuns, cpuMetrics, idleCpuLevel, actionTimeout, action);
-        }
-
-        private void processRuns(Map<String, PipelineRun> running, Map<String, Double> cpuMetrics,
-                                 double idleCpuLevel, int actionTimeout, IdleRunAction action) {
-            final List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
-            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
-            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
-            final Map<String, InstanceType> instanceTypeMap = instanceOfferManager.getAllInstanceTypes().stream()
-                    .collect(Collectors.toMap(InstanceType::getName,
-                    Function.identity(), (t1, t2) -> t1));
-            for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
-                PipelineRun run = entry.getValue();
-                Double metric = cpuMetrics.get(entry.getKey());
-                if (metric != null) {
-                    InstanceType type = instanceTypeMap.getOrDefault(run.getInstance().getNodeType(),
-                            InstanceType.builder().vCPU(1).build());
-                    double cpuUsageRate = metric / MILLIS / type.getVCPU();
-                    if (Precision.compareTo(cpuUsageRate, idleCpuLevel, ONE_THOUSANDTH) < 0) {
-                        processIdleRun(run, actionTimeout, action, runsToNotify,
-                                runsToUpdateNotificationTime, cpuUsageRate, runsToUpdateTags);
-                    } else if (run.getLastIdleNotificationTime() != null) { // No action is longer needed, clear timeout
-                        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
-                                run.getPodId(), cpuUsageRate));
-                        processFormerIdleRun(run, runsToUpdateNotificationTime, runsToUpdateTags);
-                    }
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(notProlongedRuns.size());
+            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(notProlongedRuns.size());
+            for (Map.Entry<String, PipelineRun> entry : notProlongedRuns.entrySet()) {
+                final PipelineRun run = entry.getValue();
+                final Double metric = metrics.get(entry.getKey());
+                if (Objects.isNull(metric)) {
+                    continue;
+                }
+                final double usageRate = metric / MILLIS / instanceVCPU(run);
+                if (Precision.compareTo(usageRate, idleLevel, ONE_THOUSANDTH) < 0) {
+                    processIdleRun(run, IdleMonitoringType.CPU, usageRate, conf.actionTimeoutMinutes(),
+                            conf.action(), runsToNotify, runsToUpdateTags);
+                } else if (isIdleTagged(run, IdleMonitoringType.CPU)) {
+                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
+                            run.getPodId(), IdleMonitoringType.CPU.name(), usageRate));
+                    processFormerIdleRun(run, runsToUpdateTags, IdleMonitoringType.CPU);
                 }
             }
-            notificationManager.notifyIdleRuns(runsToNotify, NotificationType.IDLE_RUN);
-            pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdateNotificationTime);
+            notificationManager.notifyIdleRuns(runsToNotify, NotificationType.IDLE_CPU_RUN, conf.thresholdPercent());
             pipelineRunManager.updateRunsTags(runsToUpdateTags);
         }
 
-        private void processIdleRun(PipelineRun run, int actionTimeout, IdleRunAction action,
-                                    List<Pair<PipelineRun, Double>> pipelinesToNotify,
-                                    List<PipelineRun> runsToUpdateNotificationTime, Double cpuUsageRate,
-                                    List<PipelineRun> runsToUpdateTags) {
-            if (shouldPerformActionOnIdleRun(run, actionTimeout)) {
-                performActionOnIdleRun(run, action, cpuUsageRate, pipelinesToNotify,
-                        runsToUpdateNotificationTime, runsToUpdateTags);
+        private void processGPUIdleRuns(final List<PipelineRun> runs) {
+            final Map<String, PipelineRun> running = groupedByNode(filterGpuRuns(runs));
+            final IdleMonitoringConfig conf = findEnabledIdleConfig(IdleMonitoringType.GPU);
+            if (!isIdleConfigReadyForProcessing(conf, IdleMonitoringType.GPU)) {
                 return;
             }
-            if (Objects.isNull(run.getLastIdleNotificationTime())) {
-                run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
-                Optional.ofNullable(getTimestampTag(UTILIZATION_LEVEL_LOW))
-                        .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
-                runsToUpdateTags.add(run);
-                run.setLastIdleNotificationTime(DateUtils.nowUTC());
-                runsToUpdateNotificationTime.add(run);
+
+            final int idleGracePeriod = conf.gracePeriodMinutes();
+            final Map<String, PipelineRun> notProlongedRuns = filterNotProlongedRuns(running, idleGracePeriod);
+            final Map<String, Double> activeGPUsByRuns = loadIdleMetrics(
+                    ELKUsageMetric.GPU_AGGS, notProlongedRuns.keySet(), idleGracePeriod
+            );
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(notProlongedRuns.size());
+            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(notProlongedRuns.size());
+            for (Map.Entry<String, PipelineRun> entry : notProlongedRuns.entrySet()) {
+                final PipelineRun run = entry.getValue();
+                final Double activeGPUs = activeGPUsByRuns.get(entry.getKey());
+                if (Objects.isNull(activeGPUs)) {
+                    continue;
+                }
+                if (activeGPUs <= ZERO_USAGE_RATE) {
+                    processIdleRun(run, IdleMonitoringType.GPU, activeGPUs, conf.actionTimeoutMinutes(),
+                            conf.action(), runsToNotify, runsToUpdateTags);
+                } else if (isIdleTagged(run, IdleMonitoringType.GPU)) {
+                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
+                            run.getPodId(), IdleMonitoringType.GPU.name(), activeGPUs));
+                    processFormerIdleRun(run, runsToUpdateTags, IdleMonitoringType.GPU);
+                }
             }
-            pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
-            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
+            notificationManager.notifyIdleRuns(runsToNotify, NotificationType.IDLE_GPU_RUN, ZERO_USAGE_RATE);
+            pipelineRunManager.updateRunsTags(runsToUpdateTags);
         }
 
-        private boolean shouldPerformActionOnIdleRun(final PipelineRun run, final int actionTimeout) {
-            return Objects.nonNull(run.getLastIdleNotificationTime()) &&
-                    run.getLastIdleNotificationTime().isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
+        private boolean isIdleConfigReadyForProcessing(final IdleMonitoringConfig conf,
+                                                        final IdleMonitoringType type) {
+            if (conf == null) {
+                log.debug("{} idle monitoring config is not configured or disabled, skipping idle check.",
+                        type.name());
+                return false;
+            }
+            if (Objects.isNull(conf.gracePeriodMinutes()) || Objects.isNull(conf.actionTimeoutMinutes())) {
+                log.warn("{} idle monitoring config misses grace period or action timeout, skipping idle check.",
+                        type.name());
+                return false;
+            }
+            return true;
         }
 
-        private void processFormerIdleRun(final PipelineRun run, final List<PipelineRun> runsToUpdateNotificationTime,
-                                          final List<PipelineRun> runsToUpdateTags) {
-            run.setLastIdleNotificationTime(null);
-            run.removeTag(UTILIZATION_LEVEL_LOW);
-            run.removeTag(getTimestampTag(UTILIZATION_LEVEL_LOW));
-            runsToUpdateNotificationTime.add(run);
+        private Map<String, PipelineRun> filterNotProlongedRuns(final Map<String, PipelineRun> running,
+                                                                  final int idleGracePeriod) {
+            return running.entrySet().stream()
+                    .filter(e -> Optional.ofNullable(e.getValue().getProlongedAtTime())
+                            .map(timestamp -> DateUtils.nowUTC().isAfter(timestamp.plusMinutes(idleGracePeriod)))
+                            .orElse(Boolean.FALSE))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        private Map<String, Double> loadIdleMetrics(final ELKUsageMetric usageMetric, final Set<String> nodes,
+                                                     final int idleGracePeriod) {
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST, usageMetric.getName(),
+                    nodes.size(), String.join(", ", nodes)));
+            final LocalDateTime now = DateUtils.nowUTC();
+            final Map<String, Double> metrics = monitoringDao.loadMetrics(usageMetric, nodes,
+                    now.minusMinutes(idleGracePeriod + ONE), now);
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_RECEIVED,
+                    usageMetric.getName(),
+                    metrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+                            .collect(Collectors.joining(", "))));
+            return metrics;
+        }
+
+        private IdleMonitoringConfig findEnabledIdleConfig(
+                final IdleMonitoringType monitoringType) {
+            return ListUtils.emptyIfNull(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                    .stream()
+                    .filter(IdleMonitoringConfig::enabled)
+                    .filter(config -> config.type() == monitoringType)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        private List<PipelineRun> filterGpuRuns(final List<PipelineRun> runs) {
+            return ListUtils.emptyIfNull(runs).stream()
+                    .filter(this::hasGpu)
+                    .collect(Collectors.toList());
+        }
+
+        private void processAbsoluteIdleRuns(final List<PipelineRun> runs) {
+            final IdleMonitoringConfig absoluteConf = findEnabledIdleConfig(IdleMonitoringType.ABSOLUTE);
+            if (absoluteConf == null) {
+                log.debug("ABSOLUTE idle monitoring config is not configured or disabled, skipping idle check.");
+                return;
+            }
+            if (Objects.isNull(absoluteConf.actionTimeoutMinutes())) {
+                log.warn("ABSOLUTE idle monitoring config misses action timeout, skipping idle check.");
+                return;
+            }
+
+            final int actionTimeout = absoluteConf.actionTimeoutMinutes();
+            final IdleRunAction action = absoluteConf.action();
+
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(runs.size());
+            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(runs.size());
+            for (final PipelineRun run : ListUtils.emptyIfNull(runs)) {
+                if (isAbsolutelyIdle(run)) {
+                    processIdleRun(
+                            run, IdleMonitoringType.ABSOLUTE, ZERO_USAGE_RATE, actionTimeout, action,
+                            runsToNotify, runsToUpdateTags
+                    );
+                } else if (isIdleTagged(run, IdleMonitoringType.ABSOLUTE)) {
+                    processFormerIdleRun(run, runsToUpdateTags, IdleMonitoringType.ABSOLUTE);
+                }
+            }
+            notificationManager.notifyIdleRuns(runsToNotify, NotificationType.IDLE_RUN, ZERO_USAGE_RATE);
+            pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private boolean isAbsolutelyIdle(final PipelineRun run) {
+            if (!isIdleTagged(run, IdleMonitoringType.CPU)) {
+                return false;
+            }
+            return !hasGpu(run) || isIdleTagged(run, IdleMonitoringType.GPU);
+        }
+
+        private boolean hasGpu(final PipelineRun run) {
+            return Optional.ofNullable(run.getInstance())
+                    .map(RunInstance::getNodeType)
+                    .map(instanceTypes::get)
+                    .map(type -> type.getGpu() > 0)
+                    .orElse(false);
+        }
+
+        private Map<String, InstanceType> computeInstanceTypes() {
+            return ListUtils.emptyIfNull(instanceOfferManager.getAllInstanceTypes()).stream()
+                    .collect(Collectors.toMap(InstanceType::getName, Function.identity(), (t1, t2) -> t1));
+        }
+
+        private int instanceVCPU(final PipelineRun run) {
+            return instanceTypes.getOrDefault(run.getInstance().getNodeType(),
+                    InstanceType.builder().vCPU(1).build()).getVCPU();
+        }
+
+        private boolean isIdleTagged(final PipelineRun run, final IdleMonitoringType type) {
+            return MapUtils.emptyIfNull(run.getTags()).containsKey(type.getTag());
+        }
+
+        private void processIdleRun(final PipelineRun run, final IdleMonitoringType monitoringType,
+                                    final Double usageRate, final int actionTimeout, final IdleRunAction action,
+                                    final List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                    final List<PipelineRun> runsToUpdateTags) {
+
+            final String tag = monitoringType.getTag();
+
+            if (shouldPerformActionOnIdleRun(run, actionTimeout, monitoringType)) {
+                performActionOnIdleRun(run, action, usageRate, pipelinesToNotify, runsToUpdateTags, monitoringType);
+                return;
+            }
+
+            if (!isIdleTagged(run, monitoringType)) {
+                run.addTag(tag, TRUE_VALUE_STRING);
+                Optional.ofNullable(getTimestampTag(monitoringType))
+                        .ifPresent(dateTag -> run.addTag(dateTag, DateUtils.nowUTCStr()));
+                runsToUpdateTags.add(run);
+            }
+            pipelinesToNotify.add(new ImmutablePair<>(run, usageRate));
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY,
+                    run.getPodId(), monitoringType.name(), usageRate));
+        }
+
+        private boolean shouldPerformActionOnIdleRun(final PipelineRun run, final int actionTimeout,
+                                                     final IdleMonitoringType monitoringType) {
+            final String timestampTag = getTimestampTag(monitoringType);
+            final String date = MapUtils.emptyIfNull(run.getTags()).get(timestampTag);
+            if (StringUtils.isBlank(date)) {
+                return false;
+            }
+            try {
+                return DateUtils.strToUTCDate(date).isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
+            } catch (DateTimeParseException e) {
+                log.error("Failed to parse idle timestamp tag {} for run {}: {}", timestampTag, run.getId(), date, e);
+                return false;
+            }
+        }
+
+        private void processFormerIdleRun(final PipelineRun run, final List<PipelineRun> runsToUpdateTags,
+                                          final IdleMonitoringType monitoringType) {
+            run.removeTag(monitoringType.getTag());
+            Optional.ofNullable(getTimestampTag(monitoringType)).ifPresent(run::removeTag);
+            notificationManager.removeNotificationTimestamps(
+                    run.getId(),
+                    NotificationType.getById(monitoringType.getNotificationTypeId())
+            );
             runsToUpdateTags.add(run);
         }
 
         private void performActionOnIdleRun(final PipelineRun run, IdleRunAction action,
-                                            final double cpuUsageRate,
+                                            final double resourceUsageRate,
                                             final List<Pair<PipelineRun, Double>> pipelinesToNotify,
-                                            final List<PipelineRun> runsToUpdate,
-                                            final List<PipelineRun> runsToUpdateTags) {
-            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
-                    action));
+                                            final List<PipelineRun> runsToUpdateTags,
+                                            final IdleMonitoringType monitoringType) {
+
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(),
+                    monitoringType, resourceUsageRate, action));
+
             switch (action) {
                 case PAUSE:
                     if (run.getInstance().getSpot()) {
-                        performNotify(run, cpuUsageRate, pipelinesToNotify);
+                        performNotify(run, resourceUsageRate, pipelinesToNotify);
                     } else {
-                        performPause(run, cpuUsageRate);
+                        performPause(run, resourceUsageRate);
                     }
 
                     break;
                 case PAUSE_OR_STOP:
                     if (run.getInstance().getSpot()) {
-                        performStop(run, cpuUsageRate, runsToUpdateTags);
+                        performStop(run, resourceUsageRate, monitoringType, runsToUpdateTags);
                     } else {
-                        performPause(run, cpuUsageRate);
+                        performPause(run, resourceUsageRate);
                     }
 
                     break;
                 case STOP:
-                    performStop(run, cpuUsageRate, runsToUpdateTags);
+                    performStop(run, resourceUsageRate, monitoringType, runsToUpdateTags);
                     break;
                 default:
-                    performNotify(run, cpuUsageRate, pipelinesToNotify);
+                    performNotify(run, resourceUsageRate, pipelinesToNotify);
             }
-
-            runsToUpdate.add(run);
         }
 
-        private void performNotify(PipelineRun run, double cpuUsageRate,
-                                   List<Pair<PipelineRun, Double>> pipelinesToNotify) {
-            run.setLastIdleNotificationTime(DateUtils.nowUTC());
+        private void performNotify(final PipelineRun run, final double cpuUsageRate,
+                                   final List<Pair<PipelineRun, Double>> pipelinesToNotify) {
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
         }
 
@@ -622,7 +769,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
         }
 
         private void performStop(final PipelineRun run,
-                                 final double cpuUsageRate,
+                                 final double usageRate,
+                                 final IdleMonitoringType monitoringType,
                                  final List<PipelineRun> runsToUpdateTags) {
             if (run.isNonPause() || run.isClusterRun()) {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
@@ -631,14 +779,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
             pipelineRunManager.stop(run.getId());
             final String stopTag = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_STOP_REASON);
             if (StringUtils.isNotBlank(stopTag)) {
-                run.addTag(stopTag, "IDLE_RUN");
+                run.addTag(stopTag, monitoringType.getTag());
                 runsToUpdateTags.add(run);
             }
-            notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
-                    NotificationType.IDLE_RUN_STOPPED);
+            notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, usageRate)),
+                    NotificationType.IDLE_RUN_STOPPED, 0.0);
         }
 
-        private void performPause(PipelineRun run, double cpuUsageRate) {
+        private void performPause(PipelineRun run, double usageRate) {
             if (run.isNonPause() || run.isClusterRun()) {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
                 return;
@@ -647,10 +795,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
                 log.debug(messageHelper.getMessage(MessageConstants.ERROR_RUN_OPERATION_FORBIDDEN));
                 return;
             }
-            run.setLastIdleNotificationTime(null);
             pipelineRunDockerOperationManager.pauseRun(run.getId(), true);
-            notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
-                    NotificationType.IDLE_RUN_PAUSED);
+            notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, usageRate)),
+                    NotificationType.IDLE_RUN_PAUSED, 0.0);
         }
 
         private void processServerlessRuns() {
@@ -731,9 +878,13 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager impleme
                     .orElse(false);
         }
 
-        private String getTimestampTag(final String tagName) {
+        private String getTimestampTag(final String tag) {
             final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
-            return StringUtils.isNotEmpty(suffix) ? tagName + suffix : null;
+            return StringUtils.isNotEmpty(suffix) ? tag + suffix : null;
+        }
+
+        private String getTimestampTag(final IdleMonitoringType monitoringType) {
+            return getTimestampTag(monitoringType.getTag());
         }
     }
 }

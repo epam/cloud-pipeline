@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +88,7 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 
+
 @Service
 @Slf4j
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
@@ -99,6 +101,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     public static final String MAX_POSTFIX = "_max";
     public static final String CAPACITY_POSTFIX = "_capacity";
     public static final long SECS_IN_MIN = 60L;
+    private static final EnumSet<NotificationType> IDLE_NOTIFICATION_TYPES =
+            EnumSet.of(
+                    NotificationType.IDLE_RUN,
+                    NotificationType.IDLE_CPU_RUN,
+                    NotificationType.IDLE_GPU_RUN
+            );
 
     @Autowired
     private UserManager userManager;
@@ -320,16 +328,16 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     /**
      * Issues a notification of an idle Pipeline Run for multiple runs.
      *
-     * @param pipelineCpuRatePairs a list of pairs of PipelineRun and Double cpu usage rate value
+     * @param pipelineRatePairs a list of pairs of PipelineRun and Double cpu rate usage/active gpu number value
      * @param type a type of notification to be issued. Supported types are IDLE_RUN, IDLE_RUN_PAUSED,
      *                         IDLE_RUN_STOPPED
      * @throws IllegalArgumentException if notificationType is not from IDLE_RUN group
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
-                               final NotificationType type) {
-        if (CollectionUtils.isEmpty(pipelineCpuRatePairs)) {
+    public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineRatePairs,
+                               final NotificationType type, final double usageIdleLevel) {
+        if (CollectionUtils.isEmpty(pipelineRatePairs)) {
             return;
         }
 
@@ -343,29 +351,28 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
 
         final List<Long> ccUserIds = getCCUsers(settings);
-        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineRatePairs);
 
-        final double idleCpuLevel = preferenceManager.getPreference(
-                SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
         final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
 
-        final List<Pair<PipelineRun, Double>> filtered = pipelineCpuRatePairs.stream()
+        final List<Pair<PipelineRun, Double>> filtered = pipelineRatePairs.stream()
                 .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), type, settings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
                 .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
-                .collect(Collectors.toList());
+                .toList();
+
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
-                        pair.getRight(), idleCpuLevel, type))
+                        pair.getRight(), usageIdleLevel, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
 
-        if (NotificationType.IDLE_RUN.equals(type)) {
+        if (IDLE_NOTIFICATION_TYPES.contains(type)) {
             final List<Long> runIds = filtered.stream()
                     .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
-            monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.IDLE_RUN);
+            monitoringNotificationDao.updateNotificationTimestamp(runIds, type);
         }
     }
 
@@ -373,13 +380,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                                        final List<Long> ccUserIds,
                                                        final Map<String, PipelineUser> pipelineOwners,
                                                        final PipelineRun run,
-                                                       final double cpuRate,
-                                                       final double idleCpuLevel,
+                                                       final double usageRate,
+                                                       final double usageIdleLevel,
                                                        final NotificationType type) {
-        log.debug("Sending idle run notification for run '{}'.", run.getId());
+        log.debug("Sending '{}' notification for run '{}'.", type.name(), run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run, cpuRate, idleCpuLevel));
+        message.setTemplateParameters(parameterManager.build(type, run, usageRate, usageIdleLevel));
         if (idleRunSettings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
         }
@@ -956,7 +963,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     private boolean shouldNotifyIdleRun(final Long runId, final NotificationType notificationType,
                                         final NotificationSettings notificationSettings) {
-        if (!NotificationType.IDLE_RUN.equals(notificationType)) {
+        if (!IDLE_NOTIFICATION_TYPES.contains(notificationType)) {
             return true;
         }
         return shouldNotify(runId, notificationSettings);

@@ -16,9 +16,9 @@
 <body>
     <p>Dear user,</p>
     <p>*** This is a system generated email, do not reply to this email ***</p>
-    <p>Looks like a job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, is completely idle (none of the compute resources: CPU, GPU is utilized).</p>
+    <p>Looks like a job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, is GPU idle: Active GPU number is ${CP_DOLLAR}numberTool.format("#0", ${CP_DOLLAR}templateParameters.get("activeGpuNumber")) below or equal the limit ${CP_DOLLAR}numberTool.format("#0", ${CP_DOLLAR}templateParameters.get("idleGpuNumberThreshold")).</p>
     <br />
-    <p>If you consider this normal, please use the <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/run/${CP_DOLLAR}templateParameters.get("id")/prolong">extend idle period request</a></p>
+    <p>If you consider the active GPU number normal, please use the <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/run/${CP_DOLLAR}templateParameters.get("id")/prolong">extend idle period request</a></p>
     <p>Otherwise this job may be terminated automatically</p>
     <br />
     <p><b>Job details:</b></p>

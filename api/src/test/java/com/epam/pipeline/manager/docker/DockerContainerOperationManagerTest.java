@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -156,7 +157,7 @@ public class DockerContainerOperationManagerTest {
     @Test
     public void pauseRun() throws IOException {
         final PipelineRun idledRun =
-                createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW, TEST_TAG);
+                createPausingRunWithTags(IdleMonitoringType.ABSOLUTE.getTag(), TEST_TAG);
         final PipelineRun pressuredRun =
                 createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, TEST_TAG);
 
