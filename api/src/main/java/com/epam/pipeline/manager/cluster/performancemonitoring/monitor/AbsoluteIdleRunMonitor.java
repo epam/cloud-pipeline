@@ -34,7 +34,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Component
 @Slf4j
@@ -66,13 +65,8 @@ public class AbsoluteIdleRunMonitor extends AbstractIdleRunMonitor {
 
     @Override
     public void monitor(final List<PipelineRun> runs) {
-        final IdleMonitoringConfig absoluteConf = findEnabledIdleConfig(getType());
-        if (absoluteConf == null) {
-            log.debug("ABSOLUTE idle monitoring config is not configured or disabled, skipping idle check.");
-            return;
-        }
-        if (Objects.isNull(absoluteConf.getActionTimeoutMinutes())) {
-            log.warn("ABSOLUTE idle monitoring config misses action timeout, skipping idle check.");
+        final IdleMonitoringConfig absoluteConf = getIdleConfig(getType());
+        if (!isIdleConfigReadyForProcessing(absoluteConf, getType())) {
             return;
         }
 

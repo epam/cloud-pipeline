@@ -29,6 +29,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -68,7 +70,7 @@ public class GpuIdleRunMonitor extends AbstractIdleRunMonitor {
     @Override
     public void monitor(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = groupedByNode(filterGpuRuns(runs));
-        final IdleMonitoringConfig conf = findEnabledIdleConfig(getType());
+        final IdleMonitoringConfig conf = getIdleConfig(getType());
         if (!isIdleConfigReadyForProcessing(conf, getType())) {
             return;
         }
@@ -97,5 +99,11 @@ public class GpuIdleRunMonitor extends AbstractIdleRunMonitor {
         }
         notificationManager.notifyIdleRuns(runsToNotify, getType().getNotificationType(), ZERO_USAGE_RATE);
         pipelineRunManager.updateRunsTags(runsToUpdateTags);
+    }
+
+    protected List<PipelineRun> filterGpuRuns(final List<PipelineRun> runs) {
+        return ListUtils.emptyIfNull(runs).stream()
+                .filter(this::hasGpu)
+                .collect(Collectors.toList());
     }
 }

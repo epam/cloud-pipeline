@@ -86,24 +86,26 @@ public abstract class AbstractIdleRunMonitor extends AbstractRunMonitor {
 
     protected abstract IdleMonitoringType getType();
 
-    protected IdleMonitoringConfig findEnabledIdleConfig(final IdleMonitoringType monitoringType) {
+    protected IdleMonitoringConfig getIdleConfig(final IdleMonitoringType monitoringType) {
         return ListUtils.emptyIfNull(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
                 .stream()
-                .filter(IdleMonitoringConfig::isEnabled)
                 .filter(config -> config.getType() == monitoringType)
                 .findFirst()
                 .orElse(null);
     }
 
-    protected boolean isIdleConfigReadyForProcessing(final IdleMonitoringConfig conf,
+    protected boolean isIdleConfigReadyForProcessing(final IdleMonitoringConfig config,
                                                       final IdleMonitoringType type) {
-        if (conf == null) {
+        if (config == null || !config.isEnabled()) {
             log.debug("{} idle monitoring config is not configured or disabled, skipping idle check.", type.name());
             return false;
         }
-        if (Objects.isNull(conf.getGracePeriodMinutes()) || Objects.isNull(conf.getActionTimeoutMinutes())) {
-            log.warn("{} idle monitoring config misses grace period or action timeout, skipping idle check.",
-                    type.name());
+        if (Objects.isNull(config.getActionTimeoutMinutes())) {
+            log.warn("{} idle monitoring config misses action timeout, skipping idle check.", type.name());
+            return false;
+        }
+        if (type != IdleMonitoringType.ABSOLUTE && Objects.isNull(config.getGracePeriodMinutes())) {
+            log.warn("{} idle monitoring config misses grace period, skipping idle check.", type.name());
             return false;
         }
         return true;
@@ -148,12 +150,6 @@ public abstract class AbstractIdleRunMonitor extends AbstractRunMonitor {
         return instanceTypeCache.get()
                 .getOrDefault(run.getInstance().getNodeType(), InstanceType.builder().vCPU(1).build())
                 .getVCPU();
-    }
-
-    protected List<PipelineRun> filterGpuRuns(final List<PipelineRun> runs) {
-        return ListUtils.emptyIfNull(runs).stream()
-                .filter(this::hasGpu)
-                .collect(Collectors.toList());
     }
 
     protected void processIdleRun(final PipelineRun run, final IdleMonitoringType monitoringType,

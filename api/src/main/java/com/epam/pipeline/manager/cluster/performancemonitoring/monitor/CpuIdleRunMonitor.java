@@ -69,7 +69,7 @@ public class CpuIdleRunMonitor extends AbstractIdleRunMonitor {
     @Override
     public void monitor(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = groupedByNode(runs);
-        final IdleMonitoringConfig conf = findEnabledIdleConfig(getType());
+        final IdleMonitoringConfig conf = getIdleConfig(getType());
         if (!isIdleConfigReadyForProcessing(conf, getType())) {
             return;
         }
