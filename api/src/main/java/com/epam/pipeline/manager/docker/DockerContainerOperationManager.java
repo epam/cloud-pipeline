@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -519,15 +520,20 @@ public class DockerContainerOperationManager {
 
     private void removeUtilizationLevelTags(final PipelineRun run) {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
-        Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
-                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_LOW + suffix,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix,
-                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
-                  PipelineRunManager.NETWORK_LIMIT + suffix)
-            .filter(run::hasTag)
-            .forEach(run::removeTag);
+        Stream.of(
+            IdleMonitoringType.CPU.getTag(),
+            IdleMonitoringType.CPU.getTag() + suffix,
+            IdleMonitoringType.GPU.getTag(),
+            IdleMonitoringType.GPU.getTag() + suffix,
+            IdleMonitoringType.ABSOLUTE.getTag(),
+            IdleMonitoringType.ABSOLUTE.getTag() + suffix,
+            ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
+            ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix,
+            ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH,
+            ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
+            PipelineRunManager.NETWORK_LIMIT + suffix
+        ).filter(run::hasTag)
+        .forEach(run::removeTag);
     }
 
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {
