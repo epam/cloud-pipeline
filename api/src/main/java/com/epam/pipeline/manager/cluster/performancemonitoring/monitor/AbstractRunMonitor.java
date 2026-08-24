@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common;
+package com.epam.pipeline.manager.cluster.performancemonitoring.monitor;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
@@ -30,13 +30,17 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
-public final class RunMonitorUtils {
+public abstract class AbstractRunMonitor implements RunMonitor {
 
-    private RunMonitorUtils() {
+    protected final MessageHelper messageHelper;
+    protected final PreferenceManager preferenceManager;
+
+    protected AbstractRunMonitor(final MessageHelper messageHelper, final PreferenceManager preferenceManager) {
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
     }
 
-    public static Map<String, PipelineRun> groupedByNode(final List<PipelineRun> runs,
-                                                          final MessageHelper messageHelper) {
+    protected Map<String, PipelineRun> groupedByNode(final List<PipelineRun> runs) {
         return runs.stream()
                 .filter(r -> {
                     final boolean hasNodeName = Objects.nonNull(r.getInstance())
@@ -50,7 +54,7 @@ public final class RunMonitorUtils {
                 .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
     }
 
-    public static String getTimestampTag(final String tag, final PreferenceManager preferenceManager) {
+    protected String getTimestampTag(final String tag) {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         return StringUtils.isNotEmpty(suffix) ? tag + suffix : null;
     }

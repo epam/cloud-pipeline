@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.RunMonitorUtils;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -46,7 +45,7 @@ import java.util.stream.Stream;
 
 @Component
 @Slf4j
-public class OverloadedRunMonitor implements RunMonitor {
+public class OverloadedRunMonitor extends AbstractRunMonitor {
 
     private static final double PERCENT = 100.0;
     private static final double ONE_THOUSANDTH = 0.001;
@@ -57,8 +56,6 @@ public class OverloadedRunMonitor implements RunMonitor {
     private final PipelineRunManager pipelineRunManager;
     private final NotificationManager notificationManager;
     private final MonitoringESDao monitoringDao;
-    private final MessageHelper messageHelper;
-    private final PreferenceManager preferenceManager;
 
     @Autowired
     public OverloadedRunMonitor(final PipelineRunManager pipelineRunManager,
@@ -66,16 +63,15 @@ public class OverloadedRunMonitor implements RunMonitor {
                                  final MonitoringESDao monitoringDao,
                                  final MessageHelper messageHelper,
                                  final PreferenceManager preferenceManager) {
+        super(messageHelper, preferenceManager);
         this.pipelineRunManager = pipelineRunManager;
         this.notificationManager = notificationManager;
         this.monitoringDao = monitoringDao;
-        this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
     }
 
     @Override
     public void monitor(final List<PipelineRun> runs) {
-        final Map<String, PipelineRun> running = RunMonitorUtils.groupedByNode(runs, messageHelper);
+        final Map<String, PipelineRun> running = groupedByNode(runs);
         final int timeRange = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
         final Map<ELKUsageMetric, Double> thresholds = getThresholds();
@@ -149,7 +145,7 @@ public class OverloadedRunMonitor implements RunMonitor {
                 .filter(r -> !r.hasTag(UTILIZATION_LEVEL_HIGH))
                 .peek(r -> {
                     r.addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
-                    Optional.ofNullable(RunMonitorUtils.getTimestampTag(UTILIZATION_LEVEL_HIGH, preferenceManager))
+                    Optional.ofNullable(getTimestampTag(UTILIZATION_LEVEL_HIGH))
                             .ifPresent(tag -> r.addTag(tag, DateUtils.nowUTCStr()));
                 });
         final Stream<PipelineRun> runsToRemoveTag = running.values()
@@ -158,7 +154,7 @@ public class OverloadedRunMonitor implements RunMonitor {
                 .filter(r -> r.hasTag(UTILIZATION_LEVEL_HIGH))
                 .peek(r -> {
                     r.removeTag(UTILIZATION_LEVEL_HIGH);
-                    r.removeTag(RunMonitorUtils.getTimestampTag(UTILIZATION_LEVEL_HIGH, preferenceManager));
+                    r.removeTag(getTimestampTag(UTILIZATION_LEVEL_HIGH));
                 });
         return Stream.concat(runsToAddTag, runsToRemoveTag).collect(Collectors.toList());
     }

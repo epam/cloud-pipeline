@@ -24,7 +24,6 @@ import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.RunMonitorUtils;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -44,7 +43,7 @@ import java.util.Optional;
 
 @Component
 @Slf4j
-public class NetworkConsumingRunMonitor implements RunMonitor {
+public class NetworkConsumingRunMonitor extends AbstractRunMonitor {
 
     private static final long ONE = 1L;
     private static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
@@ -53,8 +52,6 @@ public class NetworkConsumingRunMonitor implements RunMonitor {
     private final PipelineRunManager pipelineRunManager;
     private final NotificationManager notificationManager;
     private final MonitoringESDao monitoringDao;
-    private final MessageHelper messageHelper;
-    private final PreferenceManager preferenceManager;
 
     @Autowired
     public NetworkConsumingRunMonitor(final PipelineRunManager pipelineRunManager,
@@ -62,11 +59,10 @@ public class NetworkConsumingRunMonitor implements RunMonitor {
                                        final MonitoringESDao monitoringDao,
                                        final MessageHelper messageHelper,
                                        final PreferenceManager preferenceManager) {
+        super(messageHelper, preferenceManager);
         this.pipelineRunManager = pipelineRunManager;
         this.notificationManager = notificationManager;
         this.monitoringDao = monitoringDao;
-        this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
     }
 
     @Override
@@ -83,7 +79,7 @@ public class NetworkConsumingRunMonitor implements RunMonitor {
             return;
         }
 
-        final Map<String, PipelineRun> running = RunMonitorUtils.groupedByNode(runs, messageHelper);
+        final Map<String, PipelineRun> running = groupedByNode(runs);
         final int bandwidthLimitTimeout = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES);
 
@@ -138,7 +134,7 @@ public class NetworkConsumingRunMonitor implements RunMonitor {
                                                  final List<PipelineRun> runsToUpdateTags) {
         if (Objects.isNull(run.getLastNetworkConsumptionNotificationTime())) {
             run.addTag(NETWORK_CONSUMING_LEVEL_HIGH, TRUE_VALUE_STRING);
-            Optional.ofNullable(RunMonitorUtils.getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH, preferenceManager))
+            Optional.ofNullable(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH))
                     .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
             runsToUpdateTags.add(run);
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY,
@@ -154,7 +150,7 @@ public class NetworkConsumingRunMonitor implements RunMonitor {
                                                        final List<PipelineRun> runsToUpdateTags) {
         run.setLastNetworkConsumptionNotificationTime(null);
         run.removeTag(NETWORK_CONSUMING_LEVEL_HIGH);
-        run.removeTag(RunMonitorUtils.getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH, preferenceManager));
+        run.removeTag(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH));
         runsToUpdateNotificationTime.add(run);
         runsToUpdateTags.add(run);
     }

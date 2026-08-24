@@ -29,7 +29,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.InstanceTypeCache;
-import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.RunMonitorUtils;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -55,7 +54,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_MONITORING_CONFIG;
 
 @Slf4j
-public abstract class AbstractIdleRunMonitor implements RunMonitor {
+public abstract class AbstractIdleRunMonitor extends AbstractRunMonitor {
 
     protected static final double PERCENT = 100.0;
     protected static final int MILLIS = 1000;
@@ -68,8 +67,6 @@ public abstract class AbstractIdleRunMonitor implements RunMonitor {
     protected final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     protected final NotificationManager notificationManager;
     protected final MonitoringESDao monitoringDao;
-    protected final MessageHelper messageHelper;
-    protected final PreferenceManager preferenceManager;
     protected final InstanceTypeCache instanceTypeCache;
 
     protected AbstractIdleRunMonitor(final PipelineRunManager pipelineRunManager,
@@ -79,12 +76,11 @@ public abstract class AbstractIdleRunMonitor implements RunMonitor {
                                      final MessageHelper messageHelper,
                                      final PreferenceManager preferenceManager,
                                      final InstanceTypeCache instanceTypeCache) {
+        super(messageHelper, preferenceManager);
         this.pipelineRunManager = pipelineRunManager;
         this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
         this.notificationManager = notificationManager;
         this.monitoringDao = monitoringDao;
-        this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
         this.instanceTypeCache = instanceTypeCache;
     }
 
@@ -238,10 +234,6 @@ public abstract class AbstractIdleRunMonitor implements RunMonitor {
 
     protected String getTimestampTag(final IdleMonitoringType monitoringType) {
         return getTimestampTag(monitoringType.getTag());
-    }
-
-    protected String getTimestampTag(final String tag) {
-        return RunMonitorUtils.getTimestampTag(tag, preferenceManager);
     }
 
     private void performNotify(final PipelineRun run, final double usageRate,

@@ -24,7 +24,6 @@ import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.InstanceTypeCache;
-import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.RunMonitorUtils;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -68,7 +67,7 @@ public class GpuIdleRunMonitor extends AbstractIdleRunMonitor {
 
     @Override
     public void monitor(final List<PipelineRun> runs) {
-        final Map<String, PipelineRun> running = RunMonitorUtils.groupedByNode(filterGpuRuns(runs), messageHelper);
+        final Map<String, PipelineRun> running = groupedByNode(filterGpuRuns(runs));
         final IdleMonitoringConfig conf = findEnabledIdleConfig(getType());
         if (!isIdleConfigReadyForProcessing(conf, getType())) {
             return;
