@@ -60,6 +60,7 @@ public class GpuIdleRunMonitor extends AbstractIdleRunMonitor {
 
     @Override
     public int order() {
+        // Must run before AbsoluteIdleRunMonitor (order=3), which checks for the IDLE_GPU tag set here.
         return 1;
     }
 

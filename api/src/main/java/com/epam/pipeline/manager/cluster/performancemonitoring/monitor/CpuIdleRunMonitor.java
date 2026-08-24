@@ -61,6 +61,7 @@ public class CpuIdleRunMonitor extends AbstractIdleRunMonitor {
 
     @Override
     public int order() {
+        // Must run before AbsoluteIdleRunMonitor (order=3), which checks for the IDLE_CPU tag set here.
         return 0;
     }
 

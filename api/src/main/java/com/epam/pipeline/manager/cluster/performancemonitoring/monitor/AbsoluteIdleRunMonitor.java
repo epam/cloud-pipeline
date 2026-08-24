@@ -58,7 +58,9 @@ public class AbsoluteIdleRunMonitor extends AbstractIdleRunMonitor {
 
     @Override
     public int order() {
-        return 3;
+        // Must run after CpuIdleRunMonitor (order=0) and GpuIdleRunMonitor (order=1): absolute idle is
+        // determined by the presence of IDLE_CPU/IDLE_GPU tags written by those monitors in the same cycle.
+        return 2;
     }
 
     @Override
