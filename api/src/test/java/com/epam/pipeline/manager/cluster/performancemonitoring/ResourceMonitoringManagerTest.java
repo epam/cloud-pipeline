@@ -20,9 +20,9 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
-import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
+import com.epam.pipeline.entity.monitoring.*;
+
+import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_MONITORING_CONFIG;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -46,7 +46,6 @@ import io.reactivex.Observable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -63,6 +62,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,8 +74,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyDouble;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.atLeastOnce;
@@ -110,7 +115,7 @@ public class ResourceMonitoringManagerTest {
     private static final LocalDateTime HALF_AN_HOUR_BEFORE = DateUtils.nowUTC().minusSeconds(HALF_AN_HOUR);
     private static final String HIGH_CONSUMING_POD_ID = "high-consuming";
     private static final double PERCENTS = 100.0;
-    private static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    private static final String UTILIZATION_LEVEL_LOW = "IDLE_CPU";
     private static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     private static final String TRUE_VALUE_STRING = "true";
     private static final Map<String, String> IDLE_TAGS =
@@ -120,6 +125,11 @@ public class ResourceMonitoringManagerTest {
     private static final int LONG_PAUSED_ACTION_TIMEOUT = 30;
     public static final long PAUSED_RUN_ID = 234L;
     public static final int ONE_HOUR = 60;
+    private static final long TEST_IDLE_GPU_RUN_ID = 7;
+    private static final String GPU_INSTANCE_TYPE = "p2.xlarge";
+    private static final double ZERO_GPU_LOAD = 0.0;
+    private static final double ACTIVE_GPU_LOAD = 1.0;
+    private static final String TAG_DATE_SUFFIX = "_date";
 
     @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
@@ -158,10 +168,12 @@ public class ResourceMonitoringManagerTest {
     ArgumentCaptor<List<PipelineRun>> runsToUpdateTagsCaptor;
 
     private InstanceType testType;
+    private InstanceType gpuType;
     private PipelineRun okayRun;
     private PipelineRun idleSpotRun;
     private PipelineRun idleOnDemandRun;
     private PipelineRun idleRunToProlong;
+    private PipelineRun idleGpuRun;
     private PipelineRun highConsumingRun;
     private PipelineRun autoscaleMasterRun;
 
@@ -189,19 +201,14 @@ public class ResourceMonitoringManagerTest {
             .thenReturn(Observable.empty());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(TEST_RESOURCE_MONITORING_DELAY);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT))
-                .thenReturn(TEST_IDLE_THRESHOLD_PERCENT);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES)).thenReturn(1);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES))
-            .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT))
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT))
                 .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-                .thenReturn(IdleRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
                 .thenReturn(LongPausedRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES))
@@ -227,9 +234,13 @@ public class ResourceMonitoringManagerTest {
         testType.setVCPU(2);
         testType.setName("t1.test");
 
+        gpuType = new InstanceType();
+        gpuType.setVCPU(4);
+        gpuType.setGpu(1);
+        gpuType.setName(GPU_INSTANCE_TYPE);
+
         RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
                 null, null, "spotNode", true);
-        final Map <String, String> stubTagMap = new HashMap<>();
         okayRun = new PipelineRun();
         okayRun.setInstance(spotInstance);
         okayRun.setPodId("okay-pod");
@@ -238,7 +249,7 @@ public class ResourceMonitoringManagerTest {
                                           .toEpochMilli()));
         okayRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
-        okayRun.setTags(stubTagMap);
+        okayRun.setTags(new HashMap<>());
 
         idleSpotRun = new PipelineRun();
         idleSpotRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
@@ -249,7 +260,7 @@ public class ResourceMonitoringManagerTest {
                                               .toEpochMilli()));
         idleSpotRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
-        idleSpotRun.setTags(stubTagMap);
+        idleSpotRun.setTags(new HashMap<>());
 
         autoscaleMasterRun = new PipelineRun();
         autoscaleMasterRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
@@ -261,13 +272,13 @@ public class ResourceMonitoringManagerTest {
                                        .toEpochMilli()));
         autoscaleMasterRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
-        autoscaleMasterRun.setTags(stubTagMap);
+        autoscaleMasterRun.setTags(new HashMap<>());
         autoscaleMasterRun
             .setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
 
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
-                new RunInstance(testType.getName(), 0, 0, null, null, null, 
+                new RunInstance(testType.getName(), 0, 0, null, null, null,
                         "idleNode", false));
         idleOnDemandRun.setPodId("idle-on-demand");
         idleOnDemandRun.setId(TEST_IDLE_ON_DEMAND_RUN_ID);
@@ -275,11 +286,22 @@ public class ResourceMonitoringManagerTest {
                                                                   ChronoUnit.MINUTES).toEpochMilli()));
         idleOnDemandRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
-        idleOnDemandRun.setTags(stubTagMap);
+        idleOnDemandRun.setTags(new HashMap<>());
+
+        idleGpuRun = new PipelineRun();
+        idleGpuRun.setInstance(new RunInstance(GPU_INSTANCE_TYPE, 0, 0, null, null, null,
+                "gpuNode", false));
+        idleGpuRun.setPodId("idle-gpu");
+        idleGpuRun.setId(TEST_IDLE_GPU_RUN_ID);
+        idleGpuRun.setStartDate(new Date(Instant.now()
+                .minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES).toEpochMilli()));
+        idleGpuRun.setProlongedAtTime(DateUtils.nowUTC()
+                .minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES));
+        idleGpuRun.setTags(new HashMap<>());
 
         idleRunToProlong = new PipelineRun();
         idleRunToProlong.setInstance(
-                new RunInstance(testType.getName(), 0, 0, null, null, null, 
+                new RunInstance(testType.getName(), 0, 0, null, null, null,
                         "prolongedNode", false));
         idleRunToProlong.setPodId("idle-to-prolong");
         idleRunToProlong.setId(TEST_IDLE_RUN_TO_PROLONG_ID);
@@ -287,7 +309,7 @@ public class ResourceMonitoringManagerTest {
                 ChronoUnit.MINUTES).toEpochMilli()));
         idleRunToProlong.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
-        idleRunToProlong.setTags(stubTagMap);
+        idleRunToProlong.setTags(new HashMap<>());
 
         highConsumingRun = new PipelineRun();
         highConsumingRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
@@ -297,7 +319,7 @@ public class ResourceMonitoringManagerTest {
         highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
         highConsumingRun.setProlongedAtTime(DateUtils.nowUTC()
                 .plus(TEST_MAX_IDLE_MONITORING_TIMEOUT, ChronoUnit.MINUTES));
-        highConsumingRun.setTags(stubTagMap);
+        highConsumingRun.setTags(new HashMap<>());
 
         mockStats = new HashMap<>();
         // in milicores, equals 80% of core load, per 2 cores, should be = 40% load
@@ -313,41 +335,39 @@ public class ResourceMonitoringManagerTest {
                 any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.GPU_AGGS), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(Collections.emptyMap());
 
-        when(instanceOfferManager.getAllInstanceTypes()).thenReturn(Collections.singletonList(testType));
+        when(instanceOfferManager.getAllInstanceTypes()).thenReturn(Arrays.asList(testType, gpuType));
+        core.initInstanceTypes();
     }
 
     @Test
     public void testNotifyOnce() {
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleSpotRun.getPodId())));
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleOnDemandRun.getPodId())));
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getLastIdleNotificationTime() != null));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(2, runsToNotify.size());
-        Assert.assertTrue(runsToNotify.stream().anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
-        Assert.assertEquals(
+        assertEquals(2, runsToNotify.size());
+        assertTrue(runsToNotify.stream().anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
+        assertEquals(
             mockStats.get(idleSpotRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId()))
                 .findFirst().get().getRight(),
             DELTA
         );
-        Assert.assertTrue(runsToNotify.stream()
+        assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId())));
-        Assert.assertEquals(
+        assertEquals(
             mockStats.get(idleOnDemandRun.getInstance().getNodeName()) / MILICORES_TO_CORES / testType.getVCPU(),
             runsToNotify.stream()
                 .filter(r -> r.getLeft().getPodId().equals(idleOnDemandRun.getPodId()))
@@ -365,66 +385,53 @@ public class ResourceMonitoringManagerTest {
                 any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonMap(idleRunToProlong.getInstance().getNodeName(), 
                         TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-                .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
 
         //First time checks that notification is sent
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(1, updatedRuns.size());
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(1, runsToNotify.size());
-        Assert.assertTrue(runsToNotify.stream()
+        assertEquals(1, runsToNotify.size());
+        assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
 
         //now prolong run and check that notification gone
         idleRunToProlong.setProlongedAtTime(DateUtils.nowUTC()
                 .plus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 2, ChronoUnit.MINUTES));
-        idleRunToProlong.setLastIdleNotificationTime(null);
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(4))
-                .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(any());
         verify(notificationManager, times(2))
-                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-
-        updatedRuns = runsToUpdateCaptor.getValue();
-        Assert.assertEquals(0, updatedRuns.size());
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
         runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(0, runsToNotify.size());
+        assertEquals(0, runsToNotify.size());
 
-        //finally reset idleNotificationTime and again check that notification prevents again
+        //finally reset prolonged time and again check that notification fires again
         idleRunToProlong.setProlongedAtTime(DateUtils.nowUTC()
                 .minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 2, ChronoUnit.MINUTES));
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(6))
-                .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(3)).updatePipelineRunsLastNotification(any());
         verify(notificationManager, times(3))
-                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-
-        updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(1, updatedRuns.size());
-        Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
         runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(1, runsToNotify.size());
-        Assert.assertTrue(runsToNotify.stream()
+        assertEquals(1, runsToNotify.size());
+        assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
     }
 
     @Test
     public void testNotifyTwice() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
 
         LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
 
@@ -432,37 +439,39 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertFalse(updatedRuns.stream()
-                               .anyMatch(r -> r.getLastIdleNotificationTime().equals(lastNotificationDate)));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(2, runsToNotify.size());
+        assertEquals(2, runsToNotify.size());
+        assertFalse(runsToNotify.stream()
+                .anyMatch(r -> lastNotificationDate.equals(r.getLeft().getLastIdleNotificationTime())));
     }
 
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+
     /**
-     * Mock runs, that already has been notified on idle. Now we need to take some action on them
-     * @return last notification date
+     * Mock runs that already exceeded the idle action timeout. Sets tag-based idle state.
+     * @return the past timestamp used as idle start (for assertion comparisons)
      */
     private LocalDateTime mockAlreadyNotifiedRuns() {
-        LocalDateTime now = DateUtils.nowUTC();
-        LocalDateTime nowMinus1 = now.minusMinutes(1);
-        idleOnDemandRun.setLastIdleNotificationTime(nowMinus1);
-        idleSpotRun.setLastIdleNotificationTime(nowMinus1);
-
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)).thenReturn(TAG_DATE_SUFFIX);
+        final LocalDateTime pastTime = DateUtils.nowUTC().minusMinutes(2);
+        final String pastTimestamp = DATE_FMT.format(pastTime);
+        idleOnDemandRun.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+        idleOnDemandRun.addTag(UTILIZATION_LEVEL_LOW + TAG_DATE_SUFFIX, pastTimestamp);
+        idleSpotRun.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+        idleSpotRun.addTag(UTILIZATION_LEVEL_LOW + TAG_DATE_SUFFIX, pastTimestamp);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
-        return nowMinus1;
+        return pastTime;
     }
 
     @Test
     public void testPauseOnDemand() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.PAUSE.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.PAUSE));
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
@@ -471,40 +480,33 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2))
-                .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-        verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
+        verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED), anyDouble());
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertFalse(updatedRuns.stream()
-                               .anyMatch(r -> lastNotificationDate.equals(r.getLastIdleNotificationTime())));
-        Assert.assertNull(updatedRuns.stream()
-                              .filter(r -> r.getPodId().equals(idleOnDemandRun.getPodId()))
-                              .findFirst()
-                              .get()
-                              .getLastIdleNotificationTime());
+        assertFalse(lastNotificationDate.equals(idleSpotRun.getLastIdleNotificationTime()));
+        assertNull(idleOnDemandRun.getLastIdleNotificationTime());
 
         verify(pipelineRunDockerOperationManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
         verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
-        Assert.assertEquals(1, runsToNotify.size());
+        assertEquals(1, runsToNotify.size());
     }
 
     @Test
     public void testSkipAutoscaleClusterNode() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-                .thenReturn(IdleRunAction.PAUSE.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.PAUSE));
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Collections.singletonList(autoscaleMasterRun));
 
         Thread.sleep(10);
 
         resourceMonitoringManager.monitorResourceUsage();
-        // check that notification was sent
-        Assert.assertNotNull(autoscaleMasterRun.getLastIdleNotificationTime());
+        // check that run was identified as idle
+        assertTrue(autoscaleMasterRun.hasTag(UTILIZATION_LEVEL_LOW));
 
         resourceMonitoringManager.monitorResourceUsage();
         // but pause run wasn't called
@@ -513,8 +515,8 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testPauseOrStop() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.PAUSE_OR_STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.PAUSE_OR_STOP));
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         mockAlreadyNotifiedRuns();
@@ -523,46 +525,39 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-        verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
-        verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
+        verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED), anyDouble());
+        verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED), anyDouble());
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-        Assert.assertNull(updatedRuns.stream()
-                              .filter(r -> r.getPodId().equals(idleOnDemandRun.getPodId()))
-                              .findFirst()
-                              .get()
-                              .getLastIdleNotificationTime());
+        assertNull(idleOnDemandRun.getLastIdleNotificationTime());
 
         verify(pipelineRunDockerOperationManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
         verify(pipelineRunManager).stop(TEST_IDLE_SPOT_RUN_ID);
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
         verify(pipelineRunDockerOperationManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
-        Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
+        assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
     }
 
     @Test
     public void testStop() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.STOP));
 
         mockAlreadyNotifiedRuns();
         Thread.sleep(10);
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
-        verify(notificationManager, times(2)).notifyIdleRuns(any(),
-                                                                     eq(NotificationType.IDLE_RUN_STOPPED));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
+        verify(notificationManager, times(2)).notifyIdleRuns(
+                any(), eq(NotificationType.IDLE_RUN_STOPPED), anyDouble());
 
-        Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
-
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
+        assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
 
         verify(pipelineRunManager).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
         verify(pipelineRunManager).stop(TEST_IDLE_SPOT_RUN_ID);
@@ -571,27 +566,21 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testRemoveLastNotificationTimeIfNotIdle() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.STOP));
 
         mockAlreadyNotifiedRuns();
         mockStats.put(idleSpotRun.getInstance().getNodeName(), NON_IDLE_CPU_LOAD); // mock not idle anymore
 
         Thread.sleep(10);
-        idleSpotRun.setTags(new HashMap<>());
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(pipelineRunManager, times(1)).updatePipelineRunsLastNotification(any());
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
-        Assert.assertEquals(2, updatedRuns.size());
-
-        Assert.assertNull(updatedRuns.stream()
-                              .filter(r -> r.getPodId().equals(idleSpotRun.getPodId()))
-                              .findFirst()
-                              .get()
-                              .getLastIdleNotificationTime());
+        assertFalse(idleSpotRun.hasTag(UTILIZATION_LEVEL_LOW));
+        assertNull(idleSpotRun.getLastIdleNotificationTime());
 
         verify(pipelineRunManager).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
         verify(pipelineRunManager, never()).stop(TEST_IDLE_SPOT_RUN_ID);
@@ -600,12 +589,16 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testNoActionIfActionTimeoutIsNotFulfilled() throws InterruptedException {
-        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
-            .thenReturn(IdleRunAction.STOP.name());
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+            .thenReturn(cpuIdleConfig(IdleRunAction.STOP));
 
-        LocalDateTime now = DateUtils.nowUTC();
-        idleOnDemandRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
-        idleSpotRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)).thenReturn(TAG_DATE_SUFFIX);
+        final LocalDateTime now = DateUtils.nowUTC();
+        final String recentTimestamp = DATE_FMT.format(now.minusSeconds(HALF_AN_HOUR));
+        idleOnDemandRun.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+        idleOnDemandRun.addTag(UTILIZATION_LEVEL_LOW + TAG_DATE_SUFFIX, recentTimestamp);
+        idleSpotRun.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+        idleSpotRun.addTag(UTILIZATION_LEVEL_LOW + TAG_DATE_SUFFIX, recentTimestamp);
 
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
@@ -616,21 +609,22 @@ public class ResourceMonitoringManagerTest {
 
         // checks notifications were sent
         verify(notificationManager, atLeastOnce())
-                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
 
         // checks runs were not updated
         verify(pipelineRunManager, atLeastOnce()).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
+        assertTrue(CollectionUtils.isEmpty(runsToUpdateCaptor.getValue()));
 
         verify(pipelineRunManager, atLeastOnce()).updateRunsTags(runsToUpdateTagsCaptor.capture());
-        Assert.assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
+        assertTrue(CollectionUtils.isEmpty(runsToUpdateTagsCaptor.getValue()));
 
         // checks stop action is not performed
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
         verify(pipelineRunManager, never()).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
         verify(pipelineRunManager, never()).stop(TEST_IDLE_SPOT_RUN_ID);
 
-        verify(notificationManager, never()).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
+        verify(notificationManager, never()).notifyIdleRuns(
+                any(), eq(NotificationType.IDLE_RUN_STOPPED), anyDouble());
     }
 
     @Test
@@ -643,13 +637,13 @@ public class ResourceMonitoringManagerTest {
         verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(),
                 eq(NotificationType.HIGH_CONSUMED_RESOURCES));
         List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
-        Assert.assertEquals(1, value.size());
-        Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
+        assertEquals(1, value.size());
+        assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
     }
 
     @Test
     public void testIdledRunTagging() {
-        setTagsAndLastNotificationTimeOfRun(okayRun, IDLE_TAGS, HALF_AN_HOUR_BEFORE);
+        setTagsForRun(okayRun, IDLE_TAGS);
         final PipelineRun spyIdledRun = spy(idleOnDemandRun);
         final PipelineRun spyOkayRun = spy(okayRun);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyIdledRun, spyOkayRun));
@@ -657,14 +651,13 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
         assertThat(spyIdledRun.getTags(), CoreMatchers.is(IDLE_TAGS));
         assertThat(spyOkayRun.getTags(), CoreMatchers.is(Collections.emptyMap()));
-        Assert.assertNull(spyOkayRun.getLastIdleNotificationTime());
         verify(spyIdledRun, times(1)).addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
         verify(spyOkayRun, times(1)).removeTag(UTILIZATION_LEVEL_LOW);
     }
 
     @Test
     public void testPressuredRunTagging() {
-        setTagsAndLastNotificationTimeOfRun(okayRun, PRESSURE_TAGS, HALF_AN_HOUR_BEFORE);
+        setTagsForRun(okayRun, PRESSURE_TAGS);
         okayRun.setTags(new HashMap<>(PRESSURE_TAGS));
         okayRun.setLastIdleNotificationTime(HALF_AN_HOUR_BEFORE);
         final PipelineRun spyPressuredRun = spy(highConsumingRun);
@@ -675,13 +668,13 @@ public class ResourceMonitoringManagerTest {
         assertThat(spyPressuredRun.getTags(), CoreMatchers.is(PRESSURE_TAGS));
         assertThat(spyOkayRun.getTags(), CoreMatchers.is(Collections.emptyMap()));
         verify(spyPressuredRun, times(1)).addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
-        verify(spyOkayRun, times(1)).removeTag(UTILIZATION_LEVEL_LOW);
+        verify(spyOkayRun, times(1)).removeTag(UTILIZATION_LEVEL_HIGH);
     }
 
     @Test
     public void testIdledPressuredTagsRemains() {
-        setTagsAndLastNotificationTimeOfRun(idleOnDemandRun, IDLE_TAGS, HALF_AN_HOUR_BEFORE);
-        setTagsAndLastNotificationTimeOfRun(highConsumingRun, PRESSURE_TAGS, HALF_AN_HOUR_BEFORE);
+        setTagsForRun(idleOnDemandRun, IDLE_TAGS);
+        setTagsForRun(highConsumingRun, PRESSURE_TAGS);
         final PipelineRun spyIdledRun = spy(idleOnDemandRun);
         final PipelineRun spyPressuredRun = spy(highConsumingRun);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyIdledRun, spyPressuredRun));
@@ -736,10 +729,8 @@ public class ResourceMonitoringManagerTest {
         return longPausedRun;
     }
 
-    private void setTagsAndLastNotificationTimeOfRun(final PipelineRun run, final Map<String, String> tags,
-                                                     final LocalDateTime lastNotificationTime) {
+    private void setTagsForRun(final PipelineRun run, final Map<String, String> tags) {
         run.setTags(new HashMap<>(tags));
-        run.setLastIdleNotificationTime(lastNotificationTime);
     }
 
     private void verifyZeroInteractionWithTagsMethods(final PipelineRun run, final String tag) {
@@ -753,5 +744,221 @@ public class ResourceMonitoringManagerTest {
         stats.put(highConsumingRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
         stats.put(okayRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
         return stats;
+    }
+
+    private static List<IdleMonitoringConfig> cpuIdleConfig(final IdleRunAction action) {
+        return Collections.singletonList(new IdleMonitoringConfig(
+                IdleMonitoringType.CPU, true,
+                (double) TEST_IDLE_THRESHOLD_PERCENT, TEST_MAX_IDLE_MONITORING_TIMEOUT, 1, action));
+    }
+
+    private static List<IdleMonitoringConfig> gpuIdleConfig(final IdleRunAction action) {
+        return Collections.singletonList(new IdleMonitoringConfig(
+                IdleMonitoringType.GPU, true, 0.0, TEST_MAX_IDLE_MONITORING_TIMEOUT, 1, action));
+    }
+
+    private static List<IdleMonitoringConfig> absoluteIdleConfig(final IdleRunAction action) {
+        return Collections.singletonList(new IdleMonitoringConfig(
+                IdleMonitoringType.ABSOLUTE, true, null, null, 1, action));
+    }
+
+    // GPU idle tests
+
+    @Test
+    public void testGpuIdleRunNotified() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(gpuIdleConfig(IdleRunAction.NOTIFY));
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleGpuRun));
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.GPU_AGGS), any(),
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonMap(idleGpuRun.getInstance().getNodeName(), ZERO_GPU_LOAD));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_GPU_RUN), anyDouble());
+        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
+        assertEquals(1, runsToNotify.size());
+        assertEquals(idleGpuRun.getPodId(), runsToNotify.get(0).getLeft().getPodId());
+    }
+
+    @Test
+    public void testGpuRunWithActiveGpusNotNotified() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(gpuIdleConfig(IdleRunAction.NOTIFY));
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleGpuRun));
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.GPU_AGGS), any(),
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonMap(idleGpuRun.getInstance().getNodeName(), ACTIVE_GPU_LOAD));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_GPU_RUN), anyDouble());
+        assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
+    }
+
+    @Test
+    public void testNonGpuRunSkippedByGpuProcessor() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(gpuIdleConfig(IdleRunAction.NOTIFY));
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleOnDemandRun));
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.GPU_AGGS), any(),
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonMap(
+                        idleOnDemandRun.getInstance().getNodeName(), ZERO_GPU_LOAD));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_GPU_RUN), anyDouble());
+        assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
+    }
+
+    @Test
+    public void testGpuIdleRunTagging() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(gpuIdleConfig(IdleRunAction.NOTIFY));
+        final PipelineRun spyGpuRun = spy(idleGpuRun);
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(spyGpuRun));
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.GPU_AGGS), any(),
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonMap(idleGpuRun.getInstance().getNodeName(), ZERO_GPU_LOAD));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(spyGpuRun, times(1)).addTag(IdleMonitoringType.GPU.getTag(), TRUE_VALUE_STRING);
+
+        spyGpuRun.addTag(IdleMonitoringType.GPU.getTag(), TRUE_VALUE_STRING);
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.GPU_AGGS), any(),
+                any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(Collections.singletonMap(idleGpuRun.getInstance().getNodeName(), ACTIVE_GPU_LOAD));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(spyGpuRun, times(1)).removeTag(IdleMonitoringType.GPU.getTag());
+    }
+
+    @Test
+    public void testGpuConfigMissingSkipsCheck() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleGpuRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager, never()).notifyIdleRuns(
+                any(), eq(NotificationType.IDLE_GPU_RUN), anyDouble());
+    }
+
+    // Absolute idle tests
+
+    @Test
+    public void testAbsoluteIdleGpuRunRequiresCpuAndGpuTags() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(absoluteIdleConfig(IdleRunAction.NOTIFY));
+        idleGpuRun.addTag(IdleMonitoringType.CPU.getTag(), TRUE_VALUE_STRING);
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleGpuRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN), anyDouble());
+        assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
+
+        idleGpuRun.addTag(IdleMonitoringType.GPU.getTag(), TRUE_VALUE_STRING);
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager, times(2)).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN), anyDouble());
+        assertEquals(1, runsToNotifyIdleCaptor.getValue().size());
+        assertEquals(idleGpuRun.getPodId(), runsToNotifyIdleCaptor.getValue().get(0).getLeft().getPodId());
+    }
+
+    @Test
+    public void testAbsoluteIdleNonGpuRunOnlyCpuTagNeeded() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(absoluteIdleConfig(IdleRunAction.NOTIFY));
+        idleOnDemandRun.addTag(IdleMonitoringType.CPU.getTag(), TRUE_VALUE_STRING);
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleOnDemandRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyIdleRuns(
+                runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN), anyDouble());
+        assertEquals(1, runsToNotifyIdleCaptor.getValue().size());
+        assertEquals(idleOnDemandRun.getPodId(),
+                runsToNotifyIdleCaptor.getValue().get(0).getLeft().getPodId());
+    }
+
+    @Test
+    public void testAbsoluteIdleTagging() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(absoluteIdleConfig(IdleRunAction.NOTIFY));
+        final PipelineRun spyRun = spy(idleOnDemandRun);
+        spyRun.addTag(IdleMonitoringType.CPU.getTag(), TRUE_VALUE_STRING);
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(spyRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(spyRun, times(1)).addTag(IdleMonitoringType.ABSOLUTE.getTag(), TRUE_VALUE_STRING);
+
+        spyRun.addTag(IdleMonitoringType.ABSOLUTE.getTag(), TRUE_VALUE_STRING);
+        spyRun.removeTag(IdleMonitoringType.CPU.getTag());
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(spyRun, times(1)).removeTag(IdleMonitoringType.ABSOLUTE.getTag());
+    }
+
+    @Test
+    public void testAbsoluteIdleConfigMissingSkips() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
+        idleOnDemandRun.addTag(IdleMonitoringType.CPU.getTag(), TRUE_VALUE_STRING);
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleOnDemandRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager, never()).notifyIdleRuns(
+                any(), eq(NotificationType.IDLE_RUN), anyDouble());
+    }
+
+    // CPU idle tests
+
+    @Test
+    public void testCpuThresholdPassedToNotification() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(cpuIdleConfig(IdleRunAction.NOTIFY));
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Collections.singletonList(idleOnDemandRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyIdleRuns(
+                any(), eq(NotificationType.IDLE_CPU_RUN), eq((double) TEST_IDLE_THRESHOLD_PERCENT));
+    }
+
+    @Test
+    public void testCpuConfigMissingSkipsCheck() {
+        when(preferenceManager.getPreference(SYSTEM_IDLE_MONITORING_CONFIG))
+                .thenReturn(Collections.emptyList());
+        when(pipelineRunManager.loadRunningPipelineRuns())
+                .thenReturn(Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager, never()).notifyIdleRuns(
+                any(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
     }
 }

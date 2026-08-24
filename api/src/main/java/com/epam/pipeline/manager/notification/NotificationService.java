@@ -57,7 +57,7 @@ public interface NotificationService {
     }
 
     default void notifyIdleRuns(List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
-                                NotificationType notificationType) {
+                                NotificationType notificationType, double idleLevel) {
 
     }
 

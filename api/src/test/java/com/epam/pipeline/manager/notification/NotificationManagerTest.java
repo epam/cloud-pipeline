@@ -94,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.epam.pipeline.entity.notification.NotificationType.HIGH_CONSUMED_RESOURCES;
+import static com.epam.pipeline.entity.notification.NotificationType.IDLE_CPU_RUN;
 import static com.epam.pipeline.entity.notification.NotificationType.IDLE_RUN;
 import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED;
 import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED_STOPPED;
@@ -111,11 +112,14 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
+
+
 @ContextConfiguration(classes = TestApplication.class)
 @Transactional
 public class NotificationManagerTest extends AbstractManagerTest {
     private static final double TEST_CPU_RATE1 = 0.123;
     private static final double TEST_CPU_RATE2 = 0.456;
+    private static final double TEST_IDLE_THRESHOLD_PERCENT = 10.0;
     private static final double TEST_MEMORY_RATE = 0.95;
     private static final double TEST_DISK_RATE = 0.99;
     private static final double PERCENT = 100.0;
@@ -217,6 +221,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         issueCommentSettings = createSettings(NEW_ISSUE_COMMENT, issueCommentTemplate.getId(), -1L, -1L);
         createTemplate(IDLE_RUN.getId(), "idle-run-template");
         createSettings(IDLE_RUN, IDLE_RUN.getId(), 1, 1);
+        createTemplate(IDLE_CPU_RUN.getId(), "idle-cpu-run-template");
+        createSettings(IDLE_CPU_RUN, IDLE_CPU_RUN.getId(), 1, 1);
         longPausedTemplate = createTemplate(LONG_PAUSED.getId(), "longPausedTemplate");
         createSettings(LONG_PAUSED, longPausedTemplate.getId(), LONG_PAUSED_SECONDS,
                 LONG_PAUSED_SECONDS);
@@ -554,12 +560,11 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         notificationManager.notifyIdleRuns(Arrays.asList(
             new ImmutablePair<>(run1, TEST_CPU_RATE1),
-            new ImmutablePair<>(run2, TEST_CPU_RATE2)), IDLE_RUN);
+            new ImmutablePair<>(run2, TEST_CPU_RATE2)), IDLE_CPU_RUN, TEST_IDLE_THRESHOLD_PERCENT);
 
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         assertEquals(2, messages.size());
-        messages.forEach(m -> assertEquals(
-            SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT.getDefaultValue().doubleValue(),
+        messages.forEach(m -> assertEquals(TEST_IDLE_THRESHOLD_PERCENT,
             m.getTemplateParameters().get("idleCpuLevel")));
 
         NotificationMessage run1Message = messages.stream()
