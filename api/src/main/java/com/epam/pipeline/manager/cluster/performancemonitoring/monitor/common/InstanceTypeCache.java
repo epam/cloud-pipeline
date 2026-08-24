@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster.performancemonitoring.monitor;
+package com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;

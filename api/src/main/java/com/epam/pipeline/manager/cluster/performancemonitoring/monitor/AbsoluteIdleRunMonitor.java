@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.InstanceTypeCache;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;

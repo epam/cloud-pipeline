@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.common.InstanceTypeCache;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
