@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
-import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -542,13 +541,10 @@ public class DockerContainerOperationManager {
     }
 
     private void removeUtilizationNotificationTimestamps(final PipelineRun run) {
-        Stream.of(
-            IdleMonitoringType.CPU.getNotificationTypeId(),
-            IdleMonitoringType.GPU.getNotificationTypeId(),
-            IdleMonitoringType.ABSOLUTE.getNotificationTypeId()
-        ).forEach(notificationId ->
-            notificationManager.removeNotificationTimestamps(run.getId(), NotificationType.getById(notificationId))
-        );
+        Stream.of(IdleMonitoringType.values())
+            .forEach(type ->
+                notificationManager.removeNotificationTimestamps(run.getId(), type.getNotificationType())
+            );
     }
 
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {

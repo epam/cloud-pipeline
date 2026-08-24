@@ -1,20 +1,21 @@
 package com.epam.pipeline.entity.monitoring;
 
+import com.epam.pipeline.entity.notification.NotificationType;
 import lombok.Getter;
 
 public enum IdleMonitoringType {
-    CPU("IDLE_CPU", 23),
-    GPU("IDLE_GPU", 24),
-    ABSOLUTE("IDLE", 6);
+    CPU("IDLE_CPU", NotificationType.IDLE_CPU_RUN),
+    GPU("IDLE_GPU", NotificationType.IDLE_GPU_RUN),
+    ABSOLUTE("IDLE", NotificationType.IDLE_RUN);
 
     @Getter
     private final String tag;
 
     @Getter
-    private final int notificationTypeId;
+    private final NotificationType notificationType;
 
-    IdleMonitoringType(final String tag, final int notificationTypeId) {
+    IdleMonitoringType(final String tag, final NotificationType notificationType) {
         this.tag = tag;
-        this.notificationTypeId = notificationTypeId;
+        this.notificationType = notificationType;
     }
 }
