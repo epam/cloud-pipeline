@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -46,6 +47,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -150,6 +152,9 @@ public class DockerContainerOperationManager {
 
     @Autowired
     private PipelineRunServiceUrlManager serviceUrlManager;
+
+    @Autowired
+    private NotificationManager notificationManager;
 
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
@@ -536,6 +541,16 @@ public class DockerContainerOperationManager {
         .forEach(run::removeTag);
     }
 
+    private void removeUtilizationNotificationTimestamps(final PipelineRun run) {
+        Stream.of(
+            IdleMonitoringType.CPU.getNotificationTypeId(),
+            IdleMonitoringType.GPU.getNotificationTypeId(),
+            IdleMonitoringType.ABSOLUTE.getNotificationTypeId()
+        ).forEach(notificationId ->
+            notificationManager.removeNotificationTimestamps(run.getId(), NotificationType.getById(notificationId))
+        );
+    }
+
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {
         final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(runId);
         validateInstanceState(cloudInstanceState);
@@ -639,6 +654,7 @@ public class DockerContainerOperationManager {
 
         run.setPodIP(null);
         removeUtilizationLevelTags(run);
+        removeUtilizationNotificationTimestamps(run);
         runManager.updateRunInfo(run);
         serviceUrlManager.clear(run.getId());
 
