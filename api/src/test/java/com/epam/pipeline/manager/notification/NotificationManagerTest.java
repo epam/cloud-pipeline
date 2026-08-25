@@ -52,6 +52,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.PodMonitor;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.LongRunningRunMonitor;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
@@ -146,6 +147,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PodMonitor podMonitor;
+
+    @Autowired
+    private LongRunningRunMonitor longRunningRunMonitor;
 
     @MockBean
     private PipelineRunManager pipelineRunManager;
@@ -247,6 +251,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         longRunnging.setStatus(TaskStatus.RUNNING);
         longRunnging.setOwner(admin.getUserName());
         longRunnging.setPodId("longRunning");
+        longRunnging.setPodIP("pod-ip");
 
         when(pipelineRunManager.loadRunningAndTerminatedPipelineRuns())
             .thenReturn(Collections.singletonList(longRunnging));
@@ -278,7 +283,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testNotifyLongRunning() {
-        podMonitor.updateStatus();
+        longRunningRunMonitor.monitor(Collections.singletonList(longRunnging));
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         assertEquals(1, messages.size());
         assertEquals(admin.getId(), messages.get(0).getToUserId());
@@ -340,7 +345,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     public void testNotifyNoOwner() {
         updateKeepInformedOwner(longRunningSettings, false);
 
-        podMonitor.updateStatus();
+        longRunningRunMonitor.monitor(Collections.singletonList(longRunnging));
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         assertEquals(1, messages.size());
         assertNull(messages.get(0).getToUserId());
@@ -351,7 +356,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         longRunnging.setStartDate(DateTime.now(DateTimeZone.UTC).minusMinutes(9).toDate());
         longRunnging.setLastNotificationTime(DateTime.now(DateTimeZone.UTC).minusMinutes(6).toDate());
 
-        podMonitor.updateStatus();
+        longRunningRunMonitor.monitor(Collections.singletonList(longRunnging));
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         assertEquals(1, messages.size());
         assertEquals(admin.getId(), messages.get(0).getToUserId());
