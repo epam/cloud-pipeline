@@ -24,12 +24,17 @@
 # See UI proxy issues in the PR description: https://github.com/apache/spark/pull/17455
 # Original code: https://github.com/aseigneurin/spark-ui-proxy
 
-import SocketServer
+try:
+    import SocketServer as socketserver
+    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+    import urllib2 as urllib_request
+except ImportError:
+    import socketserver
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import urllib.request as urllib_request
 import logging
 import os
 import sys
-import urllib2
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 
 BIND_ADDR = os.environ.get("BIND_ADDR", "0.0.0.0")
 SERVER_PORT = int(os.environ.get("SERVER_PORT", "80"))
@@ -56,7 +61,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         self.proxyRequest(None)
 
     def do_POST(self):
-        length = int(self.headers.getheader('content-length'))
+        length = int(self.headers.get('content-length'))
         postData = self.rfile.read(length)
         self.proxyRequest(postData)
 
@@ -67,7 +72,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         print("get: %s  host: %s  path: %s  target: %s" % (self.path, targetHost, path, targetUrl))
 
         try:
-            proxiedRequest = urllib2.urlopen(targetUrl, data)
+            proxiedRequest = urllib_request.urlopen(targetUrl, data)
         except Exception as ue:
             logging.error("Caught an exception trying to reach [ {0} ]".format(targetUrl))
             raise ue
@@ -126,7 +131,7 @@ if __name__ == '__main__':
 
     print("Starting server on http://{0}:{1}".format(BIND_ADDR, SERVER_PORT))
 
-    class ForkingHTTPServer(SocketServer.ForkingMixIn, HTTPServer):
+    class ForkingHTTPServer(socketserver.ForkingMixIn, HTTPServer):
         def finish_request(self, request, client_address):
             request.settimeout(30)
             HTTPServer.finish_request(self, request, client_address)

@@ -239,7 +239,7 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 entries.append(command_pattern.format(url=url, cert=cert))
             return " && ".join(entries)
     return ""

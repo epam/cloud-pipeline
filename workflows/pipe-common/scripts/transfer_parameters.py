@@ -23,7 +23,10 @@ from pipeline.api import DataStorageRule
 import argparse
 import os
 import re
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 from timeit import default_timer as timer
 from multiprocessing import Pool
 import multiprocessing
@@ -247,7 +250,7 @@ class MetadataLocation:
 
 def split(list, n):
     """Yield successive n-sized chunks from lst."""
-    for i in xrange(0, len(list), n):
+    for i in range(0, len(list), n):
         yield list[i:i + n]
 
 
@@ -378,7 +381,7 @@ class InputDataTask:
                         report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
             Logger.success('Finished localization of remote data', task_name=self.task_name)
         except BaseException as e:
-            Logger.fail('Localization of remote data failed due to exception: %s' % e.message, task_name=self.task_name)
+            Logger.fail('Localization of remote data failed due to exception: %s' % str(e), task_name=self.task_name)
             exit(1)
 
     def fetch_dts_registry(self):
@@ -386,7 +389,7 @@ class InputDataTask:
         try:
             dts_data = self.api.load_dts_registry()
         except BaseException as e:
-            Logger.info("DTS is not available: %s" % e.message, task_name=self.task_name)
+            Logger.info("DTS is not available: %s" % str(e), task_name=self.task_name)
             return result
         for registry in dts_data:
             for prefix in registry['prefixes']:
@@ -597,7 +600,7 @@ class InputDataTask:
             else:
                 grouped_paths[path.prefix].append(path)
 
-        for prefix, paths in grouped_paths.iteritems():
+        for prefix, paths in grouped_paths.items():
             dts_url = dts_registry[prefix]
             Logger.info('Uploading {} paths using DTS service {}'.format(len(paths), dts_url),  self.task_name)
             dts_client = DataTransferServiceClient(dts_url, self.token, self.api_url, self.token, 10)

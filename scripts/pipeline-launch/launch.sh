@@ -1903,8 +1903,12 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             exit_init 1
       else
             cd $COMMON_REPO_DIR
-            # Fixed setuptools version to be compatible with the pipe-common package
-            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            # Pin setuptools: 44.1.1 is the last version supporting Python 2; Python 3 needs newer
+            if [ "$CP_PYTHON_VERSION" == "2" ]; then
+                  $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            else
+                  $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q "setuptools==84.0.0"
+            fi
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
@@ -2349,7 +2353,7 @@ command -v gitfs >/dev/null 2>&1 && { GITFS_INSTALL=1;  };
 
 if [ $GITFS_INSTALL -ne 0 ] && [ ! -z "$GIT_REPO" ];
 then
-    python $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
+    $CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
     _IS_ALLOWED=$?
     if [ $_IS_ALLOWED -ne 0 ];
     then

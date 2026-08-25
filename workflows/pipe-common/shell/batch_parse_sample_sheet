@@ -28,4 +28,4 @@ if [ "$QUOTE_VALUES" == "--quote" ]; then
 fi
 
 CMD="from pipeline import SampleSheetParser; SampleSheetParser(\"$SAMPLE_SHEET_PATH\").print_samples(print_headers=False,quote_result=$DO_QUOTE_VALUES)"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"

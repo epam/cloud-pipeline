@@ -53,7 +53,7 @@ pipe_log_success "Finished keys setup" "$WORKER_SETUP_KEYS"
 if [ ! -z "$NODE_COUNT" ] && (( "$NODE_COUNT" > 0 ))
 then
     pipe_log_info "Started cluster workers setup. $NODE_COUNT worker node(s) will be attached" "$WORKER_SETUP_TASK"
-    eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_workers.py --nodes_number ${NODE_COUNT}"
+    eval "$CP_PYTHON_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_workers.py --nodes_number ${NODE_COUNT}"
 
     if [ $? -ne 0 ]
     then

@@ -57,7 +57,7 @@ class SampleSheetParser:
                             sample[column] = row[idx]
                         samples.append(sample)
                     except Exception as e:
-                        print("Malformed sample sheet: {}. {}.".format(self.path, e.message))
+                        print("Malformed sample sheet: {}. {}.".format(self.path, str(e)))
                         continue
 
                 if row[0] == "[Data]":

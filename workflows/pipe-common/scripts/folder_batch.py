@@ -36,7 +36,7 @@ class FolderScanner(AbstractFolderScanner):
                 file_name = file[len(self.get_path_without_bucket()) - 1:]
             else:
                 file_name = file
-            for pattern_name, glob in self.patterns.iteritems():
+            for pattern_name, glob in self.patterns.items():
                 Logger.info("Matching file {} against patterns {}.".format(file_name, str(glob)), task_name=self.TASK_NAME)
                 if self.match_patterns(file_name, glob):
                     if pattern_name in self.exclude_patterns:
@@ -51,7 +51,7 @@ class FolderScanner(AbstractFolderScanner):
         if len(patterns_files) == 0:
             self.fail_task("Failed to find files matching any of patterns.")
         samples_number = None
-        for pattern, files in patterns_files.iteritems():
+        for pattern, files in patterns_files.items():
             current_length = len(files)
             if current_length == 0:
                 self.fail_task("Failed to find files matching patterns: {}.".format(str(pattern)))
@@ -62,8 +62,8 @@ class FolderScanner(AbstractFolderScanner):
             else:
                 files.sort()
         Logger.info("Found files: {}".format(str(patterns_files)), task_name=self.TASK_NAME)
-        result = [[] for x in xrange(samples_number)]
-        for pattern, files in patterns_files.iteritems():
+        result = [[] for x in range(samples_number)]
+        for pattern, files in patterns_files.items():
             index = 0
             for file in files:
                 result[index].append(file)

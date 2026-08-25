@@ -208,7 +208,7 @@ class PrintLogger(CloudPipelineLogger):
 
     def _log(self, message, level, trace):
         now_utc = datetime.datetime.utcnow()
-        formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond / 1000)
+        formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond // 1000)
         if trace:
             stacktrace = traceback.format_exc()
             message += ' ' + stacktrace
@@ -367,7 +367,7 @@ class RunLogger(CloudPipelineLogger):
 
     def _log(self, message, task, status, trace):
         now_utc = datetime.datetime.utcnow()
-        formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond / 1000)
+        formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond // 1000)
         if trace:
             stacktrace = traceback.format_exc()
             message += ' ' + stacktrace

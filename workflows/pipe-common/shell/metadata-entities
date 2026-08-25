@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/metadata-entities.py" "$@"
+"$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/metadata-entities.py" "$@"

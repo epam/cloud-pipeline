@@ -32,7 +32,7 @@ class FolderScanner(AbstractFolderScanner):
 
     def format_sample_patterns(self, sample, patterns):
         result = {}
-        for pattern, pattern_list in patterns.iteritems():
+        for pattern, pattern_list in patterns.items():
             formatted = []
             for value in pattern_list:
                 formatted.append(value.format(sample_id=sample[SAMPLE_ID],
@@ -69,7 +69,7 @@ class FolderScanner(AbstractFolderScanner):
             sample_name = sample[SAMPLE_NAME]
             patterns = self.format_sample_patterns(sample, self.patterns)
             exclude = self.format_sample_patterns(sample, self.exclude_patterns)
-            for pattern_name, glob in patterns.iteritems():
+            for pattern_name, glob in patterns.items():
                 if self.match_patterns(file_name, glob):
                     if pattern_name in exclude:
                         exclude = exclude[pattern_name]

@@ -29,7 +29,7 @@ class FolderScanner(AbstractFolderScanner):
     def find_files(self, recursive=False):
         Logger.info("Starting parsing input directory: {}.".format(self.folder), task_name=self.TASK_NAME)
         all_files = bucket.ls_s3(self.folder, self.MAX_ATTEMPTS, recursive=recursive)
-        result = [[] for x in xrange(len(all_files))]
+        result = [[] for x in range(len(all_files))]
         index = 0
         for file in all_files:
             result[index].append(os.path.join(self.folder, file))
@@ -77,7 +77,7 @@ class PipelineLauncher(AbstractPipelineLauncher):
 def batch(cmd):
     pipeline_parameters, ignored, ignored_2, param_types = EnvironmentParametersParser({'nodes'}).collect_params_from_env()
 
-    for param, value in pipeline_parameters.iteritems():
+    for param, value in pipeline_parameters.items():
         pipeline_parameters[param] = resolve_env_params(param, value)
 
     pipeline_obj = EnvironmentParametersParser.get_env_value('PIPELINE_ID')

@@ -15,7 +15,10 @@
 import os
 import fnmatch
 import time
-from urlparse import urlparse
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 from pipeline import Logger, PipelineAPI, LoggedCommand
 
 
@@ -104,7 +107,7 @@ class AbstractPipelineLauncher(AbstractTask):
             command += " --{} input?{}".format(name, value)
             index = index + 1
         # add all other params
-        for param, value in self.pipe_params.iteritems():
+        for param, value in self.pipe_params.items():
             if param.startswith('i_'):
                 command += " --{} input?{}".format(self.change_parameter_name(param), value)
             elif param.startswith('c_'):
@@ -119,7 +122,7 @@ class AbstractPipelineLauncher(AbstractTask):
             LoggedCommand(command, None, self.TASK_NAME).execute()
         except Exception as e:
             Logger.warn("Failed to launch sample processing with command: '{}'. Error: '{}'."
-                        .format(command, e.message), task_name=self.TASK_NAME)
+                        .format(command, str(e)), task_name=self.TASK_NAME)
 
     def launch_child_run(self, params, param_names, cmd, instance_size, instance_disk, docker_image, sample=None):
         run_params = {'parent-id': self.run_id}
@@ -140,7 +143,7 @@ class AbstractPipelineLauncher(AbstractTask):
             index = index + 1
 
         # add all other params
-        for param, value in self.pipe_params.iteritems():
+        for param, value in self.pipe_params.items():
             param_type = None
             param_name = param
             real_value = self.normalize_value(value)
@@ -168,7 +171,7 @@ class AbstractPipelineLauncher(AbstractTask):
             self.child_id = run['id']
         except Exception as e:
             Logger.warn("Failed to launch sample processing with parameters: '{}'. Error: '{}'."
-                        .format(str(run_params), e.message), task_name=self.TASK_NAME)
+                        .format(str(run_params), str(e)), task_name=self.TASK_NAME)
             self.child_id = None
 
     # to have possibilities to change way of naming new parameter in the batched pipeline
@@ -187,7 +190,7 @@ class AbstractPipelineLauncher(AbstractTask):
                         count = count + 1
                 return count
             except Exception as e:
-                Logger.warn("Failed to fetch running samples: {}.".format(e.message), task_name=self.TASK_NAME)
+                Logger.warn("Failed to fetch running samples: {}.".format(str(e)), task_name=self.TASK_NAME)
                 attempts = attempts + 1
                 time.sleep(self.POLL_TIMEOUT)
         Logger.fail("Exceeded maximum attempts to fetch running samples.")
@@ -202,7 +205,7 @@ class AbstractPipelineLauncher(AbstractTask):
                 run = self.api.load_run(self.child_id)
                 return run['status'] == 'RUNNING'
             except Exception as e:
-                Logger.warn("Failed to fetch child run ID '' status: {}.".format(str(self.child_id), e.message),
+                Logger.warn("Failed to fetch child run ID '' status: {}.".format(str(self.child_id), str(e)),
                             task_name=self.TASK_NAME)
                 attempts = attempts + 1
                 time.sleep(self.POLL_TIMEOUT)

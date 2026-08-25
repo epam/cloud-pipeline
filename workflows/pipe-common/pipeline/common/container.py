@@ -30,7 +30,7 @@ class EnvironmentParametersParser:
         file_patterns = {}
         exclude_patterns = {}
         param_types = {}
-        for name, param in os.environ.iteritems():
+        for name, param in os.environ.items():
             if name in self.skip_params:
                 continue
             if name + self.param_type_suffix in os.environ:

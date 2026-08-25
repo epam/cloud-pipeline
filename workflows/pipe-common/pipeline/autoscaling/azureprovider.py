@@ -572,7 +572,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         _, config_tags = utils.load_cloud_config()
         if config_tags is None:
             return tags
-        for key, value in config_tags.iteritems():
+        for key, value in config_tags.items():
             tags.update({key: value})
         return tags
 

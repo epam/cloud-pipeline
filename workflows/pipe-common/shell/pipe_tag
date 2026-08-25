@@ -24,4 +24,4 @@ fi
 
 # Call API
 CMD="from pipeline import PipelineAPI; api = PipelineAPI(\"${API}\", \"${LOG_DIR}\"); tags={\"$TAG_NAME\": \"$TAG_VALUE\"}; api.update_pipeline_run_tags(\"${RUN_ID}\", tags, keep_existing_tags=True)"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"
