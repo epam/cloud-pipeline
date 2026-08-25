@@ -82,7 +82,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -424,7 +424,7 @@ public class PipelineRunManager {
 
     private void removeIdleTags(final PipelineRun run) {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
-        ResourceMonitoringManager.IDLE_TAGS.stream()
+        RunMonitor.IDLE_TAGS.stream()
                 .flatMap(tag -> StringUtils.isEmpty(suffix)
                         ? Stream.of(tag)
                         : Stream.of(tag, tag + suffix))

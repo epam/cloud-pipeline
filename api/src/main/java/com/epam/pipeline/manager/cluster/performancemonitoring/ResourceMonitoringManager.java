@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
-import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -32,7 +31,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,14 +43,6 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 @Slf4j
 public class ResourceMonitoringManager extends AbstractSchedulingManager {
-
-    public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
-    public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
-    public static final String TRUE_VALUE_STRING = "true";
-
-    public static final List<String> IDLE_TAGS = Arrays.stream(IdleMonitoringType.values())
-            .map(IdleMonitoringType::getTag)
-            .collect(Collectors.toList());
 
     private final PipelineRunManager pipelineRunManager;
     private final MonitoringESDao monitoringDao;
