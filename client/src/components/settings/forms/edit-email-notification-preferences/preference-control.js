@@ -27,6 +27,7 @@ import {
 import PreferenceLoad from '../../../../models/preferences/PreferenceLoad';
 import {Preferences} from './configuration';
 import ExcludeParametersControl from './exclude-parameters-control';
+import IdleMonitoringSettingsControl, {IdleTypes} from './idle-monitoring-settings-control';
 import compareArrays from '../../../../utils/compareArrays';
 import styles from './preference-control.css';
 
@@ -60,6 +61,31 @@ function getExcludedParametersPayload (parameters) {
       return acc;
     }, {});
   return JSON.stringify(payload);
+}
+
+function parseIdleMonitoringSettings (jsonValue) {
+  try {
+    const arr = JSON.parse(jsonValue || '[]');
+    return (arr || []).reduce((acc, item) => {
+      if (item && item.type) {
+        acc[item.type] = item;
+      }
+      return acc;
+    }, {});
+  } catch (_) {
+    return {};
+  }
+}
+
+function getIdleMonitoringSettingsPayload (settings) {
+  const types = [IdleTypes.ABSOLUTE, IdleTypes.GPU, IdleTypes.CPU];
+  return JSON.stringify(
+    types.map(t => (settings || {})[t]).filter(Boolean)
+  );
+}
+
+function idleMonitoringSettingsModified (current, initial) {
+  return JSON.stringify(current) !== JSON.stringify(initial);
 }
 
 function processExcludedParameters (excludedParametersObj) {
@@ -116,15 +142,21 @@ class PreferenceControl extends React.Component {
             const preference = request.value;
             const isExcludedParameters = preferenceName &&
               preferenceName === 'system.notifications.exclude.params';
+            const isIdleMonitoringSettings = this.preference &&
+              this.preference.type === 'idleMonitoringSettings';
             if (preference) {
+              const parseValue = (raw) => {
+                if (isIdleMonitoringSettings) return parseIdleMonitoringSettings(raw);
+                if (isExcludedParameters) return processExcludedParameters(raw);
+                return wrapValue(raw);
+              };
+              const parsed = parseValue(preference.value);
               this.setState({
                 error: undefined,
-                value: isExcludedParameters
-                  ? processExcludedParameters(preference.value)
-                  : wrapValue(preference.value),
-                initialValue: isExcludedParameters
-                  ? processExcludedParameters(preference.value)
-                  : wrapValue(preference.value),
+                value: parsed,
+                initialValue: isIdleMonitoringSettings
+                  ? parseValue(preference.value)
+                  : parsed,
                 pending: false,
                 meta: {...preference}
               }, this.onChange);
@@ -159,9 +191,12 @@ class PreferenceControl extends React.Component {
       const {value, initialValue, meta} = this.state;
       let modified = initialValue !== value;
       let payload = value;
-      if (this.preference.type === 'excludeParamsControl') {
+      if (this.preference && this.preference.type === 'excludeParamsControl') {
         modified = compareExcludedParameters(value, initialValue);
         payload = getExcludedParametersPayload(value);
+      } else if (this.preference && this.preference.type === 'idleMonitoringSettings') {
+        modified = idleMonitoringSettingsModified(value, initialValue);
+        payload = getIdleMonitoringSettingsPayload(value);
       }
       onChange(payload, modified, meta);
     }
@@ -303,6 +338,24 @@ class PreferenceControl extends React.Component {
     }, this.onChange);
   };
 
+  renderIdleMonitoringSettings = (preference) => {
+    if (!preference) {
+      return null;
+    }
+    const {value, pending} = this.state;
+    const onValueChange = (newValue) => {
+      this.setState({value: newValue}, this.onChange);
+    };
+    return (
+      <IdleMonitoringSettingsControl
+        value={value}
+        pending={pending}
+        onChange={onValueChange}
+        visibleTypes={this.props.visibleTypes}
+      />
+    );
+  };
+
   renderExcludeParamsControl = (preference) => {
     if (!preference) {
       return null;
@@ -340,6 +393,9 @@ class PreferenceControl extends React.Component {
         case 'excludeParamsControl':
           control = this.renderExcludeParamsControl(preference);
           break;
+        case 'idleMonitoringSettings':
+          control = this.renderIdleMonitoringSettings(preference);
+          break;
         default:
           control = this.renderStringControl(preference); break;
       }
@@ -364,7 +420,8 @@ class PreferenceControl extends React.Component {
 PreferenceControl.propTypes = {
   preference: PropTypes.string,
   onChange: PropTypes.func,
-  session: PropTypes.number
+  session: PropTypes.number,
+  visibleTypes: PropTypes.arrayOf(PropTypes.string)
 };
 
 export default PreferenceControl;
