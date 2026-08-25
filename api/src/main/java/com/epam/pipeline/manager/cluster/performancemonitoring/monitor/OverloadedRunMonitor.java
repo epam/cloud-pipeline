@@ -47,11 +47,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class OverloadedRunMonitor extends AbstractRunMonitor {
 
-    private static final double PERCENT = 100.0;
-    private static final double ONE_THOUSANDTH = 0.001;
-    private static final long ONE = 1L;
-    private static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
-    private static final String TRUE_VALUE_STRING = "true";
+    public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
 
     private final PipelineRunManager pipelineRunManager;
     private final NotificationManager notificationManager;
