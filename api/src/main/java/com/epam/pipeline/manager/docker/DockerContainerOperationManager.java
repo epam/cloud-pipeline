@@ -38,7 +38,8 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.NetworkConsumingRunMonitor;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.OverloadedRunMonitor;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
@@ -531,10 +532,10 @@ public class DockerContainerOperationManager {
             IdleMonitoringType.GPU.getTag() + suffix,
             IdleMonitoringType.ABSOLUTE.getTag(),
             IdleMonitoringType.ABSOLUTE.getTag() + suffix,
-            ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
-            ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix,
-            ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH,
-            ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
+            OverloadedRunMonitor.UTILIZATION_LEVEL_HIGH,
+            OverloadedRunMonitor.UTILIZATION_LEVEL_HIGH + suffix,
+            NetworkConsumingRunMonitor.NETWORK_CONSUMING_LEVEL_HIGH,
+            NetworkConsumingRunMonitor.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
             PipelineRunManager.NETWORK_LIMIT + suffix
         ).filter(run::hasTag)
         .forEach(run::removeTag);

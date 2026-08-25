@@ -16,11 +16,25 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring.monitor;
 
+import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface RunMonitor {
+
+    long ONE = 1L;
+    int MILLIS = 1000;
+    double PERCENT = 100.0;
+    double ONE_THOUSANDTH = 0.001;
+    double ZERO_USAGE_RATE = 0.0;
+    String TRUE_VALUE_STRING = "true";
+
+    List<String> IDLE_TAGS = Arrays.stream(IdleMonitoringType.values())
+            .map(IdleMonitoringType::getTag)
+            .collect(Collectors.toList());
 
     void monitor(List<PipelineRun> runs);
 

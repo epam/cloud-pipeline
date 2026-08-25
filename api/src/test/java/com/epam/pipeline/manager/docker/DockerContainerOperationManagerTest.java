@@ -30,7 +30,8 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.OverloadedRunMonitor;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
@@ -163,7 +164,7 @@ public class DockerContainerOperationManagerTest {
         final PipelineRun idledRun =
                 createPausingRunWithTags(IdleMonitoringType.ABSOLUTE.getTag(), TEST_TAG);
         final PipelineRun pressuredRun =
-                createPausingRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, TEST_TAG);
+                createPausingRunWithTags(OverloadedRunMonitor.UTILIZATION_LEVEL_HIGH, TEST_TAG);
 
         when(kubernetesManager.getContainerIdFromKubernetesPod(nullable(String.class), nullable(String.class)))
             .thenReturn(TEST_TAG);
@@ -436,7 +437,7 @@ public class DockerContainerOperationManagerTest {
     private PipelineRun createPausingRunWithTags(final String... tags) {
         final PipelineRun result = pipelineRun();
         for (String tag : tags) {
-            result.addTag(tag, ResourceMonitoringManager.TRUE_VALUE_STRING);
+            result.addTag(tag, RunMonitor.TRUE_VALUE_STRING);
         }
         return result;
     }

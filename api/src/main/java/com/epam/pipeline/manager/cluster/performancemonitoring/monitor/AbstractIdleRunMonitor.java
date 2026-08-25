@@ -56,13 +56,6 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE
 @Slf4j
 public abstract class AbstractIdleRunMonitor extends AbstractRunMonitor {
 
-    protected static final double PERCENT = 100.0;
-    protected static final int MILLIS = 1000;
-    protected static final double ONE_THOUSANDTH = 0.001;
-    protected static final long ONE = 1L;
-    protected static final double ZERO_USAGE_RATE = 0.0;
-    protected static final String TRUE_VALUE_STRING = "true";
-
     protected final PipelineRunManager pipelineRunManager;
     protected final PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     protected final NotificationManager notificationManager;

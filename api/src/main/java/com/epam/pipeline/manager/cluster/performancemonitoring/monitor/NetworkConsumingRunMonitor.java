@@ -45,9 +45,7 @@ import java.util.Optional;
 @Slf4j
 public class NetworkConsumingRunMonitor extends AbstractRunMonitor {
 
-    private static final long ONE = 1L;
-    private static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
-    private static final String TRUE_VALUE_STRING = "true";
+    public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
 
     private final PipelineRunManager pipelineRunManager;
     private final NotificationManager notificationManager;
