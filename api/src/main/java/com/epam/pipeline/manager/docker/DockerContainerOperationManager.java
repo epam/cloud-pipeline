@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -150,6 +151,9 @@ public class DockerContainerOperationManager {
 
     @Autowired
     private PipelineRunServiceUrlManager serviceUrlManager;
+
+    @Autowired
+    private NotificationManager notificationManager;
 
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
@@ -536,6 +540,13 @@ public class DockerContainerOperationManager {
         .forEach(run::removeTag);
     }
 
+    private void removeUtilizationNotificationTimestamps(final PipelineRun run) {
+        Stream.of(IdleMonitoringType.values())
+            .forEach(type ->
+                notificationManager.removeNotificationTimestamps(run.getId(), type.getNotificationType())
+            );
+    }
+
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {
         final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(runId);
         validateInstanceState(cloudInstanceState);
@@ -635,6 +646,7 @@ public class DockerContainerOperationManager {
 
         run.setPodIP(null);
         removeUtilizationLevelTags(run);
+        removeUtilizationNotificationTimestamps(run);
         runManager.updateRunInfo(run);
         serviceUrlManager.clear(run.getId());
 

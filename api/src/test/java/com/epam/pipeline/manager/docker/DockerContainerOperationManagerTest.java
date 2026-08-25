@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.docker;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -33,8 +34,10 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
@@ -114,6 +117,15 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
 
     @Mock
     private PipelineConfigurationManager pipelineConfigurationManager;
+
+    @Mock
+    private NotificationManager notificationManager;
+
+    @Mock
+    private MessageHelper messageHelper;
+
+    @Mock
+    private PreferenceManager preferenceManager;
 
     @Before
     public void setUp() {

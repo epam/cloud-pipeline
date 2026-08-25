@@ -41,6 +41,7 @@ import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
