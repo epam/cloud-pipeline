@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
@@ -124,6 +125,9 @@ public class DockerContainerOperationManagerTest {
 
     @Mock
     private PipelineConfigurationManager pipelineConfigurationManager;
+
+    @Mock
+    private NotificationManager notificationManager;
 
     @Mock
     private MessageHelper messageHelper;
