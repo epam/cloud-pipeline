@@ -26,7 +26,7 @@ const IdleTypes = {
 };
 
 const IdleTypeLabels = {
-  [IdleTypes.ABSOLUTE]: 'IDLE_RUN, IDLE_RUN_PAUSED, IDLE_RUN_STOPPED',
+  [IdleTypes.ABSOLUTE]: 'IDLE_RUN',
   [IdleTypes.GPU]: 'IDLE_GPU_RUN',
   [IdleTypes.CPU]: 'IDLE_CPU_RUN'
 };

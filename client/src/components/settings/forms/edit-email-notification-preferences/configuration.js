@@ -255,12 +255,8 @@ const NotificationPreferences = {
   [IdleGpuType]: [
     {preference: SystemIdleSettingsPreference.preference, visibleTypes: ['GPU']}
   ],
-  [IdleRunPausedType]: [
-    {preference: SystemIdleSettingsPreference.preference, visibleTypes: ['ABSOLUTE']}
-  ],
-  [IdleRunStoppedType]: [
-    {preference: SystemIdleSettingsPreference.preference, visibleTypes: ['ABSOLUTE']}
-  ],
+  [IdleRunPausedType]: [],
+  [IdleRunStoppedType]: [],
   [LongPausedType]: [
     SystemLongPausedActionPreference.preference,
     SystemLongPausedActionTimeoutMinutesPreference.preference
