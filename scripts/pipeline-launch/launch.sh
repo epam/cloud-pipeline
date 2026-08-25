@@ -123,7 +123,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit_init "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -746,6 +746,23 @@ function install_private_packages {
       tar -zxf "${_tmp_install_dir}/conda.tgz" -C "${_install_path}"
       rm -f "${_tmp_install_dir}/conda.tgz"
       echo "Python distro is installed into ${_install_path}/conda"
+}
+
+function install_python3_packages {
+      local _install_path="$1"
+      local _tmp_install_dir="/tmp/"
+      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python312-centos7.tar.gz"}"
+
+      echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
+      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
+
+      tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/python3.tgz"
+
+      ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
+      ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
+      echo "Python3 distro is installed into ${_install_path}/python3.12"
 }
 
 function list_storage_mounts() {
@@ -1439,6 +1456,7 @@ if [ -z "$CP_USR_BIN" ]; then
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
 create_sys_dir $CP_USR_BIN
+# --- Python 2 ---
 if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
       install_private_packages $CP_USR_BIN
 fi
@@ -1465,9 +1483,39 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
             fi
       fi
 fi
-echo "Local python interpreter found: $CP_PYTHON2_PATH"
+[ -n "$CP_PYTHON2_PATH" ] && echo "Python2 interpreter: $CP_PYTHON2_PATH" \
+      || echo "[WARN] python2 not found, CP_PYTHON2_PATH unset"
 
 check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
+
+# --- Python 3 ---
+if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
+      install_python3_packages "/usr/local"
+fi
+
+export CP_PYTHON3_PATH="/usr/local/python3.12/bin/python3.12"
+if [ ! -f "$CP_PYTHON3_PATH" ]; then
+      export CP_PYTHON3_PATH=$(command -v python3.12)
+fi
+[ -n "$CP_PYTHON3_PATH" ] && echo "Python3 interpreter: $CP_PYTHON3_PATH" \
+      || echo "[WARN] python3.12 not found, CP_PYTHON3_PATH unset"
+
+# --- Active python ---
+# CP_PYTHON_VERSION=2 → use py2, anything else (default) → use py3
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-3}"
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+      export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
+else
+      export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+      ln -sf /usr/local/bin/python3 /usr/local/bin/python
+      ln -sf /usr/local/bin/pip3    /usr/local/bin/pip
+fi
+
+if [ -z "$CP_PYTHON_PATH" ]; then
+      echo "[ERROR] Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
+      exit_init 1
+fi
+echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
 
 ######################################################
 # Configure the dependencies if needed
@@ -1856,7 +1904,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
       else
             cd $COMMON_REPO_DIR
             # Fixed setuptools version to be compatible with the pipe-common package
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
@@ -1866,7 +1914,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
             _INSTALL_RESULT=$?
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
@@ -2217,7 +2265,7 @@ echo "Setup cluster users sharing"
 echo "-"
 
 if check_cp_cap CP_CAP_SHARE_USERS; then
-    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+    "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
 else
     echo "Cluster users sharing is not requested"
 fi
@@ -2236,7 +2284,7 @@ echo "Setup users synchronization"
 echo "-"
 
 if check_cp_cap CP_CAP_SYNC_USERS; then
-    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+    nohup "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
 else
     echo "Users synchronization is not requested"
 fi
@@ -2762,7 +2810,7 @@ else
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
     sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
 fi
 
 ######################################################
@@ -2777,7 +2825,7 @@ echo "-"
 if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
     echo "API_TOKEN refresh is not requested"
 else
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
 fi
 
 ######################################################
@@ -2849,9 +2897,9 @@ CP_CLOUD_CREDENTIALS_PATHS="${CP_CLOUD_CREDENTIALS_PATHS:-"$HOME $OWNER_HOME"}"
 _cloud_credentials_paths=($CP_CLOUD_CREDENTIALS_PATHS)
 for _cred_profile_home_dir in ${_cloud_credentials_paths[@]}; do
       echo "Writing cloud credentials to $_cred_profile_home_dir"
-      $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py \
+      $CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py \
             --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py \
-            --python-path=$CP_PYTHON2_PATH \
+            --python-path=$CP_PYTHON_PATH \
             --config-file=$_cred_profile_home_dir/.aws/config \
             --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
 done
