@@ -258,6 +258,13 @@ fi
 mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
 
+# Any custom docker config required. E.g. additional certificates for Zscaler.
+_DOCKER_EXTRA_INIT="@SYSTEM_DOCKER_EXTRA_INIT_SH@"
+if [ "$_DOCKER_EXTRA_INIT" ] && [[ "$_DOCKER_EXTRA_INIT" != "@"*"@" ]]; then
+  wget $_WO "${_DOCKER_EXTRA_INIT}" -O /tmp/docker-extra-init.sh
+  bash /tmp/docker-extra-init.sh
+fi
+
 # Setup docker cli location for DinD
 docker_cli_bin="/bin/docker"
 if [ ! -f "$docker_cli_bin" ]; then
