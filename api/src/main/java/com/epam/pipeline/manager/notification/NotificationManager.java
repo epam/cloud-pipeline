@@ -187,6 +187,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         message.setCopyUserIds(getCCUsers(settings));
 
         saveNotification(message);
+        monitoringNotificationDao.updateNotificationTimestamp(Collections.singletonList(run.getId()), type);
     }
 
     /**
@@ -807,7 +808,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 });
     }
 
-    private boolean shouldNotify(final Long id, final NotificationSettings notificationSettings) {
+    public boolean shouldNotify(final Long id, final NotificationSettings notificationSettings) {
         final Long resendDelay = notificationSettings.getResendDelay();
         final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(
                 id,

@@ -712,7 +712,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertNull(loadedRun.getProlongedAtTime());
 
         run.setProlongedAtTime(time);
-        pipelineRunDao.updateProlongIdleRunAndLastIdleNotificationTime(run);
+        pipelineRunDao.updateProlongedAtTime(run);
 
         loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(time, loadedRun.getProlongedAtTime());
@@ -870,40 +870,17 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void testUpdateRunsLastNotification() {
+    public void testUpdateProlongedAtTime() {
         PipelineRun run1 = createTestPipelineRun();
 
-        Date lastNotificationDate = DateUtils.now();
-        LocalDateTime lastIdleNotificationDate = DateUtils.nowUTC();
-        run1.setLastNotificationTime(lastNotificationDate);
-        run1.setLastIdleNotificationTime(lastIdleNotificationDate);
+        LocalDateTime now = DateUtils.nowUTC();
+        run1.setProlongedAtTime(now);
 
-        pipelineRunDao.updateRunLastNotification(run1);
+        pipelineRunDao.updateProlongedAtTime(run1);
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run1.getId());
 
-        assertEquals(loadedRun.getLastNotificationTime(), lastNotificationDate);
-        assertEquals(loadedRun.getLastIdleNotificationTime(), lastIdleNotificationDate);
-
-        PipelineRun run2 = createTestPipelineRun();
-        PipelineRun run3 = createTestPipelineRun();
-        Stream.of(run2, run3).forEach(r -> {
-            r.setLastNotificationTime(lastNotificationDate);
-            r.setLastIdleNotificationTime(lastIdleNotificationDate);
-        });
-
-        pipelineRunDao.updateRunsLastNotification(Arrays.asList(run2, run3));
-        Stream.of(run2, run3).forEach(r -> {
-            PipelineRun loaded = pipelineRunDao.loadPipelineRun(r.getId());
-            assertEquals(loaded.getLastNotificationTime(), lastNotificationDate);
-            assertEquals(loaded.getLastIdleNotificationTime(), lastIdleNotificationDate);
-        });
-
-        List<PipelineRun> running = pipelineRunDao.loadRunningPipelineRuns();
-        assertFalse(running.isEmpty());
-        running.forEach(loaded -> {
-            assertEquals(loaded.getLastNotificationTime(), lastNotificationDate);
-            assertEquals(loaded.getLastIdleNotificationTime(), lastIdleNotificationDate);
-        });
+        assertEquals(loadedRun.getProlongedAtTime().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
+                now.truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
     }
 
     @Test

@@ -91,6 +91,8 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
@@ -293,6 +295,9 @@ public class PipelineRunManager {
     @Autowired
     private PipelineRunMetricsDao runMetricsDao;
 
+    @Autowired
+    private MonitoringNotificationDao monitoringNotificationDao;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -415,11 +420,12 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void prolongIdleRun(Long runId) {
         PipelineRun run = loadPipelineRun(runId, false);
-        run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
         removeIdleTags(run);
-        updateProlongIdleRunAndLastIdleNotificationTime(run);
+        updateProlongedAtTime(run);
         pipelineRunDao.updateRunTags(run);
+        monitoringNotificationDao.deleteNotificationTimestampsForIdAndType(runId, NotificationType.LONG_RUNNING);
+        monitoringNotificationDao.deleteNotificationTimestampsForIdAndType(runId, NotificationType.LONG_INIT);
     }
 
     private void removeIdleTags(final PipelineRun run) {
@@ -862,19 +868,8 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updatePipelineRunLastNotification(PipelineRun run) {
-        pipelineRunDao.updateRunLastNotification(run);
-        return run;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void updatePipelineRunsLastNotification(Collection<PipelineRun> runs) {
-        pipelineRunDao.updateRunsLastNotification(runs);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateProlongIdleRunAndLastIdleNotificationTime(PipelineRun run) {
-        pipelineRunDao.updateProlongIdleRunAndLastIdleNotificationTime(run);
+    public PipelineRun updateProlongedAtTime(PipelineRun run) {
+        pipelineRunDao.updateProlongedAtTime(run);
         return run;
     }
 

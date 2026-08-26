@@ -42,7 +42,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -208,17 +207,7 @@ public abstract class AbstractIdleRunMonitor extends AbstractRunMonitor {
 
     protected boolean shouldPerformActionOnIdleRun(final PipelineRun run, final int actionTimeout,
                                                     final IdleMonitoringType monitoringType) {
-        final String timestampTag = getTimestampTag(monitoringType);
-        final String date = MapUtils.emptyIfNull(run.getTags()).get(timestampTag);
-        if (StringUtils.isBlank(date)) {
-            return false;
-        }
-        try {
-            return DateUtils.strToUTCDate(date).isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
-        } catch (DateTimeParseException e) {
-            log.error("Failed to parse idle timestamp tag {} for run {}: {}", timestampTag, run.getId(), date, e);
-            return false;
-        }
+        return actionTimeoutElapsed(run, monitoringType.getTag(), actionTimeout);
     }
 
     protected String getTimestampTag(final IdleMonitoringType monitoringType) {

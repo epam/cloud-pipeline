@@ -80,7 +80,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -98,6 +97,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import static com.epam.pipeline.entity.notification.NotificationType.HIGH_CONSUMED_RESOURCES;
 import static com.epam.pipeline.entity.notification.NotificationType.IDLE_CPU_RUN;
@@ -119,7 +120,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 
@@ -148,6 +148,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final String INCLUDE_PARAM_VALUE = "includeParamValue";
     private static final String INCLUDE_PARAM_NAME = "includeParamName";
     private static final long LONG_THRESHOLD = 2000L;
+    private static final long ONE_HOUR_SECONDS = 3600L;
     public static final String LONG_RUNNING_TAG = "LONG_RUNNING";
     public static final double CPU_AVG = 0.5d;
     public static final double CPU_MAX = 1d;
@@ -197,6 +198,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @SpyBean
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     private PipelineRun longRunnging;
     private PipelineUser admin;
@@ -304,11 +308,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         assertTrue(messages.get(0).getCopyUserIds().contains(admin.getId()));
         assertEquals(longRunningTemplate.getId(), messages.get(0).getTemplate().getId());
 
-        ArgumentCaptor<PipelineRun> runCaptor = ArgumentCaptor.forClass(PipelineRun.class);
-        verify(pipelineRunManager).updatePipelineRunLastNotification(runCaptor.capture());
-
-        PipelineRun capturedRun = runCaptor.getValue();
-        assertNotNull(capturedRun.getLastNotificationTime());
+        assertTrue(monitoringNotificationDao.loadNotificationTimestamp(
+                longRunnging.getId(), LONG_RUNNING).isPresent());
     }
 
     @Test
@@ -368,7 +369,15 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Test
     public void testReNotifyLongRunning() {
         longRunnging.setStartDate(DateTime.now(DateTimeZone.UTC).minusMinutes(9).toDate());
-        longRunnging.setLastNotificationTime(DateTime.now(DateTimeZone.UTC).minusMinutes(6).toDate());
+        // Simulate a prior notification 6 minutes ago (resend delay is 1s, so re-notify is expected).
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("RUN_ID", longRunnging.getId());
+        params.addValue("NOTIFICATION_TYPE", LONG_RUNNING.name());
+        params.addValue("TIMESTAMP", DateUtils.nowUTC().minusMinutes(6));
+        namedParameterJdbcTemplate.update(
+                "INSERT INTO pipeline.notification_timestamp (run_id, notification_type, timestamp) "
+                + "VALUES (:RUN_ID, :NOTIFICATION_TYPE, :TIMESTAMP)",
+                params);
 
         longRunningRunMonitor.monitor(Collections.singletonList(longRunnging));
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
@@ -376,6 +385,24 @@ public class NotificationManagerTest extends AbstractManagerTest {
         assertEquals(admin.getId(), messages.get(0).getToUserId());
         assertTrue(messages.get(0).getCopyUserIds().contains(admin.getId()));
         assertEquals(longRunningTemplate.getId(), messages.get(0).getTemplate().getId());
+    }
+
+    @Test
+    public void testNoResendLongRunningWithinDelay() {
+        longRunningSettings.setResendDelay(ONE_HOUR_SECONDS);
+        notificationSettingsDao.updateNotificationSettings(longRunningSettings);
+
+        // First call: sends notification and records the timestamp in notification_timestamp
+        longRunningRunMonitor.monitor(Collections.singletonList(longRunnging));
+        assertEquals(1, monitoringNotificationDao.loadAllNotifications().size());
+
+        // Clear the message queue but keep the notification_timestamp row
+        monitoringNotificationDao.deleteNotificationsByTemplateId(longRunningTemplate.getId());
+
+        // Second call immediately after: resend delay (1 hour) has not elapsed, so no notification
+        longRunningRunMonitor.monitor(Collections.singletonList(longRunnging));
+
+        assertEquals(0, monitoringNotificationDao.loadAllNotifications().size());
     }
 
     @Test
