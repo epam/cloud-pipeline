@@ -35,3 +35,15 @@ variable "ami_type" {
   type =  string
   default = ""
 }
+variable "nvidia_driver_version" {
+  # Version of the Nvidia driver and the matching Nvidia rpm packages
+  type =  string
+  default = "595.58.03"
+}
+variable "nvidia_driver_url_prefix" {
+  # Location, e.g. an internal mirror, which serves a single "$nvidia_driver_version.tgz" archive
+  # with the driver runfile and the Nvidia rpm packages inside.
+  # If empty - the public Nvidia locations are used
+  type =  string
+  default = ""
+}

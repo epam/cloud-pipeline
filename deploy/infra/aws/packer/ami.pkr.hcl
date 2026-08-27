@@ -31,10 +31,14 @@ locals {
   timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
   truncated_sha = substr(data.git-commit.cwd-head.hash, 0, 8)
   source_ami = var.source_ami != "" ? var.source_ami : data.amazon-ami.amzn2023.id
+  ami_description = (var.ami_type == "gpu"
+                     ? "Cloud Pipeline ${var.ami_type} node image (Amazon Linux 2023, Nvidia driver ${var.nvidia_driver_version})"
+                     : "Cloud Pipeline ${var.ami_type} node image (Amazon Linux 2023)")
 }
 
 source "amazon-ebs" "cloud-pipeline-ami" {
   ami_name             = "CloudPipeline-${var.ami_type}-${local.timestamp}"
+  ami_description      = "${local.ami_description}"
   instance_type        = "${var.instance_type}"
   region               = "${var.region}"
   source_ami           = "${local.source_ami}"
@@ -64,7 +68,7 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sudo bash /tmp/install-deps.sh"
+      "sudo env NVIDIA_DRIVER_VERSION='${var.nvidia_driver_version}' NVIDIA_DRIVER_URL_PREFIX='${var.nvidia_driver_url_prefix}' bash /tmp/install-deps.sh"
     ]
   }
 }

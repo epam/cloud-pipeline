@@ -18,6 +18,16 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
+        --nvidia-driver-version)
+        _NVIDIA_DRIVER_VERSION="$2"
+        shift
+        shift
+        ;;
+        --nvidia-driver-url-prefix)
+        _NVIDIA_DRIVER_URL_PREFIX="$2"
+        shift
+        shift
+        ;;
         --subnet-id)
         _SUBNET_ID="$2"
         shift
@@ -39,7 +49,7 @@ set -- "${POSITIONAL[@]}"
 if [ -z "$_REGION" ] || \
     [ -z "$_INSTANCE_PROFILE" ] || \
     [ -z "$_SUBNET_ID" ]; then
-    echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu [--source-ami ami-xxxxxxx]"
+    echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu [--source-ami ami-xxxxxxx] [--nvidia-driver-version VERSION] [--nvidia-driver-url-prefix URL]"
     exit 1
 fi
 
@@ -66,6 +76,16 @@ for _type_to_build in ${_types_list[@]}; do
     if [ "$_SOURCE_AMI" ]; then
         sed -i '/^source_ami[[:space:]]*=/d' $_config
         echo "source_ami = \"$_SOURCE_AMI\"" >> $_config
+    fi
+
+    # If not set - the default Nvidia driver version and the public Nvidia locations are used
+    if [ "$_NVIDIA_DRIVER_VERSION" ]; then
+        sed -i '/^nvidia_driver_version[[:space:]]*=/d' $_config
+        echo "nvidia_driver_version = \"$_NVIDIA_DRIVER_VERSION\"" >> $_config
+    fi
+    if [ "$_NVIDIA_DRIVER_URL_PREFIX" ]; then
+        sed -i '/^nvidia_driver_url_prefix[[:space:]]*=/d' $_config
+        echo "nvidia_driver_url_prefix = \"$_NVIDIA_DRIVER_URL_PREFIX\"" >> $_config
     fi
 
     _packer_bin="$(mktemp -d)"
