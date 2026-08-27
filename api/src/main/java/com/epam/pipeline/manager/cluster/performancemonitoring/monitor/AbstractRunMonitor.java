@@ -19,11 +19,15 @@ package com.epam.pipeline.manager.cluster.performancemonitoring.monitor;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,5 +61,24 @@ public abstract class AbstractRunMonitor implements RunMonitor {
     protected String getTimestampTag(final String tag) {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         return StringUtils.isNotEmpty(suffix) ? tag + suffix : null;
+    }
+
+    protected LocalDateTime readTimestampTag(final PipelineRun run, final String tag) {
+        final String timestampTag = getTimestampTag(tag);
+        final String date = MapUtils.emptyIfNull(run.getTags()).get(timestampTag);
+        if (StringUtils.isBlank(date)) {
+            return null;
+        }
+        try {
+            return DateUtils.strToUTCDate(date);
+        } catch (DateTimeParseException e) {
+            log.error("Failed to parse timestamp tag {} for run {}: {}", timestampTag, run.getId(), date, e);
+            return null;
+        }
+    }
+
+    protected boolean actionTimeoutElapsed(final PipelineRun run, final String tag, final int actionTimeoutMinutes) {
+        final LocalDateTime timestamp = readTimestampTag(run, tag);
+        return timestamp != null && timestamp.isBefore(DateUtils.nowUTC().minusMinutes(actionTimeoutMinutes));
     }
 }

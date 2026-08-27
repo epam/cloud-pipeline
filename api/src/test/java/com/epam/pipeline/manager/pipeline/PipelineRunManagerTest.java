@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
@@ -52,6 +53,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitorin
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -171,6 +173,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
     @MockBean
     private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @MockBean
+    private MonitoringNotificationDao monitoringNotificationDao;
 
     @MockBean
     private ToolScanInfoManager toolScanInfoManager;
@@ -812,6 +817,19 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                                        final String instanceType, final Long parentRunId) {
         return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null,
                 parentRunId, null, null, null, null);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testProlongIdleRunClearsLongRunningNotificationTimestamps() {
+        final PipelineRun run = savedToolRun();
+
+        pipelineRunManager.prolongIdleRun(run.getId());
+
+        verify(monitoringNotificationDao).deleteNotificationTimestampsForIdAndType(
+                run.getId(), NotificationType.LONG_RUNNING);
+        verify(monitoringNotificationDao).deleteNotificationTimestampsForIdAndType(
+                run.getId(), NotificationType.LONG_INIT);
     }
 
     private AwsRegion defaultRegion(final long id) {

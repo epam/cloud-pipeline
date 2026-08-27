@@ -91,14 +91,6 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String podStatus;
     private List<RunSid> runSids;
     private Map<String, String> envVars;
-    /**
-     * Last time the notification on long-running pipeline was issued
-     */
-    private Date lastNotificationTime;
-    /**
-     * Last time the notification on idle pipeline was issued
-     */
-    private LocalDateTime lastIdleNotificationTime;
     private LocalDateTime prolongedAtTime;
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;

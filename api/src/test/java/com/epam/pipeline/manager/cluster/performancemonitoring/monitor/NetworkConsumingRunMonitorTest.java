@@ -39,11 +39,11 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.manager.cluster.performancemonitoring.monitor.MonitorTestUtils.DATE_FMT;
 import static com.epam.pipeline.manager.cluster.performancemonitoring.monitor.MonitorTestUtils.activeRun;
 import static com.epam.pipeline.manager.cluster.performancemonitoring.monitor.MonitorTestUtils.cpuInstanceType;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -69,7 +69,6 @@ public class NetworkConsumingRunMonitorTest {
     @Mock private PreferenceManager preferenceManager;
 
     @Captor private ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyCaptor;
-    @Captor private ArgumentCaptor<List<PipelineRun>> updateNotificationCaptor;
     @Captor private ArgumentCaptor<List<PipelineRun>> updateTagsCaptor;
 
     private PipelineRun run;
@@ -114,8 +113,6 @@ public class NetworkConsumingRunMonitorTest {
         verify(notificationManager).notifyHighNetworkConsumingRuns(
                 runsToNotifyCaptor.capture(), eq(NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH));
         assertEquals(1, runsToNotifyCaptor.getValue().size());
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(updateNotificationCaptor.capture());
-        assertTrue(updateNotificationCaptor.getValue().contains(run));
         verify(pipelineRunManager).updateRunsTags(updateTagsCaptor.capture());
         assertTrue(updateTagsCaptor.getValue().contains(run));
     }
@@ -133,7 +130,11 @@ public class NetworkConsumingRunMonitorTest {
 
     @Test
     public void testRepeatedBreachWithinBackoffNoAction() {
-        run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC().minusMinutes(1));
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX))
+                .thenReturn(SUFFIX);
+        final String recentTimestamp = DATE_FMT.format(DateUtils.nowUTC());
+        run.addTag(NETWORK_PRESSURE_TAG, RunMonitor.TRUE_VALUE_STRING);
+        run.addTag(NETWORK_PRESSURE_TAG + SUFFIX, recentTimestamp);
         networkMetric(HIGH_BANDWIDTH);
 
         monitor.monitor(Collections.singletonList(run));
@@ -145,8 +146,12 @@ public class NetworkConsumingRunMonitorTest {
 
     @Test
     public void testRepeatedBreachPastBackoffRenotifies() {
-        run.setLastNetworkConsumptionNotificationTime(
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX))
+                .thenReturn(SUFFIX);
+        final String pastTimestamp = DATE_FMT.format(
                 DateUtils.nowUTC().minusMinutes(ACTION_BACKOFF_MINUTES + 1));
+        run.addTag(NETWORK_PRESSURE_TAG, RunMonitor.TRUE_VALUE_STRING);
+        run.addTag(NETWORK_PRESSURE_TAG + SUFFIX, pastTimestamp);
         networkMetric(HIGH_BANDWIDTH);
 
         monitor.monitor(Collections.singletonList(run));
@@ -160,8 +165,12 @@ public class NetworkConsumingRunMonitorTest {
     public void testLimitBandwidthActionIsNoOp() {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION))
                 .thenReturn("LIMIT_BANDWIDTH");
-        run.setLastNetworkConsumptionNotificationTime(
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX))
+                .thenReturn(SUFFIX);
+        final String pastTimestamp = DATE_FMT.format(
                 DateUtils.nowUTC().minusMinutes(ACTION_BACKOFF_MINUTES + 1));
+        run.addTag(NETWORK_PRESSURE_TAG, RunMonitor.TRUE_VALUE_STRING);
+        run.addTag(NETWORK_PRESSURE_TAG + SUFFIX, pastTimestamp);
         networkMetric(HIGH_BANDWIDTH);
 
         monitor.monitor(Collections.singletonList(run));
@@ -173,16 +182,28 @@ public class NetworkConsumingRunMonitorTest {
 
     @Test
     public void testRunRecoveryClears() {
-        run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC().minusMinutes(1));
-        run.addTag(NETWORK_PRESSURE_TAG, "true");
+        run.addTag(NETWORK_PRESSURE_TAG, RunMonitor.TRUE_VALUE_STRING);
         networkMetric(LOW_BANDWIDTH);
 
         monitor.monitor(Collections.singletonList(run));
 
-        assertNull(run.getLastNetworkConsumptionNotificationTime());
         assertFalse(run.hasTag(NETWORK_PRESSURE_TAG));
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(updateNotificationCaptor.capture());
-        assertTrue(updateNotificationCaptor.getValue().contains(run));
+        verify(pipelineRunManager).updateRunsTags(updateTagsCaptor.capture());
+        assertTrue(updateTagsCaptor.getValue().contains(run));
+    }
+
+    @Test
+    public void testRunRecoveryAlsoRemovesTimestampTag() {
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX))
+                .thenReturn(SUFFIX);
+        run.addTag(NETWORK_PRESSURE_TAG, RunMonitor.TRUE_VALUE_STRING);
+        run.addTag(NETWORK_PRESSURE_TAG + SUFFIX, DATE_FMT.format(DateUtils.nowUTC()));
+        networkMetric(LOW_BANDWIDTH);
+
+        monitor.monitor(Collections.singletonList(run));
+
+        assertFalse(run.hasTag(NETWORK_PRESSURE_TAG));
+        assertFalse(run.hasTag(NETWORK_PRESSURE_TAG + SUFFIX));
         verify(pipelineRunManager).updateRunsTags(updateTagsCaptor.capture());
         assertTrue(updateTagsCaptor.getValue().contains(run));
     }
