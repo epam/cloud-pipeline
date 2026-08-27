@@ -22,6 +22,7 @@ import java.util.List;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.notifier.AbstractSpringTest;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -44,6 +45,9 @@ public class NotificationRepositoryTest extends AbstractSpringTest {
 
     @Autowired
     private NotificationTemplateRepository templateRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
 
     @Test
@@ -80,8 +84,10 @@ public class NotificationRepositoryTest extends AbstractSpringTest {
         message.setCopyUserIds(Collections.singletonList(0L));
         notificationRepository.save(message);
         Long idToDelete = message.getId();
-        notificationRepository.deleteById(idToDelete);
-        assertNull(notificationRepository.findById(idToDelete).get());
+        notificationRepository.removeById(idToDelete);
+        entityManager.flush();
+        entityManager.clear();
+        assertNull(notificationRepository.findById(idToDelete).orElse(null));
     }
 
 }

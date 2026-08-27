@@ -26,6 +26,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 import com.icegreen.greenmail.util.GreenMail;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,11 @@ public class SMTPNotificationManagerTest extends AbstractSpringTest {
     void setUp() {
         greenMail = new GreenMail(ServerSetupTest.SMTP);
         greenMail.start();
+    }
+
+    @AfterEach
+    public void tearDown() {
+        greenMail.stop();
     }
 
     @Autowired
