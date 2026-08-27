@@ -39,7 +39,6 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -90,11 +89,8 @@ public class LongRunningRunMonitor implements RunMonitor {
             return;
         }
         final long duration = runningDurationOf(run);
-        if (duration >= threshold
-                && checkNeedOfNotificationResend(run.getLastNotificationTime(), settings.getResendDelay())) {
+        if (duration >= threshold && notificationManager.shouldNotify(run.getId(), settings)) {
             notificationManager.notifyLongRunningTask(run, duration, type, settings);
-            run.setLastNotificationTime(DateUtils.now());
-            pipelineRunManager.updatePipelineRunLastNotification(run);
             tagRunWithLongOperation(run, type);
         }
     }
@@ -132,12 +128,5 @@ public class LongRunningRunMonitor implements RunMonitor {
                 })
                 .filter(duration -> duration > 0)
                 .orElseGet(() -> RunDurationUtils.getOverallDuration(run).getSeconds());
-    }
-
-    private boolean checkNeedOfNotificationResend(final Date lastNotificationDate, final long resendDelay) {
-        return lastNotificationDate == null
-                || resendDelay != 0
-                && Duration.between(lastNotificationDate.toInstant(),
-                        DateUtils.now().toInstant()).abs().getSeconds() >= resendDelay;
     }
 }

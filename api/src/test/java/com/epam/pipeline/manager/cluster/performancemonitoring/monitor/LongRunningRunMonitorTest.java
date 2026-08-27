@@ -36,13 +36,10 @@ import org.mockito.MockitoAnnotations;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -80,8 +77,10 @@ public class LongRunningRunMonitorTest {
         when(notificationSettings.isEnabled()).thenReturn(true);
         when(notificationSettings.getThreshold()).thenReturn(THRESHOLD_SECONDS);
         when(notificationSettings.getResendDelay()).thenReturn(RESEND_DELAY_SECONDS);
+        when(notificationSettings.getType()).thenReturn(NotificationType.LONG_RUNNING);
         when(notificationSettingsManager.load(NotificationType.LONG_RUNNING)).thenReturn(notificationSettings);
         when(notificationSettingsManager.load(NotificationType.LONG_INIT)).thenReturn(notificationSettings);
+        when(notificationManager.shouldNotify(anyLong(), eq(notificationSettings))).thenReturn(true);
 
         longRunningRun = runWithPodIP(RUN_ID, POD_IP);
         mockRunningDuration(RUN_ID, THRESHOLD_SECONDS + 10);
@@ -96,8 +95,6 @@ public class LongRunningRunMonitorTest {
 
         verify(notificationManager).notifyLongRunningTask(
                 eq(longRunningRun), anyLong(), eq(NotificationType.LONG_RUNNING), eq(notificationSettings));
-        verify(pipelineRunManager).updatePipelineRunLastNotification(longRunningRun);
-        assertNotNull(longRunningRun.getLastNotificationTime());
     }
 
     @Test
@@ -158,7 +155,7 @@ public class LongRunningRunMonitorTest {
 
     @Test
     public void testResendDelayNotPassedNoResend() {
-        longRunningRun.setLastNotificationTime(new Date());
+        when(notificationManager.shouldNotify(anyLong(), eq(notificationSettings))).thenReturn(false);
 
         monitor.monitor(Collections.singletonList(longRunningRun));
 
@@ -167,8 +164,7 @@ public class LongRunningRunMonitorTest {
 
     @Test
     public void testResendAfterDelayPassed() {
-        final long pastMillis = System.currentTimeMillis() - (RESEND_DELAY_SECONDS + 1) * 1000L;
-        longRunningRun.setLastNotificationTime(new Date(pastMillis));
+        when(notificationManager.shouldNotify(anyLong(), eq(notificationSettings))).thenReturn(true);
 
         monitor.monitor(Collections.singletonList(longRunningRun));
 
@@ -179,7 +175,7 @@ public class LongRunningRunMonitorTest {
     @Test
     public void testZeroResendDelayNeverResends() {
         when(notificationSettings.getResendDelay()).thenReturn(0L);
-        longRunningRun.setLastNotificationTime(new Date(0L));
+        when(notificationManager.shouldNotify(anyLong(), eq(notificationSettings))).thenReturn(false);
 
         monitor.monitor(Collections.singletonList(longRunningRun));
 
@@ -254,15 +250,6 @@ public class LongRunningRunMonitorTest {
                 eq(longRunningRun), anyLong(), eq(NotificationType.LONG_RUNNING), eq(notificationSettings));
         verify(notificationManager, never()).notifyLongRunningTask(
                 eq(shortRun), anyLong(), any(), any());
-    }
-
-    @Test
-    public void testLastNotificationTimeUpdatedOnRun() {
-        assertNull(longRunningRun.getLastNotificationTime());
-
-        monitor.monitor(Collections.singletonList(longRunningRun));
-
-        assertNotNull(longRunningRun.getLastNotificationTime());
     }
 
     private PipelineRun runWithPodIP(final long id, final String podIP) {
