@@ -7,8 +7,13 @@ variable "region" {
   default = ""
 }
 variable "source_ami" {
+  # If empty - the latest Amazon Linux 2023 AMI with the 6.1 kernel is used
   type =  string
   default = ""
+}
+variable "source_ami_architecture" {
+  type =  string
+  default = "x86_64"
 }
 variable "ssh_username" {
   type =  string

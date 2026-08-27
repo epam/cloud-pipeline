@@ -1,5 +1,13 @@
 # Build using packer
 
+## Source AMI
+
+If a source AMI is not provided explicitly - the latest Amazon Linux 2023 AMI with the 6.1 kernel
+(`al2023-ami-2023.*-kernel-6.1-x86_64`, owned by `amazon`) is resolved automatically in the target region.
+
+To pin a specific base image instead - pass `--source-ami` to the wrapper or set `source_ami`
+in `$TYPE/ami.pkrvars.hcl`. Note that the AMI lookup requires `ec2:DescribeImages` permissions.
+
 ## Build using wrapper
 
 ```
@@ -7,7 +15,8 @@
 build.sh --region us-east-1 \
          --instance-profile SSM_Role \
          --subnet-id subnet-xxxxxxx \
-         --type cpu|gpu|all
+         --type cpu|gpu|all \
+         [--source-ami ami-xxxxxxx]
 ```
 
 ## Install packer

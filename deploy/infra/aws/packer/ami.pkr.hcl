@@ -13,16 +13,31 @@ packer {
 
 data "git-commit" "cwd-head" { }
 
+# Latest Amazon Linux 2023 AMI with the 6.1 kernel, used when "source_ami" is not set explicitly
+data "amazon-ami" "amzn2023" {
+  filters = {
+    name                = "al2023-ami-2023.*-kernel-6.1-${var.source_ami_architecture}"
+    architecture        = "${var.source_ami_architecture}"
+    root-device-type    = "ebs"
+    virtualization-type = "hvm"
+    state               = "available"
+  }
+  owners      = ["amazon"]
+  most_recent = true
+  region      = "${var.region}"
+}
+
 locals {
   timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
   truncated_sha = substr(data.git-commit.cwd-head.hash, 0, 8)
+  source_ami = var.source_ami != "" ? var.source_ami : data.amazon-ami.amzn2023.id
 }
 
 source "amazon-ebs" "cloud-pipeline-ami" {
   ami_name             = "CloudPipeline-${var.ami_type}-${local.timestamp}"
   instance_type        = "${var.instance_type}"
   region               = "${var.region}"
-  source_ami           = "${var.source_ami}"
+  source_ami           = "${local.source_ami}"
   ssh_username         = "${var.ssh_username}"
   ssh_interface        = "session_manager"
   communicator         = "ssh"

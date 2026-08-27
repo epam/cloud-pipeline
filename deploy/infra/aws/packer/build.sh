@@ -11,6 +11,12 @@ while [[ $# -gt 0 ]]; do
         --instance-profile)
         _INSTANCE_PROFILE="$2"
         shift
+        shift
+        ;;
+        --source-ami)
+        _SOURCE_AMI="$2"
+        shift
+        shift
         ;;
         --subnet-id)
         _SUBNET_ID="$2"
@@ -33,7 +39,7 @@ set -- "${POSITIONAL[@]}"
 if [ -z "$_REGION" ] || \
     [ -z "$_INSTANCE_PROFILE" ] || \
     [ -z "$_SUBNET_ID" ]; then
-    echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu"
+    echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu [--source-ami ami-xxxxxxx]"
     exit 1
 fi
 
@@ -55,6 +61,12 @@ for _type_to_build in ${_types_list[@]}; do
     echo "region = \"$_REGION\"" >> $_config
     echo "iam_instance_profile = \"$_INSTANCE_PROFILE\"" >> $_config
     echo "subnet_id = \"$_SUBNET_ID\"" >> $_config
+
+    # If not set - the latest Amazon Linux 2023 AMI with the 6.1 kernel is used
+    if [ "$_SOURCE_AMI" ]; then
+        sed -i '/^source_ami[[:space:]]*=/d' $_config
+        echo "source_ami = \"$_SOURCE_AMI\"" >> $_config
+    fi
 
     _packer_bin="$(mktemp -d)"
     cd $_packer_bin
