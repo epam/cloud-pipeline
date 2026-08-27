@@ -125,7 +125,6 @@ public class OverloadedRunMonitorTest {
     public void testPressuredRunTagging() {
         // okayRun starts with PRESSURE tag but is NOT over threshold — tag should be removed
         okayRun.setTags(new HashMap<>(Collections.singletonMap(PRESSURE_TAG, TRUE_VALUE_STRING)));
-        okayRun.setLastIdleNotificationTime(DateUtils.nowUTC().minusSeconds(MAX_IDLE_TIMEOUT));
         final PipelineRun spyPressuredRun = spy(highConsumingRun);
         final PipelineRun spyOkayRun = spy(okayRun);
 

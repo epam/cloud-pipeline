@@ -1179,7 +1179,7 @@ public class SystemPreferences {
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
 
     public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
-            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, isNotBlank);
 
     public static final StringPreference SYSTEM_RUN_TAG_STOP_REASON = new StringPreference(
             "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);

@@ -134,8 +134,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadRunSidsQueryForList;
     private String updatePodStatusQuery;
     private String loadEnvVarsQuery;
-    private String updateLastNotificationQuery;
-    private String updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
+    private String updateProlongedAtTimeQuery;
     private String updateRunQuery;
     private String updatePipelineNameForRunsQuery;
     private String clearPipelineIdForRunsQuery;
@@ -302,23 +301,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     public void updatePodIP(PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updatePodIPQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateRunLastNotification(PipelineRun run) {
-        getNamedParameterJdbcTemplate().update(updateLastNotificationQuery, PipelineRunParameters
-                .getParameters(run, getConnection()));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateRunsLastNotification(Collection<PipelineRun> runs) {
-        if (CollectionUtils.isEmpty(runs)) {
-            return;
-        }
-
-        MapSqlParameterSource[] params = getParamsForBatchUpdate(runs);
-
-        getNamedParameterJdbcTemplate().batchUpdate(updateLastNotificationQuery, params);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1039,8 +1021,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         return whereBuilder.toString();
     }
 
-    public void updateProlongIdleRunAndLastIdleNotificationTime(PipelineRun run) {
-        getNamedParameterJdbcTemplate().update(updateProlongedAtTimeAndLastIdleNotificationTimeQuery,
+    public void updateProlongedAtTime(PipelineRun run) {
+        getNamedParameterJdbcTemplate().update(updateProlongedAtTimeQuery,
                 PipelineRunParameters.getParameters(run, getConnection()));
     }
 
@@ -1163,10 +1145,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         IS_PRINCIPAL,
         POD_STATUS,
         ENV_VARS,
-        LAST_NOTIFICATION_TIME,
         PROLONGED_AT_TIME,
-        LAST_IDLE_NOTIFICATION_TIME,
-        LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME,
         PROJECT_PIPELINES,
         PROJECT_CONFIGS,
         EXEC_PREFERENCES,
@@ -1230,10 +1209,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(POD_STATUS.name(), run.getPodStatus());
             params.addValue(ENV_VARS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getEnvVars()));
             params.addValue(PROLONGED_AT_TIME.name(), run.getProlongedAtTime());
-            params.addValue(LAST_NOTIFICATION_TIME.name(), run.getLastNotificationTime());
-            params.addValue(LAST_IDLE_NOTIFICATION_TIME.name(), run.getLastIdleNotificationTime());
-            params.addValue(LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name(),
-                    run.getLastNetworkConsumptionNotificationTime());
             params.addValue(EXEC_PREFERENCES.name(),
                     JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
             params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
@@ -1409,23 +1384,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             }
             run.setConfigurationId(rs.getLong(CONFIGURATION_ID.name()));
             run.setPodStatus(rs.getString(POD_STATUS.name()));
-
-            Timestamp lastNotificationTime = rs.getTimestamp(LAST_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                run.setLastNotificationTime(new Date(lastNotificationTime.getTime()));
-            }
-
-            Timestamp lastIdleNotificationTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                run.setLastIdleNotificationTime(lastIdleNotificationTime.toLocalDateTime()); // convert to UTC
-            }
-
-            Timestamp lastNetworkConsumptionNotificationTime = rs.getTimestamp(
-                    LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                // convert to UTC
-                run.setLastNetworkConsumptionNotificationTime(lastNetworkConsumptionNotificationTime.toLocalDateTime());
-            }
 
             Timestamp idleNotificationStartingTime = rs.getTimestamp(PROLONGED_AT_TIME.name());
             if (!rs.wasNull()) {
@@ -1616,12 +1574,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         Assert.notNull(countRunGroupsQuery, "Required query countRunGroupsQuery is not set");
         Assert.notNull(updatePodStatusQuery, "Required query updatePodStatusQuery is not set");
         Assert.notNull(loadEnvVarsQuery, "Required query loadEnvVarsQuery is not set");
-        Assert.notNull(updateLastNotificationQuery, "Required query updateLastNotificationQuery is not set");
+        Assert.notNull(updateProlongedAtTimeQuery, "Required query updateProlongedAtTimeQuery is not set");
         Assert.notNull(updateRunQuery, "Required query updateRunQuery is not set");
         Assert.notNull(loadRunByPrettyUrlQuery, "Required query loadRunByPrettyUrlQuery is not set");
         Assert.notNull(loadRunningPipelineRunsQuery, "Required query loadRunningPipelineRunsQuery is not set");
-        Assert.notNull(updateProlongedAtTimeAndLastIdleNotificationTimeQuery,
-                "Required query updateProlongedAtTimeAndLastIdleNotificationTimeQuery is not set");
         Assert.notNull(loadRunsByStatusesAndOriginalOwnerQuery,
                 "Required query loadRunsByStatusesAndOriginalOwnerQuery is not set");
     }
@@ -1731,18 +1687,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         this.updatePodStatusQuery = updatePodStatusQuery;
     }
 
-    public void setUpdateProlongedAtTimeAndLastIdleNotificationTimeQuery(
-            String updateProlongedAtTimeAndLastIdleNotificationTimeQuery) {
-        this.updateProlongedAtTimeAndLastIdleNotificationTimeQuery =
-                updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
+    public void setUpdateProlongedAtTimeQuery(String updateProlongedAtTimeQuery) {
+        this.updateProlongedAtTimeQuery = updateProlongedAtTimeQuery;
     }
 
     public void setLoadEnvVarsQuery(String loadEnvVarsQuery) {
         this.loadEnvVarsQuery = loadEnvVarsQuery;
-    }
-
-    public void setUpdateLastNotificationQuery(String updateLastNotificationQuery) {
-        this.updateLastNotificationQuery = updateLastNotificationQuery;
     }
 
     public void setUpdateRunQuery(String updateRunQuery) {

@@ -68,7 +68,6 @@ import static com.epam.pipeline.manager.cluster.performancemonitoring.monitor.Mo
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -217,7 +216,7 @@ public class CpuIdleRunMonitorTest {
 
     @Test
     public void testNotifyTwice() throws InterruptedException {
-        final LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
+        mockAlreadyNotifiedRuns();
         Thread.sleep(10);
 
         monitor.monitor(Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
@@ -226,8 +225,6 @@ public class CpuIdleRunMonitorTest {
                 runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
         final List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyCaptor.getValue();
         assertEquals(2, runsToNotify.size());
-        assertFalse(runsToNotify.stream()
-                .anyMatch(r -> lastNotificationDate.equals(r.getLeft().getLastIdleNotificationTime())));
     }
 
     @Test
@@ -237,7 +234,7 @@ public class CpuIdleRunMonitorTest {
         when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE))
                 .thenReturn(Optional.empty());
 
-        final LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
+        mockAlreadyNotifiedRuns();
         Thread.sleep(10);
 
         monitor.monitor(Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
@@ -245,9 +242,6 @@ public class CpuIdleRunMonitorTest {
         verify(notificationManager).notifyIdleRuns(
                 runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED), anyDouble());
-
-        assertFalse(lastNotificationDate.equals(idleSpotRun.getLastIdleNotificationTime()));
-        assertNull(idleOnDemandRun.getLastIdleNotificationTime());
 
         verify(pipelineRunDockerOperationManager).pauseRun(IDLE_DEMAND_ID, true);
         verify(pipelineRunDockerOperationManager, never()).pauseRun(OK_RUN_ID, true);
@@ -286,7 +280,6 @@ public class CpuIdleRunMonitorTest {
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED), anyDouble());
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED), anyDouble());
 
-        assertNull(idleOnDemandRun.getLastIdleNotificationTime());
         verify(pipelineRunDockerOperationManager).pauseRun(IDLE_DEMAND_ID, true);
         verify(pipelineRunManager).stop(IDLE_SPOT_ID);
         verify(pipelineRunManager, never()).stop(OK_RUN_ID);
@@ -328,7 +321,6 @@ public class CpuIdleRunMonitorTest {
         verify(notificationManager).notifyIdleRuns(
                 runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_CPU_RUN), anyDouble());
         assertFalse(idleSpotRun.hasTag(IDLE_CPU_TAG));
-        assertNull(idleSpotRun.getLastIdleNotificationTime());
         verify(pipelineRunManager).stop(IDLE_DEMAND_ID);
         verify(pipelineRunManager, never()).stop(IDLE_SPOT_ID);
         verify(pipelineRunManager, never()).stop(OK_RUN_ID);
