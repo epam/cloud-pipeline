@@ -42,6 +42,7 @@ jobs:
     outputs:
       version: ${{ steps.parse.outputs.version }}
       version_full: ${{ steps.parse.outputs.version_full }}
+      version_ref: ${{ steps.parse.outputs.version_ref }}
     steps:
       - name: Parse version from dist URL
         id: parse
@@ -56,6 +57,7 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "version_full=${V[1]}.${V[2]}.${V[3]}.${V[4]}.${V[5]}" >> "$GITHUB_OUTPUT"
+          echo "version_ref=$VERSION.${V[5]:0:8}" >> "$GITHUB_OUTPUT"
 
   ##############################################################
   # Build docker images
@@ -66,6 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DOCKERS_VERSION: ${{ needs.prebuild.outputs.version }}
+      DOCKERS_VERSION_REF: ${{ needs.prebuild.outputs.version_ref }}
     strategy:
       fail-fast: true
       max-parallel: 20
@@ -279,7 +282,10 @@ jobs:
         id: tag
         run: |
           TAG_SUFFIX=$(eval echo "${{ matrix.tag }}")
-          echo "value=${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline:${TAG_SUFFIX}" >> "$GITHUB_OUTPUT"
+          TAG_REF_SUFFIX="${TAG_SUFFIX/$DOCKERS_VERSION/$DOCKERS_VERSION_REF}"
+          REGISTRY_PREFIX="${{ secrets.CP_DOCKER_DIST_SRV }}${{ secrets.CP_DOCKER_USER }}/cloud-pipeline"
+          echo "image_tag=${REGISTRY_PREFIX}:${TAG_SUFFIX}" >> "$GITHUB_OUTPUT"
+          echo "image_tag_ref=${REGISTRY_PREFIX}:${TAG_REF_SUFFIX}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push ${{ matrix.service }}
         uses: docker/build-push-action@v7
@@ -289,9 +295,11 @@ jobs:
           context: ${{ env.DOCKERS_SOURCES_PATH }}/${{ matrix.context }}
           file: ${{ matrix.dockerfile && format('{0}/{1}', env.DOCKERS_SOURCES_PATH, matrix.dockerfile) || '' }}
           push: true
-          tags: ${{ steps.tag.outputs.value }}
-          cache-from: type=registry,ref=${{ steps.tag.outputs.value }}-cache
-          cache-to: type=registry,ref=${{ steps.tag.outputs.value }}-cache,mode=max
+          tags: |
+            ${{ steps.tag.outputs.image_tag }}
+            ${{ steps.tag.outputs.image_tag_ref }}
+          cache-from: type=registry,ref=${{ steps.tag.outputs.image_tag }}-cache
+          cache-to: type=registry,ref=${{ steps.tag.outputs.image_tag }}-cache,mode=max
           build-args: |
             ${{ matrix.needs_dist_url && format('CP_API_DIST_URL={0}', inputs.cp_dist_url) || '' }}
             ${{ matrix.base_image && format('BASE_IMAGE={0}', matrix.base_image) || '' }}
