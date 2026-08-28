@@ -47,6 +47,10 @@ source "amazon-ebs" "cloud-pipeline-ami" {
   communicator         = "ssh"
   iam_instance_profile = "${var.iam_instance_profile}"
   subnet_id            = "${var.subnet_id}"
+  # If not set - a temporary security group and a temporary key pair are created by packer
+  security_group_ids   = var.security_group_ids
+  ssh_keypair_name     = "${var.ssh_keypair_name}"
+  ssh_private_key_file = "${var.ssh_private_key_file}"
   tags = {
       OS_Version = "amzn2023"
       Base_AMI_Name = "{{ .SourceAMIName }}"

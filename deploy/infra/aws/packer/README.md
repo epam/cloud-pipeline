@@ -8,6 +8,33 @@ If a source AMI is not provided explicitly - the latest Amazon Linux 2023 AMI wi
 To pin a specific base image instead - pass `--source-ami` to the wrapper or set `source_ami`
 in `$TYPE/ami.pkrvars.hcl`. Note that the AMI lookup requires `ec2:DescribeImages` permissions.
 
+## Security group and SSH key pair
+
+By default packer creates a temporary security group and a temporary key pair for the temporary
+instance and removes them afterwards. Existing ones may be used instead:
+
+| Variable | Wrapper option | Default |
+|---|---|---|
+| `security_group_ids` | `--security-group-ids sg-xxx[,sg-yyy]` | *empty*, i.e. a temporary security group is created |
+| `ssh_keypair_name` | `--ssh-keypair-name` | *empty*, i.e. a temporary key pair is created |
+| `ssh_private_key_file` | `--ssh-private-key-file` | *empty* |
+
+`ssh_keypair_name` and `ssh_private_key_file` shall be set together - the private key, which matches
+the key pair, is required to connect to the instance.
+
+The build connects to the instance via SSM Session Manager (`ssh_interface = "session_manager"`),
+so a custom security group needs **no inbound rules at all**. It shall allow outbound traffic to:
+
+* `443` for the SSM endpoints (`ssm`, `ssmmessages`, `ec2messages`) - otherwise the instance does not
+  register in SSM and the build fails waiting for the ssh connection
+* `443`/`80` for the packages, which are installed by `$TYPE/install-deps.sh`: Amazon Linux 2023 repositories,
+  `cloud-pipeline-oss-builds.s3.*` and, for the `gpu` type, the Nvidia locations
+  (see [Nvidia driver](#nvidia-driver-gpu) - an internal mirror may be used instead)
+
+The subnet shall also have a route to those destinations, i.e. a NAT/Internet gateway or the corresponding
+VPC endpoints. Additionally `ec2:DescribeInstanceStatus` permissions allow packer to close the SSM
+tunnel gracefully, instead of leaving it idle for ~20 minutes.
+
 ## Nvidia driver (gpu)
 
 | Variable | Environment variable | Default |
@@ -48,6 +75,8 @@ build.sh --region us-east-1 \
          --subnet-id subnet-xxxxxxx \
          --type cpu|gpu|all \
          [--source-ami ami-xxxxxxx] \
+         [--security-group-ids sg-xxxxxxx,sg-yyyyyyy] \
+         [--ssh-keypair-name my-key --ssh-private-key-file ~/.ssh/my-key.pem] \
          [--nvidia-driver-version 595.58.03] \
          [--nvidia-driver-url-prefix https://server/tools/nvidia/drivers/]
 ```

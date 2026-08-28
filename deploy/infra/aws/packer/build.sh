@@ -33,6 +33,21 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
+        --security-group-ids)
+        _SECURITY_GROUP_IDS="$2"
+        shift
+        shift
+        ;;
+        --ssh-keypair-name)
+        _SSH_KEYPAIR_NAME="$2"
+        shift
+        shift
+        ;;
+        --ssh-private-key-file)
+        _SSH_PRIVATE_KEY_FILE="$2"
+        shift
+        shift
+        ;;
         --type)
         _TYPE="$2"
         shift
@@ -49,7 +64,13 @@ set -- "${POSITIONAL[@]}"
 if [ -z "$_REGION" ] || \
     [ -z "$_INSTANCE_PROFILE" ] || \
     [ -z "$_SUBNET_ID" ]; then
-    echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu [--source-ami ami-xxxxxxx] [--nvidia-driver-version VERSION] [--nvidia-driver-url-prefix URL]"
+    echo "Usage: build.sh --region us-east-1 --instance-profile SSM_Role --subnet-id subnet-xxxxxxx --type cpu [--source-ami ami-xxxxxxx] [--nvidia-driver-version VERSION] [--nvidia-driver-url-prefix URL] [--security-group-ids sg-xxxxxxx[,sg-yyyyyyy]] [--ssh-keypair-name NAME --ssh-private-key-file PATH]"
+    exit 1
+fi
+
+if [[ -n "$_SSH_KEYPAIR_NAME" && -z "$_SSH_PRIVATE_KEY_FILE" ]] || \
+    [[ -n "$_SSH_PRIVATE_KEY_FILE" && -z "$_SSH_KEYPAIR_NAME" ]]; then
+    echo "[ERROR] Both --ssh-keypair-name and --ssh-private-key-file shall be specified to use an existing key pair"
     exit 1
 fi
 
@@ -76,6 +97,18 @@ for _type_to_build in ${_types_list[@]}; do
     if [ "$_SOURCE_AMI" ]; then
         sed -i '/^source_ami[[:space:]]*=/d' $_config
         echo "source_ami = \"$_SOURCE_AMI\"" >> $_config
+    fi
+
+    # If not set - a temporary security group and a temporary key pair are created by packer
+    if [ "$_SECURITY_GROUP_IDS" ]; then
+        sed -i '/^security_group_ids[[:space:]]*=/d' $_config
+        echo "security_group_ids = [$(echo "$_SECURITY_GROUP_IDS" | tr -d '[:space:]' | sed 's/[^,][^,]*/"&"/g')]" >> $_config
+    fi
+    if [ "$_SSH_KEYPAIR_NAME" ]; then
+        sed -i '/^ssh_keypair_name[[:space:]]*=/d' $_config
+        sed -i '/^ssh_private_key_file[[:space:]]*=/d' $_config
+        echo "ssh_keypair_name = \"$_SSH_KEYPAIR_NAME\"" >> $_config
+        echo "ssh_private_key_file = \"$_SSH_PRIVATE_KEY_FILE\"" >> $_config
     fi
 
     # If not set - the default Nvidia driver version and the public Nvidia locations are used
