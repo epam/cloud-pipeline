@@ -27,6 +27,26 @@ variable "subnet_id" {
   type =  string
   default = ""
 }
+variable "ssh_interface" {
+  # How packer accesses the temporary instance:
+  # - "session_manager" - a tunnel via SSM, no inbound access to the instance is required
+  # - "private_ip"      - a direct ssh connection to the private IP of the instance,
+  #                       requires an inbound access to the ssh port from the packer host
+  type =  string
+  default = "session_manager"
+
+  validation {
+    condition = contains(["session_manager", "private_ip"], var.ssh_interface)
+    error_message = "The ssh_interface value shall be either \"session_manager\" or \"private_ip\"."
+  }
+}
+variable "temporary_security_group_source_cidrs" {
+  # CIDR blocks, which are allowed to access the ssh port of the temporary security group.
+  # If empty - packer allows "0.0.0.0/0".
+  # Ignored, if "security_group_ids" is set
+  type =  list(string)
+  default = []
+}
 variable "security_group_ids" {
   # IDs (not names) of the existing security groups to assign to the temporary instance.
   # If empty - a temporary security group is created by packer

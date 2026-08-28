@@ -43,12 +43,15 @@ source "amazon-ebs" "cloud-pipeline-ami" {
   region               = "${var.region}"
   source_ami           = "${local.source_ami}"
   ssh_username         = "${var.ssh_username}"
-  ssh_interface        = "session_manager"
+  ssh_interface        = "${var.ssh_interface}"
   communicator         = "ssh"
+  # Required for the "session_manager" ssh interface only and can be empty otherwise
   iam_instance_profile = "${var.iam_instance_profile}"
+  skip_profile_validation = true
   subnet_id            = "${var.subnet_id}"
   # If not set - a temporary security group and a temporary key pair are created by packer
   security_group_ids   = var.security_group_ids
+  temporary_security_group_source_cidrs = var.temporary_security_group_source_cidrs
   ssh_keypair_name     = "${var.ssh_keypair_name}"
   ssh_private_key_file = "${var.ssh_private_key_file}"
   tags = {
