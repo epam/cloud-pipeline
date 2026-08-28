@@ -15,6 +15,15 @@
 
 set -euo pipefail
 
+# Version of the Nvidia driver and the matching Nvidia rpm packages
+NVIDIA_DRIVER_VERSION="${NVIDIA_DRIVER_VERSION:-595.58.03}"
+
+# Custom location, e.g. an internal mirror, which serves a single "$NVIDIA_DRIVER_VERSION.tgz" archive
+# with the driver runfile and the Nvidia rpm packages inside.
+# If not set - the driver and the rpm packages are downloaded from the public Nvidia locations
+NVIDIA_DRIVER_URL_PREFIX="${NVIDIA_DRIVER_URL_PREFIX:-}"
+NVIDIA_DRIVER_URL_PREFIX="${NVIDIA_DRIVER_URL_PREFIX%/}"
+
 # Disable automatic packages upgrade, if cloud-init is configured
 if [ -d "/etc/cloud/cloud.cfg.d" ]; then
 
@@ -82,19 +91,57 @@ yum install -y vulkan-devel \
                 kernel-devel \
                 kernel-modules-extra
 
-DRIVER_VERSION=595.58.03
-curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
-chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
-./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
-rm -f ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+DRIVER_VERSION="$NVIDIA_DRIVER_VERSION"
 
-# Fabric Manager for A100, H100, H200 and friends
-curl -k -L -O https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/nvidia-fabricmanager-${DRIVER_VERSION}.amzn2023.x86_64.rpm
-yum install ./nvidia-fabricmanager-${DRIVER_VERSION}.amzn2023.x86_64.rpm
-curl -k -L -O https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-yum install ./libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-curl -k -L -O https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64/nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
-yum install ./nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+if [ "$NVIDIA_DRIVER_URL_PREFIX" ]; then
+
+    # A custom location serves everything as a single archive:
+    # the driver runfile and the Nvidia rpm packages, e.g. Fabric Manager
+    NVIDIA_DIST_DIR="$(mktemp -d)"
+    curl -k -L -o "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" "$NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz"
+    tar -zxf "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz" -C "$NVIDIA_DIST_DIR"
+    rm -f "$NVIDIA_DIST_DIR/$DRIVER_VERSION.tgz"
+
+    NVIDIA_RUN_FILES=()
+    while IFS= read -r _nvidia_file; do
+        NVIDIA_RUN_FILES+=("$_nvidia_file")
+    done < <(find "$NVIDIA_DIST_DIR" -type f -name '*.run' | sort)
+    if [ "${#NVIDIA_RUN_FILES[@]}" -ne 1 ]; then
+        echo "[ERROR] Exactly one *.run driver file is expected in $NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz, but ${#NVIDIA_RUN_FILES[@]} found"
+        exit 1
+    fi
+    chmod +x "${NVIDIA_RUN_FILES[0]}"
+    "${NVIDIA_RUN_FILES[0]}" -s
+
+    NVIDIA_RPM_FILES=()
+    while IFS= read -r _nvidia_file; do
+        NVIDIA_RPM_FILES+=("$_nvidia_file")
+    done < <(find "$NVIDIA_DIST_DIR" -type f -name '*.rpm' | sort)
+    if [ "${#NVIDIA_RPM_FILES[@]}" -eq 0 ]; then
+        echo "[ERROR] At least one *.rpm package is expected in $NVIDIA_DRIVER_URL_PREFIX/$DRIVER_VERSION.tgz, but none found"
+        exit 1
+    fi
+    yum install -y "${NVIDIA_RPM_FILES[@]}"
+
+    rm -rf "$NVIDIA_DIST_DIR"
+
+else
+
+    curl -k -L -O https://us.download.nvidia.com/tesla/$DRIVER_VERSION/NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+    chmod +x ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+    ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run -s
+    rm -f ./NVIDIA-Linux-$(arch)-$DRIVER_VERSION.run
+
+    # Fabric Manager for A100, H100, H200 and friends
+    NVIDIA_PUBLIC_RPM_URL_PREFIX="https://developer.download.nvidia.com/compute/cuda/repos/amzn2023/x86_64"
+    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/nvidia-fabricmanager-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    yum install -y ./nvidia-fabricmanager-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    yum install -y ./libnvidia-cfg-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    curl -k -L -O $NVIDIA_PUBLIC_RPM_URL_PREFIX/nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+    yum install -y ./nvidia-persistenced-${DRIVER_VERSION}-1.amzn2023.x86_64.rpm
+
+fi
 
 systemctl enable nvidia-fabricmanager
 systemctl enable nvidia-persistenced
