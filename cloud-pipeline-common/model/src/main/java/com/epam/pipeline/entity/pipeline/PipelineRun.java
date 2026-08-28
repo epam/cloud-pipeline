@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -125,10 +126,11 @@ public class PipelineRun extends AbstractSecuredEntity {
     @JsonIgnore
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
-
+    private Map<String, String> tags;
 
     public PipelineRun() {
         this.terminating = false;
+        this.tags = new HashMap<>();
     }
 
     public PipelineRun(Long id, String name) {
