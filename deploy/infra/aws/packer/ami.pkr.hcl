@@ -31,14 +31,21 @@ locals {
   timestamp = formatdate("YYYYMMDDHHmmss", timestamp())
   truncated_sha = substr(data.git-commit.cwd-head.hash, 0, 8)
   source_ami = var.source_ami != "" ? var.source_ami : data.amazon-ami.amzn2023.id
-  ami_description = (var.ami_type == "gpu"
-                     ? "Cloud Pipeline ${var.ami_type} node image (Amazon Linux 2023, Nvidia driver ${var.nvidia_driver_version})"
-                     : "Cloud Pipeline ${var.ami_type} node image (Amazon Linux 2023)")
+  # Tags are assigned to the AMI, while it is being created, in contrast to the description,
+  # which is applied afterwards and requires an extra permission, and is not set at all
+  ami_tags = merge({
+                     OS_Version = "amzn2023"
+                     Base_AMI_Name = "{{ .SourceAMIName }}"
+                     Type = "${var.ami_type}"
+                     SHA = "${local.truncated_sha}"
+                   },
+                   (var.ami_type == "gpu"
+                    ? { Nvidia_Driver_Version = "${var.nvidia_driver_version}" }
+                    : {}))
 }
 
 source "amazon-ebs" "cloud-pipeline-ami" {
   ami_name             = "CloudPipeline-${var.ami_type}-${local.timestamp}"
-  ami_description      = "${local.ami_description}"
   instance_type        = "${var.instance_type}"
   region               = "${var.region}"
   source_ami           = "${local.source_ami}"
@@ -54,12 +61,7 @@ source "amazon-ebs" "cloud-pipeline-ami" {
   temporary_security_group_source_cidrs = var.temporary_security_group_source_cidrs
   ssh_keypair_name     = "${var.ssh_keypair_name}"
   ssh_private_key_file = "${var.ssh_private_key_file}"
-  tags = {
-      OS_Version = "amzn2023"
-      Base_AMI_Name = "{{ .SourceAMIName }}"
-      Type = "${var.ami_type}"
-      SHA = "${local.truncated_sha}"
-  }
+  tags = local.ami_tags
 }
 
 build {

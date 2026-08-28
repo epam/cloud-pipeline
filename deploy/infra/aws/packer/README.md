@@ -8,6 +8,13 @@ If a source AMI is not provided explicitly - the latest Amazon Linux 2023 AMI wi
 To pin a specific base image instead - pass `--source-ami` to the wrapper or set `source_ami`
 in `$TYPE/ami.pkrvars.hcl`. Note that the AMI lookup requires `ec2:DescribeImages` permissions.
 
+## Resulting AMI name and tags
+
+The AMI is named `CloudPipeline-$TYPE-$TIMESTAMP` and is tagged with `OS_Version`, `Base_AMI_Name`,
+`Type`, `SHA` and, for the `gpu` type, `Nvidia_Driver_Version`. Those are assigned by the
+`CreateImage`/`CreateTags` calls, i.e. while the AMI is being created.
+
+
 ## Connection to the temporary instance
 
 Packer provisions the image over ssh. The way the ssh connection is established is controlled
@@ -64,15 +71,6 @@ VPC endpoints.
 The identity, which runs packer, requires the usual EC2 build permissions (`RunInstances`,
 `CreateImage`, `DescribeImages`, `CreateTags`, etc.) and:
 
-* No IAM read permissions: `skip_profile_validation = true` is set, so packer does not call
-  `iam:GetInstanceProfile` to check the profile upfront. Without it the build fails immediately with
-  `Couldn't find specified instance profile: ... AccessDenied ... iam:GetInstanceProfile`,
-  even though the profile exists and is usable
-* `iam:PassRole` for the role behind `iam_instance_profile` - otherwise `RunInstances` is rejected.
-  Required for the `session_manager` interface only, as `private_ip` does not use an instance profile
-* `ec2:DescribeInstanceStatus` allows packer to close the SSM tunnel gracefully, instead of leaving
-  it idle for ~20 minutes (`session_manager` only)
-
 ## Nvidia driver (gpu)
 
 | Variable | Environment variable | Default |
@@ -82,8 +80,8 @@ The identity, which runs packer, requires the usual EC2 build permissions (`RunI
 
 Both may be set via the wrapper (`--nvidia-driver-version`, `--nvidia-driver-url-prefix`),
 via `$TYPE/ami.pkrvars.hcl` or via the corresponding environment variable, if `gpu/install-deps.sh`
-is executed directly. The driver version is recorded in the resulting AMI description, e.g.
-`Cloud Pipeline gpu node image (Amazon Linux 2023, Nvidia driver 595.58.03)`.
+is executed directly. The driver version is recorded in the `Nvidia_Driver_Version` tag of the
+resulting AMI.
 
 ### Default (public Nvidia locations)
 
