@@ -362,6 +362,11 @@ docker build    $DOCKERS_SOURCES_PATH/cp-run-cleanup-job \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_RUN_CLEANUP_JOB_DIST_NAME"
 
+# Home Storages Creator
+CP_HOME_DIRS_DIST_NAME=${CP_HOME_DIRS_DIST_NAME:-"$CP_DIST_REPO_NAME:home-dirs-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-home-dirs-creator \
+                -t "$CP_HOME_DIRS_DIST_NAME"
+docker push "$CP_HOME_DIRS_DIST_NAME"
 
 ########################
 # Base tools dockers
