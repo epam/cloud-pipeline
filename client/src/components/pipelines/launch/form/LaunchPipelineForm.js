@@ -1022,6 +1022,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.setState({pending: true});
       const hide = message.loading('Validating parameters...', 0);
       validatorUtilities.invalidateFileContentCache();
+      validatorUtilities.invalidateMetadataCache();
       await this.onCustomValidateParameters();
       hide();
       this.setState({pending: false});
