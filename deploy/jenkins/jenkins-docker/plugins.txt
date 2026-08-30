@@ -21,3 +21,4 @@ matrix-project
 conditional-buildstep
 parameterized-trigger
 throttle-concurrents
+email-ext
