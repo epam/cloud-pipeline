@@ -1,0 +1,41 @@
+.confirmation-window {
+  max-width: 40vw;
+  min-height: unset;
+}
+
+.confirmation-window-actions {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.confirmation-window-action {
+  padding: 5px 10px;
+  cursor: pointer;
+  border: 1px solid #333;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #aaa;
+  font-size: larger;
+  text-align: center;
+  min-width: 100px;
+  border-radius: 5px;
+}
+
+.confirmation-window-action:hover {
+  border: 1px solid #666;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: #ccc;
+}
+
+.confirmation-window-action.primary {
+  border: 1px solid #777;
+  background-color: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
+.confirmation-window-action.primary:hover {
+  border: 1px solid white;
+  background-color: rgba(255, 255, 255, 0.75);
+  color: black;
+}
