@@ -24,14 +24,16 @@ Deployment = NamedTuple('Deployment', [('name', str),
 Pod = NamedTuple('Pod', [('name', str),
                          ('namespace', str),
                          ('node_name', str),
-                         ('reserved', bool)])
+                         ('reserved', bool),
+                         ('state', str)])
 Instance = NamedTuple('Instance', [('name', str),
                                    ('persistence', Persistence)])
 Node = NamedTuple('Node',
                   [('name', str),
                    ('persistence', Persistence),
                    ('reserved', bool),
-                   ('used', bool)])
+                   ('used', bool),
+                   ('allocatable_pods', int)])
 Condition = Enum('Condition', 'MEMORY_PRESSURE, DISK_PRESSURE, PID_PRESSURE, READY')
 
 
