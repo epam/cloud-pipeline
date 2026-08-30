@@ -940,7 +940,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     name = self.get_file_name(version, prefix, recursive)
                     restore_status = None
                     if version['StorageClass'] != 'STANDARD' and version['StorageClass'] != 'INTELLIGENT_TIERING':
-                        restore_status, versions_restored = lifecycle_manager.find_lifecycle_status(name)
+                        restore_status, versions_restored = lifecycle_manager.find_lifecycle_status(version['Key'])
                         version_not_restored = restore_status and not version['IsLatest'] and not versions_restored
                         if not show_archive:
                             if not restore_status or version_not_restored:
@@ -1000,7 +1000,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     name = self.get_file_name(file, prefix, recursive)
                     lifecycle_status = None
                     if file['StorageClass'] != 'STANDARD' and file['StorageClass'] != 'INTELLIGENT_TIERING':
-                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
+                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(file['Key'])
                         if not show_archive and not lifecycle_status:
                             continue
                     if not permissions_manager.is_file_allowed(file.get('Key')):
@@ -1035,7 +1035,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     name = self.get_file_name(file, prefix, recursive)
                     lifecycle_status = None
                     if file['StorageClass'] != 'STANDARD' and file['StorageClass'] != 'INTELLIGENT_TIERING':
-                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
+                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(file['Key'])
                         if not show_archive and not lifecycle_status:
                             continue
                     if not permissions_manager.is_file_allowed(file.get('Key')):
