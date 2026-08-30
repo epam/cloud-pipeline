@@ -17,8 +17,9 @@ from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
 from sls.pipelineapi.model.restore_action_model import StorageLifecycleRestoreAction
 
-
 class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
+
+    STORAGE_LIFECYCLE_TYPE = "RESTORE"
 
     DATASTORAGE_RESTORE_ACTION_NOTIFICATION_TYPE = "DATASTORAGE_LIFECYCLE_RESTORE_ACTION"
 
@@ -35,6 +36,9 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
     TERMINAL_STATUSES = [SUCCEEDED_STATUS, CANCELLED_STATUS, FAILED_STATUS]
 
     PATH_TYPE_FOLDER = "FOLDER"
+
+    def _load_storages(self):
+        return self.pipeline_api_client.load_storages_with_lifecycle(self.STORAGE_LIFECYCLE_TYPE)
 
     def _sync_storage(self, storage):
         ongoing_actions = self.pipeline_api_client.filter_restore_actions(
