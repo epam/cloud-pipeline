@@ -1,0 +1,12 @@
+{
+    "short_description": "Jupyter Notebook with CPU-only support to create documents that contain live code, equations, visualizations and narrative text.",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "50",
+    "default_command": "/start.sh",
+    "endpoints": [
+        "{ \"name\": \"Jupyter-Notebook\", \"nginx\": { \"port\": \"8888\" }, \"isDefault\": true }"
+    ],
+    "metadata": {
+        "app_type": "${CP_TOOL_LAUNCHER_EXTERNAL_HOST}"
+    }
+}
