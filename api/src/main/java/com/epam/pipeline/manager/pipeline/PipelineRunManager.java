@@ -1446,6 +1446,13 @@ public class PipelineRunManager {
      * @return Updated pipeline run.
      */
     @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateRunPrice(final Long runId, final RunInstance instance) {
+        final PipelineRun run = loadPipelineRun(runId, false);
+        setRunPrice(instance, run);
+        return updateRunInfo(run);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final List<InstanceDisk> disks) {
         final PipelineRun run = loadPipelineRun(runId, false);
         final RunInstance instance = run.getInstance();
