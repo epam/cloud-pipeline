@@ -928,8 +928,6 @@ read -r -d '' system_idle_monitoring_config <<-EOF
     {
         "type": "ABSOLUTE",
         "enabled": ${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ENABLED:-true},
-        "thresholdPercent": null,
-        "gracePeriodMinutes": null,
         "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ACTION_TIMEOUT_MINUTES:-480},
         "action": "${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ACTION:-NOTIFY}"
     }
