@@ -338,6 +338,7 @@ public class UserManager implements SecuredEntityManager {
         userDao.deleteUserRoles(id);
         userNotificationManager.deleteByUserId(id);
         cloudProfileCredentialsManager.assignProfiles(id, true, Collections.emptySet(), null);
+        platformUsageCreditsUserBalanceService.deleteByUserId(id);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;
