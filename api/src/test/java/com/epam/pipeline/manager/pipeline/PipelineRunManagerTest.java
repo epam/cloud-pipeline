@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
@@ -175,6 +176,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
         when(instanceOfferManager
                 .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
+        when(instanceOfferManager.findOffer(anyString(), anyLong())).thenReturn(Optional.empty());
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any(), anyBoolean())).thenReturn(true);
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
                 .thenReturn(price);
@@ -318,6 +320,51 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
 
         verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(false));
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test(expected = IllegalArgumentException.class)
+    public void testApplyRunInstanceConfigRejectsGpuMainTypeForCpuRun() {
+        final InstanceOffer cpuOffer = InstanceOffer.builder().gpu(0).build();
+        final InstanceOffer gpuOffer = InstanceOffer.builder().gpu(1).build();
+        when(instanceOfferManager.findOffer(eq(INSTANCE_TYPE), eq(REGION_ID))).thenReturn(Optional.of(cpuOffer));
+        when(instanceOfferManager.findOffer(eq("p3.2xlarge"), eq(REGION_ID))).thenReturn(Optional.of(gpuOffer));
+        when(instanceOfferManager.isToolInstanceAllowed(eq("p3.2xlarge"), any(), eq(REGION_ID), anyBoolean()))
+                .thenReturn(true);
+        final PipelineRun run = savedToolRun();
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setInstanceType("p3.2xlarge");
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test(expected = IllegalArgumentException.class)
+    public void testApplyRunInstanceConfigRejectsGpuFallbackTypeForCpuRun() {
+        final InstanceOffer cpuOffer = InstanceOffer.builder().gpu(0).build();
+        final InstanceOffer gpuOffer = InstanceOffer.builder().gpu(1).build();
+        when(instanceOfferManager.findOffer(eq(INSTANCE_TYPE), eq(REGION_ID))).thenReturn(Optional.of(cpuOffer));
+        when(instanceOfferManager.findOffer(eq("p3.2xlarge"), eq(REGION_ID))).thenReturn(Optional.of(gpuOffer));
+        when(instanceOfferManager.isToolInstanceAllowed(eq("p3.2xlarge"), any(), eq(REGION_ID), anyBoolean()))
+                .thenReturn(true);
+        final PipelineRun run = savedToolRun();
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setFallbackInstanceTypes(Arrays.asList(INSTANCE_TYPE, "p3.2xlarge"));
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
+    }
+
+    @WithMockUser(roles = "ADMIN")
+    @Test
+    public void testApplyRunInstanceConfigAllowsCpuTypesForCpuRun() {
+        final InstanceOffer cpuOffer = InstanceOffer.builder().gpu(0).build();
+        when(instanceOfferManager.findOffer(anyString(), eq(REGION_ID))).thenReturn(Optional.of(cpuOffer));
+        final PipelineRun run = savedToolRun();
+
+        final RunInstanceConfigVO vo = new RunInstanceConfigVO();
+        vo.setInstanceType("c5.xlarge");
+        vo.setFallbackInstanceTypes(Arrays.asList("m5.large", "r5.xlarge"));
+        pipelineRunManager.applyRunInstanceConfig(run.getId(), vo);
     }
 
     private PipelineRun savedToolRun() {
