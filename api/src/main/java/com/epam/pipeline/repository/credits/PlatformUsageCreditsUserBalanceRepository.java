@@ -59,6 +59,9 @@ public interface PlatformUsageCreditsUserBalanceRepository
 
     Optional<PlatformUsageCreditsUserBalanceEntity> findByUserId(Long userId);
 
+    @Modifying
+    void deleteByUserId(Long userId);
+
     /**
      * Atomically upserts the credits balance for a single user and returns the result.
      *
