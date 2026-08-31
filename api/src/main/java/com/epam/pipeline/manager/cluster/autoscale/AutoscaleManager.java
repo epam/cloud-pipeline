@@ -548,6 +548,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         );
                         //save instance ID and IP
                         pipelineRunManager.updateRunInstance(longId, startedInstance);
+                        if (!initialInstanceType.equals(nodeType)) {
+                            pipelineRunManager.updateRunPrice(longId, startedInstance);
+                        }
                         pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                         autoscalerService.registerDisks(longId, startedInstance);
                         removeNodeUpTask(longId);
