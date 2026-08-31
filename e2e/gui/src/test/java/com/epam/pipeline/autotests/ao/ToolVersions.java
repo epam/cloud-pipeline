@@ -375,9 +375,9 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     }
 
     public ToolVersions addToWhiteList(final String version) {
-        $(toolVersion(version)).find(button("Add to white list")).click();
-        $(toolVersion(version)).find(button("Remove from white list")).should(visible);
-        $(toolVersion(version)).find(button("Add to white list")).should(hidden);
+        $(toolVersion(version)).find(button("Configure access")).click();
+        $(byClassName("rc-dropdown-menu")).$(withText("Add to white list")).click();
+        $(toolVersion(version)).find(button("White-listed")).should(visible);
         return this;
     }
 

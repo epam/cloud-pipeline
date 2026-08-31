@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.openqa.selenium.Cookie;
+import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -69,7 +70,6 @@ public abstract class AbstractBfxPipelineTest implements ITest {
         System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
         ChromeOptions options = new ChromeOptions();
         options.setBinary("/usr/local/bin/chrome");
-
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
