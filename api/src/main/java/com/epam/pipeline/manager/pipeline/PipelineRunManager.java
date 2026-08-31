@@ -708,6 +708,7 @@ public class PipelineRunManager {
         Assert.notNull(vo, "RunInstanceConfigVO must not be null");
         final PipelineRun pipelineRun = loadPipelineRun(runId);
         final RunInstance instance = pipelineRun.getInstance();
+        validateCPURunIsNotUpgradedToGPU(instance, vo);
         if (StringUtils.isNotEmpty(vo.getInstanceType())) {
             instance.setNodeType(vo.getInstanceType());
         }
@@ -724,6 +725,40 @@ public class PipelineRunManager {
                 true
         );
         updateRunInstance(pipelineRun.getId(), instance);
+    }
+
+    private void validateCPURunIsNotUpgradedToGPU(final RunInstance instance, final RunInstanceConfigVO vo) {
+        final String originalInstanceType = instance.getNodeType();
+        if (isGpuInstance(originalInstanceType, instance.getCloudRegionId())) {
+            return;
+        }
+
+        final List<String> requestedTypes = new ArrayList<>();
+        if (StringUtils.isNotEmpty(vo.getInstanceType())) {
+            requestedTypes.add(vo.getInstanceType());
+        }
+
+        if (CollectionUtils.isNotEmpty(vo.getFallbackInstanceTypes())) {
+            requestedTypes.addAll(vo.getFallbackInstanceTypes());
+        }
+
+        final String gpuType = requestedTypes.stream()
+                .filter(type -> isGpuInstance(type, instance.getCloudRegionId()))
+                .findFirst().orElse(null);
+
+        Assert.isNull(
+                gpuType,
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_GPU_INSTANCE_NOT_ALLOWED_FOR_CPU_RUN,
+                        originalInstanceType, gpuType
+                )
+        );
+    }
+
+    private boolean isGpuInstance(final String instanceType, final Long regionId) {
+        return instanceOfferManager.findOffer(instanceType, regionId)
+                .map(offer -> offer.getGpu() > 0)
+                .orElse(false);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
