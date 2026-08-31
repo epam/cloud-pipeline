@@ -19,7 +19,6 @@ package com.epam.pipeline.dao.metadata;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.metadata.Facet;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.LogicalSearchOperator;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
@@ -651,10 +650,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             MetadataClass metadataClass = new MetadataClass();
             metadataClass.setId(rs.getLong(CLASS_ID.name()));
             metadataClass.setName(rs.getString(CLASS_NAME.name()));
-            String externalClassName = rs.getString(EXTERNAL_CLASS_NAME.name());
-            if (!rs.wasNull()) {
-                metadataClass.setFireCloudClassName(FireCloudClass.valueOf(externalClassName));
-            }
             return metadataClass;
         }
     }

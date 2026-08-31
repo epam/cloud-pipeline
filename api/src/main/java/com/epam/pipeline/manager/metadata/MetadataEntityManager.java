@@ -25,7 +25,6 @@ import com.epam.pipeline.dao.metadata.MetadataClassDao;
 import com.epam.pipeline.dao.metadata.MetadataEntityDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.Facet;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -36,7 +35,6 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.PathAnalyzer;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
-import com.epam.pipeline.manager.metadata.parser.MetadataEntityConverter;
 import com.epam.pipeline.manager.metadata.parser.MetadataParsingResult;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
@@ -139,12 +137,11 @@ public class MetadataEntityManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public MetadataClass updateExternalClassName(Long id, FireCloudClass externalClassName) {
+    public MetadataClass updateExternalClassName(Long id) {
         Assert.notNull(id, messageHelper.getMessage(MessageConstants.ERROR_INVALID_METADATA_ENTITY_CLASS_ID, id));
         MetadataClass metadataClass = loadClass(id);
         Assert.notNull(metadataClass,
                 messageHelper.getMessage(MessageConstants.ERROR_METADATA_ENTITY_CLASS_NOT_FOUND, id));
-        metadataClass.setFireCloudClassName(externalClassName);
         metadataClassDao.updateMetadataClass(metadataClass);
         return metadataClass;
     }
@@ -347,21 +344,6 @@ public class MetadataEntityManager implements SecuredEntityManager {
             return Collections.emptySet();
         }
         return metadataEntityDao.loadByIds(ids);
-    }
-
-    /**
-     * Converts list of list of {@link MetadataEntity}s to map that represents entities data to upload to the FireCloud
-     * workspace.
-     * @param ids list of {@link MetadataEntity}s to be converted
-     * @return entities data content represented with the following form:
-     *         key - file name to be uploaded
-     *         value - data content that ready for upload
-     */
-    public Map<String, String> loadEntitiesData(Set<Long> ids) {
-        Set<MetadataEntity> metadataEntities = loadEntitiesByIds(ids);
-        Long folderId = getCommonFolderForEntities(metadataEntities);
-        List<MetadataEntity> entities = loadReferencesForEntities(new ArrayList<>(ids), folderId);
-        return MetadataEntityConverter.convert(entities);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

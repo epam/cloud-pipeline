@@ -17,7 +17,6 @@
 package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.dao.DaoHelper;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -90,8 +89,7 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
             params.addValue(CLASS_ID.name(), metadataClass.getId());
             params.addValue(CLASS_NAME.name(), metadataClass.getName());
-            params.addValue(EXTERNAL_CLASS_NAME.name(), metadataClass.getFireCloudClassName() == null ? null
-                    : metadataClass.getFireCloudClassName().name());
+            params.addValue(EXTERNAL_CLASS_NAME.name(), null);
             return params;
         }
 
@@ -100,10 +98,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
                 MetadataClass metadataClass = new MetadataClass();
                 metadataClass.setId(rs.getLong(CLASS_ID.name()));
                 metadataClass.setName(rs.getString(CLASS_NAME.name()));
-                String externalClassName = rs.getString(EXTERNAL_CLASS_NAME.name());
-                if (!rs.wasNull()) {
-                    metadataClass.setFireCloudClassName(FireCloudClass.valueOf(externalClassName));
-                }
                 return metadataClass;
             };
         }

@@ -92,11 +92,9 @@ import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.execution.CommandBuilder;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.log.storage.StorageRequestManager;
@@ -343,9 +341,6 @@ public class AclTestBeans {
     protected DtsRegistryManager mockDtsRegistryManager;
 
     @MockBean
-    protected FirecloudManager mockFirecloudManager;
-
-    @MockBean
     protected MetadataUploadManager mockMetadataUploadManager;
 
     @MockBean
@@ -428,9 +423,6 @@ public class AclTestBeans {
 
     @MockBean
     protected CommandBuilder mockCommandBuilder;
-
-    @MockBean
-    protected CredentialsManager mockCredentialsManager;
 
     @MockBean
     protected RunStatusDao mockRunStatusDao;

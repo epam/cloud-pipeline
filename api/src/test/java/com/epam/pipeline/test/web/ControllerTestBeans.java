@@ -66,8 +66,6 @@ import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.acl.notification.NotificationApiService;
 import com.epam.pipeline.acl.notification.NotificationSettingsApiService;
@@ -123,12 +121,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected EntityApiService entityApiService;
-
-    @MockBean
-    protected FirecloudApiService firecloudApiService;
-
-    @MockBean
-    protected CredentialsManager credentialsManager;
 
     @MockBean
     protected IssueApiService issueApiService;

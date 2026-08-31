@@ -51,8 +51,6 @@ import com.epam.pipeline.manager.cluster.pool.NodePoolMonitoringService;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.dts.DtsMonitoringManager;
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.BillingQuotasScheduler;
@@ -133,10 +131,6 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private ToolScanScheduler toolScanScheduler;
     @MockBean
     private DtsMonitoringManager dtsMonitoringManager;
-    @MockBean
-    private FirecloudApiService firecloudApiService;
-    @MockBean
-    private FirecloudManager firecloudManager;
     @MockBean
     private RunScheduleMonitoringManager runScheduleMonitoringManager;
     @MockBean

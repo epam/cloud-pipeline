@@ -206,7 +206,7 @@ public class ServerlessConfigurationManager {
         List<PipelineRun> activeRunsForConfiguration = loadActiveRuns(configurationId);
         if (CollectionUtils.isEmpty(activeRunsForConfiguration)) {
             log.debug("No active runs found. A new run will be launched");
-            activeRunsForConfiguration = configurationRunner.runConfiguration(null,
+            activeRunsForConfiguration = configurationRunner.runConfiguration(
                     runConfigurationMapper.toRunConfigurationWithEntitiesVO(configuration), null);
         }
         return activeRunsForConfiguration.stream()

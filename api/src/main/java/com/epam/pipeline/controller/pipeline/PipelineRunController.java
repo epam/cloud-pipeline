@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.controller.pipeline;
 
-import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
@@ -77,7 +76,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletResponse;
@@ -123,10 +121,9 @@ public class PipelineRunController extends AbstractRestController {
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<PipelineRun>> runPipeline(
-            @RequestHeader(value = Constants.FIRECLOUD_TOKEN_HEADER, required = false) String refreshToken,
             @RequestBody RunConfigurationWithEntitiesVO configuration,
             @RequestParam(required = false) String expansionExpression) {
-        return Result.success(runApiService.runConfiguration(refreshToken, configuration, expansionExpression));
+        return Result.success(runApiService.runConfiguration(configuration, expansionExpression));
     }
 
     @PostMapping(value = "/run/{runId}/log")
