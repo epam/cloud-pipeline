@@ -124,6 +124,22 @@ public class PlatformUsageCreditsUserBalanceRepositoryTest extends AbstractJpaTe
     }
 
     @Test
+    public void deleteByUserIdShouldBeVisibleToJdbc() {
+        repository.save(entity(user1.getId(), VALUE_HIGH));
+        entityManager.flush();
+
+        repository.deleteByUserId(user1.getId());
+
+        // The native-query delete must be visible within the same transaction to the JDBC DAO.
+        // Without @Query(nativeQuery=true) the JPA delete is deferred and the FK
+        // constraint on pipeline.user would cause a violation here.
+        userDao.deleteUserRoles(user1.getId());
+        userDao.deleteUser(user1.getId());
+
+        assertThat(repository.findByUserId(user1.getId()).isPresent(), is(false));
+    }
+
+    @Test
     public void shouldFilterByUserIds() {
         repository.save(entity(user1.getId(), VALUE_HIGH));
         repository.save(entity(user2.getId(), VALUE_LOW));

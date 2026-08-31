@@ -1214,7 +1214,7 @@ public class SystemPreferences {
                         ),
                         new IdleMonitoringConfig(
                                 IdleMonitoringType.GPU,
-                                true, 0.0, 30, 30, IdleRunAction.NOTIFY
+                                true, null, 30, 30, IdleRunAction.NOTIFY
                         ),
                         new IdleMonitoringConfig(
                                 IdleMonitoringType.ABSOLUTE,
