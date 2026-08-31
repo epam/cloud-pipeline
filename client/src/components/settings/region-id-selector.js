@@ -12,51 +12,79 @@ class RegionIdSelector extends React.Component {
       value,
       onChange,
       regions = [],
-      provider
+      provider,
+      internalId
     } = this.props;
+    const internalIdComponent = internalId === undefined ? undefined : (
+      <span className="cp-text-not-important" style={{marginLeft: 5}}>
+        Internal ID {internalId}
+      </span>
+    );
     if (!/^local$/i.test(provider) && regions.length > 0) {
       return (
-        <Select
+        <div
           className={className}
-          size="small"
-          showSearch
-          value={value}
-          onChange={onChange}
-          allowClear={false}
-          placeholder="Region ID"
-          optionFilterProp="children"
-          style={style}
-          filterOption={
-            (input, option) =>
-              option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-          disabled={disabled}>
+          style={{
+            ...(style || {}),
+            display: 'inline-flex',
+            alignItems: 'center'
+          }}
+        >
+          <Select
+            style={{flex: 1}}
+            size="small"
+            showSearch
+            value={value}
+            onChange={onChange}
+            allowClear={false}
+            placeholder="Region ID"
+            optionFilterProp="children"
+            filterOption={
+              (input, option) =>
+                option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+            disabled={disabled}>
+            {
+              (regions || []).map(r => {
+                return (
+                  <Select.Option key={r} value={r} title={r}>
+                    <AWSRegionTag
+                      showProvider={false}
+                      provider={provider}
+                      regionUID={r}
+                      style={{marginRight: 5}}
+                    />{r}
+                  </Select.Option>
+                );
+              })
+            }
+          </Select>
           {
-            (regions || []).map(r => {
-              return (
-                <Select.Option key={r} value={r} title={r}>
-                  <AWSRegionTag
-                    showProvider={false}
-                    provider={provider}
-                    regionUID={r}
-                    style={{marginRight: 5}}
-                  />{r}
-                </Select.Option>
-              );
-            })
+            internalIdComponent
           }
-        </Select>
+        </div>
       );
     }
     return (
-      <Input
-        size="small"
-        placeholder="Region ID"
-        disabled={disabled}
+      <div
         className={className}
-        style={style}
-        value={value}
-        onChange={onChange}
-      />
+        style={{
+          ...(style || {}),
+          display: 'inline-flex',
+          alignItems: 'center'
+        }}
+      >
+        <Input
+          size="small"
+          placeholder="Region ID"
+          disabled={disabled}
+          value={value}
+          onChange={onChange}
+          style={{flex: 1}}
+        />
+        {
+          internalIdComponent
+        }
+      </div>
     );
   }
 }
@@ -71,7 +99,8 @@ RegionIdSelector.propTypes = {
     PropTypes.array,
     PropTypes.object
   ]),
-  provider: PropTypes.string
+  provider: PropTypes.string,
+  internalId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 
 export default RegionIdSelector;

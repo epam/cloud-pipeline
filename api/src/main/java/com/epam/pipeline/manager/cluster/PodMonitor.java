@@ -20,28 +20,22 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
-import com.epam.pipeline.entity.notification.NotificationSettings;
-import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
-import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
-import com.epam.pipeline.utils.RunDurationUtils;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -63,12 +57,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -86,7 +76,6 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PodMonitor extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PodMonitor.class);
-    private static final String TRUE_VALUE_STRING = "true";
 
     private final PodMonitorCore core;
 
@@ -107,7 +96,6 @@ public class PodMonitor extends AbstractSchedulingManager {
     @Component
     private static class PodMonitorCore {
         private static final String PIPELINE_ID_LABEL = "pipeline_id";
-        private static final String CLUSTER_ID_LABEL = "cluster_id";
         private static final int DELETE_RETRY_ATTEMPTS = 5;
         private static final long DELETE_RETRY_DELAY = 5L;
         private static final int POD_RELEASE_TIMEOUT = 3000;
@@ -118,10 +106,8 @@ public class PodMonitor extends AbstractSchedulingManager {
         private final String kubeNamespace;
         private final RunLogManager runLogManager;
         private final PipelineRunManager pipelineRunManager;
-        private final RunStatusManager runStatusManager;
         private final MessageHelper messageHelper;
         private final KubernetesManager kubernetesManager;
-        private final NotificationSettingsManager notificationSettingsManager;
         private final NotificationManager notificationManager;
         private final ToolManager toolManager;
         private final RestartRunManager restartRunManager;
@@ -132,23 +118,19 @@ public class PodMonitor extends AbstractSchedulingManager {
         @Autowired
         PodMonitorCore(final RunLogManager runLogManager,
                        final PipelineRunManager pipelineRunManager,
-                       final RunStatusManager runStatusManager,
                        final MessageHelper messageHelper,
                        final KubernetesManager kubernetesManager,
-                       final NotificationSettingsManager notificationSettingsManager,
                        final NotificationManager notificationManager,
                        final ToolManager toolManager,
                        final RestartRunManager restartRunManager,
                        final CloudFacade cloudFacade,
                        final PreferenceManager preferenceManager,
                        final List<RunCleaner> cleaners,
-                       final @Value("${kube.namespace}") String kubeNamespace) {
+                       final @Value("${kube.namespace:default}") String kubeNamespace) {
             this.runLogManager = runLogManager;
             this.pipelineRunManager = pipelineRunManager;
-            this.runStatusManager = runStatusManager;
             this.messageHelper = messageHelper;
             this.kubernetesManager = kubernetesManager;
-            this.notificationSettingsManager = notificationSettingsManager;
             this.notificationManager = notificationManager;
             this.toolManager = toolManager;
             this.restartRunManager = restartRunManager;
@@ -191,14 +173,13 @@ public class PodMonitor extends AbstractSchedulingManager {
                     } else {
                         PodStatus status = pod.getStatus();
                         // update pod IP, if it is not set yet
-                        if (StringUtils.isEmpty(run.getPodIP())) {
-                            if (StringUtils.isEmpty(status.getPodIP())) {
-                                notifyIfExceedsThreshold(run, pod, NotificationType.LONG_INIT);
-                            } else {
-                                run.setPodIP(status.getPodIP());
-                                pipelineRunManager.updatePodIP(run);
-                            }
+                        if (StringUtils.isEmpty(run.getPodIP()) && !StringUtils.isEmpty(status.getPodIP())) {
+                            run.setPodIP(status.getPodIP());
+                            pipelineRunManager.updatePodIP(run);
                         }
+
+                        // update node name, if it is not set yet
+                        addNodeNameToRunIfNone(run.getInstance(), pod, status, run.getId());
 
                         if (status.getPhase().equals(KubernetesConstants.POD_SUCCEEDED_PHASE)) {
                             run.setStatus(TaskStatus.SUCCESS);
@@ -214,7 +195,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                                         status.getReason().equals(KubernetesConstants.NODE_LOST))) {
                             setRunFinished(run, pod, client);
                         } else {
-                            notifyIfExceedsThreshold(run, pod, NotificationType.LONG_RUNNING);
+                            // Pod is still running — skip status persistence, nothing has changed.
                             continue;
                         }
                     }
@@ -261,87 +242,6 @@ public class PodMonitor extends AbstractSchedulingManager {
          */
         private void killAsync(PipelineRun run) {
             queueToKill.add(run);
-        }
-
-        private void notifyIfExceedsThreshold(PipelineRun run, Pod pod, NotificationType type) {
-            NotificationSettings settings = notificationSettingsManager.load(type);
-            if (settings == null || !settings.isEnabled()) {
-                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_SETTINGS_NOT_FOUND, type));
-                return;
-            }
-
-            // get the diff measured in seconds
-            long threshold = settings.getThreshold();
-            long resendDelay = settings.getResendDelay();
-
-            boolean isClusterNode = pod.getMetadata() != null && pod.getMetadata().getLabels() != null &&
-                    pod.getMetadata().getLabels().containsKey(CLUSTER_ID_LABEL);
-
-            if (threshold > 0 && !isClusterNode) {
-                long duration = runningDurationOf(run);
-                if (duration >= threshold) {
-                    Date lastNotificationDate = run.getLastNotificationTime();
-                    if (checkNeedOfNotificationResend(lastNotificationDate, resendDelay)) {
-                        notificationManager.notifyLongRunningTask(run, duration, type, settings);
-
-                        run.setLastNotificationTime(DateUtils.now());
-                        pipelineRunManager.updatePipelineRunLastNotification(run);
-                        tagRunWithLongOperation(run, type);
-                    }
-                }
-            }
-        }
-
-        private void tagRunWithLongOperation(final PipelineRun run, final NotificationType notificationTypeTag) {
-            final String tag = notificationTypeTag.name();
-            final String timestampTag = String.format(
-                    "%s%s", tag, preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)
-            );
-            if (run.addTag(tag, TRUE_VALUE_STRING)) {
-                run.addTag(timestampTag, DateUtils.nowUTCStr());
-                LOGGER.debug(String.format("Successfully set tag %d for run: %s.", run.getId(), tag));
-                pipelineRunManager.updateRunsTags(Collections.singletonList(run));
-            } else {
-                LOGGER.debug(String.format("Run: %d already has %s tag.", run.getId(), tag));
-            }
-        }
-
-        private long runningDurationOf(final PipelineRun run) {
-            return Optional.of(run)
-                    .map(PipelineRun::getId)
-                    .map(runStatusManager::loadRunStatus)
-                    .filter(CollectionUtils::isNotEmpty)
-                    .map(this::toSortedStatuses)
-                    .map(this::toRunningDuration)
-                    .filter(duration -> duration > 0)
-                    .orElseGet(() -> overallDurationOf(run));
-        }
-
-        private long overallDurationOf(final PipelineRun run) {
-            return RunDurationUtils.getOverallDuration(run).getSeconds();
-        }
-
-        private List<RunStatus> toSortedStatuses(final List<RunStatus> statuses) {
-            return statuses.stream()
-                    .sorted(Comparator.comparing(RunStatus::getTimestamp))
-                    .collect(Collectors.toList());
-        }
-
-        private long toRunningDuration(final List<RunStatus> statuses) {
-            final RunStatus last = statuses.get(statuses.size() - 1);
-            return isRunning(last) ? secondsBetween(last.getTimestamp(), DateUtils.nowUTC()) : 0;
-        }
-
-        private boolean isRunning(final RunStatus status) {
-            return TaskStatus.RUNNING.equals(status.getStatus());
-        }
-
-        private long secondsBetween(final RunStatus first, final RunStatus second) {
-            return secondsBetween(first.getTimestamp(), second.getTimestamp());
-        }
-
-        private long secondsBetween(final LocalDateTime first, final LocalDateTime second) {
-            return Duration.between(first, second).getSeconds();
         }
 
         private boolean checkChildrenPods(PipelineRun run, KubernetesClient client, Pod parent) {
@@ -660,13 +560,6 @@ public class PodMonitor extends AbstractSchedulingManager {
                     .list().getItems();
         }
 
-        private boolean checkNeedOfNotificationResend(Date lastNotificationDate, long resendDelay) {
-            return lastNotificationDate == null
-                    || resendDelay != 0
-                    && Duration.between(lastNotificationDate.toInstant(),
-                    DateUtils.now().toInstant()).abs().getSeconds() >= resendDelay;
-        }
-
         private boolean shouldRerunBatchRun(PipelineRun run, String stateReason) {
             boolean isSpot = run.getInstance().getSpot() != null && run.getInstance().getSpot();
             return run.getStatus() != TaskStatus.STOPPED && isSpot && isParentBatchJob(run) &&
@@ -703,6 +596,17 @@ public class PodMonitor extends AbstractSchedulingManager {
                 return false;
             }
             return true;
+        }
+
+        private void addNodeNameToRunIfNone(final RunInstance runInstance, final Pod pod, final PodStatus status,
+                                            final Long runId) {
+            if (Objects.nonNull(runInstance) && StringUtils.isEmpty(runInstance.getNodeName())) {
+                final String nodeName = pod.getSpec().getNodeName();
+                runInstance.setNodeName(nodeName);
+                runInstance.setNodeIP(Optional.ofNullable(runInstance.getNodeIP()).orElse(status.getHostIP()));
+                runInstance.setNodeId(Optional.ofNullable(runInstance.getNodeId()).orElse(nodeName));
+                pipelineRunManager.updateRunInstance(runId, runInstance);
+            }
         }
     }
 }

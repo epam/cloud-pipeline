@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,11 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
-import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
-import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
-import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
@@ -33,10 +28,14 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.LABEL;
+import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
@@ -44,6 +43,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.openqa.selenium.By.className;
 
 public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
@@ -74,15 +74,14 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     public static Condition master() {
         return new Condition("master node") {
             @Override
-            public boolean apply(final WebElement element) {
-                return contains(nodeLabel("MASTER"))
-                        .or(contains(nodeLabel("EDGE")))
-                        .or(contains(nodeLabel("CP-SEARCH-ELK")))
-                        .or(contains(nodeLabel("HEAPSTER")))
-                        .or(contains(nodeLabel("DNS")))
-                        .or(contains(nodeLabel("TMP")))
-                        .or(contains(nodeLabel("CP-API-SRV")))
-                        .test(element);
+            public boolean apply(Driver driver, final WebElement element) {
+                return $(element).has(or("master node", contains(nodeLabel("MASTER")),
+                        contains(nodeLabel("EDGE")),
+                        contains(nodeLabel("CP-SEARCH-ELK")),
+                        contains(nodeLabel("HEAPSTER")),
+                        contains(nodeLabel("DNS")),
+                        contains(nodeLabel("TMP")),
+                        contains(nodeLabel("CP-API-SRV"))));
             }
         };
     }
@@ -90,9 +89,8 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     public static Condition windows() {
         return new Condition("windows node") {
             @Override
-            public boolean apply(final WebElement element) {
-                return contains(nodeLabel("WINDOWS"))
-                        .test(element);
+            public boolean apply(Driver driver, final WebElement element) {
+                return $(element).has(contains(nodeLabel("WINDOWS")));
             }
         };
     }
@@ -150,7 +148,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public void assertNodesTableIsEmpty() {
-        $("tbody").findAll("tr").shouldHaveSize(0);
+        $("tbody").findAll("tr").shouldHave(size(0));
     }
 
     public ClusterMenuAO filerBy(HeaderColumn header, String ip) {
@@ -239,7 +237,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByIncrease(HeaderColumn column) {
         SelenideElement createdHeaderButtonUp = $$("th").findBy(cssClass(column.cssClass))
-                .find(".ant-table-column-sorter-up").waitUntil(exist, DEFAULT_TIMEOUT);
+                .find(".ant-table-column-sorter-up").shouldBe(exist);
         if (createdHeaderButtonUp.has(cssClass("off"))) {
             createdHeaderButtonUp.click();
         }
@@ -249,7 +247,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByDecrease(HeaderColumn column) {
         SelenideElement createdHeaderButtonDown = $$("th").findBy(cssClass(column.cssClass))
-                .find(".ant-table-column-sorter-down").waitUntil(exist, DEFAULT_TIMEOUT);
+                .find(".ant-table-column-sorter-down").shouldBe(exist);
         if (createdHeaderButtonDown.has(cssClass("off"))) {
             createdHeaderButtonDown.click();
         }
@@ -291,7 +289,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void validateSortedBy(HeaderColumn column, Comparator<String> comparator) {
-        $(className("ant-table-placeholder")).waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $(className("ant-table-placeholder")).shouldBe(not(exist));
         ElementsCollection dates = column == HeaderColumn.LABEL
                 ? $$("span").filterBy(id("label-RUNID"))
                 : $$("td").filterBy(cssClass(column.cssClass));
@@ -309,7 +307,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public HotNodePoolsAO switchToHotNodePool() {
         context().find(byText("Hot Node Pools")).parent()
-                .waitUntil(exist, C.DEFAULT_TIMEOUT)
+                .shouldBe(exist)
                 .shouldBe(enabled).click();
         return new HotNodePoolsAO();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,13 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
-import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
@@ -32,10 +31,12 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
+import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
@@ -44,6 +45,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON_TIME;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.POOL_NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
@@ -52,8 +54,6 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 
 public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
 
@@ -100,7 +100,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO switchToCluster() {
-        context().find(byXpath("//a[.='All nodes']")).parent().click();
+        context().find(byXpath(".//a[.='All nodes']")).parent().click();
         return new ClusterMenuAO();
     }
 
@@ -156,6 +156,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                 entry(CREATE, context().find(button("CREATE"))),
                 entry(POOL_NAME, context().find(byText("Pool name:"))
                         .find(byXpath("following-sibling::div//input"))),
+                entry(ADD_SCHEDULE, context().find(byText("Add schedule")).parent()),
                 entry(STARTS_ON, context()
                         .find(byXpath(".//span[.='Starts on:']/following-sibling::div/div[@role='combobox']"))),
                 entry(STARTS_ON_TIME, context()
@@ -207,14 +208,14 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .findFirst()
                     .orElseThrow(NoSuchElementException::new)
                     .click();
-            context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+            context().find(byXpath(".//div[@title='latest']")).shouldBe(visible);
             sleep(5, SECONDS);
             return this;
         }
 
         public CreateHotNodePoolAO addFilter(String filter) {
             context().find(byText("Add filter")).parent().click();
-            context().find(byXpath("//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]"))
+            context().find(byXpath(".//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]"))
                     .click();
             $(byClassName("ilters-control__column")).$(byClassName("ant-select-dropdown-menu"))
                     .shouldBe(enabled)
@@ -232,7 +233,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
             context().find(By.xpath(".//div[.='Select owner']")).shouldBe(visible, enabled).click();
             context().$(byClassName("ilters-control__column")).find(byClassName("ant-select-search__field"))
                     .sendKeys(Keys.chord(Keys.CONTROL, "a"), value);
-            $(By.xpath(String.format("//li[.='%s']", value))).click();
+            $(By.xpath(String.format(".//li[.='%s']", value))).click();
             return this;
         }
 

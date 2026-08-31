@@ -113,17 +113,24 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
-                                                 final LocalDateTime to) {
+                                                 final LocalDateTime to, final Long runId) {
         final LocalDateTime start = Optional.ofNullable(from).orElse(LocalDateTime.MIN);
         final LocalDateTime end = Optional.ofNullable(to).orElse(LocalDateTime.MAX);
         return getStats(nodeName, start, end);
     }
 
     @Override
+    public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to, final Duration interval, final Long runId) {
+        throw new UnsupportedOperationException("It's not possible to specify custom interval for CAdvisor, " +
+                "during stat request!");
+    }
+
+    @Override
     public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to,
                                                  final List<GpuMetricsGranularity> granularity,
-                                                 final boolean squashCharts) {
+                                                 final boolean squashCharts, final Long runId) {
         throw new UnsupportedOperationException("GPU statistic is not available for CAdvisor metrics");
     }
 
@@ -132,7 +139,8 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
                                                     final LocalDateTime from,
                                                     final LocalDateTime to,
                                                     final Duration interval,
-                                                    final MonitoringReportType type) {
+                                                    final MonitoringReportType type,
+                                                    final Long runId) {
         throw new UnsupportedOperationException(messageHelper.getMessage(
             MessageConstants.CADVISOR_STATS_REPORTS_NOT_SUPPORTED));
     }

@@ -25,18 +25,19 @@ function check_api_response_status {
 
 function call_api {
     local api_endpoint="$1"
-    local jwt_token="$2"
-    local payload="$3"
-    local is_file="$4"
+    local api_endpoint_method="$2"
+    local jwt_token="$3"
+    local payload="$4"
+    local is_file="$5"
 
     local response=""
     if [ "$is_file" ]; then
-        response=$(curl -X POST -k -s -H "Authorization: Bearer $jwt_token" -F "file=@$payload" "${api_endpoint}")
+        response=$(curl -X "${api_endpoint_method}" -k -s -H "Authorization: Bearer $jwt_token" -F "file=@$payload" "${api_endpoint}")
     else
         if [ "$payload" ]; then
-            response=$(curl -X POST -k -s -H 'Content-Type: application/json' -H "Authorization: Bearer $jwt_token" -d "$payload" "${api_endpoint}")
+            response=$(curl -X "${api_endpoint_method}" -k -s -H 'Content-Type: application/json' -H "Authorization: Bearer $jwt_token" -d "$payload" "${api_endpoint}")
         else
-            response=$(curl -X GET -k -s -H "Authorization: Bearer $jwt_token" "${api_endpoint}")
+            response=$(curl -X "${api_endpoint_method}" -k -s -H "Authorization: Bearer $jwt_token" "${api_endpoint}")
         fi
     fi
     echo "$response"
@@ -61,6 +62,10 @@ function parse_options {
         ;;
         --check|check)
         export CP_NF_WEBLOG_HANDLER_CHECK=1
+        shift # past argument
+        ;;
+       --cleanup|cleanup)
+        export CP_NF_WEBLOG_HANDLER_CLEANUP=1
         shift # past argument
         ;;
         -f|--force)
@@ -111,22 +116,36 @@ function parse_options {
     fi
 }
 
+function _expand() { eval "echo \"$1\""; }
+
 function enable_nf_runtime_data_sync() {
     SYNC_RUN_RUNTIME_DATA_TASK="SyncRunRuntimeData"
 
-    _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 + 1 ))
-    export CP_SYNC_TO_STORAGE_THREADS=${CP_SYNC_TO_STORAGE_THREADS:-$_DEFAULT_NUMBER_OF_THREADS}
-    CP_NF_WORKDIR="${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}"
-    CP_NF_TRACE_FILE="${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt"
-
     pipe_log_info "[INFO] Configuring run data sync process..." "$SYNC_RUN_RUNTIME_DATA_TASK"
-    run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "$API_TOKEN")
+    run_sync_data_pref_response=$(call_api "$API/preferences/launch.run.sync.runtime.data" "GET" "$API_TOKEN")
     if [ $? -ne 0 ]; then
         pipe_log_error "[ERROR] Cannot retrieve 'launch.run.sync.runtime.data' preference, synchronization of nextflow runtime data will not be configured." "$SYNC_RUN_RUNTIME_DATA_TASK"
     fi
 
-    # Configure synchronization for nf trace.txt file
     run_sync_data=$(echo "$run_sync_data_pref_response" | jq '.payload.value' -r)
+    nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
+    nf_task_run_eval_type=$(echo "$nf_task_sync_config_entry" | jq '.evalType // ""' -r)
+    if [ "$nf_task_run_eval_type" = "WORKDIR" ]; then
+        pipe_log_info "[INFO] 'NF_TASK entry evalType for 'launch.run.sync.runtime.data' equals 'WORKDIR'. Nextflow task workdir sync process won't be started." "$SYNC_RUN_RUNTIME_DATA_TASK"
+        return 0
+    fi
+
+    _DEFAULT_NUMBER_OF_THREADS=$(( $(nproc) / 2 + 1 ))
+    export CP_SYNC_TO_STORAGE_THREADS=${CP_SYNC_TO_STORAGE_THREADS:-$_DEFAULT_NUMBER_OF_THREADS}
+    CP_NF_WORKDIR=$(_expand "${CP_NF_WORKDIR:-${ANALYSIS_DIR}/work}")
+    CP_NF_TRACE_FILE=$(_expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/trace.txt")
+
+    # If wasn't defined by user, define with default as trace.txt file
+    if [ -z "${CP_NF_TASK_LOOKUP_FILE_PATH}" ]; then
+        export CP_NF_TASK_LOOKUP_FILE_PATH="$CP_NF_TRACE_FILE"
+    fi
+
+    # Configure synchronization for nf trace.txt file
     export CP_SYNC_TO_STORAGE_TIMEOUT_SEC=$(echo "$run_sync_data" | jq '.syncTimeout // 60' -r)
 
     nf_trace_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TRACE // ""' -r)
@@ -147,7 +166,6 @@ function enable_nf_runtime_data_sync() {
 
     # Configure synchronization for nf task workdirs
     pipe_log_info "[INFO] Starting nextflow task workdir sync process." "$SYNC_RUN_RUNTIME_DATA_TASK"
-    nf_task_sync_config_entry=$(echo "$run_sync_data" | jq '.data.NF_TASK // ""' -r)
     nf_task_run_folder_sync_path=$(echo "$nf_task_sync_config_entry" | jq '.runFolderPathPrefix // ""' -r)
     nf_task_data_sync_path=$(echo "$nf_task_sync_config_entry" | jq '.dataPathPrefix // ""' -r)
 
@@ -162,21 +180,21 @@ function enable_nf_runtime_data_sync() {
         while true; do
             sleep "$(( CP_SYNC_TO_STORAGE_TIMEOUT_SEC / 2 ))"
 
-            if [ -f "${CP_NF_TRACE_FILE}" ] ; then
-                tail -n +2 "${CP_NF_TRACE_FILE}" | while read -r task
+            if [ -f "${CP_NF_TASK_LOOKUP_FILE_PATH}" ] ; then
+                tail -n +2 "${CP_NF_TASK_LOOKUP_FILE_PATH}" | while read -r task
                 do
                     task_hash=$(echo "$task" | awk '{ print $2 }')
-                    task_workdir=$(realpath "${CP_NF_WORKDIR}/$task_hash*")
-                    if ! grep -q -x -F "$task_hash" $nf_sync_to_storage_processed_task_file ;then
-                        if [ -n "$task_hash" ] && [ -n "$task_workdir" ]; then
-                             sync_to_storage add "$task_workdir/.command.out" "$nf_task_file_sync_path/$task_hash/.command.out"
-                             sync_to_storage add "$task_workdir/.command.err" "$nf_task_file_sync_path/$task_hash/.command.err"
-                             sync_to_storage add "$task_workdir/.command.log" "$nf_task_file_sync_path/$task_hash/.command.log"
-                             sync_to_storage add "$task_workdir/.command.sh" "$nf_task_file_sync_path/$task_hash/.command.sh"
-                             sync_to_storage add "$task_workdir/.command.run" "$nf_task_file_sync_path/$task_hash/.command.run"
-                             sync_to_storage add "$task_workdir/.command.trace" "$nf_task_file_sync_path/$task_hash/.command.trace"
-                             sync_to_storage add "$task_workdir/.command.begin" "$nf_task_file_sync_path/$task_hash/.command.begin"
-                             sync_to_storage add "$task_workdir/.exitcode" "$nf_task_file_sync_path/$task_hash/.exitcode"
+                    if [ -n "$task_hash" ] && ! grep -q -x -F "$task_hash" $nf_sync_to_storage_processed_task_file ; then
+                        task_workdir=$(realpath ${CP_NF_WORKDIR}/$task_hash*)
+                        if [ -d "$task_workdir" ]; then
+                             [ -f "$task_workdir/.command.out" ] && sync_to_storage add "$task_workdir/.command.out" "$nf_task_file_sync_path/$task_hash/.command.out"
+                             [ -f "$task_workdir/.command.err" ] && sync_to_storage add "$task_workdir/.command.err" "$nf_task_file_sync_path/$task_hash/.command.err"
+                             [ -f "$task_workdir/.command.log" ] && sync_to_storage add "$task_workdir/.command.log" "$nf_task_file_sync_path/$task_hash/.command.log"
+                             [ -f "$task_workdir/.command.sh" ] && sync_to_storage add "$task_workdir/.command.sh" "$nf_task_file_sync_path/$task_hash/.command.sh"
+                             [ -f "$task_workdir/.command.run" ] && sync_to_storage add "$task_workdir/.command.run" "$nf_task_file_sync_path/$task_hash/.command.run"
+                             [ -f "$task_workdir/.command.trace" ] && sync_to_storage add "$task_workdir/.command.trace" "$nf_task_file_sync_path/$task_hash/.command.trace"
+                             [ -f "$task_workdir/.command.begin" ] && sync_to_storage add "$task_workdir/.command.begin" "$nf_task_file_sync_path/$task_hash/.command.begin"
+                             [ -f "$task_workdir/.exitcode" ] && sync_to_storage add "$task_workdir/.exitcode" "$nf_task_file_sync_path/$task_hash/.exitcode"
                              if echo "$task" | grep -q -E "COMPLETE|FAILED|CACHED|ABORTED" ; then
                                  sync_to_storage remove "$task_workdir/.command.out"
                                  sync_to_storage remove "$task_workdir/.command.err"
@@ -192,7 +210,7 @@ function enable_nf_runtime_data_sync() {
                     fi
                 done
             else
-                pipe_log_warn "[WARN] There is no ${CP_NF_TRACE_FILE} at the moment, skip runtime data sync iteration." "$SYNC_RUN_RUNTIME_DATA_TASK"
+                pipe_log_warn "[WARN] There is no ${CP_NF_TASK_LOOKUP_FILE_PATH} at the moment, skip runtime data sync iteration." "$SYNC_RUN_RUNTIME_DATA_TASK"
             fi
         done
     else
@@ -217,13 +235,20 @@ if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ] && [ "$CP_NF_WEBLOG_HANDLER_STOP" == 1
     exit 14
 fi
 
-if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ] && [ -z "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" ] && [ -z "$CP_NF_WAIT_RUNTIME_DATA_SYNC" ]; then
-    echo "[ERROR] One of the options: --start/--stop/--check/--enable-runtime-data/--wait-runtime-data should be provided."
+if [ -z "$CP_NF_WEBLOG_HANDLER_START" ] && [ -z "$CP_NF_WEBLOG_HANDLER_STOP" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CHECK" ] && [ -z "$CP_NF_WEBLOG_HANDLER_CLEANUP" ] && [ -z "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" ] && [ -z "$CP_NF_WAIT_RUNTIME_DATA_SYNC" ]; then
+    echo "[ERROR] One of the options: --start/--stop/--check/--cleanup/--enable-runtime-data/--wait-runtime-data should be provided."
     exit 14
 fi
 
 if [ "$CP_NF_WEBLOG_HANDLER_START" == 1 ]; then
     echo "Enabling Nextflow weblog handler..."
+
+    if [ -n "${CP_NF_TASK_LOOKUP_FILE}" ]; then
+        CP_NF_TASK_LOOKUP_FILE_PATH=$(_expand "${CP_NF_TRACE_FILE_DIR:-$CP_NF_WORKDIR}/${CP_NF_TASK_LOOKUP_FILE}")
+        echo "Configuring CP_NF_TASK_LOOKUP_FILE_PATH as: $CP_NF_TASK_LOOKUP_FILE_PATH."
+        # Will be used in nf-weblog-handler to populate this path
+        export CP_NF_TASK_LOOKUP_FILE_PATH
+    fi
 
     if [ -f "$CP_NF_WEBLOG_HANDLER_PID_FILE" ]; then
         _process_pid=$(cat "$CP_NF_WEBLOG_HANDLER_PID_FILE")
@@ -274,6 +299,7 @@ if [ "$CP_NF_ENABLE_RUNTIME_DATA_SYNC" == 1 ]; then
     export -f enable_nf_runtime_data_sync
     export -f call_api
     export -f check_api_response_status
+    export -f _expand
     nohup bash -c enable_nf_runtime_data_sync &> "$CP_NF_RUNTIME_DATA_SYNC_LOG_FILE" &
     echo "$!" > "$CP_NF_RUNTIME_DATA_SYNC_PID_FILE"
 fi
@@ -349,4 +375,13 @@ if [ "$CP_NF_WEBLOG_HANDLER_CHECK" == 1 ]; then
         exit 14
     fi
 fi
+
+if [ "$CP_NF_WEBLOG_HANDLER_CLEANUP" == 1 ]; then
+    echo "Cleanup Nextflow engine tasks in Nextflow run view for run ${RUN_ID} ..."
+    call_api "$API/run/${RUN_ID}/engine/tasks" "DELETE" "$API_TOKEN"
+    if [ $? -ne 0 ]; then
+        pipe_log_error "[ERROR] Cannot cleanup nextflow engine tasks for run ${RUN_ID}" "$SYNC_RUN_RUNTIME_DATA_TASK"
+    fi
+fi
+
 

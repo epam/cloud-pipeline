@@ -34,7 +34,10 @@ import AdaptedLink from '../../special/AdaptedLink';
 import EditPipelineForm from './forms/EditPipelineForm';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
-import GitRepositoryControl from '../../special/git-repository-control';
+import GitRepositoryControl, {
+  RepositoryTypes,
+  normalizeRepositoryType
+} from '../../special/git-repository-control';
 import styles from './PipelineDetails.css';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
@@ -69,7 +72,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     const {pipeline} = this.props;
     if (pipeline && pipeline.loaded) {
       const {repositoryType} = pipeline.value || {};
-      return repositoryType;
+      return normalizeRepositoryType(repositoryType);
     }
     return undefined;
   }
@@ -184,6 +187,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           storage
         ].filter(Boolean);
     }
+  }
+
+  @computed
+  get readOnly () {
+    const {pipeline} = this.props;
+    return pipeline?.value?.repositoryType === RepositoryTypes.AzureDevOps;
   }
 
   componentDidMount () {
@@ -341,12 +350,39 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
   runPipeline = () => {
     const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
-    this.props.router.push(`${baseUrl}/${this.props.currentConfiguration || 'default'}`);
+    const {configurations, currentConfiguration} = this.props;
+    (async () => {
+      let cfg = currentConfiguration;
+      if (!cfg) {
+        cfg = 'default';
+        const hide = configurations.loaded
+          ? () => {}
+          : message.loading(`Fetching pipeline configurations...`, -1);
+        try {
+          configurations.fetchIfNeededOrWait();
+          const values = configurations.value || [];
+          const defaultConfiguration = values.find((v) => v.default) ||
+            values.find((v) => /^default$/i.test(v));
+          if (defaultConfiguration) {
+            cfg = defaultConfiguration.name;
+          }
+        } catch {
+          // noop
+        } finally {
+          hide();
+        }
+      }
+      this.props.router.push(`${baseUrl}/${cfg}`);
+    })();
   };
 
   runPipelineConfiguration = (configuration) => {
+    if (!configuration) {
+      this.runPipeline();
+      return;
+    }
     const baseUrl = `/launch/${this.props.pipelineId}/${this.props.version}`;
-    this.props.router.push(`${baseUrl}/${configuration || 'default'}`);
+    this.props.router.push(`${baseUrl}/${configuration}`);
   };
 
   renderRunButton = () => {
@@ -425,7 +461,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
     const {router: {location}} = this.props;
     const activeTab = this.activeTabPath;
-
     return (
       <div
         className={styles.fullHeightContainer}>
@@ -462,7 +497,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               overlayClassName={browserStyles.gitRepositoryPopover}
               https={this.props.pipeline.value.repository}
               ssh={this.props.pipeline.value.repositorySsh}
-              repositoryType={this.props.pipeline.value.repositoryType}
+              repositoryType={this.repositoryType}
             />
           </Col>
         </Row>
@@ -503,7 +538,10 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           {
             React.Children.map(
               this.props.children,
-              (child) => React.cloneElement(child, {onReloadTree: this.props.onReloadTree})
+              (child) => React.cloneElement(child, {
+                onReloadTree: this.props.onReloadTree,
+                readOnly: this.readOnly
+              })
             )
           }
         </div>
@@ -513,7 +551,8 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           onDelete={this.deletePipeline}
           visible={this.state.isModalVisible}
           pending={this.state.updating || this.state.deleting}
-          pipeline={this.props.pipeline.value} />
+          pipeline={this.props.pipeline.value}
+        />
       </div>
     );
   }

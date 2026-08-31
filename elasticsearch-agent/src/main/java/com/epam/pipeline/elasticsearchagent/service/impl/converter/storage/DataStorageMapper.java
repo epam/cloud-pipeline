@@ -22,10 +22,9 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.RequiredArgsConstructor;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -35,40 +34,32 @@ public class DataStorageMapper implements EntityMapper<DataStorageDoc> {
     private final SearchDocumentType documentType;
 
     @Override
-    public XContentBuilder map(final EntityContainer<DataStorageDoc> doc) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            AbstractDataStorage storage = doc.getEntity().getStorage();
-            jsonBuilder
-                    .startObject()
-                    .field(DOC_TYPE_FIELD, documentType.name())
-                    .field("id", storage.getId())
-                    .field("parentId", storage.getParentFolderId())
-                    .field("name", storage.getName())
-                    .field("path", storage.getPath())
-                    .field("createdDate", parseDataToString(storage.getCreatedDate()))
-                    .field("description", storage.getDescription())
-                    .field("storageType", storage.getType())
-                    .field("regionCode", doc.getEntity().getRegionName());
+    public Map<String, ?> map(final EntityContainer<DataStorageDoc> doc) {
+        final AbstractDataStorage storage = doc.getEntity().getStorage();
+        final Map<String, Object> jsonMap = new HashMap<>();
 
-            StoragePolicy storagePolicy = storage.getStoragePolicy();
-            if (storagePolicy != null) {
-                jsonBuilder
-                        .field("storagePolicyBackupDuration", storagePolicy.getBackupDuration())
-                        .field("storagePolicyLongTermStorageDuration",
-                                storagePolicy.getLongTermStorageDuration())
-                        .field("storagePolicyShortTermStorageDuration",
-                                storagePolicy.getShortTermStorageDuration())
-                        .field("storagePolicyVersioningEnabled", storagePolicy.getVersioningEnabled());
-            }
+        jsonMap.put(DOC_TYPE_FIELD, documentType.name());
+        jsonMap.put("id", storage.getId());
+        jsonMap.put("parentId", storage.getParentFolderId());
+        jsonMap.put("name", storage.getName());
+        jsonMap.put("path", storage.getPath());
+        jsonMap.put("createdDate", parseDataToString(storage.getCreatedDate()));
+        jsonMap.put("description", storage.getDescription());
+        jsonMap.put("storageType", storage.getType());
+        jsonMap.put("regionCode", doc.getEntity().getRegionName());
 
-            buildUserContent(doc.getOwner(), jsonBuilder);
-            buildMetadata(doc.getMetadata(), jsonBuilder);
-            buildPermissions(doc.getPermissions(), jsonBuilder);
-
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("An error occurred while creating document: ", e);
+        StoragePolicy storagePolicy = storage.getStoragePolicy();
+        if (storagePolicy != null) {
+            jsonMap.put("storagePolicyBackupDuration", storagePolicy.getBackupDuration());
+            jsonMap.put("storagePolicyLongTermStorageDuration", storagePolicy.getLongTermStorageDuration());
+            jsonMap.put("storagePolicyShortTermStorageDuration", storagePolicy.getShortTermStorageDuration());
+            jsonMap.put("storagePolicyVersioningEnabled", storagePolicy.getVersioningEnabled());
         }
+
+        buildUserContent(doc.getOwner(), jsonMap);
+        buildMetadata(doc.getMetadata(), jsonMap);
+        buildPermissions(doc.getPermissions(), jsonMap);
+
+        return jsonMap;
     }
 }

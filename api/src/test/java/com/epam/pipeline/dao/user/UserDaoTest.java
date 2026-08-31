@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +60,6 @@ public class UserDaoTest extends AbstractJdbcTest {
     private static final String ATTRIBUTES_KEY = "email";
     private static final String ATTRIBUTES_VALUE = "test_email";
     private static final String ATTRIBUTES_VALUE2 = "Mail@epam.com";
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 22;
     private static final String TEST_ROLE = "ROLE_TEST";
 
     @Autowired
@@ -225,7 +225,7 @@ public class UserDaoTest extends AbstractJdbcTest {
         assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), admin.getRoles()));
 
         Collection<Role> allRoles = roleDao.loadAllRoles(false);
-        assertEquals(EXPECTED_DEFAULT_ROLES_NUMBER, allRoles.size());
+        assertEquals(TestUtils.EXPECTED_DEFAULT_ROLES_NUMBER, allRoles.size());
         assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), allRoles));
         assertTrue(isRolePresent(DefaultRoles.ROLE_USER.getRole(), allRoles));
     }

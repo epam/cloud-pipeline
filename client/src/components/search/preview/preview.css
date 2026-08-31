@@ -224,6 +224,17 @@
   height: 100vh;
 }
 
+.vsi-label-preview-container {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 301;
+}
+
+.vsi-label-preview {
+  width: 160px;
+}
+
 .vsi-content-preview.fullscreen,
 .ome-tiff-content-preview.fullscreen {
   width: 100vw;

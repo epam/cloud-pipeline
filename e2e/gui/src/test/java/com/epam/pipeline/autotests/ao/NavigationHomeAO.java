@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
-import static org.openqa.selenium.By.className;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -44,6 +43,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SERVICES;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.className;
 import static org.testng.Assert.fail;
 
 public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
@@ -54,7 +54,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".home-page__global-container")
                         .findAll(".home-page__panel").stream()
-                        .filter(element -> text(panelName).apply(element))
+                        .filter(element -> element.has(text(panelName)))
                         .collect(toList());
             }
         };
@@ -85,6 +85,11 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
         return this;
     }
 
+    public NavigationHomeAO checkEndpointsLinkNotOnServicesPanel(String endpoint) {
+        get(SERVICES).find(byText(endpoint)).shouldNotBe(visible);
+        return this;
+    }
+
     public NavigationHomeAO checkServiceToolPath(String endpoint, String registry,
                                                  String group, String name, String runId) {
         serviceCardByRunId(runId).shouldHave(text(registry), text(group), text(name), text(endpoint));
@@ -92,7 +97,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     private SelenideElement serviceCardByRunId(String runId) {
-        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@class='ant-card-body']");
+        return get(SERVICES).find(byText(format("pipeline-%s", runId))).ancestor(".ant-card-body");
     }
 
     public ToolPageAO openEndpointLink(String endpoint, String runId) {
@@ -112,9 +117,14 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     public ShellAO openSSHLink(String runId, String region) {
-        serviceSshLink(runId).hover().closest("div")
-                .find(className("ultizone-url__expander")).click();
-        $(byText(region)).click();
+        if (serviceSshLink(runId).hover().closest("div")
+                .find(className("ultizone-url__expander")).exists()) {
+            serviceSshLink(runId).hover().closest("div")
+                    .find(className("ultizone-url__expander")).click();
+            $(byText(region)).click();
+        } else {
+            serviceSshLink(runId).click();
+        }
         switchTo().window(1);
         switchTo().frame(0);
         return new ShellAO();
@@ -125,8 +135,8 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     private SelenideElement activeRunCardByRunId(String runId) {
-        return get(RUNS).find(byXpath(format("//*[contains(text(), 'pipeline-%s')]", runId)))
-                .closest("div[@class='ant-card-body']");
+        return get(RUNS).find(byXpath(format(".//*[contains(text(), 'pipeline-%s')]", runId)))
+                .ancestor(".ant-card-body");
     }
 
     public NavigationHomeAO checkPauseLinkIsDisabledOnActiveRunsPanel(String runId) {

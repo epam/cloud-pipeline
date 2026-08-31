@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolsPage;
 import org.openqa.selenium.By;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
@@ -75,7 +77,7 @@ public interface Navigation {
     default NavigationHomeAO stopImpersonation() {
         final By stopImpersonateSelector = byId("navigation-button-stop-impersonation");
         $(stopImpersonateSelector).shouldBe(visible).click();
-        $(stopImpersonateSelector).shouldNotBe(visible);
+        $(stopImpersonateSelector).shouldBe(not(exist));
         return new NavigationHomeAO();
     }
 

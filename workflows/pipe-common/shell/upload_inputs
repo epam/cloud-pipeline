@@ -17,12 +17,49 @@
 REPORT_FILE=$1
 UPLOAD_TASK_NAME=$2
 
-
+# Download explicit inputs
 UPLOAD_RESULT=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/transfer_parameters.py --input-dir ${INPUT_DIR} \
      --analysis-dir ${ANALYSIS_DIR} --common-dir ${COMMON_DIR} \
      --task ${UPLOAD_TASK_NAME}" --report-file ${REPORT_FILE} --operation upload)
 
-if [ $? -ne 0 ]
-then
+if [ $? -ne 0 ]; then
     exit 1
+fi
+
+# Download object inputs
+OBJECT_PARAMS_INPUT_DIR="${OBJECT_PARAMS_INPUT_DIR:-$INPUT_DIR/object-params}"
+mkdir -p "$OBJECT_PARAMS_INPUT_DIR"
+
+echo "[INFO] Parsing object parameters"
+all_cp_params=$(printenv | sed 's;=.*;;' | grep _PARAM_TYPE)
+all_cp_params_arr=()
+for cp_param in $all_cp_params; do
+    cp_param_name=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
+    cp_param_type="${!cp_param}"
+    if [ "$cp_param_type" != "object" ]; then
+        continue
+    fi
+
+    echo "[INFO] $cp_param_name object param found"
+    cp_param_value=$(echo "${!cp_param_name}" | base64 -d | jq -r)
+    cp_param_value_path="${OBJECT_PARAMS_INPUT_DIR}/${cp_param_name}.json"
+    echo "$cp_param_value" > "$cp_param_value_path"
+    echo "[INFO] $cp_param_name object param value written to $cp_param_value_path"
+
+    export "$cp_param_name"="$cp_param_value_path"
+    echo "export $cp_param_name=\"$cp_param_value_path\"" >> "${REPORT_FILE}"
+    all_cp_params_arr+=("$cp_param_name")
+done
+
+if (( ${#all_cp_params_arr[@]} > 0 )); then
+    echo "[INFO] Running localization of the object inputs"
+    export CP_LOCALIZE_FROM_FILES=$( IFS=','; echo "${all_cp_params_arr[*]}" )
+    export CP_LOCALIZE_FROM_FILES_RE_PATTERN='((s3|gs|az):\/\/.+?)(.*)(?=")'
+
+    localize_inputs_from_files "$UPLOAD_TASK_NAME"
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
+else
+    echo "[INFO] No object parameters found"
 fi

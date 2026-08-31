@@ -33,7 +33,7 @@ public class JsonService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JsonService.class);
 
-    public <T> T parseJsonFromFile(String filePath, TypeReference type) {
+    public <T> T parseJsonFromFile(String filePath, TypeReference<T> type) {
         if (StringUtils.isBlank(filePath)) {
             return null;
         }

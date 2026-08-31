@@ -55,7 +55,7 @@ if [ $? -ne 0 ]; then
   
   # Otherwise try to install default docker (e.g. if it's amazon linux)
   rm -f /etc/yum.repos.d/docker-ce.repo
-  yum install -y docker-20.10*
+  yum install -y docker-20.10* containerd-1.7*
   if [ $? -ne 0 ]; then
     echo "Unable to install default docker-20.10* too, exiting"
     exit 1

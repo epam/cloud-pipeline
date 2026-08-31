@@ -15,6 +15,7 @@ import RunActions from './run-actions';
 import RunTags, {KNOWN_TAG_NAMES} from '../../../run-tags';
 import styles from './run-header.css';
 import RunEndpoints from './run-endpoints';
+import LogsModeButton from '../../../logs/logs-mode';
 
 function RunHeader (props) {
   const {
@@ -26,7 +27,11 @@ function RunHeader (props) {
     loaded,
     runTasksLoaded,
     onRefreshRunInfo,
-    preferences
+    preferences,
+    currentMode,
+    onChangeMode,
+    modes,
+    showEstimatedPrice = true
   } = props;
   const {
     id = runId
@@ -55,6 +60,12 @@ function RunHeader (props) {
         </div>
         <RunOwner run={run} className={styles.runOwner} />
         <RunExecutable run={run} className={styles.runExecutable} />
+        <LogsModeButton
+          style={{marginLeft: 5}}
+          current={currentMode}
+          modes={modes}
+          onChangeMode={onChangeMode}
+        />
         <div style={{marginLeft: 'auto'}}>
           <RunActions run={run} onRefreshRunInfo={onRefreshRunInfo} />
         </div>
@@ -71,7 +82,7 @@ function RunHeader (props) {
           <RunTimeline run={run} runTasks={runTasks} loaded={loaded && runTasksLoaded} />
         </div>
       )}
-      {loaded && (
+      {loaded && showEstimatedPrice ? (
         <div
           className={classNames(
             styles.runHeaderRow,
@@ -80,7 +91,7 @@ function RunHeader (props) {
         >
           <RunEstimatedPrice run={run} runTasks={runTasks} />
         </div>
-      )}
+      ) : null}
       {
         loaded &&
         RunTags.shouldDisplayTags(run, preferences) && (
@@ -105,11 +116,16 @@ RunHeader.propTypes = {
   runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   loaded: PropTypes.bool,
   runTasksLoaded: PropTypes.bool,
-  onRefreshRunInfo: PropTypes.func
+  onRefreshRunInfo: PropTypes.func,
+  currentMode: PropTypes.string,
+  modes: PropTypes.arrayOf(PropTypes.string),
+  onChangeMode: PropTypes.func,
+  showEstimatedPrice: PropTypes.bool
 };
 
 RunHeader.defaultProps = {
-  loaded: true
+  loaded: true,
+  showEstimatedPrice: true
 };
 
 export default inject('preferences')(observer(RunHeader));

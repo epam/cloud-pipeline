@@ -44,13 +44,15 @@ public class ReassignHandlerTest {
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final MetadataManager metadataManager = mock(MetadataManager.class);
+    private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
 
     private final ReassignHandler reassignHandler = new ReassignHandler(
             autoscalerService,
             cloudFacade,
             pipelineRunManager,
             new ArrayList<>(),
-            metadataManager);
+            metadataManager,
+            iamProfileVerifier);
 
     @Test
     public void shouldNotReassignWithCreateNewNodeParameter() {

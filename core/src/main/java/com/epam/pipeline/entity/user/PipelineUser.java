@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
@@ -126,6 +127,9 @@ public class PipelineUser extends AbstractSecuredEntity implements StorageContai
     @Transient
     private List<Quota> activeQuotas;
 
+    @Transient
+    private PlatformUsageCreditsUserBalance usageCredits;
+
     public PipelineUser() {
         this.admin = false;
         this.blocked = false;
@@ -171,6 +175,10 @@ public class PipelineUser extends AbstractSecuredEntity implements StorageContai
     @Override
     public AclClass getAclClass() {
         return AclClass.PIPELINE;
+    }
+
+    public boolean hasRole(Role role) {
+        return roles.stream().anyMatch(r -> r.getName().equals(role.getName()));
     }
 
     public static class AttributesConverterJson implements AttributeConverter<Map<String, String>, String>  {

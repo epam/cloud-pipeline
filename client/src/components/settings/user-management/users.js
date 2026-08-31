@@ -46,6 +46,7 @@ import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
 import {QuotasDisclaimerComponent} from './quota-info';
 import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
+import UsageCreditsCounter from '../user-profile/usage-credits-statistics/credits-counter';
 
 const PAGE_SIZE = 20;
 
@@ -92,6 +93,14 @@ export default class UsersManagement extends React.Component {
     filterUsers: USERS_FILTERS.all
   };
 
+  componentDidMount () {
+    this.props.users.fetch();
+  }
+
+  componentWillUnmount () {
+    this.props.usersStore.fetch();
+  }
+
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     return authenticatedUserInfo.loaded
@@ -100,8 +109,12 @@ export default class UsersManagement extends React.Component {
   };
 
   get isReader () {
-    return roleModel.hasRole('ROLE_USER_READER')(this);
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_READER)(this);
   };
+
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
+  }
 
   @computed
   get userHasReadPermissions () {
@@ -311,25 +324,29 @@ export default class UsersManagement extends React.Component {
           >
             Marked to be blocked
           </Select.Option>
-          { this.isAdmin && (
-            <Select.Option
-              key={USERS_FILTERS.online}
-              value={USERS_FILTERS.online}
-            >
-              Online
-            </Select.Option>)
+          {
+            (this.isAdmin || this.isUsersAdmin) && (
+              <Select.Option
+                key={USERS_FILTERS.online}
+                value={USERS_FILTERS.online}
+              >
+                Online
+              </Select.Option>
+            )
           }
-          { this.isAdmin && (
-            <Select.Option
-              key={USERS_FILTERS.quota}
-              value={USERS_FILTERS.quota}
-            >
-              Exceeded quotas
-            </Select.Option>)
+          {
+            (this.isAdmin || this.isUsersAdmin) && (
+              <Select.Option
+                key={USERS_FILTERS.quota}
+                value={USERS_FILTERS.quota}
+              >
+                Exceeded quotas
+              </Select.Option>
+            )
           }
         </Select>
         {
-          this.isAdmin && (
+          (this.isAdmin || this.isUsersAdmin) && (
             <Button
               style={{marginLeft: 5}}
               onClick={this.openCreateUserDialog}
@@ -339,7 +356,7 @@ export default class UsersManagement extends React.Component {
           )
         }
         {
-          this.isAdmin && (
+          (this.isAdmin || this.isUsersAdmin) && (
             <ImportUsersButton
               style={{marginLeft: 5}}
               onImportDone={this.onImportDone}
@@ -347,7 +364,7 @@ export default class UsersManagement extends React.Component {
           )
         }
         {
-          (this.isReader || this.isAdmin) && (
+          (this.isReader || this.isAdmin || this.isUsersAdmin) && (
             <Dropdown.Button
               style={{marginLeft: 5}}
               onClick={() => doExport()}
@@ -479,7 +496,7 @@ export default class UsersManagement extends React.Component {
               />
             );
           }
-          const userStatus = this.isAdmin
+          const userStatus = this.isAdmin || this.isUsersAdmin
             ? (
               <Tooltip
                 placement="left"
@@ -526,6 +543,15 @@ export default class UsersManagement extends React.Component {
                     quotas={user.activeQuotas || []}
                   />
                 </Row>
+                <Row>
+                  <UsageCreditsCounter
+                    user={user}
+                    style={{
+                      container: {fontSize: 'smaller'},
+                      label: {fontWeight: 'normal'}
+                    }}
+                  />
+                </Row>
                 {
                   blockInfo && (
                     <Row>
@@ -546,6 +572,15 @@ export default class UsersManagement extends React.Component {
                     {blockedSpan}
                   </span>
                 </span>
+              </Row>
+              <Row>
+                <UsageCreditsCounter
+                  user={user}
+                  style={{
+                    container: {fontSize: 'smaller'},
+                    label: {fontWeight: 'normal'}
+                  }}
+                />
               </Row>
               {
                 blockInfo && (
@@ -572,7 +607,7 @@ export default class UsersManagement extends React.Component {
         render: (roles) => renderTagsList((roles || []), styles.userRole, 10),
         className: styles.rolesColumn
       },
-      this.isAdmin
+      this.isAdmin || this.isUsersAdmin
         ? {
           key: 'actions',
           render: (user) => {
@@ -603,7 +638,7 @@ export default class UsersManagement extends React.Component {
         onRowClick={(user) => this.openEditUserRolesDialog(user)}
         pagination={{
           total: this.filteredUsers.length,
-          PAGE_SIZE,
+          pageSize: PAGE_SIZE,
           current: this.state.usersTableCurrentPage
         }}
         size="small"
@@ -688,7 +723,12 @@ export default class UsersManagement extends React.Component {
     ) {
       return null;
     }
-    if (!this.isReader && !this.isAdmin && !this.userHasReadPermissions) {
+    if (
+      !this.isReader &&
+      !this.isAdmin &&
+      !this.isUsersAdmin &&
+      !this.userHasReadPermissions
+    ) {
       return (
         <Alert type="error" message="Access is denied" />
       );
@@ -730,13 +770,5 @@ export default class UsersManagement extends React.Component {
         />
       </div>
     );
-  }
-
-  componentDidMount () {
-    this.props.users.fetch();
-  }
-
-  componentWillUnmount () {
-    this.props.usersStore.fetch();
   }
 }

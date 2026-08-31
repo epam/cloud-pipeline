@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RepositoryType {
-    GITLAB(0), GITHUB(1), BITBUCKET(2), BITBUCKET_CLOUD(3);
+    GITLAB(0), GITHUB(1), BITBUCKET(2), BITBUCKET_CLOUD(3), AZURE_DEVOPS(4), GITHUB_APP(5);
 
     private long id;
     private static Map<Long, RepositoryType> idMap = new HashMap<>();
@@ -29,6 +29,8 @@ public enum RepositoryType {
         idMap.put(GITHUB.id, GITHUB);
         idMap.put(BITBUCKET.id, BITBUCKET);
         idMap.put(BITBUCKET_CLOUD.id, BITBUCKET_CLOUD);
+        idMap.put(AZURE_DEVOPS.id, AZURE_DEVOPS);
+        idMap.put(GITHUB_APP.id, GITHUB_APP);
     }
     private static Map<String, RepositoryType> namesMap = new HashMap<>();
     static {
@@ -36,6 +38,8 @@ public enum RepositoryType {
         namesMap.put(GITHUB.name(), GITHUB);
         namesMap.put(BITBUCKET.name(), BITBUCKET);
         namesMap.put(BITBUCKET_CLOUD.name(), BITBUCKET_CLOUD);
+        namesMap.put(AZURE_DEVOPS.name(), AZURE_DEVOPS);
+        namesMap.put(GITHUB_APP.name(), GITHUB_APP);
     }
 
     RepositoryType(long id) {

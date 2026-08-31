@@ -34,6 +34,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -62,7 +63,6 @@
                         pod_status,
                         env_vars,
                         prolonged_at_time,
-                        last_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -71,13 +71,16 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
                         sensitive,
                         pipeline_name,
                         node_start_date,
-                        project_id)
+                        project_id,
+                        parameters_json,
+                        logs_storage_path)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -89,6 +92,7 @@
                         :TERMINATING,
                         :POD_ID,
                         :NODE_TYPE,
+                        to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb),
                         :NODE_DISK,
                         :NODE_IP,
                         :NODE_ID,
@@ -117,7 +121,6 @@
                         :POD_STATUS,
                         to_jsonb(:ENV_VARS::jsonb),
                         :PROLONGED_AT_TIME,
-                        :LAST_NOTIFICATION_TIME,
                         :EXEC_PREFERENCES,
                         :PRETTY_URL,
                         :PRICE_PER_HOUR,
@@ -126,13 +129,16 @@
                         :FS_PRICE_PER_HOUR,
                         :STATE_REASON,
                         :NON_PAUSE,
+                        :PAUSE_DISABLED,
                         :NODE_REAL_DISK,
                         :NODE_CLOUD_PROVIDER,
                         to_jsonb(:TAGS::jsonb),
                         :SENSITIVE,
                         :PIPELINE_NAME,
                         :NODE_START_DATE,
-                        :PROJECT_ID)
+                        :PROJECT_ID,
+                        :PARAMETERS_JSON::jsonb,
+                        :LOGS_STORAGE_PATH)
                 ]]>
             </value>
         </property>
@@ -150,6 +156,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -176,9 +183,6 @@
                         r.configuration_id,
                         r.pod_status,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -187,6 +191,7 @@
                         r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
+                        r.pause_disabled,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
@@ -197,14 +202,9 @@
                         r.node_pool_id,
                         r.node_start_date,
 				        r.project_id,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = :RUN_ID AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+				        r.parameters_json,
+				        r.logs_storage_path,
+                        r.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -249,6 +249,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -275,9 +276,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -286,6 +284,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -295,7 +294,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -319,6 +320,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -345,9 +347,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -356,6 +355,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -365,7 +365,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -389,6 +391,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_name,
@@ -415,9 +418,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -426,6 +426,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -435,7 +436,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -480,7 +483,8 @@
                         node_name = :NODE_NAME,
                         is_spot = :IS_SPOT,
                         node_real_disk = :NODE_REAL_DISK,
-                        node_pool_id = :NODE_POOL_ID
+                        node_pool_id = :NODE_POOL_ID,
+                        instance_fallback_types = to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb)
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -556,7 +560,6 @@
                         pod_status = :POD_STATUS,
                         env_vars = to_jsonb(:ENV_VARS::jsonb),
                         prolonged_at_time = :PROLONGED_AT_TIME,
-                        last_notification_time = :LAST_NOTIFICATION_TIME,
                         exec_preferences = :EXEC_PREFERENCES,
                         pretty_url = :PRETTY_URL,
                         price_per_hour = :PRICE_PER_HOUR,
@@ -565,13 +568,17 @@
                         fs_price_per_hour = :FS_PRICE_PER_HOUR,
                         state_reason = :STATE_REASON,
                         non_pause = :NON_PAUSE,
+                        pause_disabled = :PAUSE_DISABLED,
                         node_real_disk =:NODE_REAL_DISK,
                         tags = to_jsonb(:TAGS::jsonb),
                         sensitive = :SENSITIVE,
                         kube_service_enabled = :KUBE_SERVICE_ENABLED,
                         pipeline_name = :PIPELINE_NAME,
                         node_start_date = :NODE_START_DATE,
-                        project_id = :PROJECT_ID
+                        project_id = :PROJECT_ID,
+                        instance_fallback_types = to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb),
+                        parameters_json = :PARAMETERS_JSON::jsonb,
+                        logs_storage_path = :LOGS_STORAGE_PATH
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -597,24 +604,11 @@
                 ]]>
             </value>
         </property>
-        <property name="updateLastNotificationQuery">
+        <property name="updateProlongedAtTimeQuery">
             <value>
                 <![CDATA[
                     UPDATE pipeline.pipeline_run SET
-                        last_notification_time = :LAST_NOTIFICATION_TIME,
-                        last_idle_notification_time = :LAST_IDLE_NOTIFICATION_TIME,
-                        last_network_consumption_notification_time = :LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME
-                    WHERE
-                        run_id = :RUN_ID
-                ]]>
-            </value>
-        </property>
-        <property name="updateProlongedAtTimeAndLastIdleNotificationTimeQuery">
-            <value>
-                <![CDATA[
-                    UPDATE pipeline.pipeline_run SET
-                        prolonged_at_time = :PROLONGED_AT_TIME,
-                        last_idle_notification_time = :LAST_IDLE_NOTIFICATION_TIME
+                        prolonged_at_time = :PROLONGED_AT_TIME
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -634,6 +628,7 @@
                       r.terminating,
                       r.pod_id,
                       r.node_type,
+                      r.instance_fallback_types,
                       r.node_disk,
                       r.node_ip,
                       r.node_id,
@@ -660,9 +655,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -672,18 +664,21 @@
                       r.state_reason,
                       r.env_vars,
                       r.non_pause,
+                      r.pause_disabled,
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
                       r.kube_service_enabled,
-                      TRUE as initialization_finished,
+                      TRUE as initialized,
                       FALSE as queued,
                       r.pipeline_name,
                       r.cluster_price,
                       r.node_pool_id,
                       r.node_start_date,
-                      r.project_id
+                      r.project_id,
+                      r.parameters_json,
+                      r.logs_storage_path
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -706,6 +701,7 @@
                       r.terminating,
                       r.pod_id,
                       r.node_type,
+                      r.instance_fallback_types,
                       r.node_disk,
                       r.node_ip,
                       r.node_id,
@@ -732,9 +728,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -744,18 +737,21 @@
                       r.state_reason,
                       r.env_vars,
                       r.non_pause,
+                      r.pause_disabled,
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
                       r.sensitive,
                       r.kube_service_enabled,
-                      TRUE as initialization_finished,
+                      TRUE as initialized,
                       FALSE as queued,
                       r.pipeline_name,
                       r.cluster_price,
                       r.node_pool_id,
                       r.node_start_date,
-                      r.project_id
+                      r.project_id,
+                      r.parameters_json,
+                      r.logs_storage_path
                     FROM
                       pipeline.pipeline_run r
                     WHERE
@@ -778,6 +774,7 @@
                       r.terminating,
                       r.pod_id,
                       r.node_type,
+                      r.instance_fallback_types,
                       r.node_disk,
                       r.node_ip,
                       r.node_id,
@@ -804,9 +801,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -815,6 +809,7 @@
                       r.fs_price_per_hour,
                       r.state_reason,
                       r.non_pause,
+                      r.pause_disabled,
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
@@ -825,6 +820,8 @@
                       r.node_pool_id,
                       r.node_start_date,
                       r.project_id,
+                      r.parameters_json,
+                      r.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -848,6 +845,7 @@
                       active_run.terminating,
                       active_run.pod_id,
                       active_run.node_type,
+                      active_run.instance_fallback_types,
                       active_run.node_disk,
                       active_run.node_ip,
                       active_run.node_id,
@@ -874,9 +872,6 @@
                       active_run.configuration_id,
                       active_run.pod_status,
                       active_run.prolonged_at_time,
-                      active_run.last_notification_time,
-                      active_run.last_idle_notification_time,
-                      active_run.last_network_consumption_notification_time,
                       active_run.exec_preferences,
                       active_run.pretty_url,
                       active_run.price_per_hour,
@@ -885,6 +880,7 @@
                       active_run.fs_price_per_hour,
                       active_run.state_reason,
                       active_run.non_pause,
+                      active_run.pause_disabled,
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
@@ -895,6 +891,8 @@
                       active_run.node_pool_id,
                       active_run.node_start_date,
                       active_run.project_id,
+                      active_run.parameters_json,
+                      active_run.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -957,9 +955,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -968,6 +963,7 @@
                       r.fs_price_per_hour,
                       r.state_reason,
                       r.non_pause,
+                      r.pause_disabled,
                       r.node_real_disk,
                       r.node_cloud_provider,
                       r.tags,
@@ -975,6 +971,8 @@
                       r.pipeline_name,
                       r.node_pool_id,
                       r.node_start_date,
+                      r.parameters_json,
+                      r.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1023,9 +1021,6 @@
                       active_run.configuration_id,
                       active_run.pod_status,
                       active_run.prolonged_at_time,
-                      active_run.last_notification_time,
-                      active_run.last_idle_notification_time,
-                      active_run.last_network_consumption_notification_time,
                       active_run.exec_preferences,
                       active_run.pretty_url,
                       active_run.price_per_hour,
@@ -1034,6 +1029,7 @@
                       active_run.fs_price_per_hour,
                       active_run.state_reason,
                       active_run.non_pause,
+                      active_run.pause_disabled,
                       active_run.node_real_disk,
                       active_run.node_cloud_provider,
                       active_run.tags,
@@ -1041,6 +1037,8 @@
                       active_run.pipeline_name,
                       active_run.node_pool_id,
                       active_run.node_start_date,
+                      active_run.parameters_json,
+                      active_run.logs_storage_path,
                       CASE
                         WHEN EXISTS (
                             SELECT 1 FROM pipeline.pipeline_run_service_url su
@@ -1075,6 +1073,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1101,9 +1100,6 @@
                         r.pod_status,
                         r.last_change_commit_time,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1112,6 +1108,7 @@
                         r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
+                        r.pause_disabled,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
@@ -1121,7 +1118,9 @@
                         r.cluster_price,
                         r.node_pool_id,
                         r.node_start_date,
-                        r.project_id
+                        r.project_id,
+                        r.parameters_json,
+                        r.logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1143,6 +1142,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1169,9 +1169,6 @@
                         r.pod_status,
                         r.last_change_commit_time,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1180,6 +1177,7 @@
                         r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
+                        r.pause_disabled,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
@@ -1189,7 +1187,9 @@
                         r.cluster_price,
                         r.node_pool_id,
                         r.node_start_date,
-                        r.project_id
+                        r.project_id,
+                        r.parameters_json,
+                        r.logs_storage_path
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -1211,6 +1211,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1237,9 +1238,6 @@
                         r.configuration_id,
                         r.pod_status,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1248,6 +1246,7 @@
                         r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
+                        r.pause_disabled,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
@@ -1258,14 +1257,9 @@
                         r.node_pool_id,
                         r.node_start_date,
                         r.project_id,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = r.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        r.parameters_json,
+                        r.logs_storage_path,
+                        r.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1306,6 +1300,7 @@
                         runs.terminating,
                         runs.pod_id,
                         runs.node_type,
+                        runs.instance_fallback_types,
                         runs.node_disk,
                         runs.node_ip,
                         runs.node_id,
@@ -1332,9 +1327,6 @@
                         runs.configuration_id,
                         runs.pod_status,
                         runs.prolonged_at_time,
-                        runs.last_notification_time,
-                        runs.last_idle_notification_time,
-                        runs.last_network_consumption_notification_time,
                         runs.exec_preferences,
                         runs.pretty_url,
                         runs.price_per_hour,
@@ -1343,6 +1335,7 @@
                         runs.fs_price_per_hour,
                         runs.state_reason,
                         runs.non_pause,
+                        runs.pause_disabled,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         runs.tags,
@@ -1352,14 +1345,9 @@
                         runs.node_pool_id,
                         runs.node_start_date,
                         runs.project_id,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        runs.parameters_json,
+                        runs.logs_storage_path,
+                        runs.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1415,9 +1403,6 @@
                             p.configuration_id,
                             p.pod_status,
                             p.prolonged_at_time,
-                            p.last_notification_time,
-                            p.last_idle_notification_time,
-                            p.last_network_consumption_notification_time,
                             p.exec_preferences,
                             p.pretty_url,
                             p.price_per_hour,
@@ -1426,6 +1411,7 @@
                             p.fs_price_per_hour,
                             p.state_reason,
                             p.non_pause,
+                            p.pause_disabled,
                             p.node_real_disk,
                             p.node_cloud_provider,
                             p.tags,
@@ -1435,7 +1421,9 @@
                             p.cluster_price,
                             p.node_pool_id,
                             p.node_start_date,
-                            p.project_id
+                            p.project_id,
+                            p.parameters_json,
+                            p.logs_storage_path
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1479,9 +1467,6 @@
                             c.configuration_id,
                             c.pod_status,
                             c.prolonged_at_time,
-                            c.last_notification_time,
-                            c.last_idle_notification_time,
-                            c.last_network_consumption_notification_time,
                             c.exec_preferences,
                             c.pretty_url,
                             c.price_per_hour,
@@ -1490,6 +1475,7 @@
                             c.fs_price_per_hour,
                             c.state_reason,
                             c.non_pause,
+                            c.pause_disabled,
                             c.node_real_disk,
                             c.node_cloud_provider,
                             c.tags,
@@ -1499,7 +1485,9 @@
                             c.cluster_price,
                             c.node_pool_id,
                             c.node_start_date,
-                            c.project_id
+                            c.project_id,
+                            c.parameters_json,
+                            c.logs_storage_path
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1541,9 +1529,6 @@
                         runs.configuration_id,
                         runs.pod_status,
                         runs.prolonged_at_time,
-                        runs.last_notification_time,
-                        runs.last_idle_notification_time,
-                        runs.last_network_consumption_notification_time,
                         runs.exec_preferences,
                         runs.pretty_url,
                         runs.price_per_hour,
@@ -1552,6 +1537,7 @@
                         runs.fs_price_per_hour,
                         runs.state_reason,
                         runs.non_pause,
+                        runs.pause_disabled,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         runs.tags,
@@ -1561,14 +1547,9 @@
                         runs.node_pool_id,
                         runs.node_start_date,
                         runs.project_id,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        runs.parameters_json,
+                        runs.logs_storage_path,
+                        runs.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1595,6 +1576,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1621,9 +1603,6 @@
                         r.configuration_id,
                         r.pod_status,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1632,6 +1611,7 @@
                         r.fs_price_per_hour,
                         r.state_reason,
                         r.non_pause,
+                        r.pause_disabled,
                         r.node_real_disk,
                         r.node_cloud_provider,
                         r.tags,
@@ -1642,6 +1622,8 @@
                         r.node_pool_id,
                         r.node_start_date,
                         r.project_id,
+                        r.parameters_json,
+                        r.logs_storage_path,
                         (
                             SELECT count(*)
                             FROM pipeline.pipeline_run cr
@@ -1652,14 +1634,7 @@
                             FROM pipeline.pipeline_run cr
                             WHERE cr.parent_id = r.run_id AND cr.status = 2
                         ) AS active_child_runs_count,
-                        CASE
-                            WHEN EXISTS (
-                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
-				                WHERE init_tasks.run_id = r.run_id AND init_tasks.task_name = :TASK_NAME
-				                    AND init_tasks.status = :TASK_STATUS)
-				            THEN TRUE
-				            ELSE FALSE
-				        END AS initialization_finished,
+                        r.initialized,
                         CASE
                             WHEN EXISTS (
                                 SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
@@ -1798,9 +1773,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -1809,6 +1781,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -1818,7 +1791,10 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1872,9 +1848,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -1883,6 +1856,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -1892,7 +1866,10 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1941,9 +1918,6 @@
                         ar.configuration_id,
                         ar.pod_status,
                         ar.prolonged_at_time,
-                        ar.last_notification_time,
-                        ar.last_idle_notification_time,
-                        ar.last_network_consumption_notification_time,
                         ar.exec_preferences,
                         ar.pretty_url,
                         ar.price_per_hour,
@@ -1952,6 +1926,7 @@
                         null as fs_price_per_hour,
                         ar.state_reason,
                         ar.non_pause,
+                        ar.pause_disabled,
                         ar.node_real_disk,
                         ar.node_cloud_provider,
                         ar.tags,
@@ -1961,7 +1936,10 @@
                         ar.cluster_price,
                         ar.node_pool_id,
                         ar.node_start_date,
-                        null as project_id
+                        null as project_id,
+                        ar.parameters_json,
+                        ar.logs_storage_path,
+                        null
                     FROM
                         pipeline.archive_run ar
                     WHERE ar.end_date BETWEEN :PERIOD_START AND :PERIOD_END
@@ -1992,6 +1970,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2018,9 +1997,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2029,6 +2005,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2038,11 +2015,84 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
                         status IN (:list)
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunsByStatusesAndOriginalOwnerQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        instance_fallback_types,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        original_owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        exec_preferences, pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        fs_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        pause_disabled,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name,
+                        cluster_price,
+                        node_pool_id,
+                        node_start_date,
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        status IN (:list)
+                        AND lower(original_owner) = :OWNER
                     ORDER BY
                         start_date
                 ]]>
@@ -2062,6 +2112,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2088,9 +2139,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2099,6 +2147,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2108,7 +2157,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2132,6 +2183,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2158,9 +2210,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2169,6 +2218,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2178,7 +2228,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2202,6 +2254,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2228,9 +2281,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2239,6 +2289,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2248,7 +2299,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2282,6 +2335,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2308,9 +2362,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2319,6 +2370,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2328,7 +2380,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2352,6 +2406,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2378,9 +2433,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2389,6 +2441,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2398,7 +2451,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -2465,6 +2520,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2491,9 +2547,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2502,6 +2555,7 @@
                         fs_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
@@ -2511,7 +2565,9 @@
                         cluster_price,
                         node_pool_id,
                         node_start_date,
-                        project_id
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
                     FROM
                         pipeline.pipeline_run
                     WHERE parent_id ISNULL AND status IN (:list) AND ( @WHERE@ )
@@ -2531,6 +2587,13 @@
             <value>
                 <![CDATA[
                     SELECT count(*) FROM pipeline.pipeline_run WHERE run_id = :RUN_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateRunInitializedQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET initialized = TRUE WHERE run_id = :RUN_ID
                 ]]>
             </value>
         </property>

@@ -70,6 +70,14 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldCreateToolGroupForToolAdmin() {
+        doReturn(toolGroup).when(mockToolGroupManager).create(toolGroup);
+
+        assertThat(toolGroupApiService.create(toolGroup)).isEqualTo(toolGroup);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER, roles = TOOL_GROUP_MANAGER)
     public void shouldCreateToolGroupForManagerWhenPermissionGranted() {
         initAclEntity(dockerRegistry, AclPermission.WRITE);
@@ -103,6 +111,14 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldUpdateToolGroupForToolAdmin() {
+        doReturn(toolGroup).when(mockToolGroupManager).updateToolGroup(toolGroup);
+
+        assertThat(toolGroupApiService.update(toolGroup)).isEqualTo(toolGroup);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateToolGroupWhenPermissionIsGranted() {
         initAclEntity(toolGroup, AclPermission.WRITE);
@@ -122,6 +138,15 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadToolGroupsByRegistryIdForAdmin() {
+        final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
+        doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryId(ID);
+
+        assertThat(toolGroupApiService.loadByRegistryId(ID)).isEqualTo(toolGroups);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldLoadToolGroupsByRegistryIdForToolAdmin() {
         final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
         doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryId(ID);
 
@@ -170,6 +195,15 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldLoadToolGroupsByRegistryNameOrIdForToolAdmin() {
+        final List<ToolGroup> toolGroups = mutableListOf(toolGroup);
+        doReturn(toolGroups).when(mockToolGroupManager).loadByRegistryNameOrId(TEST_STRING);
+
+        assertThat(toolGroupApiService.loadByRegistryNameOrId(TEST_STRING)).isEqualTo(toolGroups);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadToolGroupsByRegistryNameOrIdWhenPermissionIsGranted() {
         initAclEntity(toolGroup, AclPermission.READ);
@@ -205,6 +239,14 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadToolGroupForAdmin() {
+        doReturn(toolGroup).when(mockToolGroupManager).load(ID);
+
+        assertThat(toolGroupApiService.load(ID)).isEqualTo(toolGroup);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldLoadToolGroupForToolAdmin() {
         doReturn(toolGroup).when(mockToolGroupManager).load(ID);
 
         assertThat(toolGroupApiService.load(ID)).isEqualTo(toolGroup);
@@ -302,6 +344,14 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldCreatePrivateForToolAdmin() {
+        doReturn(toolGroup).when(mockToolGroupManager).createPrivate(ID);
+
+        assertThat(toolGroupApiService.createPrivate(ID)).isEqualTo(toolGroup);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreatePrivateWhenPermissionIsGranted() {
         final DockerRegistry dockerRegistry = DockerCreatorUtils.getDockerRegistry(ID, ANOTHER_SIMPLE_USER);
@@ -329,6 +379,14 @@ public class ToolGroupApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteToolGroupForAdmin() {
+        doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, false);
+
+        assertThat(toolGroupApiService.delete(TEST_STRING)).isEqualTo(toolGroup);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldDeleteToolGroupForToolAdmin() {
         doReturn(toolGroup).when(mockToolGroupManager).delete(TEST_STRING, false);
 
         assertThat(toolGroupApiService.delete(TEST_STRING)).isEqualTo(toolGroup);

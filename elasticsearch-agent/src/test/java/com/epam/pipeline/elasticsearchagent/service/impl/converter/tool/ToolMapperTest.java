@@ -20,11 +20,10 @@ import com.epam.pipeline.elasticsearchagent.model.ToolWithDescription;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.Tool;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyMetadata;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPermissions;
@@ -44,7 +43,7 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 class ToolMapperTest {
 
     @Test
-    void shouldMapTool() throws IOException {
+    void shouldMapTool() {
         ToolMapper mapper = new ToolMapper();
 
         Tool tool = new Tool();
@@ -66,7 +65,7 @@ class ToolMapperTest {
                 .metadata(METADATA)
                 .permissions(PERMISSIONS_CONTAINER)
                 .build();
-        XContentBuilder contentBuilder = mapper.map(container);
+        Map<String, ?> contentBuilder = mapper.map(container);
 
         verifyTool(tool, contentBuilder);
         verifyPipelineUser(USER, contentBuilder);

@@ -20,6 +20,7 @@ import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao.NodeScheduleParameters
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -27,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -239,9 +241,24 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
             }
         }
 
-        private static Map<String, String> parseKubeLabels(final String kubeLabels) {
+        private static Map<String, PoolLabel> parseKubeLabels(final String kubeLabels) {
             try {
-                return JsonMapper.parseData(kubeLabels, new TypeReference<Map<String, String>>() {});
+                return JsonMapper.parseData(kubeLabels, new TypeReference<Map<String, PoolLabel>>() {});
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage(), e);
+                return readOldFormat(kubeLabels);
+            }
+        }
+
+        // Previously labels were stored as Map<String, String>
+        private static Map<String, PoolLabel> readOldFormat(final String kubeLabels) {
+            try {
+                final Map<String, String> data = JsonMapper.parseData(
+                        kubeLabels, new TypeReference<Map<String, String>>() {});
+                final Map<String, PoolLabel> labels = new HashMap<>();
+                MapUtils.emptyIfNull(data)
+                        .forEach((key, value) -> labels.put(key, new PoolLabel(value, false)));
+                return labels;
             } catch (IllegalArgumentException e) {
                 log.error(e.getMessage(), e);
                 return null;

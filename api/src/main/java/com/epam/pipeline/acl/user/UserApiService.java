@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
@@ -28,7 +29,11 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.user.OnlineUsersService;
@@ -47,12 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
-import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
-import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
-import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_FILTER;
-import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_PERMISSION;
-import static com.epam.pipeline.security.acl.AclExpressions.OR;
+import static com.epam.pipeline.security.acl.AclExpressions.*;
 
 @Service
 public class UserApiService {
@@ -72,12 +72,24 @@ public class UserApiService {
     @Autowired
     private RunLimitsService runLimitsService;
 
+    @Autowired
+    private NamedJwtTokenManager namedJwtTokenManager;
+
+    @Autowired
+    private AuthManager authManager;
+
+    @Autowired
+    private JwtTokenRevocationManager jwtTokenRevocationManager;
+
+    @Autowired
+    private PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceService;
+
     /**
      * Registers a new user
      * @param userVO specifies user to create
      * @return created user
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     @AclMask
     public PipelineUser createUser(PipelineUserVO userVO) {
         return userManager.create(userVO);
@@ -89,7 +101,7 @@ public class UserApiService {
      * @param userVO
      * @return
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     @AclMask
     public PipelineUser updateUser(final Long id, final PipelineUserVO userVO) {
         return userManager.updateUser(id, userVO);
@@ -101,7 +113,7 @@ public class UserApiService {
      * @param blockStatus boolean condition of user (true - blocked, false - not blocked)
      * @return updated user
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         return userManager.updateUserBlockingStatus(id, blockStatus);
     }
@@ -112,63 +124,68 @@ public class UserApiService {
      * @param blockStatus boolean condition of group (true - blocked, false - not blocked)
      * @return created/updated groupStatus
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
         return userManager.upsertGroupBlockingStatus(groupName, blockStatus);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public GroupStatus deleteGroupBlockingStatus(final String groupName) {
         return userManager.deleteGroupBlockingStatus(groupName);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_ADMIN_ONLY)
     public List<GroupStatus> loadAllGroupsBlockingStatuses() {
         return userManager.loadAllGroupsBlockingStatuses();
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_READ_PERMISSION)
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_ADMIN_ONLY + OR + USER_READ_PERMISSION)
     @AclMask
-    public PipelineUser loadUser(Long id, final boolean quotas) {
-        return userManager.load(id, quotas);
+    public PipelineUser loadUser(final Long id, final boolean quotas, final boolean loadCredits) {
+        return userManager.load(id, quotas, loadCredits);
     }
 
-    @PostAuthorize(ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
+    @PostAuthorize(ADMIN_ONLY+ OR + USER_ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
     @AclMask
     public PipelineUser loadUserByName(final String name) {
         return userManager.loadByNameOrId(name);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public void deleteUser(Long id) {
         userManager.delete(id);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public PipelineUser updateUserRoles(Long id, List<Long> roles) {
         return userManager.updateUser(id, roles);
     }
 
     @PostFilter(USER_READ_FILTER)
     @AclMaskList
-    public List<PipelineUser> loadUsers(final boolean loadQuotas) {
-        return new ArrayList<>(userManager.loadAllUsers(loadQuotas));
+    public List<PipelineUser> loadUsers(final boolean loadQuotas, final boolean loadCredits) {
+        return new ArrayList<>(userManager.loadAllUsers(loadQuotas, loadCredits));
     }
 
     @PostFilter(USER_READ_FILTER)
     @AclMaskList
-    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
-        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas));
+    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas, final boolean loadCredits) {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas, loadCredits));
     }
 
     //TODO
-    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER + OR + USER_ADMIN_ONLY + OR_USER_READER)
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
         return userManager.loadUsersInfo(userNames);
     }
 
     public PipelineUser getCurrentUser() {
-        return userManager.getCurrentUser();
+        final PipelineUser user = userManager.getCurrentUser();
+        if (user != null) {
+            platformUsageCreditsUserBalanceService.findByUserId(user.getId())
+                    .ifPresent(user::setUsageCredits);
+        }
+        return user;
     }
 
     /**
@@ -221,7 +238,7 @@ public class UserApiService {
         return userManager.findUsers(prefix);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER)
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         return userManager.exportUsers(attr);
     }
@@ -232,12 +249,39 @@ public class UserApiService {
      * @param expiration token expiration time (seconds)
      * @return generated token
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public JwtRawToken issueToken(final String userName, final Long expiration) {
         return userManager.issueToken(userName, expiration);
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    /**
+     * Issues a plain JWT for the current user (not registered in the named-token table).
+     */
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public JwtRawToken issueTokenForCurrentUser(final Long expiration) {
+        return authManager.issueTokenForCurrentUser(expiration, !authManager.isAdmin());
+    }
+
+    /**
+     * Issues a JWT for another user (admin) and returns registry metadata including the raw token string.
+     */
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
+    public NamedJwtToken issueNamedJwtToken(final Long userId, final Long expiration, final String registryLabel) {
+        final PipelineUser user = userManager.load(userId);
+        return namedJwtTokenManager.issueNamedTokenForUser(user.getUserName(), expiration,
+                NamedJwtToken.normalizeTokenName(registryLabel));
+    }
+
+    /**
+     * Issues a JWT for the current user and returns registry metadata including the raw token string.
+     */
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public NamedJwtToken issueNamedJwtTokenForCurrentUser(final Long expiration, final String registryLabel) {
+        return namedJwtTokenManager.issueNamedTokenForCurrentUser(expiration, !authManager.isAdmin(),
+                NamedJwtToken.normalizeTokenName(registryLabel));
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public List<PipelineUserEvent> importUsersFromCsv(final boolean createUser, final boolean createGroup,
                                                       final List<String> systemDictionariesToCreate,
                                                       final MultipartFile file) {
@@ -251,7 +295,7 @@ public class UserApiService {
      *                launch pipelines as specified user
      * @return the list of the runners
      */
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public List<RunnerSidVO> updateRunners(final Long id, final List<RunnerSidVO> runners) {
         return userRunnersManager.saveRunners(id, runners);
     }
@@ -261,7 +305,7 @@ public class UserApiService {
      * @param id the user ID
      * @return the list of the runners
      */
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER)
     public List<RunnerSid> getRunners(final Long id) {
         return userRunnersManager.getRunners(id);
     }
@@ -270,17 +314,39 @@ public class UserApiService {
         return userManager.getImpersonationStatus();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public OnlineUsers saveCurrentlyOnlineUsers() {
         return onlineUsersService.saveCurrentlyOnlineUsers();
     }
 
-    @PreAuthorize(ADMIN_ONLY)
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY)
     public boolean deleteExpiredOnlineUsers(final LocalDate date) {
         return onlineUsersService.deleteExpired(date);
     }
 
     public Map<String, Integer> getCurrentUserLaunchLimits(final boolean loadAll) {
         return runLimitsService.getCurrentUserLaunchLimits(loadAll);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public void revokeJwtTokenForCurrentUser(final String jti) {
+        final Long userId = userManager.getCurrentUser().getId();
+        jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<NamedJwtToken> listCurrentUserNamedJwtTokens() {
+        final Long userId = userManager.getCurrentUser().getId();
+        return namedJwtTokenManager.loadNamedJwtTokensByUserId(userId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR + USER_WRITE_BY_USER_ID)
+    public void revokeJwtTokenForUser(final Long userId, final String jti) {
+        jwtTokenRevocationManager.revokeTokenForUser(userId, jti);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR + USER_WRITE_BY_USER_ID)
+    public List<NamedJwtToken> listNamedJwtTokensForUser(final Long userId) {
+        return namedJwtTokenManager.loadNamedJwtTokensByUserId(userId);
     }
 }

@@ -39,4 +39,9 @@ public class ElasticSearchRequest {
     private List<String> metadataFields;
     private ScrollingParameters scrollingParameters;
     private List<SearchRequestSort> sorts;
+
+    // escape '/' symbol as it going to fail elasticsearch on search request
+    public String getQuery() {
+        return ElasticSearchQueryUtils.getEscapedQuery(query);
+    }
 }

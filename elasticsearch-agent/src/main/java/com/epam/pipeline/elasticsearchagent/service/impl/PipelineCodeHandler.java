@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.model.DeleteRequest;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearchagent.exception.EntityNotFoundException;
 import com.epam.pipeline.elasticsearchagent.model.EventType;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
@@ -37,9 +40,6 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -225,7 +225,8 @@ public class PipelineCodeHandler {
                                                         final PermissionsContainer permissions) {
         if (filePushEvent.getEventType() == EventType.DELETE) {
             return new DeleteRequest(indexName, DOC_MAPPING_TYPE,
-                    buildFileId(filePushEvent.getPath(), getVersionNameForIndex(filePushEvent.getVersion())));
+                    buildFileId(filePushEvent.getPath(), getVersionNameForIndex(filePushEvent.getVersion())),
+                    indexService.getVersion());
         } else {
             return createIndexRequest(pipeline, filePushEvent.getVersion(), indexName,
                     filePushEvent.getPath(), permissions);
@@ -269,7 +270,8 @@ public class PipelineCodeHandler {
                 return null;
             }
             final String versionName = getVersionNameForIndex(revisionName);
-            return new IndexRequest(indexName, DOC_MAPPING_TYPE, buildFileId(repoEntryPath, versionName))
+            return new IndexRequest(indexName, DOC_MAPPING_TYPE, buildFileId(repoEntryPath, versionName),
+                    indexService.getVersion())
                     .source(codeMapper
                             .pipelineCodeToDocument(
                                     pipeline, versionName, repoEntryPath, fileContent, permissionsContainer));

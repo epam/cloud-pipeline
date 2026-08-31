@@ -35,6 +35,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class JsonMapper extends ObjectMapper {
     private static final long serialVersionUID = -1414537788709027470L;
@@ -45,6 +46,7 @@ public class JsonMapper extends ObjectMapper {
      */
     private static final String FMT_ISO_LOCAL_DATE = Constants.FMT_ISO_LOCAL_DATE;
     private static final String EMPTY_JSON = "{}";
+    private static final String EMPTY_JSON_ARRAY = "[]";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(FMT_ISO_LOCAL_DATE);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(Constants.TIME_FORMAT);
 
@@ -106,12 +108,28 @@ public class JsonMapper extends ObjectMapper {
         return EMPTY_JSON;
     }
 
-    public static <T> T parseData(String data, TypeReference type) {
+    public static <T> String convertListToJsonStringForQuery(List<T> list) {
+        if (list == null) {
+            return EMPTY_JSON_ARRAY;
+        }
+        String resultData;
+        try {
+            resultData = instance.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
+        }
+        if (StringUtils.isNotBlank(resultData)) {
+            return resultData;
+        }
+        return EMPTY_JSON_ARRAY;
+    }
+
+    public static <T> T parseData(String data, TypeReference<T> type) {
         return parseData(data, type, instance);
     }
 
     public static <T> T parseData(final String data,
-                                  final TypeReference type,
+                                  final TypeReference<T> type,
                                   final ObjectMapper customMapper) {
         if (StringUtils.isBlank(data)) {
             return null;

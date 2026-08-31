@@ -59,8 +59,8 @@ public class GPUDetailsRequester extends AbstractGPUMetricsRequester {
 
     @Override
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                           final Duration interval) {
-        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to)
+                                           final Duration interval, final String podName) {
+        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to, podName)
                 .size(1)
                 .aggregation(ordered(AggregationBuilders.terms(DEVICE_ID_AGGREGATION)
                         .field(path(FIELD_METRICS_TAGS, DEVICE_ID_RAW_FIELD))

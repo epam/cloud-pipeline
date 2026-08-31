@@ -257,13 +257,16 @@ class GeneralInfoTab extends React.Component {
   initializeRange = () => {
     const {rangeInitialized, start, end} = this.state;
     const {chartsData} = this.props;
-    if (!rangeInitialized && chartsData.initialized) {
+    if (!rangeInitialized && chartsData?.initialized) {
       this.setState({
         rangeInitialized: true,
         start: start || chartsData.from || chartsData.instanceFrom,
         end: end || chartsData.to || chartsData.instanceTo
       }, () => {
-        if (chartsData.rangeEndIsFixed) {
+        if (chartsData.rangeEndIsFixed || chartsData.rangeEndIsPredefined) {
+          // the range end was requested explicitly (i.e. we're displaying
+          // statistics for the finished run) - live update would shift
+          // the range from the requested one
           this.setLiveUpdate(false);
         }
       });
@@ -295,8 +298,12 @@ class GeneralInfoTab extends React.Component {
       return Promise.resolve();
     }
     chartsData.updateRange();
-    start = start || chartsData.instanceFrom || moment().add(-1, 'hour').unix();
-    end = end || chartsData.instanceTo || moment().unix();
+    // `chartsData.from` / `chartsData.to` contain the range to be displayed initially
+    // (last hour by default, or the requested one); state.start & state.end may not be
+    // initialized yet, since the first live update is invoked immediately, i.e. before
+    // `initializeRange` state modification is applied
+    start = start || chartsData.from || chartsData.instanceFrom || moment().add(-1, 'hour').unix();
+    end = end || chartsData.to || chartsData.instanceTo || moment().unix();
     const range = end - start;
     if (!chartsData.rangeEndIsFixed) {
       end = moment().unix();
@@ -479,6 +486,14 @@ class GeneralInfoTab extends React.Component {
     });
   };
 
+  navigateToRun = () => {
+    const {chartsData, router} = this.props;
+    if (!chartsData?.runId || !router) {
+      return;
+    }
+    router.push(`/run/${chartsData.runId}`);
+  }
+
   onExport = (mode, tick) => {
     if (mode && /^custom$/i.test(mode)) {
       this.openExportSettingsWindow();
@@ -503,7 +518,8 @@ class GeneralInfoTab extends React.Component {
           start ? moment.unix(start).utc().format(format) : undefined,
           end ? moment.unix(end).utc().format(format) : undefined,
           tickValue,
-          modeValue
+          modeValue,
+          chartsData.runId
         );
         let res;
         await pipelineFile.fetch();
@@ -543,12 +559,12 @@ class GeneralInfoTab extends React.Component {
     const {
       chartsData
     } = this.props;
-    if (chartsData.error) {
+    if (chartsData?.error) {
       return (
         <Alert type={'error'} message={chartsData.error} />
       );
     }
-    if (!chartsData.initialized) {
+    if (!chartsData || !chartsData.initialized) {
       return (
         <LoadingView />
       );
@@ -576,6 +592,14 @@ class GeneralInfoTab extends React.Component {
         style={{flexDirection: 'column', overflow: 'hidden', height: 'calc(100vh - 120px)'}}
       >
         <Row type={'flex'} justify={'end'} align={'middle'} style={{marginTop: 5, marginBottom: 5}}>
+          {chartsData?.runId ? (
+            <a
+              style={{marginRight: 'auto', marginLeft: 3}}
+              onClick={this.navigateToRun}
+            >
+              Showing statistics for run #{chartsData.runId}
+            </a>
+          ) : null}
           <Checkbox
             checked={chartsData.followCommonRange}
             onChange={this.onFollowCommonRangeChanged}

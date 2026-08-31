@@ -50,20 +50,12 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
-import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
-import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
-import com.epam.pipeline.dao.pipeline.EngineRunTaskDao;
-import com.epam.pipeline.dao.pipeline.FolderDao;
-import com.epam.pipeline.dao.pipeline.PipelineDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RestartRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
-import com.epam.pipeline.dao.pipeline.RunScheduleDao;
-import com.epam.pipeline.dao.pipeline.RunStatusDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
+import com.epam.pipeline.dao.pipeline.*;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
+import com.epam.pipeline.dao.security.JwtTokenRevocationDao;
+import com.epam.pipeline.dao.security.NamedJwtTokenDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolGroupDao;
 import com.epam.pipeline.dao.tool.ToolVersionDao;
@@ -71,12 +63,20 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
+import com.epam.pipeline.manager.access.AccessService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
@@ -85,10 +85,15 @@ import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
+import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
@@ -321,6 +326,21 @@ public class AspectTestBeans {
     protected PipelineRunDao mockPipelineRunDao;
 
     @MockBean
+    protected PipelineRunResultDao mockPipelineRunResultDao;
+
+    @MockBean
+    protected JwtTokenRevocationDao mockJwtTokenRevocationDao;
+
+    @MockBean
+    protected NamedJwtTokenDao mockNamedJwtTokenDao;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
+
+    @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
+
+    @MockBean
     protected UserDao mockUserDao;
 
     @MockBean
@@ -517,4 +537,40 @@ public class AspectTestBeans {
 
     @MockBean
     protected StoragePathPermissionsDao storagePathPermissionsDao;
+
+    @MockBean
+    protected AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    protected AccessService accessService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected AzureDevOpsMapper azureDevOpsMapper;
+
+    @MockBean
+    protected GlobalSearchElasticHelper globalSearchElasticHelper;
+
+    @MockBean
+    protected HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient;
+
+    @MockBean
+    protected PipelineRunMetricsDao pipelineRunMetricsDao;
+
+    @MockBean
+    protected PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
+
+    @MockBean
+    protected PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
 }

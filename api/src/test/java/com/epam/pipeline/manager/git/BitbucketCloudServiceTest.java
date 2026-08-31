@@ -50,12 +50,13 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     private static final String CONTENT = "content123";
 
 /*
-    Authentication type should be set up in System Preferences(bitbucket.cloud.auth.type).
     If Authentication type is BASIC:
-    repositoryPath should contain user name (like https://user_name@bitbucket.org/workspace/repository.git)
-    token should contain app password
-    Clone url looks like https://user_name:password@bitbucket.org/workspace/repository.git
+    repositoryPath should contain user email
+    (like https://user_name%40company.com@bitbucket.org/workspace/repository.git)
+    token should contain API Token
+    Clone url looks like https://user_name:token@bitbucket.org/workspace/repository.git
 
+    DEPRECATED:
     If Authentication type is TOKEN:
     repositoryPath should look like https://bitbucket.org/workspace/repository.git
     token should contain secure token
@@ -75,7 +76,7 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     @Before
     public void setup() {
         final Preference preference = SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE.toPreference();
-        preference.setValue(AuthType.TOKEN.name());
+        preference.setValue(AuthType.BASIC.name());
         preferenceManager.update(Collections.singletonList(preference));
     }
 
@@ -143,7 +144,7 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     @Ignore
     @Test
     public void testGetFile() throws GitClientException {
-        final byte[] content = service.getFileContents(getGitProject(), FILE_PATH, COMMIT_ID, token);
+        final byte[] content = service.getFileContents(getGitProject(), FILE_PATH, COMMIT_ID, token, true);
         Assert.assertNotNull(content);
     }
 
@@ -151,7 +152,7 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
     @Test
     public void testGetFiles() throws GitClientException {
         final List<GitRepositoryEntry> contents = service.getRepositoryContents(getPipeline(),
-                FOLDER_PATH, COMMIT_ID, true);
+                FOLDER_PATH, COMMIT_ID, true, true);
         Assert.assertTrue(contents.size() > 0);
     }
 

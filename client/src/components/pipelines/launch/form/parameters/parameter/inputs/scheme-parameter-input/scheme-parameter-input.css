@@ -1,0 +1,69 @@
+.scheme-parameter-input {
+  cursor: pointer;
+  width: 100%;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.scheme-parameter-table-container {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  max-height: 65vh;
+  padding: 5px;
+}
+
+.scheme-parameter-table-description {
+  flex-shrink: 0;
+  margin: 5px 0;
+}
+
+.scheme-parameter-table-scroller {
+  flex: 1;
+  overflow: auto;
+  width: 100%;
+}
+
+.scheme-parameter-table {
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.scheme-parameter-table .parameter-col,
+.scheme-parameter-table .entry-action {
+  padding: 5px;
+  text-align: center;
+  border-bottom: none;
+  border-top: none;
+}
+
+.scheme-parameter-table .entry-action {
+  min-width: 50px;
+}
+
+.scheme-parameter-table .parameter-col {
+  min-width: 200px;
+  text-align: left;
+}
+
+.scheme-parameter-table th.parameter-col {
+  font-size: larger;
+  vertical-align: top;
+}
+
+.scheme-parameter-table .parameter-col.parameter-type-path {
+  min-width: 300px;
+}
+
+.scheme-parameter-table-warning {
+  flex-shrink: 0;
+  padding: 5px 0;
+}
+
+.scheme-parameter-table-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}

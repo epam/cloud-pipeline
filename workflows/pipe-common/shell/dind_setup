@@ -126,6 +126,10 @@ if [ $REQUIRES_GPU_DIND -eq 0 ]; then
         _DIND_NVIDIA_DEP_INSTALL_RESULT=$?
         find /etc/yum.repos.d -type f \( -name "*nvidia*" -o -name "*docker*" \)  -exec rm -f {} \;
     else
+        # Hacky way to make Ubuntu 24.04 DIND work with GPU
+        if [ "$distribution" == "ubuntu24.04" ]; then
+            distribution="ubuntu22.04"
+        fi
         export CP_CAP_DIND_GPU_VERSION="${CP_CAP_DIND_GPU_VERSION:-3.13.0-1}"
         if [ "$CP_CAP_DIND_GPU_VERSION_DEB" ]; then
             CP_CAP_DIND_GPU_VERSION="$CP_CAP_DIND_GPU_VERSION_DEB"
@@ -212,9 +216,59 @@ sed -i '1a \
   },' /etc/docker/daemon.json
 fi
 
+
+######################################################
+# Install buildx
+######################################################
+CP_CAP_DIND_BUILDX_ENABLED="${CP_CAP_DIND_BUILDX_ENABLED:-false}"
+CP_CAP_DIND_BUILDX_VERSION="${CP_CAP_DIND_BUILDX_VERSION:-0.25.0}"
+CP_CAP_DIND_BUILDX_INSTALL_DIR="${CP_CAP_DIND_BUILDX_INSTALL_DIR:-/usr/lib/docker/cli-plugins}"
+CP_CAP_DIND_BUILDX_DISTR_PREFIX="${CP_CAP_DIND_BUILDX_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/buildx"}"
+CP_CAP_DIND_BUILDX_BUILDER_NAME="${CP_CAP_DIND_BUILDX_BUILDER_NAME:-cp-builder}"
+if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" ">" && \
+    [ "$CP_CAP_DIND_BUILDX_ENABLED" != "false" ]; then
+
+    pipe_log_info "Installing buildx plugin:" "$DIND_SETUP_TASK"
+    pipe_log_info "- version: $CP_CAP_DIND_BUILDX_VERSION" "$DIND_SETUP_TASK"
+    pipe_log_info "- url: $CP_CAP_DIND_BUILDX_DISTR_PREFIX" "$DIND_SETUP_TASK"
+    pipe_log_info "- install dir: $CP_CAP_DIND_BUILDX_INSTALL_DIR" "$DIND_SETUP_TASK"
+    
+    mkdir -p "${CP_CAP_DIND_BUILDX_INSTALL_DIR}" && \
+    wget -q -O "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx" "${CP_CAP_DIND_BUILDX_DISTR_PREFIX}/buildx-v${CP_CAP_DIND_BUILDX_VERSION}.linux-amd64" && \
+    chmod +x "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx"
+
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "buildx installation failed" "$DIND_SETUP_TASK"
+    else
+        if [ "$http_proxy" ] || [ "$https_proxy" ] || [ "$no_proxy" ]; then
+            pipe_log_info "Setting up buildx proxies" "$DIND_SETUP_TASK"
+            docker buildx rm "$CP_CAP_DIND_BUILDX_BUILDER_NAME"
+            docker buildx create \
+                --name "$CP_CAP_DIND_BUILDX_BUILDER_NAME" \
+                --use \
+                --driver docker-container \
+                --driver-opt env.http_proxy="$http_proxy" \
+                --driver-opt env.https_proxy="$https_proxy" \
+                --driver-opt '"env.no_proxy='$no_proxy'"'
+        fi
+    fi
+fi
+
 ######################################################
 # Start dockerd
 ######################################################
 nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
+
+pipe_log_info "Waiting for Docker daemon to be ready" "$DIND_SETUP_TASK"
+_DIND_WAIT_TIMEOUT="${CP_CAP_DIND_WAIT_TIMEOUT:-60}"
+_DIND_WAIT_ELAPSED=0
+while ! docker info > /dev/null 2>&1; do
+    if [ "$_DIND_WAIT_ELAPSED" -ge "$_DIND_WAIT_TIMEOUT" ]; then
+        pipe_log_fail "Docker daemon did not become ready within ${_DIND_WAIT_TIMEOUT}s" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    sleep 2
+    _DIND_WAIT_ELAPSED=$((_DIND_WAIT_ELAPSED + 2))
+done
 
 pipe_log_success "Docker daemon started" "$DIND_SETUP_TASK"

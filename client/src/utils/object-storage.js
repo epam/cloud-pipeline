@@ -22,6 +22,7 @@ import DataStorageRequest from '../models/dataStorage/DataStoragePage';
 import DataStorageItemUpdateContent from '../models/dataStorage/DataStorageItemUpdateContent';
 import auditStorageAccessManager from './audit-storage-access';
 import {base64toString} from './base64';
+import escapeRegExp from './escape-reg-exp';
 
 const parser = new DOMParser();
 
@@ -215,6 +216,12 @@ class ObjectStorage {
         return e[1];
       }
     }
+    if (this.localRoot) {
+      const e = (new RegExp(`^${escapeRegExp(this.localRoot)}/(.+)$`, 'i')).exec(path);
+      if (e && e.length) {
+        return e[1];
+      }
+    }
     return path;
   };
 
@@ -255,7 +262,14 @@ function findStorageByPathFn (storagePath) {
   return function predicate (storage) {
     const storageMask = new RegExp(`^${storage.pathMask}(/|$)`, 'i');
     const storagePathMask = new RegExp(`^${storage.path}(/|$)`, 'i');
-    return storageMask.test(storagePath) || storagePathMask.test(storagePath);
+    const {
+      name,
+      mountPoint = `/cloud-data/${name}`
+    } = storage;
+    const cloudDataMask = new RegExp(`^${escapeRegExp(mountPoint)}(/|$)`, 'i');
+    return storageMask.test(storagePath) ||
+      storagePathMask.test(storagePath) ||
+      cloudDataMask.test(storagePath);
   };
 }
 

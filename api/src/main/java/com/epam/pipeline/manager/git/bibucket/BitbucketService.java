@@ -148,13 +148,13 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public byte[] getFileContents(final GitProject repository, final String path, final String revision,
-                                  final String token) {
+                                  final String token, final boolean isDraft) {
         return getClient(repository.getRepoUrl(), token).getFileContent(revision, path);
     }
 
     @Override
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
-                                           final int byteLimit) {
+                                           final int byteLimit, final boolean isDraft) {
         return RestApiUtils.getFileContent(getClient(pipeline).getRawFileContent(revision, path), byteLimit);
     }
 
@@ -232,7 +232,8 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String rawPath,
-                                                          final String version, final boolean recursive) {
+                                                          final String version, final boolean recursive,
+                                                          final boolean isDraft) {
         final BitbucketClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
@@ -358,7 +359,7 @@ public class BitbucketService implements GitClientService {
         final String bitbucketHost = protocol + host;
 
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
-                .getMessage(MessageConstants.ERROR_BITBUCKET_TOKEN_NOT_FOUND));
+                .getMessage(MessageConstants.ERROR_REPOSITORY_TOKEN_NOT_FOUND, getType()));
         final String credentials = AuthorizationUtils.BEARER_AUTH + token;
 
         return new BitbucketClient(bitbucketHost, credentials, null, projectName, repositoryName);
@@ -366,7 +367,7 @@ public class BitbucketService implements GitClientService {
 
     private GitClientException buildUrlParseError(final String urlPart) {
         return new GitClientException(messageHelper.getMessage(
-                MessageConstants.ERROR_PARSE_BITBUCKET_REPOSITORY_PATH, urlPart));
+                MessageConstants.ERROR_REPOSITORY_PATH_PARSE, urlPart, getType()));
     }
 
     private BitbucketTag fillCommitInfo(final BitbucketTag tag, final BitbucketClient client) {

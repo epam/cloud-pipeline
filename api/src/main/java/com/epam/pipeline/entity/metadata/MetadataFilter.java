@@ -62,6 +62,8 @@ public class MetadataFilter {
     private LocalDateTime endDateTo;
     @ApiModelProperty(notes = "Logical operator for search queries. Default: OR", allowableValues = "AND, OR")
     private LogicalSearchOperator logicalSearchOperator = LogicalSearchOperator.OR;
+    @ApiModelProperty(notes = "List of key-values pairs for retrieving groupings on it")
+    private List<FacetRequest> facets;
 
 
     @Getter
@@ -88,6 +90,15 @@ public class MetadataFilter {
     public static class OrderBy {
         private String field;
         private boolean desc = false;
+        private boolean predefined = false;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FacetRequest {
+        private String field;
         private boolean predefined = false;
     }
 }

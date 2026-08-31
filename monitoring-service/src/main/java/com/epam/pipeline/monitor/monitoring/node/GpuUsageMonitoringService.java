@@ -27,11 +27,13 @@ import com.epam.pipeline.monitor.service.elasticsearch.MonitoringElasticsearchSe
 import com.epam.pipeline.monitor.service.reporter.NodeReporterService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.IntSummaryStatistics;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -85,19 +87,30 @@ public class GpuUsageMonitoringService implements MonitoringService {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private GpuUsages tryFillSummaries(final GpuUsages usage) {
         try {
-            if (CollectionUtils.isEmpty(usage.getUsages())) {
+            final List<NodeReporterGpuUsages> usages = ListUtils.emptyIfNull(usage.getUsages()).stream()
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(usages)) {
                 return null;
             }
-            usage.setUsages(usage.getUsages().stream()
+            usage.setUsages(usages.stream()
                     .peek(value -> value.setMemoryUtilization(
                             calculateUtilization(value.getMemoryUsed(), value.getMemoryTotal())))
                     .collect(Collectors.toList()));
-            usage.setStats(collectSummaries(usage.getUsages()));
+            usage.setStats(collectSummaries(usages));
+            usage.setStatsByRun(collectSummariesByRun(usages));
             return usage;
         } catch (Exception e) {
             log.error("Failed to collect gpu statistics.", e);
             return null;
         }
+    }
+
+    private Map<Long, GpuUsageStats> collectSummariesByRun(final List<NodeReporterGpuUsages> usages) {
+        return usages.stream()
+                .filter(u -> Objects.nonNull(u.getRunId()))
+                .collect(Collectors.groupingBy(NodeReporterGpuUsages::getRunId,
+                        Collectors.collectingAndThen(Collectors.toList(), this::collectSummaries)));
     }
 
     private GpuUsageStats collectSummaries(final List<NodeReporterGpuUsages> usages) {

@@ -17,6 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtAuthenticationProvider;
 import com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter;
@@ -77,6 +78,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
     private String[] swaggerAccessRoles;
 
+    @Value("${api.security.disable.logging:false}")
+    private boolean disableLogging;
+
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
 
@@ -85,6 +89,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private UserAccessService userAccessService;
+
+    @Autowired
+    private JwtTokenRevocationManager jwtTokenRevocationManager;
 
     protected String getPublicKey() {
         return publicKey;
@@ -131,11 +138,12 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     @Bean protected JwtAuthenticationProvider jwtAuthenticationProvider() {
-        return new JwtAuthenticationProvider(jwtTokenVerifier(), userAccessService);
+        return new JwtAuthenticationProvider(jwtTokenVerifier(), jwtTokenRevocationManager, userAccessService);
     }
 
     protected JwtFilterAuthenticationFilter getJwtAuthenticationFilter() {
-        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), userAccessService);
+        return new JwtFilterAuthenticationFilter(jwtTokenVerifier(), jwtTokenRevocationManager, userAccessService,
+                disableLogging);
     }
 
     protected RequestMatcher getFullRequestMatcher() {
@@ -151,7 +159,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/restapi/dockerRegistry/oauth",
                 "/restapi/proxy/**",
                 "/error",
-                "/error/**");
+                "/error/**",
+                "/restapi/access/token",
+                "/restapi/access/code");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 

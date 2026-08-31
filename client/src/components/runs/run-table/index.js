@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,8 @@ function prepareRun (item, childrenRunsCollection, isChildRun = false) {
       children = [{
         id: `${id}-children-placeholder`,
         [RUN_LOADING_PLACEHOLDER_PROPERTY]: true,
-        [RUN_LOADING_ERROR_PROPERTY]: undefined
+        [RUN_LOADING_ERROR_PROPERTY]: undefined,
+        isPlaceholder: true
       }];
     } else if (collection.loaded) {
       const childRuns = (collection.childRuns || [])
@@ -162,14 +163,16 @@ function prepareRun (item, childrenRunsCollection, isChildRun = false) {
         children = [{
           id: `${id}-children-placeholder`,
           [RUN_LOADING_PLACEHOLDER_PROPERTY]: false,
-          [RUN_LOADING_ERROR_PROPERTY]: 'Worker jobs not found'
+          [RUN_LOADING_ERROR_PROPERTY]: 'Worker jobs not found',
+          isPlaceholder: true
         }];
       }
     } else {
       children = [{
         id: `${id}-children-placeholder`,
         [RUN_LOADING_PLACEHOLDER_PROPERTY]: collection.pending,
-        [RUN_LOADING_ERROR_PROPERTY]: collection.error
+        [RUN_LOADING_ERROR_PROPERTY]: collection.error,
+        isPlaceholder: true
       }];
     }
   }
@@ -207,7 +210,7 @@ export function extractTagsFromFilter (filter = {}) {
   }, {});
 };
 
-@inject('localization', 'routing')
+@inject('localization', 'routing', 'uiNavigation')
 @runPipelineActions
 @observer
 class RunTable extends localization.LocalizedReactComponent {
@@ -236,6 +239,11 @@ class RunTable extends localization.LocalizedReactComponent {
    * @type {ChildRuns[]}
    */
   @observable childrenRunsCollection = [];
+
+  get estimatedPriceVisible () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.utils.estimatedPriceVisible().logs;
+  }
 
   get columns () {
     const {
@@ -490,7 +498,7 @@ class RunTable extends localization.LocalizedReactComponent {
   };
 
   onRunClick = (run) => {
-    if (!run) {
+    if (!run || run.isPlaceholder) {
       return;
     }
     const {
@@ -668,7 +676,8 @@ class RunTable extends localization.LocalizedReactComponent {
         reload: this.reload.bind(this),
         state: this.state,
         setState: this.filtersChanged.bind(this),
-        disabledFilters: parseDisableFiltersProps(disableFilters)
+        disabledFilters: parseDisableFiltersProps(disableFilters),
+        estimatedPriceVisible: this.estimatedPriceVisible
       }
     );
     const {

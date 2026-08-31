@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -81,13 +83,15 @@ public class PipelineRepositoryProviderService {
     }
 
     public byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
-                                  final String path, final String revision, final String token) {
-        return getProvider(repositoryType).getFileContents(repository, path, revision, token);
+                                  final String path, final String revision, final String token,
+                                  final boolean isDraft) {
+        return getProvider(repositoryType).getFileContents(repository, path, revision, token, isDraft);
     }
 
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String version,
-                                           final int byteLimit) {
-        return getProvider(pipeline.getRepositoryType()).getTruncatedFileContents(pipeline, path, version, byteLimit);
+                                           final int byteLimit, final boolean isDraft) {
+        return getProvider(pipeline.getRepositoryType())
+                .getTruncatedFileContents(pipeline, path, version, byteLimit, isDraft);
     }
 
     public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
@@ -129,8 +133,10 @@ public class PipelineRepositoryProviderService {
     }
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
-                                                          final String version,  final boolean recursive) {
-        return getProvider(pipeline.getRepositoryType()).getRepositoryContents(pipeline, path, version, recursive);
+                                                          final String version,  final boolean recursive,
+                                                          final boolean isDraft) {
+        return getProvider(pipeline.getRepositoryType())
+                .getRepositoryContents(pipeline, path, version, recursive, isDraft);
     }
 
     public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
@@ -173,5 +179,14 @@ public class PipelineRepositoryProviderService {
 
     public boolean fileExists(final Pipeline pipeline, final String filePath) {
         return getProvider(pipeline.getRepositoryType()).fileExists(pipeline, filePath);
+    }
+
+    public List<GitNamespace> getAllowedNamespaces(final RepositoryType repositoryType) {
+        return getProvider(repositoryType).getAllowedNamespaces();
+    }
+
+    public List<GitRepositoryDTO> getNamespaceRepositories(final String namespaceId,
+                                                           final RepositoryType repositoryType) {
+        return getProvider(repositoryType).getNamespaceRepositories(namespaceId);
     }
 }

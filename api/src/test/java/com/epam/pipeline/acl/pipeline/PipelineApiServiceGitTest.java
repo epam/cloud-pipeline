@@ -21,11 +21,14 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
@@ -69,6 +72,10 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private final TaskGraphVO taskGraphVO = PipelineCreatorUtils.getTaskGraphVO();
     private final RegisterPipelineVersionVO pipelineVersionVO = PipelineCreatorUtils.getRegisterPipelineVersionVO();
     private final List<Revision> revisionList = Collections.singletonList(revision);
+    private final GitNamespace gitNamespace = GitCreatorUtils.getGitNamespace();
+    private final GitRepositoryDTO gitRepositoryDTO = GitCreatorUtils.getGitRepositoryDTO();
+    private final List<GitNamespace> gitNamespaceList = Collections.singletonList(gitNamespace);
+    private final List<GitRepositoryDTO> gitRepositoryDTOList = Collections.singletonList(gitRepositoryDTO);
 
     @Autowired
     private PipelineApiService pipelineApiService;
@@ -568,5 +575,23 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
 
         assertThrowsChecked(AccessDeniedException.class, () ->
                 pipelineApiService.registerPipelineVersion(pipelineVersionVO));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldGetAllowedNamespacesForUser() {
+        doReturn(gitNamespaceList).when(mockPipelineRepositoryService).getAllowedNamespaces(RepositoryType.GITHUB);
+
+        assertThat(pipelineApiService.getAllowedNamespaces(RepositoryType.GITHUB)).isEqualTo(gitNamespaceList);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldGetNamespaceRepositoriesForUser() {
+        doReturn(gitRepositoryDTOList).when(mockPipelineRepositoryService)
+                .getNamespaceRepositories(TEST_STRING, RepositoryType.GITHUB);
+
+        assertThat(pipelineApiService.getNamespaceRepositories(TEST_STRING, RepositoryType.GITHUB))
+                .isEqualTo(gitRepositoryDTOList);
     }
 }

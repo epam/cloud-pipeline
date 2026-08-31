@@ -22,6 +22,9 @@ import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -33,8 +36,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -66,6 +67,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     private static final int MAX_PERIOD = 700;
 
     private final AbstractEntityMapper<PipelineRunBillingInfo> mapper;
+    private final ElasticStackVersion version;
 
     /**
      * Creates billing requests for given run
@@ -420,6 +422,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             .build();
         final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
         final String docId = billing.getEntity().getPipelineRun().getId().toString();
-        return new IndexRequest(fullIndex, INDEX_TYPE).id(docId).source(mapper.map(entity));
+        return new IndexRequest(fullIndex, version)
+                .id(docId)
+                .source(mapper.map(entity));
     }
 }

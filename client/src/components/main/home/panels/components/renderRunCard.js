@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ import RunName from '../../../../runs/run-name';
 import PlatformIcon from '../../../../tools/platform-icon';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
+import {
+  findReservationParameterConfig
+} from '../../../../pipelines/launch/form/components/reservation-parameters/utilities';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -141,6 +144,11 @@ function renderCommitStatus (run) {
 
 function renderEstimatedPrice (run) {
   const price = evaluateRunPrice(run);
+  const {instance} = run || {};
+  const {nodeType} = instance || {};
+  if (findReservationParameterConfig(nodeType)) {
+    return null;
+  }
   return (
     <JobEstimatedPriceInfo>
       , estimated price: <b>{price.total.toFixed(2)}$</b>
@@ -163,7 +171,7 @@ function renderRegion (run) {
   return null;
 }
 
-export default function renderRunCard (run) {
+export default function renderRunCard (run, showEstimatedPrice = true) {
   return [
     <Row key="pipeline" style={{fontWeight: 'bold'}}>
       {renderPipeline(run)}
@@ -182,7 +190,7 @@ export default function renderRunCard (run) {
       }
     </Row>,
     <Row key="time" style={{fontSize: 'smaller'}}>
-      {renderTime(run)}{renderEstimatedPrice(run)}
+      {renderTime(run)}{showEstimatedPrice && renderEstimatedPrice(run)}
     </Row>,
     <Row key="commit status">
       {renderCommitStatus(run)}

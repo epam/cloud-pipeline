@@ -18,6 +18,22 @@
   overflow-y: auto;
 }
 
+.table .row .copy-url {
+  visibility: hidden;
+  margin-left: 5px;
+  transition: transform 0.15s ease;
+  transform: scale(1);
+  cursor: pointer;
+}
+
+.table .row .copy-url:hover {
+  transform: scale(1.2);
+}
+
+.table .row:hover .copy-url {
+  visibility: visible;
+}
+
 .table > div > div,
 .children-container > div > div {
   filter: none !important;

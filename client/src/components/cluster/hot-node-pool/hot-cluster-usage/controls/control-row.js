@@ -25,7 +25,8 @@ function ControlRow ({
   period,
   periodType,
   onChange,
-  onExport
+  onExport,
+  pending
 }) {
   return (
     <div
@@ -39,6 +40,11 @@ function ControlRow ({
           range={period}
           onChange={onChange}
           periods={[Period.month, Period.day]}
+          pending={pending}
+          style={{
+            marginRight: 0,
+            minWidth: '200px'
+          }}
         />
       </div>
       {

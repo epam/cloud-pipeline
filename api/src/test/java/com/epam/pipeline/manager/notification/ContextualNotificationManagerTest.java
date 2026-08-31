@@ -43,7 +43,7 @@ public class ContextualNotificationManagerTest {
     public void notifyRunStatusChangedShouldNotCreateNotificationMessageIfThereIsNoNotification() {
         mockNoNotification();
 
-        manager.notifyRunStatusChanged(RUN);
+        manager.notifyRunStatusChanged(RUN, Collections.emptyMap());
 
         verify(monitoringNotificationDao, never()).createMonitoringNotification(any());
     }
@@ -52,7 +52,7 @@ public class ContextualNotificationManagerTest {
     public void notifyRunStatusChangedShouldNotCreateNotificationMessageIfRunStatusDoesNotMatch() {
         mockNotification(NOTIFICATION);
 
-        manager.notifyRunStatusChanged(ACTIVE_RUN);
+        manager.notifyRunStatusChanged(ACTIVE_RUN, Collections.emptyMap());
 
         verify(monitoringNotificationDao, never()).createMonitoringNotification(any());
     }
@@ -61,7 +61,7 @@ public class ContextualNotificationManagerTest {
     public void notifyRunStatusChangedShouldCreateNotificationMessageWithFirstRecipientAsToMessageTarget() {
         mockNotification(NOTIFICATION);
 
-        manager.notifyRunStatusChanged(RUN);
+        manager.notifyRunStatusChanged(RUN, Collections.emptyMap());
 
         verify(monitoringNotificationDao).createMonitoringNotification(argThat(matches(message ->
                 message.getToUserId().equals(ID))));
@@ -71,7 +71,7 @@ public class ContextualNotificationManagerTest {
     public void notifyRunStatusChangedShouldCreateNotificationMessageWithAllButFirstRecipientAsMessageCopyTargets() {
         mockNotification(NOTIFICATION);
 
-        manager.notifyRunStatusChanged(RUN);
+        manager.notifyRunStatusChanged(RUN, Collections.emptyMap());
 
         verify(monitoringNotificationDao).createMonitoringNotification(argThat(matches(message ->
                 message.getCopyUserIds().equals(Collections.singletonList(ID_2)))));
@@ -81,7 +81,7 @@ public class ContextualNotificationManagerTest {
     public void notifyRunStatusChangedShouldCreateNotificationMessageWithNotificationSubject() {
         mockNotification(NOTIFICATION);
 
-        manager.notifyRunStatusChanged(RUN);
+        manager.notifyRunStatusChanged(RUN, Collections.emptyMap());
 
         verify(monitoringNotificationDao).createMonitoringNotification(argThat(matches(message ->
                 message.getSubject().equals(SUBJECT))));
@@ -91,7 +91,7 @@ public class ContextualNotificationManagerTest {
     public void notifyRunStatusChangedShouldCreateNotificationMessageWithNotificationBody() {
         mockNotification(NOTIFICATION);
 
-        manager.notifyRunStatusChanged(RUN);
+        manager.notifyRunStatusChanged(RUN, Collections.emptyMap());
 
         verify(monitoringNotificationDao).createMonitoringNotification(argThat(matches(message ->
                 message.getBody().equals(BODY))));

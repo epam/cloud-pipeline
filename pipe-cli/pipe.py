@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import traceback
@@ -20,7 +21,6 @@ import click
 import functools
 import sys
 import re
-from prettytable import prettytable
 
 from src.api.app_info import ApplicationInfo
 from src.api.cluster import Cluster
@@ -37,12 +37,18 @@ from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
+from src.utilities.tokenless_access_manger import TokenlessAccessManager
 from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
 from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
+from src.utilities.printing.print_service import create_print_service
+from src.utilities.printing.share import create_share_print_service
+from src.utilities.printing.storage import create_storage_print_service
+from src.utilities.printing.pipeline import create_pipeline_print_service
+from src.utilities.printing.cluster import create_cluster_print_service
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
@@ -51,6 +57,7 @@ from src.utilities.user_token_operations import UserTokenOperations
 from src.utilities.dts_operations_manager import DtsOperationsManager
 from src.utilities.cloud_provider_operations import CloudProviderOperations
 from src.version import __version__, __bundle_info__, __component_version__
+from src.utilities.printing.tool import create_tool_print_service
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
@@ -70,6 +77,14 @@ STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION = 'Enables additional destination 
                                                 'exists an error will be occurred. Cannot be used in combination' \
                                                 ' with --force (-f) option: if --force (-f) specified ' \
                                                 '--verify-destination (-vd) will be ignored.'
+ON_FAILURES_OPTION_CHOICES = ['fail', 'fail-after', 'skip', 'retry']
+ON_FAILURES_OPTION_DESCRIPTION = 'Configure how singular file processing failures should affect overall command execution. '\
+                                 'Allowed values: \n'\
+                                 '[fail] fails immediately (default); \n'\
+                                 '[fail-after] fails only after all files are processed; \n'\
+                                 '[skip] skips all failures;'\
+                                 '[retry] retries all failures.'
+OUTPUT_FORMAT_OPTION_DESCRIPTION = 'Output format. Default is a text table.'
 
 
 def silent_print_api_version():
@@ -156,9 +171,16 @@ def stacktracing(func, ctx, *args, **kwargs):
         raise
     except Exception as runtime_error:
         if sys.version_info >= (3, 0):
-            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+            err_msg = str(runtime_error)
         else:
-            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
+            err_msg = unicode(runtime_error)
+        if ctx.params.get('output_format') == 'json':
+            click.echo(
+                json.dumps({'error': err_msg}, default=str, indent=2, ensure_ascii=False),
+                err=True,
+            )
+        else:
+            click.echo(u'Error: {}'.format(err_msg), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -300,13 +322,22 @@ def cli():
       CP_CLI_API_CALL_RETRY_TIMEOUT          The time interval in seconds between API call attempts (Default: 5)
       CP_AWS_MAX_ATTEMPTS                    The number of maximum retries to call AWS API. If not specifies the
                                              default boto3 provided values will be used.
+      CP_AWS_STREAM_MULTIPART_CHUNKSIZE_MB   The partition size of each part for a multipart transfer. If not specified
+                                             the default boto3 provided values will be used (8 MB). AWS S3 enforces
+                                             a maximum of 10,000 parts per object. Configuring part size is important
+                                             for large STREAM transfers, as the final size of the stream cannot
+                                             be predicted.
+      CP_CLI_STORAGE_SYNC_MTIME_ENABLED      Enables persisting timestemps from cloud objects to local files
+                                             during CLOUD -> LOCAL trasfers. (Default: True)
     """
     pass
 
 
 @cli.command()
+@click.option('-l', '--login',
+              is_flag=True,
+              help='Redirects to browser for login')
 @click.option('-a', '--auth-token',
-              prompt='Authentication token',
               help='Token for API authentication',
               default=None)
 @click.option('-s', '--api',
@@ -339,16 +370,41 @@ def cli():
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec,
-              config_store):
+@click.option('-nb', '--no-launch-browser',
+              help='Prevents the command from automatically opening a web browser. '
+                   'Works in combination with --login option. '
+                   'If --login is not specified this option will have no effect.',
+              is_flag=True,
+              default=False)
+@click.option('-ca', '--ca-bundle',
+              help='Path to a CA certificate bundle file used to verify S3 SSL connections '
+                   '(e.g. required when a ZScaler proxy intercepts TLS traffic)',
+              default=None)
+def configure(login, auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain,
+              proxy_ntlm_pass, codec, config_store, no_launch_browser, ca_bundle):
     """Configures CLI parameters
     """
+    if auth_token and login:
+        raise click.UsageError('Options --auth-token and --login are mutually exclusive. Please specify only one.')
+
+    if not auth_token and not login:
+        auth_token = click.prompt('Authentication token', default=None)
+
     if proxy_ntlm and not proxy_ntlm_user:
         proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
     if proxy_ntlm and not proxy_ntlm_domain:
         proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
     if proxy_ntlm and not proxy_ntlm_pass:
         proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
+
+    if not auth_token and login:
+        proxies = Config.build_proxies(proxy,
+                                       proxy_ntlm,
+                                       proxy_ntlm_user,
+                                       proxy_ntlm_domain,
+                                       proxy_ntlm_pass,
+                                       api)
+        auth_token = TokenlessAccessManager(api, proxies).fetch_token(no_launch_browser)
 
     Config.store(auth_token,
                  api,
@@ -359,7 +415,8 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
                  proxy_ntlm_domain,
                  proxy_ntlm_pass,
                  codec,
-                 config_store)
+                 config_store,
+                 ca_bundle)
 
 
 def echo_title(title, line=True):
@@ -376,111 +433,46 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
+def view_pipes(pipeline, versions, parameters, storage_rules, permissions, output_format):
     """Lists pipelines definitions
     """
 
     # If pipeline name or id is specified - list details of a pipeline
     if pipeline:
-        view_pipe(pipeline, versions, parameters, storage_rules, permissions)
+        view_pipe(pipeline, versions, parameters, storage_rules, permissions, output_format)
     # If no argument is specified - list brief details of all pipelines
     else:
-        view_all_pipes()
+        view_all_pipes(output_format)
 
 
-def view_all_pipes():
+def view_all_pipes(output_format=None):
     hidden_object_manager = HiddenObjectManager()
-    pipes_table = prettytable.PrettyTable()
-    pipes_table.field_names = ["ID", "Name", "Latest version", "Created", "Source repo"]
-    pipes_table.align = "r"
-
     pipelines = [p for p in Pipeline.list() if not hidden_object_manager.is_object_hidden('pipeline', p.identifier)]
 
-    if len(pipelines) > 0:
-        for pipeline_model in pipelines:
-            pipes_table.add_row([pipeline_model.identifier,
-                                 pipeline_model.name,
-                                 pipeline_model.current_version_name,
-                                 pipeline_model.created_date,
-                                 pipeline_model.repository])
-        click.echo(pipes_table)
-    else:
-        click.echo('No pipelines are available')
+    print_service = create_pipeline_print_service(output_format)
+    print_service.print_pipelines_list(pipelines)
 
 
-def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
+def view_pipe(pipeline, versions, parameters, storage_rules, permissions, output_format=None):
     pipeline_model = Pipeline.get(pipeline, storage_rules, versions, parameters)
-    pipe_table = prettytable.PrettyTable()
-    pipe_table.field_names = ["key", "value"]
-    pipe_table.align = "l"
-    pipe_table.set_style(12)
-    pipe_table.header = False
-    pipe_table.add_row(['ID:', pipeline_model.identifier])
-    pipe_table.add_row(['Name:', pipeline_model.name])
-    pipe_table.add_row(['Latest version:', pipeline_model.current_version_name])
-    pipe_table.add_row(['Created:', pipeline_model.created_date])
-    pipe_table.add_row(['Source repo:', pipeline_model.repository])
-    pipe_table.add_row(['Description:', pipeline_model.description])
-    click.echo(pipe_table)
-    click.echo()
 
-    if parameters and pipeline_model.current_version is not None and pipeline_model.current_version.run_parameters is not None:
-        echo_title('Parameters:', line=False)
-        if len(pipeline_model.current_version.run_parameters.parameters) > 0:
-            parameters_table = prettytable.PrettyTable()
-            parameters_table.field_names = ["Name", "Type", "Mandatory", "Default value"]
-            parameters_table.align = "l"
-            for parameter in pipeline_model.current_version.run_parameters.parameters:
-                parameters_table.add_row(
-                    [parameter.name, parameter.parameter_type, parameter.required, parameter.value])
-            click.echo(parameters_table)
-            click.echo()
-        else:
-            click.echo('No parameters are available for current version')
-
-    if versions:
-        echo_title('Versions:', line=False)
-        if len(pipeline_model.versions) > 0:
-            versions_table = prettytable.PrettyTable()
-            versions_table.field_names = ["Name", "Created", "Draft"]
-            versions_table.align = "r"
-            for version_model in pipeline_model.versions:
-                versions_table.add_row([version_model.name, version_model.created_date, version_model.draft])
-            click.echo(versions_table)
-            click.echo()
-        else:
-            click.echo('No versions are configured for pipeline')
-
-    if storage_rules:
-        echo_title('Storage rules', line=False)
-        if len(pipeline_model.storage_rules) > 0:
-            storage_rules_table = prettytable.PrettyTable()
-            storage_rules_table.field_names = ["File mask", "Created", "Move to STS"]
-            storage_rules_table.align = "r"
-            for rule in pipeline_model.storage_rules:
-                storage_rules_table.add_row([rule.file_mask, rule.created_date, rule.move_to_sts])
-            click.echo(storage_rules_table)
-            click.echo()
-        else:
-            click.echo('No storage rules are configured for pipeline')
-
+    # Get permissions if requested
+    permissions_list = None
     if permissions:
         permissions_list = User.get_permissions(pipeline_model.identifier, 'pipeline')[0]
-        echo_title('Permissions', line=False)
-        if len(permissions_list) > 0:
-            permissions_table = prettytable.PrettyTable()
-            permissions_table.field_names = ["SID", "Principal", "Allow", "Deny"]
-            permissions_table.align = "r"
-            for permission in permissions_list:
-                permissions_table.add_row([permission.name,
-                                           permission.principal,
-                                           permission.get_allowed_permissions_description(),
-                                           permission.get_denied_permissions_description()])
-            click.echo(permissions_table)
-            click.echo()
-        else:
-            click.echo('No user permissions are configured for pipeline')
+
+    print_service = create_pipeline_print_service(output_format)
+    print_service.print_pipeline_details(
+        pipeline_model,
+        include_parameters=parameters,
+        include_versions=versions,
+        include_storage_rules=storage_rules,
+        include_permissions=permissions,
+        permissions_list=permissions_list
+    )
 
 
 @cli.command(name='view-runs')
@@ -497,6 +489,8 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_runs(run_id,
               status,
@@ -510,23 +504,22 @@ def view_runs(run_id,
               parameters_details,
               tasks_details,
               user_filter,
-              tags_details):
+              tags_details,
+              output_format):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
-        view_run(run_id, node_details, parameters_details, tasks_details, tags_details)
+        view_run(run_id, node_details, parameters_details, tasks_details, tags_details, output=output_format)
     # If no argument is specified - list runs according to options
     else:
-        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
+        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=output_format)
 
 
-def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter):
-    runs_table = prettytable.PrettyTable()
-    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started", "Owner"]
-    runs_table.align = "r"
+def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter, output=None):
+    print_service = create_print_service(output)
     if date_to and not status:
-        click.echo("The run status shall be specified for viewing completed before specified date runs")
+        print_service.error('The run status shall be specified for viewing completed before specified date runs')
         sys.exit(1)
     statuses = []
     if status is not None:
@@ -560,260 +553,73 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, us
                                   custom_filter=find,
                                   owners=user_filter.split(",") if user_filter else None)
     if run_filter.total_count == 0:
-        click.echo('No data is available for the request')
+        print_service.empty_runs(run_filter)
     else:
-        if run_filter.total_count > run_filter.page_size:
-            click.echo('Showing {} results from {}:'.format(run_filter.page_size, run_filter.total_count))
-        for run_model in run_filter.elements:
-            runs_table.add_row([run_model.identifier,
-                                run_model.parent_id,
-                                run_model.pipeline,
-                                run_model.version,
-                                state_utilities.color_state(run_model.status),
-                                run_model.scheduled_date,
-                                run_model.owner])
-        click.echo(runs_table)
-        click.echo()
+        print_service.runs(run_filter)
 
 
-def view_run(run_id, node_details, parameters_details, tasks_details, tags_details):
+def view_run(run_id, node_details, parameters_details, tasks_details, tags_details=False, output=None):
     run_model = PipelineRun.get(run_id)
     if not run_model.pipeline and run_model.pipeline_id is not None:
         pipeline_model = Pipeline.get(run_model.pipeline_id)
         if pipeline_model is not None:
             run_model.pipeline = pipeline_model.name
     run_model_price = PipelineRun.get_estimated_price(run_id)
-    run_main_info_table = prettytable.PrettyTable()
-    run_main_info_table.field_names = ["key", "value"]
-    run_main_info_table.align = "l"
-    run_main_info_table.set_style(12)
-    run_main_info_table.header = False
-    run_main_info_table.add_row(['ID:', run_model.identifier])
-    run_main_info_table.add_row(['Pipeline:', run_model.pipeline])
-    run_main_info_table.add_row(['Version:', run_model.version])
-    if run_model.owner is not None:
-        run_main_info_table.add_row(['Owner:', run_model.owner])
-    if run_model.endpoints is not None and len(run_model.endpoints) > 0:
-        endpoint_index = 0
-        for endpoint in run_model.endpoints:
-            if endpoint_index == 0:
-                run_main_info_table.add_row(['Endpoints:', endpoint])
-            else:
-                run_main_info_table.add_row(['', endpoint])
-            endpoint_index = endpoint_index + 1
-    if not run_model.scheduled_date:
-        run_main_info_table.add_row(['Scheduled', 'N/A'])
-    else:
-        run_main_info_table.add_row(['Scheduled:', run_model.scheduled_date])
-    if not run_model.start_date:
-        run_main_info_table.add_row(['Started', 'N/A'])
-    else:
-        run_main_info_table.add_row(['Started:', run_model.start_date])
-    if not run_model.end_date:
-        run_main_info_table.add_row(['Completed', 'N/A'])
-    else:
-        run_main_info_table.add_row(['Completed:', run_model.end_date])
-    run_main_info_table.add_row(['Status:', state_utilities.color_state(run_model.status)])
-    run_main_info_table.add_row(['ParentID:', run_model.parent_id])
-    if run_model_price.total_price > 0:
-        run_main_info_table.add_row(['Estimated price:', '{} $'.format(round(run_model_price.total_price, 2))])
-    else:
-        run_main_info_table.add_row(['Estimated price:', 'N/A'])
-
-    run_main_info_table.add_row(['Tags:', run_model.tags_str])
-
-    click.echo(run_main_info_table)
-    click.echo()
-
+    print_service = create_print_service(output)
+    print_service.run(run_model, run_model_price)
     if node_details:
-
-        node_details_table = prettytable.PrettyTable()
-        node_details_table.field_names = ["key", "value"]
-        node_details_table.align = "l"
-        node_details_table.set_style(12)
-        node_details_table.header = False
-
-        for key, value in run_model.instance:
-            if key == PriceType.SPOT:
-                node_details_table.add_row(['price-type', PriceType.SPOT if value else PriceType.ON_DEMAND])
-            else:
-                node_details_table.add_row([key, value])
-        echo_title('Node details:')
-        click.echo(node_details_table)
-        click.echo()
-
+        print_service.node_details(run_model)
     if parameters_details:
-        echo_title('Parameters:')
-        if len(run_model.parameters) > 0:
-            for parameter in run_model.parameters:
-                click.echo('{}={}'.format(parameter.name, parameter.value))
-        else:
-            click.echo('No parameters are configured')
-        click.echo()
-
+        print_service.run_parameters(run_model)
     if tasks_details:
-        echo_title('Tasks:', line=False)
-        if len(run_model.tasks) > 0:
-            tasks_table = prettytable.PrettyTable()
-            tasks_table.field_names = ['Task', 'State', 'Scheduled', 'Started', 'Finished']
-            tasks_table.align = "r"
-            for task in run_model.tasks:
-                scheduled = 'N/A'
-                started = 'N/A'
-                finished = 'N/A'
-                if task.created is not None:
-                    scheduled = task.created
-                if task.started is not None:
-                    started = task.started
-                if task.finished is not None:
-                    finished = task.finished
-                tasks_table.add_row(
-                    [task.name, state_utilities.color_state(task.status), scheduled, started, finished])
-            click.echo(tasks_table)
-        else:
-            click.echo('No tasks are available for the run')
-        click.echo()
-
+        print_service.run_tasks(run_model)
     if tags_details:
-        echo_title('Tags:')
-        if len(run_model.tags) > 0:
-            for tag_name in run_model.tags:
-                click.echo('{}={}'.format(tag_name, run_model.tags[tag_name]))
-        else:
-            click.echo('No tags are configured')
-        click.echo()
+        print_service.run_tags(run_model)
+    print_service.flush()
 
 
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def view_cluster(node_name):
+def view_cluster(node_name, output_format):
     """Lists cluster nodes
     """
     # If a node id is specified - list details of a node
     if node_name:
-        view_cluster_for_node(node_name)
+        view_cluster_for_node(node_name, output_format)
     # If no argument is specified - list all nodes
     else:
-        view_all_cluster()
+        view_all_cluster(output_format)
 
 
-def view_all_cluster():
-    nodes_table = prettytable.PrettyTable()
-    nodes_table.field_names = ["Name", "Pipeline", "Run", "Addresses", "Created"]
-    nodes_table.align = "l"
+def view_all_cluster(output_format=None):
+    """Display all cluster nodes in the specified format.
+
+    Args:
+        output_format: Optional output format. If 'json', returns JSON. Otherwise returns table.
+    """
     nodes = Cluster.list()
-    if len(nodes) > 0:
-        for node_model in nodes:
-            info_lines = []
-            is_first_line = True
-            pipeline_name = None
-            run_id = None
-            if node_model.run is not None:
-                pipeline_name = node_model.run.pipeline
-                run_id = node_model.run.identifier
-            for address in node_model.addresses:
-                if is_first_line:
-                    info_lines.append([node_model.name, pipeline_name, run_id, address, node_model.created])
-                else:
-                    info_lines.append(['', '', '', address, ''])
-                is_first_line = False
-            if len(info_lines) == 0:
-                info_lines.append([node_model.name, pipeline_name, run_id, None, node_model.created])
-            for line in info_lines:
-                nodes_table.add_row(line)
-            nodes_table.add_row(['', '', '', '', ''])
-        click.echo(nodes_table)
+    print_service = create_cluster_print_service(output_format)
+
+    if nodes:
+        print_service.print_nodes_list(nodes)
     else:
-        click.echo('No data is available for the request')
+        print_service.empty_nodes()
 
 
-def view_cluster_for_node(node_name):
+def view_cluster_for_node(node_name, output_format=None):
+    """Display details of a specific cluster node.
+
+    Args:
+        node_name: Name of the node to display
+        output_format: Optional output format. If 'json', returns JSON. Otherwise returns table.
+    """
     node_model = Cluster.get(node_name)
-    node_main_info_table = prettytable.PrettyTable()
-    node_main_info_table.field_names = ["key", "value"]
-    node_main_info_table.align = "l"
-    node_main_info_table.set_style(12)
-    node_main_info_table.header = False
-    node_main_info_table.add_row(['Name:', node_model.name])
-
-    pipeline_name = None
-    if node_model.run is not None:
-        pipeline_name = node_model.run.pipeline
-
-    node_main_info_table.add_row(['Pipeline:', pipeline_name])
-
-    addresses_string = ''
-    for address in node_model.addresses:
-        addresses_string += address + '; '
-
-    node_main_info_table.add_row(['Addresses:', addresses_string])
-    node_main_info_table.add_row(['Created:', node_model.created])
-    click.echo(node_main_info_table)
-    click.echo()
-
-    if node_model.system_info is not None:
-        table = prettytable.PrettyTable()
-        table.field_names = ["key", "value"]
-        table.align = "l"
-        table.set_style(12)
-        table.header = False
-        for key, value in node_model.system_info:
-            table.add_row([key, value])
-        echo_title('System info:')
-        click.echo(table)
-        click.echo()
-
-    if node_model.labels is not None:
-        table = prettytable.PrettyTable()
-        table.field_names = ["key", "value"]
-        table.align = "l"
-        table.set_style(12)
-        table.header = False
-        for key, value in node_model.labels:
-            if key.lower() == 'node-role.kubernetes.io/master':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'kubeadm.alpha.kubernetes.io/role' and value.lower() == 'master':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'cloud-pipeline/role' and value.lower() == 'edge':
-                table.add_row([key, click.style(value, fg='blue')])
-            elif key.lower() == 'runid':
-                table.add_row([key, click.style(value, fg='green')])
-            else:
-                table.add_row([key, value])
-        echo_title('Labels:')
-        click.echo(table)
-        click.echo()
-
-    if node_model.allocatable is not None or node_model.capacity is not None:
-        ac_table = prettytable.PrettyTable()
-        ac_table.field_names = ["", "Allocatable", "Capacity"]
-        ac_table.align = "l"
-        keys = []
-        for key in node_model.allocatable.keys():
-            if key not in keys:
-                keys.append(key)
-        for key in node_model.capacity.keys():
-            if key not in keys:
-                keys.append(key)
-        for key in keys:
-            ac_table.add_row([key, node_model.allocatable.get(key, ''), node_model.capacity.get(key, '')])
-        click.echo(ac_table)
-        click.echo()
-
-    if len(node_model.pods) > 0:
-        echo_title("Jobs:", line=False)
-        if len(node_model.pods) > 0:
-            pods_table = prettytable.PrettyTable()
-            pods_table.field_names = ["Name", "Namespace", "Status"]
-            pods_table.align = "l"
-            for pod in node_model.pods:
-                pods_table.add_row([pod.name, pod.namespace, state_utilities.color_state(pod.phase)])
-            click.echo(pods_table)
-        else:
-            click.echo('No jobs are available')
-        click.echo()
+    print_service = create_cluster_print_service(output_format)
+    print_service.print_node_details(node_model)
 
 
 @cli.command(name='run', context_settings=dict(ignore_unknown_options=True))
@@ -826,11 +632,17 @@ def view_cluster_for_node(node_name):
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @click.option('-id', '--instance-disk', help='Instance disk size', type=int)
 @click.option('-it', '--instance-type', help='Instance disk type', type=str)
+@click.option('-fit', '--fallback-instance-type', 'fallback_instance_types', multiple=True, type=str,
+              required=False,
+              help='Fallback instance type to try if the primary instance type has no capacity. '
+                   'The option can be specified several times. Order is preserved.')
 @click.option('-di', '--docker-image', help='Docker image', type=str)
 @click.option('-cmd', '--cmd-template', help='Command template', type=str)
 @click.option('-t', '--timeout', type=int,
               help='Specifies run timeout in minutes. '
                    'If a run doesn\'t finish within this period of time, than it is marked as failed and stopped.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help='Structured output format. When set, quiet mode is enabled automatically.')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
@@ -886,9 +698,11 @@ def run(pipeline,
         run_params,
         instance_disk,
         instance_type,
+        fallback_instance_types,
         docker_image,
         cmd_template,
         timeout,
+        output_format,
         quiet,
         instance_count,
         cores,
@@ -947,7 +761,8 @@ def run(pipeline,
                               status_notifications,
                               status_notifications_status, status_notifications_recipient,
                               status_notifications_subject, status_notifications_body,
-                              user)
+                              user, output_format,
+                              fallback_instance_types=fallback_instance_types)
 
 
 @cli.command(name='stop')
@@ -977,11 +792,17 @@ def pause(run_id, check_size, sync):
 @cli.command(name='resume')
 @click.argument('run-id', required=True, type=int)
 @click.option('-s', '--sync', is_flag=True, help=SYNC_FLAG_DESCRIPTION)
+@click.option('-it', '--instance-type', help='Instance type to use on resume', type=str)
+@click.option('-fit', '--fallback-instance-type', 'fallback_instance_types', multiple=True, type=str,
+              required=False,
+              help='Fallback instance type to try if the primary instance type has no capacity. '
+                   'The option can be specified several times. Order is preserved.')
 @common_options
-def resume(run_id, sync):
+def resume(run_id, sync, instance_type, fallback_instance_types):
     """Resumes a paused pipeline
     """
-    PipelineRunOperations.resume(run_id, sync)
+    PipelineRunOperations.resume(run_id, sync, instance_type=instance_type,
+                                 fallback_instance_types=fallback_instance_types or None)
 
 
 @cli.command(name='terminate-node')
@@ -1109,18 +930,21 @@ def mvtodir(name, directory):
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive, output_format):
     """Lists storage contents
     """
+    print_service = create_storage_print_service(output_format)
     show_extended = False
     if output == 'full':
         if path is not None or not show_details:
-            click.echo('Extended output could be configured for the storage summary listing only!', err=True)
+            print_service.error('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
     DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
-                                       show_archive)
+                                       show_archive, print_service)
 
 
 @storage.command(name='mkdir')
@@ -1201,12 +1025,8 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    'The option has effect only if --unsafe-chars option is set to replace value.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip']),
-              help='Configure how singular file processing failures should affect overall command execution. '
-                   'Allowed values: \n'
-                   '[fail] fails immediately (default); \n'
-                   '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures.')
+              type=click.Choice(ON_FAILURES_OPTION_CHOICES),
+              help=ON_FAILURES_OPTION_DESCRIPTION)
 @click.option('--on-empty-files', required=False, default='allow',
               envvar='CP_CLI_TRANSFER_EMPTY_FILES',
               help='Configure how empty files should be handled. '
@@ -1313,12 +1133,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[skip] skips empty files transferring.')
 @click.option('--on-failures', required=False, default='fail',
               envvar='CP_CLI_TRANSFER_FAILURES',
-              type=click.Choice(['fail', 'fail-after', 'skip']),
-              help='Configure how singular file processing failures should affect overall command execution. '
-                   'Allowed values: \n'
-                   '[fail] fails immediately (default); \n'
-                   '[fail-after] fails only after all files are processed; \n'
-                   '[skip] skips all failures.')
+              type=click.Choice(ON_FAILURES_OPTION_CHOICES),
+              help=ON_FAILURES_OPTION_DESCRIPTION)
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
 @click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
@@ -1398,12 +1214,14 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-f', '--format', help='Format for size [G/M/K]',
               type=click.Choice(DuOutput.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
+@click.option('-of', '--output-format', help=OUTPUT_FORMAT_OPTION_DESCRIPTION,
+              type=click.Choice(['json']), required=False, default=None)
 @common_options
-def du(name, relative_path, depth, cloud, output_mode, generation, format):
+def du(name, relative_path, depth, cloud, output_mode, generation, format, output_format):
     """
     Displays data storage usage statistics.
     """
-    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
+    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format, output_format)
 
 
 @storage.command('restore')
@@ -1443,14 +1261,16 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Get tags for a specified version')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def storage_get_object_tags(path, version):
+def storage_get_object_tags(path, version, output_format):
     """ Gets tags for a specified object.\n
         - PATH: full path to an object in a datastorage starting
         with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
         'gs://' for GCP) or common 'cp://' scheme\n
     """
-    DataStorageOperations.get_object_tags(path, version)
+    DataStorageOperations.get_object_tags(path, version, output_format)
 
 
 @storage.command('delete-object-tags')
@@ -1536,12 +1356,16 @@ def umount_storage(mountpoint, quiet):
     required=True,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-of', '--output-format',
+              type=click.Choice(['json']),
+              default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def view_acl(identifier, object_type):
+def view_acl(identifier, object_type, output_format=None):
     """ View object permissions.\n
     - IDENTIFIER: defines name or id of an object
     """
-    ACLOperations.view_acl(identifier, object_type)
+    ACLOperations.view_acl(identifier, object_type, output_format)
 
 
 @cli.command(name='set-acl')
@@ -1573,9 +1397,13 @@ def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-of', '--output-format',
+              type=click.Choice(['json']),
+              default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def view_user_objects(username, object_type):
-    ACLOperations.print_sid_objects(username, True, object_type)
+def view_user_objects(username, object_type, output_format=None):
+    ACLOperations.print_sid_objects(username, True, object_type, output_format)
 
 
 @cli.command(name='view-group-objects')
@@ -1586,9 +1414,13 @@ def view_user_objects(username, object_type):
     required=False,
     type=click.Choice(ACLOperations.get_classes())
 )
+@click.option('-of', '--output-format',
+              type=click.Choice(['json']),
+              default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def view_group_objects(group_name, object_type):
-    ACLOperations.print_sid_objects(group_name, False, object_type)
+def view_group_objects(group_name, object_type, output_format=None):
+    ACLOperations.print_sid_objects(group_name, False, object_type, output_format)
 
 
 @cli.group()
@@ -1619,15 +1451,17 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def get_tag(entity_class, entity_id):
+def get_tag(entity_class, entity_id, output_format):
     """ Lists all tags for a specific object or list of objects.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
     configuration\n
     - ENTITY_ID: defines name or id of an object of a specified class
     """
-    MetadataOperations.get_metadata(entity_class, entity_id)
+    MetadataOperations.get_metadata(entity_class, entity_id, output_format)
 
 
 @tag.command(name='delete')
@@ -1998,12 +1832,15 @@ def update_cli_version(path):
 @click.option('-g', '--group', help='List group tools.')
 @click.option('-t', '--tool', help='List tool details.')
 @click.option('-v', '--version', help='List tool version details.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
 def view_tools(tool_path,
                registry,
                group,
                tool,
-               version):
+               version,
+               output_format):
     """
     Either shows details of a tool / tool version or lists tools / tool groups.
 
@@ -2039,37 +1876,40 @@ def view_tools(tool_path,
       pipe view-tools --registry docker-registry:port --group library --tool ubuntu --version 18.04
       pipe view-tools docker-registry:port/library/ubuntu:18.04
     """
+    print_service = create_tool_print_service(output_format)
+
     if tool_path and (registry or group or tool or version):
-        click.echo('Tool path positional argument cannot be specified along with the named parameters.', err=True)
+        print_service.print_error('Tool path positional argument cannot be specified along with the named parameters.')
         sys.exit(1)
     if tool_path:
-        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version)
+        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version, output_format)
     elif tool and not registry and not group and not version:
-        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, strict=True)
+        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, output_format,
+                                                         strict=True)
     else:
         if version and not tool:
-            click.echo('Please specify tool name.', err=True)
+            print_service.print_error('Please specify tool name.')
             sys.exit(1)
         if tool and not group:
-            click.echo('Please specify tool group.', err=True)
+            print_service.print_error('Please specify tool group.')
             sys.exit(1)
 
     if not registry and not group and not tool and not version:
-        ToolOperations.view_default_group()
+        ToolOperations.view_default_group(print_service)
     elif group and tool and version:
-        ToolOperations.view_version(group, tool, version, registry)
+        ToolOperations.view_version(group, tool, version, registry, print_service)
     elif group and tool:
-        ToolOperations.view_tool(group, tool, registry)
+        ToolOperations.view_tool(group, tool, registry, print_service)
     elif group:
-        ToolOperations.view_group(group, registry)
+        ToolOperations.view_group(group, registry, print_service)
     elif registry:
-        ToolOperations.view_registry(registry)
+        ToolOperations.view_registry(registry, print_service)
     else:
-        click.echo('Specify either registry, group, tool or version parameters', err=True)
+        print_service.print_error('Specify either registry, group, tool or version parameters')
         sys.exit(1)
 
 
-def split_tool_path(tool_path, registry, group, tool, version, strict=False):
+def split_tool_path(tool_path, registry, group, tool, version, output_format=None, strict=False):
     if tool_path:
         match = re.search('^([^/]+)(/([^/]+)(/([^/:]+)(:([^/:]+))?)?)?$', tool_path)
         if match:
@@ -2078,22 +1918,54 @@ def split_tool_path(tool_path, registry, group, tool, version, strict=False):
             tool = match.group(5) if match.group(5) else tool
             version = match.group(7) if match.group(7) else version
     if strict and (not registry or not group or not tool):
-        click.echo('Please specify full tool path using one of the following patterns:\n'
-                   'registry/group/tool\n'
-                   'registry/group/tool:version', err=True)
+        print_service = create_tool_print_service(output_format)
+        print_service.print_error('Please specify full tool path using one of the following patterns:\n'
+                                 'registry/group/tool\n'
+                                 'registry/group/tool:version')
         sys.exit(1)
     return registry, group, tool, version
 
 
 @cli.command(name='token')
-@click.argument('user-id', required=True)
+@click.argument('user-id', required=False, type=int)
 @click.option('-d', '--duration', type=int, required=False, help='The number of days this token will be valid.')
+@click.option('-tn', '--token-name', 'token_name', required=False, type=str,
+              help='Optional registry label: letters, digits, underscore and hyphen only.')
 @common_options
-def token(user_id, duration):
+def token(user_id, duration, token_name):
     """
-    Prints a JWT token for specified user
+    Prints a JWT token for the specified user (admin) or the current user. The token is registered
+    as a named token (see list-tokens / revoke-tokens).
     """
-    UserTokenOperations().print_user_token(user_id, duration)
+    UserTokenOperations().print_user_token(user_id, duration, token_name)
+
+
+@cli.command(name='list-tokens')
+@click.argument('user-id', required=False, type=int)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
+@common_options
+def list_tokens(user_id, output_format):
+    """
+    Lists named JWT token entries (metadata only; secret token values are not shown).
+    """
+    UserTokenOperations().print_named_tokens(user_id, output_format)
+
+
+@cli.command(name='revoke-tokens')
+@click.argument('user-id', required=False, type=int)
+@click.option('-jti', '--jti', 'jtis', required=False, multiple=True,
+              help='JWT id (jti) to revoke. Repeat -jti/--jti for multiple tokens.')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
+@common_options
+def revoke_tokens(jtis, user_id, output_format):
+    """
+    Revokes a JWT by jti (from the token payload). Each -jti is revoked in a separate request.
+    """
+    if not jtis:
+        raise click.UsageError('Specify -jti / --jti at least once')
+    UserTokenOperations().revoke_tokens(jtis, user_id, output_format)
 
 
 @cli.group()
@@ -2105,12 +1977,14 @@ def share():
 
 @share.command(name='get')
 @click.argument('run-id', required=True)
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def get_share_run(run_id):
+def get_share_run(run_id, output_format):
     """
     Returns users and groups this run shared
     """
-    PipelineRunShareManager().get(run_id)
+    PipelineRunShareManager().get(run_id, create_share_print_service(output_format))
 
 
 @share.command(name='add')
@@ -2197,12 +2071,14 @@ def import_users(file_path, create_user, create_group, create_metadata):
 
 @users.command(name='instances')
 @click.option('-v', '--verbose', required=False, is_flag=True, default=False, help='Show all active limits in a table')
+@click.option('-of', '--output-format', type=click.Choice(['json']), default=None,
+              help=OUTPUT_FORMAT_OPTION_DESCRIPTION)
 @common_options
-def list_instance_limits(verbose):
+def list_instance_limits(verbose, output_format):
     """
     Shows information on user's instance limits
     """
-    UserOperationsManager().get_instance_limits(verbose)
+    UserOperationsManager().get_instance_limits(verbose, output_format)
 
 
 @cli.group()

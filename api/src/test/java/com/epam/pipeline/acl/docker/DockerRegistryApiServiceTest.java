@@ -86,6 +86,14 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldCreateDockerRegistryForToolAdmin() {
+        doReturn(dockerRegistry).when(mockDockerRegistryManager).create(dockerRegistryVO);
+
+        assertThat(dockerRegistryApiService.create(dockerRegistryVO)).isEqualTo(dockerRegistry);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyCreateDockerRegistryForNonAdminUser() {
         assertThrows(AccessDeniedException.class, () -> dockerRegistryApiService.create(dockerRegistryVO));
@@ -94,6 +102,14 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateDockerRegistryForAdmin() {
+        doReturn(dockerRegistry).when(mockDockerRegistryManager).updateDockerRegistry(dockerRegistry);
+
+        assertThat(dockerRegistryApiService.updateDockerRegistry(dockerRegistry)).isEqualTo(dockerRegistry);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldUpdateDockerRegistryForToolAdmin() {
         doReturn(dockerRegistry).when(mockDockerRegistryManager).updateDockerRegistry(dockerRegistry);
 
         assertThat(dockerRegistryApiService.updateDockerRegistry(dockerRegistry)).isEqualTo(dockerRegistry);
@@ -144,6 +160,15 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldUpdateDockerRegistryCredentialsForToolAdmin() {
+        doReturn(dockerRegistry).when(mockDockerRegistryManager).updateDockerRegistryCredentials(dockerRegistryVO);
+
+        assertThat(dockerRegistryApiService.updateDockerRegistryCredentials(dockerRegistryVO))
+                .isEqualTo(dockerRegistry);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyUpdateDockerRegistryCredentialsForNonAdminUser() {
         assertThrows(AccessDeniedException.class,
@@ -153,6 +178,23 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateWholeDockerRegistryHierarchyCredentialsForAdmin() {
+        final ToolGroup toolGroupWithoutPermission = initToolGroupWithoutPermissions();
+        final ToolGroup toolGroup = initToolGroupWithReadPermissions();
+        final List<ToolGroup> toolGroups =
+                Arrays.asList(toolGroup, toolGroupWithoutPermission, emptyToolGroupWithoutPermission);
+        initCommonToolAcls();
+        final DockerRegistry dockerRegistryWithTools = getDockerRegistryWithGroups(toolGroups);
+        doReturn(dockerRegistryWithTools).when(mockDockerRegistryManager)
+                .updateDockerRegistryCredentials(dockerRegistryVO);
+
+        final DockerRegistry result = dockerRegistryApiService.updateDockerRegistryCredentials(dockerRegistryVO);
+
+        assertDockerRegistryAclTreeForAdmin(result.getChildren(), toolGroups);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldUpdateWholeDockerRegistryHierarchyCredentialsForToolAdmin() {
         final ToolGroup toolGroupWithoutPermission = initToolGroupWithoutPermissions();
         final ToolGroup toolGroup = initToolGroupWithReadPermissions();
         final List<ToolGroup> toolGroups =
@@ -257,6 +299,14 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldDeleteDockerRegistryForToolAdmin() {
+        doReturn(dockerRegistry).when(mockDockerRegistryManager).delete(ID, true);
+
+        assertThat(dockerRegistryApiService.delete(ID, true)).isEqualTo(dockerRegistry);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDeleteDockerRegistryWhenPermissionIsGranted() {
         doReturn(dockerRegistry).when(mockDockerRegistryManager).delete(ID, true);
@@ -276,6 +326,14 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldNotifyDockerRegistryEventsForAdmin() {
+        doReturn(tools).when(mockDockerRegistryManager).notifyDockerRegistryEvents(TEST_STRING, eventEnvelope);
+
+        assertThat(dockerRegistryApiService.notifyDockerRegistryEvents(TEST_STRING, eventEnvelope)).isEqualTo(tools);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldNotifyDockerRegistryEventsForToolAdmin() {
         doReturn(tools).when(mockDockerRegistryManager).notifyDockerRegistryEvents(TEST_STRING, eventEnvelope);
 
         assertThat(dockerRegistryApiService.notifyDockerRegistryEvents(TEST_STRING, eventEnvelope)).isEqualTo(tools);
@@ -303,6 +361,14 @@ public class DockerRegistryApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetCertificateContentForAdmin() {
+        doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getCertificateContent(ID);
+
+        assertThat(dockerRegistryApiService.getCertificateContent(ID)).isEqualTo(BYTE_RESULT);
+    }
+
+    @Test
+    @WithMockUser(roles = TOOL_ADMIN_ROLE)
+    public void shouldGetCertificateContentForToolAdmin() {
         doReturn(BYTE_RESULT).when(mockDockerRegistryManager).getCertificateContent(ID);
 
         assertThat(dockerRegistryApiService.getCertificateContent(ID)).isEqualTo(BYTE_RESULT);

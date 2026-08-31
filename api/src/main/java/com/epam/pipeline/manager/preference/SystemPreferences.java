@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -37,17 +38,17 @@ import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
-import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
-import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
+import com.epam.pipeline.entity.monitoring.*;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
+import com.epam.pipeline.entity.log.RunLogStorageConfig;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
+import com.epam.pipeline.entity.search.ElasticStackVersion;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
@@ -62,6 +63,7 @@ import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
+import com.epam.pipeline.manager.cloud.gcp.GCPSpotType;
 import com.epam.pipeline.manager.cluster.container.ResourcesParameter;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -103,6 +105,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
@@ -145,6 +148,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+    private static final String USAGE_CREDITS_GROUP = "Usage Credits";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
@@ -256,6 +260,14 @@ public class SystemPreferences {
      */
     public static final StringPreference DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME = new StringPreference(
         "storage.system.storage.name", null, DATA_STORAGE_GROUP, null);
+
+    public static final ObjectPreference<RunLogStorageConfig> DATA_STORAGE_SYSTEM_RUN_LOGS_CONFIG =
+        new ObjectPreference<>(
+            "storage.system.run.logs.config",
+            RunLogStorageConfig.builder().enabled(false).pathPrefix("logs/runs/").build(),
+            new TypeReference<RunLogStorageConfig>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<RunLogStorageConfig>() {}));
 
     public static final StringPreference DATA_STORAGE_RUN_SHARED_STORAGE_NAME = new StringPreference(
             "storage.system.run.shared.storage.name", null, DATA_STORAGE_GROUP, pass);
@@ -370,9 +382,26 @@ public class SystemPreferences {
 
     public static final StringPreference GITHUB_USER_NAME = new StringPreference(
             "github.user.name", "x-token-auth", GIT_GROUP, pass);
+    /**
+     * GitHub App numeric identifier ({@code iss} claim for app JWT).
+     */
+    public static final StringPreference GITHUB_APP_ID = new StringPreference(
+            "github.app.id", null, GIT_GROUP, pass);
+    public static final StringPreference GITHUB_API_ROOT_URL = new StringPreference(
+            "github.api.root.url", "https://api.github.com", GIT_GROUP, pass);
+    /** A list acts as a whitelist: access is allowed if any entry equals the installation id
+     * or the installation account login (organization or username).
+     * If empty access over GitHub App is denied.
+     **/
+    public static final ObjectPreference<List<String>> GITHUB_ALLOWED_INSTALLATIONS = new ObjectPreference<>(
+            "github.allowed.installations", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+
 
     public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
             "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
+    public static final StringPreference BITBUCKET_CLOUD_STATIC_USERNAME = new StringPreference(
+            "bitbucket.cloud.static.username", "x-bitbucket-api-token-auth", GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
             "bitbucket.cloud.api.version", "2.0", GIT_GROUP, pass);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
@@ -518,6 +547,11 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX_MIB = new IntPreference(
         "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
 
+    public static final IntPreference CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT = new IntPreference(
+        "cluster.fallback.instance.types.max.count", 5,
+            CLUSTER_GROUP, isGreaterThan(0).or(isEquals(-1)), true
+    );
+
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
     public static final IntPreference CLUSTER_MAX_SIZE = new IntPreference("cluster.max.size", 50,
@@ -540,6 +574,9 @@ public class SystemPreferences {
      */
     public static final BooleanPreference CLUSTER_RANDOM_SCHEDULING = new BooleanPreference("cluster.random.scheduling",
                                                                                            false, CLUSTER_GROUP, pass);
+    public static final BooleanPreference CLUSTER_DISABLE_REASSIGN = new BooleanPreference("cluster.disable.reassign",
+            false, CLUSTER_GROUP, pass);
+
 
     public static final IntPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_DELAY = new IntPreference(
             "cluster.instance.defunct.container.monitoring.delay", 300,
@@ -626,7 +663,9 @@ public class SystemPreferences {
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
 
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
-        "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
+        "instance.offer.update.rate", 3600000, CLUSTER_GROUP,
+            isGreaterThan(10000).or(isEquals(-1))
+    );
     public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
         "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
     public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FETCH_GPU = new BooleanPreference(
@@ -710,6 +749,14 @@ public class SystemPreferences {
             "cluster.kube.core.component.label", "cloud-pipeline/core-component", CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_LOAD_TIMEOUT = new IntPreference(
             "cluster.instance.load.timeout.seconds", 15, CLUSTER_GROUP, isGreaterThan(0));
+    /**
+     * When {@code true}, responses that report Kubernetes node available resources include a per-run
+     * {@link com.epam.pipeline.entity.cluster.NodeResources#getDetails() details} list on each node
+     * (run id, owner label when set, and requested CPU/GPU/memory for that pod's containers).
+     * Default is {@code false} to keep payloads smaller and omit run-level breakdown unless needed.
+     */
+    public static final BooleanPreference CLUSTER_NODE_RESOURCES_SHOW_DETAILS = new BooleanPreference(
+            "cluster.node.resources.show.details", false, CLUSTER_GROUP, pass);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
@@ -752,7 +799,13 @@ public class SystemPreferences {
             "python .\\launch.py",
             LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
-        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
+        "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0)
+     );
+    public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION_USER_LIMIT = new IntPreference(
+            "launch.jwt.token.expiration.user.limit", 2592000, LAUNCH_GROUP,
+            isGreaterThan(0), true
+    );
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
@@ -767,6 +820,9 @@ public class SystemPreferences {
     public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
 
+    public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED = new BooleanPreference(
+            "launch.run.reschedule.worker.enabled", false, LAUNCH_GROUP, pass);
+
     public static final ObjectPreference<TwoBoundaryLimit> RUN_TOOL_SIZE_LIMITS = new ObjectPreference<>(
             "launch.tool.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
             new TypeReference<TwoBoundaryLimit>() {}, LAUNCH_GROUP,
@@ -778,6 +834,9 @@ public class SystemPreferences {
     public static final EnumPreference<PipelineRunEmergencyTermAction> LAUNCH_RUN_EMERGENCY_TERM_ACTION =
             new EnumPreference<>("launch.run.emergency.termination.action",
                     PipelineRunEmergencyTermAction.DISABLED, LAUNCH_GROUP);
+
+    public static final BooleanPreference LAUNCH_DOCKER_PREFLIGHT_CHECKS = new BooleanPreference(
+            "launch.docker.preflight.checks", true, LAUNCH_GROUP, pass, true);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
@@ -798,9 +857,9 @@ public class SystemPreferences {
                     new TypeReference<Map<String, ResourcesParameter>>() {},
                     LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, ResourcesParameter>>() {}));
     public static final ObjectPreference<Map<String, Object>> LAUNCH_RESERVATION_PARAMS =
-            new ObjectPreference<>("launch.reservation.parameters", null,
+            new ObjectPreference<>("launch.reservation.parameters", Collections.emptyMap(),
                     new TypeReference<Map<String, Object>>() {},
-                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+                    LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_WAIT_COUNT = new IntPreference(
@@ -809,6 +868,10 @@ public class SystemPreferences {
             "launch.serverless.stop.timeout", 60, LAUNCH_GROUP, isGreaterThan(0));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_COUNT = new IntPreference(
             "launch.serverless.endpoint.wait.count", 40, LAUNCH_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> LAUNCH_SERVERLESS_ENDPOINT_HTTP_HEADERS_TO_CLEANUP =
+            new ObjectPreference<>("launch.serverless.endpoint.http.headers.to.cleanup",
+            Arrays.asList("host", "SESSION"), new TypeReference<List<String>>() {}, LAUNCH_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
     public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
@@ -839,6 +902,13 @@ public class SystemPreferences {
             LAUNCH_GROUP, pass, true);
     public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
             LAUNCH_GROUP, pass, true);
+
+    public static final BooleanPreference LAUNCH_EXTERNAL_UID_ENABLE = new BooleanPreference(
+            "launch.external.uid.enable", false, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_UID_FIELD_NAME = new StringPreference(
+            "launch.external.uid.field.name", null, LAUNCH_GROUP, pass, true);
+    public static final StringPreference LAUNCH_EXTERNAL_GID_FIELD_NAME = new StringPreference(
+            "launch.external.default.gid.field.name", null, LAUNCH_GROUP, pass, true);
 
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
@@ -895,6 +965,12 @@ public class SystemPreferences {
         "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
     public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
             "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
+    /**
+     * Maximum number of registered JWT tokens per user (rows in {@code jwt_named_token}).
+     * Non-positive values disable the limit.
+     */
+    public static final IntPreference LAUNCH_JWT_NAMED_TOKENS_LIMIT = new IntPreference(
+            "launch.jwt.named.tokens.limit", 0, LAUNCH_GROUP, pass);
     public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
             "launch.insufficient.capacity.message", "Insufficient instance capacity.",
             LAUNCH_GROUP, pass);
@@ -915,6 +991,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_CLI_INSTALL_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.install.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final ObjectPreference<Map<String, String>> UI_VSCODE_EXTENSION_INSTALL_TEMPLATE =
+            new ObjectPreference<>("ui.vscode.extension.install.template", null,
+                    new TypeReference<Map<String, String>>() {}, UI_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
     public static final ObjectPreference<List<ControlEntry>> UI_CONTROLS_SETTINGS = new ObjectPreference<>(
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
@@ -1099,16 +1179,11 @@ public class SystemPreferences {
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
 
     public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
-            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, isNotBlank);
 
     public static final StringPreference SYSTEM_RUN_TAG_STOP_REASON = new StringPreference(
             "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);
 
-    /**
-     * Level of CPU load, below which a Run is considered `idle`
-     */
-    public static final IntPreference SYSTEM_IDLE_CPU_THRESHOLD_PERCENT =
-            new IntPreference("system.idle.cpu.threshold", 10, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Level of memory load, below which a Run is considered `overloaded`
      */
@@ -1124,23 +1199,31 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_MONITORING_METRIC_TIME_RANGE =
             new IntPreference("system.monitoring.time.range", 30, SYSTEM_GROUP, isGreaterThan(0));
-    /**
-     * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
-     */
-    public static final IntPreference SYSTEM_MAX_IDLE_TIMEOUT_MINUTES =
-            new IntPreference("system.max.idle.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
 
     /**
-     * A timeout to wait before an idle action will be taken
+     * Configures idle monitoring rules per metric type (CPU, GPU, ABSOLUTE).
+     * Replaces deprecated system.idle.* preferences with a unified JSON array config.
      */
-    public static final IntPreference SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES =
-            new IntPreference("system.idle.action.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
-    /**
-     * Controls which action will be executed After idle and Action timeouts. Can take values from {@link IdleRunAction}
-     */
-    // TODO: rewrite to an EnumPreference?
-    public static final StringPreference SYSTEM_IDLE_ACTION = new StringPreference("system.idle.action",
-                                   IdleRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidIdleAction);
+    public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
+            new ObjectPreference<>(
+                    "system.idle.monitoring.config",
+                    Arrays.asList(
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.CPU,
+                                true, 10.0, 30, 30, IdleRunAction.NOTIFY
+                        ),
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.GPU,
+                                true, 0.0, 30, 30, IdleRunAction.NOTIFY
+                        ),
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.ABSOLUTE,
+                                true, null, null, 30, IdleRunAction.NOTIFY
+                        )
+                    ),
+                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
+                    PreferenceValidators.isValidIdleMonitoringConfig);
+
     /**
      * Controls which action will be performed after action threshold for long paused runs.
      * Can take values from {@link LongPausedRunAction} only.
@@ -1160,6 +1243,11 @@ public class SystemPreferences {
      */
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
             "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass, true);
+    /**
+     * Specifies paths/command list that will be available for default user under sudo.
+     */
+    public static final StringPreference SYSTEM_SSH_DEFAULT_ROOT_USER_AVAILABLE_COMMANDS = new StringPreference(
+            "system.ssh.default.root.user.available.commands", "", SYSTEM_GROUP, pass);
     /**
      * Controls which instance types will be excluded from notification list.
      */
@@ -1285,6 +1373,18 @@ public class SystemPreferences {
             "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
     public static final IntPreference SYSTEM_RUN_FILTER_MAX_PAGE_SIZE = new IntPreference(
             "system.run.filter.max.page.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_LENGTH = new IntPreference(
+            "system.access.code.length", 23, SYSTEM_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<List<String>> SYSTEM_ACCESS_ALLOWED_CODE_CHALLENGE_METHODS =
+            new ObjectPreference<>("system.access.allowed.code.challenge.methods",
+                    Collections.singletonList("S256"), new TypeReference<List<String>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final IntPreference SYSTEM_ACCESS_CODE_TTL_MINUTES = new IntPreference(
+            "system.access.code.ttl.minutes", 10, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ACCESS_CODE_MONITOR_DELAY = new IntPreference(
+            "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
+            "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -1341,6 +1441,8 @@ public class SystemPreferences {
             null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final EnumPreference<ElasticStackVersion> SEARCH_ELASTIC_VERSION = new EnumPreference<>(
+            "search.elastic.version", ElasticStackVersion.V6, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_BILLING_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.billing.socket.timeout", 30000, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_BILLING_RETRY_TIMEOUT = new IntPreference(
@@ -1385,6 +1487,8 @@ public class SystemPreferences {
             new ObjectPreference<>("search.export.template.mapping", Collections.emptyMap(),
                     new TypeReference<Map<String, SearchTemplateExportConfig>>() {}, SEARCH_GROUP,
                     isValidSearchExportTemplateConfig);
+    public static final StringPreference SEARCH_PROMPT_TEMPLATE = new StringPreference(
+            "search.prompt.template", null, SEARCH_GROUP, pass);
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
         "search.storage.elements.settings",
@@ -1432,6 +1536,9 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
     public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
             "gcp.default.gpu.type", "a100", GCP_GROUP, isNotBlank);
+    public static final StringPreference GCP_SPOT_INSTANCE_TYPE = new StringPreference(
+            "gcp.spot.instance.type", GCPSpotType.PREEMPTIBLE.name(), GCP_GROUP,
+            isValidEnum(GCPSpotType.class));
 
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
@@ -1454,9 +1561,52 @@ public class SystemPreferences {
             "billing.quotas.clear.period.seconds", Constants.SECONDS_IN_DAY * 30,
             BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
+    // Usage Credits
+    /** Starting balance assigned to every new user (must be within [min, max]). Default: 2000 credits. */
+    public static final IntPreference USAGE_CREDITS_DEFAULT = new IntPreference(
+            "usage.credits.default", 2000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Hard floor for any user's balance — no event can push it below this value. Default: 24 credits. */
+    public static final IntPreference USAGE_CREDITS_MIN = new IntPreference(
+            "usage.credits.min", 24, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Hard ceiling for any user's balance — no event can push it above this value. Default: 3000 credits. */
+    public static final IntPreference USAGE_CREDITS_MAX = new IntPreference(
+            "usage.credits.max", 3000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Credits cost per single unit of each resource type. Default: CPU=1, GPU=100. */
+    public static final ObjectPreference<Map<String, Integer>> USAGE_CREDITS_RESOURCE_WEIGHTS =
+            new ObjectPreference<>("usage.credits.resource.weights",
+                    CommonUtils.toMap(Pair.of("CPU", 1), Pair.of("GPU", 100)),
+                    new TypeReference<Map<String, Integer>>() {}, USAGE_CREDITS_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}));
+    /**
+     * Percentage of the [min, max] range above min below which a low-balance notification is sent.
+     * E.g. 25 means notify when balance drops below {@code min + 0.25 * (max - min)}. Default: 25.
+     */
+    public static final IntPreference USAGE_CREDITS_NOTIFICATION_THRESHOLD = new IntPreference(
+            "usage.credits.notification.threshold", 25, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Controls enforcement level: <p>
+     * OFF disables API + population; <p>
+     * BALANCE_ONLY calculates and shows balances; <p>
+     * ON calculates and shows balances and blocks runs if insufficient. */
+    public static final EnumPreference<PlatformUsageCreditsMode> USAGE_CREDITS_MODE =
+            new EnumPreference<>("platform.usage.credits.mode",
+                    PlatformUsageCreditsMode.BALANCE_ONLY, USAGE_CREDITS_GROUP);
+
     // Lustre FS
+    public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(
+            "lustre.fs.scale.enabled", false, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_FS_SCALE_MONITORING_DELAY = new IntPreference(
+            "lustre.fs.scale.monitoring.delay", 10, LUSTRE_GROUP, isGreaterThan(0));
+    public static final DoublePreference LUSTRE_FS_SCALE_THRESHOLD_RATIO = new DoublePreference(
+            "lustre.fs.scale.threshold.ratio", 0.75, LUSTRE_GROUP,
+            isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final DoublePreference LUSTRE_FS_SCALE_DELTA_RATIO = new DoublePreference(
+            "lustre.fs.scale.delta.ratio", 0.5, LUSTRE_GROUP, isGreaterThan(0.0f));
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
             "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_MAX_FS_SIZE = new IntPreference(
+            "lustre.fs.max.size", 1125900, LUSTRE_GROUP, pass);
+    public static final IntPreference LUSTRE_UPDATE_SIZE_PERIOD = new IntPreference(
+            "lustre.fs.update.size.period", 21600, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
@@ -1557,6 +1707,15 @@ public class SystemPreferences {
             "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
     public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
             "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_PLATFORM_USAGE_CREDITS_DELAY = new IntPreference(
+            "monitoring.platform.usage.credits.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP,
+            isGreaterThan(0));
+    public static final BooleanPreference MONITORING_PLATFORM_USAGE_CREDITS_ENABLE = new BooleanPreference(
+            "monitoring.platform.usage.credits.enable", false, MONITORING_GROUP, pass);
+    public static final ObjectPreference<List<String>> MONITORING_POOL_REQUEST_NAMES = new ObjectPreference<>(
+        "monitoring.node.pool.request.names", Arrays.asList("cpu", "memory", "nvidia.com/gpu"),
+            new TypeReference<List<String>>() {}, MONITORING_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     // Cloud
     public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =

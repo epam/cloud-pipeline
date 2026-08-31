@@ -11,6 +11,7 @@ from pykube.http import HTTPClient
 from pykube.objects import Pod
 
 Host = collections.namedtuple('Host', 'action,name,ip,phase')
+CP_KUBE_NAMESPACE = os.getenv("CP_KUBE_NAMESPACE", "default")
 
 
 class MultipleFilesHostsManager:
@@ -185,7 +186,7 @@ class Watcher(threading.Thread):
     def _events_watcher(self):
         kube_api = HTTPClient(KubeConfig.from_service_account())
         kube_api.session.verify = False
-        watcher = Pod.objects(kube_api, namespace="default") \
+        watcher = Pod.objects(kube_api, namespace=CP_KUBE_NAMESPACE) \
             .filter(selector={'type': 'pipeline'}) \
             .watch()
         return watcher

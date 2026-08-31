@@ -83,6 +83,16 @@ export default function getVersionRunningInfo (
       ? displayDate(versionScanResult.gracePeriod, 'D MMMM YYYY')
       : null;
     const isLatest = version === defaultTag;
+    if (versionScanResult && versionScanResult.fromBlackList) {
+      tooltip = ScanStatusDescriptionsFn(isLatest, false).blackListed;
+      launchTooltip = LaunchMessages(gracePeriodEnd).blackListed;
+      return {
+        allowedToExecute: isAdmin ? true :false,
+        tooltip,
+        launchTooltip,
+        notLoaded: false
+      };
+    }
     let allowedToExecute = allowedToExecuteFlag || isAdmin || isGrace;
     if (!isAllowed) {
       const distributionDescription = distribution

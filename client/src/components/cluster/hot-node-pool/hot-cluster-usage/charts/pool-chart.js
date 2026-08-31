@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import Chart from './base';
 import PoolSelector from '../controls/pool-selector';
@@ -66,6 +67,7 @@ const extractDataSets = (
 function PoolChart ({
   title,
   style,
+  className,
   units,
   rawData = {},
   currentPoolId,
@@ -101,13 +103,17 @@ function PoolChart ({
   };
   return (
     <div
-      className={styles.container}
+      className={classNames(className, styles.container)}
       style={containerStyle}
     >
       <div
         style={
           Object.assign(
-            {width: '100%', flexGrow: '1', position: 'relative'},
+            {
+              width: '100%',
+              height: '100%',
+              position: 'relative'
+            },
             style
           )
         }

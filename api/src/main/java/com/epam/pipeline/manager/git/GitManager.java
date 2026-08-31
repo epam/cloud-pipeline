@@ -391,7 +391,7 @@ public class GitManager {
         final String configPath = getConfigFilePath(pipeline.getConfigurationPath());
         Assert.isTrue(pipelineRepositoryService.fileExists(pipeline, configPath),
                 String.format("Configuration file %s is missing.", configPath));
-        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, getRevisionName(version), configPath);
+        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, version, configPath);
         String config = new String(configBytes, Charset.defaultCharset());
         Assert.isTrue(StringUtils.isNotBlank(config),
                 String.format("Configuration file %s is empty.", configPath));

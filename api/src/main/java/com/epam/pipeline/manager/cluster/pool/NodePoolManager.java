@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +62,8 @@ public class NodePoolManager {
 
     public List<? extends NodePoolInfo> loadAll(final boolean loadStatus) {
         final List<NodePool> allPools = poolDao.loadAll();
-        return loadStatus ? kubernetesPoolService.attachUsage(allPools) : allPools;
+        return loadStatus && CollectionUtils.isNotEmpty(allPools) ?
+                kubernetesPoolService.attachUsage(allPools) : allPools;
     }
 
     public Optional<NodePool> find(final Long poolId) {

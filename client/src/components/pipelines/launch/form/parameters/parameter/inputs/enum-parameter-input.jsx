@@ -30,20 +30,40 @@ function mapEnumerationItem (eItem) {
   return undefined;
 }
 
+function unMapValue (value, parameter) {
+  if (parameter?.config?.multiple && Array.isArray(value)) {
+    return value.join(',');
+  }
+  return value;
+}
+
+function mapValue (value = '', parameter) {
+  if (parameter?.config?.multiple) {
+    return (value || '').split(',').filter(Boolean);
+  }
+  return String(value);
+}
+
 function LaunchFormEnumParameterInput (props) {
   const {
     className,
     style,
     value: valueProps,
+    parameter,
     onChange,
-    disabled,
-    enumeration: enumerationProps = []
+    disabled
   } = props;
-  const enumeration = enumerationProps.map(mapEnumerationItem);
-  const value = valueProps ? String(valueProps) : undefined;
+  const {
+    config = {}
+  } = parameter || {};
+  const {
+    enumeration: enumerationProps = []
+  } = config;
+  const enumeration = (enumerationProps || []).map(mapEnumerationItem);
+  const value = mapValue(valueProps, parameter);
   const onInputChange = (e) => {
     if (typeof onChange === 'function') {
-      onChange(e);
+      onChange(unMapValue(e, parameter));
     }
   };
   return (
@@ -54,6 +74,7 @@ function LaunchFormEnumParameterInput (props) {
       onChange={onInputChange}
       disabled={disabled}
       size="large"
+      mode={parameter?.config?.multiple ? 'multiple' : 'default'}
     >
       {enumeration.map((v) => (
         <Select.Option key={v.key} value={v.value}>
@@ -68,7 +89,7 @@ LaunchFormEnumParameterInput.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   value: PropTypes.any,
-  enumeration: PropTypes.any,
+  parameter: PropTypes.object,
   required: PropTypes.bool,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,

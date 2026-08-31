@@ -45,6 +45,9 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import UploadFilesArea from './upload-files-area';
 import FileUploadList from '../../../../utils/files-upload/file-upload-list';
 import UploadFilesList from './upload-files-list';
+import {
+  getAllowedStoragesForCloudRegion
+} from '../../../../utils/limit-mounts/check-cloud-region-rules';
 
 const PAGE_SIZE = 40;
 const DTS_ITEM_TYPE = 'DTS';
@@ -57,10 +60,41 @@ const GS_BUCKET_TYPE = 'GS';
 const OMICS_REF_BUCKET_TYPE = 'AWS_OMICS_REF';
 const OMICS_SEQ_BUCKET_TYPE = 'AWS_OMICS_SEQ';
 
+export function getDataStorageItemFullPath (item, bucket) {
+  if (bucket && (
+    bucket.type === ItemTypes.storage ||
+        bucket.type === S3_BUCKET_TYPE ||
+        bucket.type === AZ_BUCKET_TYPE ||
+        bucket.type === GS_BUCKET_TYPE ||
+        bucket.type === NFS_BUCKET_TYPE ||
+        bucket.type === OMICS_REF_BUCKET_TYPE ||
+        bucket.type === OMICS_SEQ_BUCKET_TYPE
+  )) {
+    const type = bucket.storageType || bucket.type;
+    const buildPath = (root) => item && item.path ? `${root}/${item.path}` : root;
+    if (type === 'NFS') {
+      const storagePath = bucket.path.replace(':', '');
+      const mountPoint = bucket.mountPoint
+        ? bucket.mountPoint.endsWith('/')
+          ? bucket.mountPoint.slice(0, -1)
+          : bucket.mountPoint
+        : null;
+      return buildPath(mountPoint || `/cloud-data/${storagePath}`);
+    }
+    if (type === OMICS_REF_BUCKET_TYPE || type === OMICS_SEQ_BUCKET_TYPE) {
+      return buildPath(`${bucket.pathMask}`);
+    }
+    return buildPath(`${type.toLowerCase()}://${bucket.path}`);
+  } else if (bucket && bucket.type === DTS_ROOT_ITEM_TYPE) {
+    return item ? (item.fullPath || '') : '';
+  }
+  return item ? (item.path || '') : '';
+}
+
 @connect({
   pipelinesLibrary
 })
-@inject('dtsList', 'preferences', 'uiLaunchParametersConfiguration')
+@inject('dtsList', 'preferences', 'uiLaunchParametersConfiguration', 'awsRegions')
 @inject(() => ({
   storages: dataStorages,
   library: pipelinesLibrary
@@ -89,7 +123,24 @@ export default class BucketBrowser extends React.Component {
         OMICS_SEQ_BUCKET_TYPE
       ])
     ),
-    uploadFilesAllowed: PropTypes.bool
+    uploadFilesAllowed: PropTypes.bool,
+    /**
+     * If cloud region is set, storages will be filtered by this region
+     * (also see `filterObjectStorages` / `filterNonObjectStorages` properties)
+     */
+    cloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    /**
+     * If cloud region is set (`cloudRegionId`),
+     * object storages will be filtered by this region.
+     * Default value: true
+     */
+    filterObjectStorages: PropTypes.bool,
+    /**
+     * If cloud region is set (`cloudRegionId`),
+     * non-object storages will be filtered by this region.
+     * Default value: true
+     */
+    filterNonObjectStorages: PropTypes.bool
   };
 
   @observable
@@ -118,6 +169,30 @@ export default class BucketBrowser extends React.Component {
     return uploadFilesAllowed &&
       uiLaunchParametersConfiguration &&
       uiLaunchParametersConfiguration.localFiles.enabled;
+  }
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
+
+  @computed
+  get currentCloudRegion () {
+    const {
+      cloudRegionId
+    } = this.props;
+    return cloudRegionId
+      ? this.awsRegions.find(r => `${r.id}` === `${cloudRegionId}`)
+      : undefined;
+  }
+
+  @computed
+  get storages () {
+    const {storages} = this.props;
+    return storages.loaded ? (storages.value || []).map(r => r) : [];
   }
 
   get storageIsFetching () {
@@ -236,44 +311,13 @@ export default class BucketBrowser extends React.Component {
     return undefined;
   }
 
-  getItemFullPath = (item) => {
-    if (this.state.bucket && (
-      this.state.bucket.type === ItemTypes.storage ||
-        this.state.bucket.type === S3_BUCKET_TYPE ||
-        this.state.bucket.type === AZ_BUCKET_TYPE ||
-        this.state.bucket.type === GS_BUCKET_TYPE ||
-        this.state.bucket.type === NFS_BUCKET_TYPE ||
-        this.state.bucket.type === OMICS_REF_BUCKET_TYPE ||
-        this.state.bucket.type === OMICS_SEQ_BUCKET_TYPE
-    )) {
-      const type = this.state.bucket.storageType || this.state.bucket.type;
-      const buildPath = (root) => item && item.path ? `${root}/${item.path}` : root;
-      if (type === 'NFS') {
-        const storagePath = this.state.bucket.path.replace(':', '');
-        const mountPoint = this.state.bucket.mountPoint
-          ? this.state.bucket.mountPoint.endsWith('/')
-            ? this.state.bucket.mountPoint.slice(0, -1)
-            : this.state.bucket.mountPoint
-          : null;
-        return buildPath(mountPoint || `/cloud-data/${storagePath}`);
-      }
-      if (type === OMICS_REF_BUCKET_TYPE || type === OMICS_SEQ_BUCKET_TYPE) {
-        return buildPath(`${this.state.bucket.pathMask}`);
-      }
-      return buildPath(`${type.toLowerCase()}://${this.state.bucket.path}`);
-    } else if (this.state.bucket && this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
-      return item ? (item.fullPath || '') : '';
-    }
-    return item ? (item.path || '') : '';
-  };
-
   itemIsSelected = (item) => {
+    const {bucket} = this.state;
     if (this.state.selectedItems && this.state.selectedItems.length > 0) {
+      const fullPath = getDataStorageItemFullPath(item, bucket).toLowerCase();
       if (this.props.multiple) {
         const filteredSelectedItems =
-          this.state.selectedItems.filter(selectedItem =>
-            selectedItem.name.trim().toLowerCase() === this.getItemFullPath(item).toLowerCase()
-          );
+          this.state.selectedItems.filter(item => item.name.trim().toLowerCase() === fullPath);
         let isSelected = false;
 
         filteredSelectedItems.forEach(selectedItem => {
@@ -281,7 +325,7 @@ export default class BucketBrowser extends React.Component {
             isSelected = isSelected || selectedItem.type === item.type;
           } else {
             const filteredData = this.tableData.filter(data =>
-              this.getItemFullPath(data).toLowerCase() === this.getItemFullPath(item).toLowerCase()
+              getDataStorageItemFullPath(data, bucket).toLowerCase() === fullPath
             );
             if (filteredData.length > 1) {
               isSelected = isSelected || item.type.toLowerCase() === 'folder';
@@ -293,8 +337,7 @@ export default class BucketBrowser extends React.Component {
 
         return isSelected;
       } else {
-        return this.getItemFullPath(item).toLowerCase() ===
-          (this.state.selectedItems[0].name || '').toLowerCase();
+        return fullPath === (this.state.selectedItems[0].name || '').toLowerCase();
       }
     }
     return false;
@@ -302,11 +345,14 @@ export default class BucketBrowser extends React.Component {
 
   selectItem = (event, item) => {
     event.stopPropagation();
+    const {bucket} = this.state;
+    const itemFullPath = getDataStorageItemFullPath(item, bucket);
     if (this.props.multiple) {
-      const itemFullPath = this.getItemFullPath(item);
       if (this.state.selectedItems && this.state.selectedItems.length > 0) {
-        const filteredData = this.tableData.filter(data =>
-          this.getItemFullPath(data).toLowerCase() === itemFullPath.toLowerCase()
+        const filteredData = this.tableData.filter(data => {
+          const dataFullPath = getDataStorageItemFullPath(data, bucket).toLowerCase();
+          return dataFullPath === itemFullPath.toLowerCase();
+        }
         );
         const index = this.state.selectedItems.findIndex((selectedItem) => {
           if (selectedItem.name.trim().toLowerCase() === itemFullPath.toLowerCase()) {
@@ -331,7 +377,10 @@ export default class BucketBrowser extends React.Component {
       if (this.itemIsSelected(item)) {
         this.setState({selectedItems: []});
       } else {
-        this.setState({selectedItems: [{name: this.getItemFullPath(item), type: item.type}]});
+        this.setState({selectedItems: [{
+          name: itemFullPath,
+          type: item.type
+        }]});
       }
     }
   };
@@ -548,8 +597,9 @@ export default class BucketBrowser extends React.Component {
   };
 
   onSelectBucketClicked = () => {
-    if (this.props.onSelect && this.state.bucket && this.props.allowBucketSelection) {
-      this.props.onSelect(this.getItemFullPath());
+    const {bucket} = this.state;
+    if (this.props.onSelect && bucket && this.props.allowBucketSelection) {
+      this.props.onSelect(getDataStorageItemFullPath());
       this.setState({selectedItems: []});
     }
   };
@@ -644,14 +694,19 @@ export default class BucketBrowser extends React.Component {
     }
   };
 
-  postprocessTree (items) {
+  postprocessTree (items, options = {}) {
+    const {
+      allowed
+    } = options || {};
     const result = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type === ItemTypes.storage) {
-        result.push(item);
+        if (!allowed || allowed.some((st) => st.id === item.id)) {
+          result.push(item);
+        }
       } else if (item.type === ItemTypes.folder && item.children && item.children.length) {
-        item.children = this.postprocessTree(item.children);
+        item.children = this.postprocessTree(item.children, options);
         if (item.children.length) {
           result.push(item);
         }
@@ -663,7 +718,31 @@ export default class BucketBrowser extends React.Component {
   generateTree () {
     if (this.props.library.loaded &&
       this.props.dtsList.loaded &&
+      this.props.storages.loaded &&
+      this.props.awsRegions.loaded &&
       !this.rootItems) {
+      const {currentCloudRegion, awsRegions = []} = this;
+      const filterStorages = currentCloudRegion !== undefined;
+      const {
+        filterObjectStorages = true,
+        filterNonObjectStorages = true
+      } = this.props;
+      let objectStorages = this.storages.filter((st) => st.type !== NFS_BUCKET_TYPE);
+      if (filterStorages && filterObjectStorages) {
+        objectStorages = getAllowedStoragesForCloudRegion(
+          objectStorages,
+          currentCloudRegion,
+          awsRegions
+        );
+      }
+      let nonObjectStorages = this.storages.filter((st) => st.type === NFS_BUCKET_TYPE);
+      if (filterStorages && filterNonObjectStorages) {
+        nonObjectStorages = getAllowedStoragesForCloudRegion(
+          nonObjectStorages,
+          currentCloudRegion,
+          awsRegions
+        );
+      }
       this.rootItems = [
         ...(this.props.dtsList.value || [])
           .filter(r => {
@@ -714,7 +793,10 @@ export default class BucketBrowser extends React.Component {
                 }
               )
             }
-          )
+          ),
+          {
+            allowed: objectStorages.concat(nonObjectStorages)
+          }
         )];
     }
     return (
@@ -1109,6 +1191,14 @@ export default class BucketBrowser extends React.Component {
       });
     } else if (this.storage && !this.storage.pending && !this.state.pagePerformed) {
       this.performPage();
+    }
+
+    if (
+      this.props.cloudRegionId !== prevProps.cloudRegionId ||
+      this.props.filterObjectStorages !== prevProps.filterObjectStorages ||
+      this.props.filterNonObjectStorages !== prevProps.filterNonObjectStorages
+    ) {
+      this.rootItems = null;
     }
 
     if (this.props.visible && this.props.visible !== prevProps.visible) {

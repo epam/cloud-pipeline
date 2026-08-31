@@ -39,12 +39,11 @@ export function correctNFSPath (path) {
   return correctedPath;
 }
 
-export function findStorageByPath (path, storages = []) {
+export function findStorageByPath (path, storages = [], showShared = false) {
   let lowerCasedPath = (path || '').toLowerCase();
   if (lowerCasedPath.endsWith('/')) {
     lowerCasedPath = lowerCasedPath.slice(0, -1);
   }
-  const notSharedStorages = storages.filter((storage) => !storage.shared);
   const storageMatch = (aStorage) => {
     const {
       pathMask = ''
@@ -56,6 +55,10 @@ export function findStorageByPath (path, storages = []) {
     return pathMaskCorrected === lowerCasedPath ||
       lowerCasedPath.startsWith(`${pathMaskCorrected}/`);
   };
+  if (showShared) {
+    return storages.find(storageMatch);
+  }
+  const notSharedStorages = storages.filter((storage) => !storage.shared);
   return notSharedStorages.find(storageMatch);
 }
 
@@ -81,14 +84,15 @@ export function getStorageLinkInfo (options) {
     storages = [],
     storageId,
     path,
-    isFolder
+    isFolder,
+    showShared = false
   } = options;
   let storage;
   let correctedPath = correctNFSPath(path);
   if (storageId && !Number.isNaN(Number(storageId))) {
     storage = findStorageByIdentifier(Number(storageId), storages);
   } else if (correctedPath) {
-    storage = findStorageByPath(correctedPath, storages);
+    storage = findStorageByPath(correctedPath, storages, showShared);
   }
   let relativePath = correctedPath || '';
   if (storage && relativePath.toLowerCase().startsWith((storage.pathMask || '').toLowerCase())) {

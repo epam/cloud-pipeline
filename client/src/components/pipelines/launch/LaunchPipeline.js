@@ -171,7 +171,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return metadataEntityFieldsRequest.value;
   };
 
-  launch = async (payloads, hostedApplicationConfiguration, platform, skipCheck) => {
+  launch = async (payloads, hostedApplicationConfiguration, platform, skipCheck, warnings) => {
     this.setState({pending: true}, async () => {
       const {currentConfiguration} = this;
       const payloadsArray = Array.isArray(payloads) ? payloads : [payloads];
@@ -186,7 +186,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           payloadsArray,
           true,
           undefined,
-          undefined,
+          warnings,
           this.allowedInstanceTypes,
           hostedApplicationConfiguration,
           platform,
@@ -577,6 +577,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
                 docker_image: vsPayload.dockerImage,
                 is_spot: vsPayload.isSpot,
                 instance_size: vsPayload.instanceType,
+                fallback_instance_types: vsPayload.fallbackInstanceTypes,
                 instance_disk: vsPayload.hddSize,
                 node_count: vsPayload.nodeCount,
                 timeout: vsPayload.timeout,
@@ -606,7 +607,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           isSpot: payloadRequest.is_spot,
           regionId: payloadRequest.cloudRegionId,
           toolId: image,
-          requestAllRegionsForProviders: ['GCP']
+          requestAllRegionsForProviders: ['GCP', 'AWS']
         });
       } catch (error) {
         message.error(error.message, 5);

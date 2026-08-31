@@ -1,0 +1,23 @@
+{
+  "policy": {
+    "description": "Security log rollover policy.",
+    "default_state": "rollover",
+    "states": [
+      {
+        "name": "rollover",
+        "actions": [
+          {
+            "rollover": {
+              "min_index_age": "1d"
+            }
+          }
+        ],
+        "transitions": []
+      }
+    ],
+    "ism_template": {
+      "index_patterns": ["security_log*"],
+      "priority": 100
+    }
+  }
+}

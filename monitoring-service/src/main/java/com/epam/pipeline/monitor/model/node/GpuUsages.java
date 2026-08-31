@@ -22,12 +22,23 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 public class GpuUsages {
+    /**
+     * Usages by GPU card
+     */
     private List<NodeReporterGpuUsages> usages;
     private String nodename;
     private LocalDateTime timestamp;
+    /**
+     * Usage summary across all GPU cards
+     */
     private GpuUsageStats stats;
+    /**
+     * Usage summary across all GPU cards assigned by particular run
+     */
+    private Map<Long, GpuUsageStats> statsByRun;
 }

@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,6 @@ import static org.junit.Assert.assertTrue;
 @Transactional
 public class RoleDaoTest extends AbstractJdbcTest {
 
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 22;
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_ROLE = "ROLE_TEST";
     private static final String TEST_ROLE_UPDATED = "NEW_ROLE";
@@ -65,7 +65,7 @@ public class RoleDaoTest extends AbstractJdbcTest {
     public void testLoadRolesWithUsers() {
         roleDao.createRole(TEST_ROLE, ROLE_OWNER);
         final Collection<Role> roles = roleDao.loadAllRoles(true);
-        assertEquals(EXPECTED_DEFAULT_ROLES_NUMBER + 1, roles.size());
+        assertEquals(TestUtils.EXPECTED_DEFAULT_ROLES_NUMBER + 1, roles.size());
         assertTrue(roles.stream().anyMatch(role -> role.getName().equals(TEST_ROLE)));
         roles.forEach(role -> {
             ExtendedRole extendedRole = (ExtendedRole)role;

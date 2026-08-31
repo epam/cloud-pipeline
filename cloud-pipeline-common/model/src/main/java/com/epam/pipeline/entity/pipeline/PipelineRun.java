@@ -35,11 +35,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.util.StringUtils;
 
@@ -50,8 +50,6 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     public static final String PARENT_ID_PARAM = "parent-id";
     public static final String KEY_VALUE_DELIMITER = "=";
-    public static final String PARAM_DELIMITER = "|";
-    private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
 
     // Describes the user who actually launch this run, in common case will be the same as owner field,
     // but in case of runAs functionality will hold a name of the user who initially initiate a launch process
@@ -96,14 +94,6 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String podStatus;
     private List<RunSid> runSids;
     private Map<String, String> envVars;
-    /**
-     * Last time the notification on long-running pipeline was issued
-     */
-    private Date lastNotificationTime;
-    /**
-     * Last time the notification on idle pipeline was issued
-     */
-    private LocalDateTime lastIdleNotificationTime;
     private LocalDateTime prolongedAtTime;
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;
@@ -126,7 +116,11 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String stateReasonMessage;
     private List<RestartRun> restartedRuns;
     private List<RunStatus> runStatuses;
+    // Is used to disable AUTO-pause functionality, see ResourceMonitoringManager.performPause()
     private boolean nonPause;
+
+    // Is used to completely disable pause functionality, even per user request
+    private boolean pauseDisabled;
 
     /**
      * For CMD runs parent is TOOL, for usual runs - it is a PIPELINE
@@ -150,21 +144,10 @@ public class PipelineRun extends AbstractSecuredEntity {
         return terminating;
     }
 
-    public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
-        params = parameters
-                .entrySet().stream()
-                .map(entry -> {
-                    String param = entry.getKey() + KEY_VALUE_DELIMITER +
-                            entry.getValue().getValue();
-                    if (StringUtils.hasText(entry.getValue().getType())) {
-                        param += KEY_VALUE_DELIMITER + (entry.getValue().getType());
-                    }
-                    return param;
-                })
-                .collect(Collectors.joining(PARAM_DELIMITER));
-    }
-
     public void parseParameters() {
+        if (CollectionUtils.isNotEmpty(pipelineRunParameters)) {
+            return;
+        }
         pipelineRunParameters = new ArrayList<>();
         if (StringUtils.hasText(params)) {
             String[] parts = params.split("\\|");

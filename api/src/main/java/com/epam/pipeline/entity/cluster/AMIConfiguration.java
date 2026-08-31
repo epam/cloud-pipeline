@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -38,5 +39,11 @@ public class AMIConfiguration {
     @JsonProperty("run_parameters")
     private Map<String, Object> runParameters;
 
+    @JsonProperty("additional_spec")
+    private Map<String, Object> additionalSpec;
 
+    private List<String> permissions;
+
+    @JsonProperty("docker_image")
+    private List<String> dockerImages;
 }

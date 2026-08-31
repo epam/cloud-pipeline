@@ -22,6 +22,8 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.log.LogFilter;
@@ -31,8 +33,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -122,7 +122,8 @@ public class StorageRequestSynchronizer implements ElasticsearchSynchronizer {
                 .createdDate(syncDate)
                 .period(getLastTimeOfMonth(syncDate))
                 .build();
-        return new IndexRequest(index, "_doc").id(String.format("%d-%d", user.getId(), storageId))
+        return new IndexRequest(index, indexService.getVersion())
+                .id(String.format("%d-%d", user.getId(), storageId))
                 .source(mapper.map(requests));
     }
 

@@ -136,14 +136,14 @@ public class GitLabService implements GitClientService {
 
     @Override
     public byte[] getFileContents(final GitProject project, final String path, final String revision,
-                                  final String token) {
+                                  final String token, final boolean isDraft) {
         return getGitlabClientForRepository(project.getRepoUrl(), token, true)
                 .getFileContents(parseProjectId(project.getId()), path, revision);
     }
 
     @Override
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
-                                           final int byteLimit) {
+                                           final int byteLimit, final boolean isDraft) {
         return getGitlabClientForPipeline(pipeline).getTruncatedFileContents(path, revision, byteLimit);
     }
 
@@ -195,7 +195,8 @@ public class GitLabService implements GitClientService {
 
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
-                                                          final String version, final boolean recursive) {
+                                                          final String version, final boolean recursive,
+                                                          final boolean isDraft) {
         return getGitlabClientForPipeline(pipeline)
                 .getRepositoryContents(path, version, recursive);
     }
@@ -383,7 +384,9 @@ public class GitLabService implements GitClientService {
 
     private GitlabClient getGitlabClientForRepository(final String repository, final String providedToken,
                                                       final boolean rootClient) {
-        final Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
+        final Long adminId = preferenceManager.findPreference(SystemPreferences.GIT_USER_ID)
+                .map(Long::valueOf)
+                .orElse(null);
         final String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         final boolean externalHost = StringUtils.isNotBlank(providedToken);
         final String token = externalHost ? providedToken

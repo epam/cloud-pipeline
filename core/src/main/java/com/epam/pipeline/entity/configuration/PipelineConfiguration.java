@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -74,6 +74,9 @@ public class PipelineConfiguration implements Cloneable {
     private static final String SHARED_WITH_ROLES = "share_with_roles";
     private static final String NOTIFICATIONS = "notifications";
     private static final String RAW_EDIT = "raw";
+    private static final String FRIENDLY_URL = "friendly_url";
+    private static final String CONFIG_VALIDATION = "config_validation";
+    private static final String FALLBACK_INSTANCE_TYPES = "fallback_instance_types";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -85,6 +88,9 @@ public class PipelineConfiguration implements Cloneable {
 
     @JsonProperty(value = INSTANCE_SIZE)
     private String instanceType;
+
+    @JsonProperty(value = FALLBACK_INSTANCE_TYPES)
+    private List<String> fallbackInstanceTypes;
 
     @JsonProperty(value = INSTANCE_IMAGE)
     private String instanceImage;
@@ -139,7 +145,7 @@ public class PipelineConfiguration implements Cloneable {
     @JsonIgnore
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
 
-    @JsonIgnore
+    @JsonProperty(value = FRIENDLY_URL)
     private String prettyUrl;
 
     @JsonIgnore
@@ -161,7 +167,7 @@ public class PipelineConfiguration implements Cloneable {
 
     private Map<String, String> kubeLabels;
 
-    private RunAssignPolicy podAssignPolicy;
+    private RunContainerSpec podAssignPolicy;
 
     private String kubeServiceAccount;
 
@@ -170,6 +176,13 @@ public class PipelineConfiguration implements Cloneable {
 
     @JsonProperty(value = "conditional_parameters")
     private Map<String, Object> conditionalParameters;
+
+    @JsonProperty(value = "config_description")
+    private String description;
+
+    // path inside the pipeline repo to the validation script of this configuration
+    @JsonProperty(value = CONFIG_VALIDATION)
+    private String validation;
 
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {
@@ -256,6 +269,9 @@ public class PipelineConfiguration implements Cloneable {
             }
             if (this.kubeLabels != null) {
                 clone.setKubeLabels(new HashMap<>(this.kubeLabels));
+            }
+            if (this.fallbackInstanceTypes != null) {
+                clone.setFallbackInstanceTypes(new ArrayList<>(this.fallbackInstanceTypes));
             }
             return clone;
         } catch (CloneNotSupportedException e) {

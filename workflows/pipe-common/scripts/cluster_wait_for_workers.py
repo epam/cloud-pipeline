@@ -13,12 +13,20 @@
 # limitations under the License.
 
 from pipeline import Logger, TaskStatus, PipelineAPI, StatusEntry
-from pipeline import Kubernetes
 import argparse
 import os
 import subprocess
 import time
 
+
+def get_pod(api, run_id):
+    run = api.load_run(run_id)
+    return Pod(run.get('podId', None), run.get('podIP', None))
+
+class Pod:
+    def __init__(self, name, ip):
+        self.name = name
+        self.ip = ip
 
 class Task:
 
@@ -38,7 +46,6 @@ class CreateWorkerNodes(Task):
     def __init__(self):
         Task.__init__(self)
         self.task_name = 'WaitForWorkerNodes'
-        self.kube = Kubernetes()
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
     def get_workers(self, parent_id):
@@ -74,16 +81,17 @@ class CreateWorkerNodes(Task):
     def get_started_workers(self, worker_ids):
         started = []
         for id in worker_ids:
-            pod = self.kube.get_pod(id)
-            if pod and pod.status == 'Running':
-                task_logs = self.pipe_api.load_task(id, self.INIT_WORKER_TASK)
-                if not task_logs:
-                    continue
-                task_status = task_logs[-1]['status']
-                if task_status == 'SUCCESS':
-                    started.append(pod)
-                elif task_status != 'RUNNING':
-                    raise RuntimeError('Worker {} failed to start'.format(id))
+            pod = get_pod(self.pipe_api, id)
+            if not pod.ip:
+                continue
+            task_logs = self.pipe_api.load_task(id, self.INIT_WORKER_TASK)
+            if not task_logs:
+                continue
+            task_status = task_logs[-1]['status']
+            if task_status == 'SUCCESS':
+                started.append(pod)
+            elif task_status != 'RUNNING':
+                raise RuntimeError('Worker {} failed to start'.format(id))
         return started
 
 
@@ -92,13 +100,13 @@ class BuildHostfile(Task):
     def __init__(self):
         Task.__init__(self)
         self.task_name = 'BuildHostfile'
-        self.kube = Kubernetes()
+        self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
     def run(self, worker_pods, path, run_id):
         try:
             Logger.info('Creating hostfile {}'.format(path), task_name=self.task_name)
             with open(path, 'w') as file:
-                master_pod = self.kube.get_pod(run_id)
+                master_pod = get_pod(self.pipe_api, run_id)
                 file.write('{}\n'.format(master_pod.name))
                 for pod in worker_pods:
                     file.write('{}\n'.format(pod.name))

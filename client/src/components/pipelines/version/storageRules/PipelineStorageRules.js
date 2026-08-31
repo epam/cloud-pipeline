@@ -129,7 +129,10 @@ export default class PipelineStorageRules extends React.Component {
       roleModel.writeAllowed(this.props.pipeline.value)
         ? (
           <Row type="flex" justify="end" style={{paddingRight: 5}}>
-            <Button type="primary" onClick={this.openCreateRuleDialog}>Add new rule</Button>
+            <Button
+              type="primary"
+              onClick={this.openCreateRuleDialog}
+            >Add new rule</Button>
           </Row>
         )
         : false

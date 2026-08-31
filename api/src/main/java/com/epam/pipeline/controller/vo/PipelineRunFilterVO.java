@@ -21,7 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -33,7 +33,7 @@ import org.apache.commons.collections4.MapUtils;
 
 @Getter
 @Setter
-public class PipelineRunFilterVO implements AclSecuredFilter {
+public class PipelineRunFilterVO implements AclSecuredRunFilter {
     private List<Long> regionIds;
     private List<Long> pipelineIds;
     private List<String> versions;

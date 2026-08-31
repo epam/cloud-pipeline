@@ -45,6 +45,12 @@ public class PipeConfValueVO {
     @JsonProperty(value = "enum")
     private List<String> availableValues;
 
+    /**
+     * Enables multiselection for availableValues property.
+     */
+    @JsonProperty(value = "multiple")
+    private boolean multiple;
+
     PipeConfValueVO() {
         this(DEFAULT_VALUE, DEFAULT_TYPE, DEFAULT_REQUIRED, DEFAULT_AVAIL_VALUES);
     }

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon, Menu} from 'antd';
+import {Menu} from 'antd';
 import styles from './run-tabs.css';
 
 function RunTabs (props) {

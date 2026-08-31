@@ -17,7 +17,8 @@
 package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -38,16 +39,21 @@ public class ElasticIndexService {
 
     private final ElasticsearchServiceClient elasticsearchServiceClient;
 
+    public ElasticStackVersion getVersion() {
+        return  elasticsearchServiceClient.getVersion();
+    }
+
     public void createIndexIfNotExists(final String indexName, final String settingsFilePath)
         throws ElasticClientException {
         try {
             if (!elasticsearchServiceClient.isIndexExists(indexName)) {
-                final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
-                                                             Charset.defaultCharset());
-                if (elasticsearchServiceClient.isIndexExists(indexName)) {
-                    log.debug("Index {} exists already!", indexName);
-                } else {
-                    elasticsearchServiceClient.createIndex(indexName, mappingsJson);
+                try (InputStream inputStream = openJsonMapping(settingsFilePath)) {
+                    final String mappingsJson = IOUtils.toString(inputStream, Charset.defaultCharset());
+                    if (elasticsearchServiceClient.isIndexExists(indexName)) {
+                        log.debug("Index {} exists already!", indexName);
+                    } else {
+                        elasticsearchServiceClient.createIndex(indexName, mappingsJson);
+                    }
                 }
             }
         } catch (IOException e) {

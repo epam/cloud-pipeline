@@ -54,6 +54,7 @@ import java.util.concurrent.Semaphore;
 import java.util.zip.GZIPInputStream;
 
 @Service
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class ScanService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ScanService.class);
@@ -155,13 +156,17 @@ public class ScanService {
             ArchiveEntry entry;
             while ((entry = tarStream.getNextEntry()) != null) {
                 String entryName = entry.getName();
-                final File entryFile = new File(layerFolder, entryName);
-                if (entry.isDirectory()) {
-                    Files.createDirectories(entryFile.toPath());
-                } else {
-                    try (OutputStream out = new BufferedOutputStream(new FileOutputStream(entryFile))) {
-                        IOUtils.copy(tarStream, out);
+                try {
+                    final File entryFile = new File(layerFolder, entryName);
+                    if (entry.isDirectory()) {
+                        Files.createDirectories(entryFile.toPath());
+                    } else {
+                        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(entryFile))) {
+                            IOUtils.copy(tarStream, out);
+                        }
                     }
+                } catch (Exception e) {
+                    LOGGER.error("Failed to fetch :" + entryName,  e);
                 }
             }
             LOGGER.debug("Successfully unpack layer: " + layerToScan.getName());

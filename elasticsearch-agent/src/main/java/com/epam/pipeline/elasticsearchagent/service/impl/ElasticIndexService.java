@@ -15,19 +15,13 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearchagent.exception.ElasticClientException;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.IOUtils;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.ResourceUtils;
@@ -37,28 +31,24 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static com.epam.pipeline.elasticsearchagent.service.EventToRequestConverter.INDEX_TYPE;
-import static com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration.RunConfigurationDocumentBuilder.ID_DELIMITER;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ElasticIndexService {
 
-    private static final String WILDCARD = "*";
+    private final ElasticsearchServiceClient elasticsearchServiceClient;
 
-    @Autowired
-    private ElasticsearchServiceClient elasticsearchServiceClient;
+    // TODO: shall we merge logic to ElasticsearchServiceClient?
+    public ElasticStackVersion getVersion() {
+        return elasticsearchServiceClient.getVersion();
+    }
 
     public void createIndexIfNotExist(final String indexName, final String settingsFilePath)
             throws ElasticClientException {
-        try {
-            final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
-                    Charset.defaultCharset());
+        try (InputStream fileStream = openJsonMapping(settingsFilePath)) {
+            final String mappingsJson = IOUtils.toString(fileStream, Charset.defaultCharset());
             elasticsearchServiceClient.createIndex(indexName, mappingsJson);
         } catch (IOException e) {
             throw new ElasticClientException("Failed to create elasticsearch index with name " + indexName, e);
@@ -68,59 +58,12 @@ public class ElasticIndexService {
     public List<DocWriteRequest> getDeleteRequestsByTerm(final String field,
                                                          final String value,
                                                          final String indexName) {
-
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(QueryBuilders.termQuery(field, value));
-        final SearchRequest request = new SearchRequest(indexName).source(searchSource);
-        log.debug("Search request: {}", request);
-        try {
-            return buildDeleteRequests(indexName, request);
-        } catch (ElasticsearchException e) {
-            return Collections.emptyList();
-        }
+        return elasticsearchServiceClient.getDeleteRequestsByTerm(field, value, indexName);
     }
 
     public List<DocWriteRequest> getDeleteRequests(final String id,
                                                    final String indexName) {
-        SearchRequest request = buildSearchRequestForConfigEntries(id, indexName);
-        log.debug("Search request: {}", request);
-        try {
-            final List<DocWriteRequest> requests = buildDeleteRequests(indexName, request);
-            // return dummy doc, since we need it to clear events DB
-            if (CollectionUtils.isEmpty(requests)) {
-                return Collections.singletonList(new DeleteRequest(indexName, INDEX_TYPE,
-                        getWildcardId(id)));
-            }
-            return requests;
-        } catch (ElasticsearchException e) {
-            return Collections.emptyList();
-        }
-    }
-
-    private List<DocWriteRequest> buildDeleteRequests(final String indexName,
-                                                      final SearchRequest request) {
-        SearchResponse search = elasticsearchServiceClient.search(request);
-        if (search.getHits().getTotalHits() == 0) {
-            log.debug("No documents found for {} {}", indexName, request);
-            return Collections.emptyList();
-        }
-        return Arrays.stream(search.getHits().getHits())
-                .map(hit -> {
-                    log.debug("Found {} entry doc: {}", indexName, hit.getId());
-                    return new DeleteRequest(indexName, INDEX_TYPE, hit.getId());
-                })
-                .collect(Collectors.toList());
-    }
-
-    private SearchRequest buildSearchRequestForConfigEntries(final String id,
-                                                             final String indexName) {
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(QueryBuilders.wildcardQuery("id", getWildcardId(id)));
-        return new SearchRequest(indexName).source(searchSource);
-    }
-
-    private String getWildcardId(final String id) {
-        return id + ID_DELIMITER + WILDCARD;
+        return elasticsearchServiceClient.getDeleteRequests(id, indexName);
     }
 
     private InputStream openJsonMapping(final String path) throws FileNotFoundException {
@@ -135,6 +78,4 @@ public class ElasticIndexService {
         }
         throw new IllegalArgumentException("Unsupported mapping file: " + path);
     }
-
-
 }

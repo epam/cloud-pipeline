@@ -29,6 +29,7 @@
                         start_date,
                         end_date,
                         parameters,
+                        parameters_json,
                         status,
                         terminating,
                         pod_id,
@@ -60,7 +61,6 @@
                         pod_status,
                         env_vars,
                         prolonged_at_time,
-                        last_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -68,12 +68,14 @@
                         disk_price_per_hour,
                         state_reason,
                         non_pause,
+                        pause_disabled,
                         node_real_disk,
                         node_cloud_provider,
                         tags,
                         sensitive,
                         pipeline_name,
-                        node_start_date)
+                        node_start_date,
+                        logs_storage_path)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -81,6 +83,7 @@
                         :START_DATE,
                         :END_DATE,
                         :PARAMETERS,
+                        :PARAMETERS_JSON::jsonb,
                         :STATUS,
                         :TERMINATING,
                         :POD_ID,
@@ -112,7 +115,6 @@
                         :POD_STATUS,
                         to_jsonb(:ENV_VARS::jsonb),
                         :PROLONGED_AT_TIME,
-                        :LAST_NOTIFICATION_TIME,
                         :EXEC_PREFERENCES,
                         :PRETTY_URL,
                         :PRICE_PER_HOUR,
@@ -120,12 +122,14 @@
                         :DISK_PRICE_PER_HOUR,
                         :STATE_REASON,
                         :NON_PAUSE,
+                        :PAUSE_DISABLED,
                         :NODE_REAL_DISK,
                         :NODE_CLOUD_PROVIDER,
                         to_jsonb(:TAGS::jsonb),
                         :SENSITIVE,
                         :PIPELINE_NAME,
-                        :NODE_START_DATE)
+                        :NODE_START_DATE,
+                        :LOGS_STORAGE_PATH)
                 ]]>
             </value>
         </property>

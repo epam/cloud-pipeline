@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,20 @@
 import React from 'react';
 import {computed} from 'mobx';
 import {observer, inject} from 'mobx-react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {Modal, Tabs, Row, Button, message, Icon, Table, AutoComplete, Select} from 'antd';
+import {
+  Modal,
+  Tabs,
+  Row,
+  Button,
+  message,
+  Icon,
+  Table,
+  AutoComplete,
+  Select,
+  Checkbox
+} from 'antd';
 import Role from '../../../models/user/Role';
 import UserFind from '../../../models/user/UserFind';
 import RoleAssign from '../../../models/user/RoleAssign';
@@ -80,6 +92,8 @@ class EditRoleDialog extends React.Component {
     fetchedUsers: [],
     roleName: null,
     operationInProgress: false,
+    userDefault: undefined,
+    userDefaultInitial: undefined,
     defaultStorageId: undefined,
     defaultStorageIdInitial: undefined,
     defaultStorageInitialized: false,
@@ -119,9 +133,13 @@ class EditRoleDialog extends React.Component {
     return false;
   }
 
+  get isUsersAdmin () {
+    return roleModel.hasRole(roleModel.ROLES.ROLE_USER_ADMIN)(this);
+  };
+
   @computed
   get restrictedMetadataKeys () {
-    if (this.isAdmin) {
+    if (this.isAdmin || this.isUsersAdmin) {
       return [];
     }
     const {preferences} = this.props;
@@ -151,10 +169,13 @@ class EditRoleDialog extends React.Component {
       defaultStorageIdInitial,
       instanceTypesChanged,
       defaultProfileId,
-      defaultProfileIdInitial
+      defaultProfileIdInitial,
+      userDefault,
+      userDefaultInitial
     } = this.state;
     return !!metadata ||
       defaultStorageId !== defaultStorageIdInitial ||
+      userDefault !== userDefaultInitial ||
       defaultProfileId !== defaultProfileIdInitial ||
       this.addedUsers.length > 0 ||
       this.removedUsers.length > 0 ||
@@ -185,29 +206,32 @@ class EditRoleDialog extends React.Component {
       usersInitialized,
       profilesInitialized
     } = this.state;
+    const {roleInfo, credentialProfiles} = this.props;
     const state = {};
-    if (!defaultStorageInitialized && this.props.roleInfo && this.props.roleInfo.loaded) {
-      state.defaultStorageId = this.props.roleInfo.value.defaultStorageId;
-      state.defaultStorageIdInitial = this.props.roleInfo.value.defaultStorageId;
+    if (!defaultStorageInitialized && roleInfo && roleInfo.loaded) {
+      state.defaultStorageId = roleInfo.value.defaultStorageId;
+      state.defaultStorageIdInitial = roleInfo.value.defaultStorageId;
       state.defaultStorageInitialized = true;
     }
-    if (!defaultProfileIdInitialized && this.props.roleInfo && this.props.roleInfo.loaded) {
-      state.defaultProfileId = this.props.roleInfo.value.defaultProfileId;
-      state.defaultProfileIdInitial = this.props.roleInfo.value.defaultProfileId;
+    if (!defaultProfileIdInitialized && roleInfo && roleInfo.loaded) {
+      state.defaultProfileId = roleInfo.value.defaultProfileId;
+      state.defaultProfileIdInitial = roleInfo.value.defaultProfileId;
       state.defaultProfileIdInitialized = true;
+      state.userDefaultInitial = roleInfo.value.userDefault;
+      state.userDefault = roleInfo.value.userDefault;
     }
     if (
       !profilesInitialized &&
-      this.props.credentialProfiles &&
-      this.props.credentialProfiles.loaded
+      credentialProfiles &&
+      credentialProfiles.loaded
     ) {
-      state.profiles = (this.props.credentialProfiles.value || []).map(o => o.id);
-      state.profilesInitial = (this.props.credentialProfiles.value || []).map(o => o.id);
+      state.profiles = (credentialProfiles.value || []).map(o => o.id);
+      state.profilesInitial = (credentialProfiles.value || []).map(o => o.id);
       state.profilesInitialized = true;
     }
-    if (!usersInitialized && this.props.roleInfo && this.props.roleInfo.loaded) {
-      state.users = (this.props.roleInfo.value.users || []).map(u => u);
-      state.usersInitial = (this.props.roleInfo.value.users || []).map(u => u);
+    if (!usersInitialized && roleInfo && roleInfo.loaded) {
+      state.users = (roleInfo.value.users || []).map(u => u);
+      state.usersInitial = (roleInfo.value.users || []).map(u => u);
       state.usersInitialized = true;
     }
     if (Object.keys(state).length > 0) {
@@ -382,6 +406,7 @@ class EditRoleDialog extends React.Component {
       users: [],
       usersInitial: [],
       usersInitialized: false,
+      userDefault: undefined,
       instanceTypesChanged: false
     }, this.props.onClose);
   };
@@ -476,20 +501,36 @@ class EditRoleDialog extends React.Component {
   saveChanges = async () => {
     if (this.modified) {
       const mainHide = message.loading('Updating role info...', 0);
+      const {predefined} = this.props;
       const {
         defaultStorageId,
         defaultStorageIdInitial,
         metadata,
         instanceTypesChanged,
         defaultProfileId,
-        defaultProfileIdInitial
+        defaultProfileIdInitial,
+        userDefaultInitial,
+        userDefault
       } = this.state;
-      if (defaultStorageId !== defaultStorageIdInitial) {
-        const hide = message.loading('Updating default data storage...', -1);
+      if (
+        defaultStorageId !== defaultStorageIdInitial ||
+        userDefault !== userDefaultInitial
+      ) {
+        const roleType = predefined ? 'role' : 'group';
+        const userDefaultMessage = userDefault !== userDefaultInitial
+          ? `default ${roleType}`
+          : undefined;
+        const defaultStorageMessage = defaultStorageId !== defaultStorageIdInitial
+          ? 'default data storage'
+          : undefined;
+        const combinedMessage = [userDefaultMessage, defaultStorageMessage]
+          .filter(Boolean)
+          .join(' and ');
+        const hide = message.loading(`Updating ${combinedMessage}...`, 0);
         const request = new RoleUpdate(this.props.role.id);
         await request.send({
           name: this.props.role.name,
-          userDefault: this.props.role.userDefault,
+          userDefault: this.state.userDefault,
           defaultStorageId
         });
         if (request.error) {
@@ -640,6 +681,11 @@ class EditRoleDialog extends React.Component {
     this.onClose();
   };
 
+  onChangeUserDefault = (event) => {
+    const {checked} = event.target;
+    this.setState({userDefault: checked});
+  };
+
   onChangeMetadata = (metadata) => {
     this.setState({metadata});
   };
@@ -674,11 +720,13 @@ class EditRoleDialog extends React.Component {
     const {
       defaultStorageIdInitial,
       defaultProfileIdInitial,
+      userDefaultInitial,
       profilesInitial,
       usersInitial
     } = this.state;
     this.setState({
       defaultStorageId: defaultStorageIdInitial,
+      userDefault: userDefaultInitial,
       defaultProfileId: defaultProfileIdInitial,
       users: usersInitial.map(u => u),
       metadata: undefined,
@@ -720,6 +768,7 @@ class EditRoleDialog extends React.Component {
     const {readOnly} = this.props;
     const {metadata} = this.state;
     const pending = this.props.credentialProfiles ? this.props.credentialProfiles.pending : false;
+    const roleType = predefined ? 'role' : 'group';
     return (
       <SplitPanel
         style={{flex: 1, height: 'unset', overflow: 'auto'}}
@@ -750,6 +799,17 @@ class EditRoleDialog extends React.Component {
         <div
           style={{display: 'flex', flexDirection: 'column', height: '100%'}}
           key={CONTENT_PANEL_KEY}>
+          <Row type="flex" style={{marginBottom: 8}} align="middle">
+            <Checkbox
+              checked={this.state.userDefault}
+              onChange={this.onChangeUserDefault}
+            >
+              <b>Default {roleType}</b>
+            </Checkbox>
+            <p className="cp-text-not-important" style={{fontSize: 'smaller'}}>
+              This {roleType} will be assigned to all new users upon the registration
+            </p>
+          </Row>
           <Row type="flex" style={{marginBottom: 10}} align="middle">
             <span style={{marginRight: 5, fontWeight: 'bold'}}>Default data storage:</span>
             <Select
@@ -757,7 +817,7 @@ class EditRoleDialog extends React.Component {
               showSearch
               disabled={this.state.operationInProgress || readOnly}
               value={this.defaultStorageId}
-              style={{flex: 1}}
+              style={{flex: 1, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden'}}
               onChange={this.onChangeDefaultStorageId}
               size="small"
               filterOption={(input, option) =>
@@ -868,7 +928,7 @@ class EditRoleDialog extends React.Component {
             <InstanceTypesManagementForm
               className={styles.instanceTypesManagementForm}
               key="instance types management form"
-              disabled={!this.isAdmin}
+              disabled={!this.isAdmin && !this.isUsersAdmin}
               resourceId={this.props.roleId}
               level="ROLE"
               onInitialized={this.onInstanceTypesFormInitialized}
@@ -889,7 +949,7 @@ class EditRoleDialog extends React.Component {
                   this.state.operationInProgress ||
                   readOnly ||
                   pending ||
-                  !this.isAdmin
+                  !(this.isAdmin || this.isUsersAdmin)
                 }
                 value={this.state.profiles.map(o => `${o}`)}
                 style={{width: '100%'}}
@@ -931,7 +991,7 @@ class EditRoleDialog extends React.Component {
                   readOnly ||
                   this.state.profiles.length === 0 ||
                   pending ||
-                  !this.isAdmin
+                  !(this.isAdmin || this.isUsersAdmin)
                 }
                 value={this.defaultProfileId}
                 style={{width: '100%'}}
@@ -974,40 +1034,50 @@ class EditRoleDialog extends React.Component {
     const blocked = this.props.roleInfo.loaded
       ? this.props.roleInfo.value.blocked
       : false;
+    const tabsConfig = [
+      {
+        key: 'group',
+        tab: (
+          <Row>
+            {
+              this.props.role.predefined
+                ? this.props.role.name
+                : this.splitRoleName(this.props.role.name)
+            }
+            {
+              blocked && (
+                <span
+                  style={{fontStyle: 'italic', marginLeft: 5}}
+                >
+                  - blocked
+                </span>
+              )
+            }
+          </Row>
+        )
+      },
+      !predefined && (this.isAdmin || this.isUsersAdmin) ? ({
+        tab: 'PERMISSIONS',
+        key: 'permissions'
+      }) : undefined
+    ].filter(Boolean);
+    if (tabsConfig.length === 1) {
+      return (
+        <div className={classNames(
+          'cp-divider bottom',
+          'cp-text',
+          styles.tabPlaceholder
+        )}>
+          {tabsConfig[0].tab}
+        </div>
+      );
+    }
     return (
       <Tabs
         activeKey={activeTab}
         onChange={onChangeTab}
       >
-        <Tabs.TabPane
-          tab={(
-            <Row>
-              {
-                this.props.role.predefined
-                  ? this.props.role.name
-                  : this.splitRoleName(this.props.role.name)
-              }
-              {
-                blocked && (
-                  <span
-                    style={{fontStyle: 'italic', marginLeft: 5}}
-                  >
-                    - blocked
-                  </span>
-                )
-              }
-            </Row>
-          )}
-          key="group"
-        />
-        {
-          !predefined && this.isAdmin && (
-            <Tabs.TabPane
-              tab="PERMISSIONS"
-              key="permissions"
-            />
-          )
-        }
+        {tabsConfig.map(config => <Tabs.TabPane {...config} />)}
       </Tabs>
     );
   };
@@ -1019,7 +1089,7 @@ class EditRoleDialog extends React.Component {
       : false;
     return (
       <Row type="flex">
-        {this.isAdmin ? (
+        {this.isAdmin || this.isUsersAdmin ? (
           <Button
             disabled={readOnly}
             id="edit-user-form-block-unblock"

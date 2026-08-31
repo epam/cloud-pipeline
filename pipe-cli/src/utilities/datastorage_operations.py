@@ -12,32 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import itertools
-
+import time
 import click
 import logging
 import multiprocessing
 import os
 import platform
-import prettytable
 import sys
+import re
 from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 import concurrent.futures
 
+from src.api.cloud_region import CloudRegion
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
-from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
+from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand
+from src.utilities.printing.storage_du import create_storage_du_print_service
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, StorageOperations
-from src.utilities.printing.storage import print_storage_items, init_items_table
+from src.utilities.printing.storage import print_storage_items
+from src.utilities.printing.storage import create_storage_object_tag_print_service
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
@@ -48,6 +51,8 @@ STORAGE_DETAILS_SEPARATOR = ', '
 DEFAULT_BATCH_SIZE = 1000
 BATCH_SIZE = int(os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE))
 ASYNC_BATCH_ENABLE = str(os.getenv('CP_CLI_STORAGE_ASYNC_BATCH_ENABLE', 'false')).lower() == 'true'
+TRANSFER_RETRY_ATTEMPTS = int(os.getenv('CP_CLI_TRANSFER_RETRY_ATTEMPTS', 3))
+TRANSFER_RETRY_TIMEOUT = int(os.getenv('CP_CLI_TRANSFER_RETRY_TIMEOUT', 15)) # seconds
 ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
 
@@ -63,11 +68,29 @@ class AllowedFailuresValues(object):
     FAIL = 'fail'
     FAIL_AFTER = 'fail-after'
     SKIP = 'skip'
+    RETRY = 'retry'
 
 
 class EmptyFilesValues(object):
     ALLOW = 'allow'
     SKIP = 'skip'
+
+
+class TransferParameters:
+
+    def __init__(self, threads, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                 io_threads, on_failures, checksum_algorithm='md5', checksum_skip=False):
+        self.threads = threads
+        self.manager = manager
+        self.source_wrapper = source_wrapper
+        self.destination_wrapper = destination_wrapper
+        self.clean = clean
+        self.quiet = quiet
+        self.tags = tags
+        self.io_threads = io_threads
+        self.on_failures = on_failures
+        self.checksum_algorithm = checksum_algorithm
+        self.checksum_skip = checksum_skip
 
 
 class DataStorageOperations(object):
@@ -181,13 +204,24 @@ class DataStorageOperations(object):
                                        clean_flag=clean,
                                        quite_flag=quiet)
 
+        transfer_params = TransferParameters(threads=threads,
+                                             manager=manager,
+                                             source_wrapper=source_wrapper,
+                                             destination_wrapper=destination_wrapper,
+                                             clean=clean,
+                                             quiet=quiet,
+                                             tags=tags,
+                                             io_threads=io_threads,
+                                             on_failures=on_failures,
+                                             checksum_algorithm=checksum_algorithm,
+                                             checksum_skip=checksum_skip)
+
         batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.LOCAL
                                                                       or source_wrapper.get_type() == WrapperType.S3)
         if batch_allowed:
-            cls._transfer_batch_items(threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet,
-                                      tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
-                                      permission_to_check, include, exclude, force, skip_existing, sync_newer,
-                                      verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+            cls._transfer_batch_items(transfer_params, audit_ctx, permission_to_check, include, exclude, force,
+                                      skip_existing, sync_newer, verify_destination, on_unsafe_chars,
+                                      on_unsafe_chars_replacement, on_empty_files)
             sys.exit(0)
 
         # TODO: rewrite tuple to object
@@ -204,92 +238,134 @@ class DataStorageOperations(object):
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                       include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                                       on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+        failed_items_queue = multiprocessing.Queue() if on_failures == AllowedFailuresValues.RETRY else None
         if threads:
-            cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
-                                             checksum_skip)
+            try:
+                cls._multiprocess_transfer_items(items, transfer_params, audit_ctx, failed_items_queue)
+            finally:
+                cls._retry_transfer(failed_items_queue, transfer_params, audit_ctx)
         else:
-            cls._transfer_items_with_audit_ctx(items, manager, source_wrapper, destination_wrapper,
-                                               audit_ctx, clean, quiet, tags, io_threads, on_failures,
-                                               checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
+            with audit_ctx:
+                try:
+                    cls._transfer_items(items, transfer_params, lock=None, failed_items_queue=failed_items_queue)
+                finally:
+                    cls._retry_transfer(failed_items_queue, transfer_params)
 
     @classmethod
-    def _transfer_batch_items(cls, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                              quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
+    def _retry_transfer(cls, failed_items_queue, params, audit_ctx=None):
+        if failed_items_queue is None:
+            # not enabled
+            return
+        retry_attempts = TRANSFER_RETRY_ATTEMPTS
+        if retry_attempts <= 0:
+            # not enabled
+            return
+        for attempt in range(1, retry_attempts + 1):
+            try:
+                failed_items = []
+                while not failed_items_queue.empty():
+                    failed_items.append(failed_items_queue.get())
+                if not failed_items:
+                    # no failures
+                    return
+                logging.debug(u"Found {} failed items. Retry attempt {}/{}.".format(len(failed_items),
+                                                                                    attempt, retry_attempts))
+                failed_items_queue = multiprocessing.Queue()
+                if params.threads:
+                    cls._multiprocess_transfer_items(failed_items, params, audit_ctx, failed_items_queue)
+                else:
+                    cls._transfer_items(failed_items, params, lock=None, failed_items_queue=failed_items_queue)
+            except Exception as e:
+                if attempt < retry_attempts:
+                    logging.error(u"Retry attempt failed: %s. Waiting %s seconds for the next attempt..", e,
+                                  TRANSFER_RETRY_TIMEOUT)
+                    time.sleep(TRANSFER_RETRY_TIMEOUT)
+
+    @classmethod
+    def _transfer_batch_items(cls, transfer_params, audit_ctx,
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
-        items_iterator = iter(source_wrapper.get_items(quiet=quiet))
+        items_iterator = iter(transfer_params.source_wrapper.get_items(quiet=transfer_params.quiet))
         try:
-            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                           permission_to_check, include, exclude, force, quiet, skip_existing,
-                                           sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+            items = cls._fetch_batch_items(items_iterator, transfer_params.manager, transfer_params.source_wrapper,
+                                           transfer_params.destination_wrapper, permission_to_check, include,
+                                           exclude, force, transfer_params.quiet, skip_existing, sync_newer,
+                                           verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
                                            on_empty_files)
         except StopIteration:
             return
-        if threads:
-            cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
-                                             destination_wrapper, exclude, force, include, io_threads, items,
-                                             manager, items_iterator, on_empty_files, on_failures, on_unsafe_chars,
-                                             on_unsafe_chars_replacement, permission_to_check, quiet,
-                                             skip_existing, source_wrapper, sync_newer, tags, threads,
-                                             verify_destination)
+        if transfer_params.threads:
+            cls._multiprocess_transfer_batch(audit_ctx, items, transfer_params,
+                                             exclude, force, include, items_iterator, on_empty_files, on_unsafe_chars,
+                                             on_unsafe_chars_replacement, permission_to_check, skip_existing,
+                                             sync_newer, verify_destination)
         else:
-            cls._transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
-                                exclude, force, include, io_threads, items, manager, items_iterator, on_empty_files,
-                                on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
-                                quiet, skip_existing, source_wrapper, sync_newer, tags, verify_destination)
+            cls._transfer_batch(audit_ctx, items, transfer_params,
+                                exclude, force, include, items_iterator, on_empty_files,
+                                on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
+                                skip_existing, sync_newer, verify_destination)
 
     @classmethod
-    def _transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper, exclude, force,
-                        include, io_threads, items, manager, items_iterator, on_empty_files, on_failures,
-                        on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check, quiet, skip_existing,
-                        source_wrapper, sync_newer, tags, verify_destination):
+    def _transfer_batch(cls, audit_ctx, items, transfer_params, exclude, force, include, items_iterator, on_empty_files,
+                        on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check, skip_existing, sync_newer,
+                        verify_destination):
         with audit_ctx:
             while True:
+                failed_items_queue = multiprocessing.Queue() \
+                    if transfer_params.on_failures == AllowedFailuresValues.RETRY else None
                 try:
                     if ASYNC_BATCH_ENABLE:
                         with concurrent.futures.ThreadPoolExecutor(1) as executor:
-                            future = executor.submit(cls._fetch_batch_items, items_iterator, manager,
-                                                     source_wrapper, destination_wrapper, permission_to_check,
-                                                     include, exclude, force, quiet, skip_existing,
+                            future = executor.submit(cls._fetch_batch_items, items_iterator, transfer_params.manager,
+                                                     transfer_params.source_wrapper,
+                                                     transfer_params.destination_wrapper, permission_to_check,
+                                                     include, exclude, force, transfer_params.quiet, skip_existing,
                                                      sync_newer, verify_destination, on_unsafe_chars,
                                                      on_unsafe_chars_replacement, on_empty_files)
-                            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                                clean, quiet, tags, io_threads, on_failures, None,
-                                                checksum_algorithm, checksum_skip)
+                            cls._transfer_items(items, transfer_params, lock=None,
+                                                failed_items_queue=failed_items_queue)
                             items = future.result()
                     else:
-                        cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet,
-                                            tags, io_threads, on_failures, None, checksum_algorithm,
-                                            checksum_skip)
-                        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper,
-                                                       destination_wrapper,
-                                                       permission_to_check, include, exclude, force, quiet,
-                                                       skip_existing,
+                        cls._transfer_items(items, transfer_params, lock=None, failed_items_queue=failed_items_queue)
+                        items = cls._fetch_batch_items(items_iterator, transfer_params.manager,
+                                                       transfer_params.source_wrapper,
+                                                       transfer_params.destination_wrapper,
+                                                       permission_to_check, include, exclude, force,
+                                                       transfer_params.quiet, skip_existing,
                                                        sync_newer, verify_destination, on_unsafe_chars,
                                                        on_unsafe_chars_replacement, on_empty_files)
                 except StopIteration:
                     break
+                finally:
+                    cls._retry_transfer(failed_items_queue, transfer_params)
 
     @classmethod
-    def _multiprocess_transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
-                                     exclude, force, include, io_threads, items, manager, items_iterator,
-                                     on_empty_files, on_failures, on_unsafe_chars, on_unsafe_chars_replacement,
-                                     permission_to_check, quiet, skip_existing, source_wrapper, sync_newer, tags,
-                                     threads, verify_destination):
+    def _multiprocess_transfer_batch(cls, audit_ctx, items, transfer_params,
+                                     exclude, force, include, items_iterator,
+                                     on_empty_files, on_unsafe_chars, on_unsafe_chars_replacement,
+                                     permission_to_check, skip_existing, sync_newer,
+                                     verify_destination):
         while True:
+            failed_items_queue = multiprocessing.Queue() if transfer_params.on_failures == AllowedFailuresValues.RETRY else None
             try:
-                transfer_workers = cls._start_multiprocess_transfer(items, threads, manager, source_wrapper,
-                                                                    destination_wrapper, audit_ctx, clean, quiet, tags,
-                                                                    io_threads, on_failures, checksum_algorithm,
-                                                                    checksum_skip)
-                items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                               permission_to_check, include, exclude, force, quiet, skip_existing,
-                                               sync_newer, verify_destination, on_unsafe_chars,
-                                               on_unsafe_chars_replacement, on_empty_files)
-                cls._handle_keyboard_interrupt(transfer_workers)
-            except StopIteration:
-                break
+                transfer_workers = cls._start_multiprocess_transfer(items, transfer_params, audit_ctx,
+                                                                    failed_items_queue)
+                try:
+                    items = cls._fetch_batch_items(items_iterator, transfer_params.manager,
+                                                   transfer_params.source_wrapper,
+                                                   transfer_params.destination_wrapper,
+                                                   permission_to_check, include, exclude, force,
+                                                   transfer_params.quiet, skip_existing,
+                                                   sync_newer, verify_destination, on_unsafe_chars,
+                                                   on_unsafe_chars_replacement, on_empty_files)
+
+                except StopIteration:
+                    break
+                finally:
+                    cls._handle_keyboard_interrupt(transfer_workers)
+            finally:
+                cls._retry_transfer(failed_items_queue, transfer_params, audit_ctx)
+
 
     @classmethod
     def _fetch_batch_items(cls, items_iterator, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -462,8 +538,31 @@ class DataStorageOperations(object):
             except ValueError:
                 click.echo("Error: Given region id '{}' is not a number.".format(region_id))
                 sys.exit(1)
+        file_share_mount_id = None
+        if type and type.upper() == 'NFS':
+            file_share_mount_id = DataStorageOperations._resolve_file_share_mount_id(path)
+            if file_share_mount_id is None:
+                click.echo("Error: Could not find a file share mount matching path '{}'.".format(path), err=True)
+                sys.exit(1)
         DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
-                         directory.id if directory else None, on_cloud, region_id)
+                         directory.id if directory else None, on_cloud, region_id, file_share_mount_id)
+
+    @classmethod
+    def _resolve_file_share_mount_id(cls, path):
+        server_port_mask = re.compile(r'^[^:]+(:[\d]+)?$', re.IGNORECASE)
+        regions = CloudRegion.get_cloud_regions()
+        mounts = [mount for region in regions for mount in (region.get('fileShareMounts') or [])]
+        path_lower = path.lower()
+        for mount in mounts:
+            mount_root = (mount.get('mountRoot') or '').strip()
+            if not mount_root:
+                continue
+            mount_type = (mount.get('mountType') or '').upper()
+            separator = ':' if mount_type == 'NFS' and server_port_mask.match(mount_root) else ''
+            prefix = (mount_root + separator).lower()
+            if path_lower.startswith(prefix):
+                return mount.get('id')
+        return None
 
     @classmethod
     def delete(cls, name, on_cloud, yes):
@@ -520,7 +619,8 @@ class DataStorageOperations(object):
             manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive,
+                     print_service):
         """Lists storage contents
         """
 
@@ -533,27 +633,27 @@ class DataStorageOperations(object):
             original_path = ''
             root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             if show_versions and not root_bucket.policy.versioning_enabled:
-                click.echo('Error: versioning is not enabled for storage.', err=True)
+                print_service.error('Error: versioning is not enabled for storage.', err=True)
                 sys.exit(1)
             if root_bucket is None:
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
+                print_service.error('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
             if show_archive and root_bucket.type != 'S3':
-                click.echo('Error: --show-archive option is not available for this provider.', err=True)
+                print_service.error('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
             if show_archive and not UserOperationsManager()\
                     .has_storage_archive_permissions(root_bucket.identifier, root_bucket.owner):
-                click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+                print_service.error(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
                 sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
                                                   page_size=page, show_versions=show_versions, show_all=show_all,
-                                                  show_archive=show_archive)
+                                                  show_archive=show_archive, print_service=print_service)
         else:
             # If no argument is specified - list brief details of all buckets
             cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
-                                              show_extended=show_extended)
+                                              show_extended=show_extended, print_service=print_service)
 
     @classmethod
     def storage_mk_dir(cls, folders):
@@ -581,13 +681,11 @@ class DataStorageOperations(object):
             raise RuntimeError("Failed to set tags for path '{}'.".format(path))
 
     @classmethod
-    def get_object_tags(cls, path, version):
+    def get_object_tags(cls, path, version, output_format=None):
+        print_service = create_storage_object_tag_print_service(output_format)
         root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
         tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
-        if not tags:
-            click.echo("No tags available for path '{}'.".format(path))
-        else:
-            click.echo(cls.create_table(tags))
+        print_service.print_tags(path, tags)
 
     @classmethod
     def delete_object_tags(cls, path, tags, version):
@@ -599,26 +697,26 @@ class DataStorageOperations(object):
 
     @classmethod
     def du(cls, storage_name, relative_path=None, depth=None, perform_on_cloud=False,
-           output_mode='brief', generation="all", size_format='M'):
+           output_mode='brief', generation="all", size_format='M', output_format=None):
+        print_service = create_storage_du_print_service(output_format)
         du_command = DataUsageCommand(storage_name, relative_path, depth,
                                       perform_on_cloud, output_mode, generation, size_format)
-        if not du_command.validate():
+        if not du_command.validate(print_service):
             # Bad input
             sys.exit(22)
         storage = DataStorage.fetch_storage(du_command.storage_name) if du_command.storage_name else None
+        helper = DataUsageHelper(print_service)
         if du_command.eagerly_allowed(storage):
             if storage.type.lower() == 's3' or storage.type.lower() == 'nfs':
-                table = None
-                header = None
-                for _item in DataUsageHelper().fetch_data_eagerly(du_command, storage):
-                    header, table = DuOutput.print_item(du_command, _item, header, table)
-                click.echo()
+                for _item in helper.fetch_data_eagerly(du_command, storage):
+                    print_service.add_item(du_command, _item)
+                print_service.flush()
                 sys.exit(0)
-            click.echo("Using --cloud, because --depth is used", err=True)
+            print_service.warning("Using --cloud, because --depth is used", err=True)
             du_command.perform_on_cloud = True
-        du_leafs = DataUsageHelper().fetch_data(du_command, storage)
-        click.echo(DuOutput.format_table(du_command, du_leafs))
-        click.echo()
+        du_leafs = helper.fetch_data(du_command, storage)
+        print_service.print_items(du_command, du_leafs)
+        print_service.flush()
 
     @classmethod
     def convert_input_pairs_to_json(cls, tags):
@@ -631,22 +729,13 @@ class DataStorageOperations(object):
         return result
 
     @classmethod
-    def create_table(cls, tags):
-        table = prettytable.PrettyTable()
-        table.field_names = ["Tag name", "Value"]
-        table.align = "l"
-        table.header = True
-        for (key, value) in iteritems(tags):
-            table.add_row([key, value])
-        return table
-
-    @classmethod
     def __load_storage_list(cls, extended=False):
         return list(DataStorage.list_with_mount_limits()) if extended else list(DataStorage.list())
 
     @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False, show_extended=False, show_archive=False):
+                                      show_versions=False, show_all=False, show_extended=False, show_archive=False,
+                                      print_service=None):
         next_page_token = None
         manager = None
         paging_allowed = (recursive and not page_size and not show_versions and bucket_model is not None
@@ -667,38 +756,34 @@ class DataStorageOperations(object):
             items = [s for s in cls.__load_storage_list(show_extended) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
 
             if not items:
-                click.echo("No datastorages available.")
+                print_service.empty_items()
                 sys.exit(0)
 
-        fields = ["Type", "Labels", "Modified", "Size", "Name"]
-        if show_versions:
-            fields.append("Version")
         if show_extended:
-            fields.extend(["Mount status", "Mount limits", "Metadata"])
             cls.assign_metadata_to_items(items)
 
-        items_table = init_items_table(fields)
-        print_storage_items(bucket_model, items, show_details, items_table, show_extended, show_versions)
+        print_service.init_header(show_versions, show_extended)
+        print_storage_items(bucket_model, items, show_details, print_service, show_extended, show_versions)
 
         if not next_page_token:
-            click.echo()
+            print_service.flush()
             return
 
-        cls.__print_paging_storage_contents(manager, bucket_model, items_table, relative_path,
+        cls.__print_paging_storage_contents(print_service, manager, bucket_model, relative_path,
                                             recursive, show_details, next_page_token, show_versions, show_archive)
 
     @classmethod
-    def __print_paging_storage_contents(cls, manager, bucket_model, items_table, relative_path,
+    def __print_paging_storage_contents(cls, print_service, manager, bucket_model, relative_path,
                                         recursive, show_details, next_page_token, show_versions,
                                         show_archive):
-        items_table.header = False
+        print_service.disable_header()
         while True:
             items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
                                                                page_size=BATCH_SIZE, start_token=next_page_token,
                                                                show_archive=show_archive)
-            print_storage_items(bucket_model, items, show_details, items_table, False, show_versions)
+            print_storage_items(bucket_model, items, show_details, print_service, False, show_versions)
             if not next_page_token:
-                click.echo()
+                print_service.flush()
                 return
 
     @classmethod
@@ -783,73 +868,53 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _start_multiprocess_transfer(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                     audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
-                                     checksum_skip):
+    def _start_multiprocess_transfer(cls, sorted_items, transfer_params, audit_ctx, failed_items_queue=None):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
-        splitted_items = cls._split_items_by_process(sorted_items, threads)
+        splitted_items = cls._split_items_by_process(sorted_items, transfer_params.threads)
         lock = multiprocessing.Lock()
 
         workers = []
-        for i in range(threads):
+        for i in range(transfer_params.threads):
             process = multiprocessing.Process(target=cls._transfer_items_with_audit_ctx,
                                               args=(splitted_items[i],
-                                                    manager,
-                                                    source_wrapper,
-                                                    destination_wrapper,
+                                                    transfer_params,
                                                     audit_ctx,
-                                                    clean,
-                                                    quiet,
-                                                    tags,
-                                                    io_threads,
-                                                    on_failures,
                                                     lock,
-                                                    checksum_algorithm,
-                                                    checksum_skip))
+                                                    failed_items_queue))
             process.start()
             workers.append(process)
         return workers
 
     @classmethod
-    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                     audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
-                                     checksum_skip):
-        workers = cls._start_multiprocess_transfer(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                                   audit_ctx, clean, quiet, tags, io_threads, on_failures,
-                                                   checksum_algorithm, checksum_skip)
+    def _multiprocess_transfer_items(cls, sorted_items, transfer_params, audit_ctx, failed_items_queue=None):
+        workers = cls._start_multiprocess_transfer(sorted_items, transfer_params, audit_ctx, failed_items_queue)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items_with_audit_ctx(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                                       quiet, tags, io_threads, on_failures, lock=None, checksum_algorithm='md5',
-                                       checksum_skip=False):
+    def _transfer_items_with_audit_ctx(cls, items, transfer_params, audit_ctx, lock=None, failed_items_queue=None):
         with audit_ctx:
-            cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
-                                io_threads, on_failures, lock, checksum_algorithm, checksum_skip)
+            cls._transfer_items(items, transfer_params, lock, failed_items_queue)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
-                        io_threads, on_failures, lock=None, checksum_algorithm='md5', checksum_skip=False):
+    def _transfer_items(cls, items, transfer_params, lock=None, failed_items_queue=None):
         transfer_results = []
         fail_after_exception = None
         for item in items:
-            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                        source_wrapper, destination_wrapper,
+            transfer_results, fail_after_exception = cls._transfer_item(item, transfer_params,
                                                                         transfer_results,
-                                                                        clean, quiet, tags, io_threads,
-                                                                        on_failures, lock, checksum_algorithm,
-                                                                        checksum_skip)
-        if not destination_wrapper.is_local():
-            cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                        transfer_results, clean=clean, flush_size=1)
+                                                                        lock)
+            if fail_after_exception:
+                if failed_items_queue is not None:
+                    failed_items_queue.put(item)
+        if not transfer_params.destination_wrapper.is_local():
+            cls._flush_transfer_results(transfer_params.source_wrapper, transfer_params.destination_wrapper,
+                                        transfer_results, clean=transfer_params.clean, flush_size=1)
         if fail_after_exception:
             raise fail_after_exception
 
     @classmethod
-    def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
-                       clean, quiet, tags, io_threads, on_failures, lock, checksum_algorithm='md5',
-                       checksum_skip=False):
+    def _transfer_item(cls, item, transfer_params, transfer_results, lock):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
@@ -857,43 +922,53 @@ class DataStorageOperations(object):
         destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
 
         fail_after_exception = None
+        source_last_modified = cls._get_tuple_item(item, 4)
         try:
-            transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                               relative_path=destination_relative_path, clean=clean, quiet=quiet,
-                                               size=size, tags=tags, io_threads=io_threads, lock=lock,
-                                               checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
-            if not destination_wrapper.is_local() and transfer_result:
+            transfer_result = transfer_params.manager.transfer(transfer_params.source_wrapper,
+                                                               transfer_params.destination_wrapper,
+                                                               path=full_path,
+                                                               relative_path=destination_relative_path,
+                                                               clean=transfer_params.clean,
+                                                               quiet=transfer_params.quiet,
+                                                               size=size,
+                                                               tags=transfer_params.tags,
+                                                               io_threads=transfer_params.io_threads, lock=lock,
+                                                               checksum_algorithm=transfer_params.checksum_algorithm,
+                                                               checksum_skip=transfer_params.checksum_skip,
+                                                               source_last_modified=source_last_modified)
+            if not transfer_params.destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
-                transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                               transfer_results, clean=clean)
+                transfer_results = cls._flush_transfer_results(transfer_params.source_wrapper,
+                                                               transfer_params.destination_wrapper,
+                                                               transfer_results, clean=transfer_params.clean)
         except Exception as e:
             err_msg = str(e)
             if isinstance(e, ClientError) \
                     and err_msg and 'InvalidObjectState' in err_msg:
-                if 'storage class' in err_msg and not quiet:
+                if 'storage class' in err_msg and not transfer_params.quiet:
                     click.echo(u'File {} transferring has failed. Archived file shall be restored first.'
                                .format(full_path))
                     return transfer_results, fail_after_exception
-                if 'access tier' in err_msg and not quiet:
+                if 'access tier' in err_msg and not transfer_params.quiet:
                     click.echo(u'File {} transferring has failed. Contact storage owner to restore file.'
                                .format(full_path))
                     return transfer_results, fail_after_exception
-            if on_failures == AllowedFailuresValues.FAIL:
+            if transfer_params.on_failures == AllowedFailuresValues.FAIL:
                 err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
                 logging.warn(err_msg)
-                if not quiet:
+                if not transfer_params.quiet:
                     click.echo(err_msg)
                 raise
-            elif on_failures == AllowedFailuresValues.FAIL_AFTER:
+            elif transfer_params.on_failures in [AllowedFailuresValues.FAIL_AFTER, AllowedFailuresValues.RETRY]:
                 err_msg = u'File transferring has failed {}. Proceeding...'.format(full_path)
                 logging.warn(err_msg)
-                if not quiet:
+                if not transfer_params.quiet:
                     click.echo(err_msg)
                 fail_after_exception = e
             else:
                 err_msg = u'File transferring has failed {}. Proceeding...'.format(full_path)
                 logging.warn(err_msg)
-                if not quiet:
+                if not transfer_params.quiet:
                     click.echo(err_msg)
         return transfer_results, fail_after_exception
 

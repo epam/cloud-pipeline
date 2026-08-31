@@ -24,7 +24,7 @@ spec:
         - name: cp-heapster-elk
           command: 
           - /init
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:heapster-elk-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:heapster-elk-${CP_HEAPSTER_VERSION}
           imagePullPolicy: "IfNotPresent"
           envFrom:
           - configMapRef:

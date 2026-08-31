@@ -42,7 +42,7 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 
 @Transactional
 @SuppressWarnings({"PMD.TooManyStaticImports", "unused"})
@@ -78,7 +78,7 @@ class GitTagEventProcessorTest extends AbstractSpringApplicationTest {
         pipeline.setName(TEST_NAME);
         pipeline.setRepository(TEST_PATH);
 
-        when(apiClient.loadPipelineByRepositoryUrl(anyString())).thenReturn(pipeline);
+        doReturn(pipeline).when(apiClient).loadPipelineByRepositoryUrl(anyString());
         gitTagEventProcessor.processEvent(gitEvent);
 
         LocalDateTime dateTime = LocalDateTime.now();
@@ -87,7 +87,7 @@ class GitTagEventProcessorTest extends AbstractSpringApplicationTest {
         assertEquals(1, pipelineCodeEvents.size());
         PipelineEvent event = pipelineCodeEvents.get(0);
 
-        Map<String, Object> map = objectMapper.readValue(event.getData(), new TypeReference<Map<String, String>>(){});
+        Map<String, ?> map = objectMapper.readValue(event.getData(), new TypeReference<Map<String, String>>(){});
 
         assertAll("event",
             () -> assertEquals(PipelineEvent.ObjectType.PIPELINE_CODE, event.getObjectType()),

@@ -45,10 +45,13 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskKeys;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunWithEngineTasks;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -56,6 +59,7 @@ import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -68,6 +72,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -450,8 +455,9 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Resumes paused run.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun> resumeRun(@PathVariable(value = RUN_ID) Long runId) {
-        return Result.success(runApiService.resumeRun(runId));
+    public Result<PipelineRun> resumeRun(@PathVariable(value = RUN_ID) Long runId,
+                                         @RequestBody(required = false) RunInstanceConfigVO resumeRunVO) {
+        return Result.success(runApiService.resumeRun(runId, resumeRunVO));
     }
 
     @PostMapping(value = "/run/{runId}/updateSids")
@@ -633,6 +639,17 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(true);
     }
 
+    @PostMapping(value = "/runs/archive/explicit")
+    @ApiOperation(
+            value = "Archive specified runs by their IDs",
+            notes = "Migrate specified pipeline runs (by ID) to the archive table.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRunsByIds(@RequestBody final List<Long> runIds) {
+        runApiService.archiveRuns(runIds);
+        return Result.success(true);
+    }
+
     @PostMapping("/runs/archive/owners")
     @ApiOperation(
             value = "Migrate runs to archive table for specified user (or group).",
@@ -684,6 +701,17 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.consumeRunEngineTaskEvents(runId, tasks));
     }
 
+    @DeleteMapping("/run/{runId}/engine/tasks")
+    @ApiOperation(
+            value = "Deletes engine task events for run",
+            notes = "Deletes engine task events for run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result resetRunEngineTaskEvents(@PathVariable(value = RUN_ID) final Long runId) {
+        runApiService.resetRunEngineTaskEvents(runId);
+        return Result.success();
+    }
+
     @GetMapping("run/{runId}/engine/{engineType}/tasks/stats")
     @ApiOperation(
             value = "Loads engine task statistics for run and engine type",
@@ -709,6 +737,18 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.filterEngineRunTasks(runId, engineType, filter));
     }
 
+    @PostMapping("run/engine/{engineType}/tasks/runInfo")
+    @ApiOperation(
+            value = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
+            notes = "Loads pipeline runs for provided engine task keys, response is grouped by pipeline run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRunWithEngineTasks>> getPipelineRunInfoByEngineTask(
+            @PathVariable(value = ENGINE_TYPE) final EngineType engineType,
+            @RequestBody final EngineRunTaskKeys keys) {
+        return Result.success(runApiService.getPipelineRunInfoByEngineTask(engineType, keys));
+    }
+
     @PostMapping("/run/{runId}/result")
     @ApiOperation(
             value = "Adds set of run result objects for the specified run",
@@ -729,5 +769,16 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRunResult>> loadPipelineRunResults(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.loadPipelineRunResultsForRun(runId));
+    }
+
+    @GetMapping("/run/{runId}/metrics")
+    @ApiOperation(
+            value = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
+            notes = "Loads run performance metrics. Metrics can be loaded only for runs in final status.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
+            @PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
     }
 }

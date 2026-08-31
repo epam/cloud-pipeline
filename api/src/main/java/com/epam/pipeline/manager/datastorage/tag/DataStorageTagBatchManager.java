@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertRequest;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,7 @@ public class DataStorageTagBatchManager {
     private final DataStorageTagDao tagDao;
     private final DataStorageDao storageDao;
     private final AuthManager authManager;
+    private final StoragePermissionManager storagePermissionManager;
     private final StoragePathPermissionsService storagePathPermissionsService;
 
     @Transactional
@@ -241,7 +243,7 @@ public class DataStorageTagBatchManager {
     private <T> List<String> getAllowedPaths(final Long storageId, final List<T> requests,
                                              final Function<T, String> getPathFunction,
                                              final int mask) {
-        if (authManager.isAdmin()) {
+        if (storagePermissionManager.isStorageAdmin()) {
             return null;
         }
         final AbstractDataStorage storage = storageDao.loadDataStorage(storageId);

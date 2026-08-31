@@ -40,6 +40,9 @@ import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
+import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.keypair.SshKeyPair;
@@ -148,9 +151,15 @@ public class UserManager implements SecuredEntityManager {
     private QuotaService quotaService;
 
     @Autowired
+    private PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceService;
+
+    @Autowired
     private SshKeyPairManager sshKeyPairManager;
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    @Autowired
+    private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManager;
+
+
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser create(final String name, final List<Long> roles,
                                final List<String> groups,
@@ -160,6 +169,7 @@ public class UserManager implements SecuredEntityManager {
                 .map(user -> configureUserDefaultStorage(user, defaultStorageId))
                 .map(this::configureUserDefaultMetadata)
                 .map(this::configureUserPrivateDockerRegistryGroup)
+                .map(this::configureDefaultCreditsBalance)
                 .get();
     }
 
@@ -274,8 +284,12 @@ public class UserManager implements SecuredEntityManager {
      * @return generated token
      */
     public JwtRawToken issueToken(final String userName, final Long expiration) {
+        return issueToken(userName, expiration, false);
+    }
+
+    public JwtRawToken issueToken(final String userName, final Long expiration, boolean validateExpirationDuration) {
         final UserContext userContext = loadUserContext(userName);
-        return authManager.issueToken(userContext, expiration);
+        return authManager.issueToken(userContext, expiration, validateExpirationDuration);
     }
 
     public PipelineUser loadUserByName(final String name) {
@@ -306,10 +320,18 @@ public class UserManager implements SecuredEntityManager {
     }
 
     public PipelineUser load(final Long id, final boolean quotas) {
+        return load(id, quotas, false);
+    }
+
+    public PipelineUser load(final Long id, final boolean quotas, final boolean loadCredits) {
         final PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         if (quotas && !user.isAdmin()) {
             user.setActiveQuotas(quotaService.loadActiveQuotasForUser(user));
+        }
+        if (loadCredits) {
+            platformUsageCreditsUserBalanceService.findByUserId(user.getId())
+                    .ifPresent(user::setUsageCredits);
         }
         return user;
     }
@@ -328,22 +350,38 @@ public class UserManager implements SecuredEntityManager {
     }
 
     public Collection<PipelineUser> loadAllUsers(final boolean loadQuotas) {
-        final  Collection<PipelineUser> pipelineUsers = userDao.loadAllUsers();
+        return loadAllUsers(loadQuotas, false);
+    }
+
+    public Collection<PipelineUser> loadAllUsers(final boolean loadQuotas, final boolean loadCredits) {
+        final Collection<PipelineUser> pipelineUsers = userDao.loadAllUsers();
         final PipelineUser currentUser = getCurrentUser();
         if (loadQuotas && (currentUser.isAdmin() ||
                 UserUtils.hasRole(currentUser, DefaultRoles.ROLE_BILLING_MANAGER))) {
             attachQuotaInfo(pipelineUsers);
         }
+        if (loadCredits) {
+            attachCreditsInfo(pipelineUsers);
+        }
         return pipelineUsers;
     }
 
     public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
+        return loadUsersWithActivityStatus(loadQuotas, false);
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas,
+                                                                final boolean loadCredits) {
         final PipelineUser currentUser = getCurrentUser();
         final Collection<PipelineUser> pipelineUsers = currentUser.isAdmin()
+                || UserUtils.hasRole(currentUser, DefaultRoles.ROLE_USER_ADMIN)
                 ? userDao.loadUsersWithActivityStatus()
                 : loadAllUsers();
         if (loadQuotas) {
             attachQuotaInfo(pipelineUsers);
+        }
+        if (loadCredits) {
+            attachCreditsInfo(pipelineUsers);
         }
         return pipelineUsers;
     }
@@ -376,6 +414,7 @@ public class UserManager implements SecuredEntityManager {
         permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
         userNotificationManager.deleteByUserId(id);
+        cloudProfileCredentialsManager.assignProfiles(id, true, Collections.emptySet(), null);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;
@@ -595,6 +634,12 @@ public class UserManager implements SecuredEntityManager {
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
         final Collection<PipelineUserWithStoragePath> filteredUsers = filterUsers(users, attr);
+        if (attr.isIncludeCredits()) {
+            final Map<Long, PlatformUsageCreditsUserBalance> balances =
+                    platformUsageCreditsUserBalanceService.findAllAsMap();
+            filteredUsers.forEach(user -> Optional.ofNullable(balances.get(user.getId()))
+                    .ifPresent(user::setUsageCredits));
+        }
         final List<String> sensitiveKeys = authManager.isAdmin() ? Collections.emptyList() :
                 preferenceManager.getPreference(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
@@ -744,5 +789,20 @@ public class UserManager implements SecuredEntityManager {
             return;
         }
         quotaService.attachQuotaInfo(pipelineUsers);
+    }
+
+    private void attachCreditsInfo(final Collection<PipelineUser> pipelineUsers) {
+        if (CollectionUtils.isEmpty(pipelineUsers)) {
+            return;
+        }
+        final Map<Long, PlatformUsageCreditsUserBalance> balances =
+                platformUsageCreditsUserBalanceService.findAllAsMap();
+        pipelineUsers.forEach(user -> Optional.ofNullable(balances.get(user.getId()))
+                .ifPresent(user::setUsageCredits));
+    }
+
+    private PipelineUser configureDefaultCreditsBalance(final PipelineUser user) {
+        platformUsageCreditsUserBalanceService.createDefaultBalance(user.getId());
+        return user;
     }
 }

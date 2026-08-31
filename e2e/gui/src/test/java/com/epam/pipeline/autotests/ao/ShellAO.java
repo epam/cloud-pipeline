@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import com.google.common.collect.Comparators;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Keys;
 
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -43,6 +44,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -63,22 +65,23 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertPageContains(String text) {
-        $(withText(text)).shouldBe(visible);
+        context().$(withText(text)).shouldBe(visible);
         return this;
     }
 
     public ShellAO assertPageContains(String text1, String text2) {
-        $(withText(text1)).shouldHave(text(text2));
+        context().$(withText(text1)).shouldHave(text(text2));
         return this;
     }
 
     public ShellAO assertPageDoesNotContain(String text) {
-        $(withText(text)).shouldNotBe(visible);
+        context().$(withText(text)).shouldNotBe(visible);
         return this;
     }
 
     public ShellAO execute(String command, CharSequence key) {
         sleep(300, MILLISECONDS);
+        context().click();
         Utils.sendKeysWithSlashes(command);
         sleep(300, MILLISECONDS);
         actions().sendKeys(key).perform();
@@ -158,13 +161,13 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertNextStringIsVisibleAtFileUpload(String str1, String str2) {
         $(withText(str1)).shouldBe(visible).parent()
-                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 
     public ShellAO assertNextStringIsVisible(String str1, String str2) {
         $(withText(str1)).shouldBe(visible)
-                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible);
+                .$(byXpath(format("following::x-row[contains(text(), '%s')]", str2))).shouldBe(visible, ofMillis(DEFAULT_TIMEOUT));
         return this;
     }
 

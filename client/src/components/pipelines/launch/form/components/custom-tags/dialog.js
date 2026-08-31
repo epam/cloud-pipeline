@@ -6,7 +6,8 @@ import {computed} from 'mobx';
 import UIRunUserTag from './ui-run-user-tag';
 import {
   getRequiredUserTags,
-  getUserTagsValidationResult
+  getUserTagsValidationResult,
+  getVisibleUserTags
 } from '../../../../../runs/run-tags/utilities';
 
 @inject('preferences')
@@ -15,12 +16,14 @@ class CustomTagsEditor extends React.Component {
   state = {
     tags: {},
     validation: [],
-    required: []
+    required: [],
+    visible: [],
+    tagsTouched: []
   };
 
   componentDidMount () {
     this.updateFromProps();
-    this.updateRequiredTags();
+    this.updateRequiredAndVisibleTags();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -31,7 +34,7 @@ class CustomTagsEditor extends React.Component {
       this.updateFromProps();
     }
     if (this.props.payload !== prevProps.payload) {
-      this.updateRequiredTags();
+      this.updateRequiredAndVisibleTags();
     }
   }
 
@@ -49,7 +52,7 @@ class CustomTagsEditor extends React.Component {
     }, this.updateValidation);
   };
 
-  updateRequiredTags = () => {
+  updateRequiredAndVisibleTags = () => {
     const {payload} = this.props;
     const current = this._token = {};
     const commit = (fn) => {
@@ -62,13 +65,23 @@ class CustomTagsEditor extends React.Component {
       }
     };
     (async () => {
-      const required = await getRequiredUserTags(payload);
-      commit(() => this.setState({required}, () => this.updateValidation()));
+      const [
+        required,
+        visible
+      ] = await Promise.all([
+        getRequiredUserTags(payload),
+        getVisibleUserTags(payload)
+      ]);
+      commit(() => this.setState({required, visible}, () => this.updateValidation()));
     })();
   };
 
   updateValidation = () => {
-    const {tags, required: requiredTags = []} = this.state;
+    const {
+      tags,
+      required: requiredTags = [],
+      visible: visibleTags = []
+    } = this.state;
     const current = this._validationToken = {};
     const commit = (fn) => {
       if (current === this._validationToken) {
@@ -80,7 +93,10 @@ class CustomTagsEditor extends React.Component {
       }
     };
     (async () => {
-      const validation = await getUserTagsValidationResult(tags, {requiredTags});
+      const validation = await getUserTagsValidationResult(
+        tags,
+        {requiredTags, visibleTags}
+      );
       commit(() => this.setState({validation}));
     })();
   };
@@ -88,7 +104,8 @@ class CustomTagsEditor extends React.Component {
   @computed
   get uiRunsUserTags () {
     const {preferences} = this.props;
-    return preferences.uiRunsUserTags;
+    const {visible: visibleTags = []} = this.state;
+    return (preferences.uiRunsUserTags || []).filter((tag) => visibleTags.includes(tag.tag));
   }
 
   handleCancel = () => {
@@ -100,7 +117,7 @@ class CustomTagsEditor extends React.Component {
   };
 
   handleSave = () => {
-    const {tags} = this.state;
+    const {tags, tagsTouched} = this.state;
     const filtered = Object.entries(tags ?? {})
       .map(([key, value]) => ({key, value}))
       .filter((o) => o.value && o.value.trim().length > 0)
@@ -108,12 +125,19 @@ class CustomTagsEditor extends React.Component {
         ...acc,
         [current.key]: current.value
       }), {});
-    this.props.onSave(filtered);
+    this.props.onSave(
+      filtered,
+      tagsTouched
+    );
   }
 
   onChangeTagValue = (tag, value) => {
-    const {tags} = this.state;
-    this.setState({tags: {...tags, [tag.tag]: value}}, this.updateValidation);
+    const {tags, tagsTouched} = this.state;
+    const touchedKeys = [...new Set([...tagsTouched, tag.tag])];
+    this.setState({
+      tags: {...tags, [tag.tag]: value},
+      tagsTouched: touchedKeys
+    }, this.updateValidation);
   };
 
   render () {

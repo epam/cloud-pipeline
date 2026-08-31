@@ -30,25 +30,42 @@ const CLOSE_POPOVER_DELAY_MS = 200;
 const RepositoryTypes = {
   GitLab: 'GITLAB',
   GitHub: 'GITHUB',
+  GitHubApp: 'GITHUB_APP',
   BitBucket: 'BITBUCKET',
-  ButBucketCloud: 'BITBUCKET_CLOUD'
+  ButBucketCloud: 'BITBUCKET_CLOUD',
+  AzureDevOps: 'AZURE_DEVOPS'
 };
 
 const availableRepositoryTypes = [
   RepositoryTypes.GitLab,
   RepositoryTypes.GitHub,
   RepositoryTypes.BitBucket,
-  RepositoryTypes.ButBucketCloud
+  RepositoryTypes.ButBucketCloud,
+  RepositoryTypes.AzureDevOps
 ];
 
 const RepositoryTypeNames = {
   [RepositoryTypes.GitLab]: 'GitLab',
   [RepositoryTypes.GitHub]: 'GitHub',
+  [RepositoryTypes.GitHubApp]: 'GitHub App',
   [RepositoryTypes.BitBucket]: 'BitBucket',
-  [RepositoryTypes.ButBucketCloud]: 'BitBucket Cloud'
+  [RepositoryTypes.ButBucketCloud]: 'BitBucket Cloud',
+  [RepositoryTypes.AzureDevOps]: 'Azure DevOps'
 };
 
-export {RepositoryTypes, RepositoryTypeNames, availableRepositoryTypes};
+function normalizeRepositoryType (repositoryType) {
+  if (repositoryType === RepositoryTypes.GitHubApp) {
+    return RepositoryTypes.GitHub;
+  }
+  return repositoryType;
+}
+
+export {
+  RepositoryTypes,
+  RepositoryTypeNames,
+  availableRepositoryTypes,
+  normalizeRepositoryType
+};
 
 export default @observer
 class GitRepositoryControl extends React.Component {
@@ -171,7 +188,7 @@ class GitRepositoryControl extends React.Component {
           {
             repositoryType && (
               <span style={{textTransform: 'uppercase', marginRight: 5}}>
-                {RepositoryTypeNames[repositoryType]}
+                {RepositoryTypeNames[normalizeRepositoryType(repositoryType)]}
               </span>
             )
           }

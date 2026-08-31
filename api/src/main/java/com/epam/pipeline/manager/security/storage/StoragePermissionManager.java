@@ -81,6 +81,11 @@ public class StoragePermissionManager {
     private final PreferenceManager preferenceManager;
     private final ContextualPreferenceManager contextualPreferenceManager;
 
+    public boolean isStorageAdmin() {
+        return authManager.isAdmin()
+            || permissionHelper.isScopedAdmin(AclClass.DATA_STORAGE);
+    }
+
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
         return grantPermissionManager.storagePermission(storage, permissionName);
@@ -186,7 +191,7 @@ public class StoragePermissionManager {
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames,
                               final boolean allPermissions) {
-        if (permissionHelper.isAdmin() || grantPermissionManager.isStorageAdmin()) {
+        if (permissionHelper.isAdmin() || permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
             return;
         }
         final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),
@@ -209,7 +214,7 @@ public class StoragePermissionManager {
     }
 
     public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return grantPermissionManager.isOwnerOrAdmin(storage) || grantPermissionManager.isStorageAdmin()
+        return grantPermissionManager.isOwnerOrAdmin(storage) || permissionHelper.isScopedAdmin(storage)
                 || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
     }
 
@@ -237,7 +242,7 @@ public class StoragePermissionManager {
 
     private boolean storageMgmtPermission(final AbstractSecuredEntity storage, final String permission) {
         return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                && (grantPermissionManager.isAdmin() || permissionHelper.isScopedAdmin(storage)
                 || !isRestrictedMgmtAccessEnabled(storage));
     }
 
@@ -275,7 +280,7 @@ public class StoragePermissionManager {
     private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
                                           final String permission) {
         return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                && (grantPermissionManager.isAdmin() || permissionHelper.isScopedAdmin(storage)
                 || !isRestrictedTagsAccessEnabled()
                 || !hasRestrictedTags(tags)
                 || permissionHelper.hasAnyRole(

@@ -17,14 +17,15 @@
 import Remote from '../basic/Remote';
 
 export default class ClusterNodeUsage extends Remote {
-  constructor (name, from, to) {
+  constructor (name, from, to, runId) {
     super();
     this.name = name;
+    this.runId = runId;
     this.changeRange(from, to);
   }
 
   buildUrl () {
-    const query = {from: this.from, to: this.to};
+    const query = {from: this.from, to: this.to, runId: this.runId};
     let queryString = Object.keys(query)
       .filter(key => query.hasOwnProperty(key) && !!query[key])
       .map(key => `${key}=${query[key]}`)

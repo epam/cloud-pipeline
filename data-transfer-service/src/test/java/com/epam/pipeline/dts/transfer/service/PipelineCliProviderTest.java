@@ -37,7 +37,7 @@ public class PipelineCliProviderTest {
     private final CmdExecutorsProvider cmdExecutorsProvider = mock(CmdExecutorsProvider.class);
 
     private PipelineCliProvider getPipelineCliProvider(final boolean isGridUploadEnabled) {
-        return new PipelineCliProviderImpl(cmdExecutorsProvider, "pipe", "", QSUB_TEMPLATE,
+        return new PipelineCliProviderImpl(cmdExecutorsProvider, "pipe", "", "", "", QSUB_TEMPLATE,
             isGridUploadEnabled, false, 5);
     }
 

@@ -180,6 +180,9 @@ public class EC2Helper implements EC2GpuHelper {
     }
 
     private Optional<Pair<String, GpuDevice>> toInstanceGpu(final InstanceTypeInfo info) {
+        if (Objects.isNull(info.getGpuInfo()) || CollectionUtils.isEmpty(info.getGpuInfo().getGpus())) {
+            return Optional.empty();
+        }
         return info.getGpuInfo().getGpus().stream().findFirst()
                 .map(gpu -> Pair.of(info.getInstanceType(), GpuDevice.from(gpu.getName(), gpu.getManufacturer())));
     }
@@ -227,6 +230,13 @@ public class EC2Helper implements EC2GpuHelper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
+    public void changeInstanceType(final String instanceId, final String instanceType, final AwsRegion awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        client.modifyInstanceAttribute(new ModifyInstanceAttributeRequest()
+                .withInstanceId(instanceId)
+                .withInstanceType(instanceType));
+    }
+
     public CloudInstanceOperationResult startInstance(String instanceId, AwsRegion awsRegion) {
         try {
             AmazonEC2 client = getEC2Client(awsRegion);
@@ -238,9 +248,10 @@ public class EC2Helper implements EC2GpuHelper {
             final List<String> limitErrors = preferenceManager.getPreference(
                     SystemPreferences.INSTANCE_LIMIT_STATE_REASONS);
             if (ListUtils.emptyIfNull(limitErrors).stream().anyMatch(code -> code.equals(e.getErrorCode()))) {
+                return CloudInstanceOperationResult.failToRetry(e.getErrorCode());
+            } else {
                 return CloudInstanceOperationResult.fail(e.getErrorCode());
             }
-            throw e;
         }
         return CloudInstanceOperationResult.success(
                 messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
@@ -309,6 +320,20 @@ public class EC2Helper implements EC2GpuHelper {
                         STOPPING_STATE, STOPPED_STATE));
     }
 
+    /**
+     * Retrieves running or paused instance by instance ID.
+     * @param instanceId Instance id.
+     * @param awsRegion Instance aws region.
+     * @return Required instance.
+     */
+    public Instance getAliveInstanceById(final String instanceId, final AwsRegion awsRegion) {
+        return findInstance(instanceId, awsRegion)
+                .orElseThrow(() -> new AwsEc2Exception(String.format(
+                        "No alive instance with id '%s' found in %s region "
+                                + "(expected instance states: running, pending, stopping, or stopped)",
+                        instanceId, awsRegion)));
+    }
+
     private Instance getInstance(final String runId, final AwsRegion awsRegion, final Filter... filters) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final List<Reservation> reservations = client.describeInstances(new DescribeInstancesRequest()
@@ -373,14 +398,29 @@ public class EC2Helper implements EC2GpuHelper {
     public void createAndAttachVolume(final String runId, final Long size,
                                       final AwsRegion awsRegion, final String kmsKeyArn,
                                       final Map<String, String> tags) {
-        final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
+        createAndAttachVolumeToInstance(instance, size, awsRegion, kmsKeyArn, tags);
+    }
+
+    public void createAndAttachVolumeToInstance(final String ec2InstanceId, final Long size,
+                                                final AwsRegion awsRegion, final String kmsKeyArn,
+                                                final Map<String, String> tags) {
+        final Instance instance = getAliveInstanceById(ec2InstanceId, awsRegion);
+        createAndAttachVolumeToInstance(instance, size, awsRegion, kmsKeyArn, tags);
+    }
+
+    private void createAndAttachVolumeToInstance(final Instance instance, final Long size,
+                                                 final AwsRegion awsRegion, final String kmsKeyArn,
+                                                 final Map<String, String> tags) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
         final String device = getVacantDeviceName(instance);
         final String zone = getAvailabilityZone(instance);
         final Volume volume = createVolume(client, size, zone, kmsKeyArn);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
-        createTags(client, tags, Collections.singletonList(volume.getVolumeId()));
+        if (MapUtils.isNotEmpty(tags)) {
+            createTags(client, tags, Collections.singletonList(volume.getVolumeId()));
+        }
     }
 
     public void deleteInstanceTags(final AwsRegion awsRegion, final String runId, final Set<String> tags) {

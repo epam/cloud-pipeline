@@ -72,6 +72,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
         doReturn(s3bucket).when(entityManager).load(DATA_STORAGE, ID);
         doReturn(aclSecuredEntry).when(spyPermissionManager).setPermissions(permissionGrantVO);
         mockUser(SIMPLE_USER);
+        mockSecurityContext();
 
         assertThat(aclPermissionApiService.setPermissions(permissionGrantVO)).isEqualTo(aclSecuredEntry);
     }
@@ -81,6 +82,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     public void shouldDenySetPermissionForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(DATA_STORAGE, ID);
         mockUser(ANOTHER_SIMPLE_USER);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class, () -> aclPermissionApiService.setPermissions(permissionGrantVO));
     }
@@ -157,6 +159,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
         doReturn(aclSecuredEntry).when(spyPermissionManager)
                 .deletePermissions(ID, AclClass.DATA_STORAGE, SIMPLE_USER, true);
         mockUser(SIMPLE_USER);
+        mockSecurityContext();
 
         assertThat(aclPermissionApiService.deletePermissions(ID, AclClass.DATA_STORAGE, SIMPLE_USER, true))
                 .isEqualTo(aclSecuredEntry);
@@ -167,6 +170,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeletePermissionsForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         mockUser(ANOTHER_SIMPLE_USER);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.deletePermissions(ID, AclClass.DATA_STORAGE, SIMPLE_USER, true));
@@ -189,6 +193,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
         doReturn(aclSecuredEntry).when(spyPermissionManager)
                 .deleteAllPermissions(ID, AclClass.DATA_STORAGE);
         mockUser(SIMPLE_USER);
+        mockSecurityContext();
 
         assertThat(aclPermissionApiService.deleteAllPermissions(ID, AclClass.DATA_STORAGE))
                 .isEqualTo(aclSecuredEntry);
@@ -199,6 +204,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     public void shouldDenyDeleteAllPermissionsForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         mockUser(ANOTHER_SIMPLE_USER);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.deleteAllPermissions(ID, AclClass.DATA_STORAGE));
@@ -221,6 +227,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
         doReturn(aclSecuredEntry).when(spyPermissionManager)
                 .changeOwner(ID, AclClass.DATA_STORAGE, SIMPLE_USER);
         mockUser(SIMPLE_USER);
+        mockSecurityContext();
 
         assertThat(aclPermissionApiService.changeOwner(ID, AclClass.DATA_STORAGE, SIMPLE_USER))
                 .isEqualTo(aclSecuredEntry);
@@ -231,6 +238,7 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     public void shouldDenyChangeOwnerForNotOwner() {
         doReturn(s3bucket).when(entityManager).load(AclClass.DATA_STORAGE, ID);
         mockUser(ANOTHER_SIMPLE_USER);
+        mockSecurityContext();
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.changeOwner(ID, AclClass.DATA_STORAGE, SIMPLE_USER));

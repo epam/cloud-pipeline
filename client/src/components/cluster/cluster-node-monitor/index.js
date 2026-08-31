@@ -15,50 +15,44 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import GeneralInfoTab from './general-info';
-import GPUInfoTab from './gpu-info';
+import GPUInfoHoc from './gpu-info-hoc';
 import SubSettings from '../../settings/sub-settings';
 
-@inject('preferences', 'allowedInstanceTypes')
+@inject('preferences')
 @observer
 class ClusterNodeMonitor extends React.Component {
   @computed
-  get gpuStatisticsAvailable () {
-    const {allowedInstanceTypes, node} = this.props;
-    if (allowedInstanceTypes.loaded && node.loaded) {
-      const types = (allowedInstanceTypes.value || {})['cluster.allowed.instance.types'] || [];
-      const gpuTypes = types
-        .filter(instance => instance.gpu || instance.gpuDevice)
-        .map(instance => (instance.name || '').toLowerCase());
-      const nodeType = node.value?.labels?.cloud_ins_type;
-      return nodeType && gpuTypes.includes(nodeType.toLowerCase());
-    }
-    return true;
+  get chartsData () {
+    return this.props.chartsData;
   }
 
   render () {
-    const {node, chartsData, nodeName} = this.props;
+    const {node, nodeName} = this.props;
+    const instanceType = node.value?.labels?.cloud_ins_type;
     const tabs = [
       {
         key: 'general',
         title: 'General statistics',
         render: () => <GeneralInfoTab
-          chartsData={chartsData}
+          chartsData={this.chartsData}
           node={node}
           nodeName={nodeName}
           preferences={this.props.preferences}
+          router={this.props.router}
         />
       },
       {
         key: 'gpu',
         title: 'GPU statistics',
-        render: () => <GPUInfoTab
+        render: () => <GPUInfoHoc
           nodeName={nodeName}
-          chartsData={chartsData}
+          chartsData={this.chartsData}
           node={node}
-          gpuStatisticsAvailable={this.gpuStatisticsAvailable}
+          instanceType={instanceType}
+          router={this.props.router}
         />
       }
     ];

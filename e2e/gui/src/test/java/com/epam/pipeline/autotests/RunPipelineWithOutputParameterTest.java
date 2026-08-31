@@ -18,12 +18,13 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.StorageHandling;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
@@ -69,6 +70,7 @@ public class RunPipelineWithOutputParameterTest extends AbstractAutoRemovingPipe
                 .ok()
                 .close()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForCompletion();

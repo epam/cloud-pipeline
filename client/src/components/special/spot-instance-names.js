@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-const SpotTypeNames = {
+import {gcpSpotInstanceType} from '../../models/utils/gcp-spot-instance-type';
+
+const getConfig = () => ({
   aws: {
     true: 'Spot',
     false: 'On-demand'
@@ -24,25 +26,27 @@ const SpotTypeNames = {
     false: 'On-demand'
   },
   gcp: {
-    true: 'Preemptible',
+    true: gcpSpotInstanceType.spotName,
     false: 'On-demand'
   },
   default: {
     true: 'Spot',
     false: 'On-demand'
   }
-};
+});
 
 export function getSpotTypeName (spot, cloudProvider) {
-  if (SpotTypeNames.hasOwnProperty((cloudProvider || '').toLowerCase())) {
-    return SpotTypeNames[(cloudProvider || '').toLowerCase()][spot];
+  const spotTypeNames = getConfig();
+  if (spotTypeNames.hasOwnProperty((cloudProvider || '').toLowerCase())) {
+    return spotTypeNames[(cloudProvider || '').toLowerCase()][spot];
   }
-  return SpotTypeNames.default[spot];
+  return spotTypeNames.default[spot];
 }
 
 export function getRunSpotTypeName ({instance}) {
   if (instance) {
     return getSpotTypeName(instance.spot, instance.cloudProvider);
   }
-  return SpotTypeNames.default[false];
+  const spotTypeNames = getConfig();
+  return spotTypeNames.default[false];
 }

@@ -53,6 +53,43 @@ const cssRegex = /\.css$/;
 const sassRegex = /\.(scss|sass)$/;
 const lessRegex = /\.less$/;
 
+const DEFAULT_DEV_PROXY_ORIGIN = 'http://localhost:9999';
+
+function devServerPathnamePrefix () {
+  const server = process.env.SERVER;
+  let pathname = '/pipeline/';
+  if (!server || typeof server !== 'string') {
+    return pathname;
+  }
+  try {
+    const t = server.trim();
+    const href = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+    const u = new URL(href);
+    let p = u.pathname || '/';
+    if (p !== '/' && !p.endsWith('/')) {
+      p += '/';
+    }
+    return p === '/' ? pathname : p;
+  } catch (e) {
+    return pathname;
+  }
+}
+
+function resolveDevelopmentInjectedServer () {
+  if (
+    process.env.PROXY_DISABLED === '1' ||
+    process.env.PROXY_DISABLED === 'true'
+  ) {
+    return process.env.SERVER;
+  }
+  const ps = process.env.PROXY_SERVER && String(process.env.PROXY_SERVER).trim();
+  if (ps) {
+    return ps;
+  }
+  const pathPrefix = devServerPathnamePrefix();
+  return `${DEFAULT_DEV_PROXY_ORIGIN}${pathPrefix}`;
+}
+
 // This is the production and development configuration.
 // It is focused on developer experience, fast rebuilds, and a minimal bundle.
 module.exports = function (webpackEnv) {
@@ -483,7 +520,7 @@ module.exports = function (webpackEnv) {
         {
           'process.env.SERVER': isEnvProduction
             ? JSON.stringify(process.env.PUBLIC_URL)
-            : JSON.stringify(process.env.SERVER),
+            : JSON.stringify(resolveDevelopmentInjectedServer()),
           'process.env.VERSION': isEnvProduction
             ? JSON.stringify(process.env.VERSION)
             : JSON.stringify('DEVELOPMENT')

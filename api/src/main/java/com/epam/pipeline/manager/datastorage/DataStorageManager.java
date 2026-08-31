@@ -412,7 +412,8 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
-        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE) {
+        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE
+                || dataStorageVO.getType() == DataStorageType.NFS) {
             Assert.notNull(dataStorageVO.getFileShareMountId(),
                     messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
                            "fileShareMountId"));
@@ -545,6 +546,7 @@ public class DataStorageManager implements SecuredEntityManager {
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
 
         if (proceedOnCloud) {
+            validateStorageIsNotAParentForOtherStorages(dataStorage);
             try {
                 storageProviderManager.deleteBucket(dataStorage);
             } catch (DataStorageException e) {
@@ -1004,6 +1006,16 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadDataStoragesByMountId(fsMountId);
     }
 
+    private void validateStorageIsNotAParentForOtherStorages(final AbstractDataStorage dataStorage) {
+        final List<AbstractDataStorage> subStorages =
+                dataStorageDao.loadDataStoragesByPathPrefix(dataStorage.getPath());
+        Assert.isTrue(subStorages.isEmpty(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES,
+                        dataStorage.getName(),
+                        subStorages.stream().map(AbstractDataStorage::getName)
+                                .collect(Collectors.joining(", "))));
+    }
+
     private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,
                                                         final Map<Long, FileShareMount> fsMounts) {
         return Optional.ofNullable(storage.getFileShareMountId()).map(fsMounts::get);
@@ -1107,7 +1119,7 @@ public class DataStorageManager implements SecuredEntityManager {
             storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
         } catch (Exception e) {
             LOGGER.error(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCCESSING, path, e.getMessage()));
+                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCESSING, path, e.getMessage()));
             LOGGER.error(e.getMessage(), e);
         }
     }
@@ -1576,7 +1588,8 @@ public class DataStorageManager implements SecuredEntityManager {
 
     private boolean needToLoadPathPermissions(final AbstractDataStorage storage) {
         return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
-                && !authManager.isAdmin() && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
+                && !storagePermissionManager.isStorageAdmin()
+                && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
     }
 
     private DataStorageListing addPathsMasks(final AbstractDataStorage storage,

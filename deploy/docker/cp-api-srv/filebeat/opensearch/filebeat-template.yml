@@ -1,0 +1,25 @@
+setup.template.name: "security_log_template"
+setup.template.pattern: "security_log*"
+setup.tempalte.enabled: false
+setup.ilm.enabled: false
+output.elasticsearch:
+  hosts: ["${CP_SEARCH_ELK_INTERNAL_SCHEME}://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"]
+  pipeline: "api_server"
+  index: "security_log"
+filebeat:
+  inputs:
+    - paths:
+        - /opt/api/logs/security.json
+      json.keys_under_root: true
+      json.add_error_key: true
+      fields:
+        service: api-srv
+processors:
+  - rename:
+      fields:
+        - from: "log_context"
+          to: "fields.type"
+      ignore_missing: true
+      fail_on_error: false
+  - drop_fields:
+      fields: ["instant", "beat", "log", "loggerFqcn", "threadId", "offset", "threadPriority", "endOfBatch", "agent", "log.offset", "esc" ]

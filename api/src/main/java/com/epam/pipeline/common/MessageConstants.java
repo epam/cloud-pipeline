@@ -163,6 +163,7 @@ public final class MessageConstants {
     public static final String ERROR_DOCKER_IMAGE_NOT_FOUND = "error.docker.image.not.found";
     public static final String ERROR_PIPELINE_RUN_ID_NOT_FOUND = "error.pipeline.run.id.not.found";
     public static final String ERROR_ON_DEMAND_REQUIRED = "error.instance.on.demand.required";
+    public static final String ERROR_RUN_CANNOT_BE_PAUSED = "error.run.cannot.be.paused";
     public static final String ERROR_INSTANCE_IP_NOT_FOUND = "error.instance.ip.not.found";
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
@@ -185,12 +186,18 @@ public final class MessageConstants {
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
     public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
+    public static final String INFO_ATTEMPT_START_INSTANCE = "info.attempt.start.instance";
+    public static final String WARN_FAIL_START_INSTANCE = "warn.fail.start.instance";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
     public static final String ERROR_RUN_AS_PIPELINES_NOT_ALLOWED = "error.run.as.pipelines.not.allowed";
     public static final String ERROR_RUN_AS_PIPELINE_NOT_ALLOWED = "error.run.as.pipeline.not.allowed";
     public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
     public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.not.allowed.for.configuration";
+    public static final String ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.update.not.allowed.for.configuration";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
@@ -216,11 +223,12 @@ public final class MessageConstants {
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
     public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
+    public static final String ERROR_SAVE_RUN_METRICS = "error.save.run.metrics";
 
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
-    public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
+    public static final String DEBUG_RUN_METRICS_RECEIVED = "debug.run.metrics.received";
     public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
     public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
     public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
@@ -265,17 +273,25 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_VERSIONING_REQUIRED = "error.datastorage.versioning.required";
     public static final String ERROR_DATASTORAGE_CREATE_FAILED = "error.datastorage.create.failed";
     public static final String ERROR_DATASTORAGE_DELETE_FAILED = "error.datastorage.delete.failed";
+    public static final String ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES =
+            "error.datastorage.has.subfolder.storages";
     public static final String ERROR_DATASTORAGE_TYPE_NOT_SPECIFIED = "error.datastorage.type.not.specified";
     public static final String ERROR_DATASTORAGE_FORBIDDEN_MOUNT_POINT = "error.datastorage.forbidden.mount.point";
     public static final String ERROR_DATASTORAGE_IS_NOT_SHARED = "error.datastorage.is.not.shared";
     public static final String ERROR_SHARED_ROOT_URL_IS_NOT_SET = "error.shared.root.url.is.not.set";
     public static final String ERROR_DATASTORAGE_USED_AS_DEFAULT = "error.datastorage.is.used.default";
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
+    public static final String ERROR_DATASTORAGE_TAG_UPDATE_FAILED = "error.datastorage.tag.update.failed";
     public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
     public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
-    public static final String ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS = "error.datastorage.folder.already.exists";
+    public static final String ERROR_DATASTORAGE_FOLDER_CREATE_FAILED = "error.datastorage.folder.create.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_DELETE_FAILED = "error.datastorage.blob.delete.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_DOWNLOAD_FAILED = "error.datastorage.blob.download.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_UPLOAD_FAILED = "error.datastorage.blob.upload.failed";
+    public static final String ERROR_DATASTORAGE_BLOB_COPY_FAILED = "error.datastorage.blob.copy.failed";
     public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
-    public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_DATASTORAGE_PATH_PROCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_DATASTORAGE_GET_CONTENT_FAILED = "error.datastorage.get.content.failed";
     public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
     public static final String ERROR_SENSITIVE_DATASTORAGE_OPERATION =
         "error.sensitive.datastorage.forbidden.operation";
@@ -401,14 +417,10 @@ public final class MessageConstants {
             "error.repository.folder.cannot.be.removed";
     public static final String ERROR_INVALID_PIPELINE_FILE_NAME = "error.pipeline.file.name.invalid";
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
-    public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
-    public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
-    public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
-            "error.parse.bitbucket.cloud.repository.path";
-    public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
-    public static final String ERROR_PARSE_GITHUB_REPOSITORY_PATH = "error.parse.github.repository.path";
-    public static final String ERROR_GITHUB_TOKEN_NOT_FOUND = "error.github.token.not.found";
+    public static final String ERROR_REPOSITORY_PATH_PARSE = "error.repository.path.parse";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
+    public static final String ERROR_REPOSITORY_CREATION_NOT_SUPPORTED = "error.repository.creation.not.supported";
+    public static final String ERROR_REPOSITORY_TOKEN_NOT_FOUND = "error.repository.token.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =
@@ -423,6 +435,8 @@ public final class MessageConstants {
     public static final String ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED = "instance.type.not.allowed";
     public static final String ERROR_PRICE_TYPE_IS_NOT_ALLOWED = "price.type.not.allowed";
     public static final String ERROR_INSTANCE_DISK_IS_INVALID = "instance.disk.invalid";
+    public static final String ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT =
+            "fallback.instance.types.exceed.limit";
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
@@ -579,6 +593,12 @@ public final class MessageConstants {
     public static final String ERROR_ATTACHMENT_SYSTEM_DATA_STORAGE_NOT_CONFIGURED =
         "error.attachment.system.data.storage.not.configured";
 
+    // Run Logs Storage
+    public static final String WARN_RUN_LOG_STORAGE_NOT_CONFIGURED = "warn.run.log.storage.not.configured";
+    public static final String ERROR_RUN_LOG_MIGRATION_FAILED = "error.run.log.migration.failed";
+    public static final String INFO_RUN_LOG_MIGRATED = "info.run.log.migrated";
+    public static final String WARN_RUN_LOG_MIGRATED = "warn.run.log.already.migrated";
+
     //Preferences
     public static final String ERROR_PREFERENCE_NAME_NOT_SPECIFIED = "error.preference.name.not.specified";
     public static final String ERROR_PREFERENCE_TYPE_NOT_SPECIFIED = "error.preference.type.not.specified";
@@ -668,7 +688,7 @@ public final class MessageConstants {
 
     //Azure
     public static final String ERROR_AZURE_STORAGE_ACC_REQUIRED = "error.azure.storage.account.required";
-    public static final String ERROR_AZURE_STORAGE_KEY_REQUIRED = "error.azure.storage.key.required";
+    public static final String ERROR_AZURE_STORAGE_AUTH_INFO_REQUIRED = "error.azure.storage.auth.info.required";
     public static final String ERROR_AZURE_INSTANCE_NOT_FOUND = "error.azure.instance.not.found";
     public static final String ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE = "error.azure.resource.is.not.vm.like";
     public static final String ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS = "error.azure.scale.set.doesnt.contain.vm";
@@ -677,7 +697,7 @@ public final class MessageConstants {
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
     public static final String ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND = "error.azure.resource.group.not.found";
-    public static final String ERROR_AZURE_AUTH_FILE_IS_INVALID = "error.azure.auth.file.invalid";
+    public static final String ERROR_AZURE_AUTHENTICATION_FAILED = "error.azure.auth.failed";
     public static final String ERROR_AZURE_IP_RANGE_IS_INVALID = "error.azure.policy.ip.range.invalid";
     public static final String ERROR_AZURE_IP_IS_INVALID = "error.azure.ip.policy.invalid";
 
@@ -909,6 +929,37 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
+    //Archive runs
+    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
+    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
+
+    // Platform usage credits
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
+            "error.platform.usage.credits.rule.not.found";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
+            "error.platform.usage.credits.rule.name.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
+            "error.platform.usage.credits.rule.filter.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
+            "error.platform.usage.credits.rule.action.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
+            "error.platform.usage.credits.rule.unknown.field";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
+            "error.platform.usage.credits.rule.unsupported.operand";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
+            "error.platform.usage.credits.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
+            "error.platform.usage.credits.rule.time.window.invalid";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT =
+            "error.platform.usage.credits.insufficient";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
+            "error.platform.usage.credits.disabled";
 
     private MessageConstants() {
         // no-op

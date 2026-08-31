@@ -15,10 +15,11 @@
  */
 package com.epam.pipeline.elasticsearchagent.app;
 
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import com.epam.pipeline.elasticsearchagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
@@ -55,6 +56,8 @@ public class CommonSyncConfiguration {
     private String commonIndexPrefix;
     @Value("${sync.load.common.entity.chunk.size:1000}")
     private int syncChunkSize;
+    @Value("${elasticsearch.client.version:V6}")
+    private ElasticStackVersion version;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
@@ -80,7 +83,7 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.RUN,
                 runMapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize,
@@ -94,14 +97,13 @@ public class CommonSyncConfiguration {
             final ToolLoader loader,
             final PipelineEventDao eventDao,
             final ElasticIndexService indexService,
-            final ElasticsearchServiceClient elasticsearchClient,
             final BulkRequestSender requestSender,
             final @Value("${sync.tool.index.name}") String indexName,
             final @Value("${sync.tool.index.mapping}") String toolMapping) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.TOOL,
                 toolMapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -120,7 +122,7 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.FOLDER,
                 folderMapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -139,7 +141,7 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.TOOL_GROUP,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -158,7 +160,7 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.DOCKER_REGISTRY,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -177,7 +179,7 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.ISSUE,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize);
@@ -196,7 +198,7 @@ public class CommonSyncConfiguration {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.METADATA_ENTITY,
                 mapping,
-                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
+                new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper, version),
                 indexService,
                 requestSender,
                 syncChunkSize);

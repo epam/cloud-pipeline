@@ -22,7 +22,7 @@ spec:
       serviceAccountName: cp-main-service
       containers:
         - name: cp-search-elk
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-${CP_SEARCH_ELK_CLUSTER_VERSION}
           securityContext:
             privileged: true
           imagePullPolicy: "IfNotPresent"
@@ -37,9 +37,6 @@ spec:
           volumeMounts:
             - mountPath: /usr/share/elasticsearch/data
               subPath: search-elk/data
-              name: cp-system
-            - mountPath: /var/log/curator
-              subPath: search-elk/log/curator
               name: cp-system
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"

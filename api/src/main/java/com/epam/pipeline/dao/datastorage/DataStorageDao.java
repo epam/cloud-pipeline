@@ -69,6 +69,7 @@ import static com.epam.pipeline.dao.DaoHelper.POSTGRES_LIKE_CHARACTER;
 
 public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
+    public static final String SLASH = "/";
     private Pattern limitPattern = Pattern.compile("@LIMIT@");
     private Pattern offsetPattern = Pattern.compile("@OFFSET@");
 
@@ -84,6 +85,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStorageByNameQuery;
     private String loadDataStorageByNameAndParentIdQuery;
     private String loadDataStoragesByNFSRootPath;
+    private String loadDataStoragesByPathPrefixQuery;
     private String updateStorageLocksQuery;
     private String loadStorageCountQuery;
     private String loadAllStoragesWithParentsQuery;
@@ -254,10 +256,15 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public List<AbstractDataStorage> loadDataStorageByNameOrPath(final String name, final String path,
                                                                  final boolean withMirrors) {
-        final String usePath = path == null ? name : path;
+        String effectivePath = path == null ? name : path;
+        if (effectivePath.endsWith(SLASH)) {
+            effectivePath = effectivePath.substring(0, effectivePath.length() - 1);
+        }
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(DataStorageParameters.DATASTORAGE_NAME.name(), name);
-        params.addValue(DataStorageParameters.PATH.name(), usePath);
+        params.addValue(DataStorageParameters.PATH.name(), effectivePath);
+        // Special case for datastorages created from root of the NFS, it this case it ends with '/'
+        params.addValue(DataStorageParameters.PATH_WITH_SLASH.name(), effectivePath + SLASH);
         return getNamedParameterJdbcTemplate()
             .query(loadDataStorageByNameQuery, params, DataStorageParameters.getRowMapper())
             .stream()
@@ -331,6 +338,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 .getRowMapper(), nfsRootPath + POSTGRES_LIKE_CHARACTER);
     }
 
+    public List<AbstractDataStorage> loadDataStoragesByPathPrefix(String path) {
+        final String normalizedPath = StringUtils.stripEnd(path, SLASH);
+        return getJdbcTemplate().query(loadDataStoragesByPathPrefixQuery, DataStorageParameters
+                .getRowMapper(), normalizedPath + SLASH + POSTGRES_LIKE_CHARACTER);
+    }
+
     public List<AbstractDataStorage> loadDataStoragesByFileShareMountID(Long fileShareId) {
         return getJdbcTemplate().query(loadDataStoragesFileShareId, DataStorageParameters
                 .getRowMapper(), fileShareId);
@@ -362,6 +375,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
+    }
+
+    @Required
+    public void setLoadDataStoragesByPathPrefixQuery(String loadDataStoragesByPathPrefixQuery) {
+        this.loadDataStoragesByPathPrefixQuery = loadDataStoragesByPathPrefixQuery;
     }
     @Required
     public void setDataStorageSequence(String dataStorageSequence) {
@@ -501,6 +519,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         DESCRIPTION,
         DATASTORAGE_TYPE,
         PATH,
+        PATH_WITH_SLASH,
         FOLDER_ID,
         CREATED_DATE,
         OWNER,

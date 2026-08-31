@@ -25,6 +25,7 @@ from src.utilities.storage.storage_usage import StorageUsageAccumulator
 from src.utilities.storage.s3_checksum import ChecksumProcessor
 
 import collections
+import logging
 import os
 
 from boto3 import Session
@@ -47,6 +48,7 @@ from src.config import Config
 import requests
 
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
+from src.utilities.storage.file_timestamps import FileTimestampsManager
 
 requests.urllib3.disable_warnings()
 import botocore.vendored.requests.packages.urllib3 as boto_urllib3
@@ -131,10 +133,11 @@ class StorageItemManager(object):
         self.region_name = region_name
         self.endpoint = endpoint
         _boto_config = S3BucketOperations.get_boto_config(cross_region=cross_region)
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         self.s3 = session.resource('s3', config=_boto_config,
                                    region_name=self.region_name,
                                    endpoint_url=endpoint,
-                                   verify=False if endpoint else None)
+                                   verify=False if endpoint else _ca_bundle)
         self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
@@ -154,10 +157,11 @@ class StorageItemManager(object):
 
     def _get_client(self):
         _boto_config = S3BucketOperations.get_boto_config()
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         client = self.session.client('s3', config=_boto_config,
                                      region_name=self.region_name,
                                      endpoint_url=self.endpoint,
-                                     verify=False if self.endpoint else None)
+                                     verify=False if self.endpoint else _ca_bundle)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
@@ -206,11 +210,13 @@ class StorageItemManager(object):
     def get_local_modification_datetime(path):
         return StorageOperations.get_local_file_modification_datetime(path)
 
-    def get_transfer_config(self, io_threads):
+    def get_transfer_config(self, io_threads, multipart_chunksize=None):
         transfer_config = TransferConfig()
         if io_threads is not None:
             transfer_config.max_concurrency = max(io_threads, 1)
             transfer_config.use_threads = transfer_config.max_concurrency > 1
+        if multipart_chunksize:
+            transfer_config.multipart_chunksize = int(multipart_chunksize) * 1024 * 1024
         return transfer_config
 
 
@@ -237,7 +243,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
             StorageOperations.get_local_file_modification_datetime(destination_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -251,6 +258,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
         self.bucket.download_file(source_key, to_string(destination_key),
                                   Callback=progress_callback,
                                   Config=transfer_config)
+        if source_last_modified is not None:
+            FileTimestampsManager().set_timestamp(destination_key, source_last_modified)
         if clean:
             self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_wrapper.delete_item(source_key)
@@ -275,11 +284,13 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
         return 0, None
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        transfer_config = self.get_transfer_config(io_threads)
+        multipart_chunksize = os.getenv('CP_AWS_STREAM_MULTIPART_CHUNKSIZE_MB')
+        transfer_config = self.get_transfer_config(io_threads, multipart_chunksize)
         if StorageItemManager.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
@@ -315,7 +326,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -364,7 +376,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -374,7 +387,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
             'ACL': 'bucket-owner-full-control'
         }
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
-        transfer_config = self.get_transfer_config(io_threads)
+        multipart_chunksize = os.getenv('CP_AWS_STREAM_MULTIPART_CHUNKSIZE_MB')
+        transfer_config = self.get_transfer_config(io_threads, multipart_chunksize)
         if StorageItemManager.show_progress(quiet, size, lock):
             progress_callback = ProgressPercentage(relative_path, size)
         else:
@@ -410,7 +424,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False,
+                 source_last_modified=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region
@@ -441,11 +456,12 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
     def build_source_client(self, source_region, source_endpoint):
         _boto_config = S3BucketOperations.get_boto_config(cross_region=self.cross_region)
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         source_s3 = self.session.resource('s3',
                                           config=_boto_config,
                                           region_name=source_region,
                                           endpoint_url=source_endpoint,
-                                          verify=False if source_endpoint else None)
+                                          verify=False if source_endpoint else _ca_bundle)
         source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
@@ -591,6 +607,9 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         if not prefix.endswith(delimiter):
             prefix += delimiter
 
+        permissions_manager = get_permissions_manager(self.bucket.bucket, prefix, write_required=True, quite=False,
+                                                      root_file_flag=self.bucket.is_file())
+
         operation_parameters = {
             'Bucket': bucket
         }
@@ -602,9 +621,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         pages = paginator.paginate(**operation_parameters)
         restore_items = []
         for page in pages:
-            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include,
-                                               prefix,
-                                               versions=True)
+            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include, prefix,
+                                               permissions_manager, versions=True)
             restore_items, flushing_items = S3BucketOperations.split_by_aws_limit(restore_items)
             if flushing_items:
                 self._restore_objects(client, bucket, flushing_items)
@@ -1111,8 +1129,9 @@ class S3BucketOperations(object):
     @classmethod
     def _get_client(cls, session, region_name=None, endpoint=None):
         _boto_config = S3BucketOperations.get_boto_config()
+        _ca_bundle = Config.instance(raise_config_not_found_exception=False).ca_bundle
         client = session.client('s3', config=_boto_config, region_name=region_name,
-                                endpoint_url=endpoint, verify=False if endpoint else None)
+                                endpoint_url=endpoint, verify=False if endpoint else _ca_bundle)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
             max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)

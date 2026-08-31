@@ -36,6 +36,6 @@ public class ProxyController {
 
     @GetMapping("/proxy/token")
     public Result<JwtRawToken> getProxyToken() {
-        return Result.success(authManager.issueTokenForCurrentUser());
+        return Result.success(authManager.issueTokenForCurrentUser(null, true));
     }
 }

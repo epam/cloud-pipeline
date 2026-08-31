@@ -19,9 +19,7 @@ import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.collections4.MapUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -32,7 +30,7 @@ public interface EntityMapper<T> {
     SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
     String ATTRIBUTE_NAME = "Name";
 
-    XContentBuilder map(EntityContainer<T> doc);
+    Map<String, ?> map(EntityContainer<T> doc);
 
     default String parseDataToString(Date date) {
         if (date == null) {
@@ -41,50 +39,39 @@ public interface EntityMapper<T> {
         return SIMPLE_DATE_FORMAT.format(date);
     }
 
-    default XContentBuilder buildUserContent(final PipelineUser user,
-                                             final XContentBuilder jsonBuilder) throws IOException {
+    default void buildUserContent(final PipelineUser user,
+                                  final Map<String, Object> jsonMap) {
         if (user != null) {
-            Map<String, String> attributes = user.getAttributes();
-            jsonBuilder
-                    .field("ownerUserId", user.getId())
-                    .field("ownerUserName", user.getUserName())
-                    .field("ownerFriendlyName", MapUtils.emptyIfNull(attributes).get(ATTRIBUTE_NAME))
-                    .field("ownerGroups", user.getGroups());
+            final Map<String, String> attributes = user.getAttributes();
+            jsonMap.put("ownerUserId", user.getId());
+            jsonMap.put("ownerUserName", user.getUserName());
+            jsonMap.put("ownerFriendlyName", MapUtils.emptyIfNull(attributes).get(ATTRIBUTE_NAME));
+            jsonMap.put("ownerGroups", user.getGroups());
         }
-        return jsonBuilder;
     }
 
-    default XContentBuilder buildMetadata(final Map<String, String> metadata,
-                                          final XContentBuilder jsonBuilder) throws IOException {
-        buildMap(metadata, jsonBuilder, "metadata");
-        MapUtils.emptyIfNull(metadata).forEach((key, value) -> {
-            try {
-                jsonBuilder.field(key, value);
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Failed to add metadata to elasticsearch document: ", e);
-            }
-        });
-        return jsonBuilder;
+    default void buildMetadata(final Map<String, String> metadata,
+                               final Map<String, Object> jsonMap) {
+        buildMap(metadata, jsonMap, "metadata");
+        jsonMap.putAll(MapUtils.emptyIfNull(metadata));
     }
 
-    default XContentBuilder buildMap(final Map<String, String> data,
-                                     final XContentBuilder jsonBuilder,
-                                     final String fieldName) throws IOException {
+    default void buildMap(final Map<String, String> data,
+                          final Map<String, Object> jsonMap,
+                          final String fieldName) {
         if (MapUtils.isNotEmpty(data)) {
-            jsonBuilder.array(fieldName,
+            jsonMap.put(fieldName,
                     data.entrySet().stream()
                             .map(entry -> entry.getKey() + " " + entry.getValue())
                             .toArray(String[]::new));
         }
-        return jsonBuilder;
     }
 
-    default XContentBuilder buildPermissions(final PermissionsContainer permissions,
-                                             final XContentBuilder jsonBuilder) throws IOException {
-        jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
-        jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
-        jsonBuilder.array("allowed_groups", permissions.getAllowedGroups().toArray());
-        jsonBuilder.array("denied_groups", permissions.getDeniedGroups().toArray());
-        return jsonBuilder;
+    default void buildPermissions(final PermissionsContainer permissions,
+                                  final Map<String, Object> jsonMap) {
+        jsonMap.put("allowed_users", permissions.getAllowedUsers().toArray());
+        jsonMap.put("denied_users", permissions.getDeniedUsers().toArray());
+        jsonMap.put("allowed_groups", permissions.getAllowedGroups().toArray());
+        jsonMap.put("denied_groups", permissions.getDeniedGroups().toArray());
     }
 }

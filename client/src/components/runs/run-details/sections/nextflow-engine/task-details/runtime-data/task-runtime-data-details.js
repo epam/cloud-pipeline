@@ -54,7 +54,8 @@ class TaskRuntimeDataDetails extends React.Component {
   fetchTaskRuntimeData = (clear = false) => {
     this.abortReload();
     const {task = {}, detailsType, reload = false} = this.props;
-    const {runId, taskKey} = task;
+    const {runId, taskKey, attributes = {}} = task;
+    const {workdir} = attributes;
     const token = this.token = {};
     if (runId && taskKey && detailsType) {
       const statePayload = {
@@ -74,7 +75,8 @@ class TaskRuntimeDataDetails extends React.Component {
           const request = new GetRunTaskRuntimeData(runId);
           await request.send({
             hash: taskKey,
-            type: detailsType
+            type: detailsType,
+            ...(workdir ? {workdir} : {})
           });
           if (request.error) {
             throw new Error(`Error fetching task logs: ${request.error}`);

@@ -16,17 +16,41 @@ ARG BASE_IMAGE=library/rockylinux:8.7
 FROM ${BASE_IMAGE}
 
 # Common applications
-RUN yum install -y wget \
-                   git \
-                   curl \
-                   java-17-openjdk \
-                   graphviz \
-                   python2 && \
+RUN yum install -y --allowerasing coreutils
+RUN yum install -y  wget \
+                    git \
+                    curl \
+                    java-17-openjdk \
+                    graphviz \
+                    python2 \
+                    initscripts \
+                    bzip2 \
+                    zlib-devel \
+                    bzip2-devel \
+                    xz-devel \
+                    make \
+                    ncurses-devel \
+                    unzip \
+                    git \
+                    fuse \
+                    tzdata \
+                    acl \
+                    coreutils \
+                    openssh-server \
+                    yum-utils \
+                    sudo \
+                    bc \
+                    python2 \
+                    openssl \
+                    libxml2 \
+                    libpng \
+                    libffi && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script
-ENV NXF_VER="25.04.3"
+ARG NEXTFLOW_VERSION=25.04.3
+ENV NXF_VER="$NEXTFLOW_VERSION"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 

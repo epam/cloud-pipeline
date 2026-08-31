@@ -172,8 +172,10 @@ export default class PipelineConfiguration extends React.Component {
   get defaultConfigurationName () {
     if (this.props.configurations.loaded &&
       this.props.configurations.value.length > 0) {
-      const [configuration] = this.props.configurations.value
-        .filter(c => c.default);
+      const configs = this.props.configurations.value || [];
+      const configuration = configs.find(c => c.default) ||
+        configs.find(c => /^default$/i.test(c.name)) ||
+        configs[0];
       if (configuration) {
         return configuration.name;
       }
@@ -193,7 +195,7 @@ export default class PipelineConfiguration extends React.Component {
 
   @computed
   get canModifySources () {
-    if (this.props.pipeline.pending || this.isBitBucket) {
+    if (this.props.readOnly || this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&

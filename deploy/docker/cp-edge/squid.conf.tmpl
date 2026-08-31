@@ -1,0 +1,21 @@
+acl localnet src ${CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR}
+
+# SSL ports, e.g.:
+# acl SSL_ports port 4000
+${CP_EDGE_SQUID_SSL_PORTS_ACLS}
+
+acl CONNECT method CONNECT
+
+http_access deny CONNECT !SSL_ports
+
+http_access allow localhost manager
+http_access deny manager
+
+http_access allow localnet
+http_access allow localhost
+http_access deny all
+
+http_port ${CP_EDGE_SQUID_PORT}
+
+cache_dir ufs ${CP_EDGE_SQUID_CACHE_DIR} 100 16 256
+coredump_dir ${CP_EDGE_SQUID_CACHE_DIR}

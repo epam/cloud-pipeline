@@ -27,17 +27,27 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class CmdExecutor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CmdExecutor.class);
+    public static final int TIMEOUT_EXITCODE = 124;
 
     public String executeCommand(String command) {
         return executeCommand(command, false);
     }
 
+    public String executeCommand(String command, long timeout) {
+        return executeCommand(command, false, timeout);
+    }
+
     public String executeCommand(String command, boolean silent) {
-        return executeCommand(command, null, null, silent);
+        return executeCommand(command,  silent, 0);
+    }
+
+    public String executeCommand(String command, boolean silent, long timeout) {
+        return executeCommand(command, null, null, silent, timeout);
     }
 
     public String executeCommandWithEnvVars(String command, Map<String, String> envVars) {
@@ -56,6 +66,10 @@ public class CmdExecutor {
     }
 
     public String executeCommand(String command, String[] envVars, File context, boolean silent) {
+        return executeCommand(command, envVars, context, silent, 0);
+    }
+
+    public String executeCommand(String command, String[] envVars, File context, boolean silent, long timeoutMills) {
         StringBuilder output = new StringBuilder();
         StringBuilder errors = new StringBuilder();
         Process p;
@@ -67,7 +81,8 @@ public class CmdExecutor {
                     new InputStreamReader(p.getErrorStream())));
             stdReader.start();
             errReader.start();
-            int exitCode = p.waitFor();
+
+            int exitCode = waitForProcessToExit(p, command, timeoutMills);
             stdReader.join();
             errReader.join();
             if (exitCode != 0) {
@@ -83,6 +98,27 @@ public class CmdExecutor {
             throw new CmdExecutionException(command, e);
         }
         return output.toString();
+    }
+
+    private int waitForProcessToExit(final Process p, final String command,
+                                            final long timeoutMills) throws InterruptedException {
+        if (timeoutMills > 0) {
+            boolean finished = p.waitFor(timeoutMills, TimeUnit.MILLISECONDS);
+            if (finished) {
+                return p.exitValue();
+            } else {
+                p.destroyForcibly();
+                throw new CmdExecutionException(
+                        command, TIMEOUT_EXITCODE,
+                        String.format(
+                                "Command was not able to finish in configured timeout: %d mills",
+                                timeoutMills
+                        )
+                );
+            }
+        } else {
+            return p.waitFor();
+        }
     }
 
     private void readOutputStream(String command, StringBuilder content, InputStreamReader in) {

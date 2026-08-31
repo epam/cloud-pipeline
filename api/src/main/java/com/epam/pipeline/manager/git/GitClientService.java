@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -47,9 +49,19 @@ public interface GitClientService {
 
     void createFile(GitProject project, String path, String content, String token, String branch);
 
-    byte[] getFileContents(GitProject project, String path, String revision, String token);
+    /**
+     * @param isDraft if true indicates that version is a commit ID otherwise version is a tag name.
+     *                Applicable for Azure DevOps provider only.
+     *
+     */
+    byte[] getFileContents(GitProject project, String path, String revision, String token, boolean isDraft);
 
-    byte[] getTruncatedFileContents(Pipeline pipeline, String path, String revision, int byteLimit);
+    /**
+     * @param isDraft if true indicates that version is a commit ID otherwise version is a tag name.
+     *                Applicable for Azure DevOps provider only.
+     *
+     */
+    byte[] getTruncatedFileContents(Pipeline pipeline, String path, String revision, int byteLimit, boolean isDraft);
 
     List<Revision> getTags(Pipeline pipeline);
 
@@ -63,7 +75,13 @@ public interface GitClientService {
 
     GitCommitEntry getCommit(Pipeline pipeline, String revisionName);
 
-    List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive);
+    /**
+     * @param isDraft if true indicates that version is a commit ID otherwise version is a tag name.
+     *                Applicable for Azure DevOps provider only.
+     *
+     */
+    List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive,
+                                                   boolean isDraft);
 
     GitCommitEntry updateFile(Pipeline pipeline, String path, String content, String message, boolean fileExists);
 
@@ -82,4 +100,14 @@ public interface GitClientService {
     GitCommitEntry uploadFiles(Pipeline pipeline, List<UploadFileMetadata> files, String message);
 
     boolean fileExists(Pipeline pipeline, String filePath);
+
+    default List<GitNamespace> getAllowedNamespaces() {
+        throw new UnsupportedOperationException(
+                String.format("Getting allowed namespaces is not supported for %s repository", getType()));
+    }
+
+    default List<GitRepositoryDTO> getNamespaceRepositories(String namespaceId) {
+        throw new UnsupportedOperationException(
+                String.format("Getting namespace repositories is not supported for %s repository", getType()));
+    }
 }

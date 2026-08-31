@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {QuarterPicker, Quarters, RangePicker, YearPicker, MonthPicker, DayPicker} from '../pickers';
 import {Period, Range, getPeriod} from '../../periods';
 
-function rangeFilter ({period, range, onChange}) {
+function rangeFilter ({period, range, onChange, style}) {
   const onChangeDate = (date) => {
     if (onChange) {
       const {start, end} = Range.buildRangeByDate(date, period);
@@ -55,6 +55,7 @@ function rangeFilter ({period, range, onChange}) {
         }
         value={start}
         onChange={onChangeDate}
+        style={style}
       />
     );
   }
@@ -64,6 +65,7 @@ function rangeFilter ({period, range, onChange}) {
         title={`${defaultStart.format('YYYY')} year`}
         value={start}
         onChange={onChangeDate}
+        style={style}
       />
     );
   }
@@ -73,6 +75,7 @@ function rangeFilter ({period, range, onChange}) {
         title={defaultStart.format('MMM YYYY')}
         value={start}
         onChange={onChangeDate}
+        style={style}
       />
     );
   }
@@ -81,6 +84,7 @@ function rangeFilter ({period, range, onChange}) {
       <RangePicker
         range={range}
         onChange={onCustomRangeChanged}
+        style={style}
       />
     );
   }
@@ -89,6 +93,7 @@ function rangeFilter ({period, range, onChange}) {
       <DayPicker
         value={start}
         onChange={onChangeDate}
+        style={style}
       />
     );
   }

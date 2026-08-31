@@ -82,6 +82,7 @@ import TicketsBrowser from '../special/tickets/tickets-list';
 import TicketPage from '../special/tickets/ticket';
 import NewTicketPage from '../special/tickets/new-ticket-page';
 import CloudNodes from '../cluster/cloud-nodes';
+import AIChatPage from '../ai-chat';
 
 function HomePageRedirectionComponent ({router, uiNavigation}) {
   if (uiNavigation.loaded && router) {
@@ -173,6 +174,7 @@ function AppRouterComponent ({history, uiNavigation}) {
             <Route path="storage(/:type)" component={BillingReports.StorageReport} />
           </Route>
         </Route>
+        <Route path="/chat" component={AIChatPage} />
         <Route path="/notifications" component={NotificationBrowser} />
         <Route path="/miew" component={MiewPage} />
         <Route path="/wsi" component={VSIPreviewPage} />

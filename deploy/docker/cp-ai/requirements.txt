@@ -1,0 +1,13 @@
+python-dotenv==1.2.1
+pydantic==2.12.5
+requests==2.32.5
+httpx==0.28.1
+urllib3==2.6.3
+pymongo==4.16.0
+llama-index==0.14.13
+llama-index-llms-google-genai==0.8.4
+llama-index-embeddings-google-genai==0.3.2
+chromadb==1.4.1
+llama-index-vector-stores-chroma==0.5.5
+fastapi[standard]==0.128.0
+python-socketio==5.16.0

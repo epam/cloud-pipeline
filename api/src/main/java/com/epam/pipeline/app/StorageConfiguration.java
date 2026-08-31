@@ -27,4 +27,9 @@ public class StorageConfiguration {
     public StorageEventCollector gsEvents(final AuditClient gsAuditClient) {
         return new StorageEventCollector(gsAuditClient);
     }
+
+    @Bean
+    public StorageEventCollector nfsEvents(final AuditClient nfsAuditClient) {
+        return new StorageEventCollector(nfsAuditClient);
+    }
 }

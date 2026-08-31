@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails;
 import com.epam.pipeline.entity.billing.StorageBillingChartCostDetails.StorageBillingDetails;
 import com.epam.pipeline.manager.billing.BillingUtils;
-import com.epam.pipeline.manager.utils.ElasticSearchUtils;
+import com.epam.pipeline.manager.utils.elasticsearch.ElasticSearchUtils;
 import com.epam.pipeline.utils.NumericUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;

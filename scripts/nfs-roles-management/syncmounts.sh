@@ -21,7 +21,7 @@ function contains_element {
 }
 
 function remove_trailing_slashes {
-    echo $(realpath -s $1)
+    echo "$(realpath -s "$1")"
 }
 
 function clean_outdated {
@@ -243,7 +243,7 @@ while IFS='|' read -r id name path type region_id; do
         continue
      fi
 
-     mkdir -p ${mount_root_srv_dir}
+     mkdir -p "${mount_root_srv_dir}"
 
      if [[ "${type}" == "AZ" ]]; then
          CP_TMP_DIR_PATH="/mnt/blobfusetmp/${path}"
@@ -260,7 +260,7 @@ while IFS='|' read -r id name path type region_id; do
          blobfuse ${mount_root_srv_dir} --container-name=${path} --tmp-path=$CP_TMP_DIR_PATH
          mount_result=$?
      elif [[ "${type}" == "S3" ]] || [[ "${type}" == "GCP" ]]; then
-         pipe storage mount ${mount_root_srv_dir} -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_MOUNT_TIMEOUT:-10000} -o allow_other -c audit-buffer-ttl=0 -l /var/log/fuse_${id}.log
+         pipe storage mount "${mount_root_srv_dir}" -b ${path} -t --mode 775 -w ${CP_PIPE_FUSE_MOUNT_TIMEOUT:-10000} -o allow_other -c audit-buffer-ttl=0 -l /var/log/fuse_${id}.log
          mount_result=$?
          # Even in the "pipe storage mount" is OK, it may take a second or two to fully initialized
          # During this period the directory is considered as an empty "overlayfs"
@@ -288,7 +288,7 @@ while IFS='|' read -r id name path type region_id; do
         continue
      fi
      echo "[DONE] $path is mounted to $mount_root_srv_dir (id: ${id}, type: ${type})"
-     mounted_dirs+=($(remove_trailing_slashes "$mount_root_srv_dir"))
+     mounted_dirs+=("$(remove_trailing_slashes "$mount_root_srv_dir")")
 done <<< "$storages"
 echo
 

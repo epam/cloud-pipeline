@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.AutoscalerServiceImpl;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +53,11 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     int TIME_TO_SHUT_DOWN_NODE = 1;
 
     default Map<String, String> getPoolLabels(final NodePool pool) {
-        return Collections.singletonMap(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
+        final Map<String, String> instanceLabels = new HashMap<>();
+        instanceLabels.put(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(pool.getId()));
+        MapUtils.emptyIfNull(pool.getKubeLabels())
+                .forEach((key, label) -> instanceLabels.put(key, label.getValue()));
+        return instanceLabels;
     }
 
     /**
@@ -81,6 +86,14 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param nodeName
      */
     void terminateNode(T region, String internalIp, String nodeName);
+
+    /**
+     * Changes instance type of a previously stopped cloud instance.
+     * Default implementation is a no-op for providers that do not support this operation.
+     */
+    default void changeInstanceType(T region, String instanceId, String instanceType) {
+        log.warn("changeInstanceType is not supported for provider {}", region.getProvider());
+    }
 
     /**
      * Starts previously stopped cloud instance
@@ -195,6 +208,15 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param tags
      */
     void attachDisk(T region, Long runId, DiskAttachRequest request, Map<String, String> tags);
+
+    /**
+     * Creates and attaches a new disk to the cloud instance identified by node name.
+     */
+    default void attachDiskToInstance(T region, String nodeName, DiskAttachRequest request,
+                                      Map<String, String> tags) {
+        throw new UnsupportedOperationException(String.format(
+                "Attaching disk to instance by node name is not supported for cloud provider %s", getProvider()));
+    }
 
     /**
      * Loads all disks attached to cloud instance.

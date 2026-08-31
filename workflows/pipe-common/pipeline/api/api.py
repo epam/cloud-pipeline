@@ -21,6 +21,11 @@ import sys
 import time
 import urllib3
 
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
 from .region import CloudRegion
 from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
 from .token import StaticToken
@@ -224,6 +229,7 @@ class PipelineAPI:
     LOAD_METADATA = "/metadata/load"
     SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
+    UPDATE_METADATA_ENTITY = "metadataEntity/updateKey"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
@@ -274,6 +280,7 @@ class PipelineAPI:
     DATA_STORAGE_MOUNT_LOAD = '/filesharemount/{id}'
     RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
     RUN_RESULT_URL = '/run/{id}/result'
+    STORAGE_PATH_TYPE = 'datastorage/{id}/type'
 
     # Pipeline API default header
 
@@ -524,7 +531,7 @@ class PipelineAPI:
         return result.json()['payload']['podId']
 
     def load_child_pipelines(self, parent_id):
-        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent_id={}'.format(parent_id)}
+        request = {'page': '1', 'pageSize': self.MAX_PAGE_SIZE, 'partialParameters': 'parent-id={}'.format(parent_id)}
         result = requests.post(str(self.api_url) + self.FILTER_RUNS,
                                data=json.dumps(request), headers=self.header, verify=False)
         if hasattr(result.json(), 'error') or result.json()['status'] != self.RESPONSE_STATUS_OK:
@@ -784,6 +791,25 @@ class PipelineAPI:
             raise RuntimeError("Failed to save metadata entities. "
                                "Error message: {}".format(str(e.message)))
 
+    # {
+    #     "entityId": 1,
+    #     "parentId": 1,
+    #     "data": {
+    #         "key1": {
+    #             "type": "string",
+    #             "value": "value1"
+    #         }
+    #     }
+    # }
+    def update_metadata_entity(self, entity):
+        try:
+            result = self.execute_request(str(self.api_url) + self.UPDATE_METADATA_ENTITY, method='post',
+                                          data=json.dumps(entity))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to update metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
     def find_metadata_entity(self, folder_id, external_id, class_name):
         try:
             result = self.execute_request(str(self.api_url) +
@@ -837,6 +863,18 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
                                "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+
+    def search_contextual_preferences(self, preference_name):
+        try:
+            data = {
+                "preferences": [ preference_name ]
+                }
+            result = self.execute_request(str(self.api_url) + 'contextual/preference', method='post',
+            data=json.dumps(data))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s. "
+                               "Error message: %s" % (preference_name, e.message))
 
     # "preference_level" accepts only "TOOL" value for now. Any other value will throw an error
     # "resource_id"=-1 is used when you don't need to consider the tool's setting. Only user and group
@@ -1110,16 +1148,38 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
 
-    def generate_user_token(self, user_name, duration=None):
+    def generate_user_token(self, user_name=None, duration=None):
         try:
+            url = str(self.api_url) + '/user/token'
+            params = []
+            if user_name:
+                params.append('name=' + user_name)
             if duration:
-                expiration_query = '&expiration=' + str(duration)
-            url = str(self.api_url) \
-                  + '/user/token?name=' + user_name \
-                  + (expiration_query if duration else '')
+                params.append('expiration=' + str(duration))
+            if params:
+                url += '?' + '&'.join(params)
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
+
+    def list_named_tokens(self, user_id=None):
+        try:
+            url = str(self.api_url) + '/user/token/named/list'
+            if user_id is not None:
+                url += '?userId=' + str(int(user_id))
+            result = self.execute_request(url, method='get')
+            return result if result is not None else []
+        except Exception as e:
+            raise RuntimeError("Failed to list named tokens. Error message: {}".format(str(e.message)))
+
+    def revoke_named_token_for_current_user(self, jti):
+        try:
+            encoded_jti = quote(str(jti), safe='')
+            url = str(self.api_url) + '/user/token/revoke?jti=' + encoded_jti
+            return self.execute_request(url, method='delete')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to revoke named token for current user. Error message: {}".format(str(e.message)))
 
     def generate_user_token_efficiently(self, user_name=None, duration=None):
         args = {}
@@ -1592,3 +1652,12 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to load run results for run ID '{}', error: {}".format(str(run_id), str(e)))
+
+
+    def get_storage_item_type(self, storage_id, relative_path):
+        try:
+            endpoint = self.STORAGE_PATH_TYPE.format(id=str(storage_id)) + "?path={}".format(relative_path)
+            return self._request(endpoint=endpoint, http_method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load item type for storage ID '{}', error: {}".format(str(storage_id),
+                                                                                                str(e)))

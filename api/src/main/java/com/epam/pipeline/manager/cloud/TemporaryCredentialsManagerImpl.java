@@ -27,6 +27,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -51,18 +52,21 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
     private final MessageHelper messageHelper;
     private final DataStorageManager dataStorageManager;
     private final StoragePathPermissionsService storagePathPermissionsService;
+    private final StoragePermissionManager storagePermissionManager;
     private final AuthManager authManager;
 
     public TemporaryCredentialsManagerImpl(final List<TemporaryCredentialsGenerator> credentialsGenerators,
                                            final MessageHelper messageHelper,
                                            final DataStorageManager dataStorageManager,
                                            final StoragePathPermissionsService storagePathPermissionsService,
+                                           final StoragePermissionManager storagePermissionManager,
                                            final AuthManager authManager) {
         this.credentialsGenerators = CommonUtils.groupByKey(credentialsGenerators,
                 TemporaryCredentialsGenerator::getStorageType);
         this.messageHelper = messageHelper;
         this.dataStorageManager = dataStorageManager;
         this.storagePathPermissionsService = storagePathPermissionsService;
+        this.storagePermissionManager = storagePermissionManager;
         this.authManager = authManager;
     }
 
@@ -139,7 +143,8 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
             action.setItemType(null);
             return true;
         }
-        if (authManager.isAdmin() || storage.getOwner().equalsIgnoreCase(authManager.getAuthorizedUser())) {
+        if (storagePermissionManager.isStorageAdmin()
+                || storage.getOwner().equalsIgnoreCase(authManager.getAuthorizedUser())) {
             return true;
         }
         return DataStorageItemType.File.equals(action.getItemType())

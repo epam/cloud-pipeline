@@ -19,11 +19,11 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.config.JsonMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import lombok.AllArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 import retrofit2.Retrofit;
@@ -36,10 +36,11 @@ import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-@RequiredArgsConstructor
 public class ApiBuilder<T> {
 
     private static final int TIMEOUT = 30;
@@ -51,9 +52,16 @@ public class ApiBuilder<T> {
     private Class<T> apiClientClass;
     private String authHeaderName;
     private String dateFormat;
+    private final Map<String, String> extraHeaders;
 
     public ApiBuilder(final Class<T> apiClientClass, final String apiHost,
                       final String authHeaderName, final String token, final String dateFormat) {
+        this(apiClientClass, apiHost, authHeaderName, token, dateFormat, Collections.emptyMap());
+    }
+
+    public ApiBuilder(final Class<T> apiClientClass, final String apiHost,
+                      final String authHeaderName, final String token, final String dateFormat,
+                      final Map<String, String> extraHeaders) {
         this.apiClientClass = apiClientClass;
         this.authHeaderName = authHeaderName;
         this.dateFormat = dateFormat;
@@ -61,6 +69,7 @@ public class ApiBuilder<T> {
         this.readTimeout = TIMEOUT;
         this.apiHost = apiHost;
         this.token = token;
+        this.extraHeaders = MapUtils.emptyIfNull(extraHeaders);
     }
 
     public T build() {
@@ -105,6 +114,13 @@ public class ApiBuilder<T> {
         builder.readTimeout(readTimeout, TimeUnit.SECONDS)
                 .connectTimeout(connectTimeout, TimeUnit.SECONDS)
                 .hostnameVerifier((s, sslSession) -> true);
+        if (MapUtils.isNotEmpty(extraHeaders)) {
+            builder.addInterceptor(chain -> {
+                final Request.Builder requestBuilder = chain.request().newBuilder();
+                extraHeaders.forEach(requestBuilder::header);
+                return chain.proceed(requestBuilder.build());
+            });
+        }
         if (StringUtils.isNotBlank(token)) {
             builder.addInterceptor(new TokenInterceptor(authHeaderName, token));
         }

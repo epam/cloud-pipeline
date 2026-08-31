@@ -34,5 +34,28 @@ function sig_handler {
     exit 143
 }
 trap 'kill $! ; sig_handler' SIGTERM
+
+# Monitor open file descriptors and trigger container shutdown when near the process limit
+monitor_fd_limit() {
+    local interval="${CP_MONITORING_FD_CHECK_INTERVAL_SEC:-60}"
+    local threshold_pct="${CP_MONITORING_FD_THRESHOLD_PERCENT:-90}"
+    while kill -0 "$APP_PID" 2>/dev/null; do
+        [ -d "/proc/$APP_PID" ] || break
+        local limit=$(grep "Max open files" /proc/$APP_PID/limits 2>/dev/null | awk '{print $4}')
+        local current=$(ls -1 /proc/$APP_PID/fd 2>/dev/null | wc -l)
+        if [ -n "$limit" ] && [ "$limit" -gt 0 ] && [ -n "$current" ]; then
+            local threshold=$(( limit * threshold_pct / 100 ))
+            if [ "$current" -ge "$threshold" ]; then
+                echo "FD monitor: open FDs $current >= threshold $threshold (${threshold_pct}% of $limit), triggering shutdown" >&2
+                kill -TERM $$
+                return
+            fi
+        fi
+        sleep "$interval"
+    done
+}
+
+[ "${CP_MONITORING_FD_MONITOR_ENABLED:-true}" = "true" ] && monitor_fd_limit &
+
 tail -F $MONITORING_RUNTIME_LOG &
 wait "$!"

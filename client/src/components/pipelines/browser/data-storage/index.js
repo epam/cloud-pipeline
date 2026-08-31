@@ -115,6 +115,9 @@ import {
   StorageItemPermissionsButton,
   StorageItemPermissionsModal
 } from './components/storage-item-permissions';
+import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
+import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
+import {checkStorageOperationsEnabled} from './utils';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -204,6 +207,14 @@ export default class DataStorage extends React.Component {
 
   @observable generateDownloadUrls;
   @observable filterDropdownVisible;
+
+  get storageOperationsEnabled () {
+    if (!this.storage.loaded) {
+      return false;
+    }
+    const metadata = this.storage?.metadata;
+    return metadata ? checkStorageOperationsEnabled(metadata) : true;
+  }
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -590,6 +601,10 @@ export default class DataStorage extends React.Component {
     if (!info) {
       return [];
     }
+    const isAzure = /^az$/i.test(
+      this.storage.info.storageType ||
+      this.storage.info.type
+    );
     const {sensitive} = info;
     const items = [];
     const documentPreviewAvailable = (item) => {
@@ -621,8 +636,10 @@ export default class DataStorage extends React.Component {
       const fileRestored = restoreStatus.status === STATUS.SUCCEEDED;
       for (let version in versions) {
         if (versions.hasOwnProperty(version)) {
-          const archived = versions[version].labels &&
-            !isStandardClass(versions[version].labels['StorageClass']);
+          const {labels} = versions[version] || {};
+          const archived = isAzure
+            ? false
+            : labels && !isStandardClass(labels['StorageClass']);
           const versionRestored = restoreStatus.restoreVersions &&
             restoreStatus.status === STATUS.SUCCEEDED;
           const latest = versions[version].version === item.version;
@@ -663,7 +680,9 @@ export default class DataStorage extends React.Component {
     };
     items.push(...elements.map(i => {
       const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
-      const archived = i.labels && !isStandardClass(i.labels['StorageClass']);
+      const archived = isAzure
+        ? false
+        : i.labels && !isStandardClass(i.labels['StorageClass']);
       const active = i.labels && isActiveClass(i.labels['StorageClass']);
       const type = i.type.toLowerCase();
       const isDownloadable = !this.isOmicsStore
@@ -1098,6 +1117,20 @@ export default class DataStorage extends React.Component {
     this.setState({itemsToDelete: null});
   };
 
+  copyPathsToClipboard = (items = []) => {
+    if (!items.length) {
+      return null;
+    }
+    const paths = items
+      .map(item => getDataStorageItemFullPath(item, this.storage.info))
+      .filter(Boolean);
+    copyTextToClipboard(paths.join('\n')).then(() => {
+      message.info(`Path${paths.length > 1 ? 's' : ''} copied to clipboard`, 3);
+    }).catch((error) => {
+      message.error(error.message, 3);
+    });
+  };
+
   removeItemConfirm = (event, item) => {
     event.stopPropagation();
     if (this.showVersions) {
@@ -1261,7 +1294,7 @@ export default class DataStorage extends React.Component {
   };
 
   canRestoreVersion = (item) => {
-    if (!this.showVersions) {
+    if (!this.showVersions || !this.storageOperationsEnabled) {
       return false;
     }
     if (
@@ -1514,7 +1547,7 @@ export default class DataStorage extends React.Component {
   };
 
   onNgbFileActionClick = async (file, event) => {
-    const {storageId, path, preferences} = this.props;
+    const {storageId, preferences} = this.props;
     event && event.stopPropagation();
     const fileName = getNgbFileName(file.path);
     const hide = message.loading((<span>Opening <b>{fileName}</b>...</span>), 0);
@@ -1807,10 +1840,26 @@ export default class DataStorage extends React.Component {
         const highlightedText = this.storage.filtersApplied && search
           ? highlightText(text, search)
           : text;
-        if (item.latest) {
-          return <span>{highlightedText} (latest)</span>;
-        }
-        return highlightedText;
+        const name = (
+          <span>
+            {highlightedText} {item.latest ? '(latest)' : null}
+          </span>
+        );
+        return (
+          <span>
+            {name}
+            {item.selectable ? (
+              <Icon
+                className={styles.copyUrl}
+                type="link"
+                onClick={event => {
+                  event.stopPropagation();
+                  this.copyPathsToClipboard([item]);
+                }}
+              />) : null
+            }
+          </span>
+        );
       },
       filterDropdown: (
         <InputFilter
@@ -2273,7 +2322,8 @@ export default class DataStorage extends React.Component {
       download: 'download',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
-      permissions: 'permissions'
+      permissions: 'permissions',
+      copyPaths: 'copyPaths'
     };
     const clearAction = {
       key: Keys.clear,
@@ -2296,14 +2346,16 @@ export default class DataStorage extends React.Component {
     const restoreAction = {
       key: Keys.restore,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
-      available: this.userLifeCyclePermissions.write &&
+      available: this.storageOperationsEnabled &&
+        this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && !this.isOmicsStore,
       icon: 'reload'
     };
     const restoreOmicsAction = {
       key: Keys.restoreOmics,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
-      available: this.userLifeCyclePermissions.write &&
+      available: this.storageOperationsEnabled &&
+        this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
     };
@@ -2344,6 +2396,12 @@ export default class DataStorage extends React.Component {
         (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
       icon: 'link'
     };
+    const copyPathsAction = {
+      key: Keys.copyPaths,
+      title: 'Copy Paths',
+      icon: 'link',
+      available: this.clearSelectionVisible
+    };
     const removeAllAction = {
       key: Keys.removeAll,
       title: 'Remove',
@@ -2371,6 +2429,7 @@ export default class DataStorage extends React.Component {
     appendAction(restoreAction);
     appendAction(restoreOmicsAction);
     appendAction(generateURLAction);
+    appendAction(copyPathsAction);
     appendAction(downloadAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
@@ -2411,6 +2470,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
+          break;
+        case Keys.copyPaths:
+          this.copyPathsToClipboard(selectedItems);
           break;
         case Keys.downloadOmics:
           handleDownloadOmicsItems(preferences, omicsItemsForDownload, omicsDownloadConfig);
@@ -2615,6 +2677,7 @@ export default class DataStorage extends React.Component {
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}
                   uploadToNFS={/^nfs$/i.test(type)}
+                  uploadToAzure={/^az$/i.test(type)}
                   action={
                     DataStorageItemUpdate.uploadUrl(
                       this.props.storageId,
@@ -2668,7 +2731,7 @@ export default class DataStorage extends React.Component {
         title={title}
         rowKey="key"
         pagination={false}
-        rowClassName={(item) => classNames({
+        rowClassName={(item) => classNames(styles.row, {
           [styles[item.type.toLowerCase()]]: true,
           'cp-storage-deleted-row': !!item.deleteMarker
         })}
@@ -2963,6 +3026,7 @@ export default class DataStorage extends React.Component {
             <Row style={{marginLeft: 5}}>
               <DataStorageNavigation
                 path={this.props.path}
+                showCopyPath
                 storage={this.storage.info}
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
@@ -3040,7 +3104,7 @@ export default class DataStorage extends React.Component {
                 (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                ((!/^nfs$/i.test(type) && !this.state.selectedFile) && !this.isOmicsStore)
+                (this.storageOperationsEnabled && !/^nfs$/i.test(type) && !this.state.selectedFile && !this.isOmicsStore)
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
@@ -3065,12 +3129,19 @@ export default class DataStorage extends React.Component {
                   onClickRestore={() => this.openRestoreFilesDialog('folder')}
                   restoreInfo={this.lifeCycleRestoreInfo}
                   restoreEnabled={this.userLifeCyclePermissions.write}
-                  visible={!this.state.selectedFile && (
-                    this.userLifeCyclePermissions.read ||
-                    this.userLifeCyclePermissions.write
-                  )}
+                  visible={
+                    !this.state.selectedFile &&
+                    this.storageOperationsEnabled &&
+                    (
+                      this.userLifeCyclePermissions.read ||
+                      this.userLifeCyclePermissions.write
+                    )
+                  }
                 />,
-                <StorageSize storage={this.storage.info} />
+                <StorageSize
+                  storage={this.storage.info}
+                  storageOperationsEnabled={this.storageOperationsEnabled}
+                />
               ].filter(Boolean) : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
@@ -3092,6 +3163,7 @@ export default class DataStorage extends React.Component {
         <DataStorageEditDialog
           visible={this.state.editDialogVisible}
           dataStorage={this.storage.info}
+          storageOperationsEnabled={this.storageOperationsEnabled}
           pending={this.storage.infoPending}
           policySupported={policySupported}
           onDelete={this.deleteStorage}

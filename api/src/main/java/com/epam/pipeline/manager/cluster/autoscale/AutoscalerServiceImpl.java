@@ -100,6 +100,16 @@ public class AutoscalerServiceImpl implements AutoscalerService {
                 .map(cloudRegionManager::load)
                 .orElse(cloudRegionManager.loadDefaultRegion())
                 .getId());
+        final int maxFallbackCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxFallbackCount == -1) {
+            if (!ListUtils.emptyIfNull(configuration.getFallbackInstanceTypes()).isEmpty()) {
+                log.warn("Fallback instance types are provided but will not be applied: " +
+                        "'cluster.fallback.instance.types.max.count' is set to -1 (feature is disabled).");
+            }
+        } else {
+            instance.setFallbackInstanceTypes(configuration.getFallbackInstanceTypes());
+        }
         return instance;
     }
 

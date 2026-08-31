@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-gitlab-reader
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:gitlab-reader-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:gitlab-reader-${CP_GITLAB_READER_VERSION}
           imagePullPolicy: "Always"
           command: ["/init.sh"]
           envFrom:

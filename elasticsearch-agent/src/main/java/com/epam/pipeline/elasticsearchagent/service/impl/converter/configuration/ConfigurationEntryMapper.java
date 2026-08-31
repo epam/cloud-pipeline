@@ -26,98 +26,85 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @Component
-@RequiredArgsConstructor
 public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntryDoc> {
 
     @Override
-    public XContentBuilder map(final EntityContainer<ConfigurationEntryDoc> container) {
+    public Map<String, ?> map(final EntityContainer<ConfigurationEntryDoc> container) {
         return getContentBuilder(container);
     }
 
-    private XContentBuilder getContentBuilder(final EntityContainer<ConfigurationEntryDoc> container) {
-        RunConfiguration configuration = container.getEntity().getConfiguration();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            jsonBuilder.startObject();
-            AbstractRunConfigurationEntry entry = container.getEntity().getEntry();
-            jsonBuilder
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.CONFIGURATION.name())
-                    .field("id", container.getEntity().getId())
-                    .field("name", Optional.ofNullable(entry)
-                            .map(AbstractRunConfigurationEntry::getName)
-                            .orElse(configuration.getName()))
-                    .field("description", configuration.getName() + " " +
-                            StringUtils.defaultIfBlank(configuration.getDescription(), StringUtils.EMPTY))
-                    .field("createdDate", parseDataToString(configuration.getCreatedDate()))
-                    .field("parentId", Optional.ofNullable(configuration.getParent())
-                            .map(BaseEntity::getId)
-                            .orElse(null));
+    private Map<String, ?> getContentBuilder(final EntityContainer<ConfigurationEntryDoc> container) {
+        final RunConfiguration configuration = container.getEntity().getConfiguration();
+        final Map<String, Object> jsonMap = new HashMap<>();
+        final AbstractRunConfigurationEntry entry = container.getEntity().getEntry();
 
-            buildUserContent(container.getOwner(), jsonBuilder);
-            buildMetadata(container.getMetadata(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.CONFIGURATION.name());
+        jsonMap.put("id", container.getEntity().getId());
+        jsonMap.put("name", Optional.ofNullable(entry)
+                .map(AbstractRunConfigurationEntry::getName)
+                .orElse(configuration.getName()));
+        jsonMap.put("description", configuration.getName() + " " +
+                StringUtils.defaultIfBlank(configuration.getDescription(), StringUtils.EMPTY));
+        jsonMap.put("createdDate", parseDataToString(configuration.getCreatedDate()));
+        jsonMap.put("parentId", Optional.ofNullable(configuration.getParent())
+                .map(BaseEntity::getId)
+                .orElse(null));
 
-            if (entry != null) {
-                buildConfigurationEntry(entry,
-                        container.getEntity().getPipeline(), jsonBuilder);
-            }
+        buildUserContent(container.getOwner(), jsonMap);
+        buildMetadata(container.getMetadata(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for run configuration: ", e);
+        if (entry != null) {
+            buildConfigurationEntry(entry, container.getEntity().getPipeline(), jsonMap);
         }
+        return jsonMap;
     }
 
     private void buildConfigurationEntry(final AbstractRunConfigurationEntry entry,
                                          final Pipeline pipeline,
-                                         final XContentBuilder jsonBuilder) throws IOException {
+                                         final Map<String, Object> jsonMap) {
         if (entry == null) {
             return;
         }
 
-        jsonBuilder
-                .field("environment", entry.getExecutionEnvironment().name())
-                .field("entryName", entry.getName())
-                .field("rootEntityId", entry.getRootEntityId())
-                .field("configName", entry.getConfigName())
-                .field("defaultConfiguration", entry.isDefaultConfiguration());
+        jsonMap.put("environment", entry.getExecutionEnvironment().name());
+        jsonMap.put("entryName", entry.getName());
+        jsonMap.put("rootEntityId", entry.getRootEntityId());
+        jsonMap.put("configName", entry.getConfigName());
+        jsonMap.put("defaultConfiguration", entry.isDefaultConfiguration());
 
-        buildExecutionEnvironmentConfiguration(entry, pipeline, jsonBuilder);
+        buildExecutionEnvironmentConfiguration(entry, pipeline, jsonMap);
     }
 
     private void buildExecutionEnvironmentConfiguration(final AbstractRunConfigurationEntry entry,
                                                         final Pipeline pipeline,
-                                                        final XContentBuilder jsonBuilder) throws IOException {
+                                                        final Map<String, Object> jsonMap) {
         if (entry.getExecutionEnvironment() == ExecutionEnvironment.CLOUD_PLATFORM ||
                 entry.getExecutionEnvironment() == ExecutionEnvironment.DTS) {
-            PipelineStart pipelineStart = entry.toPipelineStart();
-            jsonBuilder
-                    .field("pipelineId", pipelineStart.getPipelineId())
-                    .field("pipelineVersion", pipelineStart.getVersion())
-                    .field("dockerImage", pipelineStart.getDockerImage());
+            final PipelineStart pipelineStart = entry.toPipelineStart();
+            jsonMap.put("pipelineId", pipelineStart.getPipelineId());
+            jsonMap.put("pipelineVersion", pipelineStart.getVersion());
+            jsonMap.put("dockerImage", pipelineStart.getDockerImage());
 
             if (pipeline != null) {
-                jsonBuilder.field("pipelineName", pipeline.getName());
+                jsonMap.put("pipelineName", pipeline.getName());
             }
         } else if (entry.getExecutionEnvironment() == ExecutionEnvironment.FIRECLOUD) {
-            FirecloudRunConfigurationEntry firecloudEntry = (FirecloudRunConfigurationEntry) entry;
-            jsonBuilder
-                    .field("methodName", firecloudEntry.getMethodName())
-                    .field("methodSnapshot", firecloudEntry.getMethodSnapshot())
-                    .field("methodConfigurationName", firecloudEntry.getMethodConfigurationName())
-                    .field("methodConfigurationSnapshot", firecloudEntry.getMethodConfigurationSnapshot());
+            final FirecloudRunConfigurationEntry firecloudEntry = (FirecloudRunConfigurationEntry) entry;
+            jsonMap.put("methodName", firecloudEntry.getMethodName());
+            jsonMap.put("methodSnapshot", firecloudEntry.getMethodSnapshot());
+            jsonMap.put("methodConfigurationName", firecloudEntry.getMethodConfigurationName());
+            jsonMap.put("methodConfigurationSnapshot", firecloudEntry.getMethodConfigurationSnapshot());
         }
     }
 }

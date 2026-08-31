@@ -8,6 +8,9 @@ import AdaptedLink from '../../../../special/AdaptedLink';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../../pipelines/launch/form/utilities/parameters';
 import DataStorageList from '../../../controls/data-storage-list';
 import instanceParameters from './instance-parameters';
+import roleModel from '../../../../../utils/roleModel';
+import {sortRunParameters} from '../../../logs/misc/post-process-run';
+import ShareWith from '../../../ShareWith';
 import styles from './run-parameters.css';
 
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
@@ -193,6 +196,11 @@ class RunParametersSection extends React.Component {
     );
   };
 
+  refreshRun = () => {
+    const {refreshRun} = this.props;
+    refreshRun && refreshRun();
+  };
+
   render () {
     const {
       className,
@@ -205,7 +213,9 @@ class RunParametersSection extends React.Component {
     const {
       pipelineRunParameters = []
     } = run;
-    let filteredRunParameters = (pipelineRunParameters || []).filter(p => p.name && p.value);
+    const filteredRunParameters = sortRunParameters(
+      (pipelineRunParameters || []).filter(p => p.name && p.value)
+    );
     const getParameterType = p => {
       switch ((p.type || '').toLowerCase()) {
         case 'common':
@@ -222,6 +232,9 @@ class RunParametersSection extends React.Component {
       .filter((p) => (p.available && typeof p.available === 'function' && p.available(run)) ||
         (p.available && typeof p.available !== 'function') ||
         p.available === undefined);
+    const canShare = run.initialized &&
+      run.status === 'RUNNING' &&
+      roleModel.isOwner(run);
     return (
       <div
         className={classNames(className, styles.runParametersSection)}
@@ -238,6 +251,16 @@ class RunParametersSection extends React.Component {
                 </tr>
               )
             }
+            {canShare ? (
+              <tr>
+                <th className={styles.parameterName}>
+                  Share with:
+                </th>
+                <td className={styles.parameterValue}>
+                  <ShareWith run={run} onSave={this.refreshRun} />
+                </td>
+              </tr>
+            ) : null}
             {
               instanceParametersFiltered.map(this.renderInstanceParameter)
             }

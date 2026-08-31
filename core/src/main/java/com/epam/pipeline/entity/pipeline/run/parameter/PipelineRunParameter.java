@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.pipeline.run.parameter;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class PipelineRunParameter {
     private String name;
     /**

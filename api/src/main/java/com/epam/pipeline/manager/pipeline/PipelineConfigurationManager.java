@@ -30,7 +30,7 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -153,6 +153,20 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
+    public void validateFallbackInstanceTypesCount(final List<String> fallbackTypes) {
+        if (CollectionUtils.isEmpty(fallbackTypes)) {
+            return;
+        }
+        final int maxCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxCount == -1) {
+            return;
+        }
+        Assert.isTrue(fallbackTypes.size() <= maxCount,
+                messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
+                        fallbackTypes.size(), maxCount));
+    }
+
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
         Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
@@ -160,7 +174,6 @@ public class PipelineConfigurationManager {
         configuration.setMainFile(defaultConfig.getMainFile());
         configuration.setMainClass(defaultConfig.getMainClass());
         configuration.setEnvironmentParams(defaultConfig.getEnvironmentParams());
-        configuration.setPrettyUrl(runVO.getPrettyUrl());
         configuration.setCloudRegionId(defaultConfig.getCloudRegionId());
         Map<String, PipeConfValueVO> runParameters = new LinkedHashMap<>();
 
@@ -195,6 +208,11 @@ public class PipelineConfigurationManager {
         } else {
             configuration.setInstanceType(defaultConfig.getInstanceType());
         }
+        if (runVO.getFallbackInstanceTypes() != null) {
+            configuration.setFallbackInstanceTypes(runVO.getFallbackInstanceTypes());
+        } else {
+            configuration.setFallbackInstanceTypes(defaultConfig.getFallbackInstanceTypes());
+        }
         if (runVO.getTimeout() != null) {
             configuration.setTimeout(runVO.getTimeout());
         } else {
@@ -215,6 +233,12 @@ public class PipelineConfigurationManager {
             configuration.setKubeLabels(runVO.getKubeLabels());
         } else {
             configuration.setKubeLabels(defaultConfig.getKubeLabels());
+        }
+
+        if (StringUtils.hasText(runVO.getPrettyUrl())) {
+            configuration.setPrettyUrl(runVO.getPrettyUrl());
+        } else {
+            configuration.setPrettyUrl(defaultConfig.getPrettyUrl());
         }
 
         // TODO: merging parentNodeId together with runAssignPolicy,
@@ -251,9 +275,9 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
-    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
+    private RunContainerSpec mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
         final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
-        final RunAssignPolicy assignPolicy = runVO.getPodAssignPolicy();
+        final RunContainerSpec assignPolicy = runVO.getPodAssignPolicy();
 
         if (useRunId != null && assignPolicy != null) {
             throw new IllegalArgumentException(
@@ -272,9 +296,9 @@ public class PipelineConfigurationManager {
                     String.format("Configuring RunAssignPolicy as: label %s, value: %s.",
                             KubernetesConstants.RUN_ID_LABEL, value)
                 );
-                return RunAssignPolicy.builder()
+                return RunContainerSpec.builder()
                         .selector(
-                            RunAssignPolicy.PodAssignSelector.builder()
+                            RunContainerSpec.PodAssignSelector.builder()
                                 .label(KubernetesConstants.RUN_ID_LABEL)
                                 .value(value).build())
                         .build();
@@ -282,7 +306,7 @@ public class PipelineConfigurationManager {
                 if (defaultConfig.getPodAssignPolicy() != null && defaultConfig.getPodAssignPolicy().isValid()) {
                     return defaultConfig.getPodAssignPolicy();
                 }
-                return RunAssignPolicy.builder().build();
+                return RunContainerSpec.builder().build();
             }
         }
     }
@@ -396,6 +420,7 @@ public class PipelineConfigurationManager {
             configuration.setIsSpot(instance.getSpot());
             configuration.setInstanceImage(instance.getNodeImage());
             configuration.setCloudRegionId(instance.getCloudRegionId());
+            configuration.setFallbackInstanceTypes(instance.getFallbackInstanceTypes());
         }
 
         setEndpointsErasure(configuration);
@@ -490,8 +515,8 @@ public class PipelineConfigurationManager {
         }
     }
 
-    private ConfigurationEntry getConfigurationForToolVersion(final Long toolId, final String dockerImage,
-                                                              final String configurationName) {
+    public ConfigurationEntry getConfigurationForToolVersion(final Long toolId, final String dockerImage,
+                                                             final String configurationName) {
         String tag = toolManager.getTagFromImageName(dockerImage);
         List<ConfigurationEntry> configurationEntries =
                 toolVersionManager.loadToolVersionSettings(toolId, tag)

@@ -57,7 +57,7 @@ pipe_log_info "Will localize any remotes from the config files, defined by the f
 
 CP_LOCALIZE_FROM_FILES_EXT="${CP_LOCALIZE_FROM_FILES_EXT:-*}"
 CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX="${CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX:-_PARAM_TYPE_FROM_FILE}"
-CP_LOCALIZE_FROM_FILES_RE_PATTERN="${CP_LOCALIZE_FROM_FILES_RE_PATTERN:-((s3|gs|az):\/\/.*(,|;|$))}"
+CP_LOCALIZE_FROM_FILES_RE_PATTERN="${CP_LOCALIZE_FROM_FILES_RE_PATTERN:-((s3|gs|az):\/\/[^,;$\s]*)}"
 CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE="${CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE:-1000}"
 
 pipe_log_info "--> Files extensions: $CP_LOCALIZE_FROM_FILES_EXT" "$LOCALIZE_FROM_FILES_TASK_NAME"
@@ -121,7 +121,7 @@ for _path in ${_files_to_localize[@]}; do
         fi
         i=$((i+1))
         _has_something_to_localize=true
-    done <<< "$(grep -oP "$_localize_re_pattern" "$_real_path")"
+    done <<< "$(grep -oP "$_localize_re_pattern" "$_real_path" | sort | uniq)"
 done
 
 if [ "$_has_something_to_localize" != "true" ]; then

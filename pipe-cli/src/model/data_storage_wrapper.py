@@ -30,6 +30,7 @@ from urllib.parse import urlparse
 import click
 import requests
 import sys
+from ..api.cloud_region import CloudRegion
 from ..api.data_storage import DataStorage
 from ..config import ConfigNotFoundError
 from ..utilities.storage.s3 import S3BucketOperations
@@ -392,6 +393,7 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
     def __init__(self, bucket, path):
         super(AzureBucketWrapper, self).__init__(bucket, path)
         self.service = None
+        self.is_hns_enabled = False
 
     @classmethod
     def build_wrapper(cls, root_bucket, relative_path, versioning=False, init=True):
@@ -400,7 +402,20 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
         wrapper = AzureBucketWrapper(root_bucket, relative_path)
         if init:
             StorageOperations.init_wrapper(wrapper, versioning=versioning)
+            if not wrapper.is_file_flag:
+                wrapper.is_hns_enabled = cls._is_hns_enabled(root_bucket)
         return wrapper
+
+    @staticmethod
+    def _is_hns_enabled(bucket):
+        region_code = bucket.region
+        if not region_code:
+            return False
+        for region in CloudRegion.get_cloud_regions('azure'):
+            rid = region.get('regionId')
+            if rid and rid.lower() == region_code.lower():
+                return bool(region.get('hierarchicalStorageNamespace', False))
+        return False
 
     def get_type(self):
         return WrapperType.AZURE
@@ -416,7 +431,8 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
     def get_delete_manager(self, events, versioning):
         if versioning:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
-        return AzureDeleteManager(self._blob_service(read=True, write=True), events, self.bucket)
+        return AzureDeleteManager(self._blob_service(read=True, write=True), events, self.bucket, self.is_file(),
+                                  self.is_hns_enabled)
 
     def _blob_service(self, read, write):
         if write or not self.service:

@@ -16,6 +16,7 @@ import json
 import os
 import time
 import threading
+import csv
 
 from app.util import parse
 from engine_task import CloudPipelineRunEngineTask
@@ -43,9 +44,10 @@ class NextflowEventHandler(object):
         "ABORTED": "ABORTED"
     }
 
-    def __init__(self, logger, api_client, run_id, sync_batch_size, sync_batch_timeout):
+    def __init__(self, logger, api_client, nf_task_lookup_file, run_id, sync_batch_size, sync_batch_timeout):
         self.logger = logger
         self.api_client = api_client
+        self.nf_task_lookup_file = nf_task_lookup_file
         self.run_id = run_id
         self.events = SharedObject([])
         self.sync_batch_size = sync_batch_size
@@ -157,12 +159,41 @@ class NextflowEventHandler(object):
 
     def _send_events_batch(self, event_list):
         merged = self._merge_batch(event_list)
+        self._update_nf_lookup_file_with_events(merged)
         if self.api_client.log_pipeline_run_engine_task_events(merged):
             self.events.set([])
             self.sync_timestamp = time.time()
         else:
             self.events.set(merged)
             self.failed_sync_timestamp = time.time()
+
+    def _update_nf_lookup_file_with_events(self, event_list):
+
+        def _read_nf_lookup_file(_lookup_file_path):
+            _lookup_file_dict = {}
+            if os.path.isfile(_lookup_file_path):
+                with open(_lookup_file_path, "rb") as csvfile:
+                    csv_reader = csv.reader(csvfile, delimiter='\t')
+                    # Skip header
+                    csv_reader.next()
+                    for row in csv_reader:
+                        _lookup_file_dict[row[0]] = row
+            return _lookup_file_dict
+
+        def _write_nf_lookup_file(_lookup_file_path, _lookup_file_dict):
+            with open(_lookup_file_path, 'wb') as csvfile:
+                csv_writer = csv.writer(csvfile, delimiter='\t', quoting=csv.QUOTE_MINIMAL)
+                csv_writer.writerow(['task_id', 'hash', 'process', 'tag', 'name', 'status'])
+                for task in _lookup_file_dict.values():
+                    csv_writer.writerow(task)
+
+        if self.nf_task_lookup_file:
+            lookup_file_dict = _read_nf_lookup_file(self.nf_task_lookup_file)
+            for event in event_list:
+                lookup_file_dict[event.taskId] = [event.taskId, event.taskKey, event.taskGroup, event.taskTag, event.taskName, event.status]
+            self.logger.info("Updating nf task lookup file with {} entries ...".format(len(lookup_file_dict)))
+            _write_nf_lookup_file(self.nf_task_lookup_file, lookup_file_dict)
+        pass
 
     def _merge_batch(self, event_list):
         event_map = {}
@@ -193,7 +224,7 @@ class NextflowEventHandler(object):
             "event": "trace_file_record",
             "trace": {
                 "task_id": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("task_id", -1))),
-                "native_id": parse.parse_int_str(parse.get_array_element_or_default(task_fields, header.get("native_id", -1))),
+                "native_id": parse.get_array_element_or_default(task_fields, header.get("native_id", -1)),
                 "status": parse.get_array_element_or_default(task_fields, header.get("status", -1)),
                 "hash": parse.get_array_element_or_default(task_fields, header.get("hash", -1)),
                 "name": parse.get_array_element_or_default(task_fields, header.get("name", -1)),

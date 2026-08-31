@@ -87,7 +87,7 @@ RUN cd /tmp && \
     rm -rf lustre-client*
 
 RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
-    pip install -I requests==2.21.0 && \
+    pip install -I requests==2.21.0 futures && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 

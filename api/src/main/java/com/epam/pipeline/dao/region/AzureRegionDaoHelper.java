@@ -53,6 +53,9 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
         params.addValue(CloudRegionParameters.SSH_PUBLIC_KEY.name(), region.getSshPublicKeyPath());
         params.addValue(CloudRegionParameters.METER_REGION_NAME.name(), region.getMeterRegionName());
         params.addValue(CloudRegionParameters.AZURE_API_URL.name(), region.getAzureApiUrl());
+        params.addValue(CloudRegionParameters.MANAGED_IDENTITY.name(), region.getManagedIdentity());
+        params.addValue(CloudRegionParameters.HIERARCHICAL_STORAGE_NAMESPACE.name(),
+                region.isHierarchicalStorageNamespace());
         params.addValue(CloudRegionParameters.PRICE_OFFER_ID.name(), region.getPriceOfferId());
         params.addValue(CloudRegionParameters.ENTERPRISE_AGREEMENTS.name(), region.isEnterpriseAgreements());
         return params;
@@ -72,6 +75,9 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
         region.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
         region.setMeterRegionName(rs.getString(CloudRegionParameters.METER_REGION_NAME.name()));
         region.setAzureApiUrl(rs.getString(CloudRegionParameters.AZURE_API_URL.name()));
+        region.setManagedIdentity(rs.getString(CloudRegionParameters.MANAGED_IDENTITY.name()));
+        region.setHierarchicalStorageNamespace(rs.getBoolean(
+                CloudRegionParameters.HIERARCHICAL_STORAGE_NAMESPACE.name()));
         region.setPriceOfferId(rs.getString(CloudRegionParameters.PRICE_OFFER_ID.name()));
         region.setEnterpriseAgreements(rs.getBoolean(CloudRegionParameters.ENTERPRISE_AGREEMENTS.name()));
         return region;

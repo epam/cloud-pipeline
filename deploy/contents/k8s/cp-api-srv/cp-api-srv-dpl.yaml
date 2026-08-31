@@ -27,7 +27,7 @@ spec:
       terminationGracePeriodSeconds: 50
       containers:
         - name: cp-api-srv-leader-elector
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-${CP_LEADER_ELECTOR_VERSION}
           imagePullPolicy: "Always"
           securityContext:
             privileged: true
@@ -46,7 +46,7 @@ spec:
                 name: cp-config-global
           
         - name: cp-api-srv
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-${CP_API_SRV_VERSION}
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

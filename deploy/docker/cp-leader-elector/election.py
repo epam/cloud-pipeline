@@ -24,6 +24,8 @@ def get_service_name():
     return os.environ['HA_ELECTION_SERVICE_NAME']
 
 
+CP_KUBE_NAMESPACE = os.getenv("CP_KUBE_NAMESPACE", "default")
+
 HA_ELECTION_PERIOD_SEC = int(os.environ['HA_ELECTION_PERIOD_SEC'])
 HA_VOTE_EXPIRATION_PERIOD_SEC = int(os.environ['HA_VOTE_EXPIRATION_PERIOD_SEC'])
 HA_ELECTION_SET_SELF_LABELS = os.getenv('HA_ELECTION_SET_SELF_LABELS', 'False').lower() == 'true'
@@ -39,7 +41,7 @@ def get_my_pod_name():
 
 
 def is_pod_alive(api, pod_id):
-    pods = pykube.Pod.objects(api).filter(field_selector={'metadata.name': pod_id})
+    pods = pykube.Pod.objects(api, namespace=CP_KUBE_NAMESPACE).filter(field_selector={'metadata.name': pod_id})
     if len(pods) == 1:
         pod = pods.response['items'][0]
         phase = pod['status']['phase']
@@ -65,7 +67,7 @@ def set_leader_labels(api, name, election_time):
     if not is_pod_alive(api, name):
         print("Selected pod is not in `Ready` state, keep current leader")
         return 
-    deploy = pykube.Deployment.objects(api).get_by_name(SERVICE_NAME)
+    deploy = pykube.Deployment.objects(api, namespace=CP_KUBE_NAMESPACE).get_by_name(SERVICE_NAME)
     deploy.labels[ELECTION_TIME_LABEL] = str(election_time)
     deploy.labels[LEADER_NAME_LABEL] = name
     deploy.update()
@@ -80,7 +82,7 @@ def check_self_labels(api, leader_name):
                         if leader_name == my_name \
                         else LEADERSHIP_TYPE_COMMON
     
-    pod = pykube.Pod.objects(api).get_by_name(my_name)
+    pod = pykube.Pod.objects(api, namespace=CP_KUBE_NAMESPACE).get_by_name(my_name)
     my_current_leadership_type = ""
     if LEADERSHIP_TYPE_LABEL in pod.labels:
         my_current_leadership_type = pod.labels[LEADERSHIP_TYPE_LABEL]
@@ -130,7 +132,7 @@ def check_leader_info_labels(sync_start_epochs):
 
 
 def get_service_metadata(api, service_name):
-    service = pykube.Deployment.objects(api).get_by_name(service_name)
+    service = pykube.Deployment.objects(api, namespace=CP_KUBE_NAMESPACE).get_by_name(service_name)
     metadata = service.metadata
     return metadata
 

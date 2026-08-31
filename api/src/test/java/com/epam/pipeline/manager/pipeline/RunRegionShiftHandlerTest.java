@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,8 @@ public class RunRegionShiftHandlerTest {
     @Before
     public void setup() {
         doReturn(true).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
+        doReturn(false).when(preferenceManager)
+                .getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED);
     }
 
     @Test
@@ -261,7 +263,7 @@ public class RunRegionShiftHandlerTest {
     }
 
     @Test
-    public void shouldNotRestartRunWhenWorker() {
+    public void shouldNotRestartRunWhenWorkerNotConfiguredWithParameter() {
         final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
         final PipelineRun currentRun = getCurrentRun(runInstance);
         currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
@@ -271,6 +273,41 @@ public class RunRegionShiftHandlerTest {
         doReturn(getRegions()).when(cloudRegionManager).loadAll();
 
         assertRunNotRestarted();
+    }
+
+    @Test
+    public void shouldRestartRunWorkerWhenRunConfiguredWithParameter() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getConfiguredForRestartWorkerParameter(TRUE)));
+        currentRun.setParentRunId(ID);
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        verify(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
+    public void shouldRestartRunWorkerWhenRunConfiguredInSysPref() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        doReturn(true).when(preferenceManager)
+                .getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED);
+
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+        currentRun.setParentRunId(ID);
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        verify(pipelineRunManager).restartRun(expectedSuccessfulRunWithoutParameters());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
     }
 
     @Test
@@ -390,6 +427,10 @@ public class RunRegionShiftHandlerTest {
 
     private static PipelineRunParameter getConfiguredForRestartParameter(final String value) {
         return new PipelineRunParameter(RunRegionShiftHandler.CP_CAP_RESCHEDULE_RUN_PARAM, value);
+    }
+
+    private static PipelineRunParameter getConfiguredForRestartWorkerParameter(final String value) {
+        return new PipelineRunParameter(RunRegionShiftHandler.CP_CAP_RESCHEDULE_RUN_WORKER_PARAM, value);
     }
 
     private static PipelineRun expectedSuccessfulRun() {

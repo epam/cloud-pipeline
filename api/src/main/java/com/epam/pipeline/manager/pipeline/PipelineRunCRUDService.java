@@ -19,6 +19,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -63,6 +64,12 @@ public class PipelineRunCRUDService {
         pipelineRunDao.updateRun(run);
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updatePipelineRunLogStoragePath(final PipelineRun run, final String runLogStoragePath) {
+        run.setLogsStoragePath(runLogStoragePath);
+        pipelineRunDao.updateRun(run);
+    }
+
     public List<PipelineRun> loadRunsByIds(final List<Long> runIds) {
         if (CollectionUtils.isEmpty(runIds)) {
             return Collections.emptyList();
@@ -97,6 +104,15 @@ public class PipelineRunCRUDService {
 
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         return pipelineRunDao.loadRunsByPoolId(poolId);
+    }
+
+    public List<PipelineRun> loadRunsByStatusesAndOriginalOwner(final List<TaskStatus> statuses, final String owner) {
+        return pipelineRunDao.loadRunsByStatusesAndOriginalOwner(statuses, owner);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunInitialized(final Long runId) {
+        pipelineRunDao.updateRunInitialized(runId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

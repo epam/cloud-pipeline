@@ -76,3 +76,8 @@ variable "additional_tags" {
   default     = {}
   description = "Additional tags for the infrastructure tagging"
 }
+
+variable "prepend_user_data" {
+  default     = ""
+  description = "User data that is injected into the user data script ahead of the Jump Server initialization. Can be used to setup proxies, certificates and other customizations"
+}

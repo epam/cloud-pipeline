@@ -19,10 +19,16 @@ import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.NodePoolUsageReportRecord;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.entity.cluster.pool.Requests;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -35,7 +41,9 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.report.ReportUtils.buildTimeIntervals;
 import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMax;
+import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMaxLong;
 import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMedian;
+import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMedianLong;
 import static com.epam.pipeline.manager.report.ReportUtils.dateInInterval;
 
 @Service
@@ -45,6 +53,7 @@ public class NodePoolReportService {
     private static final int TO_PERCENTS = 100;
 
     private final NodePoolUsageService nodePoolUsageService;
+    private final PreferenceManager preferenceManager;
 
     public List<NodePoolUsageReport> getReport(final ReportFilter filter) {
         prepareFilter(filter);
@@ -102,12 +111,37 @@ public class NodePoolReportService {
         final Integer nodesCount = calculateSampleMax(NodePoolUsage::getTotalNodesCount, hourUsages);
         final Integer occupiedNodesCount = calculateSampleMax(NodePoolUsage::getOccupiedNodesCount, hourUsages);
         final Integer utilization = calculateSampleMax(this::calculateHourUtilization, hourUsages);
+        final Integer activeRunsCount = calculateSampleMax(NodePoolUsage::getActiveRunsCount, hourUsages);
+        final Integer pendingRunsCount = calculateSampleMax(NodePoolUsage::getPendingRunsCount, hourUsages);
+        final Map<String, Requests> requestStats = ListUtils.emptyIfNull(
+                preferenceManager.getPreference(SystemPreferences.MONITORING_POOL_REQUEST_NAMES))
+                .stream()
+                .map(name -> {
+                    final Long active = calculateSampleMaxLong(usage ->
+                            MapUtils.emptyIfNull(usage.getRequestsStats()).getOrDefault(name, new Requests())
+                                    .getActive(), hourUsages);
+                    final Long pending = calculateSampleMaxLong(usage ->
+                            MapUtils.emptyIfNull(usage.getRequestsStats()).getOrDefault(name, new Requests())
+                                    .getPending(), hourUsages);
+                    final Long total = calculateSampleMaxLong(usage ->
+                            MapUtils.emptyIfNull(usage.getRequestsStats()).getOrDefault(name, new Requests())
+                                    .getTotal(), hourUsages);
+                    if (Objects.isNull(active) && Objects.isNull(pending) && Objects.isNull(total)) {
+                        return null;
+                    }
+                    return new ImmutablePair<>(name, new Requests(active, pending, total));
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(ImmutablePair::getLeft, ImmutablePair::getRight));
         return NodePoolUsageReportRecord.builder()
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
                 .occupiedNodesCount(occupiedNodesCount)
                 .nodesCount(nodesCount)
+                .activeRunsCount(activeRunsCount)
+                .pendingRunsCount(pendingRunsCount)
                 .utilization(utilization)
+                .requestsStats(requestStats)
                 .build();
     }
 
@@ -145,7 +179,32 @@ public class NodePoolReportService {
                         NodePoolUsageReportRecord::getOccupiedNodesCount, hourlyUsage))
                 .nodesCount(calculateSampleMedian(NodePoolUsageReportRecord::getNodesCount, hourlyUsage))
                 .utilization(calculateSampleMedian(NodePoolUsageReportRecord::getUtilization, hourlyUsage))
+                .activeRunsCount(calculateSampleMedian(NodePoolUsageReportRecord::getActiveRunsCount, hourlyUsage))
+                .pendingRunsCount(calculateSampleMedian(NodePoolUsageReportRecord::getPendingRunsCount, hourlyUsage))
+                .requestsStats(buildMedianRequests(hourlyUsage))
                 .build();
+    }
+
+    private Map<String, Requests> buildMedianRequests(final List<NodePoolUsageReportRecord> hourlyUsage) {
+        return ListUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.MONITORING_POOL_REQUEST_NAMES))
+                .stream()
+                .map(name -> {
+                    final Long active = calculateSampleMedianLong(usage ->
+                            MapUtils.emptyIfNull(usage.getRequestsStats()).getOrDefault(name, new Requests())
+                                    .getActive(), hourlyUsage);
+                    final Long pending = calculateSampleMedianLong(usage ->
+                            MapUtils.emptyIfNull(usage.getRequestsStats()).getOrDefault(name, new Requests())
+                                    .getPending(), hourlyUsage);
+                    final Long total = calculateSampleMedianLong(usage ->
+                            MapUtils.emptyIfNull(usage.getRequestsStats()).getOrDefault(name, new Requests())
+                                    .getTotal(), hourlyUsage);
+                    if (Objects.isNull(active) && Objects.isNull(pending) && Objects.isNull(total)) {
+                        return null;
+                    }
+                    return new ImmutablePair<>(name, new Requests(active, pending, total));
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(ImmutablePair::getLeft, ImmutablePair::getRight));
     }
 
     private void prepareFilter(final ReportFilter filter) {

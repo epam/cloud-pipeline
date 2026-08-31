@@ -20,7 +20,7 @@ function check_installed {
 }
 
 print_info "Installing common packages"
-yum install -y \
+yum install -y --allowerasing \
             curl \
             wget \
             git \

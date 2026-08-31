@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {inject, observer} from 'mobx-react';
 
 export function generateRunInstanceParameterValueComponent (
   parameter,
@@ -13,7 +14,8 @@ export function generateRunInstanceParameterValueComponent (
     const {
       className,
       style,
-      run
+      run,
+      routing
     } = props;
     if (!run) {
       return null;
@@ -22,10 +24,11 @@ export function generateRunInstanceParameterValueComponent (
     if (parameter in instance) {
       return (
         <span className={className} style={style}>
-          {render(instance[parameter], run)}
+          {render(instance[parameter], run, routing)}
         </span>
       );
     }
+    return null;
   }
 
   RunInstanceParameter.propTypes = {
@@ -41,7 +44,7 @@ export function generateRunInstanceParameterValueComponent (
       parameter in run.instance;
   };
 
-  return RunInstanceParameter;
+  return inject('routing')(observer(RunInstanceParameter));
 }
 
 export function generateRunValueComponent (

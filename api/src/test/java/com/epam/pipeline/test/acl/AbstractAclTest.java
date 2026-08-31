@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -63,6 +64,10 @@ import static org.mockito.Mockito.doReturn;
 public abstract class AbstractAclTest {
 
     protected static final String ADMIN_ROLE = "ADMIN";
+    protected static final String PIPELINE_ADMIN_ROLE = "PIPELINE_ADMIN";
+    protected static final String TOOL_ADMIN_ROLE = "TOOL_ADMIN";
+    protected static final String RUN_ADMIN_ROLE = "RUN_ADMIN";
+    protected static final String USER_ADMIN_ROLE = "USER_ADMIN";
     protected static final String CONFIGURATION_MANAGER_ROLE = "CONFIGURATION_MANAGER";
     protected static final String ENTITIES_MANAGER_ROLE = "ENTITIES_MANAGER";
     protected static final String PIPELINE_MANAGER_ROLE = "PIPELINE_MANAGER";
@@ -153,6 +158,31 @@ public abstract class AbstractAclTest {
         return acl;
     }
 
+    protected AclImpl initAclEntity(AbstractSecuredEntity entity, List<AbstractGrantPermission> permissions,
+                                    Acl parentAcl) {
+        ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(entity);
+        AclImpl acl = new AclImpl(objectIdentity, entity.getId(), aclAuthorizationStrategy,
+                grantingStrategy, parentAcl, null, true, new PrincipalSid(entity.getOwner()));
+        if (CollectionUtils.isNotEmpty(permissions)) {
+            IntStream
+                    .range(0, permissions.size())
+                    .forEach(i -> {
+                        AbstractGrantPermission permission = permissions.get(i);
+                        acl.insertAce(i, permissionFactory.buildFromMask(permission.mask), permission.toSid(), true);
+                    });
+        }
+        doReturn(acl).when(aclService).readAclById(eq(objectIdentity), anyList());
+        doReturn(acl).when(aclService).getAcl(eq(entity));
+        doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity));
+        doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity), eq(true));
+        doReturn(acl).when(aclService).createAcl(eq(entity));
+        doReturn(acl).when(aclService).updateAcl(acl);
+        doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());
+        doReturn(entity).when(mockEntityManager).load(entity.getAclClass(), entity.getId());
+        doReturn(Optional.empty()).when(mockQuotaService).findActiveActionForUser(any(), any(), any());
+        return acl;
+    }
+
     @AllArgsConstructor
     protected abstract static class AbstractGrantPermission {
         private int mask;
@@ -211,5 +241,9 @@ public abstract class AbstractAclTest {
 
     protected void mockUserContext(final UserContext userContext) {
         doReturn(userContext).when(mockUserManager).loadUserContext(any());
+    }
+
+    protected void mockUser(final PipelineUser user) {
+        doReturn(user).when(mockUserManager).loadByNameOrId(eq(user.getUserName()));
     }
 }

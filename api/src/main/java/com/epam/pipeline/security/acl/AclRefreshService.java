@@ -40,11 +40,11 @@ public class AclRefreshService {
 
     @Scheduled(fixedDelayString = "${security.acl.cache.ttl:60000}")
     public void refresh() {
-        log.info("Receiving ACLs...");
+        log.debug("Receiving ACLs...");
         final Map<ObjectIdentity, Acl> acls = lookupStrategy.lookupObjectIdentities();
-        log.info("Received {} ACLs", acls.size());
-        log.info("Persisting ACLs...");
+        log.debug("Received {} ACLs", acls.size());
+        log.debug("Persisting ACLs...");
         acls.forEach((key, value) -> aclCache.putInCache((MutableAcl) value));
-        log.info("Persisted {} ACLs", acls.size());
+        log.debug("Persisted {} ACLs", acls.size());
     }
 }

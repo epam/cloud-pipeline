@@ -211,8 +211,13 @@ public class DockerRegistryManager implements SecuredEntityManager {
         return AclClass.DOCKER_REGISTRY;
     }
 
-    public DockerRegistry loadByNameOrId(String registryPath) {
-        DockerRegistry dockerRegistry = dockerRegistryDao.loadDockerRegistry(registryPath);
+    public DockerRegistry loadByNameOrId(String identifier) {
+        DockerRegistry dockerRegistry;
+        if (StringUtils.isNumeric(identifier)) {
+            dockerRegistry = dockerRegistryDao.loadDockerRegistry(Long.parseLong(identifier));
+        } else {
+            dockerRegistry = dockerRegistryDao.loadDockerRegistry(identifier);
+        }
         if (dockerRegistry != null) {
             dockerRegistry.setHasMetadata(
                     this.metadataManager.hasMetadata(new EntityVO(dockerRegistry.getId(), AclClass.DOCKER_REGISTRY)));

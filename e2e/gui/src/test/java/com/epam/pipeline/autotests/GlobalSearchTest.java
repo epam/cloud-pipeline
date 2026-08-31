@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.SEARCH_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.BeforeClass;
@@ -46,12 +46,12 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
+import static com.epam.pipeline.autotests.utils.C.SEARCH_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -148,7 +148,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
 
     @BeforeMethod
     public void refreshPage() {
-        getWebDriver().navigate().refresh();
+        refresh();
     }
 
     @Test
@@ -243,6 +243,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
@@ -251,6 +252,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .stopRun(getLastRunId());
         library()
@@ -258,6 +260,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this);
         search()
                 .click(PIPELINES)
@@ -389,6 +392,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();

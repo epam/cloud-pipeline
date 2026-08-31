@@ -43,6 +43,8 @@ import escapeRegExp from '../../../../utils/escape-reg-exp';
 import Panel from '../../../special/panel';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 import {base64toString} from '../../../../utils/base64';
+import {createObjectStorageWrapper} from '../../../../utils/object-storage';
+import LabelPreview from './label-preview';
 
 const {SA, SAM, $} = window;
 
@@ -174,11 +176,21 @@ function getTiles (storageId, folders, name) {
   });
 }
 
+async function getParserFileContent (storageId, parserFile) {
+  try {
+    return await readStorageFileJson(storageId, parserFile);
+  } catch (error) {
+    console.log('Error loading .wsiparser file contents:', error);
+  }
+  return undefined;
+}
+
 function getTilesInfo (file) {
   const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
   if (e && e.length === 4) {
     const filePathWithoutExtension = `${e[1] || ''}${e[2]}`;
     return {
+      parserFile: `${e[1] || ''}.wsiparser/${e[2] || ''}/.${e[2] || ''}.wsiparser`,
       tilesFolders: [
         `${e[1] || ''}.wsiparser/${e[2] || ''}/tiles`,
         `${filePathWithoutExtension}.tiles`,
@@ -199,9 +211,15 @@ async function getPreviewConfiguration (storageId, file) {
     }
     const {
       tilesFolders,
-      name
+      name,
+      parserFile
     } = info;
-    return await getTiles(storageId, tilesFolders, name);
+    let parserFileContent;
+    if (parserFile) {
+      parserFileContent = await getParserFileContent(storageId, parserFile);
+    }
+    const tiles = await getTiles(storageId, tilesFolders, name);
+    return {tiles, content: parserFileContent};
   } catch (error) {
     console.warn(error.message);
   }
@@ -214,6 +232,8 @@ class VSIPreview extends React.Component {
   state = {
     items: [],
     tiles: false,
+    labelUrl: undefined,
+    showLabel: false,
     omeTiff: false,
     preview: undefined,
     active: undefined,
@@ -411,6 +431,8 @@ class VSIPreview extends React.Component {
     if (!path) {
       this.setState({
         items: [],
+        labelUrl: undefined,
+        showLabel: false,
         tiles: false,
         omeTiff: false,
         pending: false
@@ -418,6 +440,8 @@ class VSIPreview extends React.Component {
     }
     this.setState({
       items: [],
+      labelUrl: undefined,
+      showLabel: false,
       tiles: false,
       omeTiff: {
         path,
@@ -427,48 +451,91 @@ class VSIPreview extends React.Component {
     }, this.reportPreviewLoaded);
   };
 
-  fetchDeepZoomData = (configuration) => {
+  fetchDeepZoomData = async (configuration, parserContent) => {
     const {
       file,
       storageId,
       preferences,
-      dataStorageCache
+      dataStorageCache,
+      dataStorages
     } = this.props;
-    const result = {...(configuration || {})};
-    const tagsRequest = dataStorageCache.getTags(storageId, file);
-    tagsRequest
-      .fetch()
-      .then(() => preferences.fetchIfNeededOrWait())
-      .then(() => {
-        let magnification;
-        if (
-          tagsRequest.loaded &&
-          tagsRequest.value &&
-          tagsRequest.value.hasOwnProperty(magnificationTagName)
-        ) {
-          let [, value = ''] = /([\d\\.\\,]+)/
-            .exec(tagsRequest.value[magnificationTagName]) || [];
-          if (value) {
-            magnification = Number(value.replace(/,/g, '.'));
-            if (Number.isNaN(magnification)) {
-              magnification = undefined;
+    try {
+      const {
+        label
+      } = parserContent || {};
+      const result = {...(configuration || {})};
+      const tagsRequest = dataStorageCache.getTags(storageId, file);
+      let labelRequest;
+      if (label) {
+        labelRequest = (async () => {
+          try {
+            dataStorages.fetchIfNeededOrWait();
+            let os = await createObjectStorageWrapper(
+              dataStorages.value || [],
+              label
+            );
+            if (!os) {
+              console.log(`Data storage not found for wsi label "${label}". Using current storage`);
+              os = await createObjectStorageWrapper(
+                dataStorages.value || [],
+                storageId
+              );
             }
+            if (os) {
+              return {
+                storage: os.id,
+                path: os.getRelativePath(label)
+              };
+            }
+            throw new Error(`Data storage not found for wsi label "${label}"`);
+          } catch (labelError) {
+            console.log('error fetching wsi label', labelError);
+          }
+          return undefined;
+        })();
+      }
+      await Promise.all([
+        tagsRequest.fetch(),
+        preferences.fetchIfNeededOrWait(),
+        ...(labelRequest ? [labelRequest] : [])
+      ]);
+      let labelUrl;
+      if (labelRequest) {
+        labelUrl = await labelRequest;
+      }
+      let magnification;
+      if (
+        tagsRequest.loaded &&
+        tagsRequest.value &&
+        tagsRequest.value.hasOwnProperty(magnificationTagName)
+      ) {
+        let [, value = ''] = /([\d\\.\\,]+)/
+          .exec(tagsRequest.value[magnificationTagName]) || [];
+        if (value) {
+          magnification = Number(value.replace(/,/g, '.'));
+          if (Number.isNaN(magnification)) {
+            magnification = undefined;
           }
         }
-        if (!result.info) {
-          result.info = {};
-        }
-        result.info.scannedAt = magnification;
-        result.info.maxZoomLevel = magnification
-          ? preferences.vsiPreviewMagnificationMultiplier * magnification
-          : undefined;
-        this.setState({
-          items: [],
-          tiles: result,
-          omeTiff: false,
-          pending: false
-        }, this.reportPreviewLoaded);
-      });
+      }
+      if (!result.info) {
+        result.info = {};
+      }
+      result.info.scannedAt = magnification;
+      result.info.maxZoomLevel = magnification
+        ? preferences.vsiPreviewMagnificationMultiplier * magnification
+        : undefined;
+      this.setState({
+        items: [],
+        tiles: result,
+        labelUrl,
+        showLabel: !!labelUrl,
+        omeTiff: false,
+        pending: false
+      }, this.reportPreviewLoaded);
+    } catch (error) {
+      console.log('error fetching deep zoom data', error);
+    }
   };
 
   fetchSlideShowData = (folder) => {
@@ -497,6 +564,8 @@ class VSIPreview extends React.Component {
         this.setState({
           items: files,
           tiles: false,
+          labelUrl: undefined,
+          showLabel: false,
           omeTiff: false,
           pending: false
         }, () => {
@@ -520,6 +589,8 @@ class VSIPreview extends React.Component {
       this.setState({
         items: [],
         tiles: false,
+        labelUrl: undefined,
+        showLabel: false,
         omeTiff: false,
         active: undefined,
         preview: undefined,
@@ -530,6 +601,8 @@ class VSIPreview extends React.Component {
       this.setState({
         items: [],
         tiles: false,
+        labelUrl: undefined,
+        showLabel: false,
         omeTiff: false,
         active: undefined,
         preview: undefined,
@@ -537,11 +610,12 @@ class VSIPreview extends React.Component {
         showAttributes: false
       }, () => {
         getPreviewConfiguration(storageId, file)
-          .then((configuration) => {
-            if (configuration && configuration.type === TilesType.omeTiff) {
-              this.fetchOmeTiffData(configuration.info);
-            } else if (configuration) {
-              this.fetchDeepZoomData(configuration);
+          .then((data) => {
+            const {tiles, content} = data || {};
+            if (tiles && tiles.type === TilesType.omeTiff) {
+              this.fetchOmeTiffData(tiles.info);
+            } else if (tiles) {
+              this.fetchDeepZoomData(tiles, content);
             } else if (/\.vsi$/i.test(file)) {
               this.fetchSlideShowData(file.split('.').slice(0, -1).join('.'));
             } else {
@@ -824,6 +898,18 @@ class VSIPreview extends React.Component {
     });
   };
 
+  showLabelPreview = () => {
+    this.setState({
+      showLabel: true
+    });
+  };
+
+  hideLabelPreview = () => {
+    this.setState({
+      showLabel: false
+    });
+  };
+
   renderAttributesPanel = () => {
     const {
       children
@@ -843,6 +929,27 @@ class VSIPreview extends React.Component {
     );
   };
 
+  renderLabelPreview = () => {
+    const {
+      showLabel,
+      labelUrl
+    } = this.state;
+    if (showLabel && labelUrl) {
+      return (
+        <div
+          className={styles.vsiLabelPreviewContainer}
+        >
+          <LabelPreview
+            storageId={labelUrl.storage}
+            storagePath={labelUrl.path}
+            className={styles.vsiLabelPreview}
+          />
+        </div>
+      );
+    }
+    return null;
+  }
+
   renderTiles = () => {
     const {
       storageId,
@@ -858,7 +965,9 @@ class VSIPreview extends React.Component {
     } = this.props;
     const {
       tiles,
-      shareUrl
+      shareUrl,
+      labelUrl,
+      showLabel
     } = this.state;
     if (!tiles || !storageId) {
       return null;
@@ -1020,6 +1129,17 @@ class VSIPreview extends React.Component {
             )
           }
           {
+            labelUrl && (
+              <Button
+                id="vsi-preview-capture-button"
+                className={styles.vsiPreviewButton}
+                onClick={showLabel ? this.hideLabelPreview : this.showLabelPreview}
+              >
+                <Icon type={showLabel ? 'tag' : 'tag-o'} />
+              </Button>
+            )
+          }
+          {
             children && (
               <Button
                 id="vsi-preview-show-attributes-button"
@@ -1032,6 +1152,7 @@ class VSIPreview extends React.Component {
           }
         </div>
         {this.renderAttributesPanel()}
+        {this.renderLabelPreview()}
       </div>
     );
   };

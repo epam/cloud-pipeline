@@ -24,6 +24,7 @@ export default function runPipelineActions (WrappedComponent) {
     'localization',
     'preferences',
     'pipelines',
-    'hiddenObjects'
+    'hiddenObjects',
+    'authenticatedUserInfo'
   )(observer(WrappedComponent));
 }

@@ -214,16 +214,24 @@ public class DtsSynchronizationService {
         return Optional.of(entry.getKey())
             .map(AutonomousSyncRule::getSource)
             .map(Paths::get)
-            .filter(Files::exists)
+            .filter(path -> {
+                final boolean exists = Files.exists(path);
+                log.info("Starting source `{}` synchronization. Checking if it exists: {}",
+                        path, exists);
+                return exists;
+            })
             .isPresent();
     }
 
     private boolean shouldBeTriggered(final Date now,
                                       final Map.Entry<AutonomousSyncRule, AutonomousSyncCronDetails> entry) {
         final AutonomousSyncRule rule = entry.getKey();
+        log.info("Checking if transfer should be triggered from `{}` to `{}`", rule.getSource(), rule.getDestination());
         final AutonomousSyncCronDetails cronDetails = entry.getValue();
         final Date lastExecution = cronDetails.getLastExecution();
-        final boolean shouldBeTriggered = cronDetails.getGenerator().next(lastExecution).before(now);
+        final Date next = cronDetails.getGenerator().next(lastExecution);
+        log.info("Transfer was last triggered {}, next trigger {}", lastExecution, next);
+        final boolean shouldBeTriggered = next.before(now);
         if (shouldBeTriggered) {
             log.info("Transfer from `{}` to `{}` should be triggered [cron: `{}`, lastExecution:`{}`]",
                      rule.getSource(), rule.getDestination(),

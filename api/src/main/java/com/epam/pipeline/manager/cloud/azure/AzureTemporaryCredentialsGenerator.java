@@ -16,24 +16,17 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
-import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
-import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureBlobStorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.azure.AzureStorageHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import com.microsoft.azure.storage.blob.ContainerSASPermission;
-import com.microsoft.azure.storage.blob.SASProtocol;
-import com.microsoft.azure.storage.blob.SASQueryParameters;
-import com.microsoft.azure.storage.blob.ServiceSASSignatureValues;
-import com.microsoft.azure.storage.blob.SharedKeyCredentials;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -48,12 +41,16 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
 
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
-    private final MessageHelper messageHelper;
-    private final StorageEventCollector azEvents;
+    private final AzureBlobStorageProvider storageProvider;
 
     @Override
     public DataStorageType getStorageType() {
         return DataStorageType.AZ;
+    }
+
+    @Override
+    public AzureRegion getRegion(final AzureBlobStorage dataStorage) {
+        return cloudRegionManager.getAzureRegion(dataStorage);
     }
 
     @Override
@@ -63,50 +60,18 @@ public class AzureTemporaryCredentialsGenerator implements TemporaryCredentialsG
     }
 
     private TemporaryCredentials generate(final List<DataStorageAction> actions, final AzureBlobStorage dataStorage) {
-        final AzureRegion region = cloudRegionManager.getAzureRegion(dataStorage);
-        final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-
+        final AzureStorageHelper helper = storageProvider.getAzureStorageHelper(dataStorage);
         final Integer duration =
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_TEMP_CREDENTIALS_DURATION);
-
-        final AzureStorageHelper helper = new AzureStorageHelper(region, credentials, azEvents, messageHelper);
-
-        Assert.isTrue(actions.size() == 1, "Multiple actions is not supported for AZURE provider");
-
-        final DataStorageAction dataStorageAction = actions.get(0);
         final OffsetDateTime expiryTime = OffsetDateTime.now().plusSeconds(duration);
-        final ServiceSASSignatureValues values = new ServiceSASSignatureValues()
-                .withProtocol(SASProtocol.HTTPS_ONLY)
-                .withExpiryTime(expiryTime)
-                .withContainerName(dataStorage.getPath())
-                .withContentType("container")
-                .withPermissions(buildPermissions(dataStorageAction));
-        helper.addIPRangeToSASValue(values);
-        final SharedKeyCredentials credential = helper.getStorageCredential();
-        final SASQueryParameters token = values.generateSASQueryParameters(credential);
-
+        final AzureRegion region = cloudRegionManager.getAzureRegion(dataStorage);
+        final String sasToken = helper.generateSASToken(dataStorage, actions, expiryTime);
         return TemporaryCredentials.builder()
                 .region(region.getRegionCode())
                 .accessKey(region.getStorageAccount())
-                .token(token.encode())
+                .token(sasToken)
                 .expirationTime(TemporaryCredentialsGenerator
                         .expirationTimeWithUTC(new Date(expiryTime.toInstant().toEpochMilli())))
                 .build();
-    }
-
-    @Override
-    public AzureRegion getRegion(final AzureBlobStorage dataStorage) {
-        return cloudRegionManager.getAzureRegion(dataStorage);
-    }
-
-    private String buildPermissions(final DataStorageAction dataStorageAction) {
-        final ContainerSASPermission permission = new ContainerSASPermission();
-        permission.withList(true);
-        permission.withRead(dataStorageAction.isRead());
-        if (dataStorageAction.isWrite()) {
-            permission.withWrite(true);
-            permission.withDelete(true);
-        }
-        return permission.toString();
     }
 }

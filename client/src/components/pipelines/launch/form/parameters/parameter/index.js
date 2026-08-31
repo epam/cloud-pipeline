@@ -6,6 +6,7 @@ import LaunchFormParameterInput from './inputs';
 import styles from './launch-form-parameter.css';
 import ParameterNameInput from './name-input';
 import {getParameterKeyClassName} from '../utilities';
+import Markdown from '../../../../../special/markdown';
 
 function LaunchFormParameter (props) {
   const {
@@ -17,23 +18,28 @@ function LaunchFormParameter (props) {
     onRemoveParameter,
     rawEdit,
     editConfiguration,
+    currentCloudRegionId,
     currentProjectId,
     currentProjectMetadata,
     currentMetadataEntity,
     rootEntityId,
     metadataAutoComplete,
     detached = false,
-    pipeline = false
+    pipeline = false,
+    parametersMetadata
   } = props;
   if (!parameter) {
     return null;
   }
-  const {name, config = {}, error, system} = parameter;
+  const {name, config = {}, error, warning, system} = parameter;
   const {
     description,
-    required = false
+    required = false,
+    readOnly = false
   } = config;
-  const removeAllowed = !disabled && typeof onRemoveParameter === 'function' &&
+  const removeAllowed = !readOnly &&
+    !disabled &&
+    typeof onRemoveParameter === 'function' &&
     (system || rawEdit || (!required && !(detached && pipeline)));
   const onRemoveParameterClicked = () => {
     if (typeof onRemoveParameter === 'function' && removeAllowed && !disabled) {
@@ -53,6 +59,7 @@ function LaunchFormParameter (props) {
       style={style}
     >
       <ParameterNameInput
+        disabled={disabled || (detached && pipeline)}
         rawEdit={rawEdit}
         parameter={parameter}
         onChange={onChange}
@@ -61,7 +68,7 @@ function LaunchFormParameter (props) {
       />
       <div style={{display: 'flex', flexWrap: 'nowrap', fontSize: 'larger'}}>
         <Form.Item
-          validateStatus={error ? 'error' : 'success'}
+          validateStatus={error ? 'error' : warning ? 'warning' : 'success'}
           hasFeedback
           style={{flex: 1, marginBottom: 0}}>
           <LaunchFormParameterInput
@@ -70,11 +77,13 @@ function LaunchFormParameter (props) {
             onChange={onChange}
             disabled={disabled}
             rawEdit={rawEdit}
+            currentCloudRegionId={currentCloudRegionId}
             currentProjectId={currentProjectId}
             currentProjectMetadata={currentProjectMetadata}
             currentMetadataEntity={currentMetadataEntity}
             rootEntityId={rootEntityId}
             metadataAutoComplete={metadataAutoComplete}
+            parametersMetadata={parametersMetadata}
           />
         </Form.Item>
         {removeAllowed && typeof onRemoveParameter === 'function' ? (
@@ -109,9 +118,19 @@ function LaunchFormParameter (props) {
         )
       }
       {
+        !error && warning && (
+          <div className="cp-warning" style={{margin: 0}}>
+            {warning}
+          </div>
+        )
+      }
+      {
         description && (
           <div className="cp-text-not-important">
-            {description}
+            <Markdown
+              md={description}
+              className={styles.parameterDescription}
+            />
           </div>
         )
       }
@@ -129,6 +148,7 @@ LaunchFormParameter.propTypes = {
   onRemoveParameter: PropTypes.func,
   editConfiguration: PropTypes.bool,
   rawEdit: PropTypes.bool,
+  currentCloudRegionId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

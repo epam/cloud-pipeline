@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.SecuredEntityDelegate;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -191,8 +191,8 @@ public class AclAspect {
         storagePermissionManager.filterStorage(list, Collections.singletonList("READ"));
     }
 
-    @Before("@annotation(com.epam.pipeline.manager.security.acl.AclFilter) && args(filter,..)")
-    public void extendFilter(JoinPoint joinPoint, AclSecuredFilter filter) {
+    @Before("@annotation(com.epam.pipeline.manager.security.acl.AclRunFilter) && args(filter,..)")
+    public void extendFilter(JoinPoint joinPoint, AclSecuredRunFilter filter) {
         runPermissionManager.extendFilter(filter);
     }
 

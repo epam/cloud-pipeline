@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,9 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
-import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -40,8 +38,8 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.*;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.*;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
@@ -50,11 +48,13 @@ import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.SHOW_TIMINGS;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -258,6 +258,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
             .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+            .doNotMountStoragesSelect(true)
             .launch(this)
             .showLog(getLastRunId())
             .waitForCompletion();

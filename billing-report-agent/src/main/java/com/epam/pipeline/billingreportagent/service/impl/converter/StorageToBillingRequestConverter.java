@@ -25,6 +25,9 @@ import com.epam.pipeline.billingreportagent.model.storage.StorageDescription;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.MountType;
@@ -36,8 +39,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -69,13 +70,16 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
     private final MountType desiredMountType;
     private boolean enableStorageHistoricalBillingGeneration;
     private CloudPipelineAPIClient apiClient;
+    private final ElasticStackVersion elasticStackVersion;
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
                                             final StorageType storageType,
                                             final StoragePricingService storagePricing,
                                             final CloudPipelineAPIClient apiClient,
-                                            final boolean enableStorageHistoricalBillingGeneration) {
-        this(mapper, storageType, storagePricing, apiClient, null, null, enableStorageHistoricalBillingGeneration);
+                                            final boolean enableStorageHistoricalBillingGeneration,
+                                            final ElasticStackVersion elasticStackVersion) {
+        this(mapper, storageType, storagePricing, apiClient, null, null, enableStorageHistoricalBillingGeneration,
+                elasticStackVersion);
     }
 
     public StorageToBillingRequestConverter(final AbstractEntityMapper<StorageBillingInfo> mapper,
@@ -84,7 +88,8 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                             final CloudPipelineAPIClient apiClient,
                                             final FileShareMountsService fileshareMountsService,
                                             final MountType desiredMountType,
-                                            final boolean enableStorageHistoricalBillingGeneration) {
+                                            final boolean enableStorageHistoricalBillingGeneration,
+                                            final ElasticStackVersion elasticStackVersion) {
         this.mapper = mapper;
         this.storageType = storageType;
         this.storagePricing = storagePricing;
@@ -92,6 +97,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         this.fileshareMountsService = Optional.ofNullable(fileshareMountsService);
         this.desiredMountType = desiredMountType;
         this.enableStorageHistoricalBillingGeneration = enableStorageHistoricalBillingGeneration;
+        this.elasticStackVersion = elasticStackVersion;
     }
 
     @Override
@@ -168,8 +174,9 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
             .entity(billing)
             .region(region)
             .build();
-        return new IndexRequest(fullIndex, INDEX_TYPE)
-                .id(billing.getEntity().getId().toString()).source(mapper.map(entity));
+        return new IndexRequest(fullIndex, elasticStackVersion)
+                .id(billing.getEntity().getId().toString())
+                .source(mapper.map(entity));
     }
 
     StorageBillingInfo createBilling(

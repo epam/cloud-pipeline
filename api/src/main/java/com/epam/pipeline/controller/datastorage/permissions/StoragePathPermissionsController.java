@@ -72,14 +72,18 @@ public class StoragePathPermissionsController extends AbstractRestController {
     @GetMapping(URL)
     @ResponseBody
     @ApiOperation(
-            value = "Loads storage path permissions for specified storage and current user.",
-            notes = "Loads storage path permissions for specified storage and current user.",
+            value = "Loads storage path permissions for specified storage and user. If user is not specified, " +
+                    "then for current user.",
+            notes = "Loads storage path permissions for specified storage and user. If user is not specified, " +
+                    "then for current user.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<StoragePathPermissions>> loadStoragePathPermissions(@PathVariable(value = ID) final Long id) {
-        return Result.success(storagePathPermissionsApiService.loadStoragePathPermissions(id));
+    public Result<List<StoragePathPermissions>> loadStoragePathPermissions(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(required = false) final Long userId) {
+        return Result.success(storagePathPermissionsApiService.loadStoragePathPermissions(id, userId));
     }
 
     @DeleteMapping(URL)

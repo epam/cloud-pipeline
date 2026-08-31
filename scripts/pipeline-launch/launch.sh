@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,8 +86,9 @@ function clone_repository {
                   fi
 
                   if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ]; then
+                        echo "[INFO] CP_GIT_RECURSIVE_CLONE==true updating submodules with args: ${CP_GIT_CLONE_EXTRA_ARGS}"
                         git -c http.sslVerify=false submodule init
-                        git -c http.sslVerify=false submodule update
+                        git $CP_GIT_CLONE_EXTRA_ARGS -c http.sslVerify=false submodule update
                   elif [ "$CP_GIT_RECURSIVE_CLONE_SINGLE_CMD" = "true" ]; then
                         git -c http.sslVerify=false submodule update --init --recursive
                   fi
@@ -348,7 +349,7 @@ function check_package_installed {
       fi
 
       if check_installed "dpkg"; then
-            dpkg -q "$_PACKAGE_TO_CHECK" &> /dev/null
+            dpkg -s "$_PACKAGE_TO_CHECK" &> /dev/null
             return $?
       elif check_installed "rpm"; then
             rpm -q "$_PACKAGE_TO_CHECK"  &> /dev/null
@@ -399,8 +400,26 @@ function configure_package_manager_pip {
 }
 
 function run_pre_common_commands {
+      # Allowed values: pre_init, pre_exec
+      # If left empty - will try to use unsectioned commands
+      local section="$1"
       preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
-      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      
+      if [ -z "$section" ]; then
+            section_commands="$preference_value"
+      else
+            section_commands=$(echo "$preference_value" | jq -r ".${section}" | grep -v "^null$")
+            # Backward compatability - if pre_init is requested but no such section - try to use unsectioned commands
+            if [ -z "$section_commands" ] && [ "$section" == "pre_init" ]; then
+                  section_commands="$preference_value"
+            fi
+      fi
+      if [ -z "$section_commands" ]; then
+        echo "Additional commands for section ${section:-<unsectioned>} were not found."
+        return
+      fi
+
+      linux_commands=$(echo "$section_commands" | jq -r '.linux' | grep -v "^null$")
       if [ -z "$linux_commands" ]; then
         echo "Additional commands for Linux distribution were not found."
         return
@@ -560,10 +579,17 @@ function configure_package_manager {
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+                  # Note: Keeping for backward compatability, further on use CP_REPO_MANAGER_EXTRA_CONFIG_DEB
                   if [ "$CP_REPO_ACCESS_TIMEOUT_SEC" ]; then
                         mkdir -p /etc/apt/apt.conf.d
                         echo "Acquire::http::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
                         echo "Acquire::https::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
+                  fi
+                  # CP_REPO_MANAGER_EXTRA_CONFIG_DEB shall be defined as a set of "key=value;"
+                  # e.g. Acquire::http::timeout "10"; Acquire::https::Pipeline-Depth "0";
+                  if [ "$CP_REPO_MANAGER_EXTRA_CONFIG_DEB" ]; then
+                        mkdir -p /etc/apt/apt.conf.d
+                        echo "$CP_REPO_MANAGER_EXTRA_CONFIG_DEB" >> /etc/apt/apt.conf.d/999cp_extra
                   fi
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
@@ -657,49 +683,6 @@ function get_install_command_by_current_distr {
       fi
 
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
-}
-
-function symlink_common_locations {
-      local _OWNER="$1"
-      local _OWNER_HOME="$2"
-
-      # Grant OWNER passwordless sudo
-      if check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]
-      then
-            echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-      fi
-      user_create_home "$_OWNER" "$_OWNER_HOME"
-
-      # Create symlinks to /cloud-data with mounted buckets into account's home dir
-      mkdir -p /cloud-data/
-      if [ -L $_OWNER_HOME/cloud-data ]; then
-        unlink $_OWNER_HOME/cloud-data
-      fi
-      [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
-      
-      # Create symlinks to /common with cluster share fs into account's home dir
-      mkdir -p "$SHARED_WORK_FOLDER"
-      if [ -L $_OWNER_HOME/workdir ]; then
-        unlink $_OWNER_HOME/workdir
-      fi
-      [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
-      
-      # Create symlinks to /code-repository with gitfs repository into account's home dir
-      local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
-      local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
-      if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
-            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
-                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
-            fi
-            mkdir -p $_REPOSITORY_HOME
-            if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
-                  ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
-            else
-                  ln -s "$_REPOSITORY_MOUNT_SRC" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
-            fi
-      else
-            echo "$_REPOSITORY_MOUNT_SRC not found, no code repository will be available"
-      fi
 }
 
 function create_sys_dir {
@@ -812,6 +795,24 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function get_external_uid() {
+    local entity_id="$1"
+    local entity_class="$2"
+    local field="$3"
+    local uid
+
+    if [ -z "$field" ]; then
+        field="$(get_pipe_preference_low_level "launch.external.uid.field.name" "")"
+    fi
+    [ -n "$field" ] || return 1
+
+    uid="$(resolve_external_uid "$entity_id" "$entity_class" "$field")"
+    [ -n "$uid" ] || return 1
+
+    echo "$uid"
+    return 0
+}
+
 function configure_owner_account() {
     OWNER_ID="$(resolve_owner_id)"
     export OWNER_ID
@@ -831,19 +832,32 @@ function configure_owner_account() {
                 return "$?"
             fi
         else
-            UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
-            export UID_SEED
-            export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            _enable_external_uid="$(get_pipe_preference_low_level "launch.external.uid.enable" "false")"
+            if [ "$_enable_external_uid" = "true" ]; then
+                OWNER_UID_EXTERNAL="$(get_external_uid "$OWNER_ID" "PIPELINE_USER" "")"
+                export OWNER_UID_EXTERNAL
+            fi
+            if [ -n "$OWNER_UID_EXTERNAL" ]; then
+                export OWNER_UID="$OWNER_UID_EXTERNAL"
+            else
+                UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
+                export UID_SEED
+                export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            fi
             export OWNER_GID="$OWNER_UID"
-            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
+            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups "$_enable_external_uid")
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
                 # Check that a user is a member of all the groups. This is useful for the "committed" images
                 add_user_to_groups "$OWNER" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
-                return 0
+                _modified_user_status=0
             else
                 create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
-                return "$?"
+                _modified_user_status=$?
             fi
+            if [ ${_modified_user_status} -eq 0 ] && [ "$_enable_external_uid" = "true" ]; then
+                update_default_user_group "$OWNER" "$OWNER_ID"
+            fi
+            return $_modified_user_status
         fi
     else
         echo "OWNER is not set - skipping owner account configuration"
@@ -884,9 +898,31 @@ function get_owner_info () {
             "$API/whoami"
 }
 
+function get_entity_attributes() {
+    local entity_id="$1"
+    local entity_class="$2"
+    curl -s -k \
+            --max-time 60 \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $API_TOKEN" \
+            --header "Content-Type: application/json" \
+            "$API/metadata/load" \
+            -d "[ { \"entityId\": ${entity_id}, \"entityClass\": \"${entity_class}\" } ]"
+}
+
 function resolve_owner_id() {
     # Returns current cloud pipeline user id
     get_owner_info | jq -r '.payload.id // 0'
+}
+
+function resolve_external_uid() {
+    local entity_id="$1"
+    local entity_class="$2"
+    local field="$3"
+
+    # Returns the external uid if found
+    get_entity_attributes "$entity_id" "$entity_class" |
+        jq -r --arg field "$field" 'select(.status == "OK") | .payload? // [] | .[] | .data[$field]?.value // empty'
 }
 
 function check_user_created() {
@@ -901,6 +937,17 @@ function check_user_created() {
         if [ "$_user_uid" ] && [ "$_user_uid" != "$_existing_user_uid" ] \
             || [ "$_user_gid" ] && [ "$_user_gid" != "$_existing_user_gid" ]; then
             echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
+            if check_cp_cap "CP_CAP_UID_RECREATE_EXISTING_USER"; then
+                if check_installed "userdel"; then
+                    userdel "$_user_name"
+                elif check_installed "deluser"; then
+                    deluser "$_user_name"
+                else
+                    echo "Cannot delete user $_user_name: userdel/deluser commands are not installed"
+                    return 0
+                fi
+                return 1
+            fi
         fi
         return 0
     else
@@ -909,15 +956,24 @@ function check_user_created() {
 }
 
 function create_user_extra_groups() {
+      local _enable_external_uid="$1"
       if ! check_installed "groupadd" && ! check_installed "addgroup"; then
             return
       fi
 
-      _gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _default_gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _external_uid_field_name="$(get_pipe_preference_low_level "launch.external.uid.field.name" "")"
       _groups_added=""
       _user_groups=$(get_owner_info | jq -r '.payload.roles[] | (.id | tostring) + "," + .name')
       while IFS=, read -r group_id group_name; do
-            real_group_id=$(( _gid_seed + group_id ))
+            if [ "$_enable_external_uid" = "true" ] && [ -n "$_external_uid_field_name" ]; then
+                _external_gid="$(get_external_uid "$group_id" "ROLE" "$_external_uid_field_name")"
+            fi
+            if [ -n "${_external_gid}" ]; then
+                real_group_id=${_external_gid}
+            else
+                real_group_id=$(( _default_gid_seed + group_id ))
+            fi
             _group_create_result=1
             if ! getent group $real_group_id &> /dev/null; then
                   if check_installed "groupadd"; then
@@ -1000,6 +1056,31 @@ function create_user() {
     return 0
 }
 
+function update_default_user_group() {
+    local _user_name="$1"
+    local _user_id="$2"
+
+    _external_gid_field_name="$(get_pipe_preference_low_level "launch.external.default.gid.field.name" "")"
+    [ -n "${_external_gid_field_name}" ] || return 1
+
+    _user_external_default_gid="$(get_external_uid "$_user_id" "PIPELINE_USER" "$_external_gid_field_name")"
+    [ -n "${_user_external_default_gid}" ] || return 1
+
+    _current_gid="$(id -g "$_user_name")"
+    [ "$_current_gid" -eq "$_user_external_default_gid" ] && return 0
+
+    if ! check_installed "usermod"; then
+        echo "Cannot modify user $_user_name default group - usermod is not installed"
+        return 1
+    fi
+    if ! getent group "$_user_external_default_gid" &> /dev/null; then
+        echo "Cannot modify user $_user_name default group - group '$_user_external_default_gid' doesn't exist"
+        return 1
+    fi
+    echo "Changing default user $_user_name group to the group: $_user_external_default_gid"
+    usermod -g "$_user_external_default_gid" "$_user_name"
+}
+
 function configureHyperThreading() {
     mount -o rw,remount /sys
     if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
@@ -1033,6 +1114,11 @@ function configureHyperThreading() {
 function mark_run_as_completed() {
     pipe_log_info "Marking run as finished." "CleanupEnvironment"
     tag_run "$CP_CAP_RUN_WORK_FINISHED_TAG" "$(date +"%F %T.%3N" -u)"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Failed to mark run as finished with tag $CP_CAP_RUN_WORK_FINISHED_TAG." "CleanupEnvironment"
+    else
+        pipe_log_success "Successfully marked run as finished." "CleanupEnvironment"
+    fi
 }
 
 function exit_stage() {
@@ -1148,6 +1234,69 @@ function jwt_get_user_groups() {
   echo ${_jwt_groups} ${_jwt_roles}
 }
 
+function symlink_common_locations {
+      local _OWNER="$1"
+      local _OWNER_HOME="$2"
+
+      # Grant OWNER passwordless sudo
+      # NOTE:
+      # 1. 'system.ssh.default.root.user.available.commands' must contain a list of allowed commands in sudoers format,
+      #    e.g.: "/usr/bin/yum, /usr/bin/dnf"
+      # 2. To allow a non-admin user to execute ALL commands from sudo, use the value: "ALL"
+      # 3. For users with the ROLE_ADMIN role, CP_CAP_SUDO_ENABLE capability is enabled by default (check code below)
+      _cp_user_available_cmd="$(get_pipe_preference_low_level "system.ssh.default.root.user.available.commands" "")"
+      _cp_user_sudo_file="/etc/sudoers.d/${_OWNER}-sudoers"
+      _user_groups=$(jwt_get_user_groups)
+      if [ -f /etc/sudoers ]; then
+          _sudoers_owner="$(printf '%s' "$_OWNER" | sed 's/[][\/.^$*+?|(){}-]/\\&/g')"
+          sed -i -e "/^${_sudoers_owner}[[:space:]]\+ALL=(ALL)[[:space:]]\+NOPASSWD/d" /etc/sudoers
+      fi
+      if [ -f "${_cp_user_sudo_file}" ]; then
+          rm -f "${_cp_user_sudo_file}"
+      fi
+      if check_cp_cap CP_CAP_SUDO_ENABLE \
+         && [[ "$_OWNER" != "root" ]] \
+         && [[ -n "$_cp_user_available_cmd" ]] \
+         && ! [[ " ${_user_groups} " =~ " ROLE_ADMIN " ]]; then
+          echo "${_OWNER} ALL=(ALL) NOPASSWD:SETENV: ${_cp_user_available_cmd}" > "${_cp_user_sudo_file}"
+          chmod 440 "${_cp_user_sudo_file}"
+      elif check_cp_cap CP_CAP_SUDO_ENABLE || [[ "$_OWNER" == "root" ]]; then
+          echo "$_OWNER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+      fi
+      user_create_home "$_OWNER" "$_OWNER_HOME"
+
+      # Create symlinks to /cloud-data with mounted buckets into account's home dir
+      mkdir -p /cloud-data/
+      if [ -L $_OWNER_HOME/cloud-data ]; then
+        unlink $_OWNER_HOME/cloud-data
+      fi
+      [ -d /cloud-data/ ] && ln -s -f /cloud-data/ $_OWNER_HOME/cloud-data || echo "/cloud-data/ not found, no buckets will be available"
+
+      # Create symlinks to /common with cluster share fs into account's home dir
+      mkdir -p "$SHARED_WORK_FOLDER"
+      if [ -L $_OWNER_HOME/workdir ]; then
+        unlink $_OWNER_HOME/workdir
+      fi
+      [ -d $SHARED_WORK_FOLDER ] && ln -s -f $SHARED_WORK_FOLDER $_OWNER_HOME/workdir || echo "$SHARED_WORK_FOLDER not found, no shared fs will be available in $_OWNER_HOME"
+
+      # Create symlinks to /code-repository with gitfs repository into account's home dir
+      local _REPOSITORY_MOUNT_SRC="${REPOSITORY_MOUNT}/${PIPELINE_NAME}/current"
+      local _REPOSITORY_HOME="$_OWNER_HOME/code-repository"
+      if [ ! -z "$GIT_REPO" ] && [ -d "$_REPOSITORY_MOUNT_SRC" ]; then
+            if [ -L "$_REPOSITORY_HOME/${PIPELINE_NAME}" ]; then
+                  unlink "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
+            mkdir -p $_REPOSITORY_HOME
+            if [ -d "$_REPOSITORY_MOUNT_SRC/src" ]; then
+                  ln -s "$_REPOSITORY_MOUNT_SRC/src" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            else
+                  ln -s "$_REPOSITORY_MOUNT_SRC" "$_REPOSITORY_HOME/${PIPELINE_NAME}"
+            fi
+      else
+            echo "$_REPOSITORY_MOUNT_SRC not found, no code repository will be available"
+      fi
+}
+
 ######################################################
 
 
@@ -1256,7 +1405,7 @@ fi
 define_distro_name_and_version
 
 # Invoke any additional commands for the distribution
-run_pre_common_commands
+run_pre_common_commands "pre_init"
 
 # Perform any distro/version specific package manage configuration
 configure_package_manager
@@ -1646,6 +1795,34 @@ then
 
     sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+    # Pre-create a local (non-NFS) authorized_keys store so that AuthorizedKeysCommand
+    # can serve keys even when the home directory is NFS-mounted with UID squashing or
+    # group-write bits that sshd's StrictModes would otherwise reject.
+    _CP_AUTH_KEYS_DIR="/var/run/cp_auth_keys"
+    mkdir -p "$_CP_AUTH_KEYS_DIR"
+    chmod 755 "$_CP_AUTH_KEYS_DIR"
+    if [ -n "$OWNER" ]; then
+        mkdir -p "$_CP_AUTH_KEYS_DIR/$OWNER"
+        chown "$OWNER" "$_CP_AUTH_KEYS_DIR/$OWNER"
+        chmod 700 "$_CP_AUTH_KEYS_DIR/$OWNER"
+        touch "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+        chown "$OWNER" "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+        chmod 600 "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+    fi
+    cat > /etc/ssh/fetch_auth_keys.sh << 'CP_FETCH_KEYS_EOF'
+#!/bin/bash
+user="${1//[^a-zA-Z0-9._-]/}"
+[ -n "$user" ] || exit 1
+cat "/var/run/cp_auth_keys/$user/authorized_keys" 2>/dev/null
+home="$(getent passwd "$user" | cut -d: -f6 2>/dev/null)"
+[ -n "$home" ] && cat "$home/.ssh/authorized_keys" 2>/dev/null
+CP_FETCH_KEYS_EOF
+    chmod 755 /etc/ssh/fetch_auth_keys.sh
+    sed -i '/AuthorizedKeysCommand\b/d' /etc/ssh/sshd_config
+    sed -i '/AuthorizedKeysCommandUser/d' /etc/ssh/sshd_config
+    echo "AuthorizedKeysCommand /etc/ssh/fetch_auth_keys.sh %u" >> /etc/ssh/sshd_config
+    echo "AuthorizedKeysCommandUser root" >> /etc/ssh/sshd_config
 
     # Allow clients to be idle for 1 hour (30 sec * 120 times)
     CP_CAP_SSH_CLIENT_ALIVE_INTERVAL=${CP_CAP_SSH_CLIENT_ALIVE_INTERVAL:-30}
@@ -2702,6 +2879,9 @@ custom_fixes
 # Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
 custom_cap_setup
 
+# Run "pre_exec" commands
+run_pre_common_commands "pre_exec"
+
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
@@ -2731,9 +2911,15 @@ cat "$CP_EXEC_SCRIPT_PATH"
 echo "User script text:"
 cat "$CP_USER_SCRIPT_PATH"
 
-bash "$CP_EXEC_SCRIPT_PATH"
+if check_cp_cap "CP_EXEC_FORK"; then
+      bash "$CP_EXEC_SCRIPT_PATH" &
+      wait $!
+      CP_EXEC_RESULT=$?
+else
+      bash "$CP_EXEC_SCRIPT_PATH"
+      CP_EXEC_RESULT=$?
+fi
 
-CP_EXEC_RESULT=$?
 if [ "$CP_EXEC_TIMEOUT" ] && [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
 fi

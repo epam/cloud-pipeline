@@ -217,7 +217,7 @@ class WebDAVInterface extends WebBasedInterface {
         .map((o) => o.toLowerCase()),
     );
     const contents = await super.list(directoryCorrected);
-    const filteredContents = contents.filter((anItem) => isRoot || !isHiddenStorage(anItem.name));
+    const filteredContents = contents.filter((anItem) => !isHiddenStorage(anItem.name));
     /**
      * @param {FSItem} anItem
      * @returns {FSItem}

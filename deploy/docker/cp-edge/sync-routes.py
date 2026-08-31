@@ -37,6 +37,8 @@ try:
 except ImportError:
         raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
 
+CP_KUBE_NAMESPACE = os.getenv("CP_KUBE_NAMESPACE", "default")
+
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
 SVC_URL_TMPL = '{{ ' \
@@ -720,8 +722,9 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 
 def load_pods_for_runs_with_endpoints(run_pod_selector_key, run_pod_selector_value):
         pods_with_endpoints = []
-        all_pipeline_pods = Pod.objects(kube_api).filter(selector={run_pod_selector_key: run_pod_selector_value})\
-                                                 .filter(field_selector={"status.phase": "Running"})
+        all_pipeline_pods = (Pod.objects(kube_api, namespace=CP_KUBE_NAMESPACE)\
+                             .filter(selector={run_pod_selector_key: run_pod_selector_value})\
+                             .filter(field_selector={"status.phase": "Running"}))
         for pod in all_pipeline_pods.response['items']:
                 labels = pod['metadata']['labels']
                 if 'job-type' in labels and labels['job-type'] == 'Service':
@@ -993,7 +996,7 @@ dns_domain = os.getenv('CP_EDGE_CUSTOM_DOMAIN') or find_preference(API_GET_PREF,
 # applied yet - so we will wait
 edge_kube_service_object = None
 for n in range(NUMBER_OF_RETRIES):
-    edge_kube_service = Service.objects(kube_api).filter(selector={
+    edge_kube_service = Service.objects(kube_api, namespace=CP_KUBE_NAMESPACE).filter(selector={
             EDGE_SVC_ROLE_LABEL: EDGE_SVC_ROLE_LABEL_VALUE, EDGE_SVC_REGION_LABEL: edge_region_name})
     if not edge_kube_service.response['items']:
         do_log('EDGE service is not found by labels: cloud-pipeline/role=EDGE and %s=%s'

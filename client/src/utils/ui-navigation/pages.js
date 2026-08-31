@@ -24,6 +24,7 @@ export default {
   settings: 'settings',
   search: 'search',
   billing: 'billing',
+  chat: 'chat',
   notifications: 'notifications',
   miew: 'miew',
   wsi: 'wsi',

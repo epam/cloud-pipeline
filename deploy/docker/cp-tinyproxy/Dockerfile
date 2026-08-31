@@ -25,6 +25,7 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 # 1. TinyProxy (HTTP proxy)
 RUN yum install wget \
                 gcc \
+                bzip2 \
                 make -y
 
 RUN mkdir -p /opt/tinyproxy && \
@@ -48,19 +49,29 @@ RUN yum install -y epel-release
 RUN yum install -y nginx nginx-mod-stream
 
 # 3. SMTP proxy setup
+ENV PATH=$PATH:/opt/local/mamba/bin \
+    MAMBA_ROOT_PREFIX=/opt/local/mamba
+
 RUN yum install -y nginx-mod-mail gettext && \
-    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh --no-check-certificate && \
-    bash /tmp/miniconda.sh -b -p /opt/miniconda && \
-    source /opt/miniconda/etc/profile.d/conda.sh && \
-    conda create -y -n auth-srv python=3.7 && \
-    conda activate auth-srv && \
+    mkdir -p /opt/local/mamba && \
+    cd /opt/local/mamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    eval "$(micromamba shell hook --shell bash)" && \
+    micromamba create -y -n auth-srv python=3.7 && \
+    micromamba activate auth-srv && \
     pip install dnspython requests
 ADD smtp-auth-srv.py /opt/smtp/smtp-auth-srv.py
 
 # 4. Add file beat logging
 RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
-ADD filebeat-template.yml /etc/filebeat/
+ADD filebeat/elasticsearch/filebeat-template.yml /etc/filebeat/
+
+RUN cd /tmp \
+    && wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-oss-7.10.0-linux-x86_64.tar.gz \
+    && tar -xzf /tmp/filebeat-oss-7.10.0-linux-x86_64.tar.gz -C /opt/ \
+    && mv /opt/filebeat-7.10.0-linux-x86_64 /opt/filebeat-oss
+ADD filebeat/opensearch/filebeat-template.yml /opt/filebeat-oss/
 
 RUN yum install python3 -y \
     && python3 -m pip install elasticsearch5 pykube

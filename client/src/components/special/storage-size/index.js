@@ -369,9 +369,15 @@ class StorageSize extends React.PureComponent {
   };
 
   renderControls = () => {
+    const {storageOperationsEnabled = true} = this.props;
+    const showReindex = storageOperationsEnabled;
+    const showDetails = this.hasArchivedData && this.usageInfo?.details?.length > 0;
+    if (!showDetails && !showReindex) {
+      return null;
+    }
     return (
       <div>
-        {this.hasArchivedData && this.usageInfo?.details?.length > 0 ? (
+        {showDetails ? (
           <a
             className={styles.controlsButton}
             onClick={this.showDetailedInfo}
@@ -379,18 +385,20 @@ class StorageSize extends React.PureComponent {
             Show details
           </a>
         ) : null}
-        <a
-          className={styles.controlsButton}
-          onClick={this.refreshSize}
-        >
-          Re-index
-        </a>
+        {showReindex ? (
+          <a
+            className={styles.controlsButton}
+            onClick={this.refreshSize}
+          >
+            Re-index
+          </a>
+        ) : null}
       </div>
     );
   };
 
   render () {
-    const {className, style} = this.props;
+    const {className, style, storageOperationsEnabled = true} = this.props;
     if (
       this.usageInfo &&
       (this.usageInfo.size || this.usageInfo.archiveSizeTotal)
@@ -410,6 +418,9 @@ class StorageSize extends React.PureComponent {
           {this.renderDetailedInfoModal()}
         </div>
       );
+    }
+    if (!storageOperationsEnabled) {
+      return null;
     }
     return (
       <div
@@ -436,6 +447,7 @@ StorageSize.propTypes = {
   className: PropTypes.string,
   storage: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  storageOperationsEnabled: PropTypes.bool,
   style: PropTypes.object
 };
 

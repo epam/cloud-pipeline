@@ -17,6 +17,7 @@ package com.epam.pipeline.test.creator.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilterOperator;
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.ConfigurationPoolInstanceFilter;
@@ -47,7 +48,8 @@ public final class NodePoolCreatorUtils {
     public static final int POOL_SCALE_STEP = 2;
     public static final double POOL_SCALE_DOWN_THRESHOLD = 25.0;
     public static final double POOL_SCALE_UP_THRESHOLD = 75.0;
-    public static final Map<String, String> POOL_KUBE_LABELS = Collections.singletonMap("key-1-test", "value-1-test");
+    public static final Map<String, PoolLabel> POOL_KUBE_LABELS = Collections.singletonMap("key-1-test",
+            new PoolLabel("value-1-test", false));
 
     private NodePoolCreatorUtils() {
         //no op

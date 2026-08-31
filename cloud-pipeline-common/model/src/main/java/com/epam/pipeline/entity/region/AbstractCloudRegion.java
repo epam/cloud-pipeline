@@ -36,6 +36,7 @@ import java.util.List;
         use = JsonTypeInfo.Id.NAME,
         include = JsonTypeInfo.As.PROPERTY,
         property = "provider",
+        visible = true,
         defaultImpl = AwsRegion.class)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AwsRegion.class, name = "AWS"),

@@ -21,13 +21,19 @@ import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.plugin.UIPluginAssignmentRepository;
 import com.epam.pipeline.dao.plugin.UIPluginRepository;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
+import com.epam.pipeline.manager.access.AccessCodeCleaner;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.ldap.LdapManager;
@@ -39,6 +45,8 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.repository.access.AccessCodeRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
@@ -191,8 +199,33 @@ public class TestApplication {
 
     @MockBean
     protected UIPluginRepository pluginRepository;
+
     @MockBean
     protected UIPluginAssignmentRepository assignmentRepository;
+
+    @MockBean
+    public AccessCodeRepository accessCodeRepository;
+
+    @MockBean
+    public ClusterCommandService clusterCommandService;
+
+    @MockBean
+    public AccessCodeCleaner accessCodeCleaner;
+
+    @MockBean
+    public GlobalSearchElasticHelper elasticHelper;
+
+    @MockBean
+    public PlatformUsageCreditsRuleService platformUsageCreditsRuleService;
+
+    @MockBean
+    public PlatformUsageCreditsUserBalanceService platformUsageCreditsUserBalanceService;
+
+    @MockBean
+    public PlatformUsageCreditsUserBalanceCRUDService platformUsageCreditsUserBalanceCRUDService;
+
+    @MockBean
+    public PlatformUsageCreditsEventService platformUsageCreditsEventService;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

@@ -1,0 +1,7 @@
+.markdown li > p {
+  display: inline;
+}
+
+.markdown img {
+  max-width: 100%;
+}

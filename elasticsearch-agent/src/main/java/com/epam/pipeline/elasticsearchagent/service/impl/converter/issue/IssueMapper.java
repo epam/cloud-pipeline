@@ -22,13 +22,12 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityVO;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -36,64 +35,54 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class IssueMapper implements EntityMapper<Issue> {
 
     @Override
-    public XContentBuilder map(final EntityContainer<Issue> container) {
-        Issue issue = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            jsonBuilder.startObject();
-            jsonBuilder
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.ISSUE.name())
-                    .field("id", issue.getId())
-                    .field("name", issue.getName())
-                    .field("text", issue.getText())
-                    .field("status", issue.getStatus())
-                    .field("createdDate", parseDataToString(issue.getCreatedDate()))
-                    .field("updatedDate", parseDataToString(issue.getUpdatedDate()));
+    public Map<String, ?> map(final EntityContainer<Issue> container) {
+        final Issue issue = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.ISSUE.name());
+        jsonMap.put("id", issue.getId());
+        jsonMap.put("name", issue.getName());
+        jsonMap.put("text", issue.getText());
+        jsonMap.put("status", issue.getStatus());
+        jsonMap.put("createdDate", parseDataToString(issue.getCreatedDate()));
+        jsonMap.put("updatedDate", parseDataToString(issue.getUpdatedDate()));
 
-            buildLabels(issue.getLabels(), jsonBuilder);
-            buildAttachments(issue.getAttachments(), jsonBuilder);
-            buildEntityVO(issue.getEntity(), jsonBuilder);
-            buildComments(issue.getComments(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
-            buildUserContent(container.getOwner(), jsonBuilder);
+        buildLabels(issue.getLabels(), jsonMap);
+        buildAttachments(issue.getAttachments(), jsonMap);
+        buildEntityVO(issue.getEntity(), jsonMap);
+        buildComments(issue.getComments(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
+        buildUserContent(container.getOwner(), jsonMap);
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for issue: ", e);
-        }
+        return jsonMap;
     }
 
-    private void buildComments(final List<IssueComment> comments,
-                               final XContentBuilder jsonBuilder) throws IOException {
+    private void buildComments(final List<IssueComment> comments, final Map<String, Object> jsonMap) {
         if (!CollectionUtils.isEmpty(comments)) {
-            jsonBuilder.array("comments", comments.stream()
+            jsonMap.put("comments", comments.stream()
                     .map(comment -> comment.getAuthor() + " : " + comment.getText())
                     .toArray(String[]::new));
         }
     }
 
-    private void buildAttachments(final List<Attachment> attachments,
-                                  final XContentBuilder jsonBuilder) throws IOException {
+    private void buildAttachments(final List<Attachment> attachments, final Map<String, Object> jsonMap) {
         if (!CollectionUtils.isEmpty(attachments)) {
-            jsonBuilder.array("attachments", attachments
-                    .stream()
+            jsonMap.put("attachments", attachments.stream()
                     .map(Attachment::getPath)
                     .toArray(String[]::new));
         }
     }
 
-    private void buildLabels(final List<String> labels, final XContentBuilder jsonBuilder) throws IOException {
+    private void buildLabels(final List<String> labels, final Map<String, Object> jsonMap) {
         if (!CollectionUtils.isEmpty(labels)) {
-            jsonBuilder.array("labels", labels.toArray());
+            jsonMap.put("labels", labels.toArray());
         }
     }
 
-    private void buildEntityVO(final EntityVO entity, final XContentBuilder jsonBuilder) throws IOException {
+    private void buildEntityVO(final EntityVO entity, final Map<String, Object> jsonMap) {
         if (entity != null) {
-            jsonBuilder
-                    .field("entityId", entity.getEntityId())
-                    .field("parentId", entity.getEntityId())
-                    .field("entityClass", entity.getEntityClass());
+            jsonMap.put("entityId", entity.getEntityId());
+            jsonMap.put("parentId", entity.getEntityId());
+            jsonMap.put("entityClass", entity.getEntityClass());
         }
     }
 }

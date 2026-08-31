@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;

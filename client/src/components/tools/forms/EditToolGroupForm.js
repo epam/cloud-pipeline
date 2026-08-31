@@ -246,6 +246,10 @@ export default class EditToolGroupForm extends React.Component {
                       defaultMask={defaultMask}
                       enabledMask={enabledMask}
                       readOnlyRoles={readOnlyRoles}
+                      editOwnerAvailable={
+                        roleModel.isOwner(this.props.toolGroup) ||
+                        roleModel.isManager.toolAdmin(this)
+                      }
                     />
                   </Tabs.TabPane>
                 )

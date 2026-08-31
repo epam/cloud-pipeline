@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.epam.pipeline.autotests.ao.Configuration;
 import com.epam.pipeline.autotests.ao.Profile;
 import com.epam.pipeline.autotests.ao.Template;
@@ -25,11 +26,11 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.function.Consumer;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
@@ -43,7 +44,6 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Configuration.priceType;
 import static com.epam.pipeline.autotests.ao.Configuration.startIdle;
@@ -69,6 +69,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.version;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class DetachedConfigurationsTest
@@ -170,6 +171,7 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineProfile1611, profile -> {
                 refresh();
                 profile
+                    .ensureVisible(ESTIMATED_PRICE)
                     .addStringParameter(stringParameter, stringParameterValue)
                     .addPathParameter(pathParameter, pathParameterValue)
                     .addCommonParameter(commonParameter, commonParameterValue)
@@ -355,6 +357,7 @@ public class DetachedConfigurationsTest
                     .ensure(TEMPLATE, readOnlyEditor())
                     .ensure(START_IDLE, disabled)
                     .ensure(ADD_PARAMETER, disabled)
+                    .ensure(ADD_SYSTEM_PARAMETER, disabled)
             );
     }
 
@@ -629,7 +632,7 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, "")
                                 .setValue(pathParameterValue2)
                                 .validateParameter(pathParameterName, pathParameterValue2)
-                                .ensure(PARAMETER_NAME, disabled);
+                                .parameterNameIsEnable(false);
                         configuration
                                 .click(SAVE)
                                 .ensureDisable(SAVE);
@@ -773,6 +776,7 @@ public class DetachedConfigurationsTest
     @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-1604"})
     public void deleteDetachedConfigurationValidation() {
+        refresh();
         library()
             .removeConfiguration(mainConfiguration)
             .ensure(configurationWithName(mainConfiguration), not(visible));
@@ -788,7 +792,7 @@ public class DetachedConfigurationsTest
     private Condition isSelected() {
         return new Condition("pipeline version is selected") {
             @Override
-            public boolean apply(final WebElement element) {
+            public boolean apply(Driver driver, final WebElement element) {
                 return !element.findElements(byClassName("anticon-check-circle")).isEmpty();
             }
 

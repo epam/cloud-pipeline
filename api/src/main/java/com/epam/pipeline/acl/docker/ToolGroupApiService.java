@@ -33,24 +33,24 @@ public class ToolGroupApiService {
     @Autowired
     private ToolGroupManager toolGroupManager;
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('TOOL_GROUP_MANAGER') AND "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR (hasRole('TOOL_GROUP_MANAGER') AND "
                   + "hasPermission(#group.registryId, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'WRITE'))")
     public ToolGroup create(final ToolGroup group) {
         return toolGroupManager.create(group);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#group, 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR hasPermission(#group, 'WRITE')")
     public ToolGroup update(final ToolGroup group) {
         return toolGroupManager.updateToolGroup(group);
     }
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<ToolGroup> loadByRegistryId(Long registryId) {
         return toolGroupManager.loadByRegistryId(registryId);
     }
 
-    @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
+    @PostFilter("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
     public List<ToolGroup> loadByRegistryNameOrId(String registry) {
         return toolGroupManager.loadByRegistryNameOrId(registry);
@@ -75,18 +75,19 @@ public class ToolGroupApiService {
         return toolGroupManager.loadPrivate(registryId);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.createPrivateToolGroupPermission(#registryId)")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') " +
+            "OR @grantPermissionManager.createPrivateToolGroupPermission(#registryId)")
     public ToolGroup createPrivate(Long registryId) {
         return toolGroupManager.createPrivate(registryId);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('TOOL_GROUP_MANAGER') AND "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR (hasRole('TOOL_GROUP_MANAGER') AND "
             + "@grantPermissionManager.toolGroupPermission(#id, 'WRITE'))")
     public ToolGroup delete(String id) {
         return toolGroupManager.delete(id, false);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('TOOL_GROUP_MANAGER') AND "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('TOOL_ADMIN') OR (hasRole('TOOL_GROUP_MANAGER') AND "
             + "@grantPermissionManager.toolGroupChildPermission(#id, 'WRITE'))")
     public ToolGroup deleteForce(String id) {
         return toolGroupManager.delete(id, true);

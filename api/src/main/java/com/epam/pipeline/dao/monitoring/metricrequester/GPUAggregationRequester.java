@@ -20,13 +20,18 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringMetrics;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+import java.time.ZoneOffset;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -59,8 +64,9 @@ public class GPUAggregationRequester extends AbstractGPUMetricsRequester {
 
     @Override
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                           final Duration interval) {
-        final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to)
+                                           final Duration interval, final String podName) {
+        final String queryType = StringUtils.isNotBlank(podName) ? POD : NODE;
+        final SearchSourceBuilder aggregation = statsQuery(nodeName, queryType, from, to, podName)
                 .size(1)
                 .aggregation(buildHistogram(interval));
         return request(from, to, aggregation);
@@ -86,12 +92,25 @@ public class GPUAggregationRequester extends AbstractGPUMetricsRequester {
     @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        return null;
+        return request(from, to,
+                new SearchSourceBuilder()
+                        .query(QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
+                                        resourceIds))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_NODE_NAME))
+                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
+                                .size(resourceIds.size())
+                                .subAggregation(average(ACTIVE_GPUS_FIELD, ACTIVE_GPUS_FIELD))));
     }
 
     @Override
-    public Map<String, Double> parseResponse(SearchResponse response) {
-        return Collections.emptyMap();
+    public Map<String, Double> parseResponse(final SearchResponse response) {
+        return collectAggregation(response, AGGREGATION_NODE_NAME, AVG_AGGREGATION + ACTIVE_GPUS_FIELD);
     }
 
     private Stream<? extends MultiBucketsAggregation.Bucket> getBucketStream(final List<Aggregation> aggregations) {

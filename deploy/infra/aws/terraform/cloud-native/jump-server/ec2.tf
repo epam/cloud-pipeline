@@ -14,6 +14,7 @@
 
 module "ec2_instance" {
   source = "terraform-aws-modules/ec2-instance/aws"
+  version = "5.7.0"
   name   = "${local.resource_name_prefix}-jump-server"
 
   iam_instance_profile = var.iam_instance_profile == null ? aws_iam_instance_profile.bastion_execution[0].name : var.iam_instance_profile
@@ -46,6 +47,8 @@ module "ec2_instance" {
 locals {
   user_data = <<-EOT
     #!/bin/bash
+
+    ${var.prepend_user_data}
 
     echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
 

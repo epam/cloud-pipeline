@@ -7,8 +7,8 @@ import Logs from './Log';
 import {isMlflowEngine, isNextflowEngine} from '../run-details/utilities/helpers';
 import {inject, observer} from 'mobx-react';
 
-const runDetailsPresentation = {
-  default: 'default',
+export const runDetailsPresentation = {
+  default: 'basic',
   nextflow: 'nextflow',
   mlflow: 'mlflow'
 };
@@ -34,7 +34,9 @@ class LogsRedirect extends React.Component {
   state = {
     pending: true,
     run: undefined,
-    error: undefined
+    error: undefined,
+    presentation: undefined,
+    modes: []
   };
 
   componentDidMount () {
@@ -68,7 +70,9 @@ class LogsRedirect extends React.Component {
       this.setState({
         pending: true,
         error: undefined,
-        run: undefined
+        run: undefined,
+        presentation: undefined,
+        modes: []
       }, async () => {
         try {
           const runRequest = new PipelineRunInfo(currentRunId);
@@ -80,17 +84,26 @@ class LogsRedirect extends React.Component {
             throw new Error(`Run #${currentRunId} not found`);
           }
           const run = {...runRequest.value};
+          const presentation = getRunDetailsPresentation(run, preferences);
+          const modes = [...new Set([
+            presentation,
+            runDetailsPresentation.default
+          ])];
           commit(() => {
             this.setState({
               pending: false,
-              run
+              run,
+              presentation,
+              modes
             });
           });
         } catch (error) {
           commit(() => {
             this.setState({
               pending: false,
-              error: error.message
+              error: error.message,
+              presentation: undefined,
+              modes: []
             });
           });
         }
@@ -99,16 +112,22 @@ class LogsRedirect extends React.Component {
       this.setState({
         pending: false,
         error: 'Run is not specified',
-        run: undefined
+        run: undefined,
+        presentation: undefined,
+        modes: []
       });
     }
   }
+
+  onChangeMode = (mode) => this.setState({presentation: mode});
 
   render () {
     const {
       error,
       pending,
-      run
+      run,
+      presentation,
+      modes
     } = this.state;
     if (pending) {
       return (
@@ -118,17 +137,28 @@ class LogsRedirect extends React.Component {
       );
     }
     if (run) {
-      const {params: currentParams = {}, preferences} = this.props;
-      const {mode} = currentParams;
-      switch (getRunDetailsPresentation(run, preferences)) {
+      switch (presentation) {
         case runDetailsPresentation.nextflow:
         case runDetailsPresentation.mlflow:
-          return mode === undefined
-            ? (<RunDetails {...this.props} preLoadedRun={run} />)
-            : (<Logs {...this.props} />);
+          return (
+            <RunDetails
+              {...this.props}
+              preLoadedRun={run}
+              currentMode={presentation}
+              modes={modes}
+              onChangeMode={this.onChangeMode}
+            />
+          );
         case runDetailsPresentation.default:
         default:
-          return (<Logs {...this.props} />);
+          return (
+            <Logs
+              {...this.props}
+              currentMode={presentation}
+              modes={modes}
+              onChangeMode={this.onChangeMode}
+            />
+          );
       }
     }
     return (

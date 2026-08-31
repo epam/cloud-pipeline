@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
+import com.epam.pipeline.autotests.ao.UserManagementAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -101,7 +102,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
                         preferencesAO.updatePreference(preference.getRight(), preference.getLeft()[0], false)
                 );
         final String userLogin = userWithoutCompletedRuns.login.toUpperCase();
-        final SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry userEntry = navigationMenu()
+        final UserManagementAO.UsersTabAO.UserEntry userEntry = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
@@ -164,7 +165,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
     }
 
     private void checkBlockedStatus(final boolean adminBlockedStatus, final boolean userBlockedStatus) {
-        final SettingsPageAO.UserManagementAO.UsersTabAO usersTabAO = navigationMenu()
+        final UserManagementAO.UsersTabAO usersTabAO = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers();

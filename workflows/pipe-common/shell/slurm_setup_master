@@ -146,6 +146,9 @@ EOL
     if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
         echo "MailProg=$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
+    if [ "$CP_CAP_SLURM_MAX_ARRAY_SIZE" ]; then
+        echo "MaxArraySize=$CP_CAP_SLURM_MAX_ARRAY_SIZE" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    fi
     if check_cp_cap CP_CAP_AUTOSCALE; then
         echo "MaxNodeCount=1000" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
         echo "TreeWidth=65533" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf

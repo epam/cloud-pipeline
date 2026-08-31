@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
+import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
@@ -65,6 +66,9 @@ public class NotificationAspectTest extends AbstractAspectTest {
     private ContextualNotificationManager contextualNotificationManager;
 
     @Autowired
+    private PipelineRunDao runDao;
+
+    @Autowired
     private UserDao mockUserDao;
 
     @Autowired
@@ -77,6 +81,7 @@ public class NotificationAspectTest extends AbstractAspectTest {
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        doReturn(run).when(runDao).loadPipelineRun(run.getId());
         mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
@@ -130,11 +135,12 @@ public class NotificationAspectTest extends AbstractAspectTest {
         final PipelineRun run = PipelineCreatorUtils.getPipelineRun(TaskStatus.SUCCESS);
         doReturn(settings).when(mockNotificationSettingsDao).loadNotificationSettings(any());
         doReturn(pipelineUser).when(mockUserDao).loadUserByName(any());
+        doReturn(run).when(runDao).loadPipelineRun(run.getId());
         mockRole();
 
         pipelineRunManager.updatePipelineStatus(run);
 
-        verify(contextualNotificationManager).notifyRunStatusChanged(run);
+        verify(contextualNotificationManager).notifyRunStatusChanged(run, Collections.emptyMap());
     }
 
     private void mockRole() {

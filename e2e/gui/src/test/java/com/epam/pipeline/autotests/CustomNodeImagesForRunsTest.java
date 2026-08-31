@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
-import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -33,6 +31,8 @@ import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
+import static com.epam.pipeline.autotests.ao.ClusterMenuAO.HeaderColumn.DATE;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
@@ -80,6 +80,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .saveAndCommitWithMessage("test: Add instance image")
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
         final Set<String> logMess =
                 runsMenu()
@@ -105,6 +106,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .clickOnDraftVersion(pipeline2)
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
@@ -121,9 +123,12 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
         library()
                 .clickOnDraftVersion(pipeline1)
                 .runPipeline()
+                .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this)
                 .showLog(getLastRunId());
         assertEquals(clusterMenu()
+                .sortByDecrease(DATE)
                 .waitForTheNode(getLastRunId())
                 .getNodeName(getLastRunId()), nodeName);
     }

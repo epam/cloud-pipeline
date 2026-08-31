@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,10 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
-import static com.epam.pipeline.autotests.utils.C.COMMITTING_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,22 +57,24 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.Primitive.ARROW;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
-import static com.epam.pipeline.autotests.ao.Primitive.LAUNCH;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.VERSIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.utils.C.COMMITTING_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Conditions.backgroundColor;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 
@@ -90,7 +92,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
-        public boolean apply(final WebElement ignored) {
+        public boolean apply(Driver driver, final WebElement ignored) {
             return $(byClassName("ant-table-placeholder")).is(visible);
         }
     };
@@ -108,7 +110,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-table-body")
                         .findAll(".ant-table-row").stream()
-                        .filter(element -> text(component).apply(element))
+                        .filter(element -> element.has(text(component)))
                         .collect(toList());
             }
         };
@@ -134,7 +136,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public static Consumer<ToolVersions> tagsHave(final Primitive... primitives) {
         final Condition containsAllPrimitives = new Condition("Element contains all primitives ") {
             @Override
-            public boolean apply(final WebElement element) {
+            public boolean apply(Driver driver, final WebElement element) {
                 return Arrays.stream(primitives).allMatch(existsFor(element));
             }
 
@@ -152,7 +154,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-tabs")
                         .findAll(".ant-tabs-tab").stream()
-                        .filter(element -> text(tab).apply(element))
+                        .filter(element -> element.has(text(tab)))
                         .collect(toList());
             }
         };
@@ -164,7 +166,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-table-body")
                         .findAll(".ant-table-row").stream()
-                        .filter(element -> exactText(version).apply(element.find(".tools__version-name")))
+                        .filter(element -> element.find(".tools__version-name").has(exactText(version)))
                         .collect(toList());
             }
         };
@@ -314,7 +316,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public ToolVersions validateScanningProcess(final String version) {
         $(toolVersion(version)).find(byClassName("anticon-loading")).should(exist);
         $(toolVersion(version)).find(byText("SCANNING")).should(visible);
-        $(toolVersion(version)).find(scan).waitUntil(visible, COMMITTING_TIMEOUT);
+        $(toolVersion(version)).find(scan).shouldBe(visible, ofMillis(COMMITTING_TIMEOUT));
         return this;
     }
 

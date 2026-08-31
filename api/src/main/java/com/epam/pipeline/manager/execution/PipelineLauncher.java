@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
@@ -109,7 +109,7 @@ public class PipelineLauncher {
     @Autowired
     private ToolScanInfoManager toolScanInfoManager;
 
-    @Value("${kube.namespace}")
+    @Value("${kube.namespace:default}")
     private String kubeNamespace;
 
     @Value("${launch.script.url.linux}")
@@ -247,15 +247,19 @@ public class PipelineLauncher {
         final boolean isAdvancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
                 .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
                 .orElse(false);
-        if (isAdvancedRunAssignPolicy) {
-            final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
-                    .map(Role::getName).collect(Collectors.toList());
-            if (userRoles.contains(DefaultRoles.ROLE_ADVANCED_RUN_POLICY_MANAGER.getName())) {
-                return;
-            }
-            throw new IllegalStateException(
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
+        if (!isAdvancedRunAssignPolicy) {
+            return;
         }
+        if (CollectionUtils.isEmpty(configuration.getPodAssignPolicy().getTolerances())) {
+            return;
+        }
+        final List<String> userRoles = ListUtils.emptyIfNull(user.getRoles()).stream()
+                .map(Role::getName).collect(Collectors.toList());
+        if (userRoles.contains(DefaultRoles.ROLE_ADVANCED_RUN_POLICY_MANAGER.getName())) {
+            return;
+        }
+        throw new IllegalStateException(
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
     }
 
     private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,
@@ -304,7 +308,7 @@ public class PipelineLauncher {
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
-    private void markRunOnParentNode(final PipelineRun run, final RunAssignPolicy assignPolicy,
+    private void markRunOnParentNode(final PipelineRun run, final RunContainerSpec assignPolicy,
                                      final Map<SystemParams, String> systemParams) {
         if (assignPolicy != null && assignPolicy.isValid()) {
             assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)

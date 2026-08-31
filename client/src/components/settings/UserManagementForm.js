@@ -27,7 +27,7 @@ import UsageReport from './user-management/usage-report';
 import BillingQuotasList from '../../models/billing/quotas/list';
 
 const roles = new Roles();
-const usersWithActivity = new Users(true, true);
+const usersWithActivity = new Users(true, true, true);
 const quotas = new BillingQuotasList();
 
 function UserManagementForm (
@@ -45,9 +45,19 @@ function UserManagementForm (
     authenticatedUserInfo.value.admin;
   const isReader = roleModel.userHasRole(
     authenticatedUserInfo.loaded ? authenticatedUserInfo.value : undefined,
-    'ROLE_USER_READER'
+    roleModel.ROLES.ROLE_USER_READER
   );
-  if (!isAdmin && !isReader && usersWithActivity.pending && !usersWithActivity.loaded) {
+  const isUserAdmin = roleModel.userHasRole(
+    authenticatedUserInfo.loaded ? authenticatedUserInfo.value : undefined,
+    roleModel.ROLES.ROLE_USER_ADMIN
+  );
+  if (
+    !isAdmin &&
+    !isReader &&
+    !isUserAdmin &&
+    usersWithActivity.pending &&
+    !usersWithActivity.loaded
+  ) {
     return null;
   }
   const users = usersWithActivity.loaded ? usersWithActivity.value : [];
@@ -59,6 +69,7 @@ function UserManagementForm (
   if (
     !isReader &&
     !isAdmin &&
+    !isUserAdmin &&
     !userHasReadPermissions &&
     !groupsHasSharedPermissions
   ) {
@@ -67,7 +78,7 @@ function UserManagementForm (
     );
   }
   const sections = [
-    (isReader || isAdmin || userHasReadPermissions) ? {
+    (isReader || isAdmin || isUserAdmin || userHasReadPermissions) ? {
       key: 'users',
       title: 'Users',
       default: true,
@@ -75,21 +86,21 @@ function UserManagementForm (
         <UsersManagement />
       )
     } : false,
-    (isReader || isAdmin || groupsHasSharedPermissions) ? {
+    (isReader || isAdmin || isUserAdmin || groupsHasSharedPermissions) ? {
       key: 'groups',
       title: 'Groups',
       render: () => (
         <GroupsManagement />
       )
     } : false,
-    (isReader || isAdmin) ? {
+    (isReader || isAdmin || isUserAdmin) ? {
       key: 'roles',
       title: 'Roles',
       render: () => (
         <GroupsManagement predefined />
       )
     } : false,
-    (isReader || isAdmin) ? {
+    (isReader || isAdmin || isUserAdmin) ? {
       key: 'report',
       title: 'Usage report',
       render: () => (

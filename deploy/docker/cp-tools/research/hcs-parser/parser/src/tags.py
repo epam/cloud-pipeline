@@ -159,11 +159,26 @@ class HcsFileTagProcessor:
         keyword_file_content = self.try_extract_keyword_file_content(keyword_file_path)
         if keyword_file_content is None:
             return keyword_file_content
-        self.add_owner_info_if_present(keyword_file_content, metadata_dict)
-        self.add_channel_type_info_if_present(keyword_file_content, metadata_dict)
-        self.add_timepoints_info_if_present(keyword_file_content, metadata_dict)
-        self.add_plane_info_if_present(keyword_file_content, metadata_dict)
-        self.add_experiment_date_info_if_present(keyword_file_content, metadata_dict)
+        try:
+            self.add_owner_info_if_present(keyword_file_content, metadata_dict)
+        except Exception as e:
+            self.log_processing_info('Failed [add_owner_info_if_present]: {}'.format(str(e)))
+        try:
+            self.add_channel_type_info_if_present(keyword_file_content, metadata_dict)
+        except Exception as e:
+            self.log_processing_info('Failed [add_channel_type_info_if_present]: {}'.format(str(e)))
+        try:
+            self.add_timepoints_info_if_present(keyword_file_content, metadata_dict)
+        except Exception as e:
+            self.log_processing_info('Failed [add_timepoints_info_if_present]: {}'.format(str(e)))
+        try:
+            self.add_plane_info_if_present(keyword_file_content, metadata_dict)
+        except Exception as e:
+            self.log_processing_info('Failed [add_plane_info_if_present]: {}'.format(str(e)))
+        try:
+            self.add_experiment_date_info_if_present(keyword_file_content, metadata_dict)
+        except Exception as e:
+            self.log_processing_info('Failed [add_experiment_date_info_if_present]: {}'.format(str(e)))
         return keyword_file_content
 
     @staticmethod

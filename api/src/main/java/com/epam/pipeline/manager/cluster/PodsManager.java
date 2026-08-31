@@ -32,6 +32,7 @@ import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -54,6 +55,13 @@ public class PodsManager {
         final String labelName = preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_CORE_COMPONENT_LABEL);
         return kubernetesManager.getPodsByLabel(labelName).stream()
                 .map(pod -> buildCorePod(pod, labelName))
+                .collect(Collectors.toList());
+    }
+
+    public List<PodInstance> getPodsByLabels(final Map<String, String> labels) {
+        return kubernetesManager.getPodsByLabels(labels)
+                .stream()
+                .map(pod -> buildCorePod(pod, StringUtils.EMPTY))
                 .collect(Collectors.toList());
     }
 

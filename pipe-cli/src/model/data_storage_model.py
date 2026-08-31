@@ -32,6 +32,7 @@ class DataStorageModel(DataStorageItemModel):
         self.owner = None
         self.root = None
         self.path_permissions_enabled = False
+        self.source_storage_id = None
 
     @classmethod
     def load(cls, json):
@@ -58,6 +59,8 @@ class DataStorageModel(DataStorageItemModel):
             cls.parse_tool_to_mount(instance, json)
         if 'owner' in json:
             instance.owner = json['owner']
+        if 'sourceStorageId' in json:
+            instance.source_storage_id = json["sourceStorageId"]
         cls.parse_mount_status(instance, json)
         return instance
 

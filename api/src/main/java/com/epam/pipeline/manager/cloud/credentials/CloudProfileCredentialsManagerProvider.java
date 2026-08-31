@@ -109,7 +109,7 @@ public class CloudProfileCredentialsManagerProvider {
                 : findAllForUser(userId);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public List<? extends AbstractCloudProfileCredentials> assignProfiles(final Long sidId, final boolean principal,
                                                                           final Set<Long> profileIds,
                                                                           final Long defaultProfileId) {
@@ -119,10 +119,9 @@ public class CloudProfileCredentialsManagerProvider {
         final List<CloudProfileCredentialsEntity> profiles = SetUtils.emptyIfNull(profileIds).stream()
                 .map(this::findEntity)
                 .collect(Collectors.toList());
-        if (principal) {
-            return toDtos(assignProfilesToUser(profiles, sidId, defaultProfileId).getCloudProfiles());
-        }
-        return toDtos(assignProfilesToRole(sidId, defaultProfileId, profiles).getCloudProfiles());
+        return principal
+                ? toDtos(assignProfilesToUser(profiles, sidId, defaultProfileId).getCloudProfiles())
+                : toDtos(assignProfilesToRole(sidId, defaultProfileId, profiles).getCloudProfiles());
     }
 
     public TemporaryCredentials generateProfileCredentials(final Long profileId, final Long regionId) {

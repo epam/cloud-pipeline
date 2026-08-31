@@ -25,7 +25,8 @@ export const names = {
   allowedPriceTypes: 'cluster.allowed.price.types',
   jobsVisibility: 'launch.run.visibility',
   jwtTokenExpirationRefreshThreshold: 'launch.jwt.token.expiration.refresh.threshold',
-  storageManagementRestrictedAccess: 'storage.management.restricted.access'
+  storageManagementRestrictedAccess: 'storage.management.restricted.access',
+  gcpSpotInstanceType: 'gcp.spot.instance.type'
 };
 
 export class ContextualPreferenceLoad extends Remote {

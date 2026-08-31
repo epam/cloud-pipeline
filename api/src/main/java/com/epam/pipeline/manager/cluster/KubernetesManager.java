@@ -118,7 +118,7 @@ public class KubernetesManager {
     @Autowired
     private KubernetesDeploymentAPIClient deploymentAPIClient;
 
-    @Value("${kube.namespace}")
+    @Value("${kube.namespace:default}")
     private String kubeNamespace;
 
     @Value("${kube.master.pod.check.url}")
@@ -250,7 +250,7 @@ public class KubernetesManager {
 
     public Set<String> listAllSecrets() {
         try (KubernetesClient client = getKubernetesClient()) {
-            final SecretList list = client.secrets().list();
+            final SecretList list = client.secrets().inNamespace(kubeNamespace).list();
             if (Objects.isNull(list)) {
                 return Collections.emptySet();
             }
@@ -1111,7 +1111,7 @@ public class KubernetesManager {
 
     public Optional<Integer> generateFreeTargetPort() {
         try (KubernetesClient client = getKubernetesClient()) {
-            return client.services().list().getItems().stream()
+            return client.services().inNamespace(kubeNamespace).list().getItems().stream()
                 .map(Service::getSpec)
                 .map(ServiceSpec::getPorts)
                 .flatMap(Collection::stream)
@@ -1156,7 +1156,9 @@ public class KubernetesManager {
     }
 
     private boolean deleteService(final KubernetesClient client, final Service service) {
-        final boolean deleted = Optional.ofNullable(client.services().delete(service)).orElse(false);
+        final boolean deleted = Optional.ofNullable(
+                client.services().inNamespace(kubeNamespace).delete(service)
+        ).orElse(false);
         if (!deleted) {
             LOGGER.debug("Failed to delete service '{}'", service.getMetadata().getName());
         }
@@ -1236,6 +1238,19 @@ public class KubernetesManager {
         }
     }
 
+    public List<Pod> getPodsByLabels(final Map<String, String> labels) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withLabels(labels)
+                    .list()
+                    .getItems();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
     public List<Event> getEvents(final KubernetesClient client, final String objectId) {
         return client.events()
                 .inNamespace(kubeNamespace)
@@ -1245,7 +1260,9 @@ public class KubernetesManager {
     }
 
     private boolean deleteEndpoints(final KubernetesClient client, final Endpoints endpoints) {
-        final boolean deleted = Optional.ofNullable(client.endpoints().delete(endpoints)).orElse(false);
+        final boolean deleted = Optional.ofNullable(client.endpoints()
+                .inNamespace(kubeNamespace)
+                .delete(endpoints)).orElse(false);
         if (!deleted) {
             LOGGER.debug("Failed to delete endpoints '{}'", endpoints.getMetadata().getName());
         }
@@ -1262,6 +1279,7 @@ public class KubernetesManager {
     private List<Service> findServicesByLabel(final KubernetesClient client, final String labelName,
                                               final String labelValue) {
         return client.services()
+                .inNamespace(kubeNamespace)
                 .withLabel(labelName, labelValue)
                 .list()
                 .getItems();
@@ -1269,6 +1287,7 @@ public class KubernetesManager {
 
     private List<Service> findServicesByLabels(final KubernetesClient client, final Map<String, String> labels) {
         return client.services()
+                .inNamespace(kubeNamespace)
                 .withLabels(labels)
                 .list()
                 .getItems();

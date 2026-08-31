@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.security.run;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.AclSecuredRunFilter;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
@@ -121,6 +122,9 @@ public class RunPermissionManager {
         if (permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner())) {
             return true;
         }
+        if (permissionsHelper.isScopedAdmin(pipelineRun)) {
+            return true;
+        }
         final List<RunSid> sshSharedSids = ListUtils.emptyIfNull(pipelineRun.getRunSids())
                 .stream()
                 .filter(sid -> RunAccessType.SSH.equals(sid.getAccessType()))
@@ -159,8 +163,8 @@ public class RunPermissionManager {
         }
     }
 
-    public void extendFilter(final AclSecuredFilter filter) {
-        if (permissionsHelper.isAdmin()) {
+    public void extendFilter(final AclSecuredRunFilter filter) {
+        if (permissionsHelper.isAdmin() || permissionsHelper.hasAnyRole(DefaultRoles.ROLE_RUN_ADMIN)) {
             return;
         }
         filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());

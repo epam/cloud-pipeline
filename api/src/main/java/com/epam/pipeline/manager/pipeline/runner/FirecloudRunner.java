@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.FirecloudPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.google.FirecloudCredentials;
@@ -68,6 +69,7 @@ public class FirecloudRunner implements ExecutionRunner<FirecloudRunConfiguratio
     private final PipelineConfigurationManager pipelineConfigurationManager;
     private final PipelineRunManager pipelineRunManager;
     private final MetadataEntityManager metadataEntityManager;
+    private final PlatformUsageCreditsLaunchService creditsLaunchService;
 
     @Override
     public List<PipelineRun> runAnalysis(AnalysisConfiguration<FirecloudRunConfigurationEntry> configuration) {
@@ -139,6 +141,9 @@ public class FirecloudRunner implements ExecutionRunner<FirecloudRunConfiguratio
                 .methodConfigurationSnapshot(entry.getMethodSnapshot())
                 .build());
         addCredentials(runConfiguration, settings);
+
+        creditsLaunchService.checkCreditsForRun(runConfiguration);
+
         return pipelineRunManager.launchPipeline(runConfiguration, null, null,
                 startVO.getInstanceType(), startVO.getConfigurationName(), null, null,
                 entities, configurationId, startVO.getRunSids(), startVO.getNotifications());

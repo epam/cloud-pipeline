@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -205,6 +206,7 @@ public class ToolsParametersTest
                 .updateCodeText(launchCapabilities,
                         readResourceFully(CUSTOM_CAPABILITIES_3_JSON), true)
                 .saveIfNeeded();
+        refresh();
         tools().perform(registry, group, tool, tool ->
                         tool
                                 .versions()

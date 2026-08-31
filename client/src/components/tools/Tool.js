@@ -68,6 +68,7 @@ import displaySize from '../../utils/displaySize';
 import LoadToolAttributes from '../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../models/tools/LoadToolScanPolicy';
 import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhiteList';
+import UpdateToolVersionBlackList from '../../models/tools/UpdateToolVersionBlackList';
 import ToolScan from '../../models/tools/ToolScan';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import VersionScanResult from './elements/VersionScanResult';
@@ -88,6 +89,7 @@ import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
 import Markdown from '../special/markdown';
 import {applyUserCapabilities} from '../pipelines/launch/form/utilities/run-capabilities';
 import ToolHistory from './ToolHistory';
+import {fillUserTagsWithDefaultValues, getVisibleUserTags} from '../runs/run-tags/utilities';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -198,6 +200,19 @@ export default class Tool extends localization.LocalizedReactComponent {
         .registries;
     }
     return [];
+  }
+
+  @computed
+  get dockerImageWithoutVersion () {
+    const {tool} = this.props;
+    if (!tool?.loaded) {
+      return;
+    }
+    const {image} = tool.value;
+    const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
+    return registry
+      ? `${registry.path}/${image}`
+      : `${image}`;
   }
 
   @computed
@@ -891,6 +906,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           platform: versionAttributes ? versionAttributes.platform : undefined,
           digestAliases,
           fromWhiteList: scanResult.fromWhiteList,
+          fromBlackList: scanResult.fromBlackList,
           size: versionAttributes && versionAttributes.size ? versionAttributes.size : '',
           modificationDate: versionAttributes && versionAttributes.modificationDate
             ? versionAttributes.modificationDate : '',
@@ -970,15 +986,12 @@ export default class Tool extends localization.LocalizedReactComponent {
     }
   };
 
-  toggleVersionWhiteList = (e, version) => {
+  setVersionListStatus = (e, version, listType, enable) => {
     e.preventDefault();
     e.stopPropagation();
-
-    const request = new UpdateToolVersionWhiteList(
-      this.props.toolId,
-      version.name,
-      !version.fromWhiteList
-    );
+    const request = listType === 'white'
+      ? new UpdateToolVersionWhiteList(this.props.toolId, version.name, enable)
+      : new UpdateToolVersionBlackList(this.props.toolId, version.name, enable);
     return new Promise(async (resolve) => {
       await request.send({});
       if (request.error) {
@@ -988,6 +1001,87 @@ export default class Tool extends localization.LocalizedReactComponent {
       }
       resolve();
     });
+  };
+
+  renderVersionListToggle = (version) => {
+    if (
+      /^windows$/i.test(version.platform) ||
+      !(this.isAdmin() || roleModel.isManager.toolAdmin(this)) ||
+      this.link ||
+      !this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
+    ) {
+      return null;
+    }
+    let label;
+    let buttonType = 'default';
+    let menuItems;
+    if (version.fromWhiteList) {
+      label = 'White-listed';
+      buttonType = 'primary';
+      menuItems = [
+        {key: 'remove-white', label: 'Remove from white list', listType: 'white', enable: false},
+        {key: 'add-black', label: 'Add to black list', listType: 'black', enable: true}
+      ];
+    } else if (version.fromBlackList) {
+      label = 'Black-listed';
+      buttonType = 'danger';
+      menuItems = [
+        {key: 'remove-black', label: 'Remove from black list', listType: 'black', enable: false},
+        {key: 'add-white', label: 'Add to white list', listType: 'white', enable: true}
+      ];
+    } else {
+      label = 'Configure access';
+      menuItems = [
+        {key: 'add-white', label: 'Add to white list', listType: 'white', enable: true},
+        {key: 'add-black', label: 'Add to black list', listType: 'black', enable: true}
+      ];
+    }
+    const onSelect = ({key, domEvent}) => {
+      if (domEvent) {
+        domEvent.preventDefault();
+        domEvent.stopPropagation();
+      }
+      const menuItem = menuItems.find((item) => item.key === key);
+      if (menuItem) {
+        this.setVersionListStatus(domEvent, version, menuItem.listType, menuItem.enable);
+      }
+    };
+    const menu = (
+      <Menu onClick={onSelect} style={{cursor: 'pointer'}}>
+        {menuItems.map((item) => (
+          <MenuItem key={item.key}>{item.label}</MenuItem>
+        ))}
+      </Menu>
+    );
+    const blackListWarning = version.fromBlackList
+      ? this.getVersionRunningInformation(version.name).tooltip
+      : null;
+    const dropdown = (
+      <Dropdown
+        overlay={menu}
+        trigger={['click']}
+        placement="bottomRight"
+      >
+        <Button
+          size="small"
+          type={buttonType}
+          className={classNames('cp-tool-version-list-toggle')}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          style={{lineHeight: 1}}
+        >
+          {
+            blackListWarning &&
+            <Icon type="exclamation-circle" style={{marginRight: 5}} />
+          }
+          <span>{label}</span>
+          <Icon type="down" style={{marginLeft: 5}} />
+        </Button>
+      </Dropdown>
+    );
+    return dropdown;
   };
 
   renderVersions = () => {
@@ -1088,21 +1182,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       render: (version) => {
         return (
           <Row type="flex" justify="end" className={styles.toolVersionActions}>
-            {
-              !/^windows$/i.test(version.platform) &&
-              this.isAdmin() &&
-              !this.link &&
-              this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry) &&
-              (
-                <Button
-                  size="small"
-                  onClick={(e) => this.toggleVersionWhiteList(e, version)}
-                  style={{lineHeight: 1}}
-                >
-                  {version.fromWhiteList ? 'Remove from ' : 'Add to '}white list
-                </Button>
-              )
-            }
+            {this.renderVersionListToggle(version)}
             {
               !/^windows$/i.test(version.platform) &&
               (
@@ -1245,6 +1325,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     }
     const [, image] = this.props.tool.value.image.split('/');
     const warningForLatestVersion = this.getWarningForLatestVersion();
+    const dockerImage = `${this.dockerImageWithoutVersion}:${this.defaultTag}`;
     return (
       <div>
         { warningForLatestVersion &&
@@ -1298,6 +1379,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           executionEnvironmentDisabled={!this.defaultTag}
           onSubmit={this.updateTool}
           dockerOSVersion={this.toolVersionOS}
+          dockerImage={dockerImage}
         />
       </div>
     );
@@ -1528,7 +1610,6 @@ export default class Tool extends localization.LocalizedReactComponent {
         }
         return settingsValue;
       };
-      const registry = this.registries.find(r => r.id === this.props.tool.value.registryId);
       const prepareParameters = (parameters) => {
         const result = {};
         if (parameters) {
@@ -1559,6 +1640,10 @@ export default class Tool extends localization.LocalizedReactComponent {
         regionId: cloudRegionIdValue,
         spot: isSpotValue
       });
+      let dockerImage = this.dockerImageWithoutVersion;
+      if (version) {
+        dockerImage = `${dockerImage}:${version}`;
+      }
       await allowedInstanceTypesRequest.fetch();
       const payload = modifyPayloadForAllowedInstanceTypes({
         instanceType:
@@ -1579,9 +1664,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           this.props.tool.value.defaultCommand,
           this.props.preferences.getPreferenceValue('launch.cmd.template')
         ),
-        dockerImage: registry
-          ? `${registry.path}/${this.props.tool.value.image}${version ? `:${version}` : ''}`
-          : `${this.props.tool.value.image}${version ? `:${version}` : ''}`,
+        dockerImage,
         params: prepareParameters(versionSettingValue('parameters')),
         isSpot: isSpotValue,
         nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
@@ -1605,6 +1688,17 @@ export default class Tool extends localization.LocalizedReactComponent {
         this.props.preferences,
         platform
       );
+      const visibility = await getVisibleUserTags(payload);
+      const tags = await fillUserTagsWithDefaultValues(
+        payload.tags || {},
+        [],
+        visibility,
+        currentUserAttributes,
+        payload
+      );
+      if (Object.keys(tags).length > 0) {
+        payload.tags = tags;
+      }
       hide();
       const runResolved = await run(this)(
         payload,
@@ -1767,7 +1861,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               e.stopPropagation();
               this.runTool(version || this.anyTag);
             }}
-            style={{lineHeight: 1}}
+            style={{lineHeight: 1, display: 'flex', alignItems: 'center', flexWrap: 'nowrap'}}
           >
             {
               tooltip && !notLoaded
@@ -1798,7 +1892,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               e.stopPropagation();
               return this.runToolDefault(version);
             }}
-            style={{lineHeight: 1}}
+            style={{lineHeight: 1, display: 'flex', alignItems: 'center', flexWrap: 'nowrap'}}
           >
             {
               tooltip && !notLoaded
@@ -1906,7 +2000,7 @@ export default class Tool extends localization.LocalizedReactComponent {
               }}
               size="small"
               type="primary"
-              style={{lineHeight: 1}}
+              style={{lineHeight: 1, display: 'flex', alignItems: 'center', flexWrap: 'nowrap'}}
             >
               <Icon type="down" style={{lineHeight: 'inherit'}} />
             </Button>
@@ -2209,6 +2303,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             defaultMask={defaultMask}
             enabledMask={enabledMask}
             readOnlyRoles={readOnlyRoles}
+            editOwnerAvailable={
+              roleModel.isManager.toolAdmin(this)
+            }
           />
         </Modal>
       </Card>

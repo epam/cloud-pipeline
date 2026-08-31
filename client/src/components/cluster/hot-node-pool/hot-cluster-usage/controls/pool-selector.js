@@ -23,7 +23,9 @@ import styles from './pool-selector.css';
 function PoolSelector ({
   value,
   pools = [],
-  onChange
+  onChange,
+  description,
+  showPoolDescription = true
 }) {
   const onSelectChange = ({key}) => {
     onChange && onChange(Number(key));
@@ -63,10 +65,11 @@ function PoolSelector ({
           <Icon type="setting" style={{marginLeft: 2}} />
         </div>
       </Dropdown>
-      <PoolShortDescription
+      {showPoolDescription && <PoolShortDescription
         className={styles.description}
         pool={pool}
-      />
+      />}
+      {description && <span style={{marginLeft: 5}}>{' - '}{description}</span>}
     </div>
   );
 }

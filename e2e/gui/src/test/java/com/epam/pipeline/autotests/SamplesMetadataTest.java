@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.disabled;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -30,6 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
 import static com.codeborne.selenide.Condition.*;
@@ -37,6 +38,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Condition.disabled;
 import static com.epam.pipeline.autotests.ao.Configuration.*;
 import static com.epam.pipeline.autotests.ao.Configuration.name;
 import static com.epam.pipeline.autotests.ao.Configuration.title;
@@ -52,6 +54,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
 import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -494,9 +497,9 @@ public class SamplesMetadataTest
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(parametersTab)
-                                .selectValue(rootEntityType(), rootEntityTypeSample)
+                                .selectRootEntityTypeValue(rootEntityTypeSample)
                                 .ensure(rootEntityType(), text(rootEntityTypeSample))
-                                .selectValue(rootEntityType(), rootEntityTypeSampleSet)
+                                .selectRootEntityTypeValue(rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
                                 .click(save())
                                 .ensure(save(), disabled)
@@ -513,7 +516,8 @@ public class SamplesMetadataTest
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
-                        profile.selectValue(rootEntityType(), rootEntityTypeSample)
+                        profile
+                                .selectRootEntityTypeValue(rootEntityTypeSample)
                                 .addToParameter(fastqR1, "this.")
                                 .ensure(
                                         templatesList(),
@@ -612,7 +616,7 @@ public class SamplesMetadataTest
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTab(parametersTab)
-                                .selectValue(rootEntityType(), rootEntityTypeSampleSet)
+                                .selectRootEntityTypeValue(rootEntityTypeSampleSet)
                                 .setParameter(fastqR1, "this.")
                                 .ensure(
                                         templatesList(),
@@ -746,7 +750,7 @@ public class SamplesMetadataTest
     }
 
     private Runnable ensureSamplesCountIs(final int count) {
-        return () -> SelenideElements.of(rows).shouldHaveSize(count);
+        return () -> SelenideElements.of(rows).shouldHave(size(count));
     }
 
     private Consumer<StorageContentAO> loadFiles(final String... files) {

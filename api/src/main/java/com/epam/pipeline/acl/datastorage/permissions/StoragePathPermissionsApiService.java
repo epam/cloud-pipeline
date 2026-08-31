@@ -43,8 +43,8 @@ public class StoragePathPermissionsApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<StoragePathPermissions> loadStoragePathPermissions(final Long id) {
-        return storagePathPermissionsService.loadHierarchyForStorage(id);
+    public List<StoragePathPermissions> loadStoragePathPermissions(final Long id, final Long userId) {
+        return storagePathPermissionsService.loadHierarchyForStorage(id, userId);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)

@@ -24,7 +24,8 @@ package com.epam.pipeline.entity.metadata;
  * - tool - Docker image of a tool used for a run
  * - run_id - Integer ID of a run
  * - owner - Username of a run owner
+ * - billing_center - Billing center from run owner's user metadata (see {@code billing.center.key})
  */
 public enum CommonInstanceTagsType {
-    tool, run_id, owner
+    tool, run_id, owner, billing_center
 }

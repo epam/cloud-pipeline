@@ -33,13 +33,18 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -54,15 +59,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
@@ -189,6 +191,12 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private FolderApiService folderApiService;
 
+    @Mock
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Mock
+    private RestartRunManager restartRunManager;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -218,6 +226,7 @@ public class PipelineRunManagerLaunchTest {
         initMocks(this);
 
         mock(CLUSTER_DOCKER_EXTRA_MULTI);
+        mock(CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
         mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
         mock(CLUSTER_SPOT);
         mock(COMMIT_TIMEOUT);
@@ -431,6 +440,31 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
+    public void pipelineRunShouldDisablePauseIfRunLaunchedWithNonRunIdPodAssignPolicy() {
+        final PipelineConfiguration configurationWithNonRunIdAssignPolicy = configuration;
+        configurationWithNonRunIdAssignPolicy.setPodAssignPolicy(
+            RunContainerSpec.builder()
+                .selector(
+                    RunContainerSpec.PodAssignSelector.builder()
+                            .label(KubernetesConstants.CP_LABEL_PREFIX + "some-tag")
+                            .value("some-value").build()
+                ).build()
+        );
+        final PipelineRun pipelineRun = launchPipeline(configurationWithNonRunIdAssignPolicy, INSTANCE_TYPE);
+
+        assertThat(pipelineRun.isPauseDisabled(), is(true));
+        assertThat(pipelineRun.isNonPause(), is(true));
+    }
+
+    @Test
+    public void pipelineRunShouldNotDisablePauseIfRunLaunchedRunIdPodAssignPolicy() {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
+
+        assertThat(pipelineRun.isPauseDisabled(), is(false));
+        assertThat(pipelineRun.isNonPause(), is(false));
+    }
+
+    @Test
     public void launchPipelineShouldRegisterNotificationsRequestsIfSpecified() {
         final PipelineRun pipelineRun = launchPipelineWithNotificationRequests(configuration);
 
@@ -476,6 +510,32 @@ public class PipelineRunManagerLaunchTest {
         );
         pipelineRun = launchTool(configuration, INSTANCE_TYPE);
         assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+    }
+
+    @Test
+    public void restartRunShouldPreserveFallbackInstanceTypes() {
+        final String fallbackType = "fallback.type";
+        final RunInstance instance = new RunInstance();
+        instance.setCloudRegionId(REGION_ID);
+        instance.setCloudProvider(CloudProvider.AWS);
+        instance.setNodeType(INSTANCE_TYPE);
+        instance.setNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setEffectiveNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setFallbackInstanceTypes(singletonList(fallbackType));
+
+        final PipelineRun run = getPipelineRun(ID, TEST_USER);
+        run.setInstance(instance);
+        run.setDockerImage(IMAGE);
+        run.setActualDockerImage(IMAGE);
+
+        doReturn(configuration).when(pipelineConfigurationManager).getConfigurationFromRun(any());
+        doReturn(ID_2).when(pipelineRunDao).createRunId();
+        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(any(), any(), any(), any());
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNotNull(restartedRun.getInstance());
+        assertThat(restartedRun.getInstance().getFallbackInstanceTypes(), is(singletonList(fallbackType)));
     }
 
     private void mock(final InstancePrice price) {

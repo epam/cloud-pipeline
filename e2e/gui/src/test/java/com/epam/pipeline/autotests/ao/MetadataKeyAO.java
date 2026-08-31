@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -24,14 +25,12 @@ import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.have;
-import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
-
 
 public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
 
@@ -43,7 +42,7 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
 
     public static final Condition backgroundColorGrey = new Condition("backgroundColorGrey") {
         @Override
-        public boolean apply(WebElement element) {
+        public boolean apply(Driver driver, WebElement element) {
             return element.getCssValue("background-color").equals("rgba(249, 249, 249, 1)");
         }
     };
@@ -101,7 +100,7 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
     public static Condition numberOfSamples(int number) {
         return new Condition("number of samples") {
             @Override
-            public boolean apply(WebElement element) {
+            public boolean apply(Driver driver, WebElement element) {
                 return element.findElements(By.tagName("div")).size() == number;
             }
         };

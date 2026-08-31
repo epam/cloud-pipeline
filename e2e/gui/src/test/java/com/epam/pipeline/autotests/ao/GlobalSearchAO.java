@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.CheckResult;
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -31,6 +33,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
@@ -72,8 +75,8 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
      */
     public static Condition disable = new Condition("be disable type") {
         @Override
-        public boolean apply(final WebElement element) {
-            return cssClass("disabled").apply(element);
+        public CheckResult check(Driver driver, final WebElement element) {
+            return cssClass("disabled").check(driver, element);
         }
     };
 
@@ -83,8 +86,8 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
      */
     public static Condition selected = new Condition("selected") {
         @Override
-        public boolean apply(WebElement element) {
-            return cssClass("earch__active").apply(element);
+        public boolean apply(Driver driver, WebElement element) {
+            return cssClass("earch__active").apply(driver, element);
         }
     };
 
@@ -117,7 +120,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
 
     public GlobalSearchAO waitUntilSearchCompleted() {
         sleep(2, SECONDS);
-        get(SEARCH_RESULT).$(byClassName("anticon-loading")).waitUntil(not(exist), C.DEFAULT_TIMEOUT);
+        get(SEARCH_RESULT).$(byClassName("anticon-loading")).shouldBe(not(exist));
         return this;
     }
 
@@ -152,7 +155,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         }
         get(SEARCH_RESULT)
                 .findAll(".earch__search-result-item")
-                .shouldHaveSize(count)
+                .shouldHave(size(count))
                 .forEach(i -> i.shouldHave(text(itemName)));
         return this;
     }
@@ -236,7 +239,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         private Condition completedFieldCorrespondStatus() {
             return new Condition("completed field correspond Status") {
                 @Override
-                public boolean apply(final WebElement element) {
+                public boolean apply(Driver driver, final WebElement element) {
                     final String dateRegex = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$";
                     return $(element).find(By.xpath("./td[1]")).has(completed)
                             ? $(element).find(By.xpath("./td[4]")).text().matches(dateRegex)

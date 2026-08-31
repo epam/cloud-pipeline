@@ -7,37 +7,23 @@ import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
 import {
-  CP_CAP_DIND_CONTAINER,
   CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM,
-  CP_CAP_MODULES,
-  CP_DISABLE_HYPER_THREADING,
-  CP_CAP_DCV,
   CP_CAP_DCV_WEB,
   CP_CAP_DCV_DESKTOP,
-  CP_CAP_RUN_CAPABILITIES
+  CP_CAP_RUN_CAPABILITIES,
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_PARAMETERS
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
 import {mergeUserRoleAttributes} from '../../../../../utils/attributes/merge-user-role-attributes';
 import fetchToolDefaultParameters from './fetch-tool-default-parameters';
-import {RUN_CAPABILITIES} from '../../../../../models/preferences/PreferencesLoad';
+import {getReservationParametersConfig} from '../components/reservation-parameters/utilities';
 import styles from './run-capabilities.css';
 import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 import {defaultSorter} from '../../../../../utils/sorting';
 
 export {RUN_CAPABILITIES};
-
-export const RUN_CAPABILITIES_PARAMETERS = {
-  [RUN_CAPABILITIES.dinD]: CP_CAP_DIND_CONTAINER,
-  [RUN_CAPABILITIES.singularity]: CP_CAP_SINGULARITY,
-  [RUN_CAPABILITIES.systemD]: CP_CAP_SYSTEMD_CONTAINER,
-  [RUN_CAPABILITIES.noMachine]: CP_CAP_DESKTOP_NM,
-  [RUN_CAPABILITIES.module]: CP_CAP_MODULES,
-  [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING,
-  [RUN_CAPABILITIES.dcv]: CP_CAP_DCV
-};
 
 export const RUN_CAPABILITIES_MODE = {
   launch: 'launch',
@@ -102,12 +88,15 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     platform,
     os,
     provider,
-    region
+    region,
+    reservationConfig
   } = platformInfo;
   const capabilities = platform && PLATFORM_SPECIFIC_CAPABILITIES.hasOwnProperty(platform)
     ? PLATFORM_SPECIFIC_CAPABILITIES[platform]
     : PLATFORM_SPECIFIC_CAPABILITIES.default;
-  const custom = preferences ? preferences.launchCapabilities : [];
+  const launchCapabilities = preferences ? preferences.launchCapabilities : [];
+  const systemOverrides = (launchCapabilities || []).filter(c => c.custom === false);
+  const custom = (launchCapabilities || []).filter(c => c.custom !== false);
   const filterCustomCapability = capability => (capability.platforms || []).length === 0 ||
     platform === undefined ||
     !capability.platforms ||
@@ -147,19 +136,38 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     } = capability;
     const enabledByOS = filterByOS(capability);
     const enabledByCloudProvider = filterByCloudProvider(capability);
+    const enabledByReservationConfig = isEnabledByReservationConfig(
+      capability,
+      reservationConfig
+    );
     return {
       ...capabilityInfo,
       capabilities: capabilities.map(c => mapCapability(c, capability)),
-      disabled: !enabledByOS || !enabledByCloudProvider,
+      disabled: !enabledByOS || !enabledByCloudProvider || !enabledByReservationConfig,
+      disabledByReservationConfig: !enabledByReservationConfig,
       parentValue: parent?.value
     };
   };
-  return capabilities.map(o => ({
-    value: o,
-    name: o,
-    os: CAPABILITIES_OS_FILTERS[o],
-    cloud: CAPABILITIES_CLOUD_FILTERS[o]
-  }))
+  const systemCapabilities = capabilities.map(o => {
+    const override = systemOverrides.find(ov => ov.value === o);
+    const base = {
+      value: o,
+      name: o,
+      os: CAPABILITIES_OS_FILTERS[o],
+      cloud: CAPABILITIES_CLOUD_FILTERS[o]
+    };
+    if (!override) {
+      return base;
+    }
+    const {value: _v, custom: _c, ...overrideFields} = override;
+    return {
+      ...base,
+      ...overrideFields,
+      value: o,
+      custom: false
+    };
+  });
+  return systemCapabilities
     .concat((custom || []).filter(filterCustomCapability))
     .map(capability => mapCapability(capability));
 }
@@ -186,6 +194,33 @@ function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
   );
 }
 
+export function isEnabledByReservationConfig (capability, reservationConfig) {
+  // If capability does not specify "check privileged" flag, allow
+  if (!capability.privileged) {
+    return true;
+  }
+  // If reservation config is not specified, allow
+  if (!reservationConfig) {
+    return true;
+  }
+  const {
+    kube_assign_policy: _kubeAssignPolicy = {},
+    kubeAssignPolicy = _kubeAssignPolicy
+  } = reservationConfig || {};
+  // If kube assign policy is not overridden, allow
+  if (!kubeAssignPolicy) {
+    return true;
+  }
+  const {securityContext} = kubeAssignPolicy;
+  // If kube assign policy is overridden, but the security context is not overridden, allow
+  if (!securityContext) {
+    return true;
+  }
+  const {privileged} = securityContext;
+  // Allow only if the privileged flag is specified
+  return privileged === true;
+}
+
 @inject('preferences', 'dockerRegistries')
 @observer
 class RunCapabilities extends React.Component {
@@ -203,7 +238,8 @@ class RunCapabilities extends React.Component {
     region: PropTypes.object,
     mode: PropTypes.string,
     showError: PropTypes.bool,
-    getPopupContainer: PropTypes.func
+    getPopupContainer: PropTypes.func,
+    instanceType: PropTypes.string
   };
 
   static defaultProps = {
@@ -213,12 +249,14 @@ class RunCapabilities extends React.Component {
   };
 
   state = {
-    os: undefined
+    os: undefined,
+    reservationConfig: undefined
   };
 
   componentDidMount () {
     this.fetchDockerImageOS();
     this.setInitialRequiredCapabilities();
+    this.setReservationConfig();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -233,6 +271,12 @@ class RunCapabilities extends React.Component {
     }
     if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
+    }
+    if (prevProps.instanceType !== this.props.instanceType) {
+      this.setReservationConfig();
+    }
+    if (prevState.reservationConfig !== this.state.reservationConfig) {
+      this.correctCapabilitiesSelection();
     }
   }
 
@@ -258,6 +302,21 @@ class RunCapabilities extends React.Component {
       });
   };
 
+  setReservationConfig = async () => {
+    const {instanceType} = this.props;
+    if (!instanceType || typeof instanceType !== 'string') {
+      this.setState({reservationConfig: undefined});
+      return;
+    }
+    try {
+      const config = await getReservationParametersConfig(instanceType);
+      this.setState({reservationConfig: config});
+    } catch (error) {
+      console.error('Error retrieving reservation config:', error);
+      this.setState({reservationConfig: undefined});
+    }
+  };
+
   get allCapabilities () {
     const {
       platform,
@@ -266,7 +325,8 @@ class RunCapabilities extends React.Component {
       preferences
     } = this.props;
     const {
-      os
+      os,
+      reservationConfig
     } = this.state;
     return getAllPlatformCapabilities(
       preferences,
@@ -274,7 +334,8 @@ class RunCapabilities extends React.Component {
         platform,
         os,
         provider,
-        region
+        region,
+        reservationConfig
       }
     );
   }
@@ -288,7 +349,8 @@ class RunCapabilities extends React.Component {
       values
     } = this.props;
     const {
-      os
+      os,
+      reservationConfig
     } = this.state;
     const capabilities = getPlatformSpecificCapabilities(
       preferences,
@@ -296,7 +358,8 @@ class RunCapabilities extends React.Component {
         platform,
         os,
         provider,
-        region
+        region,
+        reservationConfig
       }
     );
     return (values || [])
@@ -347,18 +410,27 @@ class RunCapabilities extends React.Component {
       preferences,
       onChange
     } = this.props;
-    const {os} = this.state;
+    const {os, reservationConfig} = this.state;
     const capabilities = getPlatformSpecificCapabilities(
       preferences,
       {
         platform,
         os,
         provider,
-        region
+        region,
+        reservationConfig
       }
     );
-    const filtered = (values || [])
+    let filtered = (values || [])
       .filter(v => capabilities.find(o => o.value === v));
+    const dcv = RUN_CAPABILITIES.dcv;
+    const noMachine = RUN_CAPABILITIES.noMachine;
+    if (filtered.includes(dcv) && filtered.includes(noMachine)) {
+      console.warn(
+        'cannot enable both NICE DCV and NoMachine - switching off NICE DCV capability'
+      );
+      filtered = filtered.filter((o) => o !== dcv);
+    }
     onChange && onChange(filtered);
   };
 
@@ -425,6 +497,21 @@ class RunCapabilities extends React.Component {
     if (isSelected) {
       // add capability
       newSelection.push(value);
+      // check - DinD and NoMachine could not be selected together
+      const niceDcbIndex = newSelection.indexOf(RUN_CAPABILITIES.dcv);
+      const noMachineIndex = newSelection.indexOf(RUN_CAPABILITIES.noMachine);
+      let capabilityToRemove = -1;
+      if (value === RUN_CAPABILITIES.dcv && noMachineIndex >= 0) {
+        capabilityToRemove = noMachineIndex;
+      } else if (value === RUN_CAPABILITIES.noMachine && niceDcbIndex >= 0) {
+        capabilityToRemove = niceDcbIndex;
+      }
+      if (capabilityToRemove >= 0) {
+        console.warn(
+          'cannot enable both NICE DCV and NoMachine - switching off',
+          `${newSelection[capabilityToRemove]} capability`);
+        newSelection.splice(capabilityToRemove, 1);
+      }
     }
     // If it is "parent" / "child", we need to handle special cases:
     // a) if we select parent capability (isRequired & isSelected)
@@ -501,13 +588,14 @@ class RunCapabilities extends React.Component {
       ) {
         return null;
       }
+      const isDisabled = capability.disabled;
       if (capabilities.length === 0) {
         return (
           <MenuItem
             key={capability.value}
             value={capability.value}
             title={capability.description || capability.name}
-            disabled={capability.disabled}
+            disabled={isDisabled}
           >
             <Capability
               capability={capability}
@@ -536,7 +624,7 @@ class RunCapabilities extends React.Component {
               }
             />
           )}
-          disabled={capability.disabled}
+          disabled={isDisabled}
           onTitleClick={onCapabilityClick}
         >
           {
@@ -829,7 +917,36 @@ export function applyCapabilities (parameters, capabilities = [], preferences, p
         : (CAPABILITIES_DEPENDENCIES[capability.value] || []);
       dependencies.forEach(dependency => enable(dependency));
     });
-  return correctParametersForRequiredCapabilities(parameters, preferences);
+  return normalizeCapabilities(correctParametersForRequiredCapabilities(parameters, preferences));
+}
+
+export function normalizeCapabilities (parameters) {
+  if (!parameters) {
+    parameters = {};
+  }
+  const disable = (parameter) => {
+    parameters[parameter] = {
+      type: 'boolean',
+      value: false
+    };
+  };
+  const isEnabled = (parameter) => parameters[parameter] &&
+    `${parameters[parameter].value}`.toLowerCase() === 'true';
+  if (
+    isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]) &&
+    isEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.noMachine])
+  ) {
+    console.warn('cannot enable both NICE DCV and NoMachine - switching off NICE DCV capability');
+    disable(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]);
+  }
+  const disableParameterIfNotEnabled = (param) => {
+    if (!isEnabled(param)) {
+      disable(param); // explicitly set to false so that it is not overridden by tool defaults
+    }
+  };
+  disableParameterIfNotEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.dcv]);
+  disableParameterIfNotEnabled(RUN_CAPABILITIES_PARAMETERS[RUN_CAPABILITIES.noMachine]);
+  return parameters;
 }
 
 export function updateCapabilities (
@@ -858,6 +975,16 @@ export async function getUserCapabilities () {
     .map((o) => o.trim())
     .filter((o) => o.length);
 }
+
+export const getUserCapabilitiesCached = (() => {
+  let _promise;
+  return async () => {
+    if (!_promise) {
+      _promise = getUserCapabilities();
+    }
+    return _promise;
+  };
+})();
 
 export async function applyUserCapabilities (parameters, preferences, platform) {
   const userCapabilities = await getUserCapabilities();
@@ -906,7 +1033,7 @@ export function applyCustomCapabilitiesParameters (parameters, preferences) {
       }
     }
   }
-  return result;
+  return normalizeCapabilities(result);
 }
 
 export function hasPlatformSpecificCapabilities (platform, preferences) {

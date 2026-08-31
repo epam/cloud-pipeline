@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.List;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
-
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.*;
 import static com.codeborne.selenide.Condition.*;
@@ -96,11 +96,9 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
                 .create()
                 .searchForTableEntry(warningActiveNotification)
                 .ensureSeverityIconIs(severity.name());
-        if(!impersonateMode()) {
-            refresh();
-            validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
-            closeNotification(warningActiveNotification);
-        }
+        refresh();
+        validateActiveNotification(warningActiveNotification, warningActiveNotificationBodyText, severity);
+        closeNotification(warningActiveNotification);
     }
 
     @Test(dependsOnMethods = {"validateCreateInactiveInfoNotification"})
@@ -204,11 +202,9 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     @Test(dependsOnMethods = {"validateDeleteActiveNotification"})
     @TestCase(value = {"EPMCMBIBPC-1217"})
     public void validateSeveralInactiveNotifications() {
-        if (!impersonateMode()) {
-            changeStateOf(infoEditedTitle);
-            changeStateOf(warningActiveNotification);
-            changeStateOf(criticalNotification);
-        }
+        changeStateOf(infoEditedTitle);
+        changeStateOf(warningActiveNotification);
+        changeStateOf(criticalNotification);
 
         refresh();
         ensureNotificationIsAbsent(infoEditedTitle);
@@ -289,7 +285,7 @@ public class NotificationsTest extends AbstractBfxPipelineTest implements Author
     }
 
     private void ensureNotificationIsAbsent(String title) {
-        $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
+        $(byXpath(format(".//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
                 .shouldNotBe(visible);
     }
 

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
 import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
@@ -33,6 +34,9 @@ import com.epam.pipeline.acl.pipeline.issue.GitlabIssueApiService;
 import com.epam.pipeline.acl.plugin.PluginAssignmentService;
 import com.epam.pipeline.acl.plugin.PluginService;
 import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
+import com.epam.pipeline.acl.credits.PlatformUsageCreditsEventApiService;
+import com.epam.pipeline.acl.credits.PlatformUsageCreditsRuleApiService;
+import com.epam.pipeline.acl.credits.PlatformUsageCreditsUserBalanceApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.acl.resource.StaticResourceApiService;
@@ -59,6 +63,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
@@ -78,6 +83,8 @@ import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.acl.user.RoleApiService;
 import com.epam.pipeline.acl.user.UserApiService;
@@ -176,6 +183,12 @@ public class ControllerTestBeans {
     protected AuthManager authManager;
 
     @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
+
+    @MockBean
     protected AclPermissionApiService aclPermissionApiService;
 
     @MockBean
@@ -266,6 +279,15 @@ public class ControllerTestBeans {
     protected QuotaApiService quotaApiService;
 
     @MockBean
+    protected PlatformUsageCreditsRuleApiService platformUsageCreditsRuleApiService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceApiService platformUsageCreditsUserBalanceApiService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventApiService platformUsageCreditsEventApiService;
+
+    @MockBean
     protected ReportApiService reportApiService;
 
     @MockBean
@@ -306,4 +328,10 @@ public class ControllerTestBeans {
 
     @MockBean
     protected PluginAssignmentService pluginAssignmentService;
+
+    @MockBean
+    protected AccessApiService accessApiService;
+
+    @MockBean
+    protected UnsecuredAccessService unsecuredAccessService;
 }

@@ -15,41 +15,106 @@
  */
 
 import React from 'react';
+import {Alert} from 'antd';
 import CoreNodesTable from './core-nodes-table';
 import CoreServicesTable from './core-services-table';
 import SubSettings from '../../settings/sub-settings';
 import ProxyState from './proxy-state';
+import whoAmI from '../../../models/user/WhoAmI';
+import {isAdmin, isClusterReader} from '../utilities/access-permissinos';
+import LoadingView from '../../special/LoadingView';
+
+const allowClusterReaders = false;
 
 export default class CoreNodes extends React.Component {
   state = {
-    activeTabKey: 'nodes'
+    tabs: [],
+    pending: !whoAmI.loaded,
+    error: undefined
   };
 
-  tabs = [
-    {
-      key: 'nodes',
-      title: 'Core nodes',
-      render: () => <CoreNodesTable router={this.props.router} />
-    },
-    {
-      key: 'services',
-      title: 'Core services',
-      render: () => <CoreServicesTable />
-    },
-    {
-      key: 'proxy-state',
-      title: 'Proxy state',
-      render: () => <ProxyState />
-    }
-  ];
+  componentDidMount () {
+    this.buildTabs();
+  }
 
-  onChangeTab = (key) => this.setState({activeTabKey: key});
+  buildTabs = () => {
+    (async () => {
+      try {
+        this.setState({pending: true, error: undefined, tabs: []});
+        await whoAmI.fetchIfNeededOrWait();
+        if (whoAmI.error) {
+          throw new Error(`Access is denied: ${whoAmI.error}`);
+        }
+        if (!whoAmI.loaded || !whoAmI.value) {
+          throw new Error('Access is denied: error fetching user info');
+        }
+        const userIsAdmin = isAdmin(whoAmI.value);
+        const userIsClusterReader = allowClusterReaders ? isClusterReader(whoAmI.value) : false;
+        if (!userIsAdmin && !userIsClusterReader) {
+          throw new Error('Access is denied');
+        }
+        const tabs = (() => {
+          if (userIsAdmin) {
+            return [
+              {
+                key: 'nodes',
+                title: 'Core nodes',
+                render: () => <CoreNodesTable router={this.props.router} />
+              },
+              {
+                key: 'services',
+                title: 'Core services',
+                render: () => <CoreServicesTable />
+              },
+              {
+                key: 'proxy-state',
+                title: 'Proxy state',
+                render: () => <ProxyState />
+              }
+            ];
+          }
+          return [
+            {
+              key: 'nodes',
+              title: 'Core nodes',
+              render: () => <CoreNodesTable router={this.props.router} />
+            }
+          ];
+        })();
+        this.setState({error: undefined, pending: false, tabs});
+      } catch (error) {
+        this.setState({error: error.message, pending: false, tabs: []});
+      }
+    })();
+  }
 
   render () {
+    const {
+      pending,
+      error,
+      tabs
+    } = this.state;
+    if (pending) {
+      return (
+        <div style={{display: 'flex', flex: 1}}>
+          <LoadingView />
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div style={{display: 'flex', flex: 1}}>
+          <div style={{width: '100%'}}>
+            <Alert message={error} type="error" style={{width: '100%'}} />
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={{display: 'flex', flex: 1}}>
         <SubSettings
-          sections={this.tabs}
+          sections={tabs}
+          showSingleSection={false}
         />
       </div>
     );

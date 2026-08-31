@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,10 +28,10 @@ public class ContextualNotificationManager implements NotificationService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyRunStatusChanged(final PipelineRun run) {
+    public void notifyRunStatusChanged(final PipelineRun run, Map<String, Object> additionalNotificationParams) {
         contextualNotificationSettingsManager.find(NotificationType.PIPELINE_RUN_STATUS, run.getId())
                 .filter(notification -> triggersOnStatus(notification, run))
-                .map(notification -> toMessage(notification, run))
+                .map(notification -> toMessage(notification, run, additionalNotificationParams))
                 .map(message -> log(message, run))
                 .ifPresent(monitoringNotificationDao::createMonitoringNotification);
     }
@@ -40,11 +41,16 @@ public class ContextualNotificationManager implements NotificationService {
     }
 
     private NotificationMessage toMessage(final ContextualNotification notification,
-                                          final PipelineRun run) {
+                                          final PipelineRun run,
+                                          final Map<String, Object> additionalRunParams) {
+
+        final Map<String, Object> parameters = notificationParameterManager.build(notification.getType(), run);
+        parameters.putAll(additionalRunParams);
+
         final NotificationMessage message = new NotificationMessage();
         message.setSubject(notification.getSubject());
         message.setBody(notification.getBody());
-        message.setTemplateParameters(notificationParameterManager.build(notification.getType(), run));
+        message.setTemplateParameters(parameters);
         message.setToUserId(recipient(notification).orElse(null));
         message.setCopyUserIds(copyRecipients(notification));
         return message;

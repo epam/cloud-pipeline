@@ -135,6 +135,7 @@ RUN mkdir -p /etc/ssh-proxy/  && \
 ADD wetty /etc/ssh-proxy/wetty
 RUN cd /etc/ssh-proxy/wetty && \
     npm install && \
+    npm run build && \
     cd /
 
 ## Install maintenance page
@@ -158,5 +159,19 @@ ADD ingress-config /etc/nginx/ingress
 RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
-COPY filebeat-config/* /etc/filebeat/
+COPY filebeat-config/elasticsearch/* /etc/filebeat/
 RUN chmod go-w /etc/filebeat/*
+
+RUN cd /tmp \
+    && wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-oss-7.10.0-linux-x86_64.tar.gz \
+    && tar -xzf /tmp/filebeat-oss-7.10.0-linux-x86_64.tar.gz -C /opt/ \
+    && mv /opt/filebeat-7.10.0-linux-x86_64 /opt/filebeat-oss
+
+COPY filebeat-config/opensearch/* /opt/filebeat-oss/
+RUN chmod go-w /opt/filebeat-oss/*
+
+
+# Install SQUID
+
+RUN yum install -y squid
+COPY squid.conf.tmpl /etc/squid/squid.conf.tmpl

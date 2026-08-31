@@ -24,6 +24,8 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -39,6 +41,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,9 +83,20 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Autowired
     private RunLimitsService mockRunLimitsService;
 
+    @Autowired
+    private PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
+
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateUserForAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).create(pipelineUserVO);
+
+        assertThat(userApiService.createUser(pipelineUserVO)).isEqualTo(pipelineUser);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldCreateUserForUserAdmin() {
         doReturn(pipelineUser).when(mockUserManager).create(pipelineUserVO);
 
         assertThat(userApiService.createUser(pipelineUserVO)).isEqualTo(pipelineUser);
@@ -105,6 +119,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpdateUserForUserAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).updateUser(ID, pipelineUserVO);
+
+        assertThat(userApiService.updateUser(ID, pipelineUserVO)).isEqualTo(pipelineUser);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyUpdateUserForNotAdmin() {
         doReturn(pipelineUser).when(mockUserManager).updateUser(ID, pipelineUserVO);
@@ -115,6 +137,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdateUserBlockingStatusForAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).updateUserBlockingStatus(ID, true);
+
+        assertThat(userApiService.updateUserBlockingStatus(ID, true)).isEqualTo(pipelineUser);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpdateUserBlockingStatusForUserAdmin() {
         doReturn(pipelineUser).when(mockUserManager).updateUserBlockingStatus(ID, true);
 
         assertThat(userApiService.updateUserBlockingStatus(ID, true)).isEqualTo(pipelineUser);
@@ -137,6 +167,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpsertGroupBlockingStatusForUserAdmin() {
+        doReturn(groupStatus).when(mockUserManager).upsertGroupBlockingStatus(TEST_STRING, true);
+
+        assertThat(userApiService.upsertGroupBlockingStatus(TEST_STRING, true)).isEqualTo(groupStatus);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyUpsertGroupBlockingStatusForNotAdmin() {
         doReturn(groupStatus).when(mockUserManager).upsertGroupBlockingStatus(TEST_STRING, true);
@@ -153,6 +191,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDeleteGroupBlockingStatusForUserAdmin() {
+        doReturn(groupStatus).when(mockUserManager).deleteGroupBlockingStatus(TEST_STRING);
+
+        assertThat(userApiService.deleteGroupBlockingStatus(TEST_STRING)).isEqualTo(groupStatus);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyDeleteGroupBlockingStatusForNotAdmin() {
         doReturn(groupStatus).when(mockUserManager).deleteGroupBlockingStatus(TEST_STRING);
@@ -163,6 +209,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadAllGroupsBlockingStatusesForAdmin() {
+        doReturn(groupStatusList).when(mockUserManager).loadAllGroupsBlockingStatuses();
+
+        assertThat(userApiService.loadAllGroupsBlockingStatuses()).isEqualTo(groupStatusList);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadAllGroupsBlockingStatusesForUserAdmin() {
         doReturn(groupStatusList).when(mockUserManager).loadAllGroupsBlockingStatuses();
 
         assertThat(userApiService.loadAllGroupsBlockingStatuses()).isEqualTo(groupStatusList);
@@ -187,17 +241,25 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUserForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, false);
 
-        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false, false)).isEqualTo(pipelineUser);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadUserForUserAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, false);
+
+        assertThat(userApiService.loadUser(ID, false, false)).isEqualTo(pipelineUser);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUserForUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, false);
 
-        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false, false)).isEqualTo(pipelineUser);
     }
 
     @Test
@@ -205,12 +267,29 @@ public class UserApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadUserForNotUserReader() {
         doReturn(pipelineUser).when(mockUserManager).load(ID);
         initAclEntity(pipelineUser);
-        assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false));
+        assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false, false));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldLoadUserWithCreditsForAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, true);
+
+        assertThat(userApiService.loadUser(ID, false, true)).isEqualTo(pipelineUser);
+        verify(mockUserManager).load(ID, false, true);
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUserByNameForAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
+
+        assertThat(userApiService.loadUserByName(TEST_STRING)).isEqualTo(pipelineUser);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadUserByNameForUserAdmin() {
         doReturn(pipelineUser).when(mockUserManager).loadByNameOrId(TEST_STRING);
 
         assertThat(userApiService.loadUserByName(TEST_STRING)).isEqualTo(pipelineUser);
@@ -251,6 +330,16 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDeleteUserForUserAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).delete(ID);
+
+        userApiService.deleteUser(ID);
+
+        verify(mockUserManager).delete(ID);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyDeleteUserForNotAdmin() {
         doReturn(pipelineUser).when(mockUserManager).delete(ID);
@@ -267,8 +356,16 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldUpdateUserRolesForUserAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).updateUser(ID, TEST_LONG_LIST);
+
+        assertThat(userApiService.updateUserRoles(ID, TEST_LONG_LIST)).isEqualTo(pipelineUser);
+    }
+
+    @Test
     @WithMockUser
-    public void shouldDenyUpdateUserRolesForAdmin() {
+    public void shouldDenyUpdateUserRolesForNonAdmin() {
         doReturn(pipelineUser).when(mockUserManager).updateUser(ID, TEST_LONG_LIST);
 
         assertThrows(AccessDeniedException.class, () -> userApiService.updateUserRoles(ID, TEST_LONG_LIST));
@@ -277,29 +374,64 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUsersForAdmin() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
 
-        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false, false)).isEqualTo(pipelineUserList);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadUsersForUserAdmin() {
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
+
+        assertThat(userApiService.loadUsers(false, false)).isEqualTo(pipelineUserList);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUsersForUserReader() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
 
-        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false, false)).isEqualTo(pipelineUserList);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyLoadUsersForNotUserReader() {
         doReturn(pipelineUserList).when(mockUserManager).loadAllUsers();
-        assertThat(userApiService.loadUsers(false)).isEmpty();
+        assertThat(userApiService.loadUsers(false, false)).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldLoadUsersWithCreditsForAdmin() {
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, true);
+
+        assertThat(userApiService.loadUsers(false, true)).isEqualTo(pipelineUserList);
+        verify(mockUserManager).loadAllUsers(false, true);
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldNotEnrichCreditsWhenFlagIsFalse() {
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
+
+        userApiService.loadUsers(false, false);
+
+        verify(mockUserManager).loadAllUsers(false, false);
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUsersInfoForAdmin() {
+        doReturn(userInfoList).when(mockUserManager).loadUsersInfo(null);
+
+        assertThat(userApiService.loadUsersInfo(null)).isEqualTo(userInfoList);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldLoadUsersInfoForUserAdmin() {
         doReturn(userInfoList).when(mockUserManager).loadUsersInfo(null);
 
         assertThat(userApiService.loadUsersInfo(null)).isEqualTo(userInfoList);
@@ -332,8 +464,33 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     public void shouldGetCurrentUser() {
         doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
+        doReturn(Optional.empty())
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
 
         assertThat(userApiService.getCurrentUser()).isEqualTo(pipelineUser);
+    }
+
+    @Test
+    public void shouldSetUsageCreditsOnGetCurrentUser() {
+        final PlatformUsageCreditsUserBalance balance =
+                new PlatformUsageCreditsUserBalance(pipelineUser.getId(), 1500, null, null);
+        doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
+        doReturn(Optional.of(balance))
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
+
+        final PipelineUser result = userApiService.getCurrentUser();
+
+        assertThat(result.getUsageCredits()).isEqualTo(balance);
+    }
+
+    @Test
+    public void shouldLeaveUsageCreditsNullWhenNoBalanceExists() {
+        pipelineUser.setUsageCredits(null);
+        doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
+        doReturn(Optional.empty())
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
+
+        assertThat(userApiService.getCurrentUser().getUsageCredits()).isNull();
     }
 
     @Test
@@ -383,6 +540,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldExportUsersForUserAdmin() {
+        doReturn(TEST_ARRAY).when(mockUserManager).exportUsers(userExportVO);
+
+        assertThat(userApiService.exportUsers(userExportVO)).isEqualTo(TEST_ARRAY);
+    }
+
+    @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldExportUsersForUserReader() {
         doReturn(TEST_ARRAY).when(mockUserManager).exportUsers(userExportVO);
@@ -407,6 +572,14 @@ public class UserApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldGetTokenForUserAdmin() {
+        doReturn(token).when(mockUserManager).issueToken(TEST_STRING, ID);
+
+        assertThat(userApiService.issueToken(TEST_STRING, ID)).isEqualTo(token);
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyGetTokenForNotAdmin() {
         doReturn(token).when(mockUserManager).issueToken(TEST_STRING, ID);
@@ -417,6 +590,18 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldImportUsersForAdmin() {
+        final List<PipelineUserEvent> usersEvents = Collections.singletonList(UserCreatorUtils
+                .getPipelineUserEvent(SIMPLE_USER));
+        doReturn(usersEvents).when(mockUsersFileImportManager)
+                .importUsersFromFile(true, true, TEST_STRING_LIST, null);
+
+        assertThat(userApiService.importUsersFromCsv(true, true, TEST_STRING_LIST, null))
+                .isEqualTo(usersEvents);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldImportUsersForUserAdmin() {
         final List<PipelineUserEvent> usersEvents = Collections.singletonList(UserCreatorUtils
                 .getPipelineUserEvent(SIMPLE_USER));
         doReturn(usersEvents).when(mockUsersFileImportManager)

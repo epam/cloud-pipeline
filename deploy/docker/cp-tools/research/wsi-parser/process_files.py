@@ -45,6 +45,7 @@ SCHEMA_PREFIX = '{http://www.openmicroscopy.org/Schemas/OME/2016-06}'
 WSI_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('WSI_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
 ZOOM_TILES_SIZE = int(os.getenv('WSI_PARSING_DZ_TILES_SIZE', 256))
 TAGS_PROCESSING_ONLY = os.getenv('WSI_PARSING_TAGS_ONLY', 'false') == 'true'
+EVALS_DISABLED = str(os.getenv('WSI_PARSING_EVALS_DISABLE', 'false')).lower() == 'true'
 TARGET_FORMAT = os.getenv('WSI_PARSING_TARGET_FORMAT', 'DZ')
 REFR_IND_CAT_ATTR_NAME = os.getenv('WSI_PARSING_REFR_IND_CAT_ATTR_NAME', 'Immersion liquid')
 EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NAME', 'Extended Focus')
@@ -129,6 +130,7 @@ class WsiParsingUtils:
 
     TILES_DIR = 'tiles'
     PARSER_SERVICE_DIR = '.wsiparser'
+    LABEL_FILE = 'label.jpg'
 
     @staticmethod
     def get_file_without_extension(file_path):
@@ -1104,12 +1106,14 @@ class WsiFileTagProcessor:
 
 
 class WsiFileParser:
-    _DEFAULT_SERVICE_IMAGE_GROUPS = {'overview', 'label', 'thumbnail', 'macro', 'macro image', 'macro mask image',
-                                     'label image', 'overview image', 'thumbnail image'}
+    _DEFAULT_LABEL_IMAGE_GROUPS = {'label', 'label image'}
+    _DEFAULT_SERVICE_IMAGE_GROUPS = _DEFAULT_LABEL_IMAGE_GROUPS.union(
+        {'overview', 'thumbnail', 'macro', 'macro image', 'macro mask image', 'overview image', 'thumbnail image'})
     _DEEP_ZOOM_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'),
                                               'create_deepzoom.sh')
     _OME_TIFF_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'),
                                               'create_pyramid_ome_tiff.sh')
+    _LABEL_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'), 'create_label.sh')
 
     def __init__(self, file_path):
         self.file_path = file_path
@@ -1130,6 +1134,13 @@ class WsiFileParser:
         else:
             return {group.strip() for group in service_image_groups_parameter.split(',')}
 
+    def _get_label_image_groups(self):
+        label_image_groups_parameter = os.getenv('WSI_LABEL_SERIES_NAMES')
+        if not label_image_groups_parameter:
+            return self._DEFAULT_LABEL_IMAGE_GROUPS
+        else:
+            return {group.strip() for group in label_image_groups_parameter.split(',')}
+
     def generate_xml_info_file(self):
         WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
         os.system('showinf -nopix -omexml-only "{}" > "{}"'.format(self.file_path, self.xml_info_file))
@@ -1137,9 +1148,9 @@ class WsiFileParser:
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
 
-    def create_tmp_stat_file(self, image_details):
+    def create_tmp_stat_file(self, image_details, label_file_path=None):
         WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
-        self._write_processing_stats_to_file(self.tmp_stat_file_name, image_details)
+        self._write_processing_stats_to_file(self.tmp_stat_file_name, image_details, label_file_path)
 
     def clear_tmp_stat_file(self):
         if os.path.exists(self.tmp_stat_file_name):
@@ -1149,17 +1160,30 @@ class WsiFileParser:
         if os.path.exists(self.tmp_local_dir):
             shutil.rmtree(self.tmp_local_dir)
 
-    def update_stat_file(self, target_image_details):
+    def update_stat_file(self, target_image_details, label_file_path=None):
         WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
-        self._write_processing_stats_to_file(self.stat_file_name, target_image_details)
+        self._write_processing_stats_to_file(self.stat_file_name, target_image_details, label_file_path)
 
-    def _write_processing_stats_to_file(self, stat_file_path, target_image_details):
+    def update_stat_file_with_label(self, label_file_path):
+        WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
+        details = {}
+        if os.path.exists(self.stat_file_name) and os.path.isfile(self.stat_file_name):
+            # load details if already exist
+            with open(self.stat_file_name, 'r') as output_file:
+                details = json.loads(output_file.read())
+        details['label'] = label_file_path
+        with open(self.stat_file_name, 'w') as output_file:
+            output_file.write(json.dumps(details, indent=4))
+
+    def _write_processing_stats_to_file(self, stat_file_path, target_image_details, label_file_path=None):
         details = {
             'file': self.file_path,
             'target_series': target_image_details.id,
             'width': target_image_details.width,
             'height': target_image_details.height
         }
+        if label_file_path:
+            details['label'] = label_file_path
         with open(stat_file_path, 'w') as output_file:
             output_file.write(json.dumps(details, indent=4))
 
@@ -1315,18 +1339,30 @@ class WsiFileParser:
         tags_processing_result = self.try_process_tags(target_tags_file, target_image_details,
                                                        self.file_path.endswith('.qptiff'))
         if TAGS_PROCESSING_ONLY:
+            self.log_processing_info('Only tags processing required, exiting...')
             return tags_processing_result
-        elif self._is_same_series_selected(target_series):
-            self.log_processing_info('The same series [{}] is selected for image processing, skipping... '
-                                     .format(target_series))
-            self.update_stat_file(target_image_details)
-            return 0
-        self.log_processing_info('Series #{} selected for conversions [width={}; height={}]'
-                                 .format(target_series, target_image_details.width, target_image_details.height))
+
         if not self._localize_related_files():
             self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
             return 1
         local_file_path = os.path.join(self.tmp_local_dir, os.path.basename(self.file_path))
+
+        label_file_path = self.process_label_image(local_file_path)
+
+        if EVALS_DISABLED:
+            if label_file_path:
+                self.update_stat_file_with_label(label_file_path)
+            self.log_processing_info('TIFF image processing disabled, exiting...')
+            return 0
+
+        if self._is_same_series_selected(target_series):
+            self.log_processing_info('The same series [{}] is selected for image processing, skipping... '
+                                     .format(target_series))
+            self.update_stat_file(target_image_details, label_file_path)
+            return 0
+
+        self.log_processing_info('Series #{} selected for conversions [width={}; height={}]'
+                                 .format(target_series, target_image_details.width, target_image_details.height))
         _target_format = self.find_target_format() if TARGET_FORMAT == "AUTO" else TARGET_FORMAT
         if _target_format == "DZ":
             self.log_processing_info('DZ is configured as conversion format for the file!')
@@ -1351,7 +1387,7 @@ class WsiFileParser:
             self.log_processing_info('Target format: {} is not supported, exiting...'.format(TARGET_FORMAT))
             return 1
         if conversion_result == 0:
-            self.update_stat_file(target_image_details)
+            self.update_stat_file(target_image_details, label_file_path)
             if _target_format == "DZ":
                 self.update_info_file(target_image_details.width, target_image_details.height)
             self.log_processing_info('File processing is finished')
@@ -1372,6 +1408,45 @@ class WsiFileParser:
             tags_processing_result = 1
         return tags_processing_result
 
+    def process_label_image(self, local_file_path):
+        try:
+            label_group_inx = self.calculate_label_series()
+            if label_group_inx is None:
+                self.log_processing_info('Skipping label processing..')
+                return None
+            label_file_path = os.path.join(str(WsiParsingUtils.get_service_directory(self.file_path)),
+                                           WsiParsingUtils.LABEL_FILE)
+            command = 'bash "{}" "{}" {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-label-$RUN_ID.log 2>&1'.format(
+                self._LABEL_CREATION_SCRIPT,
+                local_file_path,
+                label_group_inx,
+                label_file_path,
+                self.tmp_local_dir)
+            conversion_result = os.system(command)
+            if conversion_result != 0:
+                self.log_processing_info('Label processing has failed.')
+                return None
+            return label_file_path
+        except Exception as e:
+            log_info('An error occurred during label processing: {}'.format(str(e)))
+            print(traceback.format_exc())
+            return None
+
+    def calculate_label_series(self):
+        images = self.xml_info_tree.findall(SCHEMA_PREFIX + 'Image')
+        series_mapping = self.group_image_series(images)
+        label_image_groups = self._get_label_image_groups()
+        label_group_inx = None
+        label_group = None
+        label_group_counter = 0
+        for group_name in series_mapping.keys():
+            if group_name.lower() in label_image_groups:
+                label_group = group_name
+                label_group_inx = label_group_counter
+                break
+            label_group_counter = label_group_counter + 1
+        self.log_processing_info('Label group is: {}'.format(label_group))
+        return label_group_inx
 
 def log_success(message):
     log_info(message, status=TaskStatus.SUCCESS)

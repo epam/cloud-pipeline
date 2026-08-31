@@ -44,6 +44,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ADMIN_ONLY;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.READ_PERMISSION;
@@ -117,6 +118,16 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_ADMIN_ROLE)
+    public void shouldCreatePipelineForPipelineAdminWhenPermissionIsGranted() throws GitClientException {
+        initAclEntity(folder, AclPermission.WRITE);
+        doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
+
+        assertThat(pipelineApiService.create(pipelineVO)).isEqualTo(pipeline);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
     public void shouldCreateVersionedStorageWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(folder, AclPermission.WRITE);
@@ -129,6 +140,17 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_MANAGER_ROLE)
     public void shouldDenyCreatePipelineWhenParentIdIsNull() throws GitClientException {
+        initAclEntity(folder, AclPermission.WRITE);
+        final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO(null);
+        doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
+
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_ADMIN_ROLE)
+    public void shouldDenyCreatePipelineForPipelineAdminWhenParentIdIsNull() throws GitClientException {
         initAclEntity(folder, AclPermission.WRITE);
         final PipelineVO pipelineVO = PipelineCreatorUtils.getPipelineVO(null);
         doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
@@ -179,6 +201,17 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_ADMIN_ROLE)
+    public void shouldDenyCreatePipelineForPipelineAdminWhenPermissionForParentFolderIsNotGranted()
+            throws GitClientException {
+        initAclEntity(folder);
+        doReturn(pipeline).when(mockPipelineManager).create(pipelineVO);
+        mockSecurityContext();
+
+        assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.create(pipelineVO));
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER, roles = VERSIONED_STORAGE_MANAGER)
     public void shouldDenyCreateVersionedStorageWhenPermissionForParentFolderIsNotGranted() throws GitClientException {
         initAclEntity(folder);
@@ -198,6 +231,14 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUpdatePipelineForAdmin() {
+        doReturn(pipeline).when(mockPipelineManager).update(pipelineVO);
+
+        assertThat(pipelineApiService.update(pipelineVO)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(roles = PIPELINE_ADMIN_ROLE)
+    public void shouldUpdatePipelineForPipelineAdmin() {
         doReturn(pipeline).when(mockPipelineManager).update(pipelineVO);
 
         assertThat(pipelineApiService.update(pipelineVO)).isEqualTo(pipeline);
@@ -233,6 +274,14 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = PIPELINE_ADMIN_ROLE)
+    public void shouldUpdateTokenForPipelineAdmin() {
+        doReturn(pipeline).when(mockPipelineManager).updateToken(pipelineVO);
+
+        assertThat(pipelineApiService.updateToken(pipelineVO)).isEqualTo(pipeline);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateTokenWhenPermissionIsGranted() {
         initAclEntity(pipeline, AclPermission.WRITE);
@@ -257,6 +306,15 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadAllPipelinesForAdmin() {
         doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(true);
+
+        assertThat(pipelineApiService.loadAllPipelines(true)).hasSize(1).contains(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = ANOTHER_SIMPLE_USER, roles = PIPELINE_ADMIN_ONLY)
+    public void shouldLoadAllPipelinesForPipelineAdmin() {
+        doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(true);
+        initAclEntity(pipeline, AclPermission.OWNER);
 
         assertThat(pipelineApiService.loadAllPipelines(true)).hasSize(1).contains(pipeline);
     }
@@ -307,6 +365,17 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = PIPELINE_ADMIN_ROLE)
+    public void shouldLoadAllPipelinesWithPermissionsForPipelineAdmin() {
+        doReturn(pipelinesWithPermissions).when(spyGrantPermissionManager)
+                .loadAllPipelinesWithPermissions(TEST_INT, TEST_INT);
+
+        assertThat(pipelineApiService.loadAllPipelinesWithPermissions(TEST_INT, TEST_INT))
+                .isEqualTo(pipelinesWithPermissions);
+        reset(spyGrantPermissionManager);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldDenyLoadAllPipelinesWithPermissionsForNotAdmin() {
         doReturn(pipelinesWithPermissions).when(spyGrantPermissionManager)
@@ -321,6 +390,15 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadPipelineForAdmin() {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
+
+        assertThat(pipelineApiService.load(ID)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = ANOTHER_SIMPLE_USER, roles = PIPELINE_ADMIN_ROLE)
+    public void shouldLoadPipelineForPipelineAdmin() {
+        doReturn(pipeline).when(mockPipelineManager).load(ID, true);
+        initAclEntity(pipeline, AclPermission.READ);
 
         assertThat(pipelineApiService.load(ID)).isEqualTo(pipeline);
     }
@@ -384,6 +462,14 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = PIPELINE_ADMIN_ROLE)
+    public void shouldLoadAllPipelinesWithoutVersionForPipelineAdmin() {
+        doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(false);
+
+        assertThat(pipelineApiService.loadAllPipelinesWithoutVersion()).hasSize(1).contains(pipeline);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadAllPipelinesWithoutVersionWhenPermissionIsGranted() {
         initAclEntity(pipeline, AclPermission.READ);
@@ -421,6 +507,16 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeletePipelineForAdmin() {
         doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
+
+        assertThat(pipelineApiService.delete(ID, true)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = ANOTHER_SIMPLE_USER, roles = PIPELINE_ADMIN_ROLE)
+    public void shouldDeletePipelineForPipelineAdmin() {
+        initAclEntity(pipeline, AclPermission.OWNER);
+        doReturn(pipeline).when(mockPipelineManager).delete(ID, true);
+        mockSecurityContext();
 
         assertThat(pipelineApiService.delete(ID, true)).isEqualTo(pipeline);
     }
@@ -478,6 +574,14 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadAllRunsByPipelineForAdmin() {
+        doReturn(pipelineRunList).when(mockPipelineRunManager).loadAllRunsByPipeline(ID);
+
+        assertThat(pipelineApiService.loadAllRunsByPipeline(ID)).isEqualTo(pipelineRunList);
+    }
+
+    @Test
+    @WithMockUser(roles = PIPELINE_ADMIN_ROLE)
+    public void shouldLoadAllRunsByPipelineForPipelineAdmin() {
         doReturn(pipelineRunList).when(mockPipelineRunManager).loadAllRunsByPipeline(ID);
 
         assertThat(pipelineApiService.loadAllRunsByPipeline(ID)).isEqualTo(pipelineRunList);
@@ -720,6 +824,14 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(roles = PIPELINE_ADMIN_ROLE)
+    public void shouldLoadPipelineByRepoUrlForPipelineAdmin() {
+        doReturn(pipeline).when(mockPipelineManager).loadByRepoUrl(TEST_STRING);
+
+        assertThat(pipelineApiService.loadPipelineByRepoUrl(TEST_STRING)).isEqualTo(pipeline);
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldLoadPipelineByRepoUrlWhenPermissionIsGranted() {
         initAclEntity(pipeline, AclPermission.READ);
@@ -744,6 +856,17 @@ public class PipelineApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCopyPipelineForAdmin() {
         doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+
+        assertThat(pipelineApiService.copyPipeline(ID, ID, TEST_STRING)).isEqualTo(pipeline);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = PIPELINE_ADMIN_ROLE)
+    public void shouldCopyPipelineForPipelineAdminWhenPermissionIsGranted() {
+        initAclEntity(pipeline, AclPermission.READ);
+        initAclEntity(folder, AclPermission.WRITE);
+        doReturn(pipeline).when(mockPipelineManager).copyPipeline(ID, ID, TEST_STRING);
+        mockSecurityContext();
 
         assertThat(pipelineApiService.copyPipeline(ID, ID, TEST_STRING)).isEqualTo(pipeline);
     }

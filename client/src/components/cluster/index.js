@@ -22,6 +22,7 @@ import AdaptedLink from '../special/AdaptedLink';
 import styles from './Cluster.css';
 import roleModel from '../../utils/roleModel';
 import 'highlight.js/styles/github.css';
+import {isAdmin, isClusterReader} from './utilities/access-permissinos';
 
 const Tabs = [
   {
@@ -34,25 +35,25 @@ const Tabs = [
     key: 'cloud-nodes',
     path: '/cluster/cloud-nodes',
     title: 'Cloud nodes',
-    available: (user) => user ? user.admin : false
+    available: isAdmin
   },
   {
     key: 'core-nodes',
     path: '/cluster/core-nodes',
     title: 'Core nodes',
-    available: (user) => user ? user.admin : false
+    available: isAdmin
   },
   {
     key: 'hot',
     path: '/cluster/hot',
     title: 'Hot Node Pools',
-    available: (user) => user ? user.admin : false
+    available: isClusterReader
   },
   {
     key: 'usage',
     path: '/cluster/usage',
     title: 'Pools Usage',
-    available: (user) => user ? user.admin : false
+    available: isClusterReader
   }
 ];
 

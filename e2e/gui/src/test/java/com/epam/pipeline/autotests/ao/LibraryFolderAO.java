@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
@@ -27,6 +26,7 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NEW_RULE;
@@ -61,7 +61,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
     }
 
     public LibraryFolderEditPopupAO clickEditButton() {
-        get(SETTINGS).waitUntil(enabled, DEFAULT_TIMEOUT);
+        get(SETTINGS).shouldBe(enabled);
         click(SETTINGS);
         click(EDIT_FOLDER);
         return new LibraryFolderEditPopupAO(this);
@@ -129,6 +129,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
         sleep(5, SECONDS);
         ensure(UPLOAD_METADATA, visible);
         $(byClassName("ant-upload-select")).find(tagName("input")).should(exist).uploadFile(file);
+        $(withText("Uploading files...")).should(disappear);
         return this;
     }
 

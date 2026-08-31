@@ -52,6 +52,10 @@
   padding-left: 50px;
 }
 
+.chart-controls.with-run-id {
+  padding-top: 0;
+}
+
 .range-controls {
   display: flex;
   flex-wrap: nowrap;

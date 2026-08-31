@@ -20,13 +20,20 @@ import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.NodePoolUsageReportRecord;
 import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.entity.cluster.pool.Requests;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.apache.commons.collections4.ListUtils;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.util.ReportTestUtils.DAYS_IN_MONTH;
@@ -46,12 +53,21 @@ public class NodePoolReportServiceTest {
     private static final Integer NODES_COUNT = 2;
     private static final Integer OCCUPIED_NODE_COUNT = 1;
     private static final Integer UTILIZATION = 50;
+    private static final String CPU = "cpu";
+    private static final Long ACTIVE_CPUS = 2L;
+    private static final Long PENDING_CPUS = 1L;
+    private static final Long TOTAL_CPUS = 2L;
+    private static final String MEMORY = "memory";
 
     private final NodePoolUsageService nodePoolUsageService = mock(NodePoolUsageService.class);
-    private final NodePoolReportService nodePoolReportService = new NodePoolReportService(nodePoolUsageService);
+    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final NodePoolReportService nodePoolReportService =
+            new NodePoolReportService(nodePoolUsageService, preferenceManager);
 
     @Test
     public void shouldCalculateDayUsage() {
+        doReturn(Arrays.asList(CPU, MEMORY)).when(preferenceManager)
+               .getPreference(SystemPreferences.MONITORING_POOL_REQUEST_NAMES);
         final LocalDateTime from = dayStart();
         final LocalDateTime to = dayEnd(from);
 
@@ -61,13 +77,15 @@ public class NodePoolReportServiceTest {
                 .interval(ChronoUnit.HOURS)
                 .build();
         doReturn(generateNodePoolUsage(from, to)).when(nodePoolUsageService).getByPeriod(from, to);
-
+        final Map<String, Requests> requests = new HashMap<>();
+        requests.put(CPU, new Requests(ACTIVE_CPUS, PENDING_CPUS, TOTAL_CPUS));
         final NodePoolUsageReportRecord expectedFirstRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from)
                 .periodEnd(from.plusHours(1))
                 .nodesCount(NODES_COUNT)
                 .occupiedNodesCount(OCCUPIED_NODE_COUNT)
                 .utilization(UTILIZATION)
+                .requestsStats(requests)
                 .build();
         final NodePoolUsageReportRecord expectedLastRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from.plusHours(HOURS_IN_DAY - 1))
@@ -75,6 +93,7 @@ public class NodePoolReportServiceTest {
                 .nodesCount(NODES_COUNT)
                 .occupiedNodesCount(OCCUPIED_NODE_COUNT)
                 .utilization(UTILIZATION)
+                .requestsStats(requests)
                 .build();
 
         final List<NodePoolUsageReport> result = nodePoolReportService.getReport(filter);
@@ -102,10 +121,12 @@ public class NodePoolReportServiceTest {
         final NodePoolUsageReportRecord expectedFirstRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from)
                 .periodEnd(from.plusHours(1))
+                .requestsStats(new HashMap<>())
                 .build();
         final NodePoolUsageReportRecord expectedLastRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from.plusHours(HOURS_IN_DAY - 1))
                 .periodEnd(from.plusHours(HOURS_IN_DAY))
+                .requestsStats(new HashMap<>())
                 .build();
 
         final List<NodePoolUsageReport> result = nodePoolReportService.getReport(filter);
@@ -116,6 +137,12 @@ public class NodePoolReportServiceTest {
 
     @Test
     public void shouldCalculateMonthUsage() {
+        doReturn(Arrays.asList(CPU, MEMORY)).when(preferenceManager)
+                .getPreference(SystemPreferences.MONITORING_POOL_REQUEST_NAMES);
+
+        final Map<String, Requests> requests = new HashMap<>();
+        requests.put(CPU, new Requests(ACTIVE_CPUS, PENDING_CPUS, TOTAL_CPUS));
+
         final LocalDateTime from = monthStart();
         final LocalDateTime to = monthEnd(from);
 
@@ -132,6 +159,7 @@ public class NodePoolReportServiceTest {
                 .nodesCount(NODES_COUNT)
                 .occupiedNodesCount(OCCUPIED_NODE_COUNT)
                 .utilization(UTILIZATION)
+                .requestsStats(requests)
                 .build();
         final NodePoolUsageReportRecord expectedLastRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from.plusDays(DAYS_IN_MONTH - 1))
@@ -139,6 +167,7 @@ public class NodePoolReportServiceTest {
                 .nodesCount(NODES_COUNT)
                 .occupiedNodesCount(OCCUPIED_NODE_COUNT)
                 .utilization(UTILIZATION)
+                .requestsStats(requests)
                 .build();
 
         final List<NodePoolUsageReport> result = nodePoolReportService.getReport(filter);
@@ -166,10 +195,12 @@ public class NodePoolReportServiceTest {
         final NodePoolUsageReportRecord expectedFirstRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from)
                 .periodEnd(from.plusDays(1))
+                .requestsStats(new HashMap<>())
                 .build();
         final NodePoolUsageReportRecord expectedLastRecord = NodePoolUsageReportRecord.builder()
                 .periodStart(from.plusDays(DAYS_IN_MONTH - 1))
                 .periodEnd(from.plusDays(DAYS_IN_MONTH))
+                .requestsStats(new HashMap<>())
                 .build();
 
         final List<NodePoolUsageReport> result = nodePoolReportService.getReport(filter);
@@ -191,11 +222,16 @@ public class NodePoolReportServiceTest {
     }
 
     private NodePoolUsage nodePoolUsage(final LocalDateTime logDate, final Long poolId) {
+        final Requests requests = new Requests();
+        requests.setPending(1L);
+        requests.setActive(2L);
+        requests.setTotal(2L);
         return NodePoolUsage.builder()
                 .nodePoolId(poolId)
                 .logDate(logDate)
                 .totalNodesCount(NODES_COUNT)
                 .occupiedNodesCount(OCCUPIED_NODE_COUNT)
+                .requestsStats(Collections.singletonMap(CPU, requests))
                 .build();
     }
 

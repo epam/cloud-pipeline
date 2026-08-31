@@ -1,0 +1,135 @@
+.input {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 4px;
+  font-family: inherit;
+  font-size: small;
+}
+
+.inputLabel {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input--inline .inputLabel {
+  margin-right: 8px;
+  margin-bottom: 0;
+}
+
+.inputControl {
+  appearance: none;
+  border: 1px solid var(--color-border-dark);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border-radius: var(--border-radius);
+  padding: 4px 8px;
+  line-height: 1.2;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.inputControl:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary), 0.1);
+}
+
+.inputControl:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+/* Color input size normalization */
+.inputControl[type="color"] {
+  padding: 0;
+  width: 42px;
+  height: 32px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.inputHint {
+  color: var(--color-text-secondary);
+}
+
+.inputIconEnd {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.inputError {
+  color: var(--color-error);
+}
+
+.input--error .inputControl {
+  border-color: var(--color-error);
+}
+
+.input--disabled .inputControl {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.inputControl[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+}
+
+.inputControl[type="checkbox"]:checked {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.inputControl[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: transform 120ms ease-in-out;
+  transform-origin: bottom left;
+  box-shadow: inset 1em 1em var(--color-bg-primary);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+}
+
+.inputControl[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+.input textarea.inputControl {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.input--sm .inputControl {
+  padding: 2px 6px;
+}
+
+.input--md .inputControl {
+  padding: 4px 8px;
+}
+
+.input--lg .inputControl {
+  padding: 6px 12px;
+}
+
+.input--sm textarea.inputControl {
+  min-height: 56px;
+}
+
+.input--md textarea.inputControl {
+  min-height: 72px;
+}
+
+.input--lg textarea.inputControl {
+  min-height: 96px;
+}

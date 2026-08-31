@@ -46,7 +46,7 @@ public class NodePool implements NodePoolInfo {
     private Double scaleUpThreshold;
     private Double scaleDownThreshold;
     private Integer scaleStep;
-    private Map<String, String> kubeLabels;
+    private Map<String, PoolLabel> kubeLabels;
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {

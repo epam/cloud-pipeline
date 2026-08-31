@@ -33,6 +33,7 @@ class ChartsData extends ChartData {
   @observable followCommonRange = true;
   @observable from;
   @observable to;
+  @observable runId;
   @observable cpuUsage;
   @observable memoryUsage;
   @observable lastMemoryUsage;
@@ -40,6 +41,20 @@ class ChartsData extends ChartData {
   @observable fileSystemUsage;
 
   @observable node;
+
+  /**
+   * `true` if the range was requested explicitly (i.e. we're opening node monitor
+   * for the specific run); in that case the requested range is displayed initially,
+   * otherwise (node list -> monitor) the last hour is displayed by default
+   */
+  rangeIsPredefined = false;
+
+  /**
+   * `true` if the range end was requested explicitly (i.e. we're displaying statistics
+   * for the finished run). Unlike `rangeEndIsFixed`, this flag is not affected by the
+   * `ui.cluster.monitoring.admins.allow.range` preference
+   */
+  rangeEndIsPredefined = false;
 
   @computed
   get pending () {
@@ -61,13 +76,16 @@ class ChartsData extends ChartData {
     }
   }
 
-  constructor (nodeName, from, to, stores) {
+  constructor (nodeName, from, to, stores, runId) {
     const format = 'YYYY-MM-DD HH:mm:ss';
     const instanceFrom = from ? moment.utc(decodeURIComponent(from), format).unix() : undefined;
     const instanceTo = to ? moment.utc(decodeURIComponent(to), format).unix() : undefined;
-    super(nodeName, instanceFrom, instanceTo);
+    super(nodeName, instanceFrom, instanceTo, runId);
+    this.rangeIsPredefined = !!instanceFrom || !!instanceTo;
+    this.rangeEndIsPredefined = !!instanceTo;
     this.preferences = (stores || {}).preferences;
     this.authenticatedUserInfo = (stores || {}).authenticatedUserInfo;
+    this.runId = runId;
     this.nodeName = nodeName;
     this.initialize()
       .then(this.loadData);
@@ -113,8 +131,10 @@ class ChartsData extends ChartData {
         (creationTimestamp ? moment.utc(creationTimestamp).unix() : undefined);
     }
     this.instanceTo = this.instanceTo || moment.utc().unix();
-    const lastHour = moment.unix(this.instanceTo).add(-1, 'hour').unix();
-    this.from = Math.max(this.instanceFrom || lastHour, lastHour);
+    if (!this.rangeIsPredefined) {
+      const lastHour = moment.unix(this.instanceTo).add(-1, 'hour').unix();
+      this.from = Math.max(this.instanceFrom || lastHour, lastHour);
+    }
     this.cpuUsage = new CPUUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.memoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.networkUsage = new NetworkUsageData(this.nodeName, this.instanceFrom, this.instanceTo);

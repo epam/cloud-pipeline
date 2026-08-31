@@ -19,7 +19,8 @@ import PropTypes from 'prop-types';
 import {Select} from 'antd';
 import {
   RepositoryTypeNames,
-  availableRepositoryTypes
+  availableRepositoryTypes,
+  normalizeRepositoryType
 } from '../../../special/git-repository-control';
 
 class RepositoryTypeSelector extends React.Component {
@@ -75,7 +76,7 @@ class RepositoryTypeSelector extends React.Component {
           style={{width: '100%'}}
           disabled={disabled}
           onChange={this.onChange}
-          value={value}
+          value={normalizeRepositoryType(value)}
         >
           {
             availableRepositoryTypes

@@ -18,6 +18,30 @@ DCV_INSTALL_TASK="NiceDCVInitialization"
 export CP_DCV_DESKTOP_PORT=8099
 export CP_DCV_WEB_PORT=8100
 
+_mesa_fix_owner_allowed=1
+if [ -n "${CP_CAP_DCV_MESA_FIX_USERS:-}" ]; then
+    _mesa_fix_owner_allowed=0
+    IFS=',' read -ra _mesa_fix_users_list <<< "$CP_CAP_DCV_MESA_FIX_USERS"
+    for _mesa_fix_user in "${_mesa_fix_users_list[@]}"; do
+        if [ "$_mesa_fix_user" == "$OWNER" ]; then
+            _mesa_fix_owner_allowed=1
+            break
+        fi
+    done
+fi
+
+if [ $_mesa_fix_owner_allowed -eq 1 ] && \
+   grep -m1 'vendor_id' /proc/cpuinfo | grep -q 'GenuineIntel' && \
+   grep -m1 'flags' /proc/cpuinfo | grep -q 'avx512' && \
+   ! grep -m1 'flags' /proc/cpuinfo | grep -q 'arch_capabilities'; then
+      cat > /etc/profile.d/mesa-fix.sh << 'EOF'
+export GALLIUM_DRIVER=softpipe
+export LIBGL_ALWAYS_SOFTWARE=1
+EOF
+      chmod +x /etc/profile.d/mesa-fix.sh
+      pipe_log_warn "[WARNING] Mesa will use software rendering due to invalid avx512 exposure" "$DCV_INSTALL_TASK"
+fi
+
 _dcv_distro_url="${CP_CAP_DCV_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dcv}"
 _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11445-el8-x86_64
 wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \

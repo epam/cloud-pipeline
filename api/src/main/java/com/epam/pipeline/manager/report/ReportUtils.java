@@ -60,12 +60,37 @@ public interface ReportUtils {
         return sample.length == 0 ? 0 : (int) Math.round(new Median().evaluate(sample));
     }
 
+    static <T> Long calculateSampleMedianLong(final Function<T, Long> getValueFunction,
+                                              final List<T> records) {
+        final List<Long> sampleWithNulls = records.stream()
+                .map(getValueFunction)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(sampleWithNulls)) {
+            return null;
+        }
+        final double[] sample = sampleWithNulls.stream()
+                .mapToDouble(Long::doubleValue)
+                .filter(value -> value != 0)
+                .toArray();
+        return sample.length == 0 ? 0 : Math.round(new Median().evaluate(sample));
+    }
+
     static <T> Integer calculateSampleMax(final Function<T, Integer> getValueFunction,
                                           final List<T> records) {
         return records.stream()
                 .map(getValueFunction)
                 .filter(Objects::nonNull)
                 .max(Integer::compareTo)
+                .orElse(null);
+    }
+
+    static <T> Long calculateSampleMaxLong(final Function<T, Long> getValueFunction,
+                                           final List<T> records) {
+        return records.stream()
+                .map(getValueFunction)
+                .filter(Objects::nonNull)
+                .max(Long::compareTo)
                 .orElse(null);
     }
 }

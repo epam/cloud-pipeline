@@ -47,8 +47,12 @@ export function getToolLaunchPayload (options) {
     docker_image: toolVersion
       ? `${image}:${toolVersion}`
       : image,
+    friendly_url: versionSettingValue('friendly_url') || tool.friendly_url,
     instance_disk: +versionSettingValue('instance_disk') || tool.disk,
     instance_size: versionSettingValue('instance_size') || tool.instanceType,
+    fallback_instance_types: versionSettingValue('fallback_instance_types') ||
+      tool.fallbackInstanceTypes ||
+      tool.fallback_instance_types,
     is_spot: versionSettingValue('is_spot'),
     parameters: versionSettingValue('parameters'),
     node_count: parameterIsNotEmpty(versionSettingValue('node_count'))
@@ -94,6 +98,8 @@ export function getRunLaunchPayload (options) {
   if (run.instance) {
     parameters.instance_size = run.instance.nodeType;
     parameters.instance_disk = run.instance.nodeDisk;
+    parameters.fallback_instance_types = run.instance.fallbackInstanceTypes ||
+      run.instance.fallback_instance_types;
     parameters.is_spot = run.instance.spot;
     parameters.cloudRegionId = run.instance.cloudRegionId;
   }

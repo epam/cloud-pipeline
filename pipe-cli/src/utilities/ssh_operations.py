@@ -1203,6 +1203,7 @@ def add_record_to_putty_config(local_port, remote_host, passwordless_config):
         winreg.SetValueEx(key, 'PortNumber', 0, winreg.REG_DWORD, local_port)
         winreg.SetValueEx(key, 'Protocol', 0, winreg.REG_SZ, 'ssh')
         winreg.SetValueEx(key, 'PublicKeyFile', 0, winreg.REG_SZ, passwordless_config.local_ppk_key_path)
+        winreg.SetValueEx(key, 'ProxyMethod', 0, winreg.REG_DWORD, 0)
 
 
 def remove_record_from_putty_config(remote_host, passworless_config):

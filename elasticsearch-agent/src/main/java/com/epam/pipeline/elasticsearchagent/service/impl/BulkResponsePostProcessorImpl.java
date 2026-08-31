@@ -15,13 +15,13 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;

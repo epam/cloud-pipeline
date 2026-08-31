@@ -18,7 +18,6 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import {Icon, message, Button} from 'antd';
 import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -352,10 +351,14 @@ export default class DockerRegistriesActionsButton extends React.Component {
 
   _renderActionsMenu = () => {
     const registryActions = [];
+    const toolAdmin = roleModel.isManager.toolAdmin(this);
+    const toolGroupAdmin = roleModel.isManager.toolGroup(this);
     const canEditGroup = this.props.group &&
       !this.props.group.aggregatedFromFilters &&
-      roleModel.writeAllowed(this.props.group);
-    if (roleModel.writeAllowed(this.props.docker)) {
+      (
+        roleModel.writeAllowed(this.props.group) || toolAdmin
+      );
+    if (roleModel.writeAllowed(this.props.docker) || toolAdmin) {
       registryActions.push(
         <MenuItem
           key="add-registry"
@@ -387,8 +390,16 @@ export default class DockerRegistriesActionsButton extends React.Component {
       );
     }
     if (this.props.registry &&
-      roleModel.isManager.toolGroup(this) &&
-      roleModel.writeAllowed(this.props.registry)) {
+      (
+        (
+          toolGroupAdmin &&
+          roleModel.writeAllowed(this.props.registry)
+        ) ||
+        (
+          toolAdmin
+        )
+      )
+    ) {
       groupActions.push(
         <MenuItem
           key="add-group"
@@ -411,7 +422,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
           <Icon type="edit" /> Edit
         </MenuItem>
       );
-      if (roleModel.isManager.toolGroup(this)) {
+      if (toolGroupAdmin || toolAdmin) {
         groupActions.push(
           <MenuItem
             key="delete-group"

@@ -671,7 +671,8 @@ class RunTaskLogs extends React.Component {
       runId,
       downloadCurrentLog,
       onDownloadCompleteLogClick,
-      alwaysShowDownloadCompleteLog = false
+      alwaysShowDownloadCompleteLog = false,
+      alwaysShowDownloadCurrentLog = false
     } = this.props;
     let showDate = showDateProps;
     if (showDate === undefined) {
@@ -692,7 +693,9 @@ class RunTaskLogs extends React.Component {
     const showDownloadComplete = !pending &&
       (runId || onDownloadCompleteLogClick) &&
       (this.logsTruncated || alwaysShowDownloadCompleteLog);
-    const showDownloadCurrentLog = !pending && this.logsTruncated && downloadCurrentLog;
+    const showDownloadCurrentLog = pending
+      ? false
+      : alwaysShowDownloadCurrentLog || (this.logsTruncated && downloadCurrentLog);
     const showControls = showExpandMore || showDownloadComplete || showDownloadCurrentLog;
     return (
       <div
@@ -970,6 +973,7 @@ RunTaskLogs.propTypes = {
   searchAvailable: PropTypes.bool,
   downloadCurrentLog: PropTypes.bool,
   alwaysShowDownloadCompleteLog: PropTypes.bool,
+  alwaysShowDownloadCurrentLog: PropTypes.bool,
   onDownloadCompleteLogClick: PropTypes.func,
   fileName: PropTypes.string,
   onExpandClicked: PropTypes.func,

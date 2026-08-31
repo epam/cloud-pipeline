@@ -33,7 +33,9 @@ public class EngineRunTaskSortVO {
         taskGroup("task_group"),
         taskId("task_id"),
         taskTag("task_tag"),
-        status("status");
+        status("status"),
+        startDate("start_date"),
+        endDate("end_date");
 
         private final String dbColumn;
 

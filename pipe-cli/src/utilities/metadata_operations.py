@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import click
-import prettytable
-from future.utils import iteritems
 
 from src.api.metadata import Metadata
+from src.utilities.printing.tag import create_tag_print_service
 
 
 class MetadataOperations(object):
@@ -44,17 +43,15 @@ class MetadataOperations(object):
                 raise
 
     @classmethod
-    def get_metadata(cls, entity_class, entity_id):
+    def get_metadata(cls, entity_class, entity_id, output_format=None):
+        print_service = create_tag_print_service(output_format)
         try:
             id = Metadata.find(entity_id, entity_class).entity_id
             metadata = Metadata.load(id, entity_class)
-            if not metadata.data:
-                click.echo("No metadata available for {} {}.".format(entity_class, entity_id))
-            else:
-                click.echo(cls.create_table(metadata.data))
+            print_service.print_tags(entity_class, entity_id, metadata.data)
         except RuntimeError as runtime_error:
             if "No enum constant" and "AclClass" in str(runtime_error):
-                click.echo("Error: Class '{}' does not exist.".format(entity_class), err=True)
+                print_service.error("Class '{}' does not exist.".format(entity_class))
             else:
                 raise
 
@@ -110,18 +107,3 @@ class MetadataOperations(object):
             result.update({key: {}})
         return result
 
-    @classmethod
-    def create_table(cls, metadata):
-        table = prettytable.PrettyTable()
-        table.field_names = ["Tag name", "Value", "Type"]
-        table.align = "l"
-        table.header = True
-        for (key, entry) in iteritems(metadata):
-            entry_value = None
-            entry_type = None
-            if 'value' in entry:
-                entry_value = entry['value']
-            if 'type' in entry:
-                entry_type = entry['type']
-            table.add_row([key, entry_value, entry_type])
-        return table

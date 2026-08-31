@@ -31,22 +31,22 @@ public class NodeScheduleApiService {
 
     private final NodeScheduleManager nodeScheduleManager;
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodeSchedule createOrUpdate(final NodeScheduleVO vo) {
         return nodeScheduleManager.createOrUpdate(vo);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodeSchedule load(final Long scheduleId) {
         return nodeScheduleManager.load(scheduleId);
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public List<NodeSchedule> loadAll() {
         return nodeScheduleManager.loadAll();
     }
 
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)
     public NodeSchedule delete(final Long scheduleId) {
         return nodeScheduleManager.delete(scheduleId);
     }

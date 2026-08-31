@@ -27,6 +27,8 @@ const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 
 const KNOWN_TAG_NAMES = {
   idle: 'idle',
+  idle_cpu: 'idle_cpu',
+  idle_gpu: 'idle_gpu',
   pressure: 'pressure',
   sge_in_use: 'sge_in_use',
   slurm_in_use: 'slurm_in_use',
@@ -37,7 +39,8 @@ const KNOWN_TAG_NAMES = {
   network_pressure: 'network_pressure',
   long_running: 'long_running',
   mlflow_experiment: 'CP_MLFLOW_EXPERIMENT_ID',
-  mlflow_run: 'CP_MLFLOW_RUN_UUID'
+  mlflow_run: 'CP_MLFLOW_RUN_UUID',
+  external_urls: 'EXTERNAL_URLS'
 };
 
 const KNOWN_TAG_RENDER = {
@@ -104,6 +107,12 @@ function mlflowExperimentTagRenderer (tag, value) {
 
 const PREDEFINED_TAGS = [{
   tag: KNOWN_TAG_NAMES.idle,
+  color: 'warning'
+},{
+  tag: KNOWN_TAG_NAMES.idle_cpu,
+  color: 'warning'
+}, {
+  tag: KNOWN_TAG_NAMES.idle_gpu,
   color: 'warning'
 }, {
   tag: KNOWN_TAG_NAMES.pressure,
@@ -202,6 +211,7 @@ const getValue = (tags, tag) => {
 const skipTag = (tag, tags, preferences) => {
   return `${tags[tag]}` === 'false' ||
     /^alias$/i.test(tag) ||
+    tag.toLowerCase() === KNOWN_TAG_NAMES.external_urls.toLowerCase() ||
     isKnownTagWithDateSuffix(tag, preferences);
 };
 
@@ -283,14 +293,14 @@ function Tag (
       {valueToDisplay}
     </span>
   );
-  if (tagOptions.link) {
+  if (tagOptions.link && interactive) {
     return (
       <a
         className={styles.link}
-        onMouseEnter={interactive ? onMouseEnter : undefined}
-        onMouseLeave={interactive ? onMouseLeave : undefined}
-        onClick={interactive ? handleClick : undefined}
-        onFocus={interactive ? onFocus : undefined}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={handleClick}
+        onFocus={onFocus}
         href={tagOptions.link}
         target="_blank"
       >
@@ -298,17 +308,17 @@ function Tag (
       </a>
     );
   }
-  if (isInstanceLink) {
+  if (isInstanceLink && interactive) {
     const instanceLink = `/cluster/${instance.nodeName}/monitor`;
     return (
       <Link
         id={tagName}
         to={instanceLink}
         className={styles.link}
-        onMouseEnter={interactive ? onMouseEnter : undefined}
-        onMouseLeave={interactive ? onMouseLeave : undefined}
-        onClick={interactive ? handleClick : undefined}
-        onFocus={interactive ? onFocus : undefined}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={handleClick}
+        onFocus={onFocus}
       >
         {element}
       </Link>

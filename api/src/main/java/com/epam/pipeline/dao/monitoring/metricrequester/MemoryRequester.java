@@ -78,9 +78,9 @@ public class MemoryRequester extends AbstractMetricRequester {
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
-                                              final Duration interval) {
+                                              final Duration interval, final String podName) {
         return request(from, to,
-                statsQuery(nodeName, NODE, from, to)
+                statsQuery(nodeName, NODE, from, to, null)
                         .size(0)
                         .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
                                 .subAggregation(average(MEMORY_UTILIZATION, WORKING_SET))

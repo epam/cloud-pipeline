@@ -187,7 +187,8 @@ class ConfigureFileSystem extends React.Component {
       notSupported,
       className,
       style,
-      cloudRegionProvider
+      cloudRegionProvider,
+      disabled = false
     } = this.props;
     if (notSupported || (cloudRegionProvider && !/^aws$/i.test(cloudRegionProvider))) {
       return null;
@@ -227,6 +228,7 @@ class ConfigureFileSystem extends React.Component {
               className={styles.configureFsControl}
               value={fsType}
               onChange={this.onChangeFsType}
+              disabled={disabled}
             >
               {
                 [ShareFsType.lfs, ShareFsType.lustre].map((ft) => (
@@ -253,6 +255,7 @@ class ConfigureFileSystem extends React.Component {
                   )}
                   value={deploymentType}
                   onChange={this.onChangeDeploymentType}
+                  disabled={disabled}
                 >
                   {
                     deploymentTypes.map((dt) => (
@@ -287,6 +290,7 @@ class ConfigureFileSystem extends React.Component {
                   className={classNames(styles.configureFsControl, {'cp-error': volumeError})}
                   value={volume === undefined ? '' : volume.toString()}
                   onChange={this.onChangeFsVolume}
+                  disabled={disabled}
                 />
                 {renderParameterTooltip(CP_CAP_SHARE_FS_SIZE)}
               </div>
@@ -313,6 +317,7 @@ class ConfigureFileSystem extends React.Component {
                   className={classNames(styles.configureFsControl, {'cp-error': throughputError})}
                   value={getOptionValue(throughput)}
                   onChange={this.onChangeFsThroughput}
+                  disabled={disabled}
                 >
                   {
                     throughputOptions.map((to) => (
@@ -351,6 +356,7 @@ class ConfigureFileSystem extends React.Component {
                   className={classNames(styles.configureFsControl, {'cp-error': iopsError})}
                   value={getOptionValue(iops)}
                   onChange={this.onChangeFsIops}
+                  disabled={disabled}
                 >
                   {
                     iopsOptions.map((io) => (
@@ -393,7 +399,8 @@ ConfigureFileSystem.propTypes = {
   }),
   onChange: PropTypes.func,
   notSupported: PropTypes.bool,
-  cloudRegionProvider: PropTypes.string
+  cloudRegionProvider: PropTypes.string,
+  disabled: PropTypes.bool
 };
 
 ConfigureFileSystem.defaultProps = {

@@ -65,6 +65,7 @@ import {
 } from './utilities/get-storage-file-display-name-templates';
 import getUserSearchColumnsOrder from './utilities/get-user-search-columns-order';
 import roleModel from '../../utils/roleModel';
+import {getSearchPrompt} from './utilities/search-utilities';
 
 function getDomainKey (domain) {
   return `domain-${domain || ''}`;
@@ -540,6 +541,7 @@ class FacetedSearch extends React.Component {
             storageFileDisplayNameTemplates = [],
             disableCounts
           } = this.state;
+          const {preferences} = this.props;
           if (facets.length === 0) {
             // eslint-disable-next-line
             console.warn('No facets configured. Please, check "faceted.filter.dictionaries" preference and system dictionaries');
@@ -548,9 +550,8 @@ class FacetedSearch extends React.Component {
             });
             return;
           }
-          const query = !advancedSearchMode && currentQuery
-            ? `*${currentQuery}*`
-            : currentQuery;
+          const template = preferences.searchPromptTemplate;
+          const query = getSearchPrompt(currentQuery, template, advancedSearchMode);
           const userDocumentTypesFilter = userDocumentTypes.length > 0
             ? {[DocumentTypeFilterName]: userDocumentTypes}
             : {};
