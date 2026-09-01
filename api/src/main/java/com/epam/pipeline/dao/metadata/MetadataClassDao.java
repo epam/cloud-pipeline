@@ -37,7 +37,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
     private String metadataClassSequence;
     private String createMetadataClassQuery;
-    private String updateMetadataClassExternalNameQuery;
     private String loadAllMetadataClassesQuery;
     private String loadMetadataClassQuery;
     private String deleteMetadataClassQuery;
@@ -48,12 +47,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
         metadataClass.setId(daoHelper.createId(metadataClassSequence));
         getNamedParameterJdbcTemplate()
                 .update(createMetadataClassQuery, MetadataClassParameters.getParameters(metadataClass));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateMetadataClass(MetadataClass metadataClass) {
-        getNamedParameterJdbcTemplate()
-                .update(updateMetadataClassExternalNameQuery, MetadataClassParameters.getParameters(metadataClass));
     }
 
     public List<MetadataClass> loadAllMetadataClasses() {
@@ -81,15 +74,13 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
     enum MetadataClassParameters {
         CLASS_ID,
-        CLASS_NAME,
-        EXTERNAL_CLASS_NAME;
+        CLASS_NAME;
 
         private static MapSqlParameterSource getParameters(MetadataClass metadataClass) {
             MapSqlParameterSource params = new MapSqlParameterSource();
 
             params.addValue(CLASS_ID.name(), metadataClass.getId());
             params.addValue(CLASS_NAME.name(), metadataClass.getName());
-            params.addValue(EXTERNAL_CLASS_NAME.name(), null);
             return params;
         }
 
@@ -107,8 +98,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
         Assert.notNull(loadMetadataClassQuery, "Required query loadMetadataClassQuery is not set");
         Assert.notNull(metadataClassSequence, "Required query metadataClassSequence is not set");
         Assert.notNull(createMetadataClassQuery, "Required query createMetadataClassQuery is not set");
-        Assert.notNull(updateMetadataClassExternalNameQuery,
-                "Required query updateMetadataClassExternalNameQuery is not set");
         Assert.notNull(loadAllMetadataClassesQuery, "Required query loadAllMetadataClassesQuery is not set");
         Assert.notNull(deleteMetadataClassQuery, "Required query deleteMetadataClassQuery is not set");
         Assert.notNull(loadMetadataClassByNameQuery, "Required query loadMetadataClassByNameQuery is not set");
@@ -125,10 +114,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
     public void setCreateMetadataClassQuery(String createMetadataClassQuery) {
         this.createMetadataClassQuery = createMetadataClassQuery;
-    }
-
-    public void setUpdateMetadataClassExternalNameQuery(String updateMetadataClassExternalNameQuery) {
-        this.updateMetadataClassExternalNameQuery = updateMetadataClassExternalNameQuery;
     }
 
     public void setLoadAllMetadataClassesQuery(String loadAllMetadataClassesQuery) {

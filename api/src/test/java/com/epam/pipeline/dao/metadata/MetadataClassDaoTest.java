@@ -47,8 +47,6 @@ public class MetadataClassDaoTest extends AbstractJdbcTest {
         List<MetadataClass> expectedResult = Collections.singletonList(metadataClass);
         assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
 
-        metadataClassDao.updateMetadataClass(metadataClass);
-
         expectedResult = Collections.singletonList(metadataClass);
         assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
 

@@ -530,7 +530,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         EXTERNAL_IDS,
         KEY,
         TYPE,
-        EXTERNAL_CLASS_NAME,
         FOLDER_ID,
         PARENT_FOLDER_ID;
 

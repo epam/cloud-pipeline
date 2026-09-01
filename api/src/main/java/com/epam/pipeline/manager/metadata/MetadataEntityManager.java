@@ -137,16 +137,6 @@ public class MetadataEntityManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public MetadataClass updateExternalClassName(Long id) {
-        Assert.notNull(id, messageHelper.getMessage(MessageConstants.ERROR_INVALID_METADATA_ENTITY_CLASS_ID, id));
-        MetadataClass metadataClass = loadClass(id);
-        Assert.notNull(metadataClass,
-                messageHelper.getMessage(MessageConstants.ERROR_METADATA_ENTITY_CLASS_NOT_FOUND, id));
-        metadataClassDao.updateMetadataClass(metadataClass);
-        return metadataClass;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntity updateMetadataEntity(MetadataEntityVO metadataEntityVO) {
         Assert.notNull(metadataEntityVO.getParentId(),
                 messageHelper.getMessage(MessageConstants.ERROR_PARENT_REQUIRED));
