@@ -123,7 +123,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit_init "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
+    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -376,15 +376,16 @@ function upgrade_installed_packages {
 }
 
 function configure_package_manager_pip {
+    # Converts regional s3 endpoints
+    # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+    # to regional website s3 endpoints
+    # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+    _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+        | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+
+    # --- py2 ---
     if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
-        # Converts regional s3 endpoints
-        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
-        # to regional website s3 endpoints
-        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
-        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
-            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
         if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
-            # If the conversion was successful
             CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
         else
             CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
@@ -396,7 +397,23 @@ function configure_package_manager_pip {
     export CP_REPO_PYPI_BASE_URL_DEFAULT
     export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
     export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+    echo "Using pypi repository (py2) $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+
+    # --- py3 ---
+    if [ -z "$CP_REPO_PYPI3_BASE_URL_DEFAULT" ]; then
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi3/simple"
+        else
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI3_BASE_URL_DEFAULT
+    export CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT
+    export CP_PIP3_EXTRA_ARGS="${CP_PIP3_EXTRA_ARGS} --index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository (py3) $CP_REPO_PYPI3_BASE_URL_DEFAULT ($CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT)..."
 }
 
 function run_pre_common_commands {
@@ -752,7 +769,7 @@ function install_python3_packages {
       local _install_path="$1"
       local _tmp_install_dir="/tmp/"
       rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
-      CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python312-centos7.tar.gz"}"
+      CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
       wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
@@ -1489,9 +1506,7 @@ fi
 check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH - $CP_PIP_EXTRA_ARGS; };
 
 # --- Python 3 ---
-if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
-      install_python3_packages "/usr/local"
-fi
+install_python3_packages "/usr/local"
 
 export CP_PYTHON3_PATH="/usr/local/python3.12/bin/python3.12"
 if [ ! -f "$CP_PYTHON3_PATH" ]; then
@@ -1502,13 +1517,12 @@ fi
 
 # --- Active python ---
 # CP_PYTHON_VERSION=2 → use py2, anything else (default) → use py3
-export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-3}"
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
 if [ "$CP_PYTHON_VERSION" == "2" ]; then
       export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
 else
       export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
-      ln -sf /usr/local/bin/python3 /usr/local/bin/python
-      ln -sf /usr/local/bin/pip3    /usr/local/bin/pip
+      export PATH=/usr/local/python3.12/bin:$PATH
 fi
 
 if [ -z "$CP_PYTHON_PATH" ]; then
@@ -1903,11 +1917,16 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             exit_init 1
       else
             cd $COMMON_REPO_DIR
+            if [ "$CP_PYTHON_VERSION" == "2" ]; then
+                  _PIPE_COMMON_PIP_ARGS="$CP_PIP_EXTRA_ARGS"
+            else
+                  _PIPE_COMMON_PIP_ARGS="$CP_PIP3_EXTRA_ARGS"
+            fi
             # Pin setuptools: 44.1.1 is the last version supporting Python 2; Python 3 needs newer
             if [ "$CP_PYTHON_VERSION" == "2" ]; then
-                  $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==44.1.1
             else
-                  $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q "setuptools==84.0.0"
+                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==68.0.0
             fi
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
@@ -1918,7 +1937,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
-            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS . -q -I
             _INSTALL_RESULT=$?
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
