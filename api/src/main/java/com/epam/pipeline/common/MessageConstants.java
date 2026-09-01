@@ -433,6 +433,8 @@ public final class MessageConstants {
     public static final String INFO_INSTANCE_OFFERS_UPDATED = "instance.offers.updated";
     public static final String SETTING_IS_NOT_PROVIDED = "setting.is.not.provided";
     public static final String ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED = "instance.type.not.allowed";
+    public static final String ERROR_GPU_INSTANCE_NOT_ALLOWED_FOR_CPU_RUN =
+            "error.gpu.instance.not.allowed.for.cpu.run";
     public static final String ERROR_PRICE_TYPE_IS_NOT_ALLOWED = "price.type.not.allowed";
     public static final String ERROR_INSTANCE_DISK_IS_INVALID = "instance.disk.invalid";
     public static final String ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT =

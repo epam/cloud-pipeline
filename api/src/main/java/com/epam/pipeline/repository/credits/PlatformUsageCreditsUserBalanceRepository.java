@@ -59,6 +59,10 @@ public interface PlatformUsageCreditsUserBalanceRepository
 
     Optional<PlatformUsageCreditsUserBalanceEntity> findByUserId(Long userId);
 
+    @Modifying
+    @Query(value = "DELETE FROM pipeline.usage_credits_user_balance WHERE user_id = :userId", nativeQuery = true)
+    void deleteByUserId(@Param("userId") Long userId);
+
     /**
      * Atomically upserts the credits balance for a single user and returns the result.
      *

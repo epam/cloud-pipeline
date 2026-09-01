@@ -196,6 +196,11 @@ public class PlatformUsageCreditsUserBalanceCRUDService {
      * @param userId the ID of the newly created user
      */
     @Transactional
+    public void deleteByUserId(final Long userId) {
+        repository.deleteByUserId(userId);
+    }
+
+    @Transactional
     public void createDefaultBalance(final Long userId) {
         if (isOffMode()) {
             return;

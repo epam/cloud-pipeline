@@ -925,12 +925,37 @@ function api_setup_base_preferences {
     api_set_preference "ui.pipeline.deployment.name" "${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-"Cloud Pipeline"}" "true"
 
     ## System
-    api_set_preference "system.max.idle.timeout.minutes" "${CP_PREF_SYSTEM_MAX_IDLE_TIMEOUT_MINUTES:-1440}" "false"         # How long we tolerate utilization < system.idle.cpu.threshold (default: 24 hours)
-    api_set_preference "system.idle.action.timeout.minutes" "${CP_PREF_SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES:-480}" "false"    # How long we wait before performing action, defined by system.idle.action (default: 8 hours)
+local system_idle_monitoring_config="[]"
+read -r -d '' system_idle_monitoring_config <<-EOF
+[
+    {
+        "type": "CPU",
+        "enabled": ${CP_PREF_SYSTEM_IDLE_CPU_ENABLED:-true},
+        "thresholdPercent": ${CP_PREF_SYSTEM_IDLE_CPU_THRESHOLD:-1},
+        "gracePeriodMinutes": ${CP_PREF_SYSTEM_IDLE_CPU_GRACE_PERIOD_MINUTES:-1440},
+        "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_CPU_ACTION_TIMEOUT_MINUTES:-480},
+        "action": "${CP_PREF_SYSTEM_IDLE_CPU_ACTION:-NOTIFY}"
+    },
+    {
+        "type": "GPU",
+        "enabled": ${CP_PREF_SYSTEM_IDLE_GPU_ENABLED:-true},
+        "gracePeriodMinutes": ${CP_PREF_SYSTEM_IDLE_GPU_GRACE_PERIOD_MINUTES:-1440},
+        "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_GPU_ACTION_TIMEOUT_MINUTES:-480},
+        "action": "${CP_PREF_SYSTEM_IDLE_GPU_ACTION:-NOTIFY}"
+    },
+    {
+        "type": "ABSOLUTE",
+        "enabled": ${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ENABLED:-true},
+        "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ACTION_TIMEOUT_MINUTES:-480},
+        "action": "${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ACTION:-NOTIFY}"
+    }
+]
+EOF
+
+    system_idle_monitoring_config="$(escape_string "$system_idle_monitoring_config")"
+    api_set_preference "system.idle.monitoring.config" "$system_idle_monitoring_config" "false"
     api_set_preference "system.resource.monitoring.period" "${CP_PREF_SYSTEM_RESOURCE_MONITORING_PERIOD:-300000}" "false"   # How often we poll utilization stats (default: 5 minutes)
     api_set_preference "system.resource.monitoring.stats.retention.period" "${CP_PREF_SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD:-5}" "false"    # How often we drop elastic indices (default: each 5 days)
-    api_set_preference "system.idle.action" "${CP_PREF_SYSTEM_IDLE_ACTION:-"NOTIFY"}" "false"                               # Which action to perform if a run is idle for system.max.idle.timeout.minutes + system.idle.action.timeout.minutes (default: notify only)
-    api_set_preference "system.idle.cpu.threshold" "${CP_PREF_SYSTEM_IDLE_CPU_THRESHOLD:-1}" "false"                        # %% of CPU utilization, which is considered idle (default: all runs with utilization below 1% are idle)
     api_set_preference "system.memory.consume.threshold" "${CP_PREF_SYSTEM_MEMORY_CONSUME_THRESHOLD:-95}" "false"           # %% of memory utilization that is considered "HIGH" (default: runs with RAM utilization above 95% are under pressure)
     api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
     api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
