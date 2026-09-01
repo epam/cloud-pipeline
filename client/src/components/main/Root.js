@@ -18,7 +18,6 @@ import React from 'react';
 import {hashHistory} from 'react-router';
 import {Provider} from 'mobx-react';
 import {RouterStore, syncHistoryWithStore} from 'mobx-react-router';
-import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
@@ -75,7 +74,6 @@ const counter = new RunCount({usePreferenceValue: true, autoUpdate: true});
 const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();
-const googleApi = new GoogleApi(preferences);
 const users = new Users();
 const usersInfo = new UsersInfo();
 const allowedInstanceTypes = new AllowedInstanceTypes();
@@ -121,7 +119,6 @@ const Root = () =>
   <Provider
     {...{
       routing,
-      googleApi,
       localization,
       history,
       preferences,
