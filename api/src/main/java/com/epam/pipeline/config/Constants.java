@@ -40,8 +40,6 @@ public final class Constants {
     public static final Integer SECONDS_IN_DAY = SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY;
     public static final Integer MILLISECONDS_IN_DAY = SECONDS_IN_DAY * 1000;
 
-    public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
-
     private Constants() {
         //no op
     }

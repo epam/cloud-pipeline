@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.metadata;
 
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.jupiter.api.Test;
@@ -47,9 +46,6 @@ public class MetadataClassDaoTest extends AbstractJdbcTest {
 
         List<MetadataClass> expectedResult = Collections.singletonList(metadataClass);
         assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());
-
-        metadataClass.setFireCloudClassName(FireCloudClass.SAMPLE);
-        metadataClassDao.updateMetadataClass(metadataClass);
 
         expectedResult = Collections.singletonList(metadataClass);
         assertEquals(expectedResult, metadataClassDao.loadAllMetadataClasses());

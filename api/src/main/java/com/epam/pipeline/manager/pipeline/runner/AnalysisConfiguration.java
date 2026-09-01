@@ -35,6 +35,5 @@ public class AnalysisConfiguration<T extends AbstractRunConfigurationEntry> {
     private Long configurationId;
     private String expansionExpression;
     private List<Long> entitiesIds;
-    private String refreshToken;
     private List<PipelineStartNotificationRequest> notifications;
 }

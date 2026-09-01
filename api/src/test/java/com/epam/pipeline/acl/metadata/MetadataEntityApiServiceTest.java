@@ -18,7 +18,6 @@ package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -51,7 +50,6 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_SET;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doNothing;
@@ -60,7 +58,6 @@ import static org.mockito.Mockito.verify;
 
 public class MetadataEntityApiServiceTest extends AbstractAclTest {
 
-    private static final FireCloudClass PARTICIPANT = FireCloudClass.PARTICIPANT;
     private final MetadataClass metadataClass = MetadataCreatorUtils.getMetadataClass();
     private final MetadataEntityVO metadataEntityVO = MetadataCreatorUtils.getMetadataEntityVO(ID);
     private final Folder folder = FolderCreatorUtils.getFolder(ID, ID_2, ANOTHER_SIMPLE_USER);
@@ -129,23 +126,6 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
         doReturn(metadataClass).when(mockMetadataEntityManager).deleteMetadataClass(ID);
 
         assertThrows(AccessDeniedException.class, () -> entityApiService.deleteMetadataClass(ID));
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldUpdateMetadataClassForAdmin() {
-        doReturn(metadataClass).when(mockMetadataEntityManager).updateExternalClassName(ID, PARTICIPANT);
-
-        assertThat(entityApiService.updateExternalClassName(ID, FireCloudClass.PARTICIPANT)).isEqualTo(metadataClass);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldDenyUpdateMetadataClassForNotAdmin() {
-        doReturn(metadataClass).when(mockMetadataEntityManager).updateExternalClassName(ID, FireCloudClass.PARTICIPANT);
-
-        assertThrows(AccessDeniedException.class, () ->
-                entityApiService.updateExternalClassName(ID, FireCloudClass.PARTICIPANT));
     }
 
     @Test
@@ -532,36 +512,6 @@ public class MetadataEntityApiServiceTest extends AbstractAclTest {
         doNothing().when(mockMetadataEntityManager).deleteMetadataEntitiesInProject(ID, TEST_STRING);
 
         assertThrows(AccessDeniedException.class, () -> entityApiService.deleteMetadataFromProject(ID, TEST_STRING));
-    }
-
-    @Test
-    @WithMockUser(roles = ADMIN_ROLE)
-    public void shouldLoadEntitiesDataForAdmin() {
-        doReturn(TEST_STRING_MAP).when(mockMetadataEntityManager).loadEntitiesData(TEST_LONG_SET);
-
-        assertThat(entityApiService.loadEntitiesData(TEST_LONG_SET)).isEqualTo(TEST_STRING_MAP);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldLoadEntitiesDataWhenPermissionIsGranted() {
-        initAclEntity(folder, AclPermission.READ);
-        doReturn(TEST_STRING_MAP).when(mockMetadataEntityManager).loadEntitiesData(TEST_LONG_SET);
-        mockLoadEntities();
-        mockAuthUser(SIMPLE_USER);
-
-        assertThat(entityApiService.loadEntitiesData(TEST_LONG_SET)).isEqualTo(TEST_STRING_MAP);
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldDenyLoadEntitiesDataWhenPermissionIsNotGranted() {
-        initAclEntity(folder);
-        doReturn(TEST_STRING_MAP).when(mockMetadataEntityManager).loadEntitiesData(TEST_LONG_SET);
-        mockLoadEntities();
-        mockSecurityContext();
-
-        assertThrows(AccessDeniedException.class, () -> entityApiService.loadEntitiesData(TEST_LONG_SET));
     }
 
     @Test

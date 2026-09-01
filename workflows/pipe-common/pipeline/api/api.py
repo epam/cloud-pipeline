@@ -231,7 +231,6 @@ class PipelineAPI:
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     UPDATE_METADATA_ENTITY = "metadataEntity/updateKey"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
-    LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
     LOAD_CONFIGURATION = '/configuration/%d'
     GET_PREFERENCE = '/preferences/%s'
@@ -783,15 +782,6 @@ class PipelineAPI:
     def load_all_metadata_efficiently(self, entity_ids, entity_class):
         data = [{"entityId": entity_id, "entityClass": entity_class} for entity_id in entity_ids]
         return self._request('POST', self.LOAD_METADATA, data=data) or []
-
-    def load_entities(self, entities_ids):
-        try:
-            result = self.execute_request(str(self.api_url) + self.LOAD_ENTITIES_DATA, method='post',
-                                          data="[%s]" % entities_ids)
-            return {} if result is None else result
-        except BaseException as e:
-            raise RuntimeError("Failed to load entities data. "
-                               "Error message: {}".format(str(e.message)))
 
     def save_metadata_entity(self, entity):
         try:

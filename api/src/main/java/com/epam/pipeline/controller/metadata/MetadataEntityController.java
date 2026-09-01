@@ -20,7 +20,6 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -41,7 +40,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Controller
@@ -88,19 +86,6 @@ public class MetadataEntityController extends AbstractRestController {
             })
     public Result<MetadataClass> deleteMetadataClass(@PathVariable(value = ID) final Long id) {
         return Result.success(metadataEntityApiService.deleteMetadataClass(id));
-    }
-
-    @PostMapping(value = "/metadataClass/{id}/external")
-    @ResponseBody
-    @Operation(
-            summary = "Updates a metadata external class, specified by metadata's id.",
-            description = "Updates a metadata external class, specified by metadata's id.")
-    @ApiResponses(
-            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-            })
-    public Result<MetadataClass> updateExternalClass(@PathVariable(value = ID) final Long id,
-                                                     @RequestParam FireCloudClass externalClassName) {
-        return Result.success(metadataEntityApiService.updateExternalClassName(id, externalClassName));
     }
 
     @RequestMapping(value = "/metadataEntity/{id}/load", method = RequestMethod.GET)
@@ -261,18 +246,6 @@ public class MetadataEntityController extends AbstractRestController {
                                          @RequestParam(required = false) final String entityClass) {
         metadataEntityApiService.deleteMetadataFromProject(projectId, entityClass);
         return Result.success();
-    }
-
-    @PostMapping("/metadataEntity/entities")
-    @ResponseBody
-    @Operation(
-            summary = "Loads specified metadata entities.",
-            description = "Loads specified metadata entities.")
-    @ApiResponses(
-            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
-            })
-    public Result<Map<String, String>> loadEntitiesData(@RequestBody Set<Long> entitiesIds) {
-        return Result.success(metadataEntityApiService.loadEntitiesData(entitiesIds));
     }
 
     @GetMapping("/metadataEntity/download")
