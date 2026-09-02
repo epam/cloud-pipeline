@@ -186,6 +186,8 @@ public final class MessageConstants {
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
     public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
+    public static final String INFO_ATTEMPT_START_INSTANCE = "info.attempt.start.instance";
+    public static final String WARN_FAIL_START_INSTANCE = "warn.fail.start.instance";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
     public static final String ERROR_RUN_AS_PIPELINES_NOT_ALLOWED = "error.run.as.pipelines.not.allowed";
     public static final String ERROR_RUN_AS_PIPELINE_NOT_ALLOWED = "error.run.as.pipeline.not.allowed";
@@ -226,7 +228,7 @@ public final class MessageConstants {
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
-    public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
+    public static final String DEBUG_RUN_METRICS_RECEIVED = "debug.run.metrics.received";
     public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
     public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
     public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
@@ -271,6 +273,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_VERSIONING_REQUIRED = "error.datastorage.versioning.required";
     public static final String ERROR_DATASTORAGE_CREATE_FAILED = "error.datastorage.create.failed";
     public static final String ERROR_DATASTORAGE_DELETE_FAILED = "error.datastorage.delete.failed";
+    public static final String ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES =
+            "error.datastorage.has.subfolder.storages";
     public static final String ERROR_DATASTORAGE_TYPE_NOT_SPECIFIED = "error.datastorage.type.not.specified";
     public static final String ERROR_DATASTORAGE_FORBIDDEN_MOUNT_POINT = "error.datastorage.forbidden.mount.point";
     public static final String ERROR_DATASTORAGE_IS_NOT_SHARED = "error.datastorage.is.not.shared";
@@ -429,8 +433,12 @@ public final class MessageConstants {
     public static final String INFO_INSTANCE_OFFERS_UPDATED = "instance.offers.updated";
     public static final String SETTING_IS_NOT_PROVIDED = "setting.is.not.provided";
     public static final String ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED = "instance.type.not.allowed";
+    public static final String ERROR_GPU_INSTANCE_NOT_ALLOWED_FOR_CPU_RUN =
+            "error.gpu.instance.not.allowed.for.cpu.run";
     public static final String ERROR_PRICE_TYPE_IS_NOT_ALLOWED = "price.type.not.allowed";
     public static final String ERROR_INSTANCE_DISK_IS_INVALID = "instance.disk.invalid";
+    public static final String ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT =
+            "fallback.instance.types.exceed.limit";
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
@@ -932,6 +940,28 @@ public final class MessageConstants {
     public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
     public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
     public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
+
+    // Platform usage credits
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
+            "error.platform.usage.credits.rule.not.found";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
+            "error.platform.usage.credits.rule.name.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
+            "error.platform.usage.credits.rule.filter.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
+            "error.platform.usage.credits.rule.action.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
+            "error.platform.usage.credits.rule.unknown.field";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
+            "error.platform.usage.credits.rule.unsupported.operand";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
+            "error.platform.usage.credits.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
+            "error.platform.usage.credits.rule.time.window.invalid";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT =
+            "error.platform.usage.credits.insufficient";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
+            "error.platform.usage.credits.disabled";
 
     private MessageConstants() {
         // no-op

@@ -34,6 +34,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -62,7 +63,6 @@
                         pod_status,
                         env_vars,
                         prolonged_at_time,
-                        last_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -92,6 +92,7 @@
                         :TERMINATING,
                         :POD_ID,
                         :NODE_TYPE,
+                        to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb),
                         :NODE_DISK,
                         :NODE_IP,
                         :NODE_ID,
@@ -120,7 +121,6 @@
                         :POD_STATUS,
                         to_jsonb(:ENV_VARS::jsonb),
                         :PROLONGED_AT_TIME,
-                        :LAST_NOTIFICATION_TIME,
                         :EXEC_PREFERENCES,
                         :PRETTY_URL,
                         :PRICE_PER_HOUR,
@@ -156,6 +156,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -182,9 +183,6 @@
                         r.configuration_id,
                         r.pod_status,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -251,6 +249,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -277,9 +276,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -324,6 +320,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -350,9 +347,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -397,6 +391,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_name,
@@ -423,9 +418,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -491,7 +483,8 @@
                         node_name = :NODE_NAME,
                         is_spot = :IS_SPOT,
                         node_real_disk = :NODE_REAL_DISK,
-                        node_pool_id = :NODE_POOL_ID
+                        node_pool_id = :NODE_POOL_ID,
+                        instance_fallback_types = to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb)
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -567,7 +560,6 @@
                         pod_status = :POD_STATUS,
                         env_vars = to_jsonb(:ENV_VARS::jsonb),
                         prolonged_at_time = :PROLONGED_AT_TIME,
-                        last_notification_time = :LAST_NOTIFICATION_TIME,
                         exec_preferences = :EXEC_PREFERENCES,
                         pretty_url = :PRETTY_URL,
                         price_per_hour = :PRICE_PER_HOUR,
@@ -584,6 +576,7 @@
                         pipeline_name = :PIPELINE_NAME,
                         node_start_date = :NODE_START_DATE,
                         project_id = :PROJECT_ID,
+                        instance_fallback_types = to_jsonb(:INSTANCE_FALLBACK_TYPES::jsonb),
                         parameters_json = :PARAMETERS_JSON::jsonb,
                         logs_storage_path = :LOGS_STORAGE_PATH
                     WHERE
@@ -611,24 +604,11 @@
                 ]]>
             </value>
         </property>
-        <property name="updateLastNotificationQuery">
+        <property name="updateProlongedAtTimeQuery">
             <value>
                 <![CDATA[
                     UPDATE pipeline.pipeline_run SET
-                        last_notification_time = :LAST_NOTIFICATION_TIME,
-                        last_idle_notification_time = :LAST_IDLE_NOTIFICATION_TIME,
-                        last_network_consumption_notification_time = :LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME
-                    WHERE
-                        run_id = :RUN_ID
-                ]]>
-            </value>
-        </property>
-        <property name="updateProlongedAtTimeAndLastIdleNotificationTimeQuery">
-            <value>
-                <![CDATA[
-                    UPDATE pipeline.pipeline_run SET
-                        prolonged_at_time = :PROLONGED_AT_TIME,
-                        last_idle_notification_time = :LAST_IDLE_NOTIFICATION_TIME
+                        prolonged_at_time = :PROLONGED_AT_TIME
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -648,6 +628,7 @@
                       r.terminating,
                       r.pod_id,
                       r.node_type,
+                      r.instance_fallback_types,
                       r.node_disk,
                       r.node_ip,
                       r.node_id,
@@ -674,9 +655,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -723,6 +701,7 @@
                       r.terminating,
                       r.pod_id,
                       r.node_type,
+                      r.instance_fallback_types,
                       r.node_disk,
                       r.node_ip,
                       r.node_id,
@@ -749,9 +728,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -798,6 +774,7 @@
                       r.terminating,
                       r.pod_id,
                       r.node_type,
+                      r.instance_fallback_types,
                       r.node_disk,
                       r.node_ip,
                       r.node_id,
@@ -824,9 +801,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -871,6 +845,7 @@
                       active_run.terminating,
                       active_run.pod_id,
                       active_run.node_type,
+                      active_run.instance_fallback_types,
                       active_run.node_disk,
                       active_run.node_ip,
                       active_run.node_id,
@@ -897,9 +872,6 @@
                       active_run.configuration_id,
                       active_run.pod_status,
                       active_run.prolonged_at_time,
-                      active_run.last_notification_time,
-                      active_run.last_idle_notification_time,
-                      active_run.last_network_consumption_notification_time,
                       active_run.exec_preferences,
                       active_run.pretty_url,
                       active_run.price_per_hour,
@@ -983,9 +955,6 @@
                       r.configuration_id,
                       r.pod_status,
                       r.prolonged_at_time,
-                      r.last_notification_time,
-                      r.last_idle_notification_time,
-                      r.last_network_consumption_notification_time,
                       r.exec_preferences,
                       r.pretty_url,
                       r.price_per_hour,
@@ -1052,9 +1021,6 @@
                       active_run.configuration_id,
                       active_run.pod_status,
                       active_run.prolonged_at_time,
-                      active_run.last_notification_time,
-                      active_run.last_idle_notification_time,
-                      active_run.last_network_consumption_notification_time,
                       active_run.exec_preferences,
                       active_run.pretty_url,
                       active_run.price_per_hour,
@@ -1107,6 +1073,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1133,9 +1100,6 @@
                         r.pod_status,
                         r.last_change_commit_time,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1178,6 +1142,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1204,9 +1169,6 @@
                         r.pod_status,
                         r.last_change_commit_time,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1249,6 +1211,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1275,9 +1238,6 @@
                         r.configuration_id,
                         r.pod_status,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1340,6 +1300,7 @@
                         runs.terminating,
                         runs.pod_id,
                         runs.node_type,
+                        runs.instance_fallback_types,
                         runs.node_disk,
                         runs.node_ip,
                         runs.node_id,
@@ -1366,9 +1327,6 @@
                         runs.configuration_id,
                         runs.pod_status,
                         runs.prolonged_at_time,
-                        runs.last_notification_time,
-                        runs.last_idle_notification_time,
-                        runs.last_network_consumption_notification_time,
                         runs.exec_preferences,
                         runs.pretty_url,
                         runs.price_per_hour,
@@ -1445,9 +1403,6 @@
                             p.configuration_id,
                             p.pod_status,
                             p.prolonged_at_time,
-                            p.last_notification_time,
-                            p.last_idle_notification_time,
-                            p.last_network_consumption_notification_time,
                             p.exec_preferences,
                             p.pretty_url,
                             p.price_per_hour,
@@ -1512,9 +1467,6 @@
                             c.configuration_id,
                             c.pod_status,
                             c.prolonged_at_time,
-                            c.last_notification_time,
-                            c.last_idle_notification_time,
-                            c.last_network_consumption_notification_time,
                             c.exec_preferences,
                             c.pretty_url,
                             c.price_per_hour,
@@ -1577,9 +1529,6 @@
                         runs.configuration_id,
                         runs.pod_status,
                         runs.prolonged_at_time,
-                        runs.last_notification_time,
-                        runs.last_idle_notification_time,
-                        runs.last_network_consumption_notification_time,
                         runs.exec_preferences,
                         runs.pretty_url,
                         runs.price_per_hour,
@@ -1627,6 +1576,7 @@
                         r.terminating,
                         r.pod_id,
                         r.node_type,
+                        r.instance_fallback_types,
                         r.node_disk,
                         r.node_ip,
                         r.node_id,
@@ -1653,9 +1603,6 @@
                         r.configuration_id,
                         r.pod_status,
                         r.prolonged_at_time,
-                        r.last_notification_time,
-                        r.last_idle_notification_time,
-                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,
@@ -1826,9 +1773,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -1849,7 +1793,8 @@
                         node_start_date,
                         project_id,
                         parameters_json,
-                        logs_storage_path
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1903,9 +1848,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -1926,7 +1868,8 @@
                         node_start_date,
                         project_id,
                         parameters_json,
-                        logs_storage_path
+                        logs_storage_path,
+                        instance_fallback_types
                     FROM
                         pipeline.pipeline_run r
                     INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
@@ -1975,9 +1918,6 @@
                         ar.configuration_id,
                         ar.pod_status,
                         ar.prolonged_at_time,
-                        ar.last_notification_time,
-                        ar.last_idle_notification_time,
-                        ar.last_network_consumption_notification_time,
                         ar.exec_preferences,
                         ar.pretty_url,
                         ar.price_per_hour,
@@ -1998,7 +1938,8 @@
                         ar.node_start_date,
                         null as project_id,
                         ar.parameters_json,
-                        ar.logs_storage_path
+                        ar.logs_storage_path,
+                        null
                     FROM
                         pipeline.archive_run ar
                     WHERE ar.end_date BETWEEN :PERIOD_START AND :PERIOD_END
@@ -2029,6 +1970,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2055,9 +1997,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2088,7 +2027,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadAllRunsByIdsQuery">
+        <property name="loadRunsByStatusesAndOriginalOwnerQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -2102,6 +2041,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2128,9 +2068,77 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
+                        exec_preferences, pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        fs_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        pause_disabled,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name,
+                        cluster_price,
+                        node_pool_id,
+                        node_start_date,
+                        project_id,
+                        parameters_json,
+                        logs_storage_path
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE
+                        status IN (:list)
+                        AND lower(original_owner) = :OWNER
+                    ORDER BY
+                        start_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRunsByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        instance_fallback_types,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        original_owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2175,6 +2183,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2201,9 +2210,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2248,6 +2254,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2274,9 +2281,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2331,6 +2335,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2357,9 +2362,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2404,6 +2406,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2430,9 +2433,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,
@@ -2520,6 +2520,7 @@
                         terminating,
                         pod_id,
                         node_type,
+                        instance_fallback_types,
                         node_disk,
                         node_ip,
                         node_id,
@@ -2546,9 +2547,6 @@
                         configuration_id,
                         pod_status,
                         prolonged_at_time,
-                        last_notification_time,
-                        last_idle_notification_time,
-                        last_network_consumption_notification_time,
                         exec_preferences,
                         pretty_url,
                         price_per_hour,

@@ -23,9 +23,11 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -185,6 +187,24 @@ public class PipeRunCmdBuilderTest {
     }
 
 
+    @Test
+    public void shouldAddFallbackInstanceTypesToCommand() {
+        final List<String> fallbackTypes = Arrays.asList("type2", "type3");
+        final PipelineStart pipelineStart = new PipelineStart();
+        pipelineStart.setPipelineId(1L);
+        pipelineStart.setInstanceType(INSTANCE_TYPE);
+        pipelineStart.setFallbackInstanceTypes(fallbackTypes);
+
+        final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
+        pipeRunCmdStartVO.setPipelineStart(pipelineStart);
+
+        final PipeRunCmdBuilder pipeRunCmdBuilder = new PipeRunCmdBuilder(pipeRunCmdStartVO);
+        final String actualResult = buildCmd(pipeRunCmdBuilder);
+        final String expected = buildExpectedForLinux("pipe run", "-n 1", "-it type",
+                "-fit type2", "-fit type3", "-pt spot");
+        Assert.assertEquals(expected, actualResult);
+    }
+
     private String buildCmd(final PipeRunCmdBuilder pipeRunCmdBuilder) {
         return pipeRunCmdBuilder
                 .name()
@@ -193,6 +213,7 @@ public class PipeRunCmdBuilderTest {
                 .yes()
                 .instanceDisk()
                 .instanceType()
+                .fallbackInstanceTypes()
                 .dockerImage()
                 .cmdTemplate()
                 .timeout()

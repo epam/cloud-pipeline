@@ -263,7 +263,10 @@ class GeneralInfoTab extends React.Component {
         start: start || chartsData.from || chartsData.instanceFrom,
         end: end || chartsData.to || chartsData.instanceTo
       }, () => {
-        if (chartsData.rangeEndIsFixed) {
+        if (chartsData.rangeEndIsFixed || chartsData.rangeEndIsPredefined) {
+          // the range end was requested explicitly (i.e. we're displaying
+          // statistics for the finished run) - live update would shift
+          // the range from the requested one
           this.setLiveUpdate(false);
         }
       });
@@ -295,8 +298,12 @@ class GeneralInfoTab extends React.Component {
       return Promise.resolve();
     }
     chartsData.updateRange();
-    start = start || chartsData.instanceFrom || moment().add(-1, 'hour').unix();
-    end = end || chartsData.instanceTo || moment().unix();
+    // `chartsData.from` / `chartsData.to` contain the range to be displayed initially
+    // (last hour by default, or the requested one); state.start & state.end may not be
+    // initialized yet, since the first live update is invoked immediately, i.e. before
+    // `initializeRange` state modification is applied
+    start = start || chartsData.from || chartsData.instanceFrom || moment().add(-1, 'hour').unix();
+    end = end || chartsData.to || chartsData.instanceTo || moment().unix();
     const range = end - start;
     if (!chartsData.rangeEndIsFixed) {
       end = moment().unix();

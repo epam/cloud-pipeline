@@ -153,6 +153,20 @@ public class PipelineConfigurationManager {
         return configuration;
     }
 
+    public void validateFallbackInstanceTypesCount(final List<String> fallbackTypes) {
+        if (CollectionUtils.isEmpty(fallbackTypes)) {
+            return;
+        }
+        final int maxCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxCount == -1) {
+            return;
+        }
+        Assert.isTrue(fallbackTypes.size() <= maxCount,
+                messageHelper.getMessage(MessageConstants.ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT,
+                        fallbackTypes.size(), maxCount));
+    }
+
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
         Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
@@ -193,6 +207,11 @@ public class PipelineConfigurationManager {
             configuration.setInstanceType(runVO.getInstanceType());
         } else {
             configuration.setInstanceType(defaultConfig.getInstanceType());
+        }
+        if (runVO.getFallbackInstanceTypes() != null) {
+            configuration.setFallbackInstanceTypes(runVO.getFallbackInstanceTypes());
+        } else {
+            configuration.setFallbackInstanceTypes(defaultConfig.getFallbackInstanceTypes());
         }
         if (runVO.getTimeout() != null) {
             configuration.setTimeout(runVO.getTimeout());
@@ -401,6 +420,7 @@ public class PipelineConfigurationManager {
             configuration.setIsSpot(instance.getSpot());
             configuration.setInstanceImage(instance.getNodeImage());
             configuration.setCloudRegionId(instance.getCloudRegionId());
+            configuration.setFallbackInstanceTypes(instance.getFallbackInstanceTypes());
         }
 
         setEndpointsErasure(configuration);

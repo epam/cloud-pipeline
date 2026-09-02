@@ -112,7 +112,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().batchUpdate(updateNotificationTimestampQuery, params);
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.SUPPORTS)
     public Optional<NotificationTimestamp> loadNotificationTimestamp(final Long id, final NotificationType type) {
         final MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue(NotificationTimestampParameters.RUN_ID.name(), id);

@@ -57,6 +57,19 @@ DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 POOL_ID_KEY = 'pool_id'
 KUBE_CONFIG_PATH = '~/.kube/config'
+# learn more about spot instance request statuses:
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instances-request-status-lifecycle.html
+SPOT_HOLDING_STATES = [
+    'capacity-not-available',
+    'capacity-oversubscribed',
+    'constraint-not-fulfillable',
+    'price-too-low',
+]
+SPOT_PRE_FULFILLMENT_TERMINAL_STATES = [
+    'schedule-expired',
+    'canceled-before-fulfillment',
+    'system-error'
+]
 
 current_run_id = 0
 api_url = None
@@ -1059,16 +1072,21 @@ def terminate_instance(ec2_client, instance_id, spot_request_id=None, kube_clien
             pipe_log('Node {} was not found in the kube cluster'.format(kube_node_real_name))
 
 
+def _get_spot_instance_request_id(instance):
+    spot_request_id = None
+    if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
+        spot_request_id = instance['SpotInstanceRequestId']
+    return spot_request_id
+
+
 def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instance_id_on_fail=None, kube_client=None):
     rep = rep + 1
     if rep > num_rep:
         if kill_instance_id_on_fail:
-            spot_request_id = None
             pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
                      'See more details below'.format(kill_instance_id_on_fail))
             instance = ec2_client.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
-            if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
-                spot_request_id = instance['SpotInstanceRequestId']
+            spot_request_id = _get_spot_instance_request_id(instance)
             terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id, kube_client)
         raise RuntimeError(error_message)
     return rep
@@ -1124,7 +1142,7 @@ def get_spot_prices(ec2, aws_region, instance_type, hours=3):
 
 def exit_if_spot_unavailable(run_id, last_status):
     # will exit with code '5' if a spot request can't be fulfilled
-    if last_status in ['capacity-not-available', 'capacity-oversubscribed', 'constraint-not-fulfillable']:
+    if last_status in SPOT_HOLDING_STATES or last_status in SPOT_PRE_FULFILLMENT_TERMINAL_STATES:
         pipe_log('[ERROR] Could not fulfill spot request for run {}, status: {}'.format(run_id, last_status),
                  status=TaskStatus.FAILURE)
         sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
@@ -1357,6 +1375,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
 
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
+        cancel_if_bad_spot_request_status(status, request_id, run_id)
         pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
         # TODO: review all this logic, it is difficult to read and maintain
         if rep >= num_rep:
@@ -1397,10 +1416,11 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_i
                     spot_req = ec2.describe_spot_instance_requests(
                         SpotInstanceRequestIds=[request_id])['SpotInstanceRequests'][0]
                     status = spot_req['Status']['Code']
-                    pipe_log('Exceeded retry count ({}) for spot instance (SpotInstanceRequestId: {}). Spot instance request status code: {}.'
-                                .format(num_rep, request_id, status))
+                    cancel_if_bad_spot_request_status(status, request_id, run_id)
                     rep = rep + 1
                     if rep > num_rep:
+                        pipe_log('Exceeded retry count ({}) for spot instance (SpotInstanceRequestId: {}). Spot instance request status code: {}.'
+                                 .format(num_rep, request_id, status))
                         exit_if_spot_unavailable(run_id, status)
                         return '', ''
                 if  instance_is_active(ec2, spot_req['InstanceId']):
@@ -1408,6 +1428,76 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_i
         sleep(5)
     pipe_log('No spot request for RunID {} found\n-'.format(run_id))
     return '', ''
+
+
+def cancel_if_bad_spot_request_status(status, request_id, run_id):
+    if status in SPOT_PRE_FULFILLMENT_TERMINAL_STATES:
+        pipe_log('Spot instance request ({}) in terminal status: {}'.format(request_id, status))
+        exit_if_spot_unavailable(run_id, status)
+    if status == 'bad-parameters':
+        raise RuntimeError('Invalid spot request parameters')
+
+
+def list_active_instances_for_run(ec2, run_id):
+    response = ec2.describe_instances(
+        Filters=[
+            run_id_filter(run_id),
+            {
+                'Name': 'instance-state-name',
+                'Values': ['pending', 'running']
+            }
+        ]
+    )
+    instances = []
+    for reservation in response.get('Reservations', []):
+        for instance in reservation.get('Instances', []):
+            if instance_is_active(ec2, instance['InstanceId']):
+                instances.append(instance)
+    return instances
+
+
+def elect_winner_instance(instances):
+    # Oldest LaunchTime, then smallest InstanceId.
+    return min(instances, key=lambda instance: (instance['LaunchTime'], instance['InstanceId']))
+
+
+def process_duplicated_instances(ins_id, run_id, instances, ec2, kube_client):
+    for instance in instances:
+        other_id = instance['InstanceId']
+        if other_id == ins_id:
+            # skip winner
+            continue
+        pipe_log('Winner {} terminating extra instance {} for RunID {}'.format(ins_id, other_id, run_id))
+        try:
+            terminate_instance(ec2, other_id,
+                               spot_request_id=_get_spot_instance_request_id(instance),
+                               kube_client=kube_client)
+        except Exception as e:
+            pipe_log('Failed to terminate duplicated instance {}: {}'.format(other_id, e.message))
+
+
+def check_duplicates(ec2, run_id, ins_id, kube_client=None):
+    instances = list_active_instances_for_run(ec2, run_id)
+    if not instances:
+        raise RuntimeError('No active instance found for RunID {} while resolving duplicates'.format(run_id))
+    winner = elect_winner_instance(instances)
+    winner_id = winner['InstanceId']
+    pipe_log('Duplicate check for RunID {}: this={}, winner={}, live={}'.format(
+        run_id, ins_id, winner_id, [i['InstanceId'] for i in instances]))
+    if len(instances) == 1 and ins_id == winner_id:
+        pipe_log('No duplicate instances found for RunID {}'.format(run_id))
+        return
+    if ins_id != winner_id:
+        current = next((i for i in instances if i['InstanceId'] == ins_id), None)
+        pipe_log('Instance {} lost duplicate election for RunID {} (winner {}). Terminating.'.format(
+            ins_id, run_id, winner_id))
+        terminate_instance(ec2, ins_id,
+                           spot_request_id=_get_spot_instance_request_id(current) if current else None,
+                           kube_client=kube_client)
+        raise RuntimeError(
+            'Duplicate instance {} for RunID {} (winner {}). Terminated.'.format(ins_id, run_id, winner_id))
+    # current instance is winner, but duplicates found, these instance shall be terminated
+    process_duplicated_instances(ins_id, run_id, instances, ec2, kube_client)
 
 
 def get_spot_req_by_run_id(ec2, run_id):
@@ -1651,6 +1741,9 @@ def main():
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
         nodename = verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api)
+
+        check_duplicates(ec2, run_id, ins_id, kube_client=api)
+
         label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels)
         pipe_log('Node created:\n'
                  '- {}\n'

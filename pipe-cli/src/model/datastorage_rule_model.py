@@ -21,6 +21,8 @@ class DataStorageRuleModel(object):
         self.file_mask = None
         self.pipeline_id = None
         self.created_date = None
+        self.name = None
+        self.is_result = False
 
     @classmethod
     def load(cls, json):
@@ -33,4 +35,8 @@ class DataStorageRuleModel(object):
             instance.pipeline_id = json['pipelineId']
         if 'createdDate' in json:
             instance.created_date = date_utilities.server_date_representation(json['createdDate'])
+        if 'name' in json:
+            instance.name = json['name']
+        if 'isResult' in json:
+            instance.is_result = json['isResult']
         return instance

@@ -34,17 +34,18 @@ import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -73,6 +74,7 @@ public class PipelineRunDockerOperationManager {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final RunLimitsService runLimitsService;
+    private final PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
 
     /**
      * Commits docker image and push it to a docker registry from specified run
@@ -166,7 +168,8 @@ public class PipelineRunDockerOperationManager {
      * @param runId {@link PipelineRun} id for pipeline run to be resumed
      * @return resumed {@link PipelineRun}
      */
-    public PipelineRun resumeRun(Long runId) {
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun resumeRun(final Long runId) {
         checkAbilityToPerformOperation();
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
@@ -177,6 +180,7 @@ public class PipelineRunDockerOperationManager {
         }
         final Integer totalRunInstances = 1 + Optional.ofNullable(pipelineRun.getNodeCount()).orElse(0);
         runLimitsService.checkRunLaunchLimits(totalRunInstances);
+        platformUsageCreditsLaunchService.checkCreditsForResumeRun(pipelineRun);
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
         pipelineRun.setStatus(TaskStatus.RESUMING);
         // prolong the run here in order to get rid off idle notification right after resume

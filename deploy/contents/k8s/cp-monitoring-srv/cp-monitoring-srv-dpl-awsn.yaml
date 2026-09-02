@@ -31,6 +31,9 @@ spec:
             - name: cp-system
               subPath: monitoring/logs
               mountPath: /opt/monitoring/logs
+            - name: cp-system
+              subPath: monitoring/lastPlatformUsageCreditsMonitorTime.txt
+              mountPath: /opt/monitoring/lastPlatformUsageCreditsMonitorTime.txt
       volumes:
         - name: cp-system
           persistentVolumeClaim:

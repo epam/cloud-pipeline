@@ -31,6 +31,7 @@ import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
@@ -42,6 +43,7 @@ import java.util.*;
 import static com.epam.pipeline.entity.utils.DateUtils.convertDateToLocalDateTime;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -57,7 +59,6 @@ public class PipelineRunDockerOperationManagerTest {
     private static final Date DATE_1 = new Date();
     private static final Date DATE_2 = DateUtils.addMinutes(DATE_1, 1);
     private static final Date DATE_3 = DateUtils.addMinutes(DATE_2, 1);
-
     private final DockerContainerOperationManager dockerContainerOperationManager =
             mock(DockerContainerOperationManager.class);
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
@@ -71,6 +72,8 @@ public class PipelineRunDockerOperationManagerTest {
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
     private final RunLimitsService runLimitsService = mock(RunLimitsService.class);
+    private final PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService =
+            mock(PlatformUsageCreditsLaunchService.class);
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
             new PipelineRunDockerOperationManager(
                     dockerContainerOperationManager,
@@ -84,7 +87,8 @@ public class PipelineRunDockerOperationManagerTest {
                     runStatusManager,
                     messageHelper,
                     preferenceManager,
-                    runLimitsService);
+                    runLimitsService,
+                    platformUsageCreditsLaunchService);
 
     @Test
     public void pauseRunShouldBeRelaunched() {
@@ -131,7 +135,7 @@ public class PipelineRunDockerOperationManagerTest {
         pipelineRunDockerOperationManager.rerunPauseAndResume();
 
         verify(toolManager).loadByNameOrId(TEST_NAME);
-        verify(dockerContainerOperationManager).resumeRun(run, TEST_NAMES);
+        verify(dockerContainerOperationManager).resumeRun(eq(run), eq(TEST_NAMES));
         verify(dockerContainerOperationManager, never()).pauseRun(any(), anyBoolean());
     }
 
@@ -154,7 +158,7 @@ public class PipelineRunDockerOperationManagerTest {
 
         verify(dockerContainerOperationManager).pauseRun(any(), anyBoolean());
         verify(toolManager).loadByNameOrId(TEST_NAME);
-        verify(dockerContainerOperationManager).resumeRun(runToResume, TEST_NAMES);
+        verify(dockerContainerOperationManager).resumeRun(eq(runToResume), eq(TEST_NAMES));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -275,4 +279,5 @@ public class PipelineRunDockerOperationManagerTest {
                 pausingRunStatus(convertDateToLocalDateTime(DATE_1))));
         when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
     }
+
 }

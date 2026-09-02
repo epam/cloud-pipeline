@@ -20,6 +20,7 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsMode;
 import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
@@ -37,9 +38,7 @@ import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
-import com.epam.pipeline.entity.monitoring.IdleRunAction;
-import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
-import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
+import com.epam.pipeline.entity.monitoring.*;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataConfig;
@@ -149,6 +148,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+    private static final String USAGE_CREDITS_GROUP = "Usage Credits";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
     private static final String CLOUD = "Cloud";
@@ -546,6 +546,11 @@ public class SystemPreferences {
         "cluster.node.extra.mem.min.mib", 512, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX_MIB = new IntPreference(
         "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
+
+    public static final IntPreference CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT = new IntPreference(
+        "cluster.fallback.instance.types.max.count", 5,
+            CLUSTER_GROUP, isGreaterThan(0).or(isEquals(-1)), true
+    );
 
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
@@ -1174,16 +1179,11 @@ public class SystemPreferences {
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
 
     public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
-            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, isNotBlank);
 
     public static final StringPreference SYSTEM_RUN_TAG_STOP_REASON = new StringPreference(
             "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);
 
-    /**
-     * Level of CPU load, below which a Run is considered `idle`
-     */
-    public static final IntPreference SYSTEM_IDLE_CPU_THRESHOLD_PERCENT =
-            new IntPreference("system.idle.cpu.threshold", 10, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Level of memory load, below which a Run is considered `overloaded`
      */
@@ -1199,23 +1199,31 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_MONITORING_METRIC_TIME_RANGE =
             new IntPreference("system.monitoring.time.range", 30, SYSTEM_GROUP, isGreaterThan(0));
-    /**
-     * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
-     */
-    public static final IntPreference SYSTEM_MAX_IDLE_TIMEOUT_MINUTES =
-            new IntPreference("system.max.idle.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
 
     /**
-     * A timeout to wait before an idle action will be taken
+     * Configures idle monitoring rules per metric type (CPU, GPU, ABSOLUTE).
+     * Replaces deprecated system.idle.* preferences with a unified JSON array config.
      */
-    public static final IntPreference SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES =
-            new IntPreference("system.idle.action.timeout.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
-    /**
-     * Controls which action will be executed After idle and Action timeouts. Can take values from {@link IdleRunAction}
-     */
-    // TODO: rewrite to an EnumPreference?
-    public static final StringPreference SYSTEM_IDLE_ACTION = new StringPreference("system.idle.action",
-                                   IdleRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidIdleAction);
+    public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
+            new ObjectPreference<>(
+                    "system.idle.monitoring.config",
+                    Arrays.asList(
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.CPU,
+                                true, 10.0, 30, 30, IdleRunAction.NOTIFY
+                        ),
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.GPU,
+                                true, null, 30, 30, IdleRunAction.NOTIFY
+                        ),
+                        new IdleMonitoringConfig(
+                                IdleMonitoringType.ABSOLUTE,
+                                true, null, null, 30, IdleRunAction.NOTIFY
+                        )
+                    ),
+                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
+                    PreferenceValidators.isValidIdleMonitoringConfig);
+
     /**
      * Controls which action will be performed after action threshold for long paused runs.
      * Can take values from {@link LongPausedRunAction} only.
@@ -1553,6 +1561,36 @@ public class SystemPreferences {
             "billing.quotas.clear.period.seconds", Constants.SECONDS_IN_DAY * 30,
             BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
+    // Usage Credits
+    /** Starting balance assigned to every new user (must be within [min, max]). Default: 2000 credits. */
+    public static final IntPreference USAGE_CREDITS_DEFAULT = new IntPreference(
+            "usage.credits.default", 2000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Hard floor for any user's balance — no event can push it below this value. Default: 24 credits. */
+    public static final IntPreference USAGE_CREDITS_MIN = new IntPreference(
+            "usage.credits.min", 24, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Hard ceiling for any user's balance — no event can push it above this value. Default: 3000 credits. */
+    public static final IntPreference USAGE_CREDITS_MAX = new IntPreference(
+            "usage.credits.max", 3000, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Credits cost per single unit of each resource type. Default: CPU=1, GPU=100. */
+    public static final ObjectPreference<Map<String, Integer>> USAGE_CREDITS_RESOURCE_WEIGHTS =
+            new ObjectPreference<>("usage.credits.resource.weights",
+                    CommonUtils.toMap(Pair.of("CPU", 1), Pair.of("GPU", 100)),
+                    new TypeReference<Map<String, Integer>>() {}, USAGE_CREDITS_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}));
+    /**
+     * Percentage of the [min, max] range above min below which a low-balance notification is sent.
+     * E.g. 25 means notify when balance drops below {@code min + 0.25 * (max - min)}. Default: 25.
+     */
+    public static final IntPreference USAGE_CREDITS_NOTIFICATION_THRESHOLD = new IntPreference(
+            "usage.credits.notification.threshold", 25, USAGE_CREDITS_GROUP, isGreaterThan(0));
+    /** Controls enforcement level: <p>
+     * OFF disables API + population; <p>
+     * BALANCE_ONLY calculates and shows balances; <p>
+     * ON calculates and shows balances and blocks runs if insufficient. */
+    public static final EnumPreference<PlatformUsageCreditsMode> USAGE_CREDITS_MODE =
+            new EnumPreference<>("platform.usage.credits.mode",
+                    PlatformUsageCreditsMode.BALANCE_ONLY, USAGE_CREDITS_GROUP);
+
     // Lustre FS
     public static final BooleanPreference LUSTRE_FS_SCALE_ENABLED = new BooleanPreference(
             "lustre.fs.scale.enabled", false, LUSTRE_GROUP, pass);
@@ -1669,6 +1707,11 @@ public class SystemPreferences {
             "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
     public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
             "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_PLATFORM_USAGE_CREDITS_DELAY = new IntPreference(
+            "monitoring.platform.usage.credits.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP,
+            isGreaterThan(0));
+    public static final BooleanPreference MONITORING_PLATFORM_USAGE_CREDITS_ENABLE = new BooleanPreference(
+            "monitoring.platform.usage.credits.enable", false, MONITORING_GROUP, pass);
     public static final ObjectPreference<List<String>> MONITORING_POOL_REQUEST_NAMES = new ObjectPreference<>(
         "monitoring.node.pool.request.names", Arrays.asList("cpu", "memory", "nvidia.com/gpu"),
             new TypeReference<List<String>>() {}, MONITORING_GROUP,

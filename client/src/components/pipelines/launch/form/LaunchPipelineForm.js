@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {action, computed, observable} from 'mobx';
+import {action, computed, isObservableArray, observable} from 'mobx';
 import {
   Alert,
   Button,
@@ -139,6 +139,7 @@ import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
 import {getSelectOptions} from '../../../special/instance-type-info';
+import {FallbackInstanceTypesInput} from '../../../special/fallback-instance-types-input';
 import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
@@ -1365,8 +1366,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       conditionalParameters
     } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
     const instanceType = values[EXEC_ENVIRONMENT].type;
+    const fallbackInstanceTypes = this.fallbackInstanceTypesDisabled
+      ? []
+      : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     let payload = {
       instance_size: instanceType,
+      fallback_instance_types: fallbackInstanceTypes.length > 0
+        ? fallbackInstanceTypes
+        : undefined,
       instance_disk: +values[EXEC_ENVIRONMENT].disk,
       friendly_url: prettyUrlGenerator.build(values[ADVANCED].friendly_url),
       timeout: +(values[ADVANCED].timeout || 0),
@@ -1396,6 +1403,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.state.isDts && this.props.detached) {
       payload.instance_size = undefined;
+      payload.fallback_instance_types = undefined;
       payload.instance_disk = undefined;
       payload.timeout = undefined;
       payload.is_spot = undefined;
@@ -1565,8 +1573,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else {
       disk = undefined;
     }
+    const fallbackInstanceTypes = this.fallbackInstanceTypesDisabled
+      ? []
+      : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     const payload = {
       instanceType,
+      fallbackInstanceTypes: fallbackInstanceTypes.length > 0
+        ? fallbackInstanceTypes
+        : undefined,
       hddSize: disk,
       timeout: +(values[ADVANCED].timeout || 0),
       cmdTemplate: cmd,
@@ -1813,6 +1827,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (key.split('.')[0] === 'notifications' && this.props.parameters) {
       return (this.props.parameters.notifications || []).map(mapObservableNotification);
     }
+    if (key === 'fallback_instance_types' && this.props.parameters) {
+      const value = this.props.parameters.fallback_instance_types;
+      return Array.isArray(value) || isObservableArray(value) ? value.slice() : undefined;
+    }
     if (!this.props.parameters[key]) {
       return undefined;
     }
@@ -1865,6 +1883,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   get instanceTypesMergedForRegions () {
     return this.props.allowedInstanceTypes &&
       this.props.allowedInstanceTypes.regionsMerged;
+  }
+
+  @computed
+  get fallbackInstanceTypesDisabled () {
+    // when no fallback instance types are allowed, the control is hidden
+    // and fallback instance types are not passed to the payload / configuration
+    return (this.props.preferences.maximumFallbackInstanceTypes || 0) <= 0;
   }
 
   @computed
@@ -3032,6 +3057,42 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               )
             }
           </Select>
+        )}
+      </FormItem>
+    );
+  };
+
+  renderFallbackInstanceTypesSelection = () => {
+    if (this.state.isDts && this.props.detached) {
+      return undefined;
+    }
+    if (this.fallbackInstanceTypesDisabled) {
+      return undefined;
+    }
+    const disabled = !!this.state.fireCloudMethodName ||
+      (this.props.readOnly && !this.props.canExecute) ||
+      (
+        this.props.allowedInstanceTypes &&
+        (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
+      );
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItem, 'fallbackInstanceTypes')}
+        {...this.formItemLayout}
+        label="Fallback node types"
+      >
+        {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('fallbackInstanceTypes',
+          {
+            initialValue: this.getDefaultValue('fallback_instance_types')
+          }
+        )(
+          <FallbackInstanceTypesInput
+            disabled={disabled}
+            instanceTypes={this.instanceTypes}
+            hyperThreadingDisabled={this.hyperThreadingDisabled}
+            displayRegion={this.instanceTypesMergedForRegions}
+            showReservationTag={!this.props.detached}
+          />
         )}
       </FormItem>
     );
@@ -5350,6 +5411,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       this.renderFormItemRow(
                         this.renderInstanceTypeSelection,
                         hints.instanceTypeHint
+                      )
+                    }
+                    {
+                      this.renderFormItemRow(
+                        this.renderFallbackInstanceTypesSelection,
+                        hints.fallbackInstanceTypesHint
                       )
                     }
                     {this.renderReservationParametersSelector()}

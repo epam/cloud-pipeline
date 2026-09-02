@@ -102,6 +102,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get maximumFallbackInstanceTypes () {
+    return +this.getPreferenceValue('cluster.fallback.instance.types.max.count') || 0;
+  }
+
+  @computed
   get searchEnabled () {
     return !!this.getPreferenceValue('search.elastic.host');
   }

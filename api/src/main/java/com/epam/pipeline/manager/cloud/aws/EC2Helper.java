@@ -230,6 +230,13 @@ public class EC2Helper implements EC2GpuHelper {
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
+    public void changeInstanceType(final String instanceId, final String instanceType, final AwsRegion awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        client.modifyInstanceAttribute(new ModifyInstanceAttributeRequest()
+                .withInstanceId(instanceId)
+                .withInstanceType(instanceType));
+    }
+
     public CloudInstanceOperationResult startInstance(String instanceId, AwsRegion awsRegion) {
         try {
             AmazonEC2 client = getEC2Client(awsRegion);
@@ -241,9 +248,10 @@ public class EC2Helper implements EC2GpuHelper {
             final List<String> limitErrors = preferenceManager.getPreference(
                     SystemPreferences.INSTANCE_LIMIT_STATE_REASONS);
             if (ListUtils.emptyIfNull(limitErrors).stream().anyMatch(code -> code.equals(e.getErrorCode()))) {
+                return CloudInstanceOperationResult.failToRetry(e.getErrorCode());
+            } else {
                 return CloudInstanceOperationResult.fail(e.getErrorCode());
             }
-            throw e;
         }
         return CloudInstanceOperationResult.success(
                 messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)

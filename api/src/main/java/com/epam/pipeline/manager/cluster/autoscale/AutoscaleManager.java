@@ -77,6 +77,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
+
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE;
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODE_POOL_PREFIX;
 
 @Service
 @Slf4j
@@ -117,6 +123,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
         private final MetadataManager metadataManager;
+        private final String haDeployEnabled;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -138,7 +145,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
-                             final MetadataManager metadataManager) {
+                             final MetadataManager metadataManager,
+                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -154,6 +162,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
+            this.haDeployEnabled = haDeployEnabled;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -280,7 +289,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             CompletableFuture.runAsync(
                 () -> {
                     Instant start = Instant.now();
-                    String nodeId = AutoscaleContants.NODE_POOL_PREFIX + nodesManager.getNextFreeNodeId();
+                    String nodeId = NODE_POOL_PREFIX + nodesManager.getNextFreeNodeId();
                     cloudFacade.scaleUpPoolNode(nodeId, node);
                     Instant end = Instant.now();
                     poolNodeUpTaskInProgress.merge(node.getId(), 0, (oldVal, newVal) -> oldVal - 1);
@@ -556,36 +565,70 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             long longId = Long.parseLong(runId);
             addNodeUpTask(longId);
             tasks.add(CompletableFuture.runAsync(() -> {
-                Instant start = Instant.now();
+
                 //save required instance
                 pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
-                RunInstance instance = cloudFacade
-                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
-                                requiredInstance.getTags());
-                //save instance ID and IP
-                pipelineRunManager.updateRunInstance(longId, instance);
-                pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
-                autoscalerService.registerDisks(longId, instance);
-                Instant end = Instant.now();
-                removeNodeUpTask(longId);
-                log.debug("Time to create a node for run {} : {} s.", runId,
-                        Duration.between(start, end).getSeconds());
+
+                final String initialInstanceType = requiredInstance.getInstance().getNodeType();
+
+                final List<String> allNodeTypesToTry = Stream.concat(
+                        Stream.of(initialInstanceType),
+                        ListUtils.emptyIfNull(requiredInstance.getInstance().getFallbackInstanceTypes()).stream()
+                ).collect(Collectors.toList());
+
+                CmdExecutionException catchedCmdException = null;
+                for (String nodeType : allNodeTypesToTry) {
+                    if (cancelNodeUpForNonMaster(longId, runId)) {
+                        return;
+                    }
+                    try {
+                        Instant start = Instant.now();
+                        requiredInstance.getInstance().setNodeType(nodeType);
+                        final RunInstance startedInstance = cloudFacade.scaleUpNode(
+                                longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
+                                requiredInstance.getTags()
+                        );
+                        //save instance ID and IP
+                        pipelineRunManager.updateRunInstance(longId, startedInstance);
+                        if (!initialInstanceType.equals(nodeType)) {
+                            pipelineRunManager.updateRunPrice(longId, startedInstance);
+                        }
+                        pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
+                        autoscalerService.registerDisks(longId, startedInstance);
+                        removeNodeUpTask(longId);
+                        Instant end = Instant.now();
+                        log.debug("Time to create a node for run {} : {} s.", runId,
+                                Duration.between(start, end).getSeconds());
+                        return;
+                    } catch (CmdExecutionException ex) {
+                        Integer exitCode = ex.getExitCode();
+                        if (!Objects.equals(NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, exitCode)
+                                && !Objects.equals(NODEUP_LIMIT_EXCEEDED_EXIT_CODE, exitCode)
+                                && !Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, exitCode)) {
+                            throw ex;
+                        }
+                        catchedCmdException = ex;
+                    }
+                }
+                throw Objects.requireNonNull(catchedCmdException,
+                        "catchedCmdException must be set after exhausting all node types!"
+                );
             }, executorService.getExecutorService()).exceptionally(e -> {
                 log.error(e.getMessage(), e);
 
                 if (e.getCause() instanceof CmdExecutionException &&
-                        Objects.equals(AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE,
+                        Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE,
                                 ((CmdExecutionException) e.getCause()).getExitCode())) {
                     spotNodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal + 1);
                 }
                 if (e.getCause() instanceof CmdExecutionException && Objects.equals(
-                        AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE,
+                        NODEUP_LIMIT_EXCEEDED_EXIT_CODE,
                         ((CmdExecutionException) e.getCause()).getExitCode())) {
                     // do not fail and do not change attempts count if instance quota exceeded
                     nodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal - 1);
                 }
                 if (e.getCause() instanceof CmdExecutionException && Objects.equals(
-                        AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
+                        NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
                         ((CmdExecutionException) e.getCause()).getExitCode())) {
                     final int retryCount = nodeUpAttempts.getOrDefault(longId, 0);
                     final int nodeUpRetryCount = preferenceManager.getPreference(
@@ -605,6 +648,18 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 removeNodeUpTask(longId, false);
                 return null;
             }));
+        }
+
+        private boolean cancelNodeUpForNonMaster(long longId, String runId) {
+            if (StringUtils.equalsIgnoreCase(haDeployEnabled, Boolean.TRUE.toString())
+                    && !kubernetesManager.isMasterHost()) {
+                log.warn("Cancelling scheduling node for run #{} since host is not master.", runId);
+                // If this pod becomes a master again, a leftover in-progress task would still count toward
+                // cluster size and nodeup tasks limit => this task shall be removed.
+                removeNodeUpTask(longId, false);
+                return true;
+            }
+            return false;
         }
 
         private void addNodeUpTask(long longId) {

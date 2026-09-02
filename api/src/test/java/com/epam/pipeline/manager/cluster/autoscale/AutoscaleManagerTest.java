@@ -54,13 +54,18 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -68,6 +73,8 @@ import static org.mockito.Mockito.when;
 public class AutoscaleManagerTest {
     private static final String TEST_KUBE_NAMESPACE = "testNamespace";
     private static final Long TEST_RUN_ID = 111L;
+    private static final String PRIMARY_INSTANCE_TYPE = "primary.type";
+    private static final String FALLBACK_INSTANCE_TYPE = "fallback.type";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -108,8 +115,8 @@ public class AutoscaleManagerTest {
     private RunRegionShiftHandler runRegionShiftHandler;
     @Mock
     private MetadataManager metadataManager;
-
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
+    private PipelineRun testRun;
 
     @Before
     public void setUp() throws Exception {
@@ -120,7 +127,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager);
+                runRegionShiftHandler, metadataManager, Boolean.FALSE.toString());
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -167,7 +174,7 @@ public class AutoscaleManagerTest {
         status.setConditions(Collections.singletonList(condition));
         unscheduledPipelinePod.setStatus(status);
 
-        PipelineRun testRun = new PipelineRun();
+        testRun = new PipelineRun();
         testRun.setId(TEST_RUN_ID);
         testRun.setStatus(TaskStatus.RUNNING);
         testRun.setPipelineRunParameters(Collections.emptyList());
@@ -220,5 +227,111 @@ public class AutoscaleManagerTest {
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
                 Matchers.hasProperty("spot", Matchers.is(false))), any(), any());
+    }
+
+    @Test
+    public void testFallbackInstanceTypeTriedOnSpotFailure() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
+        RunInstance instance = new RunInstance();
+        instance.setSpot(false);
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
+        testRun.setInstance(instance);
+
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+            .thenThrow(new CmdExecutionException("", AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE, ""))
+            .thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager, never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testFallbackInstanceTypeTriedOnLimitExceeded() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
+        RunInstance instance = new RunInstance();
+        instance.setSpot(false);
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
+        testRun.setInstance(instance);
+
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+            .thenThrow(new CmdExecutionException("", AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE, ""))
+            .thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager, never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testNodeUpSkippedWhenNotMasterInHaMode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(kubernetesManager.isMasterHost()).thenReturn(false);
+
+        AutoscaleManager.AutoscaleManagerCore haCoreNotMaster = new AutoscaleManager.AutoscaleManagerCore(
+                pipelineRunManager, executorService,
+                autoscalerService, nodesManager, kubernetesManager,
+                preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
+                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
+        Whitebox.setInternalState(haCoreNotMaster, "preferenceManager", preferenceManager);
+
+        haCoreNotMaster.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+    }
+
+    @Test
+    public void testNodeUpProceedsWhenMasterInHaMode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(kubernetesManager.isMasterHost()).thenReturn(true);
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+
+        AutoscaleManager.AutoscaleManagerCore haCoreIsMaster = new AutoscaleManager.AutoscaleManagerCore(
+                pipelineRunManager, executorService,
+                autoscalerService, nodesManager, kubernetesManager,
+                preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
+                nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
+                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
+        Whitebox.setInternalState(haCoreIsMaster, "preferenceManager", preferenceManager);
+
+        haCoreIsMaster.runAutoscaling();
+
+        verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    @Test
+    public void testNodeTypeNotOverwrittenOnUnexpectedException() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+
+        RunInstance instance = new RunInstance();
+        instance.setSpot(false);
+        instance.setNodeType(PRIMARY_INSTANCE_TYPE);
+        instance.setFallbackInstanceTypes(Collections.singletonList(FALLBACK_INSTANCE_TYPE));
+        testRun.setInstance(instance);
+
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+                .thenThrow(new CmdExecutionException("", AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE, ""))
+                .thenThrow(new RuntimeException("unexpected error during fallback attempt"));
+
+        final List<String> capturedNodeTypes = new ArrayList<>();
+        doAnswer(invocation -> {
+            capturedNodeTypes.add(((RunInstance) invocation.getArguments()[1]).getNodeType());
+            return null;
+        }).when(pipelineRunManager).updateRunInstance(eq(TEST_RUN_ID), any(RunInstance.class));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        // DB is saved once with the primary type before the loop; fallback type is never written to DB
+        assertThat(capturedNodeTypes, Matchers.contains(PRIMARY_INSTANCE_TYPE));
+        verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
     }
 }
