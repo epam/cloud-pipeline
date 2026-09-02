@@ -1,5 +1,9 @@
 /Pipeline_CLI.egg-info
 /build
 /dist
+/.gradle
+/.history
+/.idea
+/.codemie
 *.pyc
 *.egg-info

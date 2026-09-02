@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "prompt": {
+        "system": [
+            "You are an expert assistant for this specific project.",
+            "Always use English in code comments.",
+            "Follow the coding style used in this repo: TypeScript + npm.",
+            "Use cmd to run commands in terminal. Never use pwsh."
+        ]
+    }
+}

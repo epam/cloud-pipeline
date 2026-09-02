@@ -1,12 +1,14 @@
 /.gradle
 /.idea
+/.history
 *.log
 api/src/main/resources/static/
 *.class
 *.project
 *.pyc
 .vscode/
-.gnupg/
+/.gnupg
+/.gnupg.zip
 docs/site
 dist
 vscode-cloud-pipeline/.env

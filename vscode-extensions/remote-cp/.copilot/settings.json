@@ -1,0 +1,8 @@
+{
+  // "github.copilot.chat.shell": "cmd",
+  "chat.tools.terminal.autoApprove": {
+    "/npm run compile/": true,
+    "npx": true,
+    "git": true
+  }
+}

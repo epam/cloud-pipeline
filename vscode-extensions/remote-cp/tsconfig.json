@@ -1,0 +1,34 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "strict": true /* enable all strict type-checking options */,
+    "outDir": "dist",
+
+    "sourceMap": true,
+    "rootDir": "src",
+    "exactOptionalPropertyTypes": false,
+    "useUnknownInCatchVariables": false,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "types": ["node", "vscode", "mocha"],
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "validate", "src/cp-run-view/webview"],
+  "overrides": [
+    {
+      "files": ["*.cjs"],
+      "compilerOptions": {
+        "module": "CommonJS"
+      }
+    }
+  ]
+}
