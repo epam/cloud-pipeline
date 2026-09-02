@@ -64,7 +64,7 @@ certifi==2026.7.22
 chardet==3.0.4
 cryptography==50.0.1
 docutils==0.23
-httplib2==0.18.1
+docutils==0.19
 idna==2.8
 lockfile==0.12.2
 luigi==3.8.1
@@ -91,7 +91,16 @@ psutil==7.2.2
 watchdog==6.0.0
 PyJWT==2.13.0
 click==8.5.0
-wheel==0.44.0"
+wheel==0.44.0
+flask==2.3.3
+botocore==1.32.7
+boto3==1.29.0
+azure-common==1.1.28
+azure-mgmt-compute==31.0.0
+azure-mgmt-network==26.0.0
+azure-mgmt-resource==23.1.0
+msrestazure==0.6.4
+httplib2==0.18.1"
 download_list "$pypi_packages" /srv/pypi/web/
 
 python3 $WD/create_simple_index.py /srv/pypi/web/

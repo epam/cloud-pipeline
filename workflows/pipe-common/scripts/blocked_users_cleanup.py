@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-import mutex
 import os
 import subprocess
 from datetime import datetime, timedelta
