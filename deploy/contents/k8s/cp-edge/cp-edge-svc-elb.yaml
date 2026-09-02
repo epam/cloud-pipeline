@@ -21,6 +21,10 @@ spec:
       port: ${CP_EDGE_CONNECT_INTERNAL_PORT}
       targetPort: 8282
       name: cp-edge-port-connect
+    - protocol: TCP
+      port: 445
+      targetPort: 445
+      name: cp-edge-port-smb
   selector:
     cloud-pipeline/cp-edge: "true"
     cloud-pipeline/region: $CP_CLOUD_REGION_ID
@@ -47,3 +51,10 @@ spec:
     - port: 443
       targetPort: 8080
       protocol: TCP
+      name: ingress-port-https
+    # SMB traffic, which is proxied by EDGE to the cp-dav service.
+    # SMB clients do not allow to specify a custom port, so 445 is used on both sides
+    - port: 445
+      targetPort: 445
+      protocol: TCP
+      name: ingress-port-smb

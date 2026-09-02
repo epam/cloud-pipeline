@@ -22,6 +22,10 @@ export CP_DAV_MOUNT_POINT="${CP_DAV_MOUNT_POINT:-/dav-mount}"
 export APACHE_LOG_DIR="${APACHE_LOG_DIR:-/var/log/dav/httpd}"
 export SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
 export APACHE_DAV_LOCK_DB="${APACHE_DAV_LOCK_DB:-$APACHE_HOME/dav/DavLock}"
+export CP_SMB_INTERNAL_PORT="${CP_SMB_INTERNAL_PORT:-445}"
+export CP_SMB_AUTH_PORT="${CP_SMB_AUTH_PORT:-31087}"
+export CP_SMB_SESSION_DURATION="${CP_SMB_SESSION_DURATION:-86400}"
+export SMB_LOG_DIR="${SMB_LOG_DIR:-/var/log/dav/smb}"
 
 function download_file {
     local _FILE_URL=$1
@@ -59,7 +63,7 @@ if [ $? -eq 0 ]; then
 fi
 
 # Create the required directories
-mkdir -p "$CP_DAV_SERVE_DIR" "$CP_DAV_MOUNT_POINT" "$APACHE_LOG_DIR" "$SYNC_LOG_DIR"
+mkdir -p "$CP_DAV_SERVE_DIR" "$CP_DAV_MOUNT_POINT" "$APACHE_LOG_DIR" "$SYNC_LOG_DIR" "$SMB_LOG_DIR"
 mkdir -p $(dirname $APACHE_DAV_LOCK_DB)
 
 # Unpack and configure NFS observer script
@@ -91,6 +95,9 @@ crond
 
 # Start the extra commands service
 nohup python2 ${EXTRA_HOME}/dav-extra-command.py &> /dev/null &
+
+# Start the SMB server (Python 3.12 via micromamba)
+nohup /opt/local/mamba/envs/${SMB_CONDA_ENV}/bin/python ${SMB_HOME}/smb_server.py >> ${SMB_LOG_DIR}/smb.log 2>&1 &
 
 # Update the Apache WebDAV configuration according to the environment variables
 envsubst < /tmp/httpd.conf > ${APACHE_HOME}/conf/httpd.conf

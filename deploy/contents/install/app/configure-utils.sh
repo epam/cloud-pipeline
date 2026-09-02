@@ -1091,12 +1091,17 @@ function api_register_drive_mapping {
 
     export CP_DAV_EXTERNAL_MAPPING_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_URL_PATH}/
     export CP_DAV_EXTERNAL_AUTH_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_AUTH_URL_PATH}/
+    # SMB credentials endpoint, which is proxied by EDGE to the cp-dav service
+    export CP_SMB_EXTERNAL_AUTH_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_SMB_URL_PATH:-smb}/auth
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                             "CP_DAV_EXTERNAL_MAPPING_URL" \
                             "$CP_DAV_EXTERNAL_MAPPING_URL"
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                             "CP_DAV_EXTERNAL_AUTH_URL" \
                             "$CP_DAV_EXTERNAL_AUTH_URL"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_SMB_EXTERNAL_AUTH_URL" \
+                            "$CP_SMB_EXTERNAL_AUTH_URL"
 
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
 

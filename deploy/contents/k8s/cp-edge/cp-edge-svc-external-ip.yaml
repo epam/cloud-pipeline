@@ -21,6 +21,10 @@ spec:
     port: ${CP_EDGE_CONNECT_INTERNAL_PORT}
     targetPort: 8282
     name: cp-edge-port-connect
+  - protocol: TCP
+    port: 445
+    targetPort: 445
+    name: cp-edge-port-smb
   externalIPs:
 ${CP_EDGE_SVC_EXTERNAL_IP_LIST}
   selector:
