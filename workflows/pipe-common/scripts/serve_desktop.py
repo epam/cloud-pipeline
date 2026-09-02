@@ -123,7 +123,7 @@ def _extract_user_from_request(logger):
     bearer_cookie = request.cookies.get('bearer')
     if not bearer_cookie:
         logger.warn('Bearer was not found in request cookies...')
-    user_name = jwt.decode(bearer_cookie, verify=False).get('sub') if bearer_cookie else None
+    user_name = jwt.decode(bearer_cookie, options={"verify_signature": False}, algorithms=["HS256", "RS256"]).get('sub') if bearer_cookie else None
     if not user_name:
         logger.warn('User name was not found in bearer. '
                     'Falling back to owner connection file...')
