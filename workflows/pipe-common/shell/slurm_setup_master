@@ -27,6 +27,22 @@
 # rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
 # ls -la /root/rpmbuild/RPMS/x86_64/*
 ########################################
+# Build instructions: slurm RPMs for EL9
+# yum install -y epel-release
+# yum install -y yum-utils
+# yum config-manager --set-enabled crb
+# yum install -y systemd wget rpm-build munge-devel munge-libs pam-devel perl python3 readline-devel mariadb-devel
+# GLOBAL_DISTRIBUTION_URL=https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+# CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
+# _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
+# wget $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+# rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
+# ls -la /root/rpmbuild/RPMS/x86_64/*
+# cd /root/rpmbuild/RPMS
+# mv x86_64 slurm-22.05.0-1
+# tar -cvf slurm-22.05.5-1.el9.x86_64.tar slurm-22.05.0-1
+# aws s3 cp slurm-22.05.5-1.el9.x86_64.tar s3://cloud-pipeline-oss-builds/tools/slurm/rpm/slurm-22.05.5-1.el9.x86_64.tar
+########################################
 
 SLURM_COMMON_CONFIG_DIR="$SHARED_FOLDER/.slurm"
 SLURM_MASTER_SETUP_TASK="SLURMMasterSetup"
