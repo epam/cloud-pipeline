@@ -132,7 +132,7 @@ def execute_command(command, max_attempts=1):
 
 
 def current_utc_time():
-    return datetime.datetime.utcnow()
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 def current_utc_time_millis():
