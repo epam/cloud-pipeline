@@ -98,6 +98,7 @@ else
     export CP_EDGE_FSBROWSER_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
     export CP_EDGE_INVALIDATE_URL_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
 fi
+export CP_SMB_URL_CORS="${CP_SMB_URL_CORS:-*}"
 # FIXME: !!! WebDAV tips For Windows Drive Mapping:
 #        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
 #        !!! - File size/timout restrictions which require registry to be modified !!!
@@ -113,7 +114,7 @@ echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
 NGINX_COMMON_CONF="$(envsubst '${CP_EDGE_SSL_PROTOCOLS} ${CP_EDGE_SSL_CIPHERS}' < /etc/nginx/endpoints-config/server.common.conf)"
 echo "$NGINX_COMMON_CONF" > /etc/nginx/endpoints-config/server.common.conf
 
-NGINX_CONF="$(envsubst '${CP_EDGE_REGION} ${CP_EDGE_CONNECT_PROXY_AUTHENTICATION} ${CP_EDGE_ROOT_PROXY_PASS_DESTINATION} ${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT} ${CP_DAV_EXTRA_INTERNAL_PORT} ${CP_SMB_URL_PATH} ${CP_SMB_AUTH_PORT}' < /etc/nginx/nginx.conf)"
+NGINX_CONF="$(envsubst '${CP_EDGE_REGION} ${CP_EDGE_CONNECT_PROXY_AUTHENTICATION} ${CP_EDGE_ROOT_PROXY_PASS_DESTINATION} ${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT} ${CP_DAV_EXTRA_INTERNAL_PORT} ${CP_SMB_URL_PATH} ${CP_SMB_AUTH_PORT} ${CP_SMB_URL_CORS}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 # Add the "ingress" configuration to the nginx, which will force all the client traffic to flow via EDGE
