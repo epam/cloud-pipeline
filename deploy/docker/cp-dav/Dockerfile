@@ -30,7 +30,9 @@ RUN yum update -y && \
                     zlib-devel \
                     libcurl-devel \
                     libxml2-devel \
-                    openssl-devel
+                    openssl-devel \
+                    bzip2
+
 ARG APACHE_BUILD_DIR=/opt/httpd-build
 ARG APACHE_VERSION=2.4.41
 ARG APR_VERSION=1.7.0
@@ -104,6 +106,27 @@ COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management
 ENV EXTRA_HOME=/opt/dav-extra
 RUN pip install PyJWT==1.6.1 cryptography==2.6.1 flask==1.1.4 xxhash==2.0.2
 COPY extra ${EXTRA_HOME}
+
+# SMB server — Python 3.12 via micromamba
+ENV SMB_HOME=/opt/cp-smb
+ENV SMB_CONDA_ENV=smb
+
+RUN mkdir -p /opt/local/mamba && \
+    cd /opt/local/mamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    /opt/local/mamba/bin/micromamba create -y \
+        --prefix /opt/local/mamba/envs/${SMB_CONDA_ENV} \
+        --root-prefix /opt/local/mamba \
+        -c conda-forge \
+        python=3.12 && \
+    /opt/local/mamba/envs/${SMB_CONDA_ENV}/bin/pip install --no-cache-dir \
+        impacket \
+        PyJWT \
+        cryptography \
+        flask \
+        werkzeug
+
+COPY smb ${SMB_HOME}
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
