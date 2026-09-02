@@ -169,7 +169,7 @@ public class PipelineRunManager {
     private static final String LIMIT_MOUNTS_NONE = "none";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
-    private static final String CP_GPU_COUNT = "CP_GPU_COUNT";
+    private static final String CP_GPU_AVAILABLE = "CP_GPU_AVAILABLE";
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
@@ -572,12 +572,12 @@ public class PipelineRunManager {
             final InstanceOffer offer = instance.get();
             if (offer.getGpu() > 0) {
                 configuration.setParameters(CommonUtils.mergeMaps(
-                        Collections.singletonMap(CP_GPU_COUNT, new PipeConfValueVO(String.valueOf(offer.getGpu()))),
+                        Collections.singletonMap(CP_GPU_AVAILABLE, new PipeConfValueVO(Boolean.TRUE.toString())),
                         configuration.getParameters()));
                 return;
             }
         }
-        MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
+        MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_AVAILABLE);
     }
 
     private RunContainerSpec getDefaultPodAssignPolicy(final PipelineRun run) {
