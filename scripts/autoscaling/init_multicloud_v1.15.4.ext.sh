@@ -483,12 +483,26 @@ EOL
   fi
 fi
 
+cat >> /etc/rc.local << 'RESUME_DOCKER_CONFIG_CLEANUP'
+function check_gpu_available {
+    command -v "nvidia-smi" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then echo "nvidia-smi not found"; return 1; fi
+
+    nvidia-smi &> /dev/null
+    if [ $? -eq 9 ]; then echo "NVIDIA driver is not loaded"; return 1; fi
+
+    return 0
+}
 if check_gpu_available; then
-  cat >> /etc/rc.local << EOF
-nvidia-persistenced --persistence-mode
-nvidia-smi
-EOF
+    nvidia-persistenced --persistence-mode
+    nvidia-smi
+else
+    if [ -f /etc/docker/daemon.json ] && jq -e '."default-runtime" or .runtimes' /etc/docker/daemon.json > /dev/null 2>&1; then
+        jq 'del(."default-runtime", .runtimes)' /etc/docker/daemon.json > /tmp/daemon.json.tmp \
+            && mv /tmp/daemon.json.tmp /etc/docker/daemon.json
+    fi
 fi
+RESUME_DOCKER_CONFIG_CLEANUP
 
 echo "> [$(date)] Setup resume script"
 cat >> /etc/rc.local << EOF
