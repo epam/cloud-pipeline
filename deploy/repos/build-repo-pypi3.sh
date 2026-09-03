@@ -13,6 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO: currently this code shall be launched on ubuntu instances
+# because building on rockylinux leads to issues on ubuntu
+
 WD=$(pwd)
 cat > "create_simple_index.py" << 'EOF'
 import re, sys

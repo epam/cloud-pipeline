@@ -18,6 +18,16 @@ try:
     from shutil import which as find_executable
 except ImportError:
     from distutils.spawn import find_executable
+
+try:
+    _UTC = datetime.timezone.utc
+except AttributeError:
+    class _UTC(datetime.tzinfo):
+        _ZERO = datetime.timedelta(0)
+        def utcoffset(self, dt): return self._ZERO
+        def tzname(self, dt): return 'UTC'
+        def dst(self, dt): return self._ZERO
+    _UTC = _UTC()
 import errno
 import logging
 import os
@@ -132,7 +142,7 @@ def execute_command(command, max_attempts=1):
 
 
 def current_utc_time():
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.now(_UTC)
 
 
 def current_utc_time_millis():

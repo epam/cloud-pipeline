@@ -19,6 +19,16 @@ from abc import ABCMeta, abstractmethod
 
 import datetime
 
+try:
+    _UTC = datetime.timezone.utc
+except AttributeError:
+    class _UTC(datetime.tzinfo):
+        _ZERO = datetime.timedelta(0)
+        def utcoffset(self, dt): return self._ZERO
+        def tzname(self, dt): return 'UTC'
+        def dst(self, dt): return self._ZERO
+    _UTC = _UTC()
+
 from pipeline.api import LogEntry, TaskStatus, PipelineAPI
 
 
@@ -207,7 +217,7 @@ class PrintLogger(CloudPipelineLogger):
             self._inner.error(message, task=task, trace=trace)
 
     def _log(self, message, level, trace):
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_utc = datetime.datetime.now(_UTC)
         formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond // 1000)
         if trace:
             stacktrace = traceback.format_exc()
@@ -366,7 +376,7 @@ class RunLogger(CloudPipelineLogger):
             self._inner.error(message, task=task, trace=trace)
 
     def _log(self, message, task, status, trace):
-        now_utc = datetime.datetime.now(datetime.timezone.utc)
+        now_utc = datetime.datetime.now(_UTC)
         formatted_dt = self._DATE_WITH_MILLISECONDS % (now_utc.strftime(self._DATE_FORMAT), now_utc.microsecond // 1000)
         if trace:
             stacktrace = traceback.format_exc()

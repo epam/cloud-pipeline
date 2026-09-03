@@ -26,6 +26,16 @@ try:
 except ImportError:
     from urllib import quote
 
+try:
+    _UTC = datetime.timezone.utc
+except AttributeError:
+    class _UTC(datetime.tzinfo):
+        _ZERO = datetime.timedelta(0)
+        def utcoffset(self, dt): return self._ZERO
+        def tzname(self, dt): return 'UTC'
+        def dst(self, dt): return self._ZERO
+    _UTC = _UTC()
+
 from .region import CloudRegion
 from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
 from .token import StaticToken
@@ -149,7 +159,7 @@ class CommmitStatus:
 class LogEntry:
     def __init__(self, run_id, status, text, task, instance):
         self.runId = run_id
-        self.date = datetime.datetime.now(datetime.timezone.utc).strftime(DATE_FORMAT)
+        self.date = datetime.datetime.now(_UTC).strftime(DATE_FORMAT)
         self.status = status
         self.logText = text
         self.taskName = task
@@ -163,7 +173,7 @@ class LogEntry:
 # Represents a status entry in format supported by Pipeline API
 class StatusEntry:
     def __init__(self, status):
-        self.endDate = datetime.datetime.now(datetime.timezone.utc).strftime(DATE_FORMAT)
+        self.endDate = datetime.datetime.now(_UTC).strftime(DATE_FORMAT)
         self.status = status
 
     def to_json(self):
@@ -1520,7 +1530,7 @@ class PipelineAPI:
 
     def stop_run(self, run_id):
         try:
-            data = {'status': 'STOPPED', 'endDate': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f')}
+            data = {'status': 'STOPPED', 'endDate': datetime.datetime.now(_UTC).strftime('%Y-%m-%d %H:%M:%S.%f')}
             return self._request(endpoint='run/{}/status'.format(str(run_id)), http_method="post", data=data)
         except Exception as e:
             raise RuntimeError("Failed to stop run. \n {}".format(e))
