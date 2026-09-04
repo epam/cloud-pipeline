@@ -1236,21 +1236,25 @@ function getParameterValidationError (parameters, config) {
 /**
  * @param {Parameter[]} parameters
  * @param enumeration
+ * @returns {{name: string, value: string, visible: boolean}[]|undefined}
  */
 function parseParameterEnumeration (parameters, enumeration) {
   if (enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))) {
     return [...enumeration].map((item) => {
       if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
-        return String(item);
+        return {name: String(item), value: String(item), visible: true};
       }
-      if (typeof item === 'object') {
+      if (typeof item === 'object' && item.name !== undefined) {
         const {
           name,
+          value = name,
           visible
         } = item;
-        if (evaluate(parameters, `enum "${name}"`, visible)) {
-          return name;
-        }
+        return {
+          name,
+          value,
+          visible: evaluate(parameters, `enum "${name}"`, visible, true)
+        };
       }
       return undefined;
     }).filter(Boolean);
@@ -1366,7 +1370,9 @@ function validateParameter (parameter, parameters, rawEdit = false) {
     if (actualConfig.visible) {
       if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
         if (!actualConfig.multiple) {
-          value = actualConfig.enumeration.find((o) => o === value);
+          const matched = actualConfig.enumeration
+            .find((o) => o.visible && o.value === value);
+          value = matched ? matched.value : undefined;
         }
         if (!actualConfig.multiple && !value) {
           value = actualConfig.value;
