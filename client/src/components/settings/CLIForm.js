@@ -30,7 +30,7 @@ import UserToken from '../../models/user/UserToken';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../models/notifications/Notifications';
 import LoadingView from '../special/LoadingView';
-import DriveMappingWindowsForm from './DriveMappingWindowsForm';
+import FileSystemAccess from './FileSystemAccess';
 import {getOS} from '../../utils/OSDetection';
 import roleModel from '../../utils/roleModel';
 import BashCode from '../special/bash-code';
@@ -463,44 +463,24 @@ export default class CLIForm extends React.Component {
       })();
     }
 
-    const loadCode = (config, key) => {
-      let code = this.props.preferences.replacePlaceholders(config);
-      if (code && code.indexOf('{user.jwt.token}') >= 0) {
-        code = code.replace(
-          new RegExp('{user.jwt.token}', 'g'),
-          this.state.driveMapping.accessKey || ''
-        );
-      }
-      return (
-        <BashCode
-          id="drive-mapping-command"
-          key={key}
-          loading={!code}
-          className={styles.mdPreview}
-          code={this.props.preferences.replacePlaceholders(code)}
-          copyable
+    if (driveMappingConfig) {
+      content = (
+        <FileSystemAccess
+          key="drive-mapping-configure-command"
+          userJwtToken={this.state.driveMapping.accessKey}
+          content={parseDriveMappingConfig(driveMappingConfig)}
         />
       );
-    };
-    if (driveMappingConfig) {
-      const renderSingleConfig = (instructions, index) => {
-        if (/^windows$/i.test(operationSystem) && /^<AUTH_TEMPLATE>$/i.test(instructions)) {
-          return (<DriveMappingWindowsForm key={`instructions-${index}`} />);
-        } else if (instructions) {
-          return loadCode(instructions, `drive-mapping-configure-command-${index}`);
-        }
-        return undefined;
-      };
-      content = parseDriveMappingConfig(driveMappingConfig)
-        .map(renderSingleConfig)
-        .filter(Boolean);
-      if (content.length === 0) {
-        content = undefined;
-      }
     }
 
     if (fileBrowserConfig) {
-      fileBrowserContent = loadCode(fileBrowserConfig, 'file-browser-configure-command');
+      fileBrowserContent = (
+        <FileSystemAccess
+          key="file-browser-configure-command"
+          userJwtToken={this.state.driveMapping.accessKey}
+          content={fileBrowserConfig}
+        />
+      );
     }
 
     return [
