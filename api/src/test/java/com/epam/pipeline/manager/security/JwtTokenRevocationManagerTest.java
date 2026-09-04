@@ -21,8 +21,8 @@ import com.epam.pipeline.dao.security.NamedJwtTokenDao;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -31,8 +31,8 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 
@@ -51,9 +51,9 @@ public class JwtTokenRevocationManagerTest {
     @InjectMocks
     private JwtTokenRevocationManager jwtTokenRevocationManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test

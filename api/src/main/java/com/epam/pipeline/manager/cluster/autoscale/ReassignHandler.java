@@ -153,14 +153,14 @@ public class ReassignHandler {
     }
 
     private boolean matchRun(final PoolFilter filter, final PipelineRun run) {
-        final List<PoolInstanceFilter> filters = filter.getFilters();
-        switch (filter.getOperator()) {
+        final List<PoolInstanceFilter> filters = filter.filters();
+        switch (filter.operator()) {
             case AND:
                 return filters.stream().allMatch(f -> matchRunToFilter(f, run));
             case OR:
                 return filters.stream().anyMatch(f -> matchRunToFilter(f, run));
             default:
-                throw new IllegalArgumentException("Unsupported filter operator: " + filter.getOperator());
+                throw new IllegalArgumentException("Unsupported filter operator: " + filter.operator());
         }
     }
 

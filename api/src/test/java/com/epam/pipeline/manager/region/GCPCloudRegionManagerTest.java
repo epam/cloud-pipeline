@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +32,7 @@ import java.util.List;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
@@ -46,8 +46,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
             CustomInstanceType.withGpu(2, 3.75, 1, "K80")
     );
 
-    @Before
-    public void initGCPPreferences() {
+    @BeforeEach    public void initGCPPreferences() {
         doReturn(Collections.singletonList(validRegionId())).when(preferenceManager)
                 .getPreference(SystemPreferences.GCP_REGION_LIST);
     }

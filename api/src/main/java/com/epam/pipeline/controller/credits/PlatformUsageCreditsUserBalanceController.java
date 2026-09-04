@@ -23,12 +23,11 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsResetRequest;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalanceFilterVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,7 +38,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@Api(value = "Platform usage credits user balances management")
+@Tag(name = "platform-usage-credits-user-balance-controller",
+        description = "Platform usage credits user balances management")
 @RequestMapping("/usage/credits/users")
 @RequiredArgsConstructor
 public class PlatformUsageCreditsUserBalanceController extends AbstractRestController {
@@ -47,32 +47,34 @@ public class PlatformUsageCreditsUserBalanceController extends AbstractRestContr
     private final PlatformUsageCreditsUserBalanceApiService apiService;
 
     @PostMapping
-    @ApiOperation(
-            value = "Loads current user balances with optional filters. Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    @Operation(
+            summary = "Loads current user balances with optional filters. Admin only.",
+            description = "Loads current user balances with optional filters. Admin only.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PagedResult<List<PlatformUsageCreditsUserBalance>>> filter(
             @RequestBody final PlatformUsageCreditsUserBalanceFilterVO filter) {
         return Result.success(apiService.filter(filter));
     }
 
     @PostMapping("/reset")
-    @ApiOperation(
-            value = "Resets the credits balance for specific users, or for all users if userIds is omitted. "
+    @Operation(
+            summary = "Resets the credits balance for specific users, or for all users if userIds is omitted. "
                     + "Admin only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+            description = "Resets the credits balance for specific users, or for all users if userIds is omitted. "
+                    + "Admin only.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<Void> reset(@RequestBody final PlatformUsageCreditsResetRequest resetRequest) {
         apiService.reset(resetRequest);
         return Result.success(null);
     }
 
     @GetMapping("/balance")
-    @ApiOperation(
-            value = "Returns the credits balance for a specific user including currently allocated credits. "
+    @Operation(
+            summary = "Returns the credits balance for a specific user including currently allocated credits. "
                     + "Admins can query any user; non-admins can only query their own balance.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+            description = "Returns the credits balance for a specific user including currently allocated credits. "
+                    + "Admins can query any user; non-admins can only query their own balance.")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PlatformUsageCreditsUserBalance> getBalanceWithAllocated(
             @RequestParam final Long userId) {
         return Result.success(apiService.getBalanceWithAllocated(userId));

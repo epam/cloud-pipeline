@@ -17,12 +17,14 @@ package com.epam.pipeline.entity.cluster.pool;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class NodeSchedule {
     private Long id;
     private String name;

@@ -33,7 +33,7 @@ public class ContextualPreferencePermissionManager {
     private final CheckPermissionHelper permissionHelper;
 
     public boolean hasScopedAdminPermission(final ContextualPreferenceExternalResource resource) {
-        final ContextualPreferenceLevel resourceLevel = resource.getLevel();
+        final ContextualPreferenceLevel resourceLevel = resource.level();
         if (resourceLevel == null) {
             return false;
         }
@@ -51,9 +51,9 @@ public class ContextualPreferencePermissionManager {
     }
 
     public boolean hasScopedAdminPermission(final ContextualPreferenceVO contextualPreference) {
-        if (contextualPreference.getResource() == null) {
+        if (contextualPreference.resource() == null) {
             return false;
         }
-        return hasScopedAdminPermission(contextualPreference.getResource());
+        return hasScopedAdminPermission(contextualPreference.resource());
     }
 }

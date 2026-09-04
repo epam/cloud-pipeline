@@ -29,7 +29,7 @@ import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;

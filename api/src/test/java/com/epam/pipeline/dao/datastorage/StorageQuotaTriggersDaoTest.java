@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 

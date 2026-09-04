@@ -36,11 +36,13 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import org.apache.commons.collections4.map.HashedMap;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.Date;
@@ -53,10 +55,13 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.quality.Strictness.LENIENT;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = LENIENT)
 public class NodesManagerTest {
 
     private static final String TEST_ID = "1";
@@ -84,10 +89,8 @@ public class NodesManagerTest {
     @Autowired
     private NodesManager nodesManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
         labels = new HashedMap<>();
         labels.put(KubernetesConstants.RUN_ID_LABEL, TEST_ID);
         labels.put(TEST_NODENAME, TEST_NODENAME);
@@ -123,7 +126,9 @@ public class NodesManagerTest {
                         .getMockedEntity();
 
         doReturn(mockKubernetesClient).when(mockKubernetesManager).getKubernetesClient(any(Config.class));
+        //when(mockKubernetesManager.getKubernetesClient(any(Config.class))).thenReturn(mockKubernetesClient);
         doReturn(mockNodes).when(mockKubernetesClient).nodes();
+        //when(mockKubernetesClient.nodes()).thenReturn(mockNodes);
         doReturn(Collections.singletonList(pipelineRun)).when(mockPipelineRunManager).loadPipelineRuns(any());
     }
 

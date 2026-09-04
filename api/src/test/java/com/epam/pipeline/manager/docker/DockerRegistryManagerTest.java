@@ -16,7 +16,8 @@
 
 package com.epam.pipeline.manager.docker;
 
-import static org.mockito.Matchers.any;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -35,10 +36,9 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.util.TestUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -47,6 +47,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DockerRegistryManagerTest extends AbstractManagerTest {
 
@@ -80,8 +82,7 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
     @Mock
     private DockerClient dockerClient;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         MockitoAnnotations.initMocks(this);
 
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactoryMock);
@@ -98,10 +99,10 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
         dockerRegistry.setPath(PATH);
         dockerRegistry.setDescription(DESCRIPTION);
         dockerRegistryManager.create(dockerRegistry);
-        Assert.assertNotNull(dockerRegistryManager.loadByNameOrId(dockerRegistry.getPath()));
+        assertNotNull(dockerRegistryManager.loadByNameOrId(dockerRegistry.getPath()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void createRegistryShouldThrowExceptionIfRegistryAlreadyExists() {
         when(dockerClientFactoryMock.getDockerClient(any(DockerRegistry.class)))
@@ -110,7 +111,7 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
         dockerRegistry.setPath(PATH);
         dockerRegistry.setDescription(DESCRIPTION);
         dockerRegistryManager.create(dockerRegistry);
-        dockerRegistryManager.create(dockerRegistry);
+        assertThrows(IllegalArgumentException.class, () -> dockerRegistryManager.create(dockerRegistry));
     }
 
     @Test
@@ -131,7 +132,7 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
                 .thenReturn(mockClient);
         ImageDescription expected = new ImageDescription(1L, TEST_IMAGE, TEST_TAG, date);
         when(mockClient.getImageDescription(registry, tool.getName(), TEST_TAG)).thenReturn(expected);
-        Assert.assertEquals(expected, dockerRegistryManager.getImageDescription(registry, tool.getName(), TEST_TAG));
+        assertEquals(expected, dockerRegistryManager.getImageDescription(registry, tool.getName(), TEST_TAG));
     }
 
     @Test
@@ -151,14 +152,14 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
                 .thenReturn(mockClient);
         List<String> expected = Arrays.asList("TAG1", "TAG2");
         when(mockClient.getImageTags(ANOTHER_PATH, TEST_IMAGE)).thenReturn(expected);
-        Assert.assertEquals(expected, dockerRegistryManager.loadImageTags(registry, tool));
+        assertEquals(expected, dockerRegistryManager.loadImageTags(registry, tool));
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testListing() {
         Set<String> entries = dockerRegistryManager.getRegistryEntries(null);
-        Assert.assertNotNull(entries);
+        assertNotNull(entries);
     }
 
     @Test

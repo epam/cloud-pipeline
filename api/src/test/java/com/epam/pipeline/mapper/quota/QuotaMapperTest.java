@@ -21,7 +21,7 @@ import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
 import java.util.Collections;

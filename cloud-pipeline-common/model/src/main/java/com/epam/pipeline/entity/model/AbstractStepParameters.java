@@ -32,8 +32,8 @@ import java.util.List;
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = RModelStepParameters.class, name = ModelStepType.Name.MODEL),
-        @JsonSubTypes.Type(value = ProtocolStepParameters.class, name = ModelStepType.Name.PROTOCOL)})
+    @JsonSubTypes.Type(value = RModelStepParameters.class, name = ModelStepType.Name.MODEL),
+    @JsonSubTypes.Type(value = ProtocolStepParameters.class, name = ModelStepType.Name.PROTOCOL)})
 public abstract class AbstractStepParameters {
 
     /**

@@ -21,7 +21,6 @@ import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
-import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
@@ -99,12 +98,6 @@ public class ConfigurationEntryMapper implements EntityMapper<ConfigurationEntry
             if (pipeline != null) {
                 jsonMap.put("pipelineName", pipeline.getName());
             }
-        } else if (entry.getExecutionEnvironment() == ExecutionEnvironment.FIRECLOUD) {
-            final FirecloudRunConfigurationEntry firecloudEntry = (FirecloudRunConfigurationEntry) entry;
-            jsonMap.put("methodName", firecloudEntry.getMethodName());
-            jsonMap.put("methodSnapshot", firecloudEntry.getMethodSnapshot());
-            jsonMap.put("methodConfigurationName", firecloudEntry.getMethodConfigurationName());
-            jsonMap.put("methodConfigurationSnapshot", firecloudEntry.getMethodConfigurationSnapshot());
         }
     }
 }

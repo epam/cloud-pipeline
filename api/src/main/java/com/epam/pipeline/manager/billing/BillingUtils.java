@@ -220,14 +220,14 @@ public final class BillingUtils {
     public static Long parseSum(final Aggregations aggregations, final String field) {
         final ParsedSum sumAggResult = aggregations.get(field);
         return Optional.ofNullable(sumAggResult)
-                .map(result -> new Double(result.getValue()).longValue())
+                .map(result -> Double.valueOf(result.getValue()).longValue())
                 .orElse(null);
     }
 
     public static Long parseAccumulatedSum(final Aggregations aggregations, final String field) {
         final ParsedSimpleValue accumulatedSumAggResult = aggregations.get(field);
         return Optional.ofNullable(accumulatedSumAggResult)
-                .map(result -> new Double(result.getValueAsString()).longValue())
+                .map(result -> Double.valueOf(result.getValueAsString()).longValue())
                 .orElse(null);
     }
 

@@ -19,24 +19,23 @@ package com.epam.pipeline.app;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
-@Import({JWTSecurityConfiguration.class,
-        SAMLSecurityConfiguration.class,
-        AclSecurityConfiguration.class,
-        ProxySecurityConfig.class})
+@EnableMethodSecurity(securedEnabled = true)
+@Import({ImpersonationSecurityConfiguration.class,
+    JWTSecurityConfiguration.class,
+    SAMLSecurityConfiguration.class,
+    AclSecurityConfiguration.class})
 public class SecurityConfig {
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurerAdapter() {
+        return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")

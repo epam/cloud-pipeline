@@ -40,6 +40,6 @@ public class RegionContextualPreferenceHandler extends AbstractDaoContextualPref
 
     @Override
     boolean externalEntityExists(final ContextualPreference preference) {
-        return cloudRegionDao.loadById(Long.parseLong(preference.getResource().getResourceId())).isPresent();
+        return cloudRegionDao.loadById(Long.parseLong(preference.resource().resourceId())).isPresent();
     }
 }

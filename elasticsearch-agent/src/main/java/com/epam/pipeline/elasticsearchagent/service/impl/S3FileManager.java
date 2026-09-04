@@ -232,7 +232,7 @@ public class S3FileManager implements ObjectStorageFileManager {
     }
 
     @RequiredArgsConstructor
-    private static class S3VersionPageIterator implements Iterator<List<DataStorageFile>> {
+    private static final class S3VersionPageIterator implements Iterator<List<DataStorageFile>> {
 
         private final AmazonS3 client;
         private final String bucket;

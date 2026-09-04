@@ -17,19 +17,15 @@
 package com.epam.pipeline.entity.billing;
 
 import lombok.Builder;
-import lombok.Value;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
-@Value
 @Builder
-public class BillingChartInfo {
-
-    Map<String, String> groupingInfo;
-    LocalDateTime periodStart;
-    LocalDateTime periodEnd;
-    BillingChartDetails costDetails;
-    Long cost;
-    Long accumulatedCost;
-}
+public record BillingChartInfo(
+        Map<String, String> groupingInfo,
+        LocalDateTime periodStart,
+        LocalDateTime periodEnd,
+        BillingChartDetails costDetails,
+        Long cost,
+        Long accumulatedCost) {}

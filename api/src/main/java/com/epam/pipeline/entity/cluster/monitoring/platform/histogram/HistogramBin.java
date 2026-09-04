@@ -19,9 +19,11 @@ package com.epam.pipeline.entity.cluster.monitoring.platform.histogram;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 public class HistogramBin {
     long count;
     String value;

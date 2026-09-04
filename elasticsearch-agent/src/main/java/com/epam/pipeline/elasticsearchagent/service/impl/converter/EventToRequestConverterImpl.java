@@ -49,7 +49,7 @@ public class EventToRequestConverterImpl<T> implements EventToRequestConverter {
                                        final EntityLoader<T> loader,
                                        final EntityMapper<T> mapper,
                                        final ElasticStackVersion version) {
-       this(indexPrefix, indexName, loader, mapper, Collections.emptyList(), version);
+        this(indexPrefix, indexName, loader, mapper, Collections.emptyList(), version);
     }
 
     public EventToRequestConverterImpl(final String indexPrefix,

@@ -17,8 +17,8 @@
 package com.epam.pipeline.cmd.async;
 
 import static com.epam.pipeline.cmd.async.ProcessGroupExecution.DEFAULT_PROCESSES_KILL_COMMAND;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.startsWith;
@@ -29,7 +29,7 @@ import com.epam.pipeline.cmd.CmdExecutor;
 import java.io.IOException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class ProcessGroupCmdExecutorTest {

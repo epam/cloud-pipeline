@@ -56,7 +56,7 @@ public class AzureMonitorService implements VMMonitorService<AzureRegion> {
     public List<VirtualMachine> fetchRunningVms(final AzureRegion region) {
         final Azure azure = buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
-                .listByTag(region.getResourceGroup(), instanceTag.getKey(), instanceTag.getValue());
+                .listByTag(region.getResourceGroup(), instanceTag.key(), instanceTag.value());
         final Iterable<GenericResource> iterable = resources::listIterator;
         return StreamSupport.stream(iterable.spliterator(), false)
                 .filter(resource -> resource.resourceType().equalsIgnoreCase(VIRTUAL_MACHINES))

@@ -19,7 +19,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AclImpl;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -29,7 +29,7 @@ import java.util.Collections;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GrantPermissionManagerTest extends AbstractAclTest {
 

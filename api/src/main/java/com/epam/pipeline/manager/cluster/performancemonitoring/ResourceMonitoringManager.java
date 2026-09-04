@@ -25,15 +25,16 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 /**
  * Schedules and orchestrates resource monitoring for active runs.
@@ -42,7 +43,7 @@ import java.util.stream.Collectors;
 @Service
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 @Slf4j
-public class ResourceMonitoringManager extends AbstractSchedulingManager {
+public class ResourceMonitoringManager extends AbstractSchedulingManager implements InitializingBean {
 
     private final PipelineRunManager pipelineRunManager;
     private final MonitoringESDao monitoringDao;
@@ -62,8 +63,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 .collect(Collectors.toList());
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(this::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
                 "Resource Usage Monitoring");
     }

@@ -1354,7 +1354,7 @@ public class GrantPermissionManager {
 
     @Data
     @RequiredArgsConstructor
-    private static class SidAclEntry {
+    private static final class SidAclEntry {
         private final AclPermissionEntry entry;
         private final boolean resolved;
     }

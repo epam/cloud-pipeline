@@ -18,10 +18,8 @@ package com.epam.pipeline.manager.cluster.writer;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -30,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CsvMonitoringStatsWriterTest {
 
@@ -56,12 +56,12 @@ public class CsvMonitoringStatsWriterTest {
         final List<MonitoringStats> stats = createStatsList();
         final String csvInfo = monitoringStatsWriter.convertStatsToCsvString(stats);
         final String[] linesOfTables = csvInfo.split("\\n");
-        Assert.assertEquals(3, linesOfTables.length);
+        assertEquals(3, linesOfTables.length);
         final List<String[]> table = Arrays.stream(linesOfTables)
             .map(line -> line.replaceAll("\"", ""))
             .map(line -> line.split(",", -1))
             .peek(cells ->
-                      Assert.assertEquals(COMMON_INFO_SIZE + 2 * DISK_INFOS.size() + 2 * NETWORK_INTERFACES.size(),
+                      assertEquals(COMMON_INFO_SIZE + 2 * DISK_INFOS.size() + 2 * NETWORK_INTERFACES.size(),
                                           cells.length)
             )
             .collect(Collectors.toList());
@@ -69,40 +69,40 @@ public class CsvMonitoringStatsWriterTest {
         final String[] firstStatEntry = table.get(1);
         final long totalSpace1 = DISK_INFOS.get(0).totalSpace;
         final long usedSpace1 = DISK_INFOS.get(0).usedSpace;
-        Assert.assertEquals(totalSpace1, Long.parseLong(firstStatEntry[COMMON_INFO_SIZE]));
-        Assert.assertEquals(0,
+        assertEquals(totalSpace1, Long.parseLong(firstStatEntry[COMMON_INFO_SIZE]));
+        assertEquals(0,
                             Double.compare(HUNDRED_PERCENTS * usedSpace1 / totalSpace1,
                                            Double.parseDouble(firstStatEntry[COMMON_INFO_SIZE + 1])));
-        Assert.assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 2]);
-        Assert.assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 3]);
+        assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 2]);
+        assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 3]);
         final long inBytes1 = NETWORK_INTERFACES_RX.get(0);
         final long outBytes1 = NETWORK_INTERFACES_TX.get(0);
-        Assert.assertEquals(inBytes1, Long.parseLong(firstStatEntry[COMMON_INFO_SIZE + 4]));
-        Assert.assertEquals(outBytes1, Long.parseLong(firstStatEntry[COMMON_INFO_SIZE + 5]));
-        Assert.assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 6]);
-        Assert.assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 7]);
+        assertEquals(inBytes1, Long.parseLong(firstStatEntry[COMMON_INFO_SIZE + 4]));
+        assertEquals(outBytes1, Long.parseLong(firstStatEntry[COMMON_INFO_SIZE + 5]));
+        assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 6]);
+        assertEquals(StringUtils.EMPTY, firstStatEntry[COMMON_INFO_SIZE + 7]);
 
         final String[] secondStatEntry = table.get(2);
-        Assert.assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE]);
-        Assert.assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE + 1]);
+        assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE]);
+        assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE + 1]);
         final long totalSpace2 = DISK_INFOS.get(1).totalSpace;
         final long usedSpace2 = DISK_INFOS.get(1).usedSpace;
-        Assert.assertEquals(totalSpace2, Long.parseLong(secondStatEntry[COMMON_INFO_SIZE + 2]));
-        Assert.assertEquals(0,
+        assertEquals(totalSpace2, Long.parseLong(secondStatEntry[COMMON_INFO_SIZE + 2]));
+        assertEquals(0,
                             Double.compare(HUNDRED_PERCENTS * usedSpace2 / totalSpace2,
                                            Double.parseDouble(secondStatEntry[COMMON_INFO_SIZE + 3])));
-        Assert.assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE + 4]);
-        Assert.assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE + 5]);
+        assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE + 4]);
+        assertEquals(StringUtils.EMPTY, secondStatEntry[COMMON_INFO_SIZE + 5]);
         final long inBytes2 = NETWORK_INTERFACES_RX.get(1);
         final long outBytes2 = NETWORK_INTERFACES_TX.get(1);
-        Assert.assertEquals(inBytes2, Long.parseLong(secondStatEntry[COMMON_INFO_SIZE + 6]));
-        Assert.assertEquals(outBytes2, Long.parseLong(secondStatEntry[COMMON_INFO_SIZE + 7]));
+        assertEquals(inBytes2, Long.parseLong(secondStatEntry[COMMON_INFO_SIZE + 6]));
+        assertEquals(outBytes2, Long.parseLong(secondStatEntry[COMMON_INFO_SIZE + 7]));
     }
 
     @Test
     public void testEmptyStatsConversion() {
         final List<MonitoringStats> stats = Collections.emptyList();
-        Assert.assertEquals(StringUtils.EMPTY, monitoringStatsWriter.convertStatsToCsvString(stats));
+        assertEquals(StringUtils.EMPTY, monitoringStatsWriter.convertStatsToCsvString(stats));
     }
 
     private List<MonitoringStats> createStatsList() {
@@ -119,7 +119,7 @@ public class CsvMonitoringStatsWriterTest {
 
     private Map<String, MonitoringStats.DisksUsage.DiskStats> getStatsByDisk(final DiskInfo... infos) {
         return Arrays.stream(infos)
-            .collect(Collectors.toMap(DiskInfo::getName, i -> getDiskStats(i.getTotalSpace(), i.getUsedSpace())));
+            .collect(Collectors.toMap(DiskInfo::name, i -> getDiskStats(i.totalSpace(), i.usedSpace())));
     }
 
     private MonitoringStats createMonitoringStats(final String endTime, final double cpuLoad, final long maxMem,
@@ -182,11 +182,5 @@ public class CsvMonitoringStatsWriterTest {
         return memoryUsage;
     }
 
-    @Value
-    private static class DiskInfo {
-
-        private String name;
-        private long totalSpace;
-        private long usedSpace;
-    }
+    private record DiskInfo(String name, long totalSpace, long usedSpace) {}
 }

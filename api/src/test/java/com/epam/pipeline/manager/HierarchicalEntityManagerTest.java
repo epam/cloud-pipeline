@@ -31,7 +31,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -50,7 +50,7 @@ import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getTool;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.getToolGroup;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 
 public class HierarchicalEntityManagerTest extends AbstractAclTest {

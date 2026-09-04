@@ -32,8 +32,8 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,8 +55,8 @@ import static com.epam.pipeline.test.creator.security.SecurityCreatorUtils.getUs
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.apache.commons.lang3.StringUtils.containsIgnoreCase;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 @SuppressWarnings("PMD.UnusedPrivateField")
@@ -116,8 +116,7 @@ public class DockerRegistryNotificationTest extends AbstractAclTest {
     private final Tool tool3 = getTool(getToolGroup(null, IMAGE_GROUP_1, ID_2, ANOTHER_SIMPLE_USER),
             IMAGE, registryWithExternalPath, ANOTHER_SIMPLE_USER);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         mockUserContext(getUserContext(ID, SIMPLE_USER, ID, SIMPLE_USER_ROLE));
         MockitoAnnotations.initMocks(this);
     }

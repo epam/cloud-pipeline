@@ -21,10 +21,13 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,6 +40,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@MockitoSettings(strictness = Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class ResourceMonitoringManagerTest {
 
     @Mock private PipelineRunManager pipelineRunManager;
@@ -47,9 +52,8 @@ public class ResourceMonitoringManagerTest {
 
     private ResourceMonitoringManager resourceMonitoringManager;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
         when(firstMonitor.order()).thenReturn(0);
         when(secondMonitor.order()).thenReturn(1);
         resourceMonitoringManager = new ResourceMonitoringManager(

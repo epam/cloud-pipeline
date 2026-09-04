@@ -16,13 +16,9 @@
 
 package com.epam.pipeline.entity.user;
 
-import lombok.Data;
 import java.time.LocalDateTime;
 
-@Data
-public class GroupStatus {
-
-    private final String groupName;
-    private final boolean blocked;
-    private final LocalDateTime lastModifiedData;
-}
+public record GroupStatus(
+        String groupName,
+        boolean blocked,
+        LocalDateTime lastModifiedData) {}

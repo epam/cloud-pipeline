@@ -5,10 +5,11 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,24 +26,24 @@ public class DataStorageRuleManagerTest {
 
     private final DataStorageRuleManager dataStorageRuleManager = new DataStorageRuleManager();
 
-    @Before
+    @BeforeEach
     public void setup() {
-        Whitebox.setInternalState(dataStorageRuleManager, "messageHelper", messageHelper);
-        Whitebox.setInternalState(dataStorageRuleManager, "dataStorageRuleDao", dataStorageRuleDao);
-        Whitebox.setInternalState(dataStorageRuleManager, "pipelineManager", pipelineManager);
+        ReflectionTestUtils.setField(dataStorageRuleManager, "messageHelper", messageHelper);
+        ReflectionTestUtils.setField(dataStorageRuleManager, "dataStorageRuleDao", dataStorageRuleDao);
+        ReflectionTestUtils.setField(dataStorageRuleManager, "pipelineManager", pipelineManager);
         when(messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED)).thenReturn(MOCK_MESSAGE);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createRuleShouldFailIfResultRuleDoesNotHaveName() {
         DataStorageRule dataStorageRule = new DataStorageRule();
         dataStorageRule.setPipelineId(PIPELINE_ID);
         dataStorageRule.setIsResult(true);
         dataStorageRule.setFileMask(FILE_MASK);
-        dataStorageRuleManager.createRule(dataStorageRule);
+        assertThrows(IllegalArgumentException.class, () -> dataStorageRuleManager.createRule(dataStorageRule));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createRuleShouldFailIfResultRuleDoesNotHaveMoveToSts() {
         DataStorageRule dataStorageRule = new DataStorageRule();
         dataStorageRule.setPipelineId(PIPELINE_ID);
@@ -50,7 +51,7 @@ public class DataStorageRuleManagerTest {
         dataStorageRule.setName(NAME);
         dataStorageRule.setFileMask(FILE_MASK);
         dataStorageRule.setMoveToSts(false);
-        dataStorageRuleManager.createRule(dataStorageRule);
+        assertThrows(IllegalArgumentException.class, () -> dataStorageRuleManager.createRule(dataStorageRule));
     }
 
     @Test

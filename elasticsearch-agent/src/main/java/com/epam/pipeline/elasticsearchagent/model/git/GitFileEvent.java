@@ -18,12 +18,14 @@ package com.epam.pipeline.elasticsearchagent.model.git;
 import com.epam.pipeline.elasticsearchagent.model.EventType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@Jacksonized
 @AllArgsConstructor
 public class GitFileEvent {
     private String version;

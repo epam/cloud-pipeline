@@ -19,7 +19,7 @@ package com.epam.pipeline.controller.credits;
 import com.epam.pipeline.acl.credits.PlatformUsageCreditsEventApiService;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -29,7 +29,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -53,7 +53,7 @@ public class PlatformUsageCreditsEventControllerTest extends AbstractControllerT
     @WithMockUser
     public void shouldExport() throws Exception {
         doAnswer(invocation -> {
-            final OutputStream os = invocation.getArgumentAt(1, OutputStream.class);
+            final OutputStream os = invocation.getArgument(1, OutputStream.class);
             os.write(CSV_BYTES);
             return null;
         }).when(mockApiService).export(any(PlatformUsageCreditsEventFilterVO.class), any(OutputStream.class));

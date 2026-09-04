@@ -19,10 +19,12 @@ package com.epam.pipeline.controller.vo.region;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.CustomInstanceType;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class LocalRegionDTO extends AbstractCloudRegionDTO {
 
     private CloudProvider provider = CloudProvider.LOCAL;

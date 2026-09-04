@@ -1,9 +1,7 @@
 package com.epam.pipeline.entity.cluster;
 
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Value
-public class PrettyUrl {
-    String path;
-    String domain;
+public record PrettyUrl(@JsonProperty("path") String path,
+                        @JsonProperty("domain") String domain) {
 }

@@ -630,7 +630,7 @@ public class InstanceOfferManager {
     private List<String> getContextualPreferenceValueAsList(final List<ContextualPreferenceExternalResource> resources,
                                                             final List<String> preferences) {
         return Arrays.asList(contextualPreferenceManager
-                .searchList(preferences, resources).getValue().split(DELIMITER));
+                .searchList(preferences, resources).value().split(DELIMITER));
     }
 
     private boolean isInstanceTypeOffered(final String instanceType, final Long regionId, final boolean spot) {

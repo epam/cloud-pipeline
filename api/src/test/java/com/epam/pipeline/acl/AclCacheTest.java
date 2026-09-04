@@ -33,8 +33,9 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.util.TestUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
@@ -44,11 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
-public class AclCacheTest extends AbstractManagerTest {
+class AclCacheTest extends AbstractManagerTest {
 
     private static final String TEST_FOLDER1 = "testFolder";
     private static final String TEST_OWNER = "owner";
@@ -75,8 +73,9 @@ public class AclCacheTest extends AbstractManagerTest {
     private Role role;
     PipelineUser user;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    void setUp() {
         folder = folderManager.create(TestUtils.createFolder(TEST_FOLDER1, TEST_OWNER));
         role = roleManager.create(TEST_ROLE, false, false, null);
         user = userManager.create("TEST_USER", Collections.emptyList(),
@@ -96,43 +95,41 @@ public class AclCacheTest extends AbstractManagerTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_OWNER, roles = {ROLE_ADMIN})
-    public void roleAuthorityRemovalTest() {
+    void roleAuthorityRemovalTest() {
         grantPermissions(AclPermission.READ.getMask(), role.getName(), AclClass.FOLDER, folder.getId(), false);
         grantPermissions(AclPermission.READ.getMask(), user.getUserName(), AclClass.FOLDER, folder.getId(), true);
         final AclSecuredEntry permissions = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         final List<AclPermissionEntry> permissionEntries = permissions.getPermissions();
 
-        assertEquals(2, permissionEntries.size());
-        assertTrue(role.getName(),
-                permissions.getPermissions().stream().anyMatch(acl -> acl.getSid().getName().equals(role.getName())));
-        assertTrue(user.getUserName(),
-                permissions.getPermissions().stream().anyMatch(acl ->
-                        acl.getSid().getName().equals(user.getUserName())));
+        Assertions.assertEquals(2, permissionEntries.size());
+        Assertions.assertTrue(permissions.getPermissions().stream()
+                .anyMatch(acl -> acl.getSid().getName().equals(role.getName())), role.getName());
+        Assertions.assertTrue(permissions.getPermissions().stream().anyMatch(acl ->
+                acl.getSid().getName().equals(user.getUserName())), user.getUserName());
 
         roleManager.delete(role.getId());
         AclSecuredEntry permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
-        assertEquals(1, permissionsAfter.getPermissions().size());
-        assertTrue(user.getUserName(),
-                permissionsAfter.getPermissions().stream().allMatch(acl ->
-                        acl.getSid().getName().equals(user.getUserName())));
+        Assertions.assertEquals(1, permissionsAfter.getPermissions().size());
+        Assertions.assertTrue(permissionsAfter.getPermissions().stream().allMatch(acl ->
+                acl.getSid().getName().equals(user.getUserName())), user.getUserName());
 
         userManager.delete(user.getId());
         permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
-        assertTrue(permissionsAfter.getPermissions().isEmpty());
+        Assertions.assertTrue(permissionsAfter.getPermissions().isEmpty());
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_OWNER, roles = {ROLE_ADMIN})
-    public void userAuthorityRemovalTest() {
+    void userAuthorityRemovalTest() {
         grantPermissions(AclPermission.READ.getMask(), role.getName(), AclClass.FOLDER, folder.getId(), false);
         final AclSecuredEntry permissions = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
         final List<AclPermissionEntry> permissionEntries = permissions.getPermissions();
-        assertEquals(1, permissionEntries.size());
-        assertEquals(role.getName(), permissions.getPermissions().get(0).getSid().getName());
+        Assertions.assertEquals(1, permissionEntries.size());
+        Assertions.assertEquals(role.getName(), permissions.getPermissions().get(0).getSid().getName());
         roleManager.delete(role.getId());
         final AclSecuredEntry permissionsAfter = permissionManager.getPermissions(folder.getId(), AclClass.FOLDER);
-        assertTrue(CollectionUtils.isEmpty(permissionsAfter.getPermissions()));
+        Assertions.assertTrue(CollectionUtils.isEmpty(permissionsAfter.getPermissions()));
     }
 
 

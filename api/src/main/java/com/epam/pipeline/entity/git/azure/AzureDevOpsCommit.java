@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.git.azure;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class AzureDevOpsCommit {
     private String commitId;
     private String comment;

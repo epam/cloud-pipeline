@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +34,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
 public class RunStatusDaoTest extends AbstractJdbcTest {
@@ -63,8 +63,7 @@ public class RunStatusDaoTest extends AbstractJdbcTest {
 
     private PipelineRun testRun;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         cloudRegion = ObjectCreatorUtils.getDefaultAwsRegion();
         regionDao.create(cloudRegion);
 

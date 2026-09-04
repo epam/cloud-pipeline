@@ -18,9 +18,11 @@ package com.epam.pipeline.controller.vo.data.storage;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 public class DataStorageMountVO {
     Long id;
     Long time;

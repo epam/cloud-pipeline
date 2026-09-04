@@ -36,7 +36,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -59,6 +59,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.dao.metadata.MetadataDao.MetadataParameters.parseData;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class FolderDao extends NamedParameterJdbcDaoSupport {
 
@@ -374,58 +376,62 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
             return folder;
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(folderSequence, "Required query folderSequence is not set");
+        Assert.notNull(createFolderQuery, "Required query createFolderQuery is not set");
+        Assert.notNull(updateFolderQuery, "Required query updateFolderQuery is not set");
+        Assert.notNull(loadAllFoldersQuery, "Required query loadAllFoldersQuery is not set");
+        Assert.notNull(deleteFolderQuery, "Required query deleteFolderQuery is not set");
+        Assert.notNull(loadFolderByIdQuery, "Required query loadFolderByIdQuery is not set");
+        Assert.notNull(loadFolderByNameQuery, "Required query loadFolderByNameQuery is not set");
+        Assert.notNull(loadFolderByNameAndParentIdQuery, "Required query loadFolderByNameAndParentIdQuery is not set");
+        Assert.notNull(loadParentFoldersQuery, "Required query loadParentFoldersQuery is not set");
+        Assert.notNull(updateFolderLocksQuery, "Required query updateFolderLocksQuery is not set");
+        Assert.notNull(loadAllProjectsQuery, "Required query loadAllProjectsQuery is not set");
+    }
 
-    @Required
+
     public void setFolderSequence(String folderSequence) {
         this.folderSequence = folderSequence;
     }
 
-    @Required
     public void setCreateFolderQuery(String createFolderQuery) {
         this.createFolderQuery = createFolderQuery;
     }
 
-    @Required
     public void setUpdateFolderQuery(String updateFolderQuery) {
         this.updateFolderQuery = updateFolderQuery;
     }
 
-    @Required
     public void setLoadAllFoldersQuery(String loadAllFoldersQuery) {
         this.loadAllFoldersQuery = loadAllFoldersQuery;
     }
 
-    @Required
     public void setDeleteFolderQuery(String deleteFolderQuery) {
         this.deleteFolderQuery = deleteFolderQuery;
     }
 
-    @Required
     public void setLoadFolderByIdQuery(String loadFolderByIdQuery) {
         this.loadFolderByIdQuery = loadFolderByIdQuery;
     }
 
-    @Required
     public void setLoadFolderByNameQuery(String loadFolderByNameQuery) {
         this.loadFolderByNameQuery = loadFolderByNameQuery;
     }
 
-    @Required
     public void setLoadFolderByNameAndParentIdQuery(String loadFolderByNameAndParentIdQuery) {
         this.loadFolderByNameAndParentIdQuery = loadFolderByNameAndParentIdQuery;
     }
 
-    @Required
     public void setLoadParentFoldersQuery(String loadParentFoldersQuery) {
         this.loadParentFoldersQuery = loadParentFoldersQuery;
     }
 
-    @Required
     public void setUpdateFolderLocksQuery(String updateFolderLocksQuery) {
         this.updateFolderLocksQuery = updateFolderLocksQuery;
     }
 
-    @Required
     public void setLoadAllProjectsQuery(String loadAllProjectsQuery) {
         this.loadAllProjectsQuery = loadAllProjectsQuery;
     }

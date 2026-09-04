@@ -23,8 +23,8 @@ import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
@@ -50,8 +50,7 @@ public class BillingApiServiceTest extends AbstractAclTest {
 
     private BillingChartRequest billingChartRequest;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         billingChartInfos = Collections.singletonList(billingChartInfo);
 
         billingCenters = Collections.singletonList("billing center");

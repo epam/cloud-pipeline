@@ -43,7 +43,7 @@ abstract class AbstractDaoContextualPreferenceHandler extends AbstractContextual
     public Optional<ContextualPreference> search(final List<String> preferences,
                                                  final List<ContextualPreferenceExternalResource> resources) {
         final Optional<ContextualPreference> preference = resources.stream()
-                .filter(res -> res.getLevel() == level)
+                .filter(res -> res.level() == level)
                 .findFirst()
                 .map(res -> preferences.stream()
                         .map(pref -> loadPreference(pref, res))

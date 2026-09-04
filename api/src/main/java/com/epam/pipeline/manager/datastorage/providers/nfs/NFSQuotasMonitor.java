@@ -172,20 +172,20 @@ public class NFSQuotasMonitor {
 
     private void processActiveQuota(final NFSQuota quota, final NFSDataStorage storage,
                                     final Set<String> storageSizeMasks) {
-        CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
+        CollectionUtils.emptyIfNull(quota.notifications()).stream()
             .filter(Objects::nonNull)
             .sorted(quotasComparator(storage).reversed())
             .filter(notification -> exceedsLimit(storage, notification, storageSizeMasks))
             .findFirst()
-            .ifPresent(notification -> checkMatchingNotification(storage, notification, quota.getRecipients()));
+            .ifPresent(notification -> checkMatchingNotification(storage, notification, quota.recipients()));
     }
 
     private Comparator<NFSQuotaNotificationEntry> quotasComparator(final NFSDataStorage storage) {
         return (entry1, entry2) -> {
-            final StorageQuotaType type1 = entry1.getType();
-            final StorageQuotaType type2 = entry2.getType();
+            final StorageQuotaType type1 = entry1.type();
+            final StorageQuotaType type2 = entry2.type();
             if (type1.equals(type2)) {
-                return entry1.getValue().compareTo(entry2.getValue());
+                return entry1.value().compareTo(entry2.value());
             } else {
                 final FileShareMount shareMount = fileShareMountManager.load(storage.getFileShareMountId());
                 final MountType shareType = shareMount.getMountType();
@@ -210,19 +210,19 @@ public class NFSQuotasMonitor {
         final Integer capacityGb = lustreFS.getCapacityGb();
         final Double absoluteQuota1;
         final Double absoluteQuota2;
-        if (StorageQuotaType.GIGABYTES.equals(entry1.getType())) {
-            absoluteQuota1 = entry1.getValue();
-            absoluteQuota2 = convertLustrePercentageLimitToAbsoluteValue(entry2.getValue(), capacityGb);
+        if (StorageQuotaType.GIGABYTES.equals(entry1.type())) {
+            absoluteQuota1 = entry1.value();
+            absoluteQuota2 = convertLustrePercentageLimitToAbsoluteValue(entry2.value(), capacityGb);
         } else {
-            absoluteQuota1 = convertLustrePercentageLimitToAbsoluteValue(entry1.getValue(), capacityGb);
-            absoluteQuota2 = entry2.getValue();
+            absoluteQuota1 = convertLustrePercentageLimitToAbsoluteValue(entry1.value(), capacityGb);
+            absoluteQuota2 = entry2.value();
         }
         return absoluteQuota1.compareTo(absoluteQuota2);
     }
 
     private void checkMatchingNotification(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
                                            final List<NFSQuotaNotificationRecipient> recipients) {
-        final Set<StorageQuotaAction> actions = notification.getActions();
+        final Set<StorageQuotaAction> actions = notification.actions();
         final NFSStorageMountStatus newStatus = resolveMountStatus(storage, actions);
         if (requireStatusChange(storage, newStatus, notification)) {
             final LocalDateTime executionTime = DateUtils.nowUTC();
@@ -284,8 +284,8 @@ public class NFSQuotasMonitor {
 
     private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
         return Optional.ofNullable(notificationTriggers.getOrDefault(storage.getId(), NO_ACTIVE_QUOTAS_NOTIFICATION))
-            .filter(lastTrigger -> lastTrigger.getValue().equals(notification.getValue()))
-            .filter(lastTrigger -> lastTrigger.getType().equals(notification.getType()))
+            .filter(lastTrigger -> lastTrigger.value().equals(notification.value()))
+            .filter(lastTrigger -> lastTrigger.type().equals(notification.type()))
             .isPresent();
     }
 
@@ -308,10 +308,10 @@ public class NFSQuotasMonitor {
 
     private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
                                  final Set<String> storageSizeMasks) {
-        final Double originalLimit = notification.getValue();
+        final Double originalLimit = notification.value();
         final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, false, storageSizeMasks,
                 storage.getType().getStorageClasses(), false);
-        final StorageQuotaType notificationType = notification.getType();
+        final StorageQuotaType notificationType = notification.type();
         switch (notificationType) {
             case GIGABYTES:
                 return exceedsAbsoluteLimit(originalLimit, storageUsage);
@@ -367,13 +367,13 @@ public class NFSQuotasMonitor {
             .filter(metadataEntry -> metadataEntry.getData().containsKey(notificationsKey))
             .collect(Collectors.toMap(metadataEntry -> metadataEntry.getEntity().getEntityId(),
                                       this::mapPreferenceToQuota));
-        activeQuotasMap.values().removeIf(quota -> CollectionUtils.isEmpty(quota.getNotifications()));
+        activeQuotasMap.values().removeIf(quota -> CollectionUtils.isEmpty(quota.notifications()));
         final Map<Long, NFSQuota> removedQuotas = notificationTriggers.stream()
             .filter(trigger -> !activeQuotasMap.containsKey(trigger.getStorageId()))
             .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId,
                 trigger -> new NFSQuota(new ArrayList<>(), trigger.getRecipients())));
         activeQuotasMap.putAll(removedQuotas);
-        activeQuotasMap.values().forEach(quota -> quota.getNotifications().add(NO_ACTIVE_QUOTAS_NOTIFICATION));
+        activeQuotasMap.values().forEach(quota -> quota.notifications().add(NO_ACTIVE_QUOTAS_NOTIFICATION));
         return activeQuotasMap;
     }
 

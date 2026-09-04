@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.test.aspect;
 
-import org.junit.runner.RunWith;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 /**
  * Superclass for all Aspect layer tests
  */
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @AspectTestConfiguration
 public abstract class AbstractAspectTest {
 

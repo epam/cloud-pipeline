@@ -21,27 +21,27 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.log.storage.StorageRequestStat;
 import com.epam.pipeline.entity.log.storage.StorageStatsRequest;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "storage-request-controller", description = "Storage Request Controller")
 public class StorageRequestController extends AbstractRestController {
 
     private final StorageRequestApiService storageRequestService;
 
     @PostMapping("/log/storage/requests")
-    @ApiOperation(
-            value = "Returns storage requests statistics for specified user",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns storage requests statistics for specified user")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<StorageRequestStat> filter(final @RequestBody StorageStatsRequest request) {
         return Result.success(storageRequestService.getStatistics(request));

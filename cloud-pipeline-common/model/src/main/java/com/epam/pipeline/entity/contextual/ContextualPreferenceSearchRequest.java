@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.entity.contextual;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import lombok.Value;
 
@@ -23,4 +25,12 @@ import lombok.Value;
 public class ContextualPreferenceSearchRequest {
     private final List<String> preferences;
     private final ContextualPreferenceExternalResource resource;
+
+    @JsonCreator
+    public ContextualPreferenceSearchRequest(
+            @JsonProperty("preferences") final List<String> preferences,
+            @JsonProperty("resource") final ContextualPreferenceExternalResource resource) {
+        this.preferences = preferences;
+        this.resource = resource;
+    }
 }

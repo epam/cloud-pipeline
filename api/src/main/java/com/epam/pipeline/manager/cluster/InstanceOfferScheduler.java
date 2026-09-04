@@ -20,22 +20,23 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 
 /**
  * A class, that schedules price list updates and checks
  */
 @Service
 @RequiredArgsConstructor
-public class InstanceOfferScheduler extends AbstractSchedulingManager {
+public class InstanceOfferScheduler extends AbstractSchedulingManager implements InitializingBean {
 
     private final InstanceOfferSchedulerCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelay(core::checkAndUpdatePriceListIfNecessary,
                 SystemPreferences.CLUSTER_INSTANCE_OFFER_UPDATE_RATE,
                 "Instance Offers Expiration Status Check");

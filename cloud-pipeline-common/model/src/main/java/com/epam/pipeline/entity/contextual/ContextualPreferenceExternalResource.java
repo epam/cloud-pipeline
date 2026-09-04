@@ -16,9 +16,10 @@
 
 package com.epam.pipeline.entity.contextual;
 
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 /**
  * External resource contextual preference can be associated with.
@@ -26,9 +27,16 @@ import lombok.experimental.Wither;
  * It can be user, role, tool, etc.
  */
 @Value
-@Wither
-@RequiredArgsConstructor
+@With
 public class ContextualPreferenceExternalResource {
-    private final ContextualPreferenceLevel level;
-    private final String resourceId;
+    ContextualPreferenceLevel level;
+    String resourceId;
+
+    @JsonCreator
+    public ContextualPreferenceExternalResource(
+            @JsonProperty("level") final ContextualPreferenceLevel level,
+            @JsonProperty("resourceId") final String resourceId) {
+        this.level = level;
+        this.resourceId = resourceId;
+    }
 }

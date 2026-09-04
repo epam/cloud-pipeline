@@ -44,9 +44,10 @@ import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.git.GitCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
@@ -59,13 +60,14 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+@WebMvcTest(controllers = PipelineController.class)
 public class PipelineControllerTest extends AbstractControllerTest {
 
     private static final String PIPELINE_URL = SERVLET_PATH + "/pipeline";
@@ -605,10 +607,9 @@ public class PipelineControllerTest extends AbstractControllerTest {
                         .params(multiValueMapOf(PATH, TEST_STRING))
                         .content(MULTIPART_CONTENT),
                         MULTIPART_CONTENT_TYPE, EXPECTED_CONTENT_TYPE);
-        final ArgumentCaptor<UploadFileMetadata> captor = ArgumentCaptor.forClass(UploadFileMetadata.class);
+        final ArgumentCaptor<List<UploadFileMetadata>> captor = ArgumentCaptor.forClass(List.class);
 
-        verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING),
-                Collections.singletonList(captor.capture()));
+        verify(mockPipelineApiService).uploadFiles(eq(ID), eq(TEST_STRING), captor.capture());
         assertUnwrappedResponse(mvcResult, fileMetadataList);
     }
 

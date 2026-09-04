@@ -4,6 +4,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.Collections;
@@ -11,6 +12,7 @@ import java.util.Map;
 
 @Data
 @Builder
+@Jacksonized
 public class ContainerResources {
 
     private final Map<String, Quantity> limits;

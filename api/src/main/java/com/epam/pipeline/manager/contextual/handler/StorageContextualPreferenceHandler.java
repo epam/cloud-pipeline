@@ -30,6 +30,6 @@ public class StorageContextualPreferenceHandler extends AbstractDaoContextualPre
 
     @Override
     boolean externalEntityExists(final ContextualPreference preference) {
-        return storageDao.loadDataStorage(Long.valueOf(preference.getResource().getResourceId())) != null;
+        return storageDao.loadDataStorage(Long.valueOf(preference.resource().resourceId())) != null;
     }
 }

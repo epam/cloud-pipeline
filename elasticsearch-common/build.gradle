@@ -1,45 +1,32 @@
-/*
- * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-buildscript {
-    repositories { mavenCentral() }
-}
 plugins {
-    id "com.github.johnrengelman.shadow" version "4.0.4"
+    id 'java-library'
+    id 'maven-publish'
+    id 'jacoco'
+    id 'com.gradleup.shadow' version '8.3.5'
 }
-
-apply plugin: 'java-library'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'jacoco'
 
 group = 'com.epam.pipeline'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral()
+}
 
 dependencies {
-
-    // Elasticsearch
-    implementation group: "org.apache.lucene", name: "lucene-core", version: "7.7.0"
+    // Elasticsearch V6
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    implementation project(path: ':shaded:opensearch', configuration: 'shadow')
+
+    // OpenSearch Java client (V7 path)
+    implementation 'org.opensearch.client:opensearch-java:3.9.0'
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jaksonVersion"
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
@@ -52,15 +39,26 @@ dependencies {
     implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
     implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
 
-    //Lombok
-    implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    // Jakarta Annotations
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+
+    // Lombok
+    compileOnly group: "org.projectlombok", name: "lombok", version: lombokVersion
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
 }
 
-shadowJar {
-    relocate('org.apache.lucene', 'shaded.org.apache.lucene7')
-    relocate('lombok', 'shaded.lombok')
-    // fix for log4j version mismatch
+tasks.withType(ShadowJar).configureEach {
+    mergeServiceFiles()
     exclude('org/apache/logging/log4j/**')
-    // fix fo warning - SLF4J: Class path contains multiple SLF4J bindings.
     exclude('org/slf4j/**')
+    exclude('com/fasterxml/**')
+}
+
+// Replacement for legacy 'maven' plugin
+publishing {
+    publications {
+        create('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
 }

@@ -29,8 +29,8 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -73,8 +73,7 @@ public class PipelineRunResultDaoTest extends AbstractJdbcTest {
     private Pipeline testPipeline;
     private AbstractCloudRegion cloudRegion;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         testPipeline = new Pipeline();
         testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);

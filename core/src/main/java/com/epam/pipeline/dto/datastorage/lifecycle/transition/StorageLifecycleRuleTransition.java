@@ -18,6 +18,7 @@ package com.epam.pipeline.dto.datastorage.lifecycle.transition;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDate;
 
@@ -26,6 +27,7 @@ import java.time.LocalDate;
  */
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class StorageLifecycleRuleTransition {
 
     /**

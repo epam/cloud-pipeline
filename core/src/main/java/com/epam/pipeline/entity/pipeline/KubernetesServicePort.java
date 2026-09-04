@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.pipeline;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class KubernetesServicePort {
     private Integer port;
     private Integer targetPort;

@@ -18,11 +18,13 @@ package com.epam.pipeline.billingreportagent.model;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 
 @Data
 @Builder
+@Jacksonized
 public class EntityWithMetadata<T> {
     private T entity;
     private Map<String, String> metadata;

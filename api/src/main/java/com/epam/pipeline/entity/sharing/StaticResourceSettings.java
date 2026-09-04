@@ -15,10 +15,12 @@
 package com.epam.pipeline.entity.sharing;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class StaticResourceSettings {
     public Map<String, String> headers;
     public List<Modification> modifications;

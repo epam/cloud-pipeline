@@ -1,12 +1,9 @@
 package com.epam.pipeline.entity.billing;
 
-import lombok.Value;
-
-@Value
-public class BillingDiscount {
-
-    int computes;
-    int storages;
+public record BillingDiscount(
+    int computes,
+    int storages
+) {
 
     public static BillingDiscount empty() {
         return new BillingDiscount(0, 0);

@@ -17,14 +17,18 @@
 package com.epam.pipeline.elasticsearch.model.v7.index.query;
 
 import com.epam.pipeline.elasticsearch.model.PrefixQueryBuilder;
-import lombok.Getter;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@Getter
 public class PrefixQueryBuilderV7 implements PrefixQueryBuilder {
 
-    private final org.opensearch.index.query.PrefixQueryBuilder inner;
+    private final Query inner;
 
     public PrefixQueryBuilderV7(final String name, final String prefix) {
-        inner = org.opensearch.index.query.QueryBuilders.prefixQuery(name, prefix);
+        inner = Query.of(q -> q.prefix(p -> p.field(name).value(prefix)));
+    }
+
+    @Override
+    public Object getInner() {
+        return inner;
     }
 }

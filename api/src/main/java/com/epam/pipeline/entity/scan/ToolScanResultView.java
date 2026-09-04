@@ -16,19 +16,8 @@
 
 package com.epam.pipeline.entity.scan;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-
 import java.util.Map;
 
-@Getter
-@AllArgsConstructor
-@EqualsAndHashCode
-public class ToolScanResultView {
-
-    private final long toolId;
-    private final Map<String, ToolVersionScanResultView> toolVersionScanResults;
-
-
-}
+public record ToolScanResultView(
+        long toolId, Map<String,
+        ToolVersionScanResultView> toolVersionScanResults) {}

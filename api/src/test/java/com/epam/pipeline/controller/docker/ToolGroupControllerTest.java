@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.acl.docker.ToolGroupApiService;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

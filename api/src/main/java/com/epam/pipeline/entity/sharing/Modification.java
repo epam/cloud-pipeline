@@ -15,8 +15,10 @@
 package com.epam.pipeline.entity.sharing;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class Modification {
     public String pattern;
     public String replacement;

@@ -19,17 +19,18 @@ package com.epam.pipeline.manager.cluster.pool;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 
 @Service
 @RequiredArgsConstructor
-public class NodePoolMonitoringService extends AbstractSchedulingManager {
+public class NodePoolMonitoringService extends AbstractSchedulingManager implements InitializingBean {
     private final NodePoolMonitoringServiceCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_NODE_POOL_MONITOR_DELAY,
                 "NodePoolMonitor");
     }

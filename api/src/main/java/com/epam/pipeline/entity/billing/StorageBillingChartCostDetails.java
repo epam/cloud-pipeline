@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.billing;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
 @Builder
 @Value
+@Jacksonized
 public class StorageBillingChartCostDetails implements BillingChartDetails {
     
     BillingChartCostDetailsType type = BillingChartCostDetailsType.STORAGE_BILLING;
@@ -36,6 +38,7 @@ public class StorageBillingChartCostDetails implements BillingChartDetails {
 
     @Value
     @Builder
+    @Jacksonized
     public static class StorageBillingDetails {
         String storageClass;
         Long cost;

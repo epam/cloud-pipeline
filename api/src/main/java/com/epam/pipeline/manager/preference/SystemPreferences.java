@@ -138,7 +138,6 @@ public class SystemPreferences {
     private static final String UI_GROUP = "User Interface";
     private static final String BASE_URLS_GROUP = "Base URLs";
     private static final String MISC_GROUP = "Miscellaneous";
-    private static final String FIRECLOUD_GROUP = "FireCloud";
     private static final String DATA_SHARING_GROUP = "Data sharing";
     private static final String SYSTEM_GROUP = "System"; // important stuff, related to system as a whole
     private static final String SEARCH_GROUP = "Search";
@@ -197,7 +196,7 @@ public class SystemPreferences {
         new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
         ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
                 "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
-        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+            new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
         isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final BooleanPreference DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
         "storage.mgmt.restricted.access", false, DATA_STORAGE_GROUP, pass);
@@ -1207,7 +1206,7 @@ public class SystemPreferences {
     public static final ObjectPreference<List<IdleMonitoringConfig>> SYSTEM_IDLE_MONITORING_CONFIG =
             new ObjectPreference<>(
                     "system.idle.monitoring.config",
-                    Arrays.asList(
+                    List.of(
                         new IdleMonitoringConfig(
                                 IdleMonitoringType.CPU,
                                 true, 10.0, 30, 30, IdleRunAction.NOTIFY
@@ -1221,7 +1220,7 @@ public class SystemPreferences {
                                 true, null, null, 30, IdleRunAction.NOTIFY
                         )
                     ),
-                    new TypeReference<List<IdleMonitoringConfig>>() {}, SYSTEM_GROUP,
+                    new TypeReference<>() {}, SYSTEM_GROUP,
                     PreferenceValidators.isValidIdleMonitoringConfig);
 
     /**
@@ -1385,31 +1384,6 @@ public class SystemPreferences {
             "system.access.code.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_ACCESS_CODE_MONITOR_ENABLED = new BooleanPreference(
             "system.access.code.monitor.enable", true, SYSTEM_GROUP, pass);
-
-    // FireCloud Integration
-    public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
-        "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,
-        isNullOrValidJson(new TypeReference<List<String>>() {}));
-    public static final StringPreference FIRECLOUD_BASE_URL = new StringPreference("firecloud.base.url",
-            "https://api.firecloud.org/api/", FIRECLOUD_GROUP, PreferenceValidators.isValidUrl);
-    public static final BooleanPreference FIRECLOUD_ENABLE_USER_AUTH = new BooleanPreference(
-            "firecloud.enable.user.auth", false, FIRECLOUD_GROUP, pass);
-    public static final StringPreference GOOGLE_REDIRECT_URL = new StringPreference("google.redirect.url",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isEmptyOrValidUrlSyntax);
-    public static final StringPreference GOOGLE_CLIENT_SETTINGS = new StringPreference("google.client.settings",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isEmptyOrFileExist);
-    public static final StringPreference GOOGLE_CLIENT_ID = new StringPreference("google.client.id",
-            null, FIRECLOUD_GROUP, pass);
-    public static final StringPreference FIRECLOUD_LAUNCHER_TOOL = new StringPreference("firecloud.launcher.tool",
-            null, FIRECLOUD_GROUP, null);
-    public static final StringPreference FIRECLOUD_LAUNCHER_CMD = new StringPreference("firecloud.launcher.cmd",
-            null, FIRECLOUD_GROUP, isNotBlank);
-    public static final StringPreference FIRECLOUD_BILLING_PROJECT = new StringPreference("firecloud.billing.project",
-            null, FIRECLOUD_GROUP, isNotBlank);
-    public static final StringPreference FIRECLOUD_INSTANCE_TYPE = new StringPreference("firecloud.instance.type",
-            "m4.xlarge", FIRECLOUD_GROUP, pass);
-    public static final IntPreference FIRECLOUD_INSTANCE_DISK = new IntPreference("firecloud.instance.disk",
-            50, FIRECLOUD_GROUP, isGreaterThan(0));
 
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
@@ -1781,7 +1755,6 @@ public class SystemPreferences {
         this.dataStorageManager = dataStorageManager;
 
         LAUNCH_DOCKER_IMAGE.setValidator(isValidToolOrImage);
-        FIRECLOUD_LAUNCHER_TOOL.setValidator(isValidToolOrImage);
         DATA_STORAGE_SYSTEM_DATA_STORAGE_NAME.setValidator(isValidDataStorageName);
 
         GIT_HOST.setValidator(isGitGroupValid);

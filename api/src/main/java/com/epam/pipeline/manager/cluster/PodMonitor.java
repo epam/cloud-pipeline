@@ -49,6 +49,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -56,7 +57,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +75,7 @@ import java.util.stream.Collectors;
 @Service
 @ConditionalOnProperty(value = "cluster.disable.task.monitoring", matchIfMissing = true, havingValue = "false")
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class PodMonitor extends AbstractSchedulingManager {
+public class PodMonitor extends AbstractSchedulingManager implements InitializingBean {
     private static final Logger LOGGER = LoggerFactory.getLogger(PodMonitor.class);
 
     private final PodMonitorCore core;
@@ -84,8 +85,8 @@ public class PodMonitor extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    @PostConstruct
-    public void setup() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelay(core::updateStatus, SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE, "Task Status Update");
     }
 

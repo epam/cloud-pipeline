@@ -29,8 +29,8 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -41,9 +41,10 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -70,7 +71,7 @@ public class CloudPlatformRunnerTest {
             parameterMapper, configManager, pipelineManager, runManager,
             preferenceManager, messageHelper, creditsLaunchService);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(LAUNCH_MAX_SCHEDULED_NUMBER).when(preferenceManager)
                 .getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
@@ -130,7 +131,7 @@ public class CloudPlatformRunnerTest {
         assertThat(masterNodeCountCaptor.getValue(), is(1));
     }
 
-    @Test(expected = InsufficientUsageCreditsException.class)
+    @Test
     public void heterogeneousClusterBlockedWhenInsufficientCredits() {
         doThrow(new InsufficientUsageCreditsException("Insufficient credits"))
                 .when(creditsLaunchService)
@@ -141,7 +142,8 @@ public class CloudPlatformRunnerTest {
         final List<RunConfigurationEntry> entries = Arrays.asList(masterEntry, workerEntry);
         mockResolvedConfig(entries);
 
-        runner.runAnalysis(analysisConfig(entries));
+        assertThrows(InsufficientUsageCreditsException.class,
+                () -> runner.runAnalysis(analysisConfig(entries)));
     }
 
     @Test

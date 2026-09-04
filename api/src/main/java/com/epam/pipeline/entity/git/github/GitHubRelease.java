@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.git.github;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class GitHubRelease {
     @JsonProperty("tag_name")
     private String tagName;

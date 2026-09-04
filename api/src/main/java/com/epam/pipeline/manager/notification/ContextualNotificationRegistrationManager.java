@@ -55,7 +55,7 @@ public class ContextualNotificationRegistrationManager {
 
     private NotificationType getType(final PipelineStartNotificationRequest request) {
         return Optional.ofNullable(request)
-                .map(PipelineStartNotificationRequest::getType)
+                .map(PipelineStartNotificationRequest::type)
                 .orElse(FALLBACK_CONTEXTUAL_NOTIFICATION_TYPE);
     }
 
@@ -70,14 +70,14 @@ public class ContextualNotificationRegistrationManager {
 
     private List<TaskStatus> getTriggerStatuses(final PipelineStartNotificationRequest request) {
         return Optional.ofNullable(request)
-                .map(PipelineStartNotificationRequest::getTriggerStatuses)
+                .map(PipelineStartNotificationRequest::triggerStatuses)
                 .filter(CollectionUtils::isNotEmpty)
                 .orElse(FALLBACK_CONTEXTUAL_NOTIFICATION_TRIGGER_STATUSES);
     }
 
     private List<Long> getRecipients(final PipelineRun run, final PipelineStartNotificationRequest request) {
         final List<Long> recipients = Optional.ofNullable(request)
-                .map(PipelineStartNotificationRequest::getRecipients)
+                .map(PipelineStartNotificationRequest::recipients)
                 .map(list -> list.stream()
                         .filter(StringUtils::isNotBlank)
                         .distinct()
@@ -100,7 +100,7 @@ public class ContextualNotificationRegistrationManager {
     private String getSubject(final PipelineStartNotificationRequest request,
                               final NotificationTemplate globalNotificationTemplate) {
         return Optional.ofNullable(request)
-                .map(PipelineStartNotificationRequest::getSubject)
+                .map(PipelineStartNotificationRequest::subject)
                 .filter(StringUtils::isNotBlank)
                 .orElse(globalNotificationTemplate.getSubject());
     }
@@ -108,7 +108,7 @@ public class ContextualNotificationRegistrationManager {
     private String getBody(final PipelineStartNotificationRequest request,
                            final NotificationTemplate globalNotificationTemplate) {
         return Optional.ofNullable(request)
-                .map(PipelineStartNotificationRequest::getBody)
+                .map(PipelineStartNotificationRequest::body)
                 .filter(StringUtils::isNotBlank)
                 .orElse(globalNotificationTemplate.getBody());
     }

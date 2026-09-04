@@ -46,6 +46,6 @@ public class ToolContextualPreferenceHandler extends AbstractDaoContextualPrefer
 
     @Override
     boolean externalEntityExists(final ContextualPreference preference) {
-        return toolDao.loadTool(Long.valueOf(preference.getResource().getResourceId())) != null;
+        return toolDao.loadTool(Long.valueOf(preference.resource().resourceId())) != null;
     }
 }

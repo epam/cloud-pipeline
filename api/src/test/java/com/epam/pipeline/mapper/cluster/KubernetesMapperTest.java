@@ -18,7 +18,7 @@ package com.epam.pipeline.mapper.cluster;
 
 import com.epam.pipeline.entity.cluster.EventEntity;
 import io.fabric8.kubernetes.api.model.Event;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
 import static com.epam.pipeline.test.creator.cluster.KubernetesCreatorUtils.*;

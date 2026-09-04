@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.cloud;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class InstanceTerminationState {
 
     private String instanceId;

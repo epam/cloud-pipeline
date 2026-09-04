@@ -223,7 +223,7 @@ public class SystemNotificationManager {
             return toMetadataValue(confirmations);
         } catch (IllegalArgumentException e) {
             log.error(String.format("System notification confirmations parsing has failed. " +
-                    "All existing confirmations will be cleaned for the user %s.", confirmation.getUser()), e);
+                    "All existing confirmations will be cleaned for the user %s.", confirmation.user()), e);
             return toMetadataValue(confirmation);
         }
     }

@@ -83,7 +83,7 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("General Users Report",
             BillingExportType.USER,
             userBillingLoader,
-            (request, writer) -> new UserBillingWriter(writer, request.getFrom(), request.getTo()),
+            (request, writer) -> new UserBillingWriter(writer, request.from(), request.to()),
             elasticHelper);
     }
 
@@ -93,7 +93,7 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("General Billing Centers Report",
             BillingExportType.BILLING_CENTER,
             billingCenterBillingLoader,
-            (request, writer) -> new BillingCenterBillingWriter(writer, request.getFrom(), request.getTo()),
+            (request, writer) -> new BillingCenterBillingWriter(writer, request.from(), request.to()),
             elasticHelper);
     }
 
@@ -103,8 +103,8 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("Storages Report",
             BillingExportType.STORAGE,
             storageBillingLoader,
-            (request, writer) -> new StorageBillingWriter(writer, request.getFrom(), request.getTo(),
-                    request.getProperties()),
+            (request, writer) -> new StorageBillingWriter(writer, request.from(), request.to(),
+                    request.properties()),
             elasticHelper);
     }
 
@@ -114,7 +114,7 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("Instances Report",
             BillingExportType.INSTANCE,
             instanceBillingLoader,
-            (request, writer) -> new InstanceBillingWriter(writer, request.getFrom(), request.getTo()),
+            (request, writer) -> new InstanceBillingWriter(writer, request.from(), request.to()),
             elasticHelper);
     }
 
@@ -124,7 +124,7 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("Pipelines Report",
             BillingExportType.PIPELINE,
             pipelineBillingLoader,
-            (request, writer) -> new PipelineBillingWriter(writer, request.getFrom(), request.getTo()),
+            (request, writer) -> new PipelineBillingWriter(writer, request.from(), request.to()),
             elasticHelper);
     }
 
@@ -134,7 +134,7 @@ public class BillingConfiguration {
         return new CommonBillingExporter<>("Tools Report",
             BillingExportType.TOOL,
             toolBillingLoader,
-            (request, writer) -> new ToolBillingWriter(writer, request.getFrom(), request.getTo()),
+            (request, writer) -> new ToolBillingWriter(writer, request.from(), request.to()),
             elasticHelper);
     }
 

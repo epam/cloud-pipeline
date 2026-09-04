@@ -10,8 +10,8 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.test.creator.notification.NotificationCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,9 +21,9 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.util.CustomMatchers.matches;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -62,8 +62,7 @@ public class ContextualNotificationRegistrationManagerTest {
             notificationSettingsManager, notificationTemplateManager, contextualNotificationSettingsManager,
             userManager, messageHelper);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         mockUser(USER_ID, USER);
         mockUser(ANOTHER_USER_ID, ANOTHER_USER);
         mockUser(OWNER_ID, OWNER);

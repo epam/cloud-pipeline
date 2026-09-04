@@ -32,10 +32,11 @@ import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -43,11 +44,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -79,16 +80,16 @@ public class ToolManagerUnitTest {
     private final ToolVersionManager toolVersionManager = mock(ToolVersionManager.class);
     private final ToolVulnerabilityDao toolVulnerabilityDao = mock(ToolVulnerabilityDao.class);
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        Whitebox.setInternalState(manager, "toolDao", toolDao);
-        Whitebox.setInternalState(manager, "dockerRegistryManager", dockerRegistryManager);
-        Whitebox.setInternalState(manager, "messageHelper", messageHelper);
-        Whitebox.setInternalState(manager, "toolGroupManager", toolGroupManager);
-        Whitebox.setInternalState(manager, "authManager", authManager);
-        Whitebox.setInternalState(manager, "instanceOfferManager", instanceOfferManager);
-        Whitebox.setInternalState(manager, "toolVersionManager", toolVersionManager);
-        Whitebox.setInternalState(manager, "toolVulnerabilityDao", toolVulnerabilityDao);
+        ReflectionTestUtils.setField(manager, "toolDao", toolDao);
+        ReflectionTestUtils.setField(manager, "dockerRegistryManager", dockerRegistryManager);
+        ReflectionTestUtils.setField(manager, "messageHelper", messageHelper);
+        ReflectionTestUtils.setField(manager, "toolGroupManager", toolGroupManager);
+        ReflectionTestUtils.setField(manager, "authManager", authManager);
+        ReflectionTestUtils.setField(manager, "instanceOfferManager", instanceOfferManager);
+        ReflectionTestUtils.setField(manager, "toolVersionManager", toolVersionManager);
+        ReflectionTestUtils.setField(manager, "toolVulnerabilityDao", toolVulnerabilityDao);
     }
 
     @Test
@@ -339,34 +340,38 @@ public class ToolManagerUnitTest {
         verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailBlackListUpdateForSymlinkTool() {
         final Tool symlink = getSymlink();
         mockTool(symlink);
 
-        manager.updateBlackListWithToolVersionStatus(SYMLINK_ID, LATEST_TAG, true);
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateBlackListWithToolVersionStatus(SYMLINK_ID, LATEST_TAG, true));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailUpdateWhiteListWhenToolIsSymlink() {
         final Tool symlink = getSymlink();
         mockTool(symlink);
 
-        manager.updateWhiteListWithToolVersionStatus(SYMLINK_ID, LATEST_TAG, true);
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateWhiteListWithToolVersionStatus(SYMLINK_ID, LATEST_TAG, true));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailBlackListUpdateForNonExistentTool() {
         doReturn(null).when(toolDao).loadTool(DOES_NOT_EXIST_ID);
 
-        manager.updateBlackListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true);
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateBlackListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailUpdateWhiteListWhenToolDoesNotExist() {
         doReturn(null).when(toolDao).loadTool(DOES_NOT_EXIST_ID);
 
-        manager.updateWhiteListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true);
+        assertThrows(IllegalArgumentException.class, () ->
+                manager.updateWhiteListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true));
     }
 
     private Tool createToolForCreate() {

@@ -37,7 +37,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.switchuser.SwitchUserGrantedAuthority;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -50,10 +50,10 @@ public class AuthManager {
     @Autowired
     private JwtTokenGenerator jwtTokenGenerator;
 
-    @Value("${flyway.placeholders.default.admin}")
+    @Value("${spring.flyway.placeholders.default.admin}")
     private String defaultAdmin;
 
-    @Value("${flyway.placeholders.default.admin.id:1}")
+    @Value("${spring.flyway.placeholders.default.admin.id:1}")
     private Long defaultAdminId;
 
     public Authentication getAuthentication() {

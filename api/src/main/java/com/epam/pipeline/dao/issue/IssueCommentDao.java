@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -38,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class IssueCommentDao extends NamedParameterJdbcDaoSupport {
 
@@ -120,48 +121,51 @@ public class IssueCommentDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().update(deleteCommentsForIssuesListQuery,
                 Collections.singletonMap("ISSUES_IDS", issuesIds));
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(issueCommentSequence, "Required query issueCommentSequence is not set");
+        Assert.notNull(createIssueCommentQuery, "Required query createIssueCommentQuery is not set");
+        Assert.notNull(loadIssueCommentByIdQuery, "Required query loadIssueCommentByIdQuery is not set");
+        Assert.notNull(loadAllCommentsForIssueQuery, "Required query loadAllCommentsForIssueQuery is not set");
+        Assert.notNull(updateIssueCommentQuery, "Required query updateIssueCommentQuery is not set");
+        Assert.notNull(deleteIssueCommentQuery, "Required query deleteIssueCommentQuery is not set");
+        Assert.notNull(deleteAllCommentsForIssueQuery, "Required query deleteAllCommentsForIssueQuery is not set");
+        Assert.notNull(loadAllCommentsForIssuesQuery, "Required query loadAllCommentsForIssuesQuery is not set");
+    }
 
-    @Required
+
     public void setIssueCommentSequence(String issueCommentSequence) {
         this.issueCommentSequence = issueCommentSequence;
     }
 
-    @Required
     public void setCreateIssueCommentQuery(String createIssueCommentQuery) {
         this.createIssueCommentQuery = createIssueCommentQuery;
     }
 
-    @Required
     public void setLoadIssueCommentByIdQuery(String loadIssueCommentByIdQuery) {
         this.loadIssueCommentByIdQuery = loadIssueCommentByIdQuery;
     }
 
-    @Required
     public void setLoadAllCommentsForIssueQuery(String loadAllCommentsForIssueQuery) {
         this.loadAllCommentsForIssueQuery = loadAllCommentsForIssueQuery;
     }
 
-    @Required
     public void setUpdateIssueCommentQuery(String updateIssueCommentQuery) {
         this.updateIssueCommentQuery = updateIssueCommentQuery;
     }
 
-    @Required
     public void setDeleteIssueCommentQuery(String deleteIssueCommentQuery) {
         this.deleteIssueCommentQuery = deleteIssueCommentQuery;
     }
 
-    @Required
     public void setDeleteAllCommentsForIssueQuery(String deleteAllCommentsForIssueQuery) {
         this.deleteAllCommentsForIssueQuery = deleteAllCommentsForIssueQuery;
     }
 
-    @Required
     public  void setDeleteCommentsForIssuesListQuery(String deleteCommentsForIssuesListQuery) {
         this.deleteCommentsForIssuesListQuery = deleteCommentsForIssuesListQuery;
     }
 
-    @Required
     public void setLoadAllCommentsForIssuesQuery(String loadAllCommentsForIssuesQuery) {
         this.loadAllCommentsForIssuesQuery = loadAllCommentsForIssuesQuery;
     }

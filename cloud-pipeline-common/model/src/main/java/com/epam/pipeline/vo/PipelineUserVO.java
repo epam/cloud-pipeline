@@ -18,8 +18,10 @@ package com.epam.pipeline.vo;
 
 import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class PipelineUserVO {
     private String userName;
     private List<Long> roleIds;

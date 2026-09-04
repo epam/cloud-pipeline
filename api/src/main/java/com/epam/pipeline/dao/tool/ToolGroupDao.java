@@ -23,12 +23,14 @@ import java.util.Optional;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class ToolGroupDao extends NamedParameterJdbcDaoSupport {
     private String toolGroupSequenceName;
@@ -136,48 +138,54 @@ public class ToolGroupDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(toolGroupSequenceName, "Required query toolGroupSequenceName is not set");
+        Assert.notNull(createToolGroupQuery, "Required query createToolGroupQuery is not set");
+        Assert.notNull(loadToolGroupQuery, "Required query loadToolGroupQuery is not set");
+        Assert.notNull(loadAllToolGroupsQuery, "Required query loadAllToolGroupsQuery is not set");
+        Assert.notNull(loadToolGroupsByRegistryIdQuery, "Required query loadToolGroupsByRegistryIdQuery is not set");
+        Assert.notNull(deleteToolGroupQuery, "Required query deleteToolGroupQuery is not set");
+        Assert.notNull(loadToolGroupByNameAndRegistryIdQuery,
+                "Required query loadToolGroupByNameAndRegistryIdQuery is not set");
+        Assert.notNull(updateToolGroupQuery, "Required query updateToolGroupQuery is not set");
+        Assert.notNull(loadToolGroupsByNameAndRegistryNameQuery,
+                "Required query loadToolGroupsByNameAndRegistryNameQuery is not set");
+    }
 
-    @Required
+
     public void setToolGroupSequenceName(String toolGroupSequenceName) {
         this.toolGroupSequenceName = toolGroupSequenceName;
     }
 
-    @Required
     public void setCreateToolGroupQuery(String createToolGroupQuery) {
         this.createToolGroupQuery = createToolGroupQuery;
     }
 
-    @Required
     public void setLoadToolGroupQuery(String loadToolGroupQuery) {
         this.loadToolGroupQuery = loadToolGroupQuery;
     }
 
-    @Required
     public void setLoadAllToolGroupsQuery(String loadAllToolGroupsQuery) {
         this.loadAllToolGroupsQuery = loadAllToolGroupsQuery;
     }
 
-    @Required
     public void setLoadToolGroupsByRegistryIdQuery(String loadToolGroupsByRegistryIdQuery) {
         this.loadToolGroupsByRegistryIdQuery = loadToolGroupsByRegistryIdQuery;
     }
 
-    @Required
     public void setDeleteToolGroupQuery(String deleteToolGroupQuery) {
         this.deleteToolGroupQuery = deleteToolGroupQuery;
     }
 
-    @Required
     public void setLoadToolGroupByNameAndRegistryIdQuery(String loadToolGroupByNameAndRegistryIdQuery) {
         this.loadToolGroupByNameAndRegistryIdQuery = loadToolGroupByNameAndRegistryIdQuery;
     }
 
-    @Required
     public void setUpdateToolGroupQuery(String updateToolGroupQuery) {
         this.updateToolGroupQuery = updateToolGroupQuery;
     }
 
-    @Required
     public void setLoadToolGroupsByNameAndRegistryNameQuery(String loadToolGroupsByNameAndRegistryNameQuery) {
         this.loadToolGroupsByNameAndRegistryNameQuery = loadToolGroupsByNameAndRegistryNameQuery;
     }

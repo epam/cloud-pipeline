@@ -18,12 +18,26 @@ package com.epam.pipeline.vo;
 
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.preference.PreferenceType;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 @Value
 public class ContextualPreferenceVO {
-    private final String name;
-    private final String value;
-    private final PreferenceType type;
-    private final ContextualPreferenceExternalResource resource;
+    String name;
+    String value;
+    PreferenceType type;
+    ContextualPreferenceExternalResource resource;
+
+    @JsonCreator
+    public ContextualPreferenceVO(
+            @JsonProperty("name") final String name,
+            @JsonProperty("value") final String value,
+            @JsonProperty("type") final PreferenceType type,
+            @JsonProperty("resource") final ContextualPreferenceExternalResource resource) {
+        this.name = name;
+        this.value = value;
+        this.type = type;
+        this.resource = resource;
+    }
 }

@@ -12,8 +12,8 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,8 +21,8 @@ import java.util.Objects;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -47,8 +47,7 @@ public class DataStorageToVersionedStorageConvertManagerTest {
             new DataStorageToVersionedStorageConvertManager(pipelineManager, messageHelper, entityTransferManagers,
                     storageTransferManagers);
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         doReturn(PIPELINE).when(pipelineManager).createEmpty(any());
     }
 

@@ -19,25 +19,23 @@ package com.epam.pipeline.elasticsearch.model.v7.search.builder;
 import com.epam.pipeline.elasticsearch.model.QueryBuilder;
 import com.epam.pipeline.elasticsearch.model.SearchSourceBuilderInner;
 import lombok.Getter;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 @Getter
 public class SearchSourceBuilderV7 implements SearchSourceBuilderInner {
 
-    private final org.opensearch.search.builder.SearchSourceBuilder inner;
-
-    public SearchSourceBuilderV7() {
-        inner = new org.opensearch.search.builder.SearchSourceBuilder();
-    }
+    private Query query;
+    private Integer size;
 
     @Override
     public SearchSourceBuilderV7 query(final QueryBuilder queryBuilder) {
-        inner.query((org.opensearch.index.query.QueryBuilder) queryBuilder.getInner());
+        this.query = (Query) queryBuilder.getInner();
         return this;
     }
 
     @Override
     public SearchSourceBuilderV7 size(final int size) {
-        inner.size(size);
+        this.size = size;
         return this;
     }
 }

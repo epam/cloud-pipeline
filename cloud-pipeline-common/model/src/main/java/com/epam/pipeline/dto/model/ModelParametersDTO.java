@@ -18,10 +18,12 @@ package com.epam.pipeline.dto.model;
 
 import com.epam.pipeline.entity.model.AbstractStepParameters;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class ModelParametersDTO {
 
     /**

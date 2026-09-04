@@ -17,10 +17,12 @@
 package com.epam.pipeline.controller.vo.search;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class ScrollingParameters {
 
     private String docId;

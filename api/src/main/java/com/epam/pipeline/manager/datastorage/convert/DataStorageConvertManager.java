@@ -53,7 +53,7 @@ public class DataStorageConvertManager {
     }
 
     private DataStorageToSecuredEntityConvertManager getConvertManager(final DataStorageConvertRequest request) {
-        final DataStorageConvertRequestType targetType = Optional.ofNullable(request.getTargetType())
+        final DataStorageConvertRequestType targetType = Optional.ofNullable(request.targetType())
                 .orElse(DataStorageConvertRequestType.VERSIONED_STORAGE);
         final DataStorageToSecuredEntityConvertManager manager = managers.get(targetType);
         Assert.notNull(manager, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_CONVERT_TARGET_TYPE_INVALID,
@@ -74,7 +74,7 @@ public class DataStorageConvertManager {
     }
 
     private DataStorageConvertRequestAction getSourceAction(final DataStorageConvertRequest request) {
-        return Optional.ofNullable(request.getSourceAction()).map(Optional::of)
+        return Optional.ofNullable(request.sourceAction()).map(Optional::of)
                 .orElseGet(this::getSourceActionFromPreferences)
                 .orElse(FALLBACK_SOURCE_ACTION);
     }

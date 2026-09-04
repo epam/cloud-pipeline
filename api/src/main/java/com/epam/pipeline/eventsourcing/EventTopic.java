@@ -17,13 +17,11 @@
 package com.epam.pipeline.eventsourcing;
 
 import lombok.Builder;
-import lombok.Value;
 
-@Value
 @Builder
-public class EventTopic {
-    String stream;
-    boolean enabled;
+public record EventTopic(
+    String stream,
+    boolean enabled,
     // in millis
-    int timeout;
-}
+    int timeout
+) {}

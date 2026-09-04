@@ -19,7 +19,7 @@ package com.epam.pipeline.acl.notification;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

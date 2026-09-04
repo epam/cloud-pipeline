@@ -17,19 +17,13 @@
 package com.epam.pipeline.vmmonitor.model.vm;
 
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 import java.util.List;
 
-@AllArgsConstructor
-@Getter
-public class MissingLabelsSummary {
-
-    private final String nodeName;
-    private final List<String> labels;
-    private final String instanceType;
-    private final String creationTimestamp;
-    private final RunStatus correspondingRunStatus;
-    private final Long correspondingPoolId;
-}
+public record MissingLabelsSummary(
+        String nodeName,
+        List<String> labels,
+        String instanceType,
+        String creationTimestamp,
+        RunStatus correspondingRunStatus,
+        Long correspondingPoolId) {}

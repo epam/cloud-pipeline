@@ -19,7 +19,6 @@ package com.epam.pipeline.dao.security;
 import com.epam.pipeline.entity.security.NamedJwtToken;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -101,27 +100,22 @@ public class NamedJwtTokenDao extends NamedParameterJdbcDaoSupport {
         EXPIRES_AT
     }
 
-    @Required
     public void setInsertTokenQuery(final String insertTokenQuery) {
         this.insertTokenQuery = insertTokenQuery;
     }
 
-    @Required
     public void setLoadByJtiQuery(final String loadByJtiQuery) {
         this.loadByJtiQuery = loadByJtiQuery;
     }
 
-    @Required
     public void setLoadByUserIdQuery(final String loadByUserIdQuery) {
         this.loadByUserIdQuery = loadByUserIdQuery;
     }
 
-    @Required
     public void setCountByUserIdQuery(final String countByUserIdQuery) {
         this.countByUserIdQuery = countByUserIdQuery;
     }
 
-    @Required
     public void setDeleteByJtiQuery(final String deleteByJtiQuery) {
         this.deleteByJtiQuery = deleteByJtiQuery;
     }
