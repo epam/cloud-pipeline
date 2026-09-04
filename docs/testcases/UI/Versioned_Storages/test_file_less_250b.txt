@@ -1,0 +1,14 @@
+Histiocytosis
+Lymphadenitis
+Lymphadenopathy [C15.604.338]
+Lymphangiectasis [C15.604.360]
+Lymphangitis [C15.604.406]
+Lymphatic
+test csv value
+Histiocytosis
+Lymphadenitis
+Lymphadenopathy
+Lymphangiectasis [C15.604.360]
+Lymphangitis
+
+
