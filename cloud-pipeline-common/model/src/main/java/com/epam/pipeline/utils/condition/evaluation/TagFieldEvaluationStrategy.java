@@ -17,7 +17,6 @@
 package com.epam.pipeline.utils.condition.evaluation;
 
 import com.epam.pipeline.utils.condition.ConditionExpression;
-import com.epam.pipeline.utils.condition.ConditionOperator;
 import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Evaluates {@link FieldType#TAGS} leaf nodes, optionally applying a duration gate.
@@ -48,7 +45,7 @@ import java.util.function.Function;
  * @param <T> the subject type being evaluated
  */
 @Slf4j
-public class TagFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
+public class TagFieldEvaluationStrategy<T> extends KeyValueFieldEvaluationStrategy<T> {
 
     /** Suffix appended to a tag name to form the companion timestamp key (e.g. {@code IDLE_date}). */
     public static final String DATE_SUFFIX = "_date";
@@ -56,18 +53,8 @@ public class TagFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrateg
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
-    private final Function<T, Map<String, String>> tagsExtractor;
-
-    public TagFieldEvaluationStrategy(final SubjectEntityField<T> field,
-                                      final Function<T, Map<String, String>> tagsExtractor) {
+    public TagFieldEvaluationStrategy(final SubjectEntityField<T> field) {
         super(field);
-        this.tagsExtractor = tagsExtractor;
-    }
-
-    @Override
-    protected boolean doEvaluate(final ConditionOperator op, final String subjectValue,
-                                 final String expressionValue) {
-        return ConditionOperator.EQUALS.equals(op) == containsKey(subjectValue, expressionValue);
     }
 
     /** Adds the duration gate on top of the base boolean check. */
@@ -81,8 +68,11 @@ public class TagFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrateg
     }
 
     private boolean checkDuration(final ConditionExpression condition, final T subject, final LocalDateTime now) {
-        final String dateTagKey = condition.getValue() + DATE_SUFFIX;
-        final Map<String, String> tags = tagsExtractor.apply(subject);
+        final String expressionValue = condition.getValue();
+        final int sep = expressionValue.indexOf('=');
+        final String name = sep < 0 ? expressionValue : expressionValue.substring(0, sep);
+        final String dateTagKey = name + DATE_SUFFIX;
+        final Map<String, String> tags = field.extractMap(subject);
         if (MapUtils.isEmpty(tags)) {
             return false;
         }
@@ -101,8 +91,4 @@ public class TagFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrateg
         }
     }
 
-    private static boolean containsKey(final String commaSeparatedKeys, final String tag) {
-        return Arrays.stream(commaSeparatedKeys.split(",", -1))
-                .anyMatch(k -> k.equalsIgnoreCase(tag));
-    }
 }

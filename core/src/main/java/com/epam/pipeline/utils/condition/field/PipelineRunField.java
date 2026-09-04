@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.utils.condition.FieldType;
 import lombok.Getter;
+import org.apache.commons.collections4.MapUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -137,7 +138,8 @@ public enum PipelineRunField implements SubjectEntityField<PipelineRun> {
      * Expression names: {@code run.tag}, {@code tag}.
      */
     TAG(TAGS,
-        run -> run.getTags() != null ? String.join(",", run.getTags().keySet()) : "",
+        null,
+        run -> MapUtils.emptyIfNull(run.getTags()),
         true,
         "run.tag", "tag"),
 

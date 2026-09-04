@@ -118,7 +118,7 @@ public class PlatformUsageCreditsUpdateRuleEvaluator {
                     strategy = new EnumFieldEvaluationStrategy<>(field);
                     break;
                 case TAGS:
-                    strategy = new TagFieldEvaluationStrategy<>(field, PipelineRun::getTags);
+                    strategy = new TagFieldEvaluationStrategy<>(field);
                     break;
                 case USER_AUTHORITIES:
                     strategy = new UserAuthoritiesFieldEvaluationStrategy<>(field, authoritiesResolver);

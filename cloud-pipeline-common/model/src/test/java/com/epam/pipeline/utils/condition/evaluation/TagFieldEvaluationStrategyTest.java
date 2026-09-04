@@ -1,16 +1,15 @@
 package com.epam.pipeline.utils.condition.evaluation;
 
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
-import com.epam.pipeline.utils.condition.FieldType;
+import com.epam.pipeline.utils.condition.field.PipelineRunField;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertFalse;
@@ -27,9 +26,10 @@ public class TagFieldEvaluationStrategyTest {
     private static final String TAG_IDLE = "IDLE";
     private static final String TAG_OTHER = "OTHER";
     private static final String TAG_VALUE_TRUE = "true";
+    private static final String TAG_VALUE_FALSE = "false";
 
-    private final TagFieldEvaluationStrategy<Map<String, String>> strategy =
-            new TagFieldEvaluationStrategy<>(field(), map -> map);
+    private final TagFieldEvaluationStrategy<PipelineRun> strategy =
+            new TagFieldEvaluationStrategy<>(field());
 
     // Basic key-presence checks
 
@@ -61,20 +61,22 @@ public class TagFieldEvaluationStrategyTest {
 
     @Test
     public void shouldMatchFirstTagOfMultiple() {
+        PipelineRun pipelineRun = new PipelineRun();
         final Map<String, String> t = new HashMap<>();
         t.put("LONG-RUNNING", TAG_VALUE_TRUE);
         t.put(TAG_IDLE, TAG_VALUE_TRUE);
-        assertTrue(strategy.evaluate(leaf("=", TAG_IDLE), t, NOW));
+        pipelineRun.setTags(t);
+        assertTrue(strategy.evaluate(leaf("=", TAG_IDLE), pipelineRun, NOW));
     }
 
     @Test
     public void shouldReturnFalseForNullTagsMap() {
-        assertFalse(strategy.evaluate(leaf("=", TAG_IDLE), null, NOW));
+        assertFalse(strategy.evaluate(leaf("=", TAG_IDLE), new PipelineRun(), NOW));
     }
 
     @Test
     public void shouldReturnFalseForEmptyTagsMap() {
-        assertFalse(strategy.evaluate(leaf("=", TAG_IDLE), Collections.emptyMap(), NOW));
+        assertFalse(strategy.evaluate(leaf("=", TAG_IDLE), new PipelineRun(), NOW));
     }
 
     // Duration gate: null duration → skip gate, return boolean result
@@ -89,37 +91,37 @@ public class TagFieldEvaluationStrategyTest {
 
     @Test
     public void shouldMatchWhenTagPresentAndDurationExceeded() {
-        final Map<String, String> t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_50H));
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_50H));
         assertTrue(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), t, NOW));
     }
 
     @Test
     public void shouldNotMatchWhenTagPresentButDurationNotYetMet() {
-        final Map<String, String> t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_24H));
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_24H));
         assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), t, NOW));
     }
 
     @Test
     public void shouldMatchWhenTagPresentAndDurationExactlyMet() {
-        final Map<String, String> t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_48H));
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_48H));
         assertTrue(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), t, NOW));
     }
 
     @Test
     public void shouldMatchWithZeroDurationWhenTagJustApplied() {
-        final Map<String, String> t = tagsWithDate(TAG_IDLE, NOW);
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW);
         assertTrue(strategy.evaluate(leafWithDuration("=", TAG_IDLE, 0), t, NOW));
     }
 
     @Test
     public void shouldNotMatchWhenTagAbsentAndDurationSet() {
-        final Map<String, String> t = tags(TAG_OTHER, TAG_VALUE_TRUE);
+        final PipelineRun t = tags(TAG_OTHER, TAG_VALUE_TRUE);
         assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), t, NOW));
     }
 
     @Test
     public void shouldNotMatchWhenTagPresentButDateTagAbsent() {
-        final Map<String, String> t = tags(TAG_IDLE, TAG_VALUE_TRUE);
+        final PipelineRun t = tags(TAG_IDLE, TAG_VALUE_TRUE);
         assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), t, NOW));
     }
 
@@ -128,7 +130,7 @@ public class TagFieldEvaluationStrategyTest {
         final Map<String, String> t = new HashMap<>();
         t.put(TAG_IDLE, TAG_VALUE_TRUE);
         t.put(TAG_IDLE + TagFieldEvaluationStrategy.DATE_SUFFIX, "not-a-date");
-        assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), t, NOW));
+        assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), pipelineRunWithTags(t), NOW));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -136,18 +138,80 @@ public class TagFieldEvaluationStrategyTest {
         strategy.evaluate(leaf(">", TAG_IDLE), tags(TAG_IDLE, TAG_VALUE_TRUE), NOW);
     }
 
-    private static Map<String, String> tags(final String key, final String value) {
-        final Map<String, String> t = new HashMap<>();
-        t.put(key, value);
-        return t;
+    @Test
+    public void shouldMatchWhenKeyAndValueSatisfy() {
+        Map<String, String> tags = new HashMap<>();
+        tags.put(TAG_IDLE, TAG_VALUE_TRUE);
+        tags.put(TAG_OTHER, TAG_VALUE_FALSE);
+        assertTrue(strategy.evaluate(leaf("=", TAG_IDLE + "=" + TAG_VALUE_TRUE), pipelineRunWithTags(tags), NOW));
     }
 
-    private static Map<String, String> tagsWithDate(final String tagName,
+    @Test
+    public void shouldNotMatchWhenKeyAndValueSatisfy() {
+        Map<String, String> tags = new HashMap<>();
+        tags.put(TAG_IDLE, TAG_VALUE_TRUE);
+        tags.put(TAG_OTHER, TAG_VALUE_FALSE);
+        assertFalse(strategy.evaluate(leaf("=", TAG_IDLE + "=" + TAG_VALUE_FALSE), pipelineRunWithTags(tags), NOW));
+    }
+
+    @Test
+    public void shouldMatchWhenKeyAndValueSatisfyAndDuration() {
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_48H));
+        assertTrue(strategy.evaluate(leafWithDuration("=", TAG_IDLE + "=" + TAG_VALUE_TRUE, DURATION_24H), t, NOW));
+    }
+
+    @Test
+    public void shouldMatchWhenKeyAndValueSatisfyAndDurationFits() {
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_48H));
+        assertTrue(strategy.evaluate(leafWithDuration("=", TAG_IDLE + "=" + TAG_VALUE_TRUE, DURATION_24H), t, NOW));
+    }
+
+    @Test
+    public void shouldMatchWhenKeyAndValueNotSatisfyAndDurationFits() {
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_48H));
+        assertFalse(strategy.evaluate(leafWithDuration("=", TAG_OTHER + "=" + TAG_VALUE_TRUE, DURATION_24H), t, NOW));
+    }
+
+    @Test
+    public void shouldNotMatchWhenKeyAndValueSatisfyAndDurationNotFits() {
+        final PipelineRun t = tagsWithDate(TAG_IDLE, NOW.minusHours(DURATION_48H));
+        assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE + "=" + TAG_VALUE_TRUE, DURATION_50H), t, NOW));
+    }
+
+    @Test
+    public void shouldMatchWhenKeySatisfyAndValueNotForNotEquals() {
+        Map<String, String> tags = new HashMap<>();
+        tags.put(TAG_IDLE, TAG_VALUE_TRUE);
+        tags.put(TAG_OTHER, TAG_VALUE_FALSE);
+        assertTrue(strategy.evaluate(leaf("!=", TAG_IDLE + "=" + TAG_VALUE_FALSE), pipelineRunWithTags(tags), NOW));
+    }
+
+    @Test
+    public void shouldNotMatchWhenKeyAndValueSatisfyForNotEquals() {
+        Map<String, String> tags = new HashMap<>();
+        tags.put(TAG_IDLE, TAG_VALUE_TRUE);
+        tags.put(TAG_OTHER, TAG_VALUE_FALSE);
+        assertFalse(strategy.evaluate(leaf("!=", TAG_IDLE + "=" + TAG_VALUE_TRUE), pipelineRunWithTags(tags), NOW));
+    }
+
+    private static PipelineRun tags(final String key, final String value) {
+        final Map<String, String> t = new HashMap<>();
+        t.put(key, value);
+        return pipelineRunWithTags(t);
+    }
+
+    private static PipelineRun tagsWithDate(final String tagName,
                                                      final LocalDateTime appliedAt) {
         final Map<String, String> t = new HashMap<>();
         t.put(tagName, TAG_VALUE_TRUE);
         t.put(tagName + TagFieldEvaluationStrategy.DATE_SUFFIX, DATE_FMT.format(appliedAt));
-        return t;
+        return pipelineRunWithTags(t);
+    }
+
+    private static PipelineRun pipelineRunWithTags(Map<String, String> tags) {
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setTags(tags);
+        return pipelineRun;
     }
 
     private static ConditionExpression leaf(final String operand, final String value) {
@@ -167,27 +231,7 @@ public class TagFieldEvaluationStrategyTest {
         return e;
     }
 
-    private static SubjectEntityField<Map<String, String>> field() {
-        return new SubjectEntityField<Map<String, String>>() {
-            @Override
-            public FieldType getType() {
-                return FieldType.TAGS;
-            }
-            @Override
-            public boolean isSupportsDuration() {
-                return true;
-            }
-            @Override
-            public String extract(final Map<String, String> m) {
-                if (m == null || m.isEmpty()) {
-                    return "";
-                }
-                return String.join(",", m.keySet());
-            }
-            @Override
-            public List<String> getDisplayNames() {
-                return Collections.emptyList();
-            }
-        };
+    private static SubjectEntityField<PipelineRun> field() {
+        return PipelineRunField.TAG;
     }
 }
