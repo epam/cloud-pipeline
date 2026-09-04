@@ -116,7 +116,6 @@ import ParameterValueRepresentation from '../../pipelines/launch/form/parameters
 import ShareWith from '../ShareWith';
 import LogsModeButton from './logs-mode';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 const MAX_NESTED_RUNS_TO_DISPLAY = 10;
@@ -745,8 +744,6 @@ class Logs extends localization.LocalizedReactComponent {
     if (this.isDtsEnvironment) {
       const dts = this.dtsList.filter(dts => dts.id === run.executionPreferences.dtsId)[0];
       environment = dts ? `${dts.name}` : `${run.executionPreferences.dtsId}`;
-    } else if (this.isFireCloudEnvironment) {
-      environment = 'FireCloud';
     } else {
       environment = this.props.preferences.deploymentName || 'EPAM Cloud Pipeline';
     }
@@ -1544,13 +1541,6 @@ class Logs extends localization.LocalizedReactComponent {
     const {run} = this.state;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === DTS_ENVIRONMENT;
-  }
-
-  @computed
-  get isFireCloudEnvironment () {
-    const {run} = this.state;
-    return run && run.executionPreferences &&
-      run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
   @computed
