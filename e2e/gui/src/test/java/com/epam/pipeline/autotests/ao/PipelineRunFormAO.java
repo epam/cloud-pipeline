@@ -45,7 +45,6 @@ import static java.lang.String.format;
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
-import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
@@ -80,8 +79,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                     .find(byClassName("ant-select"))),
             entry(INSTANCE_TYPE, context().find(byXpath(".//*[contains(text(), 'Node type')]")).closest(".ant-row")
                     .find(by("role", "combobox"))),
-            entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex")
-                    .find(cssSelector(".ant-checkbox-wrapper"))),
+            entry(AUTO_PAUSE, context().find(byClassName("autoPause")).find(".ant-checkbox-wrapper")),
             entry(IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
