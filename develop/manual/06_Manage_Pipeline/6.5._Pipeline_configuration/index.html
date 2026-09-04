@@ -415,6 +415,7 @@
 <li><a href="#parameters-section">Parameters section</a><ul>
 <li><a href="#enum-type-features"><code>Enum</code> type features</a></li>
 <li><a href="#metadata-type-features"><code>Metadata</code> type features</a></li>
+<li><a href="#metadata_entity-type-features"><code>Metadata_entity</code> type features</a></li>
 </ul>
 </li>
 </ul>
@@ -630,6 +631,12 @@ In <strong><code>config.json</code></strong> file, each parameter is described a
 <td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_33.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_13.png" /></td>
 </tr>
 <tr>
+<td></td>
+<td>For selecting a parameter value from a dropdown list, populated with entities of a specific metadata class.<br><br><strong><em>Note</em></strong>: for additional details about <code>metadata_config</code> attribute see <a href="#metadata_entity-type-features">below</a>.</td>
+<td><code>metadata_entity</code></td>
+<td>In the GUI, such parameter field is displayed as a searchable dropdown list</td>
+</tr>
+<tr>
 <td><strong><code>description</code></strong></td>
 <td>Parameter description.<br>It is not processed anyhow, but just shown as parameter help</td>
 <td><em>String</em></td>
@@ -676,14 +683,18 @@ In <strong><code>config.json</code></strong> file, each parameter is described a
 <h4 id="enum-type-features"><code>Enum</code> type features</h4>
 <p>For enumeration values, visibility can be configured for each value separately.<br />
 It is being configured via the attribute <strong><code>visible</code></strong> assigned to specific enumeration values.<br />
+Also, a separate display label (distinct from the value that is actually applied to the parameter)
+can be configured via the attribute <strong><code>value</code></strong>.<br />
 In such case, format of the enumeration shall be:</p>
 <pre><code class="language-json">&quot;enum&quot; : [
     {
-        &quot;name&quot; : &quot;&lt;ENUM_VALUE1&gt;&quot;,
+        &quot;name&quot; : &quot;&lt;ENUM_DISPLAY_NAME1&gt;&quot;,
+        &quot;value&quot; : &quot;&lt;ENUM_VALUE1&gt;&quot;,
         &quot;visible&quot; : &quot;&lt;VISIBILITY_EXPRESSION1&gt;&quot;
     },
     {
-        &quot;name&quot; : &quot;&lt;ENUM_VALUE2&gt;&quot;,
+        &quot;name&quot; : &quot;&lt;ENUM_DISPLAY_NAME2&gt;&quot;,
+        &quot;value&quot; : &quot;&lt;ENUM_VALUE2&gt;&quot;,
         &quot;visible&quot; : &quot;&lt;VISIBILITY_EXPRESSION2&gt;&quot;
     },
     ...
@@ -691,7 +702,9 @@ In such case, format of the enumeration shall be:</p>
 </code></pre>
 <p>Where:</p>
 <ul>
-<li><code>&lt;ENUM_VALUE&gt;</code> - enumeration value</li>
+<li><code>&lt;ENUM_DISPLAY_NAME&gt;</code> - label that will be shown for the enumeration value in the parameter's dropdown list (in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form). This attribute is required for the object form of an enumeration value</li>
+<li><code>&lt;ENUM_VALUE&gt;</code> - value that will be applied to the parameter when this enumeration value is selected.<br />
+    This attribute is optional - if omitted, <code>&lt;ENUM_DISPLAY_NAME&gt;</code> will be used as the value as well</li>
 <li><code>&lt;VISIBILITY_EXPRESSION&gt;</code> - expression that determines if the visibility of that enumeration value:<ul>
 <li>if equals <code>true</code>, enumeration value will be visible in the parameter's dropdown list (in the <strong>CONFIGURATION</strong> tab / <strong>Launch</strong> form)</li>
 <li>if equals <code>false</code>, parameter will not be visible</li>
@@ -705,9 +718,31 @@ Where:  </li>
 <li><code>&lt;OPERAND&gt;</code> - logical operands: <code>&amp;&amp;</code> (<em>AND</em>), <code>||</code> (<em>OR</em>), <code>==</code> (<em>equals</em>), <code>!=</code> (<em>not equals</em>) or condition operands: <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></li>
 </ul>
 </li>
+<li>this attribute is optional - if omitted, enumeration value is visible by default</li>
 </ul>
 </li>
 </ul>
+<p>Example of a display name that differs from the applied value:</p>
+<pre><code class="language-json">...
+parameters: {
+    &quot;p3&quot;: {
+        &quot;type&quot; : &quot;enum&quot;,
+        &quot;enum&quot; : [
+            {
+                &quot;name&quot; : &quot;Value 1&quot;,
+                &quot;value&quot; : &quot;value1&quot;
+            },
+            &quot;value2&quot;,
+            &quot;value3&quot;
+        ],
+        &quot;required&quot; : true
+    }
+    ...
+}
+...
+</code></pre>
+<p>In the example above, the dropdown list will show <code>Value 1</code>, <code>value2</code> and <code>value3</code>,
+but if the first option is selected - <code>value1</code> will be applied as the parameter's value.</p>
 <p>Example of visibility usage for separate enumeration values:</p>
 <pre><code class="language-json">...
 parameters: {
@@ -745,6 +780,43 @@ Where:</p>
 </ul>
 <p>For example:<br />
 <img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_25.png" /></p>
+<h4 id="metadata_entity-type-features"><code>Metadata_entity</code> type features</h4>
+<p>If the parameter has <code>"type" : "metadata_entity"</code>, its value is selected from a dropdown list populated with entities of a specific metadata class from a specific folder.<br />
+The list is configured via the <strong><code>metadata_config</code></strong> attribute:</p>
+<pre><code class="language-json">&quot;&lt;PARAMETER_NAME&gt;&quot; : {
+    &quot;type&quot; : &quot;metadata_entity&quot;,
+    &quot;metadata_config&quot; : {
+        &quot;folderId&quot; : &lt;FOLDER_ID&gt;,
+        &quot;metadataClass&quot; : &quot;&lt;METADATA_CLASS_NAME&gt;&quot;,
+        &quot;nameField&quot; : &quot;&lt;NAME_FIELD&gt;&quot;,
+        &quot;displayField&quot; : &quot;&lt;DISPLAY_FIELD&gt;&quot;,
+        &quot;descriptionField&quot; : &quot;&lt;DESCRIPTION_FIELD&gt;&quot;,
+        &quot;filters&quot; : [ ... ],
+        &quot;orderBy&quot; : [ ... ],
+        &quot;params&quot; : {
+            &quot;&lt;OTHER_PARAMETER_NAME1&gt;&quot; : &quot;&lt;METADATA_FIELD1&gt;&quot;,
+            &quot;&lt;OTHER_PARAMETER_NAME2&gt;&quot; : &quot;&lt;METADATA_FIELD2&gt;&quot;,
+            ...
+        }
+    }
+}
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><code>&lt;FOLDER_ID&gt;</code> - ID of the folder which metadata entities are used to populate the dropdown list</li>
+<li><code>&lt;METADATA_CLASS_NAME&gt;</code> - name of the metadata class which entities are used to populate the dropdown list</li>
+<li><code>&lt;NAME_FIELD&gt;</code> - name of the metadata entity attribute shown as the dropdown item text</li>
+<li><code>&lt;DISPLAY_FIELD&gt;</code> - name of the metadata entity attribute shown as the dropdown item text instead of <code>&lt;NAME_FIELD&gt;</code>.<br />
+    This attribute is optional - if omitted (or an entity has no such attribute), <code>&lt;NAME_FIELD&gt;</code> is used</li>
+<li><code>&lt;DESCRIPTION_FIELD&gt;</code> - name of the metadata entity attribute shown as an additional, less prominent line under the dropdown item text.<br />
+    This attribute is optional - if omitted (or an entity has no such attribute), no additional line is shown</li>
+<li><code>filters</code> - array of filters to narrow down the entities list.<br />
+    This attribute is optional and has the same format as used by the metadata entities filtering API - each filter is a container <code>{"key", "values", "operator"}</code></li>
+<li><code>orderBy</code> - array that defines the entities list order.<br />
+    This attribute is optional and has the same format as used by the metadata entities filtering API</li>
+<li><code>params</code> - container that maps other parameters' names to metadata entity attribute names.<br />
+    This attribute is optional. Once an entity is selected from the dropdown list, values of the mapped attributes of that entity are applied to the corresponding parameters</li>
+</ul>
               
             </div>
           </div><footer>
