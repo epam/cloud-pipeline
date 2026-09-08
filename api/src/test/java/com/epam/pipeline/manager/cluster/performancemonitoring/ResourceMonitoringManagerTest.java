@@ -45,14 +45,14 @@ public class ResourceMonitoringManagerTest {
     @Mock private RunMonitor firstMonitor;
     @Mock private RunMonitor secondMonitor;
 
-    private ResourceMonitoringManager resourceMonitoringManager;
+    private ResourceMonitoringManager.ResourceMonitoringManagerCore core;
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         when(firstMonitor.order()).thenReturn(0);
         when(secondMonitor.order()).thenReturn(1);
-        resourceMonitoringManager = new ResourceMonitoringManager(
+        core = new ResourceMonitoringManager.ResourceMonitoringManagerCore(
                 pipelineRunManager, monitoringESDao, preferenceManager,
                 Arrays.asList(secondMonitor, firstMonitor));
     }
@@ -62,7 +62,7 @@ public class ResourceMonitoringManagerTest {
         final List<PipelineRun> runs = Collections.singletonList(new PipelineRun());
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(runs);
 
-        resourceMonitoringManager.monitorResourceUsage();
+        core.monitorResourceUsage();
 
         // setUp passes secondMonitor(order=1) before firstMonitor(order=0) — after sorting, first must precede second
         final InOrder ordered = inOrder(firstMonitor, secondMonitor);
@@ -75,7 +75,7 @@ public class ResourceMonitoringManagerTest {
         final List<PipelineRun> runs = Collections.singletonList(new PipelineRun());
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(runs);
 
-        resourceMonitoringManager.monitorResourceUsage();
+        core.monitorResourceUsage();
 
         verify(firstMonitor, times(1)).monitor(runs);
         verify(secondMonitor, times(1)).monitor(runs);
