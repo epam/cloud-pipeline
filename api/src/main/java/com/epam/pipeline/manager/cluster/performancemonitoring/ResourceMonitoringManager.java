@@ -29,6 +29,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -45,40 +46,56 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ResourceMonitoringManager extends AbstractSchedulingManager implements InitializingBean {
 
-    private final PipelineRunManager pipelineRunManager;
-    private final MonitoringESDao monitoringDao;
-    private final PreferenceManager preferenceManager;
-    private final List<RunMonitor> monitors;
+    private final ResourceMonitoringManagerCore core;
 
     @Autowired
-    public ResourceMonitoringManager(final PipelineRunManager pipelineRunManager,
-                                      final MonitoringESDao monitoringDao,
-                                      final PreferenceManager preferenceManager,
-                                      final List<RunMonitor> monitors) {
-        this.pipelineRunManager = pipelineRunManager;
-        this.monitoringDao = monitoringDao;
-        this.preferenceManager = preferenceManager;
-        this.monitors = monitors.stream()
-                .sorted(Comparator.comparingInt(RunMonitor::order))
-                .collect(Collectors.toList());
+    public ResourceMonitoringManager(final ResourceMonitoringManagerCore core) {
+        this.core = core;
     }
 
     @Override
     public void afterPropertiesSet() {
-        scheduleFixedDelaySecured(this::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
+        scheduleFixedDelaySecured(core::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
                 "Resource Usage Monitoring");
     }
 
-    @Scheduled(cron = "0 0 0 ? * *")
-    @SchedulerLock(name = "ResourceMonitoringManager_removeOldIndices", lockAtMostForString = "PT1H")
-    public void removeOldIndices() {
-        monitoringDao.deleteIndices(preferenceManager.getPreference(
-                SystemPreferences.SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD));
+    public void monitorResourceUsage() {
+        core.monitorResourceUsage();
     }
 
-    @SchedulerLock(name = "ResourceMonitoringManager_monitorResourceUsage", lockAtMostForString = "PT10M")
-    public void monitorResourceUsage() {
-        final List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
-        monitors.forEach(m -> m.monitor(runs));
+    @Component
+    @ConditionalOnProperty("monitoring.elasticsearch.url")
+    static class ResourceMonitoringManagerCore {
+
+        private final PipelineRunManager pipelineRunManager;
+        private final MonitoringESDao monitoringDao;
+        private final PreferenceManager preferenceManager;
+        private final List<RunMonitor> monitors;
+
+        @Autowired
+        ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
+                                      final MonitoringESDao monitoringDao,
+                                      final PreferenceManager preferenceManager,
+                                      final List<RunMonitor> monitors) {
+            this.pipelineRunManager = pipelineRunManager;
+            this.monitoringDao = monitoringDao;
+            this.preferenceManager = preferenceManager;
+            this.monitors = monitors.stream()
+                    .sorted(Comparator.comparingInt(RunMonitor::order))
+                    .collect(Collectors.toList());
+        }
+
+        @Scheduled(cron = "0 0 0 ? * *")
+        @SchedulerLock(name = "ResourceMonitoringManager_removeOldIndices", lockAtMostForString = "PT1H")
+        public void removeOldIndices() {
+            monitoringDao.deleteIndices(preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD));
+        }
+
+        @SchedulerLock(name = "ResourceMonitoringManager_monitorResourceUsage", lockAtMostForString = "PT10M")
+        public void monitorResourceUsage() {
+            final List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
+            monitors.forEach(m -> m.monitor(runs));
+        }
     }
 }
