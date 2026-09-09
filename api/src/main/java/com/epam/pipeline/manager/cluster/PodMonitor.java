@@ -229,7 +229,8 @@ public class PodMonitor extends AbstractSchedulingManager {
                     .map(entry -> entry.getKey() + "=" + entry.getValue())
                     .collect(Collectors.joining(", "));
 
-            final String logText = String.format("Run is waiting for a node matching [%s]: %s", selector, reason.get());
+            final String logText = String.format("Pod for run with node selector [%s] is in " +
+                    "Unschedulable state with reason %s", selector, reason.get());
 
             LOGGER.info("Run {} is not scheduled yet. {}", run.getId(), logText);
 
