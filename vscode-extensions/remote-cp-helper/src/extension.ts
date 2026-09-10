@@ -16,6 +16,12 @@ export async function deactivate(): Promise<void> {
 async function patchProductJson() {
   console.log("Patching product.json for 'epam.remote-cp'...");
 
+  const requiredApiProposals = [
+    "resolvers",
+    "tunnels",
+    "contribViewsRemote",
+  ];
+
   const productJsonUri = vscode.Uri.joinPath(
     vscode.Uri.file(vscode.env.appRoot),
     "product.json",
@@ -29,10 +35,23 @@ async function patchProductJson() {
 
   const objEextensionEnabledApiProposals =
     obj["extensionEnabledApiProposals"] ?? {};
+  const enabledApiProposals =
+    objEextensionEnabledApiProposals["epam.remote-cp"] ?? [];
+
+  if (
+    requiredApiProposals.every((proposal) =>
+      enabledApiProposals.includes(proposal),
+    )
+  ) {
+    console.log("product.json already contains the required API proposals.");
+    return;
+  }
+
   objEextensionEnabledApiProposals["epam.remote-cp"] = [
-    "resolvers",
-    "tunnels",
-    "contribViewsRemote",
+    ...enabledApiProposals,
+    ...requiredApiProposals.filter(
+      (proposal) => !enabledApiProposals.includes(proposal),
+    ),
   ];
   obj["extensionEnabledApiProposals"] = objEextensionEnabledApiProposals;
 
