@@ -32,10 +32,16 @@ spec:
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
+            - mountPath: /opt/common/pki
+              name: common-pki
+              readOnly: true
       volumes:
         - name: billing-logs
           hostPath:
             path: /opt/billing/logs
+        - name: common-pki
+          hostPath:
+            path: /opt/common/pki
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials

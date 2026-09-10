@@ -18,6 +18,30 @@ BILLING_RUNTIME_LOG=$CP_BILLING_HOME/logs/runtime.log
 mkdir -p $(dirname $BILLING_RUNTIME_LOG)
 touch $BILLING_RUNTIME_LOG
 
+if [ "$CP_BILLING_CA_BUNDLE" ] && [ -f "$CP_BILLING_CA_BUNDLE" ]; then
+    echo "[INFO] Setting up trust to $CP_BILLING_CA_BUNDLE defined via CP_BILLING_CA_BUNDLE"
+    ca_bundle_tmp=$(mktemp -d)
+    cd "$ca_bundle_tmp"
+    csplit -z -f cert- -b '%02d.pem' "$CP_BILLING_CA_BUNDLE" '/-----BEGIN CERTIFICATE-----/' '{*}'
+
+    JAVA_HOME=$(java -XshowSettings:properties -version 2>&1 | awk -F'= ' '/java\.home/ {print $2}')
+    if [ -z "$JAVA_HOME" ]; then
+        echo "[ERROR] Cannot get JAVA_HOME, skipping CP_BILLING_CA_BUNDLE setup"
+    else
+        i=1
+        for f in cert-*.pem; do
+            keytool -importcert -noprompt \
+                -alias "billing-ca-$i" \
+                -file "$f" \
+                -keystore "$JAVA_HOME/jre/lib/security/cacerts" \
+                -storepass changeit
+            i=$((i+1))
+        done
+    fi
+
+    rm -rf "$ca_bundle_tmp"
+fi
+
 cd $CP_BILLING_HOME
 nohup java $CP_BILLING_JAVA_OPTS -jar billing-report-agent.jar &> $BILLING_RUNTIME_LOG &
 APP_PID="$!"
