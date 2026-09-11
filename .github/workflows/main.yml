@@ -8,6 +8,7 @@ on:
     branches:
       - develop
       - vscode-ext
+      - feature/unit_tests_gui
       # - 'release/**'
       # - 'stage/**'
 
