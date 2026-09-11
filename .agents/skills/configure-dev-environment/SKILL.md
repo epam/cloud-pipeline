@@ -44,6 +44,7 @@ so the tool column below is yours to derive, not theirs to choose.
 | **Documentation** | mkdocs | `docs/` |
 | **Docker images** | a container runtime | `deploy/docker/*` |
 | **GitHub CLI** | `gh`, authenticated | the only supported way to touch issues, PRs and checks from an agent session |
+| **Browser-check the GUI** | Playwright's Chromium, via the `playwright` MCP server | `verify-client-live` needs an actual browser to open pages in, not just a running dev server |
 
 Mark each option with what the probe already found — "GUI (Node 14 missing)", "Docker (ready)" — and
 say up front which areas are already complete so nobody picks a no-op.
@@ -206,6 +207,51 @@ success or failure. Device codes expire in ~15 minutes; if that lapses, kill it 
 Never pass `--with-token` or ask the user for a personal access token in chat. Record only the
 account `gh auth status` reports — never the token, and never read `gh`'s own credential store
 (`~/.config/gh/hosts.yml`).
+
+### Browser verification — Playwright's own Chromium
+
+The MCP server needs Node **≥18** on `PATH` (its own `engines` field) — separate from `client`'s
+pinned Node 14, and not read from a `client`-scoped `nvm use`. Check the ambient default
+(`node --version`, outside `client/`) first; nothing to install if it's already ≥18.
+
+Ask headed (visible) or headless as the default, and write it — together with a fixed `outputDir`,
+so snapshots and screenshots land under the gitignored `.agents/.temp/` rather than the repo
+root — to `.agents/localenv/playwright-mcp-config.json`:
+
+```json
+{
+  "browser": {"launchOptions": {"headless": false}},
+  "outputDir": "<repo root>/.agents/.temp/.playwright-mcp"
+}
+```
+
+Register the server at user/global scope (every project, not just this repo) with whichever client
+is running this skill, pointing every vendor's registration at that same file — one setting, not one
+copy per vendor. Confirm before running, real downloads either way:
+
+```bash
+# Claude Code
+claude mcp add playwright --scope user -- npx @playwright/mcp@latest --config <absolute path to the .agents/localenv/playwright-mcp-config.json above>
+```
+
+```json
+// Cursor — add to ~/.cursor/mcp.json
+{"mcpServers": {"playwright": {"command": "npx", "args": ["@playwright/mcp@latest", "--config", "<same absolute path>"]}}}
+```
+
+VS Code Copilot: command palette → **MCP: Open User Configuration** → add the same `command`/`args`
+under `servers`.
+
+Then, regardless of client, install the browser binary itself:
+
+```bash
+npx -y playwright install chromium
+```
+
+**Changing any of this later** ("switch Playwright to headless", "run the browser check headed")
+means editing the same file — the MCP server only reads it at its own startup, so nothing here ever
+takes effect in the session making the change. Say so plainly and tell the user to exit and relaunch
+before it applies; don't imply the new setting is already active.
 
 ## 5. Record what was decided
 

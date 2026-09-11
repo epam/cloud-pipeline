@@ -105,8 +105,8 @@ Things that have gone wrong here before, or that are expensive to undo:
 - **Don't carry on in the branch you were handed.** A task gets its own branch, and whether to cut it
   from a branch that isn't shared — and whether to work in a worktree — are questions to ask, not
   defaults to assume — the `implement-task` skill → "Workspace".
-- **Don't skip the test because the code was already there.** A fix and an extension owe one exactly
-  as new code does — the `implement-task` skill → "Tests".
+- **Don't skip the test because the code was already there.** Every code change needs one — the
+  `implement-task` skill → "Tests".
 - **Don't conclude that a change needs no documentation.** An area with no page today is the gap
   itself, not the exemption — the `implement-task` skill → "Docs".
 - **Don't edit an applied Flyway migration.** Add a new one.

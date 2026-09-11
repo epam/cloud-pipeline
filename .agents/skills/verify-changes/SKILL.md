@@ -32,7 +32,7 @@ skip is a correct outcome; a silent one is not.
 
 | Changed | Run | More |
 |---|---|---|
-| `client/` | `cd client && npm run lint`, and `npm run stylelint` for CSS, plus the tests for what you changed — that runner is `client/AGENTS.md`'s to name | `client/AGENTS.md` |
+| `client/` | `cd client && npm run lint`, and `npm run stylelint` for CSS, plus the whole test suite — that runner is `client/AGENTS.md`'s to name, and it takes seconds. Then the `verify-client-live` skill, to check the change in a browser | `client/AGENTS.md` |
 | a Java module | `./gradlew :<module>:test`, then `./gradlew checkstyleMain checkstyleTest pmdMain pmdTest` | `api` and `elasticsearch-agent` tests need a live PostgreSQL - see `api/src/test/resources/test-application.properties` |
 | `pipe-cli/` | `./gradlew :pipe-cli:test` | |
 | `workflows/pipe-common/`, `scripts/` | `cd workflows/pipe-common && export PYTHONPATH=$PYTHONPATH:$PWD && python -m pytest` | |

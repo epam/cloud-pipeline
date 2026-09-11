@@ -151,6 +151,9 @@ npm run stylelint     # the same, for src/**/*.css and src/**/*.less
 npm run lint:fix
 ```
 
+**These are not the whole check for a change here.** The `verify-changes` skill is required, and it
+names the rest.
+
 `test/AGENTS.md` documents the test harness itself: the module map, the rules a test file follows,
 and the split between `npm test` (hermetic, jsdom) and `npm run test:live` (opt-in, against a real
 deployment, configured only by an untracked `.env.test.local`). Read it before adding a test.

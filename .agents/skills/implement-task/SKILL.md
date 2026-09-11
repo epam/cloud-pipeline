@@ -101,11 +101,10 @@ task does not inherit a stale one.
 
 ## Tests
 
-**Every code change owes a test, and changed code owes one exactly as new code does.** "It is not a new
-feature", "the file already existed" and "this only extends what was there" are the three ways the test
-gets dropped, and none of them is a reason. What decides it is whether the thing you changed *can* be
-tested — a function, a component, a request, a rule, a branch of logic — and you test it at the level
-the module already tests at.
+**Every code change needs a test.** Test every file you changed, not the easiest one: if you move
+logic into a new helper and edit the files that call it, the helper's test covers the helper, and the
+callers still need their own. If nothing in the module is tested at that level today, that is the gap,
+not a reason to skip.
 
 Where the change is testable but the module has no runner for it, **the runner is part of the work.**
 Attended, say what is missing and ask whether to stand it up, since it is larger than the change that

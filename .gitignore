@@ -32,6 +32,10 @@ CLAUDE.local.md
 .env.local
 .env.*.local
 
+# Scratch output for local tools (e.g. Playwright MCP's snapshots/screenshots), configured via
+# configure-dev-environment. Per-workstation, never committed.
+.agents/.temp/
+
 # Working plans and ledgers, written by the plan-change skill. Sharing one means moving it and its
 # ledger into .agents/plans/, which is tracked.
 .agents/plans.local/
