@@ -190,6 +190,10 @@ CP_DAV_AUTH_URL_PATH=webdav/auth-sso
 CP_DAV_SERVE_DIR=/dav-serve
 CP_DAV_MOUNT_POINT=/dav-mount
 CP_DAV_INSTRUCTIONS_URL=
+# SMB interface, which is served by the cp-dav service as well
+CP_SMB_INTERNAL_PORT=445
+CP_SMB_AUTH_PORT=31087
+CP_SMB_URL_PATH=smb
 
 # cp-billing-srv
 CP_BILLING_INTERNAL_HOST=cp-billing-srv.default.svc.cluster.local

@@ -916,6 +916,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<Map<String, Object>>> LAUNCH_DISK_THRESHOLDS = new ObjectPreference<>(
             "launch.job.disk.size.thresholds", null, new TypeReference<List<Map<String, Object>>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<Map<String, Object>>>() {}), true);
+    public static final BooleanPreference LAUNCH_UNSCHEDULABLE_POD_LOGGING_ENABLE = new BooleanPreference(
+            "launch.unschedulable.pod.logging.enable", false, LAUNCH_GROUP, pass, true);
+
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",

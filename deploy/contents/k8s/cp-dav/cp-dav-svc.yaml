@@ -15,5 +15,15 @@ spec:
     port: ${CP_DAV_EXTRA_INTERNAL_PORT}
     targetPort: ${CP_DAV_EXTRA_INTERNAL_PORT}
     name: cp-dav-extra-port-http
+  - protocol: TCP
+    port: ${CP_SMB_AUTH_PORT}
+    targetPort: ${CP_SMB_AUTH_PORT}
+    name: cp-dav-smb-auth-port-http
+  # EDGE proxies the SMB traffic to this service on the port 445 (SMB clients do not allow
+  # to specify a custom port), while the container port stays configurable
+  - protocol: TCP
+    port: 445
+    targetPort: ${CP_SMB_INTERNAL_PORT}
+    name: cp-dav-smb-port
   selector:
     cloud-pipeline/cp-dav: "true"

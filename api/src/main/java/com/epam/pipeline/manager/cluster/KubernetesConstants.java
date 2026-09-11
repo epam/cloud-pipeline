@@ -60,6 +60,7 @@ public final class KubernetesConstants {
 
     public static final String POD_SUCCEEDED_PHASE = "Succeeded";
     public static final String POD_FAILED_PHASE = "Failed";
+    public static final String POD_PENDING_PHASE = "Pending";
     public static final String NODE_LOST = "NodeLost";
     public static final String POD_UNSCHEDULABLE = "Unschedulable";
     public static final String POD_RUNNING_PHASE = "Running";
