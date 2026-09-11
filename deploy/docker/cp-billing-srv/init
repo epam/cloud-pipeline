@@ -33,7 +33,7 @@ if [ "$CP_BILLING_CA_BUNDLE" ] && [ -f "$CP_BILLING_CA_BUNDLE" ]; then
             keytool -importcert -noprompt \
                 -alias "billing-ca-$i" \
                 -file "$f" \
-                -keystore "$JAVA_HOME/jre/lib/security/cacerts" \
+                -keystore "$JAVA_HOME/lib/security/cacerts" \
                 -storepass changeit
             i=$((i+1))
         done
