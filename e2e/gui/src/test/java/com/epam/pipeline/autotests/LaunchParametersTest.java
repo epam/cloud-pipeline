@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.PreferencesAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -80,7 +81,7 @@ import static java.util.stream.Collectors.toSet;
 public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
 
-    private static final String LAUNCH_PARAMETERS_PREFERENCE = SettingsPageAO.PreferencesAO.LaunchAO.LAUNCH_PARAMETERS;
+    private static final String LAUNCH_PARAMETERS_PREFERENCE = PreferencesAO.LaunchAO.LAUNCH_PARAMETERS;
     private static final String LAUNCH_PARAMETER_RESOURCE = "launch-parameter";
     private static final String CP_FSBROWSER_ENABLED = "CP_FSBROWSER_ENABLED";
     private static final String USER_ROLE = "ROLE_PIPELINE_MANAGER";

@@ -17,8 +17,11 @@ package com.epam.pipeline.autotests.ao.settings;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
+import com.epam.pipeline.autotests.ao.PopupAO;
 import com.epam.pipeline.autotests.ao.Primitive;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
+
 
 import java.util.Arrays;
 import java.util.Map;
@@ -30,9 +33,13 @@ import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
+import static com.epam.pipeline.autotests.ao.Primitive.GENERATE;
 import static com.epam.pipeline.autotests.ao.Primitive.GIT_CLI;
 import static com.epam.pipeline.autotests.ao.Primitive.GIT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPE_CLI;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static org.openqa.selenium.By.tagName;
 
@@ -82,9 +89,9 @@ public class CliAO extends SettingsPageAO {
                 .replaceAll("\n", " && ");
     }
 
-    public CliAO generateAccessKey() {
+    public GenerateAccessKeyPopUpAO generateAccessKey() {
         click(byId("generate-access-key-button"));
-        return this;
+        return new GenerateAccessKeyPopUpAO(this);
     }
 
     public String getCLIConfigureCommand() {
@@ -99,6 +106,35 @@ public class CliAO extends SettingsPageAO {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
+    }
+
+    public static class GenerateAccessKeyPopUpAO
+            extends PopupAO<GenerateAccessKeyPopUpAO, CliAO> {
+        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                entry(CLOSE, context().find(byClassName("ant-modal-close-x"))),
+                entry(CANCEL, context().find(button("Cancel"))),
+                entry(GENERATE, context().find(button("Generate")))
+        );
+
+        GenerateAccessKeyPopUpAO(CliAO parentAO) {
+            super(parentAO);
+        }
+
+        @Override
+        public CliAO ok() {
+            click(GENERATE);
+            return this.parent();
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
+        }
+
+        @Override
+        public SelenideElement context() {
+            return $(PipelineSelectors.visible(byClassName("ant-modal-content")));
+        }
     }
 
     public enum OperationSystem {

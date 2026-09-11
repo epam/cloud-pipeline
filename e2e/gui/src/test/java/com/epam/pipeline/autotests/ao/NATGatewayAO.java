@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.CheckResult.Verdict.ACCEPT;
+import static com.codeborne.selenide.Condition.empty;
+import static com.codeborne.selenide.Condition.exactText;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -108,10 +111,10 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row"))
                         .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .stream()
-                        .filter(element -> text(serverName).apply(driver(),
-                                element.findAll(".external-column").get(1))
-                                && text(port).apply(driver(),
-                                element.findAll(".external-column").get(3)))
+                        .filter(element -> text(serverName).check(driver(),
+                                element.findAll(".external-column").get(1)).verdict() == ACCEPT
+                                && text(port).check(driver(),
+                                element.findAll(".external-column").get(3)).verdict() == ACCEPT)
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
                                 el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
@@ -195,7 +198,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 format("%s-%s", C.NAT_PROXY_SERVICE_PREFIX, serverName.replaceAll("\\.", "-"))));
         internalConfigElements.get(1).shouldHave(matchText(IPV4_PATTERN));
         internalConfigElements.get(2).shouldHave(matchText(PORT_PATTERN));
-        routeRecord.find(".at-gateway-configuration__comment-column").shouldHave(text(comment));
+        routeRecord.find(".at-gateway-configuration__comment-column").shouldHave(exactText(comment));
         return this;
     }
 
@@ -210,7 +213,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
                 .shouldHave(size(3));
-        internalConfigElements.get(1).shouldHave(text(StringUtils.EMPTY));
+        internalConfigElements.get(1).shouldBe(empty);
         return this;
     }
 
