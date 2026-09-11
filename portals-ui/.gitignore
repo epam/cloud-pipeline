@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# Nx cache and workspace data (machine-local)
+.nx/cache
+.nx/workspace-data
+
+# build output
+dist/
+out-tsc/
+*.tsbuildinfo
+
+# Vite dependency cache
+.vite/
+
+# testing
+coverage/
+
+# local dev settings, pointing at a specific deployment
+.dev/
+
+# misc
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local

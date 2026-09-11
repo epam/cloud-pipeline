@@ -57,6 +57,63 @@ After the task creation (formulation), it shall be assigned to one or more membe
 Then assignee(s) can begin the task implementation. If desired, assignee sets the label about the beginning of the task implementation - **`state/underway`**.  
 After the task implementation, assignee should set the corresponding label (**`state/verify`**) and/or leave the comment (_with a link to the code_) which mean that task implementation is finished and the next stages can be started.
 
+#### Branch naming
+
+The task implementation is being performed in a separate branch. Its name shall reference the task entity, so that a branch, its issue and its pull request can be matched to each other without reading the diff:
+
+```
+issue_<issue number>/<short_description>_<area>
+```
+
+- `<issue number>` - number of the corresponding `GitHub` issue, without the `#` sign
+- `<short_description>` - few words about the change, in lower case, words separated by underscores
+- `<area>` - the part of the Platform the change lands in (see _Areas_ below). It is being **omitted** when the change spans several areas or when the area can't be determined
+
+For example:
+
+```
+issue_4538/remove_hardcoded_notification_timestamps_api
+issue_4512/evolve_mechanism_of_idle_runs_gui
+issue_4521/notification_dlq
+```
+
+Everything is in lower case, a branch name shall contain **exactly one `/`**. The issue reference (or the type prefix) is the only namespace; the area goes into the name as a `_<area>` suffix and never as a second path segment.
+The `release/<version>` and `stage/<version>/<name>` lines are maintained by the team and are not being created per task. They are the exception to the one-slash rule.
+
+#### Branch naming: changes without an issue
+
+For the changes that have no corresponding issue - small infrastructure, scripts, CI - the type prefix is being used in place of the issue reference:
+
+```
+feature/<short_description>_<area>       # new functionality, infrastructure, tooling
+fix/<short_description>_<area>           # bug fix
+```
+
+#### Areas
+
+| Area | Covers |
+|---|---|
+| `api` | `api/` - the REST API server |
+| `gui` | `client/` - the main Platform GUI |
+| `cli` | `pipe-cli/`, including `mount/` and `pipe-omics/` |
+| `runtime` | `workflows/pipe-common` and `scripts/` - the code injected into job containers |
+| `deploy` | `deploy/` - Dockerfiles, `cp-edge`, `pipectl` |
+| `docs` | `docs/` - release notes and the user manual |
+| `e2e` | `e2e/` - has its own `gradlew` and toolchain |
+
+Any other change takes its **module or top-level directory name** as the area - `core`, `notifier`, `vm-monitor`, `data-transfer-service`, `billing-report-agent`, `hcs-image-viewer`. The authoritative module list is `settings.gradle`.
+
+#### Changes that span several areas
+
+Such a change is being split - **one branch and one pull request per area**, sharing the issue namespace:
+
+```
+issue_4538/notification_tags_api
+issue_4538/notification_tags_gui
+```
+
+When one person carries the whole change and it is small, a single branch with the area omitted (`issue_4538/notification_tags`) is being used instead.
+
 ### Verification
 
 After the task implementation is done, it shall be verified.  
@@ -196,3 +253,38 @@ In general, the whole contribution procedure looks like:
 6. Test results: test case and test issues are closed, automated test results are being uploaded to the Cloud Pipeline repo, comment "_tests are passed_" to the original task
 7. Documentation writing: pull request(s), comment "_docs were updated_" to the original task
 8. Task is closed
+
+***
+
+## Working with AI coding agents
+
+Agent instructions live in the repository and are reviewed like code - every agent reads them on every task, so a wrong one is a bug that reproduces itself.
+
+### Preparing the local environment
+
+Before the first change, an agent can set up the workstation toolchain. Any of these prompts starts it:
+
+```
+configure development environment
+set up my machine for this repo
+```
+
+The agent asks which parts of the Platform you are going to work on and installs only what those need. Nothing is installed without a confirmation.
+
+Ask again later to add an area that was skipped - "install Java for this repo" - and only the missing part is being set up. The chosen version managers, versions and environment names are being recorded in `.agents/localenv/`, which is per-developer and is not being committed.
+
+### Instruction files
+
+**`AGENTS.md` is the source of truth.** The root file holds the conventions for the whole repository. Any directory may add its own for its subtree, and a module gets one when it differs from the repository default - a live database, a different test runner. Write a fact in one place only: if a subtree file repeats the root file, the two will drift apart.
+
+**Adding an `AGENTS.md` takes more than the file itself.** Cursor and Copilot read it as it is; Claude Code reads only a `CLAUDE.md` pointer beside it, and a missing one fails silently. The `modifying-instructions` skill has the per-agent list.
+
+### Skills
+
+A **skill** is a procedure an agent loads **on demand** - `.agents/skills/<name>/SKILL.md`, in the open [Agent Skills](https://agentskills.io) format. A new one needs no per-agent wiring: create the directory and it is discoverable.
+
+The dividing line: a fact or convention that is true for a whole subtree belongs in `AGENTS.md`, which loads on every task; a multi-step procedure needed only occasionally belongs in a skill, which loads only when a task matches its `description`.
+
+### Creating or changing a skill
+
+**Ask an agent to scaffold it** - a request like "write a skill for _\<procedure\>_" loads the `modifying-instructions` skill, which owns the layout, the allowed frontmatter fields and the naming rules. Then review and finish it: the agent knows the format, and you know the procedure. Writing one by hand is fine, and `modifying-instructions` is the reference either way.

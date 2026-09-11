@@ -1,0 +1,9 @@
+Claude Code subagent definitions go here, and stay the exception rather than the rule.
+
+Unlike skills, subagents have no cross-vendor standard — the Agent Skills spec covers
+skills only — so anything written here works in Claude Code and nowhere else. When a
+task could be expressed either way, write a skill in .agents/skills/ instead. A
+subagent earns its place when it needs what a skill can't give it — its own tool
+allowlist, or a context window isolated from the main conversation — the way
+`client-reviewer.md` restricts itself to read-only tools plus `ReportFindings` for a
+review that shouldn't also carry edit access.

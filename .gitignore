@@ -1,5 +1,5 @@
 /.gradle
-/.idea
+.idea/
 *.log
 api/src/main/resources/static/
 *.class
@@ -10,3 +10,28 @@ api/src/main/resources/static/
 docs/site
 dist
 vscode-cloud-pipeline/.env
+
+# Agent config: everything under .claude/ is tracked and shared EXCEPT these,
+# which are per-developer. See AGENTS.md.
+.claude/settings.local.json
+CLAUDE.local.md
+**/CLAUDE.local.md
+
+# Per-workstation toolchain decisions, written by the configure-dev-environment skill.
+.agents/localenv/
+
+# Worktrees a task is being carried out in, per the implement-task skill. Each one is a checkout of
+# this repository and belongs to nobody but the task that created it. The second path is where some
+# clients put one by default.
+/.worktrees/
+.claude/worktrees/
+
+# Local environment files, per the naming convention in AGENTS.md. A .env.example is a template and
+# stays tracked.
+.env
+.env.local
+.env.*.local
+
+# Working plans and ledgers, written by the plan-change skill. Sharing one means moving it and its
+# ledger into .agents/plans/, which is tracked.
+.agents/plans.local/
