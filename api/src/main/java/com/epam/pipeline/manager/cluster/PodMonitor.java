@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -46,6 +47,7 @@ import io.fabric8.kubernetes.client.KubernetesClientException;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,6 +196,9 @@ public class PodMonitor extends AbstractSchedulingManager {
                                 (status.getReason() != null &&
                                         status.getReason().equals(KubernetesConstants.NODE_LOST))) {
                             setRunFinished(run, pod, client);
+                        } else if (KubernetesConstants.POD_PENDING_PHASE.equals(status.getPhase())) {
+                            logUnschedulablePodReason(run, pod, status);
+                            continue;
                         } else {
                             // Pod is still running — skip status persistence, nothing has changed.
                             continue;
@@ -206,6 +211,32 @@ public class PodMonitor extends AbstractSchedulingManager {
             }
             LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITOR_CHECK_FINISHED));
             LOGGER.debug("Hanging pods: {}", hangingPods);
+        }
+
+        private void logUnschedulablePodReason(final PipelineRun run, final Pod pod, final PodStatus status) {
+            final Optional<String> reason = ListUtils.emptyIfNull(status.getConditions()).stream()
+                    .filter(condition -> KubernetesConstants.POD_UNSCHEDULABLE.equals(condition.getReason()))
+                    .map(PodCondition::getMessage)
+                    .filter(StringUtils::isNotBlank)
+                    .findFirst();
+
+            if (!reason.isPresent()) {
+                return;
+            }
+
+            final String selector = MapUtils.emptyIfNull(pod.getSpec().getNodeSelector())
+                    .entrySet().stream()
+                    .map(entry -> entry.getKey() + "=" + entry.getValue())
+                    .collect(Collectors.joining(", "));
+
+            final String logText = String.format("Pod for run with node selector [%s] is in " +
+                    "Unschedulable state with reason %s", selector, reason.get());
+
+            LOGGER.info("Run {} is not scheduled yet. {}", run.getId(), logText);
+
+            if (preferenceManager.getPreference(SystemPreferences.LAUNCH_UNSCHEDULABLE_POD_LOGGING_ENABLE)) {
+                saveLog(run, run.getPodId(), logText, getStatus(run, pod));
+            }
         }
 
         @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
