@@ -2,7 +2,7 @@
 name: Bug report
 about: Create a report to help improve the Cloud Pipeline
 title: ''
-labels: kind/bug
+labels: kind/bug, intel/natural 🧐
 assignees: ''
 
 ---
