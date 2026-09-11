@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-export {
-  LaunchMessages,
-  ScanStatuses} from './constants';
-
-export {default as getVersionRunningInfo} from './getVersionInfo';
-export {default as toolMatchesSearch} from './toolMatchesSearch';
+export default function toolMatchesSearch (tool, search) {
+  if (!search || !search.length) {
+    return true;
+  }
+  if (!tool) {
+    return false;
+  }
+  const query = search.toLowerCase();
+  if ((tool.image || '').toLowerCase().indexOf(query) >= 0) {
+    return true;
+  }
+  return (tool.labels || [])
+    .some(label => (label || '').toLowerCase().indexOf(query) >= 0);
+}
