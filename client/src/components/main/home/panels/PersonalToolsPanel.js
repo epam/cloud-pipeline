@@ -25,7 +25,7 @@ import ToolImage from '../../../../models/tools/ToolImage';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import LoadToolInfo from '../../../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../../../models/tools/LoadToolScanPolicy';
-import {getVersionRunningInfo} from '../../../tools/utils';
+import {getVersionRunningInfo, toolMatchesSearch} from '../../../tools/utils';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
@@ -139,13 +139,6 @@ export default class PersonalToolsPanel extends React.Component {
       result.push(personal);
     }
     return result;
-  };
-
-  searchToolFn = (tool, search) => {
-    if (!search) {
-      return true;
-    }
-    return (tool.image || '').toLowerCase().indexOf(search.toLowerCase()) >= 0;
   };
 
   @computed
@@ -731,7 +724,7 @@ export default class PersonalToolsPanel extends React.Component {
           key="cards panel"
           search={{
             placeholder: 'Search tools',
-            searchFn: this.searchToolFn
+            searchFn: toolMatchesSearch
           }}
           panelKey={this.props.panelKey}
           onClick={navigate}
