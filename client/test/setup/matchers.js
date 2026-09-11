@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,10 @@
 
 'use strict';
 
-// This is a custom Jest transformer turning style imports into empty objects.
-// http://facebook.github.io/jest/docs/tutorial-webpack.html
+// Runs in `setupFilesAfterEnv`, i.e. once `expect` exists, and registers the DOM
+// matchers: toBeInTheDocument, toBeDisabled, toHaveTextContent, toHaveValue and
+// the rest. Unit suite only — the live suite runs in `node` and has no DOM.
+//
+// At the Vitest switch this import becomes '@testing-library/jest-dom/vitest'.
 
-module.exports = {
-  process() {
-    return 'module.exports = {};';
-  },
-  getCacheKey() {
-    // The output is always the same.
-    return 'cssTransform';
-  },
-};
+require('@testing-library/jest-dom');

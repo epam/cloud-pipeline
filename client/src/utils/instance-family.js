@@ -23,15 +23,23 @@ function getAWSInstanceFamily (instanceType) {
 }
 
 function getGCPInstanceFamily (instanceType) {
-  const e = /^(?!custom)(\w+-(?!custom)\w+)-?.*/.exec(instanceType);
-  if (e && e[1]) {
-    return e[1];
-  }
-  return undefined;
+  const extractFromPattern = (pattern, extractor, ...group) => {
+    const e = pattern.exec(instanceType);
+    if (e && !group.some((g) => e[g] === undefined)) {
+      return extractor(e);
+    }
+    return undefined;
+  };
+  return extractFromPattern(/^(\w*-?custom)-\w+-\w+$/, (e) => e[1], 1) ||
+    extractFromPattern(/^(gpu-\w*-?custom)-\w+-\w+(-\w+)-\w+$/, (e) => e[1].concat(e[2]), 1, 2) ||
+    extractFromPattern(/^(\w+-\w+)-?\w*(-?\w*)/, (e) => e[1].concat(e[2]), 1, 2);
 }
 
 function getAzureInstanceFamily (instanceType) {
-  const e = /^([a-zA-Z]+)\d+(.*)/.exec(instanceType);
+  const instanceTypeCorrected = /_/.test(instanceType)
+    ? (instanceType || '').split('_').slice(1).join('')
+    : instanceType;
+  const e = /^([a-zA-Z]+)\d+(.*)/.exec(instanceTypeCorrected);
   if (e && e[1] && e[2]) {
     return e[1].concat(e[2]);
   }

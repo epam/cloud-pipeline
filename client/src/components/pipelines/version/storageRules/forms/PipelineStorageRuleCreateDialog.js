@@ -50,25 +50,36 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
     });
   };
 
+  handeOnClose = () => {
+    this.props.form.resetFields();
+  }
+
   render() {
-    const {getFieldDecorator, resetFields} = this.props.form;
+    const {getFieldDecorator} = this.props.form;
+    const {
+      visible,
+      onCancel,
+      pipelines,
+      pending,
+      pipelineId
+    } = this.props;
     const modalFooter = this.props.pending ? false : (
       <Row>
         <Button onClick={this.props.onCancel}>Cancel</Button>
         <Button type="primary" htmlType="submit" onClick={this.handleSubmit}>Create</Button>
       </Row>
     );
-    const onClose = () => {
-      resetFields();
-    };
+    const pipelineOptions = pipelines?.value || [];
     return (
-      <Modal maskClosable={!this.props.pending}
-             afterClose={() => onClose()}
-             closable={!this.props.pending}
-             visible={this.props.visible}
-             title="Create new rule"
-             onCancel={this.props.onCancel}
-             footer={modalFooter}>
+      <Modal
+        maskClosable={!pending}
+        afterClose={this.handeOnClose}
+        closable={!pending}
+        visible={visible}
+        title="Create new rule"
+        onCancel={onCancel}
+        footer={modalFooter}
+      >
         <Spin spinning={this.props.pending}>
           <Form>
             <Spin spinning={this.props.pipelines.pending}>
@@ -78,12 +89,13 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
                     rules: [{required: true, message: `Please select ${this.localizedString('pipeline')}`}],
                     initialValue: `${this.props.pipelineId}`
                   })(
-                  <Select disabled={this.props.pending || this.props.pipelineId !== undefined}>
-                    {this.props.pipelines.value &&
-                    this.props.pipelines.value.map(pipeline =>
-                      <Select.Option key={pipeline.id}
-                                     value={`${pipeline.id}`}>{pipeline.name}</Select.Option>)}
-                  </Select>
+                  <Select disabled={pending || pipelineId !== undefined}>
+                      {pipelineOptions.map(pipeline => (
+                          <Select.Option key={pipeline.id}
+                                         value={`${pipeline.id}`}>{pipeline.name}
+                          </Select.Option>
+                        ))}
+                    </Select>
                 )}
               </Form.Item>
             </Spin>
