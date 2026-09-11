@@ -112,6 +112,9 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
     );
     const isMoveToStsDisabled = getFieldValue('isResult') || pending;
     const isRuleNameRequired = Boolean(getFieldValue('isResult'));
+    // kept out of the JSX below: babel-eslint mistokenizes `?.` inside a JSX expression
+    // container, and `value` is undefined until the pipelines request resolves
+    const pipelineOptions = pipelines?.value || [];
 
     return (
       <Modal
@@ -136,7 +139,7 @@ export default class PipelineStorageRuleCreateDialog extends localization.Locali
                     initialValue: `${pipelineId}`
                   })(
                   <Select disabled={pending || pipelineId !== undefined}>
-                      {pipelines?.value.map(pipeline => (
+                      {pipelineOptions.map(pipeline => (
                           <Select.Option key={pipeline.id}
                                          value={`${pipeline.id}`}>{pipeline.name}
                           </Select.Option>
