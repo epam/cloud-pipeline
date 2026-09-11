@@ -27,8 +27,8 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -44,13 +44,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,9 +88,9 @@ public class RunLogManagerTest extends AbstractManagerTest {
 
     private static final String INIT_TASK_NAME = "InitializeEnvironment";
 
-    @Before
+    @BeforeEach
     public void setup() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         ReflectionTestUtils.setField(logManager, "consoleLogTask", CONSOLE_LOG_TASK);
         ReflectionTestUtils.setField(logManager, "initTaskName", INIT_TASK_NAME);
         ReflectionTestUtils.setField(logManager, "self", logManager);
@@ -107,7 +105,7 @@ public class RunLogManagerTest extends AbstractManagerTest {
         PipelineRun run = new PipelineRun(RUN_ID, "");
         Mockito.doReturn(run).when(runCRUDServiceMock).loadRunById(run.getId());
         Mockito.doAnswer((Answer<Void>) invocation -> {
-            final Writer writer = invocation.getArgumentAt(1, Writer.class);
+            final Writer writer = invocation.getArgument(1, Writer.class);
             writer.write("First task Log1");
             writer.write("Second task Log1");
             writer.write("First task log2");

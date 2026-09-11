@@ -75,7 +75,7 @@ public class GpuIdleRunMonitor extends AbstractIdleRunMonitor {
             return;
         }
 
-        final int idleGracePeriod = conf.getGracePeriodMinutes();
+        final int idleGracePeriod = conf.gracePeriodMinutes();
         final Map<String, PipelineRun> notProlongedRuns = filterNotProlongedRuns(running, idleGracePeriod);
         final Map<String, Double> activeGPUsByRuns = loadIdleMetrics(
                 ELKUsageMetric.GPU_AGGS, notProlongedRuns.keySet(), idleGracePeriod
@@ -89,8 +89,8 @@ public class GpuIdleRunMonitor extends AbstractIdleRunMonitor {
                 continue;
             }
             if (activeGPUs <= ZERO_USAGE_RATE) {
-                processIdleRun(run, getType(), activeGPUs, conf.getActionTimeoutMinutes(),
-                        conf.getAction(), runsToNotify, runsToUpdateTags);
+                processIdleRun(run, getType(), activeGPUs, conf.actionTimeoutMinutes(),
+                        conf.action(), runsToNotify, runsToUpdateTags);
             } else if (isIdleTagged(run, getType())) {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
                         run.getPodId(), getType().name(), activeGPUs));

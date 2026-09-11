@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.git.report;
 
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.List;
  */
 @Data
 @Builder
+@Jacksonized
 public class GitParsedDiff {
     private List<GitParsedDiffEntry> entries;
     private GitCommitsFilter filters;

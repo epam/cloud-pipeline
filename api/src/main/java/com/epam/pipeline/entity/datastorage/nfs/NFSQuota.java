@@ -16,14 +16,8 @@
 
 package com.epam.pipeline.entity.datastorage.nfs;
 
-
-import lombok.Data;
-
 import java.util.List;
 
-@Data
-public class NFSQuota {
-
-    private final List<NFSQuotaNotificationEntry> notifications;
-    private final List<NFSQuotaNotificationRecipient> recipients;
+public record NFSQuota(List<NFSQuotaNotificationEntry> notifications,
+                       List<NFSQuotaNotificationRecipient> recipients) {
 }

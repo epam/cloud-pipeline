@@ -20,7 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Mockito.mock;

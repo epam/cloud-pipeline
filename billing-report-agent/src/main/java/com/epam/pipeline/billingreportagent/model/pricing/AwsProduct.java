@@ -17,10 +17,12 @@
 package com.epam.pipeline.billingreportagent.model.pricing;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class AwsProduct {
 
     private String productFamily;

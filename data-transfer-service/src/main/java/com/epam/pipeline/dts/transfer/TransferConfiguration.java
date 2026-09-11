@@ -17,7 +17,6 @@
 package com.epam.pipeline.dts.transfer;
 
 import com.epam.pipeline.dts.security.service.SecurityService;
-import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
 import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.service.CmdExecutorsProvider;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
@@ -37,14 +36,9 @@ import com.epam.pipeline.dts.transfer.service.impl.TransferServiceImpl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.stereotype.Controller;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -52,12 +46,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@SpringBootConfiguration
-@EntityScan(basePackages = {"com.epam.pipeline.dts.transfer.model"})
-@EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.transfer.repository"})
-@ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = TransferRestConfiguration.class),
-        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
+@Configuration
 public class TransferConfiguration {
 
     @Bean
@@ -109,22 +98,22 @@ public class TransferConfiguration {
         return new GSDataUploader(pipelineCliProvider);
     }
 
-    @Bean
+    @Bean("transferService")
     @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
-    public TransferService transferService(final TaskService taskService,
-                                           final @Qualifier("commonDataUploaderProviderManager")
-                                               DataUploaderProviderManager providerManager,
-                                           final SecurityService securityService,
-                                           @Value("${dts.impersonation.name.metadata.key}")
-                                               final String dtsNameMetadataKey) {
+    public TransferService impersonatingTransferService(final TaskService taskService,
+                                                        final @Qualifier("commonDataUploaderProviderManager")
+                                                            DataUploaderProviderManager providerManager,
+                                                        final SecurityService securityService,
+                                                        @Value("${dts.impersonation.name.metadata.key}")
+                                                            final String dtsNameMetadataKey) {
         return new ImpersonatingTransferServiceImpl(taskService, providerManager, securityService, dtsNameMetadataKey);
     }
 
-    @Bean
+    @Bean("transferService")
     @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "false")
-    public TransferService transferService(final TaskService taskService,
-                                           final @Qualifier("commonDataUploaderProviderManager")
-                                               DataUploaderProviderManager providerManager) {
+    public TransferService plainTransferService(final TaskService taskService,
+                                                final @Qualifier("commonDataUploaderProviderManager")
+                                                    DataUploaderProviderManager providerManager) {
         return new TransferServiceImpl(taskService, providerManager);
     }
 

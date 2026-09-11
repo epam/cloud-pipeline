@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.scan.clair.v4;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class ClairIndexRequestLayer {
     private String hash;
     private String uri;

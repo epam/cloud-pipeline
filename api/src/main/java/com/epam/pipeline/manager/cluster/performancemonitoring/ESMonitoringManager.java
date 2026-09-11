@@ -161,11 +161,11 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         final Duration minDuration = minimalDuration();
         final Duration adjustedDuration = interval.compareTo(minDuration) < 0
-                                          ? minDuration
-                                          : interval;
+                ? minDuration
+                : interval;
         final AbstractMonitoringStatsWriter statsWriter = Optional.ofNullable(statsWriters.get(type))
-            .orElseThrow(() -> new IllegalArgumentException(
-                messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE)));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_UNSUPPORTED_STATS_FILE_TYPE)));
         return statsWriter.convertStatsToFile(getStats(nodeName, start, end, adjustedDuration, runId));
     }
 
@@ -348,7 +348,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     private Optional<MonitoringStats> statsWithinRegion(final MonitoringStats stats, final LocalDateTime regionStart,
-                                              final LocalDateTime regionEnd, final Duration interval) {
+                                                        final LocalDateTime regionEnd, final Duration interval) {
         final LocalDateTime intervalStart = asMonitoringDateTime(stats.getStartTime());
         final LocalDateTime intervalEnd = intervalStart.plus(interval);
         final LocalDateTime start = intervalStart.isAfter(regionStart) ? intervalStart : regionStart;

@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineCRUDManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -73,6 +74,9 @@ public class JdbcTestBeans {
 
     @MockBean
     protected FolderManager mockFolderManager;
+
+    @MockBean
+    protected FolderCrudManager mockFolderCrudManager;
 
     @MockBean
     protected MetadataManager mockMetadataManager;

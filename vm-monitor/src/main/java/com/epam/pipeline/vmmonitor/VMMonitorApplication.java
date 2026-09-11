@@ -30,9 +30,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 @SpringBootApplication
 @EnableScheduling
 @EnableAutoConfiguration(exclude = {
-        DataSourceAutoConfiguration.class,
-        DataSourceTransactionManagerAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class})
+    DataSourceAutoConfiguration.class,
+    DataSourceTransactionManagerAutoConfiguration.class,
+    HibernateJpaAutoConfiguration.class})
 public class VMMonitorApplication {
 
     private static final int SCHEDULED_TASKS_POOL_SIZE = 1;

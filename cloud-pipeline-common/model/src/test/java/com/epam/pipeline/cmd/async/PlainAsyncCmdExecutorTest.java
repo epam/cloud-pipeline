@@ -16,30 +16,30 @@
 
 package com.epam.pipeline.cmd.async;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import com.epam.pipeline.cmd.CmdExecutionException;
 import com.epam.pipeline.cmd.CmdExecutor;
+import org.apache.commons.io.IOUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
-public class PlainAsyncCmdExecutorTest {
+class PlainAsyncCmdExecutorTest {
 
     private static final int OK_EXIT_CODE = 0;
     private static final int BAD_EXIT_CODE = 1;
@@ -55,38 +55,38 @@ public class PlainAsyncCmdExecutorTest {
     private final CmdExecutor innerCmdExecutor = mock(CmdExecutor.class);
     private final AsyncCmdExecutor asyncCmdExecutor = new PlainAsyncCmdExecutor(executor, innerCmdExecutor);
 
-    @Before
-    public void setUp() throws InterruptedException {
+    @BeforeEach
+    void setUp() throws InterruptedException {
         when(process.waitFor()).thenReturn(OK_EXIT_CODE);
         when(process.isAlive()).thenReturn(false);
-        when(process.getInputStream()).thenReturn(IOUtils.toInputStream(STD_OUT));
-        when(process.getErrorStream()).thenReturn(IOUtils.toInputStream(STD_ERR));
+        when(process.getInputStream()).thenReturn(IOUtils.toInputStream(STD_OUT, StandardCharsets.UTF_8));
+        when(process.getErrorStream()).thenReturn(IOUtils.toInputStream(STD_ERR, StandardCharsets.UTF_8));
         when(innerCmdExecutor.launchCommand(eq(COMMAND), any(), any())).thenReturn(process);
     }
 
     @Test
-    public void executorShouldDelegateCallToInnerExecutor() {
+    void executorShouldDelegateCallToInnerExecutor() {
         asyncCmdExecutor.launchCommand(COMMAND).get();
 
         verify(innerCmdExecutor).launchCommand(eq(COMMAND), eq(Collections.emptyMap()), eq(null));
     }
 
     @Test
-    public void executorShouldCollectProcessStdOutAsResult() {
-        final String actualOut = asyncCmdExecutor.launchCommand(COMMAND).get();
+    void executorShouldCollectProcessStdOutAsResult() {
+        String actualOut = asyncCmdExecutor.launchCommand(COMMAND).get();
 
         assertThat(actualOut, is(STD_OUT + LINE_BREAK));
     }
 
     @Test
-    public void executorShouldCollectProcessStdErrAsExceptionContentOnFailure() throws InterruptedException {
+    void executorShouldCollectProcessStdErrAsExceptionContentOnFailure() throws InterruptedException {
         when(process.waitFor()).thenReturn(BAD_EXIT_CODE);
-        final Throwable throwable = asyncCmdExecutor.launchCommand(COMMAND).with(exceptionallyResult()).get();
+        Throwable throwable = asyncCmdExecutor.launchCommand(COMMAND).with(exceptionallyResult()).get();
         assertThat(throwable.getMessage(), containsString(STD_ERR + LINE_BREAK));
     }
 
     @Test
-    public void cancelShouldKillUnderlyingProcess() throws InterruptedException, IOException {
+    void cancelShouldKillUnderlyingProcess() throws InterruptedException, IOException {
         final Process process = Runtime.getRuntime().exec(SLEEP_5);
         when(innerCmdExecutor.launchCommand(eq(COMMAND), any(), any()))
                 .thenReturn(process);

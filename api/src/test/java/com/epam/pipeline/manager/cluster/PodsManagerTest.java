@@ -27,8 +27,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.cluster.KubernetesCreatorUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,7 +54,7 @@ public class PodsManagerTest {
     private final KubernetesClient kubernetesClient = mock(KubernetesClient.class);
     private final PodsManager manager = new PodsManager(kubernetesManager, mapper, preferenceManager);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(CORE_LABEL).when(preferenceManager).getPreference(SystemPreferences.CLUSTER_KUBE_CORE_COMPONENT_LABEL);
     }

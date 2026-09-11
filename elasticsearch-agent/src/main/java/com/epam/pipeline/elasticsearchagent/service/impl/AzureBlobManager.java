@@ -123,7 +123,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     }
 
     @RequiredArgsConstructor
-    private static class AzureFlatSegmentIterator implements Iterator<ContainerListBlobFlatSegmentResponse> {
+    private static final class AzureFlatSegmentIterator implements Iterator<ContainerListBlobFlatSegmentResponse> {
 
         private final ContainerURL container;
         private final String path;

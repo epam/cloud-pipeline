@@ -3,6 +3,7 @@ package com.epam.pipeline.entity.billing;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
@@ -11,6 +12,7 @@ import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class StorageBilling implements PeriodBilling<StorageBillingMetrics> {
 
     Long id;

@@ -18,12 +18,14 @@ package com.epam.pipeline.billingreportagent.model.pricing;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class AwsPriceRate {
 
     private String unit;

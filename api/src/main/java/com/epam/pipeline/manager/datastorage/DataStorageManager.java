@@ -829,9 +829,9 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<DataStorageTagSearchResult> searchDataStorageItemByTag(final DataStorageObjectSearchByTagRequest req) {
-        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.getDatastorageIds()));
+        final Set<Long> requestedStorageIds = new HashSet<>(CollectionUtils.emptyIfNull(req.datastorageIds()));
         final Map<Long, List<DataStorageTag>> searchTagsResult =
-                tagProviderManager.search(getDatastoragesByIds(req.getDatastorageIds()), req.getTags());
+                tagProviderManager.search(getDatastoragesByIds(req.datastorageIds()), req.tags());
 
         if (MapUtils.isNotEmpty(searchTagsResult)) {
             // by tagProviderManager.search we found tags for datastorage_root, and now we need to map it on
@@ -847,15 +847,15 @@ public class DataStorageManager implements SecuredEntityManager {
                 (rootId, tags) -> tags.forEach(
                     rootTag -> storagesByRootId.getOrDefault(rootId, Collections.emptyList())
                         .stream()
-                        .filter(dataStorage -> rootTag.getObject().getPath().startsWith(dataStorage.getPrefix()))
+                        .filter(dataStorage -> rootTag.object().path().startsWith(dataStorage.getPrefix()))
                         .max(Comparator.comparingInt(s -> s.getPrefix().length()))
                         .ifPresent(dataStorage -> {
                             final DataStorageTag storageTag = new DataStorageTag(
                                 new DataStorageObject(
-                                        dataStorage.resolveRelativePath(rootTag.getObject().getPath()),
-                                        rootTag.getObject().getVersion()
+                                        dataStorage.resolveRelativePath(rootTag.object().path()),
+                                        rootTag.object().version()
                                 ),
-                                rootTag.getKey(), rootTag.getValue()
+                                rootTag.key(), rootTag.value()
                             );
                             results.computeIfAbsent(dataStorage.getId(), (id) -> new ArrayList<>()).add(storageTag);
                         })
@@ -939,9 +939,9 @@ public class DataStorageManager implements SecuredEntityManager {
         return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_QUOTAS_SKIPPED_PATHS))
             .orElse(Collections.emptyList())
             .stream()
-            .collect(Collectors.groupingBy(StorageFileSearchMask::getStorageName,
+            .collect(Collectors.groupingBy(StorageFileSearchMask::storageName,
                                            Collector.of(HashSet::new,
-                                               (set, mask) -> set.addAll(mask.getHiddenFilePathGlobs()),
+                                               (set, mask) -> set.addAll(mask.hiddenFilePathGlobs()),
                                                (left, right) -> {
                                                    left.addAll(right);
                                                    return left;

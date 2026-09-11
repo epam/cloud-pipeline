@@ -19,6 +19,7 @@ package com.epam.pipeline.cmd.async;
 import com.epam.pipeline.cmd.CmdExecutionException;
 import com.epam.pipeline.cmd.CmdExecutor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InaccessibleObjectException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
@@ -80,12 +81,16 @@ public class ProcessGroupExecution<T> extends SingleProcessExecution<T> {
     }
 
     private long getProcessPid(final Process process) throws ReflectiveOperationException {
-        final Field field = process.getClass().getDeclaredField("pid");
-        synchronized (field) {
-            field.setAccessible(true);
-            final long pid = field.getLong(process);
-            field.setAccessible(false);
-            return pid;
+        try {
+            final Field field = process.getClass().getDeclaredField("pid");
+            synchronized (field) {
+                field.setAccessible(true);
+                final long pid = field.getLong(process);
+                field.setAccessible(false);
+                return pid;
+            }
+        } catch (InaccessibleObjectException ex) {
+            return process.pid();
         }
     }
 

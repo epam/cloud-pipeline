@@ -18,6 +18,7 @@ package com.epam.pipeline.monitor.model.node;
 
 import com.epam.pipeline.entity.reporter.NodeReporterGpuUsages;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ import java.util.Map;
 
 @Data
 @Builder
+@Jacksonized
 public class GpuUsages {
     /**
      * Usages by GPU card

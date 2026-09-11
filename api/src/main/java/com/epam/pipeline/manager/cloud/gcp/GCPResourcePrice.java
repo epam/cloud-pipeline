@@ -16,10 +16,5 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import lombok.Value;
-
-@Value
-public class GCPResourcePrice {
-    private final GCPResourceRequest request;
-    private final long nanos;
+public record GCPResourcePrice(GCPResourceRequest request, long nanos) {
 }

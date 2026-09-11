@@ -23,9 +23,12 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 RUN yum install -y \
                 wget \
                 curl \
-                java-1.8.0-openjdk \
                 python \
                 unzip
+
+# OpenJDK upstream does not publish JDK 21 packages for CentOS/RHEL 7; use Amazon Corretto (OpenJDK-based) which does.
+RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
+    yum install -y java-21-amazon-corretto-devel
 
 ENV CP_VM_MONITOR_HOME="/opt/vm-monitor" \
     CP_VM_MONITOR_TEMPLATES_LOCATION="${CP_VM_MONITOR_HOME}/templates"
@@ -34,7 +37,8 @@ RUN mkdir -p $CP_VM_MONITOR_HOME
 ADD config $CP_VM_MONITOR_HOME/config
 
 ADD init /init
-RUN chmod +x /init                
+RUN chmod +x /init
+
 # API distribution
 ARG CP_API_DIST_URL=""
 RUN cd /tmp && \

@@ -18,18 +18,9 @@ package com.epam.pipeline.dts.submission;
 
 import com.epam.pipeline.cmd.CmdExecutor;
 import com.epam.pipeline.cmd.PlainCmdExecutor;
-import com.epam.pipeline.dts.configuration.CommonConfiguration;
-import com.epam.pipeline.dts.security.JWTSecurityConfiguration;
-import com.epam.pipeline.dts.submission.configuration.SubmissionRestConfiguration;
-import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Import;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.stereotype.Controller;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.FileTemplateResolver;
@@ -38,13 +29,7 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 /**
  * Module for work with SGE jobs
  */
-@SpringBootConfiguration
-@EntityScan(basePackages = {"com.epam.pipeline.dts.submission.model"})
-@EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.submission.repository"})
-@ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = SubmissionRestConfiguration.class),
-        @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
-@Import({JWTSecurityConfiguration.class, CommonConfiguration.class})
+@Configuration
 @EnableScheduling
 public class SubmissionConfiguration {
 

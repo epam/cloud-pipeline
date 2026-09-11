@@ -17,16 +17,18 @@
 package com.epam.pipeline;
 
 import com.epam.pipeline.app.TestApplication;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = TestApplication.class, properties = {"server.ssl.enabled=false"})
 @TestPropertySource(locations="classpath:test-application.properties")
 @ContextConfiguration(classes = TestApplication.class)
+//@EnableJpaRepositories(basePackages = {"com.epam.pipeline", "com.epam.pipeline.dao.monitoring"})
+//@EntityScan(basePackages = {"com.epam.pipeline"})
 public abstract class AbstractSpringTest {
 }

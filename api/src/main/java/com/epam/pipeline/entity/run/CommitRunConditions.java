@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.run;
 import com.epam.pipeline.entity.utils.ConditionCheck;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CommitRunConditions {
     private ConditionCheck<Boolean> enoughSpace;

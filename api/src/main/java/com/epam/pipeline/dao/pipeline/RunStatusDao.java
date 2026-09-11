@@ -21,7 +21,7 @@ import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.transaction.annotation.Propagation;
@@ -108,32 +108,26 @@ public class RunStatusDao extends DryRunJdbcDaoSupport {
 
     }
 
-    @Required
     public void setCreateRunStatusQuery(final String createRunStatusQuery) {
         this.createRunStatusQuery = createRunStatusQuery;
     }
 
-    @Required
     public void setLoadRunStatusQuery(final String loadRunStatusQuery) {
         this.loadRunStatusQuery = loadRunStatusQuery;
     }
 
-    @Required
     public void setLoadRunStatusByListQuery(final String loadRunStatusByListQuery) {
         this.loadRunStatusByListQuery = loadRunStatusByListQuery;
     }
 
-    @Required
     public void setDeleteRunStatusQuery(final String deleteRunStatusQuery) {
         this.deleteRunStatusQuery = deleteRunStatusQuery;
     }
 
-    @Required
     public void setDeleteRunStatusByIdsQuery(final String deleteRunStatusByIdsQuery) {
         this.deleteRunStatusByIdsQuery = deleteRunStatusByIdsQuery;
     }
 
-    @Required
     public void setLoadRunStatusByListWithArchivedQuery(final String loadRunStatusByListWithArchivedQuery) {
         this.loadRunStatusByListWithArchivedQuery = loadRunStatusByListWithArchivedQuery;
     }

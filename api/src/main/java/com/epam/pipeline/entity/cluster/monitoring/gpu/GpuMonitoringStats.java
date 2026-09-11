@@ -19,11 +19,13 @@ package com.epam.pipeline.entity.cluster.monitoring.gpu;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class GpuMonitoringStats {
     private MonitoringStats global;
     private List<MonitoringStats> charts;

@@ -35,7 +35,7 @@ abstract class AbstractContextualPreferenceHandler implements ContextualPreferen
 
     @Override
     public boolean isValid(final ContextualPreference preference) {
-        return preference.getResource().getLevel() == level
+        return preference.resource().level() == level
                 ? externalEntityExists(preference)
                 : validateUsingNextHandler(preference).orElse(false);
     }

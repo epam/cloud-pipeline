@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -27,6 +28,7 @@ import java.util.List;
  * Corresponding model step type is {@link ModelStepType#MODEL}.
  */
 @Data
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = false)
 public class RModelStepParameters extends AbstractStepParameters {
 

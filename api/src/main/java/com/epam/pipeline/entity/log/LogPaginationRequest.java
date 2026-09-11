@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.entity.log;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Class that contains information about ElasticSearch result page parameters.
@@ -26,6 +28,8 @@ import lombok.Data;
  * */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class LogPaginationRequest {
     private PageMarker token;
     private Integer pageSize;

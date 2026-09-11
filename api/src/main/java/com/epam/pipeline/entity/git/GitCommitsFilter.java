@@ -18,12 +18,14 @@ package com.epam.pipeline.entity.git;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class GitCommitsFilter {
     List<String> authors;
     String path;

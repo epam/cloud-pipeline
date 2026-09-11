@@ -46,6 +46,6 @@ public class UserContextualPreferenceHandler extends AbstractDaoContextualPrefer
 
     @Override
     public boolean externalEntityExists(final ContextualPreference preference) {
-        return userDao.loadUserById(Long.valueOf(preference.getResource().getResourceId())) != null;
+        return userDao.loadUserById(Long.valueOf(preference.resource().resourceId())) != null;
     }
 }

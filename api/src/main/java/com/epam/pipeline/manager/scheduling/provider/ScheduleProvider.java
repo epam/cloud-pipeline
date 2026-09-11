@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import org.quartz.CronExpression;
+import org.quartz.Job;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -51,7 +52,7 @@ public interface ScheduleProvider {
 
     void verifySchedulable(Long schedulableId);
 
-    Class<?> getScheduleJobClass();
+    Class<? extends Job> getScheduleJobClass();
 
     MessageHelper getMessageHelper();
 

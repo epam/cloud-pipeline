@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
  * */
 @Data
 @Builder
+@Jacksonized
 @ToString
 public class RunContainerSpec {
 
@@ -102,6 +104,7 @@ public class RunContainerSpec {
      * */
     @Value
     @Builder
+    @Jacksonized
     @ToString
     public static class PodAssignSelector {
         String label;
@@ -129,6 +132,7 @@ public class RunContainerSpec {
      * */
     @Value
     @Builder
+    @Jacksonized
     @ToString
     public static class PodAssignTolerance {
         String label;

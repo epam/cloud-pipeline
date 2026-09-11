@@ -16,10 +16,12 @@
 package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class ParameterPoolInstanceFilter implements MapInstanceFilter {
 
     private PoolInstanceFilterOperator operator;

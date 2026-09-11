@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

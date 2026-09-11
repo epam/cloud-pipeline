@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.log;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class LogRequest {
     private LogFilter filter;
     private String groupBy;

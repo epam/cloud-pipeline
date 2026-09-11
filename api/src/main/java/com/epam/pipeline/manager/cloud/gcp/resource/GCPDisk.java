@@ -59,7 +59,7 @@ public class GCPDisk extends AbstractGCPObject {
     @Override
     public long totalPrice(final List<GCPResourcePrice> prices) {
         return prices.stream()
-                .mapToLong(GCPResourcePrice::getNanos)
+                .mapToLong(GCPResourcePrice::nanos)
                 .sum();
     }
 

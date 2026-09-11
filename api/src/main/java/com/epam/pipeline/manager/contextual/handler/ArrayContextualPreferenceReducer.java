@@ -35,7 +35,7 @@ public class ArrayContextualPreferenceReducer implements ContextualPreferenceRed
             return Optional.empty();
         }
         final String mergedValue = preferences.stream()
-                .map(ContextualPreference::getValue)
+                .map(ContextualPreference::value)
                 .flatMap(instanceTypes -> Arrays.stream(instanceTypes.split(DELIMITER)))
                 .distinct()
                 .collect(Collectors.joining(DELIMITER));

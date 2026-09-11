@@ -65,12 +65,13 @@ import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
-import javax.annotation.PostConstruct;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -95,7 +96,7 @@ import static com.epam.pipeline.manager.preference.AbstractSystemPreference.Stri
  */
 @Service
 @Slf4j
-public class AggregatingToolScanManager implements ToolScanManager {
+public class AggregatingToolScanManager implements ToolScanManager, InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingToolScanManager.class);
 
@@ -130,8 +131,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
     private ClairClient clairService;
     private DockerComponentScanService dockerComponentService;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         initClients();
         Arrays.asList(
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED,

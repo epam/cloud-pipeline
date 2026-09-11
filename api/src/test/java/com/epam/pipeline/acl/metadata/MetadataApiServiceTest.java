@@ -34,7 +34,7 @@ import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
@@ -52,7 +52,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_SET;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class MetadataApiServiceTest extends AbstractAclTest {

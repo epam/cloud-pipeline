@@ -18,8 +18,7 @@ package com.epam.pipeline.manager.search;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
@@ -31,6 +30,7 @@ import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.ROLE_USER
 import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.SPECIES;
 import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.getFacetedSearchExportRequest;
 import static com.epam.pipeline.test.creator.search.SearchCreatorUtils.getFacetedSearchResult;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SearchResultExportManagerTest extends AbstractSpringTest {
 
@@ -47,10 +47,10 @@ public class SearchResultExportManagerTest extends AbstractSpringTest {
                 null);
         final String[] exportedCsv = new String(
                 searchResultExportManager.export(facetedSearchExportRequest, facetedSearchResult)).split("\n");
-        Assert.assertNotNull(exportedCsv);
-        Assert.assertEquals(2, exportedCsv.length);
-        Assert.assertEquals(PLAIN_HEADER, exportedCsv[0]);
-        Assert.assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(TEST_STRING)));
+        assertNotNull(exportedCsv);
+        assertEquals(2, exportedCsv.length);
+        assertEquals(PLAIN_HEADER, exportedCsv[0]);
+        assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(TEST_STRING)));
     }
 
     @Test
@@ -60,9 +60,9 @@ public class SearchResultExportManagerTest extends AbstractSpringTest {
                 SPECIES);
         final String[] exportedCsv = new String(
                 searchResultExportManager.export(facetedSearchExportRequest, facetedSearchResult)).split("\n");
-        Assert.assertNotNull(exportedCsv);
-        Assert.assertEquals(3, exportedCsv.length);
-        Assert.assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
-        Assert.assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(ROLE_USER) && s.contains(HUMAN)));
+        assertNotNull(exportedCsv);
+        assertEquals(3, exportedCsv.length);
+        assertEquals(HEADER_WITH_ATTRIBUTE, exportedCsv[0]);
+        assertTrue(Arrays.stream(exportedCsv).anyMatch(s -> s.contains(ROLE_USER) && s.contains(HUMAN)));
     }
 }

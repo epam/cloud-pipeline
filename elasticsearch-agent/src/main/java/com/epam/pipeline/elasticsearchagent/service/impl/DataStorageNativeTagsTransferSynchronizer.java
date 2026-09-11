@@ -91,7 +91,7 @@ public class DataStorageNativeTagsTransferSynchronizer implements ElasticsearchS
                                 file.getPath(), file.getVersion(), e.getKey(), e.getValue()));
         return BooleanUtils.toBoolean(MapUtils.emptyIfNull(file.getLabels()).get("LATEST"))
                 ? dataStorageTagInsertRequestStream.flatMap(r -> Stream.of(r,
-                new DataStorageTagUpsertRequest(r.getPath(), null, r.getKey(), r.getValue())))
+                    new DataStorageTagUpsertRequest(r.getPath(), null, r.getKey(), r.getValue())))
                 : dataStorageTagInsertRequestStream;
     }
 

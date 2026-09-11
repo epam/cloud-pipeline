@@ -43,7 +43,7 @@ public class NotificationPermissionManager {
     }
 
     public boolean hasPermission(final Long notificationId) {
-        final UserNotificationEntity userNotification = repository.findOne(notificationId);
+        final UserNotificationEntity userNotification = repository.findById(notificationId).orElse(null);
         if (userNotification == null) {
             return false;
         }

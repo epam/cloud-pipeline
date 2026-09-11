@@ -18,9 +18,11 @@ package com.epam.pipeline.entity.git.report;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 public class VersionStorageReportFile {
     String name;
     byte[] content;

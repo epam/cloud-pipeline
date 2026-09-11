@@ -37,7 +37,6 @@ import RunTags from '../../runs/run-tags';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import MultizoneUrl from '../../special/multizone-url';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 const icons = {
@@ -172,12 +171,6 @@ export default class PipelineRunPreview extends React.Component {
   }
 
   @computed
-  get isFireCloudEnvironment () {
-    return this.props.runInfo.loaded && this.props.runInfo.value.executionPreferences &&
-      this.props.runInfo.value.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
-  }
-
-  @computed
   get dtsList () {
     if (this.props.dtsList.loaded) {
       return (this.props.dtsList.value || []).map(i => i);
@@ -190,8 +183,6 @@ export default class PipelineRunPreview extends React.Component {
     if (this.isDtsEnvironment) {
       const dts = this.dtsList.filter(dts => dts.id === run.executionPreferences.dtsId)[0];
       environment = dts ? `${dts.name}` : `${run.executionPreferences.dtsId}`;
-    } else if (this.isFireCloudEnvironment) {
-      environment = 'FireCloud';
     } else {
       environment = this.props.preferences.deploymentName || 'EPAM Cloud Pipeline';
     }

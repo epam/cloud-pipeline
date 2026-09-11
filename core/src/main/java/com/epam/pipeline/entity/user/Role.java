@@ -25,16 +25,16 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.SequenceGenerator;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.SequenceGenerator;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.io.Serializable;
 import java.util.List;
 
@@ -51,7 +51,7 @@ public class Role extends AbstractSecuredEntity implements StorageContainer, Ser
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "role_generator")
-    @SequenceGenerator(name="role_generator", sequenceName = "s_role", schema = "pipeline")
+    @SequenceGenerator(name="role_generator", sequenceName = "s_role", schema = "pipeline", allocationSize = 1)
     private Long id;
 
     private String name;

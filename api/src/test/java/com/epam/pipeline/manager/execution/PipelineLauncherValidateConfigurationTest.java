@@ -6,16 +6,19 @@ import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.security.AuthManager;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 
 import java.util.Collections;
 
-@RunWith(MockitoJUnitRunner.class)
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+
+@ExtendWith(MockitoExtension.class)
 @SuppressWarnings("PMD.UnusedPrivateField")
 public class PipelineLauncherValidateConfigurationTest {
 
@@ -48,15 +51,15 @@ public class PipelineLauncherValidateConfigurationTest {
         pipelineLauncher.validateLaunchConfiguration(configuration);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void checkRunLaunchWithKubeServiceAccIsForbiddenForSimpleUser() {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
         configuration.setKubeServiceAccount(KUBE_SERVICE_ACCOUNT);
-        pipelineLauncher.validateLaunchConfiguration(configuration);
+        assertThrows(IllegalStateException.class, () -> pipelineLauncher.validateLaunchConfiguration(configuration));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void checkRunLaunchWithAdvancedRunAssignPolicyIsForbiddenForSimpleUser() {
         Mockito.doReturn(PipelineUser.builder().admin(false).build()).when(authManager).getCurrentUser();
         final PipelineConfiguration configuration = new PipelineConfiguration();
@@ -71,7 +74,7 @@ public class PipelineLauncherValidateConfigurationTest {
                                         .value(VALUE).build()))
                         .build()
         );
-        pipelineLauncher.validateLaunchConfiguration(configuration);
+        assertThrows(IllegalStateException.class, () -> pipelineLauncher.validateLaunchConfiguration(configuration));
     }
 
     @Test

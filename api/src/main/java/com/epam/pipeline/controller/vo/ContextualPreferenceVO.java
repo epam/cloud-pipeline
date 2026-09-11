@@ -18,12 +18,10 @@ package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.preference.PreferenceType;
-import lombok.Value;
 
-@Value
-public class ContextualPreferenceVO {
-    private final String name;
-    private final String value;
-    private final PreferenceType type;
-    private final ContextualPreferenceExternalResource resource;
+public record ContextualPreferenceVO(
+        String name,
+        String value,
+        PreferenceType type,
+        ContextualPreferenceExternalResource resource) {
 }

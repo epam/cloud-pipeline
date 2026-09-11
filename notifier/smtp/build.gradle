@@ -1,91 +1,103 @@
-
-buildscript {
-    repositories { mavenCentral() }
-}
-
 plugins {
     id 'java'
-    id 'org.springframework.boot' version "1.5.2.RELEASE"
-    id "io.spring.dependency-management" version "1.0.0.RELEASE"
-    id "org.sonarqube" version "2.6.1"
+    id 'org.springframework.boot' version '3.3.13'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.sonarqube' version '2.6.1'
 }
+
 group 'com.epam.pipeline'
 
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
 
 repositories {
     mavenCentral()
 }
 
-ext { springBootVersion = '1.5.2.RELEASE' }
-
-// Azure SDK (azure-core 1.5x+) requires Jackson 2.10+ (e.g. com.fasterxml.jackson.databind.cfg.MapperBuilder).
-// :core and Spring Boot 1.5 still pull Jackson 2.8.x; force a single aligned stack for this module only.
-ext.jacksonVersionForAzure = '2.10.5'
-
-// Microsoft Kiota JSON (microsoft-graph) calls JsonParser.parseReader(Reader); that API exists from Gson 2.8.6+.
-// Spring Boot 1.5 BOM still resolves an older Gson; pin a current 2.x line for this module.
-ext.gsonVersionForGraph = '2.10.1'
-
-// This part resolves transitive dependencies:
-configurations.all {
-    resolutionStrategy.eachDependency { details ->
-        if (details.requested.group?.startsWith('com.fasterxml.jackson')) {
-            details.useVersion jacksonVersionForAzure
-            details.because('Azure SDK / Graph require Jackson 2.10+; align on 2.10.5 minimum; :core still references 2.8.x')
-        }
-        if (details.requested.group == 'com.google.code.gson' && details.requested.name == 'gson') {
-            details.useVersion gsonVersionForGraph
-            details.because('Microsoft Kiota / Graph require Gson with JsonParser.parseReader(Reader)')
-        }
-    }
+ext {
+    springBootVersion = '3.3.13'
 }
 
-dependencies {
-    // Spring Boot
-    configurations {
-        all*.exclude module : 'spring-boot-starter-logging'
-    }
-    compile project(':core')
+configurations {
+    all*.exclude module: 'spring-boot-starter-logging'
+    all*.exclude group: 'commons-logging', module: 'commons-logging'
+}
 
-    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.16'
+// NOTE: on the legacy Spring Boot 1.5 build, this spot used to host:
+//   ext.jacksonVersionForAzure = '2.10.5'
+//   ext.gsonVersionForGraph    = '2.10.1'
+//   configurations.all { resolutionStrategy.eachDependency { ... } }
+// That block force-bumped Jackson and Gson because the Spring Boot 1.5 BOM pinned them
+// at versions too old for the Azure SDK (needs Jackson 2.10+ for MapperBuilder) and
+// Microsoft Graph (needs Gson 2.8.6+ for JsonParser.parseReader(Reader)).
+//
+// The Spring Boot 3.5.3 BOM already resolves Jackson 2.18.x and Gson 2.11+, well above
+// what Azure/Graph require. Re-applying the override here would DOWNGRADE those libraries
+// and break compatibility with the rest of the 3.x stack, so the block is intentionally
+// not carried over.
 
-    // Logging
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
-    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
-
-    //DB
-    compile group: 'org.postgresql', name: 'postgresql', version: '42.7.3'
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jacksonVersionForAzure
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersionForAzure
-    compile group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310', version: jacksonVersionForAzure
-    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: jacksonVersionForAzure
-    compile('org.springframework.boot:spring-boot-starter-data-jpa')
-    compile group: 'com.zaxxer', name: 'HikariCP', version: '3.2.0'
-    compile group: 'org.hibernate', name: 'hibernate-java8', version: '5.0.12.Final'
-
-    //Email notifications
-    compile group: 'org.apache.commons', name: 'commons-email', version: '1.5'
-    compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
-    compile group: 'org.apache.velocity', name: 'velocity-tools', version: '2.0'
-
-    // Azure
-    compile group: 'com.google.code.gson', name: 'gson', version: gsonVersionForGraph
-    // azure-identity uses Reactor at runtime; keep explicit so it is not dropped from the classpath
-    compile group: 'io.projectreactor', name: 'reactor-core', version: '3.4.34'
-    compile group: 'com.azure', name: 'azure-identity', version: '1.18.2'
-    compile group: 'com.microsoft.graph', name: 'microsoft-graph', version: '6.62.0'
-
-    //Tests
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-    testCompile group: 'com.h2database', name: 'h2', version: '1.4.197'
-    testCompile group: 'com.icegreen', name: 'greenmail', version: '1.5.7'
-    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: project.ext.springBootVersion
+bootJar {
+    archiveFileName = 'notifier.jar'
 }
 
 jar {
-    archiveName "notifier.jar"
+    enabled = false
+}
+
+dependencies {
+
+    // Spring Boot
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation project(':core')
+
+    // DB
+    implementation 'org.postgresql:postgresql:42.7.3'
+    implementation 'com.zaxxer:HikariCP:3.2.0'  // версия можно убрать — BOM Spring Boot 3.5 даёт HikariCP 5.x
+
+    implementation 'org.apache.commons:commons-collections4:4.0'
+
+    // Jackson
+
+    // Do NOT pin versions: everything is managed by the Spring Boot 3.5 BOM (2.18.x).
+    // The old '2.8.7' pins were removed — they were incompatible with Spring Boot 3.
+    // jackson-annotations and jackson-databind come in transitively via
+    // spring-boot-starter-data-jpa, no need to declare them explicitly.
+
+    // Java 8+ date/time support (Instant, LocalDate, ...)
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    // Keep ONLY if notifier actually parses/produces XML; otherwise remove.
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
+
+    //Email notifications
+    implementation 'org.apache.commons:commons-email:1.5'
+    implementation 'org.apache.velocity:velocity:1.7'
+    implementation 'org.apache.velocity:velocity-tools:2.0'
+
+    // Azure
+    implementation 'com.azure:azure-identity:1.18.2'
+    implementation 'com.microsoft.graph:microsoft-graph:6.62.0'
+    // gson version is supplied by the Spring Boot BOM (2.11+); Microsoft Graph (Kiota)
+    // only requires 2.8.6+, so the BOM version is sufficient. If microsoft-graph already
+    // pulls it in transitively, this line can be removed.
+    implementation 'com.google.code.gson:gson'
+    // reactor-core is NOT pinned: it's pulled transitively via azure-identity and the
+    // version is managed by the Spring Boot BOM (3.7.x). Hard-pinning 3.4.34 (as in the
+    // old build) would break version alignment with the rest of the 3.x stack.
+
+    // Lombok
+    implementation 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
+
+    // Tests
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.h2database:h2:1.4.197'
+    testImplementation 'com.icegreen:greenmail:2.1.0'
+}
+
+test {
+    useJUnitPlatform()
+    reports.html.required = true
 }

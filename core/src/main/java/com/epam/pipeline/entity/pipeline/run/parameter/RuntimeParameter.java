@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.pipeline.run.parameter;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class RuntimeParameter {
     private String argumentName;
     private RuntimeParameterType type;

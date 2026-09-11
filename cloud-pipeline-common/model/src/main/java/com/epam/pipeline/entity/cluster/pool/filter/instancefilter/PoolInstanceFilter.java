@@ -22,17 +22,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import java.util.Collection;
 
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = RunOwnerPoolInstanceFilter.class, name = "RUN_OWNER"),
-        @JsonSubTypes.Type(value = RunOwnerGroupPoolInstanceFilter.class, name = "RUN_OWNER_GROUP"),
-        @JsonSubTypes.Type(value = PipelinePoolInstanceFilter.class, name = "PIPELINE_ID"),
-        @JsonSubTypes.Type(value = ConfigurationPoolInstanceFilter.class, name = "CONFIGURATION_ID"),
-        @JsonSubTypes.Type(value = DockerPoolInstanceFilter.class, name = "DOCKER_IMAGE"),
-        @JsonSubTypes.Type(value = ParameterPoolInstanceFilter.class, name = "RUN_PARAMETER")
-    })
+    @JsonSubTypes.Type(value = RunOwnerPoolInstanceFilter.class, name = "RUN_OWNER"),
+    @JsonSubTypes.Type(value = RunOwnerGroupPoolInstanceFilter.class, name = "RUN_OWNER_GROUP"),
+    @JsonSubTypes.Type(value = PipelinePoolInstanceFilter.class, name = "PIPELINE_ID"),
+    @JsonSubTypes.Type(value = ConfigurationPoolInstanceFilter.class, name = "CONFIGURATION_ID"),
+    @JsonSubTypes.Type(value = DockerPoolInstanceFilter.class, name = "DOCKER_IMAGE"),
+    @JsonSubTypes.Type(value = ParameterPoolInstanceFilter.class, name = "RUN_PARAMETER")
+})
 public interface PoolInstanceFilter<T> {
 
     PoolInstanceFilterOperator getOperator();

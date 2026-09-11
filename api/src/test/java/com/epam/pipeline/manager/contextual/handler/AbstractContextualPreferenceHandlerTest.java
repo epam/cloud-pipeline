@@ -16,9 +16,9 @@
 
 package com.epam.pipeline.manager.contextual.handler;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public abstract class AbstractContextualPreferenceHandlerTest {
 

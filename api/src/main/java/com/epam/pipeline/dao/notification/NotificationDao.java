@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.notification.SystemNotification;
 import com.epam.pipeline.entity.notification.SystemNotificationSeverity;
 import com.epam.pipeline.entity.notification.SystemNotificationState;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -33,6 +33,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class NotificationDao extends NamedParameterJdbcDaoSupport {
     private Pattern wherePattern = Pattern.compile("@WHERE@");
@@ -180,38 +182,42 @@ public class NotificationDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(notificationSequence, "Required query notificationSequence is not set");
+        Assert.notNull(createNotificationQuery, "Required query createNotificationQuery is not set");
+        Assert.notNull(updateNotificationQuery, "Required query updateNotificationQuery is not set");
+        Assert.notNull(deleteNotificationQuery, "Required query deleteNotificationQuery is not set");
+        Assert.notNull(listNotificationsQuery, "Required query listNotificationsQuery is not set");
+        Assert.notNull(filterNotificationsQuery, "Required query filterNotificationsQuery is not set");
+        Assert.notNull(loadNotificationQuery, "Required query loadNotificationQuery is not set");
+    }
 
-    @Required
+
     public void setNotificationSequence(String notificationSequence) {
         this.notificationSequence = notificationSequence;
     }
 
-    @Required
     public void setCreateNotificationQuery(String query) {
         this.createNotificationQuery = query;
     }
 
-    @Required
     public void setUpdateNotificationQuery(String query) {
         this.updateNotificationQuery = query;
     }
 
-    @Required
     public void setDeleteNotificationQuery(String query) {
         this.deleteNotificationQuery = query;
     }
 
-    @Required
     public void setListNotificationsQuery(String query) {
         this.listNotificationsQuery = query;
     }
 
-    @Required
     public void setFilterNotificationsQuery(String query) {
         this.filterNotificationsQuery = query;
     }
 
-    @Required
     public void setLoadNotificationQuery(String query) {
         this.loadNotificationQuery = query;
     }

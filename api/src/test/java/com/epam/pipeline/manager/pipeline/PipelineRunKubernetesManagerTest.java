@@ -26,7 +26,7 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.ServiceSpec;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -39,9 +39,10 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -69,7 +70,7 @@ public class PipelineRunKubernetesManagerTest {
     @Test
     public void shouldCreateKubernetesService() {
         doReturn(run).when(pipelineRunCRUDService).loadRunById(anyLong());
-        doReturn(new Pod()).when(kubernetesManager).findPodById(anyString());
+        doReturn(new Pod()).when(kubernetesManager).findPodById(nullable(String.class));
         doReturn(service()).when(kubernetesManager).createService(anyString(), any(), any());
         doReturn(KUBE_SVC_SUFFIX).when(preferenceManager).getPreference(any());
 

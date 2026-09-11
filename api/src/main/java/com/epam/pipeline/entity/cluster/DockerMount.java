@@ -16,14 +16,4 @@
 
 package com.epam.pipeline.entity.cluster;
 
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-public class DockerMount {
-    private final String name;
-    private final String hostPath;
-    private final String mountPath;
-    private final boolean readOnly;
-}
+public record DockerMount(String name, String hostPath, String mountPath, boolean readOnly) {}

@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
 import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

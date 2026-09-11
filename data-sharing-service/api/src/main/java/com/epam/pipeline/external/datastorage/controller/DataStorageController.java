@@ -28,8 +28,8 @@ import com.epam.pipeline.external.datastorage.manager.datastorage.DataStorageMan
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.vo.data.storage.UpdateDataStorageItemVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -51,7 +51,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RestController
-@Api(value = "Datastorage API")
+@Tag(name = "Datastorage API")
 public class DataStorageController {
 
     private static final String FALSE = "false";
@@ -66,10 +66,9 @@ public class DataStorageController {
     }
 
     @GetMapping(value = "/datastorage/{id}/load")
-    @ApiOperation(
-            value = "Returns a data storage, specified by id.",
-            notes = "Returns a data storage, specified by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns a data storage, specified by id.",
+            description = "Returns a data storage, specified by id.")
     public Result<AbstractDataStorage> loadDataStorage(@PathVariable final Long id) {
         return Result.success(dataStorageManager.loadStorage(id));
     }
@@ -164,7 +163,7 @@ public class DataStorageController {
         return Result.success(dataStorageManager.updateItemsTags(id, path, tags, version, rewrite));
     }
 
-    @PostMapping(value = "/datastorage/{id}/tempCredentials")
+    @PostMapping(value = {"/datastorage/{id}/tempCredentials", "/datastorage/{id}/tempCredentials/"})
     public Result<TemporaryCredentials> generateTemporaryCredentials(
             @PathVariable long id,
             @RequestBody List<DataStorageAction> operations) {

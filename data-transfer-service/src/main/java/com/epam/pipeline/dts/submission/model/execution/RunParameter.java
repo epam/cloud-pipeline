@@ -21,7 +21,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 @Data
 @NoArgsConstructor
@@ -35,6 +36,7 @@ public class RunParameter {
     public static final String INPUT_TYPE = "input";
 
     private String name;
+    @Column(name = "`value`")
     private String value;
     private String type;
 }

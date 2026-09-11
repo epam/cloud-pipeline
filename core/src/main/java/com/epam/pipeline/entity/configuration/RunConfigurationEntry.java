@@ -23,7 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Delegate;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,17 +50,17 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
 
     @Override
     public boolean checkConfigComplete() {
-        if (!StringUtils.hasText(getName())) {
+        if (StringUtils.isBlank(getName())) {
             return false;
         }
 
-        if (pipelineId != null && !StringUtils.hasText(pipelineVersion)) {
+        if (pipelineId != null && StringUtils.isBlank(pipelineVersion)) {
             return false;
         }
 
         if (pipelineId == null &&
                 (configurationEntry.getConfiguration() == null ||
-                        !StringUtils.hasText(configurationEntry.getConfiguration().getCmdTemplate()))) {
+                        StringUtils.isBlank(configurationEntry.getConfiguration().getCmdTemplate()))) {
             return false;
         }
         return true;
@@ -88,7 +88,7 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
             startVO.setParams(configuration.getParameters());
             startVO.setTimeout(configuration.getTimeout());
             startVO.setWorkerCmd(configuration.getWorkerCmd());
-            if (!StringUtils.hasText(startVO.getWorkerCmd())) {
+            if (StringUtils.isBlank(startVO.getWorkerCmd())) {
                 startVO.setWorkerCmd(configuration.getCmdTemplate());
             }
             startVO.setNonPause(configuration.isNonPause());

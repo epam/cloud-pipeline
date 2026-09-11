@@ -18,29 +18,30 @@ package com.epam.pipeline.elasticsearch.model.v7.action.bulk;
 
 import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
 import lombok.RequiredArgsConstructor;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 
 @RequiredArgsConstructor
 public class BulkItemResponseV7 implements BulkItemResponse {
 
-    private final org.opensearch.action.bulk.BulkItemResponse response;
+    private final BulkResponseItem response;
 
     @Override
     public boolean isFailed() {
-        return response.isFailed();
+        return response.error() != null;
     }
 
     @Override
     public String getId() {
-        return response.getId();
+        return response.id();
     }
 
     @Override
     public String getFailureMessage() {
-        return response.getFailureMessage();
+        return response.error() != null ? response.error().reason() : null;
     }
 
     @Override
     public String getIndex() {
-        return response.getIndex();
+        return response.index();
     }
 }

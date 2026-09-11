@@ -18,9 +18,10 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.exception.git.GitClientException;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GitlabClientTest {
 
@@ -33,13 +34,13 @@ public class GitlabClientTest {
     private static final long DURATION = 1L;
 
     @Test
-    @Ignore
+    @Disabled
     public void testBuildCloneCredentialsWithUser() throws GitClientException {
         testBuildCloneUrl(USER, URL_WITH_USER);
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testBuildCloneCredentialsWithoutUser() throws GitClientException {
         testBuildCloneUrl(USER, URL_WITHOUT_USER);
     }
@@ -49,9 +50,9 @@ public class GitlabClientTest {
                 GitlabClient.initializeGitlabClientFromRepositoryAndToken(
                         user, url, TOKEN, null, null, false, "v3");
         GitCredentials credentials = client.buildCloneCredentials(true, DURATION);
-        Assert.assertNotNull(credentials);
-        Assert.assertEquals(USER, credentials.getUserName());
-        Assert.assertEquals(TOKEN, credentials.getToken());
-        Assert.assertEquals(URL_WITH_ENV_VARS, credentials.getUrl());
+        assertNotNull(credentials);
+        assertEquals(USER, credentials.getUserName());
+        assertEquals(TOKEN, credentials.getToken());
+        assertEquals(URL_WITH_ENV_VARS, credentials.getUrl());
     }
 }

@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.pricing.aws;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class AwsPricingCard {
 
     private AwsProduct product;

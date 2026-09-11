@@ -20,24 +20,23 @@ import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateRuleType;
 import com.epam.pipeline.entity.utils.TimestampConverter;
-import com.epam.pipeline.hibernate.ConditionExpressionUserType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
 @Entity
@@ -47,7 +46,6 @@ import java.time.LocalDateTime;
 @Table(name = "usage_credits_update_rule", schema = "pipeline")
 @NoArgsConstructor
 @AllArgsConstructor
-@TypeDef(name = "ConditionExpressionUserType", typeClass = ConditionExpressionUserType.class)
 public class PlatformUsageCreditsUpdateRuleEntity {
 
     @Id
@@ -63,11 +61,11 @@ public class PlatformUsageCreditsUpdateRuleEntity {
     @Column(name = "rule_type", nullable = false)
     private PlatformUsageCreditsUpdateRuleType ruleType;
 
-    @Type(type = "ConditionExpressionUserType")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "statement", nullable = false)
     private ConditionExpression statement;
 
-    @Type(type = "ConditionExpressionUserType")
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "exclude")
     private ConditionExpression exclude;
 

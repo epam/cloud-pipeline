@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.log;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 /**
@@ -26,6 +27,7 @@ import lombok.Data;
  * */
 @Data
 @Builder
+@Jacksonized
 public class LogPaginationRequest {
     private PageMarker token;
     private Integer pageSize;

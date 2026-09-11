@@ -79,7 +79,7 @@ public enum VSReportTemplates {
     public final String template;
     public final Supplier<VSReportTemplateProcessor> templateResolver;
 
-    private static class Constants {
+    private static final class Constants {
         public static final String EMPTY = "";
         public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         public static final DateTimeFormatter REPORT_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");

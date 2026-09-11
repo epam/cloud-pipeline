@@ -18,9 +18,11 @@ package com.epam.pipeline.monitor.model.node;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder
+@Jacksonized
 public class GpuUsageSummary {
     Integer gpuUtilization;
     Integer memoryUtilization;

@@ -20,7 +20,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.pool.Requests;
 import com.fasterxml.jackson.core.type.TypeReference;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 import java.util.Map;
 
 public class MapRequestsConverter implements AttributeConverter<Map<String, Requests>, String>  {

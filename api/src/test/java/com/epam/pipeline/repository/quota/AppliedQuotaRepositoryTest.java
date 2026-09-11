@@ -22,11 +22,10 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;

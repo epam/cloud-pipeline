@@ -16,11 +16,8 @@
 
 package com.epam.pipeline.controller.vo.search;
 
-import lombok.Value;
-
-@Value
-public class SearchRequestSort {
-    String field;
-    SearchRequestSortOrder order;
+public record SearchRequestSort(
+    String field,
+    SearchRequestSortOrder order
+) {
 }
-

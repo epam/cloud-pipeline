@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.dao.user.UserDao.UserParameters;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class RoleDao extends NamedParameterJdbcDaoSupport {
 
@@ -213,68 +215,70 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createRoleQuery, "Required query createRoleQuery is not set");
+        Assert.notNull(deleteRoleQuery, "Required query deleteRoleQuery is not set");
+        Assert.notNull(loadRoleQuery, "Required query loadRoleQuery is not set");
+        Assert.notNull(loadAllRolesQuery, "Required query loadAllRolesQuery is not set");
+        Assert.notNull(roleSequence, "Required query roleSequence is not set");
+        Assert.notNull(loadRoleListQuery, "Required query loadRoleListQuery is not set");
+        Assert.notNull(loadRolesWithUsersQuery, "Required query loadRolesWithUsersQuery is not set");
+        Assert.notNull(deleteRolesReferencesQuery, "Required query deleteRolesReferencesQuery is not set");
+        Assert.notNull(loadRoleWithUsersQuery, "Required query loadRoleWithUsersQuery is not set");
+        Assert.notNull(loadRoleByNameQuery, "Required query loadRoleByNameQuery is not set");
+        Assert.notNull(loadUserDefaultRolesQuery, "Required query loadUserDefaultRolesQuery is not set");
+    }
 
-    @Required
+
     public void setCreateRoleQuery(String createRoleQuery) {
         this.createRoleQuery = createRoleQuery;
     }
 
-    @Required
     public void setDeleteRoleQuery(String deleteRoleQuery) {
         this.deleteRoleQuery = deleteRoleQuery;
     }
 
-    @Required
     public void setLoadRoleQuery(String loadRoleQuery) {
         this.loadRoleQuery = loadRoleQuery;
     }
 
-    @Required
     public void setLoadAllRolesQuery(String loadAllRolesQuery) {
         this.loadAllRolesQuery = loadAllRolesQuery;
     }
 
-    @Required
     public void setRoleSequence(String roleSequence) {
         this.roleSequence = roleSequence;
     }
 
-    @Required
     public void setLoadRoleListQuery(String loadRoleListQuery) {
         this.loadRoleListQuery = loadRoleListQuery;
     }
 
-    @Required
     public void setLoadRolesWithUsersQuery(String loadRolesWithUsersQuery) {
         this.loadRolesWithUsersQuery = loadRolesWithUsersQuery;
     }
 
-    @Required
     public void setDeleteRolesReferencesQuery(String deleteRolesReferencesQuery) {
         this.deleteRolesReferencesQuery = deleteRolesReferencesQuery;
     }
 
-    @Required
     public void setLoadRoleWithUsersQuery(String loadRoleWithUsersQuery) {
         this.loadRoleWithUsersQuery = loadRoleWithUsersQuery;
     }
 
-    @Required
     public void setLoadRoleByNameQuery(String loadRoleByNameQuery) {
         this.loadRoleByNameQuery = loadRoleByNameQuery;
     }
 
-    @Required
     public void setLoadUserDefaultRolesQuery(String loadUserDefaultRolesQuery) {
         this.loadUserDefaultRolesQuery = loadUserDefaultRolesQuery;
     }
 
-    @Required
     public void setLoadRolesByStorageIdQuery(final String loadRolesByStorageIdQuery) {
         this.loadRolesByStorageIdQuery = loadRolesByStorageIdQuery;
     }
 
-    @Required
     public void setUpdateRoleQuery(final String updateRoleQuery) {
         this.updateRoleQuery = updateRoleQuery;
     }

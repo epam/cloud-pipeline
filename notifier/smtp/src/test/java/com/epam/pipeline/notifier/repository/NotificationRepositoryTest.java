@@ -22,12 +22,16 @@ import java.util.List;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.notifier.AbstractSpringTest;
-import org.junit.Assert;
-import org.junit.Test;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class NotificationRepositoryTest extends AbstractSpringTest {
 
@@ -41,6 +45,9 @@ public class NotificationRepositoryTest extends AbstractSpringTest {
 
     @Autowired
     private NotificationTemplateRepository templateRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
 
     @Test
@@ -56,12 +63,12 @@ public class NotificationRepositoryTest extends AbstractSpringTest {
         message.setToUserId(0L);
         message.setCopyUserIds(Collections.singletonList(0L));
         notificationRepository.save(message);
-        List<NotificationMessage> messages = notificationRepository.loadNotification(new PageRequest(0, 5));
-        Assert.assertTrue(messages.size() == 1);
+        List<NotificationMessage> messages = notificationRepository.loadNotification(PageRequest.of(0, 5));
+        assertTrue(messages.size() == 1);
         NotificationMessage loaded = messages.get(0);
-        Assert.assertEquals(Integer.toHexString(this.hashCode()), loaded.getTemplateParameters().get(PARAM));
-        Assert.assertEquals(BODY_WITH_PARAM, loaded.getTemplate().getBody());
-        Assert.assertEquals(SUBJECT, loaded.getTemplate().getSubject());
+        assertEquals(Integer.toHexString(this.hashCode()), loaded.getTemplateParameters().get(PARAM));
+        assertEquals(BODY_WITH_PARAM, loaded.getTemplate().getBody());
+        assertEquals(SUBJECT, loaded.getTemplate().getSubject());
     }
 
     @Test
@@ -77,8 +84,10 @@ public class NotificationRepositoryTest extends AbstractSpringTest {
         message.setCopyUserIds(Collections.singletonList(0L));
         notificationRepository.save(message);
         Long idToDelete = message.getId();
-        notificationRepository.deleteById(idToDelete);
-        Assert.assertNull(notificationRepository.findOne(idToDelete));
+        notificationRepository.removeById(idToDelete);
+        entityManager.flush();
+        entityManager.clear();
+        assertNull(notificationRepository.findById(idToDelete).orElse(null));
     }
 
 }

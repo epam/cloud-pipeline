@@ -21,12 +21,14 @@ import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.jackson.Jacksonized;
 
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @EqualsAndHashCode
+@Jacksonized
 public class GitCredentials {
     private String userName;
     private String token;

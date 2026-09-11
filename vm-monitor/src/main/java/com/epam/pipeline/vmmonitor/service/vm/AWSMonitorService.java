@@ -104,7 +104,7 @@ public class AWSMonitorService implements VMMonitorService<AwsRegion> {
 
     private List<Filter> getFilters() {
         return Arrays.asList(
-                new Filter().withName(TAG_KEY_FILTER + instanceTag.getKey()).withValues(instanceTag.getValue()),
+                new Filter().withName(TAG_KEY_FILTER + instanceTag.key()).withValues(instanceTag.value()),
                 new Filter().withName(INSTANCE_STATE_FILTER).withValues(RUNNING_STATE));
     }
 

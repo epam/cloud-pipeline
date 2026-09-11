@@ -18,10 +18,12 @@ package com.epam.pipeline.controller.vo;
 
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
+@NoArgsConstructor
 public class RunStatusVO {
     private TaskStatus status;
 

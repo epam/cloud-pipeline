@@ -111,7 +111,7 @@ public class GCPMonitorService implements VMMonitorService<GCPRegion> {
     }
 
     InstanceList getGcpVmInstances(final GCPRegion region, final Compute compute) {
-        final String filter = String.format(FILTER_PATTERN, instanceTag.getKey(), instanceTag.getValue());
+        final String filter = String.format(FILTER_PATTERN, instanceTag.key(), instanceTag.value());
         try {
             return Optional.ofNullable(compute.instances()
                                               .list(region.getProject(), region.getRegionCode())

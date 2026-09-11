@@ -33,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,13 +57,13 @@ public class UserNotificationManager implements NotificationManager {
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifySubscribers(final NotificationMessage message) {
         final Long messageId = message.getId();
         LOGGER.info("Trying to send message with id: {}", messageId);
         final List<UserNotificationEntity> notifications = toNotifications(message);
         LOGGER.debug("Generated {} notification(s) from message with id: {}", notifications.size(), messageId);
-        notificationRepository.save(notifications);
+        notificationRepository.saveAll(notifications);
         LOGGER.info("Message with id: {} was successfully sent", messageId);
     }
 

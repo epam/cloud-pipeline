@@ -8,7 +8,7 @@
             <PatternLayout>
                 <pattern>
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
-                </pattern>>
+                </pattern>
             </PatternLayout>
         </Console>
         <RollingFile  name="App-Appender" fileName="${log-path}/elasticsearch_agent.log"
@@ -30,7 +30,7 @@
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
                       filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
             <Filters>
@@ -53,7 +53,7 @@
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
         <RollingFile  name="Error-Appender" fileName="${log-path}/error.log"
                       filePattern="${log-path}/error-%d{yyyyMMdd}.log">
             <Filters>
@@ -76,7 +76,7 @@
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
         <RollingFile  name="Requests-Appender" fileName="${log-path}/requests.log"
                       filePattern="${log-path}/requests-%d{yyyyMMdd}.log">
             <DefaultRolloverStrategy>
@@ -96,20 +96,19 @@
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
                 </pattern>
             </PatternLayout>
-        </RollingFile >
+        </RollingFile>
     </Appenders>
     <Loggers>
-        <Logger name="com.epam.pipeline" level="debug" additivity="true">
+        <Logger name="com.epam.pipeline" level="DEBUG" additivity="true">
             <AppenderRef ref="App-Appender"/>
         </Logger>
-        <Logger name="org.springframework" level="error" additivity="false">
+        <Logger name="org.springframework" level="ERROR" additivity="false">
             <AppenderRef ref="Spring-Appender"/>
             <AppenderRef ref="Console-Appender"/>
         </Logger>
-        <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter">
-            <level value="DEBUG" />
+        <Logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" level="DEBUG">
             <AppenderRef ref="Requests-Appender"/>
-        </logger>
+        </Logger>
         <Root>
             <AppenderRef ref="Console-Appender"/>
             <AppenderRef ref="Error-Appender"/>

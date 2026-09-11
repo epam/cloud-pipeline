@@ -19,12 +19,14 @@ package com.epam.pipeline.entity.pipeline.run;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class EngineRunTaskKeys {
     private final List<String> engineTaskKeys;
 }

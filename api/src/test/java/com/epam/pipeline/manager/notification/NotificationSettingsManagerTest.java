@@ -26,12 +26,13 @@ import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration(classes = TestApplication.class)
 public class NotificationSettingsManagerTest extends AbstractSpringTest {
@@ -53,16 +54,16 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
-        Assert.assertNotNull(loaded);
-        Assert.assertEquals(NotificationType.LONG_RUNNING, loaded.getType());
-        Assert.assertEquals(1L, loaded.getThreshold().longValue());
-        Assert.assertEquals(settings.isKeepInformedOwner(), loaded.isKeepInformedOwner());
+        assertNotNull(loaded);
+        assertEquals(NotificationType.LONG_RUNNING, loaded.getType());
+        assertEquals(1L, loaded.getThreshold().longValue());
+        assertEquals(settings.isKeepInformedOwner(), loaded.isKeepInformedOwner());
 
         settings.setThreshold(2L);
         notificationSettingsManager.createOrUpdate(settings);
         loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
-        Assert.assertNotNull(loaded);
-        Assert.assertEquals(2L, loaded.getThreshold().longValue());
+        assertNotNull(loaded);
+        assertEquals(2L, loaded.getThreshold().longValue());
     }
 
     @Test
@@ -74,8 +75,8 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
-        Assert.assertEquals(-1, loaded.getThreshold().longValue());
-        Assert.assertEquals(-1, loaded.getResendDelay().longValue());
+        assertEquals(-1, loaded.getThreshold().longValue());
+        assertEquals(-1, loaded.getResendDelay().longValue());
     }
 
     @Test
@@ -87,8 +88,8 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
-        Assert.assertEquals(1, loaded.getStatusesToInform().size());
-        Assert.assertEquals(TaskStatus.RESUMING, loaded.getStatusesToInform().get(0));
+        assertEquals(1, loaded.getStatusesToInform().size());
+        assertEquals(TaskStatus.RESUMING, loaded.getStatusesToInform().get(0));
     }
 
     @Test
@@ -100,12 +101,12 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
-        Assert.assertNotNull(loaded);
+        assertNotNull(loaded);
 
         notificationSettingsManager.delete(loaded.getId());
 
         loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
-        Assert.assertNull(loaded);
+        assertNull(loaded);
     }
 
     private NotificationTemplate createTemplate(Long id, String name) {

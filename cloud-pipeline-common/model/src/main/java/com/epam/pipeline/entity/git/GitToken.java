@@ -19,8 +19,10 @@ package com.epam.pipeline.entity.git;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class GitToken {
     private Long id;
     private String token;

@@ -18,8 +18,10 @@ package com.epam.pipeline.entity.cluster;
 
 import io.fabric8.kubernetes.api.model.PodStatus;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class PodInstanceStatus {
 
     private String reason;

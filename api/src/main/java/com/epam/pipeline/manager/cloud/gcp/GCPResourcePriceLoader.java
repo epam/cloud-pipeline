@@ -101,10 +101,10 @@ public class GCPResourcePriceLoader {
         return sku.getDescription() != null
                 && sku.getCategory() != null
                 && sku.getServiceRegions() != null
-                && sku.getDescription().startsWith(request.getMapping().getPrefix())
-                && request.getObject().resourceFamily().equals(sku.getCategory().getResourceFamily())
-                && request.getBilling().termType().equals(sku.getCategory().getUsageType())
-                && request.getMapping().getGroup().equals(sku.getCategory().getResourceGroup())
+                && sku.getDescription().startsWith(request.mapping().prefix())
+                && request.object().resourceFamily().equals(sku.getCategory().getResourceFamily())
+                && request.billing().termType().equals(sku.getCategory().getUsageType())
+                && request.mapping().group().equals(sku.getCategory().getResourceGroup())
                 && sku.getServiceRegions().contains(region);
     }
 
@@ -118,7 +118,7 @@ public class GCPResourcePriceLoader {
                 .map(this::firstElement)
                 .map(TierRate::getUnitPrice)
                 .filter(money -> money.getUnits() != null && money.getNanos() != null)
-                .map(money -> request.getType().normalize(money.getUnits() * BILLION + money.getNanos()))
+                .map(money -> request.type().normalize(money.getUnits() * BILLION + money.getNanos()))
                 .map(nanos -> price(request, nanos));
     }
 

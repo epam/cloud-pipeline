@@ -19,12 +19,14 @@ package com.epam.pipeline.dao.notification;
 import java.util.List;
 
 import com.epam.pipeline.entity.notification.NotificationTemplate;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class NotificationTemplateDao extends NamedParameterJdbcDaoSupport {
 
@@ -92,28 +94,33 @@ public class NotificationTemplateDao extends NamedParameterJdbcDaoSupport {
         }
 
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createNotificationTemplateQuery, "Required query createNotificationTemplateQuery is not set");
+        Assert.notNull(loadNotificationTemplateQuery, "Required query loadNotificationTemplateQuery is not set");
+        Assert.notNull(loadAllNotificationTemplatesQuery,
+                "Required query loadAllNotificationTemplatesQuery is not set");
+        Assert.notNull(updateNotificationTemplateQuery, "Required query updateNotificationTemplateQuery is not set");
+        Assert.notNull(deleteNotificationTemplateQuery, "Required query deleteNotificationTemplateQuery is not set");
+    }
 
-    @Required
+
     public void setCreateNotificationTemplateQuery(String createNotificationTemplateQuery) {
         this.createNotificationTemplateQuery = createNotificationTemplateQuery;
     }
 
-    @Required
     public void setLoadNotificationTemplateQuery(String loadNotificationTemplateQuery) {
         this.loadNotificationTemplateQuery = loadNotificationTemplateQuery;
     }
 
-    @Required
     public void setLoadAllNotificationTemplatesQuery(String loadAllNotificationTemplatesQuery) {
         this.loadAllNotificationTemplatesQuery = loadAllNotificationTemplatesQuery;
     }
 
-    @Required
     public void setUpdateNotificationTemplateQuery(String updateNotificationTemplateQuery) {
         this.updateNotificationTemplateQuery = updateNotificationTemplateQuery;
     }
 
-    @Required
     public void setDeleteNotificationTemplateQuery(String deleteNotificationTemplateQuery) {
         this.deleteNotificationTemplateQuery = deleteNotificationTemplateQuery;
     }
