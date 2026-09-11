@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import styles from './scheme-parameter-input.css';
 import {renderParameter} from '../renderers';
-import {checkEntryPropertyValid} from "./utilities";
+import {checkEntryPropertyValid} from './utilities';
 
 function LaunchFormSchemeParameterEntryProp (props) {
   const {
