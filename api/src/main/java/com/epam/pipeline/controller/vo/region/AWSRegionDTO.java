@@ -40,6 +40,7 @@ public class AWSRegionDTO extends AbstractCloudRegionDTO {
     private boolean versioningEnabled;
     private String iamRole;
     private String s3Endpoint;
+    private Boolean s3SendQueryAsSigned;
     private String keyId;
     private String accessKey;
 }

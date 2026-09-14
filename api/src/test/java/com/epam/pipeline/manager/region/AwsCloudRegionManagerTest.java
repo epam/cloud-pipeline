@@ -131,6 +131,31 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     }
 
     @Test
+    public void updateShouldChangeS3SendQueryAsSigned() {
+        final AWSRegionDTO awsRegionDTO = updateRegionDTO();
+        awsRegionDTO.setS3SendQueryAsSigned(true);
+
+        cloudRegionManager.update(ID, awsRegionDTO);
+
+        final ArgumentCaptor<AwsRegion> regionCaptor = ArgumentCaptor.forClass(AwsRegion.class);
+        verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
+        assertThat(regionCaptor.getValue().getS3SendQueryAsSigned(), is(true));
+    }
+
+    @Test
+    public void updateShouldNotChangeS3SendQueryAsSignedIfItIsNotSpecified() {
+        final AwsRegion originalRegion = commonRegion();
+        originalRegion.setS3SendQueryAsSigned(true);
+        doReturn(Optional.of(originalRegion)).when(cloudRegionDao).loadById(ID);
+
+        cloudRegionManager.update(ID, updateRegionDTO());
+
+        final ArgumentCaptor<AwsRegion> regionCaptor = ArgumentCaptor.forClass(AwsRegion.class);
+        verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
+        assertThat(regionCaptor.getValue().getS3SendQueryAsSigned(), is(true));
+    }
+
+    @Test
     public void loadCredentialsByIdAwsRegion() {
         cloudRegionManager.create(createRegionDTO());
 
