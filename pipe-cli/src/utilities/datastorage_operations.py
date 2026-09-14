@@ -19,11 +19,13 @@ import multiprocessing
 import os
 import platform
 import sys
+import re
 from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 import concurrent.futures
 
+from src.api.cloud_region import CloudRegion
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.api.metadata import Metadata
@@ -536,8 +538,31 @@ class DataStorageOperations(object):
             except ValueError:
                 click.echo("Error: Given region id '{}' is not a number.".format(region_id))
                 sys.exit(1)
+        file_share_mount_id = None
+        if type and type.upper() == 'NFS':
+            file_share_mount_id = DataStorageOperations._resolve_file_share_mount_id(path)
+            if file_share_mount_id is None:
+                click.echo("Error: Could not find a file share mount matching path '{}'.".format(path), err=True)
+                sys.exit(1)
         DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
-                         directory.id if directory else None, on_cloud, region_id)
+                         directory.id if directory else None, on_cloud, region_id, file_share_mount_id)
+
+    @classmethod
+    def _resolve_file_share_mount_id(cls, path):
+        server_port_mask = re.compile(r'^[^:]+(:[\d]+)?$', re.IGNORECASE)
+        regions = CloudRegion.get_cloud_regions()
+        mounts = [mount for region in regions for mount in (region.get('fileShareMounts') or [])]
+        path_lower = path.lower()
+        for mount in mounts:
+            mount_root = (mount.get('mountRoot') or '').strip()
+            if not mount_root:
+                continue
+            mount_type = (mount.get('mountType') or '').upper()
+            separator = ':' if mount_type == 'NFS' and server_port_mask.match(mount_root) else ''
+            prefix = (mount_root + separator).lower()
+            if path_lower.startswith(prefix):
+                return mount.get('id')
+        return None
 
     @classmethod
     def delete(cls, name, on_cloud, yes):

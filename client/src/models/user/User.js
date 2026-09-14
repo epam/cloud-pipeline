@@ -17,8 +17,9 @@
 import Remote from '../basic/Remote';
 
 export default class User extends Remote {
-  constructor (id) {
+  constructor (id, credits = false) {
     super();
-    this.url = `/user/${id}`;
+    const query = credits ? '?credits=true' : '';
+    this.url = `/user/${id}${query}`;
   }
 }

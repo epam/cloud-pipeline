@@ -60,6 +60,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
@@ -81,6 +82,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -89,11 +91,14 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -164,7 +169,7 @@ public class PipelineRunManager {
     private static final String LIMIT_MOUNTS_NONE = "none";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
-    private static final String CP_GPU_COUNT = "CP_GPU_COUNT";
+    private static final String CP_GPU_AVAILABLE = "CP_GPU_AVAILABLE";
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
@@ -273,6 +278,9 @@ public class PipelineRunManager {
     private RunLimitsService runLimitsService;
 
     @Autowired
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Autowired
     private MetadataEntityManager metadataEntityManager;
 
     @Autowired
@@ -286,6 +294,9 @@ public class PipelineRunManager {
 
     @Autowired
     private PipelineRunMetricsDao runMetricsDao;
+
+    @Autowired
+    private MonitoringNotificationDao monitoringNotificationDao;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -311,6 +322,8 @@ public class PipelineRunManager {
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
         runVO.setRunSids(mergeRunSidsWithParent(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean clusterRun = configurationManager.initClusterConfiguration(configuration, true);
+
+        platformUsageCreditsLaunchService.checkCreditsForRun(configuration);
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
@@ -389,6 +402,8 @@ public class PipelineRunManager {
         runVO.setRunSids(mergeRunSidsWithParents(configuration, runVO.getRunSids(), resolveOriginalOwner(runVO)));
         final boolean isClusterRun = configurationManager.initClusterConfiguration(configuration, true);
 
+        platformUsageCreditsLaunchService.checkCreditsForRun(configuration);
+
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getConfigurationName(), null,
@@ -405,10 +420,22 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void prolongIdleRun(Long runId) {
         PipelineRun run = loadPipelineRun(runId, false);
-        run.setLastIdleNotificationTime(null);
-        run.setLastNotificationTime(null);
         run.setProlongedAtTime(DateUtils.nowUTC());
-        updateProlongIdleRunAndLastIdleNotificationTime(run);
+        removeIdleTags(run);
+        updateProlongedAtTime(run);
+        pipelineRunDao.updateRunTags(run);
+        monitoringNotificationDao.deleteNotificationTimestampsForIdAndType(runId, NotificationType.LONG_RUNNING);
+        monitoringNotificationDao.deleteNotificationTimestampsForIdAndType(runId, NotificationType.LONG_INIT);
+    }
+
+    private void removeIdleTags(final PipelineRun run) {
+        final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
+        RunMonitor.IDLE_TAGS.stream()
+                .flatMap(tag -> StringUtils.isEmpty(suffix)
+                        ? Stream.of(tag)
+                        : Stream.of(tag, tag + suffix))
+                .filter(run::hasTag)
+                .forEach(run::removeTag);
     }
 
     /**
@@ -545,12 +572,12 @@ public class PipelineRunManager {
             final InstanceOffer offer = instance.get();
             if (offer.getGpu() > 0) {
                 configuration.setParameters(CommonUtils.mergeMaps(
-                        Collections.singletonMap(CP_GPU_COUNT, new PipeConfValueVO(String.valueOf(offer.getGpu()))),
+                        Collections.singletonMap(CP_GPU_AVAILABLE, new PipeConfValueVO(Boolean.TRUE.toString())),
                         configuration.getParameters()));
                 return;
             }
         }
-        MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_COUNT);
+        MapUtils.emptyIfNull(configuration.getParameters()).remove(CP_GPU_AVAILABLE);
     }
 
     private RunContainerSpec getDefaultPodAssignPolicy(final PipelineRun run) {
@@ -610,43 +637,59 @@ public class PipelineRunManager {
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
         final boolean isMaster = PipelineConfigurationManager.isClusterConfiguration(configuration);
-        if (pipeline != null) {
-            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId(), isMaster);
+        validateInstanceAndPriceTypes(instanceType, configuration.getFallbackInstanceTypes(), priceType,
+                region.getId(), configuration.getDockerImage(), pipeline != null, isMaster);
+    }
+
+    private void validateInstanceAndPriceTypes(final String instanceType,
+                                               final List<String> fallbackInstanceTypes,
+                                               final PriceType priceType,
+                                               final Long regionId,
+                                               final String dockerImage,
+                                               final boolean isPipeline,
+                                               final boolean isMasterNode) {
+        configurationManager.validateFallbackInstanceTypesCount(fallbackInstanceTypes);
+        if (isPipeline) {
+            validatePipelineInstanceAndPriceTypes(instanceType, fallbackInstanceTypes, priceType, regionId,
+                    isMasterNode);
         } else {
-            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage(),
-                                              isMaster);
+            validateToolInstanceAndPriceTypes(instanceType, fallbackInstanceTypes, priceType, regionId, dockerImage,
+                    isMasterNode);
         }
     }
 
     private void validatePipelineInstanceAndPriceTypes(final String instanceType,
+                                                       final List<String> fallbackInstanceTypes,
                                                        final PriceType priceType,
                                                        final Long regionId,
                                                        final boolean isMasterNode) {
         final List<ContextualPreferenceExternalResource> resources = Collections.singletonList(
                 getRegionContextualPreference(regionId));
-
-        Assert.isTrue(StringUtils.isBlank(instanceType) || instanceOfferManager
-                        .isInstanceAllowed(instanceType, resources, regionId, priceType == PriceType.SPOT),
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
+        final boolean isSpot = priceType == PriceType.SPOT;
+        Stream.concat(Stream.of(instanceType), CollectionUtils.emptyIfNull(fallbackInstanceTypes).stream())
+                .filter(StringUtils::isNotBlank)
+                .forEach(type -> Assert.isTrue(instanceOfferManager.isInstanceAllowed(type, resources, regionId,
+                        isSpot), messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, type)));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), resources, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
     private void validateToolInstanceAndPriceTypes(final String instanceType,
+                                                   final List<String> fallbackInstanceTypes,
                                                    final PriceType priceType,
                                                    final Long regionId,
                                                    final String dockerImage,
                                                    final boolean isMasterNode) {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
-
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
         final ContextualPreferenceExternalResource regionResource = getRegionContextualPreference(regionId);
         final List<ContextualPreferenceExternalResource> resources = Arrays.asList(toolResource, regionResource);
-
-        Assert.isTrue(StringUtils.isBlank(instanceType) || instanceOfferManager
-                        .isToolInstanceAllowed(instanceType, resources, regionId, priceType == PriceType.SPOT),
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
+        final boolean isSpot = priceType == PriceType.SPOT;
+        Stream.concat(Stream.of(instanceType), CollectionUtils.emptyIfNull(fallbackInstanceTypes).stream())
+                .filter(StringUtils::isNotBlank)
+                .forEach(type -> Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(type, resources, regionId,
+                        isSpot), messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, type)));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), resources, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
@@ -741,6 +784,64 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public void applyRunInstanceConfig(final Long runId, final RunInstanceConfigVO vo) {
+        Assert.notNull(vo, "RunInstanceConfigVO must not be null");
+        final PipelineRun pipelineRun = loadPipelineRun(runId);
+        final RunInstance instance = pipelineRun.getInstance();
+        validateCPURunIsNotUpgradedToGPU(instance, vo);
+        if (StringUtils.isNotEmpty(vo.getInstanceType())) {
+            instance.setNodeType(vo.getInstanceType());
+        }
+        if (vo.getFallbackInstanceTypes() != null) {
+            instance.setFallbackInstanceTypes(vo.getFallbackInstanceTypes());
+        }
+        validateInstanceAndPriceTypes(
+                instance.getNodeType(),
+                instance.getFallbackInstanceTypes(),
+                Boolean.TRUE.equals(instance.getSpot()) ? PriceType.SPOT : PriceType.ON_DEMAND,
+                instance.getCloudRegionId(),
+                pipelineRun.getDockerImage(),
+                pipelineRun.getPipelineId() != null,
+                true
+        );
+        updateRunInstance(pipelineRun.getId(), instance);
+    }
+
+    private void validateCPURunIsNotUpgradedToGPU(final RunInstance instance, final RunInstanceConfigVO vo) {
+        final String originalInstanceType = instance.getNodeType();
+        if (isGpuInstance(originalInstanceType, instance.getCloudRegionId())) {
+            return;
+        }
+
+        final List<String> requestedTypes = new ArrayList<>();
+        if (StringUtils.isNotEmpty(vo.getInstanceType())) {
+            requestedTypes.add(vo.getInstanceType());
+        }
+
+        if (CollectionUtils.isNotEmpty(vo.getFallbackInstanceTypes())) {
+            requestedTypes.addAll(vo.getFallbackInstanceTypes());
+        }
+
+        final String gpuType = requestedTypes.stream()
+                .filter(type -> isGpuInstance(type, instance.getCloudRegionId()))
+                .findFirst().orElse(null);
+
+        Assert.isNull(
+                gpuType,
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_GPU_INSTANCE_NOT_ALLOWED_FOR_CPU_RUN,
+                        originalInstanceType, gpuType
+                )
+        );
+    }
+
+    private boolean isGpuInstance(final String instanceType, final Long regionId) {
+        return instanceOfferManager.findOffer(instanceType, regionId)
+                .map(offer -> offer.getGpu() > 0)
+                .orElse(false);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void updateRunInstanceStartDate(Long id, LocalDateTime date) {
         pipelineRunDao.updateRunInstanceStartDate(id, date);
     }
@@ -802,19 +903,8 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updatePipelineRunLastNotification(PipelineRun run) {
-        pipelineRunDao.updateRunLastNotification(run);
-        return run;
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void updatePipelineRunsLastNotification(Collection<PipelineRun> runs) {
-        pipelineRunDao.updateRunsLastNotification(runs);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateProlongIdleRunAndLastIdleNotificationTime(PipelineRun run) {
-        pipelineRunDao.updateProlongIdleRunAndLastIdleNotificationTime(run);
+    public PipelineRun updateProlongedAtTime(PipelineRun run) {
+        pipelineRunDao.updateProlongedAtTime(run);
         return run;
     }
 
@@ -1363,6 +1453,7 @@ public class PipelineRunManager {
                 .yes()
                 .instanceDisk()
                 .instanceType()
+                .fallbackInstanceTypes()
                 .dockerImage()
                 .cmdTemplate()
                 .timeout()
@@ -1389,6 +1480,13 @@ public class PipelineRunManager {
      * @param disks of {@link PipelineRun} instance.
      * @return Updated pipeline run.
      */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateRunPrice(final Long runId, final RunInstance instance) {
+        final PipelineRun run = loadPipelineRun(runId, false);
+        setRunPrice(instance, run);
+        return updateRunInfo(run);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun adjustRunPricePerHourToDisks(final Long runId, final List<InstanceDisk> disks) {
         final PipelineRun run = loadPipelineRun(runId, false);
@@ -1677,6 +1775,16 @@ public class PipelineRunManager {
         instance.setEffectiveNodeDisk(Optional.ofNullable(configuration.getEffectiveDiskSize())
                 .orElse(instance.getNodeDisk()));
         instance.setNodeType(configuration.getInstanceType());
+        final int maxFallbackCount = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
+        if (maxFallbackCount == -1) {
+            if (CollectionUtils.isNotEmpty(configuration.getFallbackInstanceTypes())) {
+                log.warn("Fallback instance types are provided but will not be applied: " +
+                        "'cluster.fallback.instance.types.max.count' is set to -1 (feature is disabled).");
+            }
+        } else {
+            instance.setFallbackInstanceTypes(configuration.getFallbackInstanceTypes());
+        }
         instance.setNodeImage(configuration.getInstanceImage());
         Optional.ofNullable(region).map(AbstractCloudRegion::getId).ifPresent(instance::setCloudRegionId);
         Optional.ofNullable(region).map(AbstractCloudRegion::getProvider).ifPresent(instance::setCloudProvider);
@@ -1893,6 +2001,7 @@ public class PipelineRunManager {
             runInstance.setEffectiveNodeDisk(i.getEffectiveNodeDisk());
             runInstance.setNodeImage(i.getNodeImage());
             runInstance.setNodeType(i.getNodeType());
+            runInstance.setFallbackInstanceTypes(i.getFallbackInstanceTypes());
             runInstance.setSpot(i.getSpot());
             runInstance.setCloudProvider(i.getCloudProvider());
             runInstance.setNodePlatform(i.getNodePlatform());

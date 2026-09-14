@@ -86,14 +86,19 @@ class NotificationPreferencesControl extends React.Component {
           )
         }
         {
-          preferences.map((preference) => (
-            <PreferenceControl
-              key={preference}
-              session={session}
-              onChange={this.onPreferenceChanged(preference)}
-              preference={preference}
-            />
-          ))
+          preferences.map((entry) => {
+            const preferenceName = typeof entry === 'string' ? entry : entry.preference;
+            const extraProps = typeof entry === 'string' ? {} : {visibleTypes: entry.visibleTypes};
+            return (
+              <PreferenceControl
+                key={preferenceName}
+                session={session}
+                onChange={this.onPreferenceChanged(preferenceName)}
+                preference={preferenceName}
+                {...extraProps}
+              />
+            );
+          })
         }
       </div>
     );

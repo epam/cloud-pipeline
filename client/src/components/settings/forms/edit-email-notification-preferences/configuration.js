@@ -19,6 +19,8 @@ import React from 'react';
 const HighConsumedResourcesType = 'HIGH_CONSUMED_RESOURCES';
 const HighConsumedNetworkBandwidthType = 'HIGH_CONSUMED_NETWORK_BANDWIDTH';
 const IdleRunType = 'IDLE_RUN';
+const IdleCpuType = 'IDLE_CPU_RUN';
+const IdleGpuType = 'IDLE_GPU_RUN';
 const IdleRunPausedType = 'IDLE_RUN_PAUSED';
 const IdleRunStoppedType = 'IDLE_RUN_STOPPED';
 const LongPausedType = 'LONG_PAUSED';
@@ -30,21 +32,24 @@ const NotificationTypes = {
   IdleRunType,
   IdleRunPausedType,
   IdleRunStoppedType,
+  IdleCpuType,
+  IdleGpuType,
   LongPausedType,
   LongPausedStoppedType
 };
 
 const IdleNotificationsTitle = (
   <div>
-    {/* eslint-disable-next-line max-len */}
-    Common <b>Idle</b>-notifications ( <i>IDLE_RUN</i>, <i>IDLE_RUN_PAUSED</i>, <i>IDLE_RUN_STOPPED</i> ) settings
+    Common <b>idle</b> notifications settings
   </div>
 );
 
 const PreferencesSectionTitle = {
   [IdleRunType]: IdleNotificationsTitle,
   [IdleRunPausedType]: IdleNotificationsTitle,
-  [IdleRunStoppedType]: IdleNotificationsTitle
+  [IdleRunStoppedType]: IdleNotificationsTitle,
+  [IdleCpuType]: IdleNotificationsTitle,
+  [IdleGpuType]: IdleNotificationsTitle
 };
 
 const SystemDiskConsumeThresholdPreference = {
@@ -99,75 +104,6 @@ const SystemMemoryConsumeThresholdPreference = {
   )
 };
 
-const SystemMaxIdleTimeoutMinutesPreference = {
-  preference: 'system.max.idle.timeout.minutes',
-  type: 'number',
-  min: 0,
-  name: 'Max duration of idle (min)',
-  hint: (
-    <div>
-      <b>Specifies a duration in minutes.</b><br />
-      This is a period during which the <i>idle</i> state of the run is not being checked.<br />
-      After this period, the System starts to verify CPU utilization of the running node<br />
-      and mark the run by the
-      <span
-        className="cp-tag warning"
-        style={{
-          padding: '2px 5px',
-          borderRadius: 5,
-          margin: 3,
-          lineHeight: 1
-        }}
-      >
-        IDLE
-      </span>
-      label when the utilization is low.
-    </div>
-  )
-};
-
-const SystemIdleActionTimeoutMinutesPreference = {
-  preference: 'system.idle.action.timeout.minutes',
-  type: 'number',
-  min: 0,
-  name: 'Action delay (min)',
-  hint: (
-    <div>
-      <b>Specifies a duration in minutes.</b><br />
-      This duration starts after the <b>"Max duration of idle (min)"</b> is over.<br />
-      This is a delay before the configured action of the <i>idle</i> run will be performed.<br />
-    </div>
-  )
-};
-
-const SystemIdleCPUThresholdPreference = {
-  preference: 'system.idle.cpu.threshold',
-  type: 'number',
-  min: 0,
-  max: 100,
-  name: 'CPU idle threshold (%)',
-  hint: (
-    <div>
-      <b>Specifies percentage of the CPU utilization</b>, below which an action with the
-      <i style={{margin: 3}}>idle</i>
-      run will be performed.
-    </div>
-  )
-};
-
-const SystemIdleActionPreference = {
-  preference: 'system.idle.action',
-  type: 'enum',
-  name: 'Action',
-  enum: ['NOTIFY', 'PAUSE', 'PAUSE_OR_STOP', 'STOP'],
-  hint: (
-    <div>
-      Sets the <b>action</b> to perform with the instance with low CPU utilization
-      (below the configured threshold).
-    </div>
-  )
-};
-
 const SystemMaxLongPausedTimeoutMinutesPreference = {
   preference: 'system.max.long.paused.timeout.minutes',
   type: 'number',
@@ -193,6 +129,12 @@ const SystemLongPausedActionPreference = {
       having the long paused state (longer then configured threshold).
     </div>
   )
+};
+
+const SystemIdleSettingsPreference = {
+  preference: 'system.idle.monitoring.config',
+  type: 'idleMonitoringSettings',
+  name: 'Idle monitoring settings'
 };
 
 const SystemNotificationsExcludeInstanceTypesPreference = {
@@ -279,10 +221,7 @@ const SystemPodBandwidthActionBackoffPeriodPreference = {
 const Preferences = [
   SystemDiskConsumeThresholdPreference,
   SystemMemoryConsumeThresholdPreference,
-  SystemMaxIdleTimeoutMinutesPreference,
-  SystemIdleActionTimeoutMinutesPreference,
-  SystemIdleCPUThresholdPreference,
-  SystemIdleActionPreference,
+  SystemIdleSettingsPreference,
   SystemMaxLongPausedTimeoutMinutesPreference,
   SystemLongPausedActionTimeoutMinutesPreference,
   SystemLongPausedActionPreference,
@@ -306,25 +245,18 @@ const NotificationPreferences = {
     SystemPodBandwidthActionBackoffPeriodPreference.preference
   ],
   [IdleRunType]: [
-    SystemMaxIdleTimeoutMinutesPreference.preference,
-    SystemIdleActionTimeoutMinutesPreference.preference,
-    SystemIdleCPUThresholdPreference.preference,
-    SystemIdleActionPreference.preference,
+    {preference: SystemIdleSettingsPreference.preference, visibleTypes: ['ABSOLUTE']},
     SystemNotificationsExcludeInstanceTypesPreference.preference,
     SystemNotificationsExcludeParamsPreference.preference
   ],
-  [IdleRunPausedType]: [
-    SystemMaxIdleTimeoutMinutesPreference.preference,
-    SystemIdleActionTimeoutMinutesPreference.preference,
-    SystemIdleCPUThresholdPreference.preference,
-    SystemIdleActionPreference.preference
+  [IdleCpuType]: [
+    {preference: SystemIdleSettingsPreference.preference, visibleTypes: ['CPU']}
   ],
-  [IdleRunStoppedType]: [
-    SystemMaxIdleTimeoutMinutesPreference.preference,
-    SystemIdleActionTimeoutMinutesPreference.preference,
-    SystemIdleCPUThresholdPreference.preference,
-    SystemIdleActionPreference.preference
+  [IdleGpuType]: [
+    {preference: SystemIdleSettingsPreference.preference, visibleTypes: ['GPU']}
   ],
+  [IdleRunPausedType]: [],
+  [IdleRunStoppedType]: [],
   [LongPausedType]: [
     SystemLongPausedActionPreference.preference,
     SystemLongPausedActionTimeoutMinutesPreference.preference
@@ -335,5 +267,7 @@ export {
   NotificationTypes,
   NotificationPreferences,
   Preferences,
-  PreferencesSectionTitle
+  PreferencesSectionTitle,
+  IdleCpuType,
+  IdleGpuType
 };

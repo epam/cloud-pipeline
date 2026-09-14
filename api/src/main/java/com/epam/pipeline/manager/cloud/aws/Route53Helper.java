@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -52,8 +53,12 @@ import org.springframework.util.Assert;
 public class Route53Helper {
 
     private static final long TTL_TIME = 60L;
-    private static final int MAX_ATTEMPTS = 100;
-    private static final int DELAY_IN_SECONDS = 1;
+
+    @Value("${instance.dns.route53.max.attempts:100}")
+    private int maxAttempts;
+
+    @Value("${instance.dns.route53.delay.seconds:1}")
+    private int delayInSeconds;
 
     public InstanceDNSRecord createDNSRecord(final AwsRegion awsRegion,
                                              final String hostedZoneId,
@@ -164,8 +169,8 @@ public class Route53Helper {
             final WaiterParameters<GetChangeRequest> request = new WaiterParameters<GetChangeRequest>()
                     .withPollingStrategy(
                             new PollingStrategy(
-                                    new MaxAttemptsRetryStrategy(MAX_ATTEMPTS),
-                                    new FixedDelayStrategy(DELAY_IN_SECONDS)
+                                    new MaxAttemptsRetryStrategy(maxAttempts),
+                                    new FixedDelayStrategy(delayInSeconds)
                             )
                     ).withRequest(new GetChangeRequest().withId(result.getChangeInfo().getId()));
             new AmazonRoute53Waiters(client).resourceRecordSetsChanged().run(request);
@@ -173,7 +178,10 @@ public class Route53Helper {
             if (status.equalsIgnoreCase(ChangeStatus.INSYNC.name())) {
                 result.getChangeInfo().setStatus(status);
             } else {
-                throw new IllegalStateException("Can't create Route53 DNS record for some reason.");
+                throw new IllegalStateException(
+                        String.format("Route53 DNS record change %s did not reach INSYNC status "
+                                        + "within %d attempts (delay: %ds). Current status: %s",
+                                result.getChangeInfo().getId(), maxAttempts, delayInSeconds, status));
             }
         }
 

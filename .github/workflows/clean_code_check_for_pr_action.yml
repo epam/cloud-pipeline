@@ -1,9 +1,20 @@
 name: PMD & CheckStyle
 on:
   pull_request:
-    branches: [ develop, 'release/**', 'stage/**' ]
-
-  workflow_dispatch:
+    branches: [ develop ]
+    paths:
+      - 'api/**'
+      - 'billing-report-agent/**'
+      - 'cloud-pipeline-common/**'
+      - 'core/**'
+      - 'data-transfer-service/**'
+      - 'data-sharing-service/**'
+      - 'docker-comp-scan/**'
+      - 'elasticsearch-agent/**'
+      - 'elasticsearch-common/**'
+      - 'monitoring-service/**'
+      - 'notifier/**'
+      - 'vm-monitor/**'
 
 jobs:
   pmd:

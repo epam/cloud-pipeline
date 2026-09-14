@@ -556,12 +556,14 @@ async function getMetadataForParameters (parameters = [], pipeline, pipelinesLib
   }
   const folderIdFallback = pipeline?.parentFolderId;
   const getKey = ({config}) => {
-    const {folderId, metadataClass = ''} = config?.metadata_config || {};
-    return `${folderId || folderIdFallback}_${metadataClass}`;
+    const {folderId, metadataClass = '', filters, orderBy} = config?.metadata_config || {};
+    const filterKey = filters && filters.length > 0 ? JSON.stringify(filters) : '';
+    const orderByKey = orderBy && orderBy.length > 0 ? JSON.stringify(orderBy) : '';
+    return `${folderId || folderIdFallback}_${metadataClass}_${filterKey}_${orderByKey}`;
   };
   const requestsTemp = {};
   for (const param of metadataEntityParams) {
-    const {folderId, metadataClass} = param.config.metadata_config;
+    const {folderId, metadataClass, filters, orderBy} = param.config.metadata_config;
     const key = getKey(param);
     if (metadataCache[key]) {
       continue;
@@ -577,31 +579,35 @@ async function getMetadataForParameters (parameters = [], pipeline, pipelinesLib
       requestsTemp[key] = {
         folderId: resolvedId || folderIdFallback,
         metadataClass,
+        filters,
+        orderBy,
         name: param.name
       };
     }
   }
   const requests = Object.entries(requestsTemp).map(
-    ([key, {name, folderId, metadataClass}]) => {
+    ([key, {name, folderId, metadataClass, filters, orderBy}]) => {
       return new Promise((resolve) => {
-        const filter = new MetadataEntityFilter();
+        const filterRequest = new MetadataEntityFilter();
         const payload = {
           folderId,
           metadataClass,
           page: 1,
-          pageSize: 999
+          pageSize: 999,
+          ...(filters && filters.length > 0 ? {filters} : {}),
+          ...(orderBy && orderBy.length > 0 ? {orderBy} : {})
         };
-        filter
+        filterRequest
           .send(payload)
           .then(() => {
-            if (filter.error || !filter.loaded) {
+            if (filterRequest.error || !filterRequest.loaded) {
               console.error(
                 `Error fetching metadata for ${name} parameter:`,
-                filter.error
+                filterRequest.error
               );
-              metadataCache[key] = {error: filter.error};
+              metadataCache[key] = {error: filterRequest.error};
             } else {
-              metadataCache[key] = filter.value || {};
+              metadataCache[key] = filterRequest.value || {};
             }
             resolve();
           })
@@ -1236,21 +1242,25 @@ function getParameterValidationError (parameters, config) {
 /**
  * @param {Parameter[]} parameters
  * @param enumeration
+ * @returns {{name: string, value: string, visible: boolean}[]|undefined}
  */
 function parseParameterEnumeration (parameters, enumeration) {
   if (enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))) {
     return [...enumeration].map((item) => {
       if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
-        return String(item);
+        return {name: String(item), value: String(item), visible: true};
       }
-      if (typeof item === 'object') {
+      if (typeof item === 'object' && item.name !== undefined) {
         const {
           name,
+          value = name,
           visible
         } = item;
-        if (evaluate(parameters, `enum "${name}"`, visible)) {
-          return name;
-        }
+        return {
+          name,
+          value,
+          visible: evaluate(parameters, `enum "${name}"`, visible, true)
+        };
       }
       return undefined;
     }).filter(Boolean);
@@ -1366,7 +1376,9 @@ function validateParameter (parameter, parameters, rawEdit = false) {
     if (actualConfig.visible) {
       if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
         if (!actualConfig.multiple) {
-          value = actualConfig.enumeration.find((o) => o === value);
+          const matched = actualConfig.enumeration
+            .find((o) => o.visible && o.value === value);
+          value = matched ? matched.value : undefined;
         }
         if (!actualConfig.multiple && !value) {
           value = actualConfig.value;

@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.monitoring.IdleMonitoringType;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -37,7 +38,8 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.NetworkConsumingRunMonitor;
+import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.OverloadedRunMonitor;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
@@ -45,13 +47,16 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +67,8 @@ import org.springframework.util.Assert;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.function.Consumer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -145,6 +152,9 @@ public class DockerContainerOperationManager {
 
     @Autowired
     private PipelineRunServiceUrlManager serviceUrlManager;
+
+    @Autowired
+    private NotificationManager notificationManager;
 
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
@@ -372,13 +382,18 @@ public class DockerContainerOperationManager {
     }
 
     @Async("pauseRunExecutor")
-    public void resumeRun(PipelineRun run, List<String> endpoints) {
+    public void resumeRun(final PipelineRun run, final List<String> endpoints) {
         try {
             final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            final boolean instanceStartedSuccessfully = startInstanceIfNeed(run, run.getInstance().getNodeId(),
+            final Optional<String> maybeRunInstanceType = startInstanceIfNeed(run, run.getInstance().getNodeId(),
                     cloudRegion.getId());
-            if (!instanceStartedSuccessfully) {
+            if (!maybeRunInstanceType.isPresent()) {
                 return;
+            }
+            final String runInstanceType = maybeRunInstanceType.get();
+            if (!runInstanceType.equals(run.getInstance().getNodeType())) {
+                run.getInstance().setNodeType(runInstanceType);
+                runManager.updateRunInstance(run.getId(), run.getInstance());
             }
 
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
@@ -445,9 +460,8 @@ public class DockerContainerOperationManager {
     private void rollbackRunToPausedState(final PipelineRun run,
                                           final CloudInstanceOperationResult startInstanceResult) {
         final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
-                startInstanceResult.getMessage());
-        addRunLog(run, msg, RESUME_RUN_TASK);
-        log.warn(msg);
+                startInstanceResult != null ? startInstanceResult.getMessage(): StringUtils.EMPTY);
+        addResumeRunLog(run, msg, log::warn);
         run.setStatus(TaskStatus.PAUSED);
         // set stateReasonMessage here only for NotificationAspect, this status won't be persisted in DB,
         // but would be passed to aspect and used for RunStatus update
@@ -491,6 +505,11 @@ public class DockerContainerOperationManager {
         addRunLog(run, logMessage, taskName, null);
     }
 
+    private void addResumeRunLog(final PipelineRun run, final String msg, final Consumer<String> logger) {
+        addRunLog(run, msg, RESUME_RUN_TASK);
+        logger.accept(msg);
+    }
+
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName,
                            final TaskStatus status) {
         final RunLog runLog = RunLog.builder()
@@ -506,15 +525,27 @@ public class DockerContainerOperationManager {
 
     private void removeUtilizationLevelTags(final PipelineRun run) {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
-        Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
-                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_LOW + suffix,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix,
-                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
-                  PipelineRunManager.NETWORK_LIMIT + suffix)
-            .filter(run::hasTag)
-            .forEach(run::removeTag);
+        Stream.of(
+            IdleMonitoringType.CPU.getTag(),
+            IdleMonitoringType.CPU.getTag() + suffix,
+            IdleMonitoringType.GPU.getTag(),
+            IdleMonitoringType.GPU.getTag() + suffix,
+            IdleMonitoringType.ABSOLUTE.getTag(),
+            IdleMonitoringType.ABSOLUTE.getTag() + suffix,
+            OverloadedRunMonitor.UTILIZATION_LEVEL_HIGH,
+            OverloadedRunMonitor.UTILIZATION_LEVEL_HIGH + suffix,
+            NetworkConsumingRunMonitor.NETWORK_CONSUMING_LEVEL_HIGH,
+            NetworkConsumingRunMonitor.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
+            PipelineRunManager.NETWORK_LIMIT + suffix
+        ).filter(run::hasTag)
+        .forEach(run::removeTag);
+    }
+
+    private void removeUtilizationNotificationTimestamps(final PipelineRun run) {
+        Stream.of(IdleMonitoringType.values())
+            .forEach(type ->
+                notificationManager.removeNotificationTimestamps(run.getId(), type.getNotificationType())
+            );
     }
 
     private void stopInstanceIfNeed(final Long runId, final RunInstance instance) {
@@ -533,35 +564,58 @@ public class DockerContainerOperationManager {
         }
     }
 
-    private boolean startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
+    private Optional<String> startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
         try {
             final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
             validateInstanceState(cloudInstanceState);
             switch (cloudInstanceState) {
-                case STOPPED:
-                    final CloudInstanceOperationResult startInstanceResult =
-                            cloudFacade.startInstance(regionId, nodeId);
-                    if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                        rollbackRunToPausedState(run, startInstanceResult);
-                        return false;
-                    }
-                    break;
                 case STOPPING:
                     rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
                             messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
-                    return false;
+                    return Optional.empty();
                 case TERMINATED:
                     throw new IllegalStateException(messageHelper
                             .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+                case STOPPED:
+                    CloudInstanceOperationResult lastFailResult = null;
+                    for (final String candidateType : buildCandidateTypes(run.getInstance())) {
+                        final String attemptMsg = messageHelper.getMessage(
+                                MessageConstants.INFO_ATTEMPT_START_INSTANCE, run.getId(), candidateType);
+                        addResumeRunLog(run, attemptMsg, log::debug);
+                        cloudFacade.changeInstanceType(regionId, nodeId, candidateType);
+                        final CloudInstanceOperationResult result = cloudFacade.startInstance(regionId, nodeId);
+                        if (result.getStatus() == CloudInstanceOperationResult.Status.OK) {
+                            return Optional.of(candidateType);
+                        }
+                        final String failMsg = messageHelper.getMessage(
+                                MessageConstants.WARN_FAIL_START_INSTANCE, run.getId(), candidateType,
+                                result.getMessage());
+                        addResumeRunLog(run, failMsg, log::warn);
+                        lastFailResult = result;
+                        if (result.getStatus() == CloudInstanceOperationResult.Status.ERROR) {
+                            break;
+                        }
+                    }
+                    rollbackRunToPausedState(run, lastFailResult);
+                    return Optional.empty();
                 default:
-                    break;
+                    return Optional.of(run.getInstance().getNodeType());
             }
-            return true;
         } catch (Exception e) {
-            log.error("An error occurred during cloud instance start: " + e.getMessage(), e);
-            addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
-            return false;
+            rollbackRunToPausedState(run,
+                CloudInstanceOperationResult.fail("An error occurred during cloud instance start: " + e.getMessage())
+            );
+            return Optional.empty();
         }
+    }
+
+    private List<String> buildCandidateTypes(final RunInstance instance) {
+        final List<String> candidates = new ArrayList<>();
+        candidates.add(instance.getNodeType());
+        ListUtils.emptyIfNull(instance.getFallbackInstanceTypes()).stream()
+                .filter(t -> !candidates.contains(t))
+                .forEach(candidates::add);
+        return candidates;
     }
 
     private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
@@ -597,6 +651,7 @@ public class DockerContainerOperationManager {
 
         run.setPodIP(null);
         removeUtilizationLevelTags(run);
+        removeUtilizationNotificationTimestamps(run);
         runManager.updateRunInfo(run);
         serviceUrlManager.clear(run.getId());
 

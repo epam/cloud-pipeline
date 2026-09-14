@@ -275,11 +275,11 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadUser() {
-        doReturn(pipelineUser).when(mockUserApiService).loadUser(ID, false);
+        doReturn(pipelineUser).when(mockUserApiService).loadUser(ID, false, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(USER_ID_URL, ID)));
 
-        verify(mockUserApiService).loadUser(ID, false);
+        verify(mockUserApiService).loadUser(ID, false, false);
         assertResponse(mvcResult, pipelineUser, UserCreatorUtils.PIPELINE_USER_INSTANCE_TYPE);
     }
 
@@ -338,11 +338,11 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadUsers() {
-        doReturn(pipelineUserList).when(mockUserApiService).loadUsers(false);
+        doReturn(pipelineUserList).when(mockUserApiService).loadUsers(false, false);
 
         final MvcResult mvcResult = performRequest(get(USERS_URL));
 
-        verify(mockUserApiService).loadUsers(false);
+        verify(mockUserApiService).loadUsers(false, false);
         assertResponse(mvcResult, pipelineUserList, UserCreatorUtils.PIPELINE_USER_LIST_INSTANCE_TYPE);
     }
 

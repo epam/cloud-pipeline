@@ -87,7 +87,7 @@ class CloudPipelineAPI:
         url = '/pipeline/git/credentials'
         if duration:
             url += '?duration=%d' % duration
-        result = self._get('/pipeline/git/credentials', token)
+        result = self._get(url, token)
         return result or {}
 
     def _get(self, url, token=None):

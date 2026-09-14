@@ -225,11 +225,13 @@ function DownloadSigWindowsToolsIfRequired($GlobalDistributionUrl) {
     }
 }
 
-function PatchSigWindowsTools($KubeHost, $KubePort, $Dns) {
+function PatchSigWindowsTools($KubeHost, $KubePort, $Dns, $GlobalDistributionUrl) {
     $instanceId=$(Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id)
     $kubeClusterHelperContent = Get-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
     $kubeClusterHelperContent[262] = '    Write-Host "Skipping node joining verification..."'
     $kubeClusterHelperContent[263] = '    return 1'
+    $kubeClusterHelperContent[294] = '    DownloadFile -Url "' + $GlobalDistributionUrl + 'tools/kube/1.15.4/win/util/cni-plugins-windows-amd64-v0.8.2.tgz" -Destination $Global:BaseDir/cni-plugins-windows-amd64-v0.8.2.tgz'
+    $kubeClusterHelperContent[329] = '    DownloadFile -Url "' + $GlobalDistributionUrl + 'tools/kube/1.15.4/win/util/net-conf.json" -Destination $(GetFlannelNetConf)'
     $kubeClusterHelperContent[344] = '        $nodeName = "' + $instanceId + '"'
     $kubeClusterHelperContent[656] = '        "--hostname-override=' + $instanceId + '"'
     $kubeClusterHelperContent[704] = '        "--hostname-override=' + $instanceId + '"'
@@ -243,6 +245,10 @@ function PatchSigWindowsTools($KubeHost, $KubePort, $Dns) {
     $kubeClusterHelperContent[1223] = '    Write-Host "Skipping nodes listing..."'
     $kubeClusterHelperContent[1228] = '    Write-Host "Skipping node deletion..."'
     $kubeClusterHelperContent | Set-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
+
+    $kubeClusterContent = Get-Content .\sig-windows-tools\kubeadm\KubeCluster.ps1
+    $kubeClusterContent[143] = '$hnsPath = "' + $GlobalDistributionUrl + 'tools/kube/1.15.4/win/util/hns.psm1"'
+    $kubeClusterContent | Set-Content .\sig-windows-tools\kubeadm\KubeCluster.ps1
 }
 
 function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $KubeDir, $Interface, $GlobalDistributionUrl) {
@@ -525,8 +531,8 @@ ConfigureAndRestartDockerDaemon
 Write-Host "Downloading Sig Windows Tools if required..."
 DownloadSigWindowsToolsIfRequired -GlobalDistributionUrl $globalDistributionUrl
 
-Write-Host "Patching KubeClusterHelper.psm1 script to ignore all preflight errors..."
-PatchSigWindowsTools -KubeHost $kubeHost -KubePort $kubePort -Dns $dnsProxyPost
+Write-Host "Patching Sig Windows Tools scripts to ignore all preflight errors and use internal distribution URLs..."
+PatchSigWindowsTools -KubeHost $kubeHost -KubePort $kubePort -Dns $dnsProxyPost -GlobalDistributionUrl $globalDistributionUrl
 
 Write-Host "Generating Sig Windows Tools config file..."
 InitSigWindowsToolsConfigFile -KubeHost $kubeHost -KubeToken $kubeToken -KubeCertHash $kubeCertHash -KubeDir $kubeDir -Interface $interface -GlobalDistributionUrl $globalDistributionUrl

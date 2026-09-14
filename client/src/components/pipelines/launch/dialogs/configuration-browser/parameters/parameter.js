@@ -297,11 +297,12 @@ class Parameter extends React.Component {
               className={className}
               onChange={changeValue}
               getPopupContainer={node => node.parentNode}
+              optionLabelProp="label"
             >
               {
                 enumeration.map(option => (
-                  <Select.Option key={option} value={option}>
-                    {option}
+                  <Select.Option key={option.value} value={option.value} label={option.name}>
+                    {option.name}
                   </Select.Option>
                 ))
               }

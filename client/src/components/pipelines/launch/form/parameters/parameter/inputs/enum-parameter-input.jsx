@@ -4,32 +4,6 @@ import classNames from 'classnames';
 import {Select} from 'antd';
 import styles from './launch-form-parameter-input.css';
 
-function mapEnumerationItem (eItem) {
-  if (typeof eItem === 'string') {
-    return {
-      key: eItem,
-      value: eItem,
-      visible: () => true
-    };
-  }
-  if (typeof eItem === 'number') {
-    return {
-      key: `${eItem}`,
-      value: `${eItem}`,
-      visible: () => true
-    };
-  }
-  if (typeof eItem === 'object') {
-    const {value, visible} = eItem;
-    return {
-      key: value,
-      value,
-      visible: () => visible
-    };
-  }
-  return undefined;
-}
-
 function unMapValue (value, parameter) {
   if (parameter?.config?.multiple && Array.isArray(value)) {
     return value.join(',');
@@ -57,9 +31,9 @@ function LaunchFormEnumParameterInput (props) {
     config = {}
   } = parameter || {};
   const {
-    enumeration: enumerationProps = []
+    enumeration = []
   } = config;
-  const enumeration = (enumerationProps || []).map(mapEnumerationItem);
+  const visibleEnumeration = enumeration.filter((o) => o.visible);
   const value = mapValue(valueProps, parameter);
   const onInputChange = (e) => {
     if (typeof onChange === 'function') {
@@ -75,10 +49,11 @@ function LaunchFormEnumParameterInput (props) {
       disabled={disabled}
       size="large"
       mode={parameter?.config?.multiple ? 'multiple' : 'default'}
+      optionLabelProp="label"
     >
-      {enumeration.map((v) => (
-        <Select.Option key={v.key} value={v.value}>
-          {v.value}
+      {visibleEnumeration.map((v) => (
+        <Select.Option key={v.value} value={v.value} label={v.name || v.value}>
+          {v.name || v.value}
         </Select.Option>
       ))}
     </Select>

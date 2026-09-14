@@ -36,8 +36,7 @@
     "ssl_backend": "true"
   },
   {
-    "name": "CP_GPU_COUNT",
-    "value": ">0",
+    "name": "CP_GPU_AVAILABLE",
     "endpoint_env": "CP_GPUSTAT_PORT_GPU",
     "endpoint_default" : "8092",
     "endpoint_num_env": "CP_GPUSTAT_ENDPOINT_ID_GPU",

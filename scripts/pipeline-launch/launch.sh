@@ -400,8 +400,26 @@ function configure_package_manager_pip {
 }
 
 function run_pre_common_commands {
+      # Allowed values: pre_init, pre_exec
+      # If left empty - will try to use unsectioned commands
+      local section="$1"
       preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
-      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      
+      if [ -z "$section" ]; then
+            section_commands="$preference_value"
+      else
+            section_commands=$(echo "$preference_value" | jq -r ".${section}" | grep -v "^null$")
+            # Backward compatability - if pre_init is requested but no such section - try to use unsectioned commands
+            if [ -z "$section_commands" ] && [ "$section" == "pre_init" ]; then
+                  section_commands="$preference_value"
+            fi
+      fi
+      if [ -z "$section_commands" ]; then
+        echo "Additional commands for section ${section:-<unsectioned>} were not found."
+        return
+      fi
+
+      linux_commands=$(echo "$section_commands" | jq -r '.linux' | grep -v "^null$")
       if [ -z "$linux_commands" ]; then
         echo "Additional commands for Linux distribution were not found."
         return
@@ -1387,7 +1405,7 @@ fi
 define_distro_name_and_version
 
 # Invoke any additional commands for the distribution
-run_pre_common_commands
+run_pre_common_commands "pre_init"
 
 # Perform any distro/version specific package manage configuration
 configure_package_manager
@@ -1777,6 +1795,34 @@ then
 
     sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+
+    # Pre-create a local (non-NFS) authorized_keys store so that AuthorizedKeysCommand
+    # can serve keys even when the home directory is NFS-mounted with UID squashing or
+    # group-write bits that sshd's StrictModes would otherwise reject.
+    _CP_AUTH_KEYS_DIR="/var/run/cp_auth_keys"
+    mkdir -p "$_CP_AUTH_KEYS_DIR"
+    chmod 755 "$_CP_AUTH_KEYS_DIR"
+    if [ -n "$OWNER" ]; then
+        mkdir -p "$_CP_AUTH_KEYS_DIR/$OWNER"
+        chown "$OWNER" "$_CP_AUTH_KEYS_DIR/$OWNER"
+        chmod 700 "$_CP_AUTH_KEYS_DIR/$OWNER"
+        touch "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+        chown "$OWNER" "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+        chmod 600 "$_CP_AUTH_KEYS_DIR/$OWNER/authorized_keys"
+    fi
+    cat > /etc/ssh/fetch_auth_keys.sh << 'CP_FETCH_KEYS_EOF'
+#!/bin/bash
+user="${1//[^a-zA-Z0-9._-]/}"
+[ -n "$user" ] || exit 1
+cat "/var/run/cp_auth_keys/$user/authorized_keys" 2>/dev/null
+home="$(getent passwd "$user" | cut -d: -f6 2>/dev/null)"
+[ -n "$home" ] && cat "$home/.ssh/authorized_keys" 2>/dev/null
+CP_FETCH_KEYS_EOF
+    chmod 755 /etc/ssh/fetch_auth_keys.sh
+    sed -i '/AuthorizedKeysCommand\b/d' /etc/ssh/sshd_config
+    sed -i '/AuthorizedKeysCommandUser/d' /etc/ssh/sshd_config
+    echo "AuthorizedKeysCommand /etc/ssh/fetch_auth_keys.sh %u" >> /etc/ssh/sshd_config
+    echo "AuthorizedKeysCommandUser root" >> /etc/ssh/sshd_config
 
     # Allow clients to be idle for 1 hour (30 sec * 120 times)
     CP_CAP_SSH_CLIENT_ALIVE_INTERVAL=${CP_CAP_SSH_CLIENT_ALIVE_INTERVAL:-30}
@@ -2832,6 +2878,9 @@ custom_fixes
 
 # Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
 custom_cap_setup
+
+# Run "pre_exec" commands
+run_pre_common_commands "pre_exec"
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"

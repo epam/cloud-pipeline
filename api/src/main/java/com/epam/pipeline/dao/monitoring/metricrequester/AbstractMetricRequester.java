@@ -136,16 +136,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     public static MetricRequester getRequester(final ELKUsageMetric metric,
                                                final HeapsterElasticRestHighLevelClient client) {
         switch (metric) {
-            case CPU:
-                return new CPURequester(client);
-            case MEM:
-                return new MemoryRequester(client);
-            case FS:
-                return new FSRequester(client);
-            case NETWORK:
-                return new NetworkRequester(client);
-            default:
-                throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
+            case CPU: return new CPURequester(client);
+            case MEM: return new MemoryRequester(client);
+            case FS: return new FSRequester(client);
+            case NETWORK: return new NetworkRequester(client);
+            case GPU_AGGS: return new GPUAggregationRequester(client);
+            default: throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
     }
 

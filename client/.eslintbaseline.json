@@ -1,0 +1,794 @@
+{
+  "scripts/dev-proxy.js": {
+    "max-len": 4
+  },
+  "scripts/gui-themes/generate-theme-configuration.js": {
+    "max-len": 1
+  },
+  "src/components/ai-chat/components/launch-form/launch-form-store.js": {
+    "quotes": 1
+  },
+  "src/components/ai-chat/components/message/run-status-message.js": {
+    "no-unused-vars": 1
+  },
+  "src/components/applications/miew/MiewPage.js": {
+    "max-len": 1,
+    "padded-blocks": 2
+  },
+  "src/components/billing/quotas/quotas-threshold.js": {
+    "no-unused-vars": 1
+  },
+  "src/components/billing/quotas/utilities/quota-indicator.js": {
+    "no-unused-vars": 2
+  },
+  "src/components/billing/reports/filters/period-filter.js": {
+    "react/jsx-indent": 1
+  },
+  "src/components/billing/reports/filters/provider-filter.js": {
+    "semi": 1
+  },
+  "src/components/billing/reports/utilities/date-range-renderer.js": {
+    "no-unused-vars": 1
+  },
+  "src/components/cluster/ClusterNodeGeneralInfo.js": {
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/cluster/ClusterNodePods.js": {
+    "max-len": 2,
+    "react/jsx-space-before-closing": 11,
+    "react/no-did-update-set-state": 1,
+    "space-before-function-paren": 1
+  },
+  "src/components/cluster/hot-node-pool/hot-node-pool-hints.js": {
+    "max-len": 2
+  },
+  "src/components/main/home/panels/ActivitiesPanel.js": {
+    "max-len": 4
+  },
+  "src/components/main/home/panels/MyDataPanel.js": {
+    "max-len": 2
+  },
+  "src/components/main/home/panels/MyPipelinesPanel.js": {
+    "max-len": 3,
+    "padded-blocks": 1
+  },
+  "src/components/main/home/panels/MyProjectsPanel.js": {
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/components/main/home/panels/MyServicesPanel.js": {
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/components/main/home/panels/PersonalToolsPanel.js": {
+    "max-len": 6
+  },
+  "src/components/main/home/panels/RecentlyCompletedRunsPanel.js": {
+    "quotes": 1
+  },
+  "src/components/main/home/panels/components/getServiceActions.js": {
+    "no-unreachable": 1
+  },
+  "src/components/main/home/panels/components/renderSeparator.js": {
+    "react/jsx-indent": 1
+  },
+  "src/components/pipelines/browser/FireCloudBrowser.js": {
+    "padded-blocks": 2
+  },
+  "src/components/pipelines/browser/FireCloudMethodSnapshotConfigurations.js": {
+    "indent": 1,
+    "padded-blocks": 2
+  },
+  "src/components/pipelines/browser/FireCloudMethodsBrowser.js": {
+    "padded-blocks": 1
+  },
+  "src/components/pipelines/browser/Folder.js": {
+    "max-len": 16,
+    "no-unused-vars": 1,
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/browser/Pipeline.js": {
+    "max-len": 1
+  },
+  "src/components/pipelines/browser/data-storage/components/download-omics-button.js": {
+    "padded-blocks": 1
+  },
+  "src/components/pipelines/browser/data-storage/index.js": {
+    "max-len": 1
+  },
+  "src/components/pipelines/browser/data-storage/ngb-files.js": {
+    "camelcase": 1,
+    "comma-dangle": 8,
+    "max-len": 4,
+    "no-useless-escape": 5,
+    "quotes": 4,
+    "semi": 1,
+    "space-before-function-paren": 6
+  },
+  "src/components/pipelines/browser/forms/AddInstanceForm.js": {
+    "max-len": 1
+  },
+  "src/components/pipelines/browser/forms/CloneForm.js": {
+    "max-len": 2,
+    "react/jsx-boolean-value": 2,
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/browser/forms/DataStorageEditDialog.js": {
+    "max-len": 1
+  },
+  "src/components/pipelines/browser/forms/DataStoragePathInput.js": {
+    "max-len": 1,
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/browser/forms/EditFolderForm.js": {
+    "comma-dangle": 1,
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/components/pipelines/browser/forms/RegisterVersionFormDialog.js": {
+    "indent": 1,
+    "padded-blocks": 1
+  },
+  "src/components/pipelines/browser/forms/life-cycle-rules/components/life-cycle-counter.js": {
+    "indent": 1
+  },
+  "src/components/pipelines/browser/forms/life-cycle-rules/components/restore-status-icon.js": {
+    "indent": 1
+  },
+  "src/components/pipelines/browser/forms/life-cycle-rules/forms/notification-form.js": {
+    "no-unused-vars": 1
+  },
+  "src/components/pipelines/browser/forms/life-cycle-rules/index.js": {
+    "indent": 4
+  },
+  "src/components/pipelines/browser/forms/life-cycle-rules/modals/life-cycle-restore-modal/index.js": {
+    "indent": 1
+  },
+  "src/components/pipelines/browser/forms/restrict-docker-images/DockerImagesEdit.js": {
+    "indent": 1
+  },
+  "src/components/pipelines/browser/versioned-storage/forms/revert-commit-form.js": {
+    "comma-dangle": 1
+  },
+  "src/components/pipelines/configuration/DetachedConfiguration.js": {
+    "indent": 1,
+    "max-len": 14,
+    "padded-blocks": 1,
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/configuration/forms/EditDetachedConfigurationForm.js": {
+    "indent": 4,
+    "operator-linebreak": 1,
+    "padded-blocks": 1,
+    "react/jsx-indent": 2
+  },
+  "src/components/pipelines/launch/dialogs/BucketBrowser.js": {
+    "max-len": 8,
+    "react/no-did-update-set-state": 5
+  },
+  "src/components/pipelines/launch/dialogs/ConfigurationBrowser.js": {
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/launch/dialogs/DockerImageBrowser.js": {
+    "max-len": 7,
+    "react/no-did-update-set-state": 4
+  },
+  "src/components/pipelines/launch/dialogs/MetadataBrowser.js": {
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/launch/form/LaunchPipelineForm.js": {
+    "comma-dangle": 3,
+    "max-len": 4,
+    "no-unused-vars": 2,
+    "semi": 1,
+    "standard/no-callback-literal": 1
+  },
+  "src/components/pipelines/launch/form/LimitMountsInput.js": {
+    "max-len": 2
+  },
+  "src/components/pipelines/launch/form/components/reservation-parameters/utilities.js": {
+    "max-len": 1
+  },
+  "src/components/pipelines/launch/form/components/upload-parameters-button/utilities.js": {
+    "max-len": 1,
+    "no-unused-vars": 1
+  },
+  "src/components/pipelines/launch/form/hints.js": {
+    "max-len": 13
+  },
+  "src/components/pipelines/launch/form/pipeline-version-picker/index.js": {
+    "max-len": 2
+  },
+  "src/components/pipelines/launch/form/utilities/launch-cluster-tooltips.js": {
+    "max-len": 10
+  },
+  "src/components/pipelines/launch/form/utilities/launch-form-modified-state.js": {
+    "max-len": 1,
+    "no-undef": 14,
+    "no-unused-vars": 1,
+    "quotes": 2
+  },
+  "src/components/pipelines/launch/form/utilities/pretty-url.js": {
+    "no-useless-escape": 1
+  },
+  "src/components/pipelines/version/code/forms/CodeFileCommitForm.js": {
+    "max-len": 5,
+    "padded-blocks": 1,
+    "react/jsx-indent": 1
+  },
+  "src/components/pipelines/version/code/forms/PipelineCodeSourceNameDialog.js": {
+    "comma-dangle": 1,
+    "padded-blocks": 1,
+    "react/jsx-indent-props": 6,
+    "space-before-blocks": 1,
+    "space-before-function-paren": 1,
+    "standard/no-callback-literal": 2
+  },
+  "src/components/pipelines/version/configuration/PipelineConfiguration.js": {
+    "max-len": 7
+  },
+  "src/components/pipelines/version/configuration/forms/CreateConfigurationForm.js": {
+    "indent": 1,
+    "max-len": 1,
+    "no-unused-vars": 1,
+    "padded-blocks": 1,
+    "react/jsx-indent": 2
+  },
+  "src/components/pipelines/version/forms/EditPipelineForm.js": {
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/pipelines/version/forms/repository-form/GitHubRepositoryForm.js": {
+    "no-multiple-empty-lines": 1,
+    "operator-linebreak": 1
+  },
+  "src/components/pipelines/version/forms/repository-form/ManualRepositoryForm.js": {
+    "indent": 1
+  },
+  "src/components/pipelines/version/graph/PipelineGraph.js": {
+    "padded-blocks": 1
+  },
+  "src/components/pipelines/version/graph/visualization/Graph.js": {
+    "max-len": 2
+  },
+  "src/components/pipelines/version/graph/visualization/cwl-graph/index.js": {
+    "no-unused-vars": 1
+  },
+  "src/components/pipelines/version/graph/visualization/forms/utilities/wdl-drop-pipeline-command-template.js": {
+    "max-len": 1,
+    "no-trailing-spaces": 1
+  },
+  "src/components/pipelines/version/storageRules/forms/PipelineStorageRuleCreateDialog.js": {
+    "indent": 4,
+    "keyword-spacing": 1,
+    "max-len": 2,
+    "object-curly-spacing": 2,
+    "react/jsx-indent": 4,
+    "react/jsx-indent-props": 1,
+    "semi": 1
+  },
+  "src/components/runs/AllRuns.js": {
+    "semi": 1
+  },
+  "src/components/runs/RunsSearch.js": {
+    "indent": 13,
+    "max-len": 1,
+    "padded-blocks": 1,
+    "react/no-did-update-set-state": 1,
+    "semi": 1,
+    "space-before-function-paren": 1
+  },
+  "src/components/runs/SaveFilterForm.js": {
+    "padded-blocks": 1
+  },
+  "src/components/runs/actions/estimated-disk-size-warning.js": {
+    "max-len": 2
+  },
+  "src/components/runs/actions/execution-allowed-check.js": {
+    "semi": 1
+  },
+  "src/components/runs/actions/resume-confirmation.js": {
+    "standard/computed-property-even-spacing": 1
+  },
+  "src/components/runs/actions/run.js": {
+    "indent": 3
+  },
+  "src/components/runs/actions/stopRun.js": {
+    "max-len": 2
+  },
+  "src/components/runs/controls/data-storage-badge.js": {
+    "react/jsx-indent": 1
+  },
+  "src/components/runs/logs/Log.js": {
+    "no-unused-vars": 4
+  },
+  "src/components/runs/logs/forms/CommitRunDockerImageInput.js": {
+    "max-len": 8
+  },
+  "src/components/runs/logs/forms/CommitRunForm.js": {
+    "indent": 2,
+    "max-len": 3,
+    "no-useless-return": 1,
+    "react/jsx-indent": 1,
+    "standard/no-callback-literal": 7
+  },
+  "src/components/runs/run-details/widgets/run-header/run-actions/run-ssh-button.js": {
+    "quotes": 1
+  },
+  "src/components/runs/run-scheduling/run-sheduling-list.js": {
+    "max-len": 1
+  },
+  "src/components/runs/run-tags/index.js": {
+    "comma-spacing": 1
+  },
+  "src/components/runs/runs-info/utils/index.js": {
+    "comma-dangle": 2
+  },
+  "src/components/search/preview/ConfigurationPreview.js": {
+    "max-len": 3
+  },
+  "src/components/search/preview/DefaultPreview.js": {
+    "max-len": 1
+  },
+  "src/components/search/preview/DockerRegistryPreview.js": {
+    "max-len": 2,
+    "padded-blocks": 1,
+    "space-before-function-paren": 1
+  },
+  "src/components/search/preview/FolderPreview.js": {
+    "indent": 3,
+    "max-len": 2,
+    "react/jsx-indent-props": 4
+  },
+  "src/components/search/preview/IssuePreview.js": {
+    "max-len": 3,
+    "padded-blocks": 1
+  },
+  "src/components/search/preview/MetadataEntityPreview.js": {
+    "max-len": 1,
+    "padded-blocks": 2
+  },
+  "src/components/search/preview/PipelineDocumentPreview.js": {
+    "max-len": 1
+  },
+  "src/components/search/preview/PipelineRunPreview.js": {
+    "max-len": 3
+  },
+  "src/components/search/preview/S3BucketPreview.js": {
+    "max-len": 2
+  },
+  "src/components/search/preview/ToolGroupPreview.js": {
+    "max-len": 2,
+    "padded-blocks": 2
+  },
+  "src/components/search/preview/ToolPreview.js": {
+    "max-len": 5,
+    "react/jsx-space-before-closing": 1
+  },
+  "src/components/search/preview/renderHighlights.js": {
+    "max-len": 1
+  },
+  "src/components/search/preview/vsi-preview/girder-mock/utilities/update-annotation.js": {
+    "indent": 1
+  },
+  "src/components/search/utilities/getPipelineFileInfo.js": {
+    "max-len": 1
+  },
+  "src/components/settings/AWSRegionsForm.js": {
+    "comma-dangle": 1,
+    "max-len": 23,
+    "no-self-compare": 1,
+    "no-use-before-define": 1
+  },
+  "src/components/settings/CLIForm.js": {
+    "max-len": 6
+  },
+  "src/components/settings/DriveMappingWindowsForm.js": {
+    "max-len": 4,
+    "padded-blocks": 1
+  },
+  "src/components/settings/appearance-management/theme-card/index.js": {
+    "max-len": 8
+  },
+  "src/components/settings/cloud-regions/contextual-setting/index.js": {
+    "comma-dangle": 1
+  },
+  "src/components/settings/forms/CreateUserForm.js": {
+    "indent": 1,
+    "max-len": 4,
+    "no-unused-vars": 1,
+    "padded-blocks": 1,
+    "react/jsx-boolean-value": 1
+  },
+  "src/components/settings/forms/EditEmailNotification.js": {
+    "max-len": 5,
+    "no-return-assign": 1,
+    "standard/no-callback-literal": 4
+  },
+  "src/components/settings/forms/EditSystemNotificationForm.js": {
+    "max-len": 2,
+    "react/jsx-boolean-value": 1,
+    "react/jsx-indent": 5
+  },
+  "src/components/settings/forms/EmailPreview.js": {
+    "max-len": 3,
+    "padded-blocks": 1
+  },
+  "src/components/settings/forms/PreferenceGroup.js": {
+    "max-len": 2,
+    "standard/no-callback-literal": 1
+  },
+  "src/components/settings/forms/edit-email-notification-preferences/configuration.js": {
+    "max-len": 1
+  },
+  "src/components/settings/forms/edit-email-notification-preferences/idle-monitoring-settings-control.js": {
+    "max-len": 1
+  },
+  "src/components/settings/user-management/usage-report/filters/period-filter.js": {
+    "react/jsx-indent": 1
+  },
+  "src/components/settings/user-management/usage-report/filters/user-filter.js": {
+    "react/jsx-indent": 1
+  },
+  "src/components/settings/user-profile/usage-credits-statistics/credits-table/credits-table.js": {
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/special/AutoCompleteForParameter.js": {
+    "padded-blocks": 1
+  },
+  "src/components/special/CodeEditor.js": {
+    "no-useless-escape": 9
+  },
+  "src/components/special/CodeEditorFormItem.js": {
+    "padded-blocks": 1
+  },
+  "src/components/special/EditableField.js": {
+    "padded-blocks": 2
+  },
+  "src/components/special/UploadOmicsButton.js": {
+    "comma-dangle": 1,
+    "max-len": 1,
+    "no-unused-vars": 3,
+    "no-useless-escape": 4,
+    "padded-blocks": 1
+  },
+  "src/components/special/UserAutoComplete.js": {
+    "padded-blocks": 1
+  },
+  "src/components/special/cellprofiler/model/modules/implementation/common.js": {
+    "no-unused-vars": 1
+  },
+  "src/components/special/file-actions/open-in-tool/index.js": {
+    "indent": 1
+  },
+  "src/components/special/hcs-image/hcs-3d-button/index.js": {
+    "max-len": 1,
+    "no-multiple-empty-lines": 1,
+    "quotes": 1,
+    "semi": 3,
+    "space-before-function-paren": 2
+  },
+  "src/components/special/hcs-image/hcs-image.js": {
+    "max-len": 1
+  },
+  "src/components/special/hcs-image/utilities/viewer-state.js": {
+    "max-len": 1
+  },
+  "src/components/special/issues/Issue.js": {
+    "comma-dangle": 1,
+    "max-len": 8,
+    "padded-blocks": 1,
+    "semi": 1
+  },
+  "src/components/special/issues/Issues.js": {
+    "max-len": 3
+  },
+  "src/components/special/issues/controls/EditIssueForm.js": {
+    "max-len": 1,
+    "padded-blocks": 1,
+    "react/jsx-indent": 1
+  },
+  "src/components/special/issues/controls/FileDropContainer.js": {
+    "padded-blocks": 1
+  },
+  "src/components/special/markdown/renderer.js": {
+    "max-len": 1
+  },
+  "src/components/special/resizablePanel/index.js": {
+    "padded-blocks": 1,
+    "space-infix-ops": 2
+  },
+  "src/components/special/splitPanel/SplitPanel.js": {
+    "comma-dangle": 1,
+    "max-len": 2,
+    "padded-blocks": 3
+  },
+  "src/components/special/timeline-chart/renderer/axis.js": {
+    "no-unused-vars": 1,
+    "object-curly-spacing": 2
+  },
+  "src/components/tools/Tool.js": {
+    "max-len": 14
+  },
+  "src/components/tools/elements/ToolEndpointsFormItem.js": {
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/components/tools/forms/DockerConfiguration.js": {
+    "max-len": 7,
+    "react/no-did-update-set-state": 1,
+    "space-infix-ops": 3
+  },
+  "src/components/tools/forms/EditRegistryForm.js": {
+    "max-len": 3,
+    "no-extra-boolean-cast": 1,
+    "padded-blocks": 1,
+    "react/jsx-indent": 2
+  },
+  "src/components/tools/forms/EditToolFormParameters.js": {
+    "max-len": 3,
+    "no-unused-vars": 1
+  },
+  "src/components/tools/forms/EditToolGroupForm.js": {
+    "react/jsx-indent": 2
+  },
+  "src/components/tools/forms/EnableToolForm.js": {
+    "padded-blocks": 1
+  },
+  "src/components/tools/selectors/RegistrySelector.js": {
+    "indent": 1,
+    "max-len": 6
+  },
+  "src/components/tools/selectors/ToolGroupSelector.js": {
+    "max-len": 6
+  },
+  "src/components/tools/tool-deletion-warning/index.js": {
+    "max-len": 2
+  },
+  "src/components/tools/tool-version/history/index.js": {
+    "max-len": 1
+  },
+  "src/components/tools/tool-version/packages/index.js": {
+    "max-len": 1,
+    "react/no-did-update-set-state": 1
+  },
+  "src/components/tools/utils/constants.js": {
+    "max-len": 5
+  },
+  "src/components/tools/utils/getVersionInfo.js": {
+    "no-unneeded-ternary": 1,
+    "space-infix-ops": 1
+  },
+  "src/components/versioned-storages/vs-actions/components/conflicts/controls/changes-display-config.js": {
+    "no-unused-vars": 1,
+    "object-curly-spacing": 2,
+    "quotes": 1
+  },
+  "src/components/versioned-storages/vs-actions/index.js": {
+    "indent": 1
+  },
+  "src/models/basic/Authorization.js": {
+    "space-before-function-paren": 2
+  },
+  "src/models/billing/quotas/create.js": {
+    "no-multiple-empty-lines": 1
+  },
+  "src/models/cloudRegions/AvailableCloudRegions.js": {
+    "padded-blocks": 1
+  },
+  "src/models/cluster/ClusterNodeUsageReport.js": {
+    "no-unused-vars": 1
+  },
+  "src/models/dataStorage/AWSRegionDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/dataStorage/DataStorageDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/dataStorage/DataStorageItemDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/dataStorage/DataStorageItemRestore.js": {
+    "padded-blocks": 1
+  },
+  "src/models/dataStorage/DataStoragePage.js": {
+    "no-unused-vars": 1
+  },
+  "src/models/dataStorage/DataStorageRules.js": {
+    "max-len": 1,
+    "padded-blocks": 2
+  },
+  "src/models/dataStorage/DataStorages.js": {
+    "space-before-function-paren": 1
+  },
+  "src/models/dataStorage/rules/DataStorageRuleDelete.js": {
+    "padded-blocks": 1,
+    "space-before-function-paren": 1
+  },
+  "src/models/dataStorage/rules/DataStorageRuleRegister.js": {
+    "padded-blocks": 1,
+    "space-before-function-paren": 1
+  },
+  "src/models/dts/DTSItemsPage.js": {
+    "max-len": 2
+  },
+  "src/models/firecloud/FireCloudMethodParameters.js": {
+    "max-len": 2
+  },
+  "src/models/firecloud/FireCloudMethodSnapshotConfigurations.js": {
+    "max-len": 2
+  },
+  "src/models/firecloud/FireCloudMethods.js": {
+    "max-len": 2
+  },
+  "src/models/folderMetadata/MetadataClassLoadAll.js": {
+    "padded-blocks": 1
+  },
+  "src/models/folderMetadata/MetadataEntityDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/folderMetadata/MetadataEntityDeleteFromProject.js": {
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/models/folderMetadata/MetadataEntityDeleteKey.js": {
+    "padded-blocks": 1
+  },
+  "src/models/folderMetadata/MetadataEntityDeleteList.js": {
+    "padded-blocks": 1
+  },
+  "src/models/folderMetadata/MetadataEntityLoad.js": {
+    "padded-blocks": 2
+  },
+  "src/models/folders/FolderDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/folders/FolderLoadWithMetadata.js": {
+    "padded-blocks": 2
+  },
+  "src/models/google/GoogleApi.js": {
+    "max-len": 2,
+    "padded-blocks": 1
+  },
+  "src/models/grant/GrantRemove.js": {
+    "max-len": 1
+  },
+  "src/models/issues/IssueAttachmentDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/issues/IssueAttachmentLoad.js": {
+    "padded-blocks": 1
+  },
+  "src/models/issues/IssueAttachmentUpload.js": {
+    "padded-blocks": 1
+  },
+  "src/models/issues/IssueCommentDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/issues/IssueDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/issues/IssuesLoad.js": {
+    "max-len": 1
+  },
+  "src/models/metadata/MetadataCache.js": {
+    "padded-blocks": 1
+  },
+  "src/models/metadata/MetadataDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/metadata/MetadataFolder.js": {
+    "padded-blocks": 1
+  },
+  "src/models/notifications/DeleteNotification.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/DeletePipeline.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineConfigurationDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineConfigurationRename.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineConfigurationUpdate.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineExportLog.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineFile.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineFileDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineFilesUpdate.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineFolderDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineFolderUpdate.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineGenerateFile.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/PipelineGitRepositories.js": {
+    "object-curly-spacing": 2
+  },
+  "src/models/pipelines/PipelineLatestConfigurations.js": {
+    "max-len": 1
+  },
+  "src/models/pipelines/PipelineRunPrice.js": {
+    "space-before-function-paren": 1
+  },
+  "src/models/pipelines/Pipelines.js": {
+    "max-len": 1
+  },
+  "src/models/pipelines/RunTasks.js": {
+    "padded-blocks": 1
+  },
+  "src/models/pipelines/Source.js": {
+    "max-len": 1,
+    "space-infix-ops": 1
+  },
+  "src/models/tools/GenerateDockerfile.js": {
+    "max-len": 1
+  },
+  "src/models/tools/RegistryDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/tools/ToolDelete.js": {
+    "padded-blocks": 1
+  },
+  "src/models/tools/ToolImage.js": {
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/models/tools/ToolRegister.js": {
+    "space-before-function-paren": 1
+  },
+  "src/models/tools/ToolScan.js": {
+    "space-infix-ops": 1
+  },
+  "src/models/tools/ToolUpdate.js": {
+    "space-before-function-paren": 1
+  },
+  "src/models/tools/UpdateCredentials.js": {
+    "padded-blocks": 1
+  },
+  "src/models/tools/UpdateToolVersionBlackList.js": {
+    "padded-blocks": 1
+  },
+  "src/models/tools/UpdateToolVersionWhiteList.js": {
+    "padded-blocks": 1
+  },
+  "src/models/utils/ToolInstanceTypes.js": {
+    "padded-blocks": 2
+  },
+  "src/models/versioned-storage/conflict-diff.js": {
+    "comma-dangle": 1
+  },
+  "src/themes/utilities/color-utilities.js": {
+    "max-len": 2,
+    "object-curly-spacing": 18
+  },
+  "src/utils/browserDependentStyle.js": {
+    "space-infix-ops": 3
+  },
+  "src/utils/continuous-fetch/index.js": {
+    "max-len": 1
+  },
+  "src/utils/filter/expressions/andExpression.js": {
+    "max-len": 1,
+    "padded-blocks": 1
+  },
+  "src/utils/filter/expressions/orExpression.js": {
+    "max-len": 1
+  },
+  "src/utils/limit-mounts/check-cloud-region-rules.js": {
+    "max-len": 3
+  }
+}

@@ -412,7 +412,8 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
-        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE) {
+        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE
+                || dataStorageVO.getType() == DataStorageType.NFS) {
             Assert.notNull(dataStorageVO.getFileShareMountId(),
                     messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
                            "fileShareMountId"));
@@ -545,6 +546,7 @@ public class DataStorageManager implements SecuredEntityManager {
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
 
         if (proceedOnCloud) {
+            validateStorageIsNotAParentForOtherStorages(dataStorage);
             try {
                 storageProviderManager.deleteBucket(dataStorage);
             } catch (DataStorageException e) {
@@ -1002,6 +1004,16 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public List<AbstractDataStorage> loadDataStoragesByMountId(final Long fsMountId) {
         return dataStorageDao.loadDataStoragesByMountId(fsMountId);
+    }
+
+    private void validateStorageIsNotAParentForOtherStorages(final AbstractDataStorage dataStorage) {
+        final List<AbstractDataStorage> subStorages =
+                dataStorageDao.loadDataStoragesByPathPrefix(dataStorage.getPath());
+        Assert.isTrue(subStorages.isEmpty(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES,
+                        dataStorage.getName(),
+                        subStorages.stream().map(AbstractDataStorage::getName)
+                                .collect(Collectors.joining(", "))));
     }
 
     private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,

@@ -26,10 +26,25 @@ import LoadingView from '../special/LoadingView';
 @observer
 class AIChatPage extends React.Component {
   @computed
+  get assistantUrl () {
+    const {preferences} = this.props;
+    if (!preferences.loaded) {
+      return undefined;
+    }
+    const {
+      assistant_url: assistantUrl
+    } = preferences.miscAIPreferences || {};
+    return assistantUrl && assistantUrl.length > 0 ? assistantUrl : undefined;
+  }
+
+  @computed
   get aiChatBotAvailable () {
     const {preferences} = this.props;
     if (!preferences.loaded) {
       return false;
+    }
+    if (this.assistantUrl) {
+      return true;
     }
     const {
       api
@@ -38,13 +53,22 @@ class AIChatPage extends React.Component {
   }
 
   renderContent = () => {
-    const {aiChatBotAvailable: available = false} = this;
-    if (available) {
-      return (<AIChat />);
+    const {aiChatBotAvailable: available = false, assistantUrl} = this;
+    if (!available) {
+      return (
+        <Alert message="Chat not available" type="warning" />
+      );
     }
-    return (
-      <Alert message="Chat not available" type="warning" />
-    );
+    if (assistantUrl) {
+      return (
+        <iframe
+          className={styles.assistantFrame}
+          src={assistantUrl}
+          title="AI assistant"
+        />
+      );
+    }
+    return (<AIChat />);
   };
 
   render () {

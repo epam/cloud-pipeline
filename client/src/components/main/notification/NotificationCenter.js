@@ -49,8 +49,8 @@ function dateSorter (notificationA, notificationB) {
   } else if (dateA < dateB) {
     return 1;
   }
-  return notificationA.notificationId
-    .localeCompare(notificationB.notificationId);
+  return `${notificationA.notificationId}`
+    .localeCompare(`${notificationB.notificationId}`);
 }
 
 function mapMessage (message) {

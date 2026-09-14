@@ -1,0 +1,269 @@
+name: Java Tests
+
+on:
+  pull_request:
+    branches: [ develop ]
+    paths:
+      - 'api/**'
+      - 'core/**'
+      - 'cloud-pipeline-common/**'
+      - 'notifier/**'
+      - 'data-transfer-service/**'
+      - 'docker-comp-scan/**'
+      - 'elasticsearch-agent/**'
+      - 'elasticsearch-common/**'
+      - 'vm-monitor/**'
+      - 'billing-report-agent/**'
+      - 'monitoring-service/**'
+
+jobs:
+  CalculateCodeChanges:
+    name: Calculate Codebase changes
+    runs-on: ubuntu-24.04
+    outputs:
+      api:           ${{ steps.detect.outputs.api }}
+      core-libs:     ${{ steps.detect.outputs.core-libs }}
+      notifier:      ${{ steps.detect.outputs.notifier }}
+      data-transfer: ${{ steps.detect.outputs.data-transfer }}
+      docker-scan:   ${{ steps.detect.outputs.docker-scan }}
+      elasticsearch: ${{ steps.detect.outputs.elasticsearch }}
+      monitoring:    ${{ steps.detect.outputs.monitoring }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Detect changed modules
+        id: detect
+        run: |
+          CHANGED=$(git diff --name-only \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}")
+          echo "Changed files:"
+          echo "$CHANGED"
+          detect() { echo "$CHANGED" | grep -qE "$1" && echo true || echo false; }
+          echo "api=$(detect           '^(api|core|cloud-pipeline-common)/')"                       >> $GITHUB_OUTPUT
+          echo "core-libs=$(detect     '^(core|cloud-pipeline-common)/')"                           >> $GITHUB_OUTPUT
+          echo "notifier=$(detect      '^notifier/')"                                               >> $GITHUB_OUTPUT
+          echo "data-transfer=$(detect '^data-transfer-service/')"                                  >> $GITHUB_OUTPUT
+          echo "docker-scan=$(detect   '^docker-comp-scan/')"                                       >> $GITHUB_OUTPUT
+          echo "elasticsearch=$(detect '^(elasticsearch-agent|elasticsearch-common|cloud-pipeline-common)/')" >> $GITHUB_OUTPUT
+          echo "monitoring=$(detect    '^(vm-monitor|billing-report-agent|monitoring-service)/')"   >> $GITHUB_OUTPUT
+
+  api-tests:
+    needs: CalculateCodeChanges
+    name: API test suite
+    if: needs.CalculateCodeChanges.outputs.api == 'true'
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_DB: pipeline_test
+          POSTGRES_USER: pipeline
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Verify PostgreSQL connection
+        run: psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "SELECT 1"
+      - name: Run API tests
+        run: ./gradlew :api:test --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-api
+          path: |
+            api/build/test-results/test/
+            api/build/reports/tests/test/
+          retention-days: 7
+
+  core-libs-tests:
+    needs: CalculateCodeChanges
+    name: Core lib test suite
+    if: needs.CalculateCodeChanges.outputs.core-libs == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Run core library tests
+        run: >-
+          ./gradlew
+          :core:test
+          :cloud-pipeline-common:model:test
+          :cloud-pipeline-common:event-sourcing-java-client:test
+          --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-core-libs
+          path: |
+            core/build/test-results/test/
+            core/build/reports/tests/test/
+            cloud-pipeline-common/model/build/test-results/test/
+            cloud-pipeline-common/model/build/reports/tests/test/
+            cloud-pipeline-common/event-sourcing-java-client/build/test-results/test/
+            cloud-pipeline-common/event-sourcing-java-client/build/reports/tests/test/
+          retention-days: 7
+
+  notifier-tests:
+    needs: CalculateCodeChanges
+    name: Notifier test suite
+    if: needs.CalculateCodeChanges.outputs.notifier == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Run notifier tests
+        run: ./gradlew :notifier:smtp:test --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-notifier
+          path: |
+            notifier/smtp/build/test-results/test/
+            notifier/smtp/build/reports/tests/test/
+          retention-days: 7
+
+  data-transfer-tests:
+    needs: CalculateCodeChanges
+    name: DataTransfer service test suite
+    if: needs.CalculateCodeChanges.outputs.data-transfer == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Run data transfer service tests
+        run: ./gradlew :data-transfer-service:test --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-data-transfer
+          path: |
+            data-transfer-service/build/test-results/test/
+            data-transfer-service/build/reports/tests/test/
+          retention-days: 7
+
+  docker-scan-tests:
+    needs: CalculateCodeChanges
+    name: Docker Comp Scan service test suite
+    if: needs.CalculateCodeChanges.outputs.docker-scan == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Run docker component scan tests
+        run: ./gradlew :docker-comp-scan:test --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-docker-scan
+          path: |
+            docker-comp-scan/build/test-results/test/
+            docker-comp-scan/build/reports/tests/test/
+          retention-days: 7
+
+  elasticsearch-tests:
+    needs: CalculateCodeChanges
+    name: Elastisearch srv service test suite
+    if: needs.CalculateCodeChanges.outputs.elasticsearch == 'true'
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16.4
+        env:
+          POSTGRES_DB: pipeline_test
+          POSTGRES_USER: pipeline
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Verify PostgreSQL connection
+        run: psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "SELECT 1"
+      - name: Apply API database migrations
+        run: |
+          psql -h 127.0.0.1 -U pipeline -d pipeline_test -c "CREATE SCHEMA IF NOT EXISTS pipeline;"
+          find api/src/main/resources/db/migration -name 'v*.sql' | sort -V | \
+            while IFS= read -r f; do
+              sed 's/\${default\.admin}/admin_test@epam.com/g; s/\${default\.admin\.id}/1/g' "$f" | \
+                psql -h 127.0.0.1 -U pipeline -d pipeline_test
+            done
+      - name: Run elasticsearch agent tests
+        run: ./gradlew :elasticsearch-agent:test --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-elasticsearch
+          path: |
+            elasticsearch-agent/build/test-results/test/
+            elasticsearch-agent/build/reports/tests/test/
+          retention-days: 7
+
+  monitoring-tests:
+    needs: CalculateCodeChanges
+    name: Monitoring service test suite
+    if: needs.CalculateCodeChanges.outputs.monitoring == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+      - name: Run monitoring service tests
+        run: >-
+          ./gradlew
+          :vm-monitor:test
+          :billing-report-agent:test
+          :monitoring-service:test
+          --no-build-cache
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-monitoring
+          path: |
+            vm-monitor/build/test-results/test/
+            vm-monitor/build/reports/tests/test/
+            billing-report-agent/build/test-results/test/
+            billing-report-agent/build/reports/tests/test/
+            monitoring-service/build/test-results/test/
+            monitoring-service/build/reports/tests/test/
+          retention-days: 7

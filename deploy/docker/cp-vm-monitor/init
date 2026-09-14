@@ -19,6 +19,14 @@ VM_MONITOR_RUN_TIME_LOG=$CP_VM_MONITOR_HOME/logs/runtime.log
 mkdir -p $(dirname $VM_MONITOR_RUN_TIME_LOG)
 touch $VM_MONITOR_RUN_TIME_LOG
 
+if [ -z "$CP_VM_MONITOR_TO_USER" ]; then
+    if [ -z "$CP_DEFAULT_ADMIN_NAME" ]; then
+        echo "[WARN] CP_VM_MONITOR_TO_USER is not set, notifications may not be delivered"
+    else
+        export CP_VM_MONITOR_TO_USER="$CP_DEFAULT_ADMIN_NAME"
+    fi
+fi
+
 cd $CP_VM_MONITOR_HOME
 nohup java $CP_VM_MONITOR_JAVA_OPTS -jar vm-monitor.jar &> $VM_MONITOR_RUN_TIME_LOG &
 APP_PID="$!"

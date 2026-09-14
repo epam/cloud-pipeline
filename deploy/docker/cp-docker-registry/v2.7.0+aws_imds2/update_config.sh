@@ -39,9 +39,24 @@ if [ "$CP_DOCKER_STORAGE_TYPE" == "obj" ]; then
       CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
     fi
 
+    # Optionally the S3 driver can be pointed to a specific endpoint via CP_DOCKER_STORAGE_ENDPOINT,
+    # which shall be a full URL of the S3 endpoint, e.g. https://s3.eu-central-1.amazonaws.com
+    # Note: registry 2.7.x always switches to the path-style addressing, once "regionendpoint" is set,
+    # hence the pre-signed URLs, emitted for the blobs, will look like:
+    #   https://s3.eu-central-1.amazonaws.com/<bucket>/<rootdirectory>/docker/registry/v2/...?X-Amz-Credential=...
+    # If not set - the endpoint is resolved by the AWS SDK from the "region" above and the virtual-hosted
+    # addressing is used instead (note that for the us-east-1 region a global s3.amazonaws.com host is used):
+    #   https://<bucket>.s3.eu-central-1.amazonaws.com/<rootdirectory>/docker/registry/v2/...?X-Amz-Credential=...
+    storage_endpoint_config=""
+    if [ -n "$CP_DOCKER_STORAGE_ENDPOINT" ]; then
+      echo "Custom S3 endpoint will be used: $CP_DOCKER_STORAGE_ENDPOINT"
+      storage_endpoint_config="    regionendpoint: ${CP_DOCKER_STORAGE_ENDPOINT}"
+    fi
+
 IFS= read -r -d '' storage_driver_config <<-EOF
   s3:
     region: ${CP_DOCKER_STORAGE_REGION:-$CP_CLOUD_REGION_ID}
+${storage_endpoint_config}
     bucket: ${CP_DOCKER_STORAGE_CONTAINER}
     accesskey: ${CP_DOCKER_STORAGE_KEY_NAME}
     secretkey: ${CP_DOCKER_STORAGE_KEY_SECRET}

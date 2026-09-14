@@ -172,6 +172,7 @@ export default class AIChat extends React.Component {
             'cp-panel-borderless'
           )
         }
+        style={{padding: 5}}
       >
         <div className={styles.overflowContainer} ref={el => {
           this.scrollContainerRef = el;

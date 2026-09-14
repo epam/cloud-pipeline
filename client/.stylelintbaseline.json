@@ -1,0 +1,257 @@
+{
+  "src/components/ai-chat/ai-chat.css": {
+    "length-zero-no-unit": 1,
+    "property-no-unknown": 1
+  },
+  "src/components/ai-chat/components/launch-form/environment/environment.css": {
+    "property-no-unknown": 2
+  },
+  "src/components/ai-chat/components/launch-form/launch-form-info/launch-form-info.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/ai-chat/components/launch-form/parameter-group/parameter-group.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/ai-chat/components/launch-form/title-section/title-section.css": {
+    "selector-pseudo-element-colon-notation": 1
+  },
+  "src/components/ai-chat/components/typing-indicator/typing-indicator.css": {
+    "property-no-unknown": 1,
+    "rule-empty-line-before": 1
+  },
+  "src/components/applications/miew/EmbeddedMiew.css": {
+    "declaration-bang-space-before": 1
+  },
+  "src/components/billing/reports/charts/billing-table.css": {
+    "block-no-empty": 1
+  },
+  "src/components/billing/reports/filters/provider-filter.css": {
+    "block-no-empty": 1
+  },
+  "src/components/billing/reports/reports.css": {
+    "block-no-empty": 4
+  },
+  "src/components/cluster/ClusterNode.css": {
+    "block-no-empty": 2
+  },
+  "src/components/cluster/cluster-node-monitor/gpu-info.css": {
+    "property-no-unknown": 3
+  },
+  "src/components/cluster/hot-node-pool/hot-cluster-usage/hot-cluster-usage.css": {
+    "declaration-block-no-duplicate-properties": 1,
+    "declaration-block-trailing-semicolon": 1,
+    "declaration-colon-space-after": 1,
+    "declaration-empty-line-before": 1,
+    "property-no-unknown": 2
+  },
+  "src/components/main/home/panels/components/CardsPanel.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/PipelinesLibrary.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/browser/Browser.css": {
+    "block-no-empty": 6,
+    "selector-type-no-unknown": 1
+  },
+  "src/components/pipelines/browser/forms/CopyMetadataEntitiesDialog.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/browser/forms/DataStorageNavigation.css": {
+    "property-no-unknown": 2
+  },
+  "src/components/pipelines/browser/forms/data-storage-item-sharing/DataStorageItemPermissionsForm.css": {
+    "indentation": 3
+  },
+  "src/components/pipelines/browser/forms/life-cycle-rules/components/restore-status-icon.css": {
+    "max-empty-lines": 1
+  },
+  "src/components/pipelines/browser/versioned-storage/header/header.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/configuration/DetachedConfiguration.css": {
+    "block-no-empty": 2
+  },
+  "src/components/pipelines/launch/dialogs/Browser.css": {
+    "block-opening-brace-space-before": 1
+  },
+  "src/components/pipelines/launch/form/LaunchPipelineForm.css": {
+    "block-no-empty": 1,
+    "property-no-unknown": 2
+  },
+  "src/components/pipelines/launch/form/components/reservation-parameters/reservation-parameters.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/launch/form/parameters/parameter/inputs/launch-form-parameter-input.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/version/code/PipelineCode.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/version/documents/PipelineDocuments.css": {
+    "block-no-empty": 1
+  },
+  "src/components/pipelines/version/graph/visualization/Graph.css": {
+    "block-no-empty": 1
+  },
+  "src/components/plugins/configure/plugins.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/runs/AllRuns.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/runs/RunsSearch.css": {
+    "block-no-empty": 1
+  },
+  "src/components/runs/run-details/sections/common/initialize-wrapper.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/runs/run-details/sections/nextflow-engine/tasks/tasks-table/tasks-table.css": {
+    "block-no-empty": 1
+  },
+  "src/components/runs/run-details/sections/reports/components/result-table/result-table.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/runs/run-scheduling/forms/styles.css": {
+    "declaration-block-trailing-semicolon": 1,
+    "property-no-unknown": 2
+  },
+  "src/components/runs/run-table/columns/run-table-columns.css": {
+    "block-no-empty": 1
+  },
+  "src/components/search/faceted-search/document-presentation/list/document-list-presentation.css": {
+    "block-no-empty": 2
+  },
+  "src/components/settings/UserManagementForm.css": {
+    "block-no-empty": 1,
+    "length-zero-no-unit": 1,
+    "rule-empty-line-before": 1
+  },
+  "src/components/settings/cloud-provider/cloud-provider.css": {
+    "block-no-empty": 1
+  },
+  "src/components/settings/system-management/dts/components/create-dts-modal.css": {
+    "length-zero-no-unit": 1,
+    "property-no-unknown": 1
+  },
+  "src/components/settings/system-management/dts/components/dts-logs.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/settings/system-management/dts/dts-info.css": {
+    "property-no-unknown": 2
+  },
+  "src/components/settings/system-management/dts/dts.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/settings/user-management/usage-report/charts/users-activity-chart.css": {
+    "block-no-empty": 1
+  },
+  "src/components/settings/user-management/usage-report/reports.css": {
+    "block-no-empty": 5,
+    "rule-empty-line-before": 1
+  },
+  "src/components/settings/user-profile/launch-profiles/launch-profile-form.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/settings/user-profile/usage-credits-statistics/credits-counter.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/settings/user-profile/usage-credits-statistics/credits-table/credits-table.css": {
+    "length-zero-no-unit": 2
+  },
+  "src/components/special/UploadOmicsButton.css": {
+    "declaration-block-trailing-semicolon": 1
+  },
+  "src/components/special/file-preview/file-preview.css": {
+    "block-no-empty": 1
+  },
+  "src/components/special/hcs-image/hcs-3d-button/hcs-3d-button.css": {
+    "length-zero-no-unit": 1,
+    "property-no-unknown": 3,
+    "rule-empty-line-before": 1
+  },
+  "src/components/special/hcs-image/hcs-z-position-selector/hcs-z-position-selector.css": {
+    "property-no-unknown": 1
+  },
+  "src/components/special/issues/Issues.css": {
+    "block-no-empty": 4
+  },
+  "src/components/special/reports/filters/period-filter.css": {
+    "no-eol-whitespace": 1
+  },
+  "src/components/special/reports/filters/range-filter.css": {
+    "no-empty-source": 1
+  },
+  "src/components/special/resizablePanel/styles.css": {
+    "block-no-empty": 1
+  },
+  "src/components/special/storage-size/storage-size.css": {
+    "declaration-colon-newline-after": 1,
+    "indentation": 1
+  },
+  "src/components/special/timeline-chart/timeline-chart.css": {
+    "block-no-empty": 1
+  },
+  "src/components/tools/Tools.css": {
+    "block-no-empty": 11,
+    "max-empty-lines": 2,
+    "selector-list-comma-newline-after": 1,
+    "selector-type-no-unknown": 1
+  },
+  "src/components/tools/forms/EditToolFormParameters.css": {
+    "block-no-empty": 1
+  },
+  "src/components/tools/tool-version/scanning-info/ToolScanningInfo.css": {
+    "block-no-empty": 1
+  },
+  "src/components/versioned-storages/vs-actions/components/conflicts/conflicts.css": {
+    "property-no-unknown": 2
+  },
+  "src/components/versioned-storages/vs-actions/components/diff/diff.css": {
+    "block-opening-brace-space-before": 1,
+    "rule-empty-line-before": 1
+  },
+  "src/staticStyles/git-diff-presentation.css": {
+    "length-zero-no-unit": 2,
+    "max-empty-lines": 1
+  },
+  "src/themes/styles/billing.less": {
+    "block-opening-brace-space-before": 1,
+    "indentation": 1
+  },
+  "src/themes/styles/cluster.less": {
+    "no-missing-end-of-source-newline": 1
+  },
+  "src/themes/styles/code-highlight.less": {
+    "block-no-empty": 1,
+    "indentation": 4
+  },
+  "src/themes/styles/layout.less": {
+    "indentation": 23,
+    "max-empty-lines": 1,
+    "property-no-unknown": 2,
+    "rule-empty-line-before": 3,
+    "selector-list-comma-newline-after": 1,
+    "selector-pseudo-element-colon-notation": 2
+  },
+  "src/themes/styles/metadata.less": {
+    "indentation": 1
+  },
+  "src/themes/styles/runs.less": {
+    "declaration-block-trailing-semicolon": 1
+  },
+  "src/themes/styles/search.less": {
+    "declaration-bang-space-before": 1
+  },
+  "src/themes/styles/settings.less": {
+    "indentation": 7
+  },
+  "src/themes/styles/variables.less": {
+    "color-hex-length": 6,
+    "declaration-block-semicolon-newline-after": 1,
+    "no-extra-semicolons": 1
+  },
+  "src/themes/styles/wdl.less": {
+    "max-empty-lines": 1
+  }
+}

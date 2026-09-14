@@ -27,6 +27,7 @@ public final class AclExpressions {
     public static final String STORAGE_ADMIN_ONLY = "hasRole('STORAGE_ADMIN')";
     public static final String PIPELINE_ADMIN_ONLY = "hasRole('PIPELINE_ADMIN')";
     public static final String USER_ADMIN_ONLY = "hasRole('USER_ADMIN')";
+    public static final String ADMIN_OR_USER_ADMIN = ADMIN_ONLY + OR + USER_ADMIN_ONLY;
 
     public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
 

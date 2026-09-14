@@ -33,11 +33,24 @@ class LaunchFormMetadataEntityParameter extends React.PureComponent {
   getDisplayLabel = (externalId) => {
     const {parameter} = this.props;
     const metadataConfig = parameter?.config?.metadata_config || {};
+    const {displayField, nameField} = metadataConfig;
+    const field = displayField || nameField;
     const entry = this.metadata.find(m => m.externalId === externalId);
-    if (entry?.data && metadataConfig.nameField) {
-      return entry.data[metadataConfig.nameField]?.value || externalId;
+    if (entry?.data && field) {
+      return entry.data[field]?.value || externalId;
     }
     return externalId;
+  };
+
+  getDescription = (externalId) => {
+    const {parameter} = this.props;
+    const metadataConfig = parameter?.config?.metadata_config || {};
+    const {descriptionField} = metadataConfig;
+    if (!descriptionField) {
+      return undefined;
+    }
+    const entry = this.metadata.find(m => m.externalId === externalId);
+    return entry?.data?.[descriptionField]?.value;
   };
 
   filterOption = (input, option) => {
@@ -72,11 +85,29 @@ class LaunchFormMetadataEntityParameter extends React.PureComponent {
         optionLabelProp="label"
         showSearch
       >
-        {this.enum.map((v) => (
-          <Select.Option key={v.key} value={v.value} label={this.getDisplayLabel(v.value)}>
-            {this.getDisplayLabel(v.value)}
-          </Select.Option>
-        ))}
+        {this.enum.map((v) => {
+          const label = this.getDisplayLabel(v.value);
+          const description = this.getDescription(v.value);
+          return (
+            <Select.Option key={v.key} value={v.value} label={label}>
+              <div className={styles.metadataEntityOption}>
+                <div>{label}</div>
+                {
+                  description && (
+                    <div
+                      title={description}
+                      className={
+                        classNames(styles.metadataEntityOptionDescription, 'cp-text-not-important')
+                      }
+                    >
+                      {description}
+                    </div>
+                  )
+                }
+              </div>
+            </Select.Option>
+          );
+        })}
       </Select>
     );
   }

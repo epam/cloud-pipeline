@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -42,6 +43,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,6 +66,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
     private final PipelineRunManager pipelineRunManager;
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
+    private final PlatformUsageCreditsLaunchService creditsLaunchService;
 
     @Override
     public List<PipelineRun> runAnalysis(AnalysisConfiguration<RunConfigurationEntry> configuration) {
@@ -125,6 +128,8 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
 
         log.debug("Running total {} nodes", totalNodes + 1);
         mainConfiguration.setNodeCount(totalNodes);
+
+        creditsLaunchService.checkCreditsForConfiguration(mainConfiguration, masterNodeCount, childConfigurations);
 
         //create master run
         List<PipelineRun> masterRun =

@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins":false,
+  "keepInformedOwner":false,
+  "enabled":true,
+  "subject":"Your usage credits balance is running low"
+}

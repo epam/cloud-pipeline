@@ -30,6 +30,9 @@ function payloadToFormParameters (payload) {
   }
   return {
     instance_size: payload.instanceType,
+    fallback_instance_types: Array.isArray(payload.fallbackInstanceTypes)
+      ? payload.fallbackInstanceTypes.slice()
+      : undefined,
     instance_disk: payload.hddSize !== undefined ? `${payload.hddSize}` : undefined,
     cloudRegionId: payload.cloudRegionId,
     is_spot: payload.isSpot !== undefined ? `${payload.isSpot}` : undefined,

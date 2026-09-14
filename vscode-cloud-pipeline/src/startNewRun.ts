@@ -7,6 +7,8 @@ import {
   RegistryToolPayload,
   ToolVersionConfigurationPayload,
   ToolVersionSettingRow,
+  WhoamiPayload,
+  MetadataEntityPayload,
 } from './api';
 
 const ALLOWED_DOCKER = 'cluster.allowed.instance.types.docker';
@@ -165,6 +167,76 @@ function clampPayloadToAllowed(
   }
 }
 
+interface LaunchProfilePayload {
+  instanceType?: string;
+  hddSize?: number;
+  timeout?: number;
+  cmdTemplate?: string;
+  params?: Record<string, { type: string; value: unknown }>;
+  isSpot?: boolean;
+  cloudRegionId?: number;
+  nodeCount?: number;
+  [key: string]: unknown;
+}
+
+interface LaunchProfile {
+  id: number;
+  name: string;
+  payload: LaunchProfilePayload;
+}
+
+async function fetchLaunchProfiles(api: CloudPipelineApi): Promise<LaunchProfile[] | undefined> {
+  const user = await api.whoami();
+  if (!user?.id) {
+    return undefined;
+  }
+  const meta = await api.loadUserMetadata(user.id);
+  if (!meta) {
+    return undefined;
+  }
+  const raw = meta.data?.['launch_profiles']?.value;
+  if (!raw) {
+    return undefined;
+  }
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return undefined;
+    }
+    const profiles = parsed.filter(
+      (p): p is LaunchProfile =>
+        p !== null &&
+        typeof p === 'object' &&
+        typeof (p as Record<string, unknown>).name === 'string' &&
+        typeof (p as Record<string, unknown>).payload === 'object' &&
+        (p as Record<string, unknown>).payload !== null
+    );
+    return profiles.length > 0 ? profiles : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function applyProfileOverlay(
+  payload: Record<string, unknown>,
+  profile: LaunchProfile
+): void {
+  const { params: profileParams, ...rest } = profile.payload;
+  for (const [key, value] of Object.entries(rest)) {
+    if (key === 'dockerImage') {
+      continue;
+    }
+    if (value !== undefined && value !== null) {
+      payload[key] = value;
+    }
+  }
+  if (profileParams && typeof profileParams === 'object') {
+    const existingParams =
+      (payload.params as Record<string, unknown> | undefined) ?? {};
+    payload.params = { ...existingParams, ...profileParams };
+  }
+}
+
 type ToolQuickPickItem = vscode.QuickPickItem & { tool: FlatRegistryTool };
 
 /**
@@ -255,6 +327,8 @@ export async function runStartNewRunFlow(
   }
   const t = pickedTool.tool;
 
+  const launchProfilesPromise = fetchLaunchProfiles(api);
+
   let versionBundle: {
     versionNames: string[];
     settingsRows: ToolVersionSettingRow[];
@@ -329,6 +403,32 @@ export async function runStartNewRunFlow(
 
   const version = pickedVer.version;
 
+  const profiles = await launchProfilesPromise;
+
+  let selectedProfile: LaunchProfile | null = null;
+  if (profiles) {
+    type ProfilePick = vscode.QuickPickItem & { profile: LaunchProfile | null };
+    const profileItems: ProfilePick[] = [
+      {
+        label: 'Tool configuration',
+        description: 'Use the tool\'s own default settings',
+        profile: null,
+      },
+      ...profiles.map((p) => ({
+        label: p.name,
+        description: p.payload.instanceType ?? '',
+        profile: p,
+      })),
+    ];
+    const pickedProfile = await vscode.window.showQuickPick(profileItems, {
+      placeHolder: 'Choose a launch profile or use tool defaults',
+    });
+    if (!pickedProfile) {
+      return;
+    }
+    selectedProfile = pickedProfile.profile;
+  }
+
   const [
     prefInstanceType,
     prefDisk,
@@ -343,16 +443,24 @@ export async function runStartNewRunFlow(
   const useSpot = `${prefSpot}` === 'true';
 
   const rawRegion = versionSettingValue(settingsRows, version, fallbackDefault, 'cloudRegionId');
-  const cloudRegionIdValue = parameterIsNotEmpty(rawRegion)
+  const toolRegionId = parameterIsNotEmpty(rawRegion)
     ? Number(rawRegion)
     : regions.find((r) => r.default)?.id;
+  const cloudRegionIdValue =
+    selectedProfile?.payload.cloudRegionId != null
+      ? selectedProfile.payload.cloudRegionId
+      : toolRegionId;
+
+  const toolIsSpot = parameterIsNotEmpty(versionSettingValue(settingsRows, version, fallbackDefault, 'is_spot'))
+    ? !!versionSettingValue(settingsRows, version, fallbackDefault, 'is_spot')
+    : useSpot;
+  const effectiveIsSpot =
+    selectedProfile?.payload.isSpot != null ? selectedProfile.payload.isSpot : toolIsSpot;
 
   const allowed = await api.getAllowedInstanceAndPriceTypes({
     toolId: t.id,
     regionId: cloudRegionIdValue,
-    spot: parameterIsNotEmpty(versionSettingValue(settingsRows, version, fallbackDefault, 'is_spot'))
-      ? !!versionSettingValue(settingsRows, version, fallbackDefault, 'is_spot')
-      : useSpot,
+    spot: effectiveIsSpot,
   });
 
   const dockerBase = `${t.registryPath}/${t.image}`.replace(/\/+/g, '/').replace(/^\/+/, '');
@@ -374,9 +482,7 @@ export async function runStartNewRunFlow(
     t.defaultCommand,
     prefCmd
   );
-  const isSpot = parameterIsNotEmpty(versionSettingValue(settingsRows, version, fallbackDefault, 'is_spot'))
-    ? !!versionSettingValue(settingsRows, version, fallbackDefault, 'is_spot')
-    : useSpot;
+  const isSpot = toolIsSpot;
   const nodeCountRaw = versionSettingValue(settingsRows, version, fallbackDefault, 'node_count');
   const nodeCount = parameterIsNotEmpty(nodeCountRaw) ? Number(nodeCountRaw) : undefined;
 
@@ -395,6 +501,10 @@ export async function runStartNewRunFlow(
     nodeCount,
     cloudRegionId: cloudRegionIdValue,
   };
+
+  if (selectedProfile) {
+    applyProfileOverlay(payload, selectedProfile);
+  }
 
   clampPayloadToAllowed(payload, allowed);
 

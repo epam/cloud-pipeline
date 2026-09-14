@@ -1,0 +1,58 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.acl.credits;
+
+import com.epam.pipeline.aspect.credits.CreditsFeatureCheck;
+import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsEventFilterVO;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+
+import java.io.OutputStream;
+import java.util.List;
+
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_USER_ADMIN;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
+
+@Service
+@RequiredArgsConstructor
+public class PlatformUsageCreditsEventApiService {
+
+    private final PlatformUsageCreditsEventService platformUsageCreditsUpdateEventService;
+
+    @CreditsFeatureCheck
+    @PreAuthorize(ADMIN_OR_USER_ADMIN)
+    public List<PlatformUsageCreditsUpdateEvent> process(final List<PlatformUsageCreditsUpdateEvent> events) {
+        return platformUsageCreditsUpdateEventService.process(events);
+    }
+
+    @CreditsFeatureCheck
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public PagedResult<List<PlatformUsageCreditsUpdateEvent>> filter(
+            final PlatformUsageCreditsEventFilterVO filter) {
+        return platformUsageCreditsUpdateEventService.filter(filter);
+    }
+
+    @CreditsFeatureCheck
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public void export(final PlatformUsageCreditsEventFilterVO filter, final OutputStream outputStream) {
+        platformUsageCreditsUpdateEventService.export(filter, outputStream);
+    }
+}

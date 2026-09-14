@@ -1408,6 +1408,8 @@ if is_service_requested cp-dav; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (internal):      http://${CP_DAV_INTERNAL_HOST}:${CP_DAV_INTERNAL_PORT}/${CP_DAV_URL_PATH}"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (external):      ${CP_DAV_EXTERNAL_MAPPING_URL}"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping Auth (external): ${CP_DAV_EXTERNAL_AUTH_URL}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nSMB Auth (internal):           http://${CP_DAV_INTERNAL_HOST}:${CP_SMB_AUTH_PORT}/auth"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nSMB Auth (external):           ${CP_SMB_EXTERNAL_AUTH_URL}"
     fi
     echo
 fi

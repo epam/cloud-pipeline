@@ -38,10 +38,13 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -61,6 +64,7 @@ import java.util.*;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
@@ -187,6 +191,12 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private FolderApiService folderApiService;
 
+    @Mock
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Mock
+    private RestartRunManager restartRunManager;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -216,6 +226,7 @@ public class PipelineRunManagerLaunchTest {
         initMocks(this);
 
         mock(CLUSTER_DOCKER_EXTRA_MULTI);
+        mock(CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
         mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
         mock(CLUSTER_SPOT);
         mock(COMMIT_TIMEOUT);
@@ -499,6 +510,32 @@ public class PipelineRunManagerLaunchTest {
         );
         pipelineRun = launchTool(configuration, INSTANCE_TYPE);
         assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+    }
+
+    @Test
+    public void restartRunShouldPreserveFallbackInstanceTypes() {
+        final String fallbackType = "fallback.type";
+        final RunInstance instance = new RunInstance();
+        instance.setCloudRegionId(REGION_ID);
+        instance.setCloudProvider(CloudProvider.AWS);
+        instance.setNodeType(INSTANCE_TYPE);
+        instance.setNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setEffectiveNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setFallbackInstanceTypes(singletonList(fallbackType));
+
+        final PipelineRun run = getPipelineRun(ID, TEST_USER);
+        run.setInstance(instance);
+        run.setDockerImage(IMAGE);
+        run.setActualDockerImage(IMAGE);
+
+        doReturn(configuration).when(pipelineConfigurationManager).getConfigurationFromRun(any());
+        doReturn(ID_2).when(pipelineRunDao).createRunId();
+        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(any(), any(), any(), any());
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNotNull(restartedRun.getInstance());
+        assertThat(restartedRun.getInstance().getFallbackInstanceTypes(), is(singletonList(fallbackType)));
     }
 
     private void mock(final InstancePrice price) {

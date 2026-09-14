@@ -259,4 +259,16 @@ fi
 ######################################################
 nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
 
+pipe_log_info "Waiting for Docker daemon to be ready" "$DIND_SETUP_TASK"
+_DIND_WAIT_TIMEOUT="${CP_CAP_DIND_WAIT_TIMEOUT:-60}"
+_DIND_WAIT_ELAPSED=0
+while ! docker info > /dev/null 2>&1; do
+    if [ "$_DIND_WAIT_ELAPSED" -ge "$_DIND_WAIT_TIMEOUT" ]; then
+        pipe_log_fail "Docker daemon did not become ready within ${_DIND_WAIT_TIMEOUT}s" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    sleep 2
+    _DIND_WAIT_ELAPSED=$((_DIND_WAIT_ELAPSED + 2))
+done
+
 pipe_log_success "Docker daemon started" "$DIND_SETUP_TASK"

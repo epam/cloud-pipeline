@@ -114,6 +114,9 @@ public class UserExporter {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_ID.getValue());
             result.add(PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_PATH.getValue());
         }
+        if (exportSettings.isIncludeCredits()) {
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.USAGE_CREDITS.getValue());
+        }
         return result.toArray(new String[0]);
     }
 
@@ -168,6 +171,11 @@ public class UserExporter {
         if (exportSettings.isIncludeDataStorage()) {
             result.add(formatNullable(user.getDefaultStorageId()));
             result.add(formatNullable(user.getDefaultStoragePath()));
+        }
+        if (exportSettings.isIncludeCredits()) {
+            result.add(user.getUsageCredits() != null
+                    ? String.valueOf(user.getUsageCredits().getCurrentValue())
+                    : StringUtils.EMPTY);
         }
         return result.toArray(new String[0]);
     }

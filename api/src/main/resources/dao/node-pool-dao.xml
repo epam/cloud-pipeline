@@ -130,6 +130,7 @@
                         ON n.schedule_id = s.id
                     LEFT JOIN pipeline.node_schedule_entry as e
                         ON s.id = e.schedule_id
+                    order by n.id, s.id, e.from_day_of_week, e.from_time
                 ]]>
             </value>
         </constructor-arg>
@@ -171,6 +172,7 @@
                         ON s.id = e.schedule_id
                     WHERE
                         n.id = ?
+                    order by e.from_day_of_week, e.from_time
                 ]]>
             </value>
         </constructor-arg>

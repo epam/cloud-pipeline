@@ -51,6 +51,7 @@ import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunWithEngineTasks;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -85,6 +86,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -325,7 +328,11 @@ public class RunApiService {
     @QuotaLaunchCheck
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun resumeRun(Long runId) {
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun resumeRun(final Long runId, final RunInstanceConfigVO runInstanceConfig) {
+        if (runInstanceConfig != null) {
+            runManager.applyRunInstanceConfig(runId, runInstanceConfig);
+        }
         return pipelineRunDockerOperationManager.resumeRun(runId);
     }
 

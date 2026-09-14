@@ -18,14 +18,10 @@ if [ "$SKIP_DEPLOYMENT" == "true" ] || [ "$SKIP_DEPLOYMENT_AWS" == "true" ]; the
     exit 0
 fi
 
-if [ -z "$PIPECTL_DIST_URL_PATH" ] || [ ! -f "$PIPECTL_DIST_URL_PATH" ]; then
-    echo "PIPECTL_DIST_URL_PATH is not defined or file does not exist"
+if [ -z "$PIPECTL_DIST_URL" ]; then
+    echo "PIPECTL_DIST_URL should be provided!"
     exit 1
 fi
-
-set -o allexport
-source "$PIPECTL_DIST_URL_PATH"
-set +o allexport
 
 source /usr/local/bin/checkout_url "$PIPECTL_DIST_URL"
 bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/deploy-dev-aws/prepare-assets.sh

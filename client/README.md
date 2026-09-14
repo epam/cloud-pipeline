@@ -30,9 +30,15 @@ Typical development settings:
 |--------|-------------|
 | `npm start` | Development: starts the optional local API proxy (unless disabled), then the webpack dev server (default **http://localhost:3000**). |
 | `npm run build` | Production build into `build/` (uses increased Node heap). |
-| `npm test` | Runs the Jest test runner. |
-| `npm run lint` / `npm run lint:fix` | ESLint on `src/`. |
-| `npm run stylelint` / `npm run stylelint:fix` | Stylelint on `src/**/*.css`. |
+| `npm test` | Runs the unit test suite (Jest, jsdom, no network) — `src/**/*.test.{js,jsx}` and `scripts/**/*.test.js`. |
+| `npm run test:watch` | The same, in watch mode. |
+| `npm run test:coverage` | The same, with a coverage report under `coverage/`. |
+| `npm run test:live` | Runs the live test suite — `src/**/*.live.test.js`, against a real deployment. Configured only by `.env.test.local` (see below); with no such file it skips itself and exits 0. |
+| `npm run lint` | ESLint on `src/`, `test/` and `scripts/` (`.js` and `.jsx`), failing only on problems that `.eslintbaseline.json` does not already record. |
+| `npm run stylelint` | The same, for `src/**/*.css` and `src/**/*.less`, against `.stylelintbaseline.json`. |
+| `npm run lint:all` / `npm run stylelint:all` | Report every problem, the baselined debt included. |
+| `npm run lint:baseline` / `npm run stylelint:baseline` | Re-record the baseline — only ever to shrink it, after fixing something. |
+| `npm run lint:fix` / `npm run stylelint:fix` | The linters' own `--fix`, over the same files. |
 | `npm run serve-build` | Serves the built app locally (via `serve`). |
 | `npm run gui-themes-prepare` | Builds GUI theme assets. |
 | `npm run gui-themes-update` | Theme development watcher. |
@@ -45,3 +51,20 @@ By default, **`npm start`** starts a small local reverse proxy so the browser ca
 - To run **only** the proxy (for debugging): from `client/`, run `node scripts/dev-proxy.js` (after loading the same `.env` chain as `npm start`).
 
 Full variable reference and behavior: [scripts/dev-proxy.md](scripts/dev-proxy.md).
+
+## Testing
+
+`npm test` needs no setup and no environment file — its defaults are fixed in the test harness
+itself, so a green run means the same thing on every machine. See `test/AGENTS.md` for the harness
+and the rules test files follow.
+
+`npm run test:live` is opt-in and runs a handful of contract tests against a real deployment. It is
+configured by **`.env.test.local`**, in this directory, untracked and never read by `npm test`:
+
+- **`CP_TEST_API_URL`** — the server root of a real deployment (for example
+  `https://your-host/pipeline/`).
+- **`CP_TEST_API_TOKEN`** — a bearer token for that deployment, if the endpoints under test need
+  one.
+
+With no `.env.test.local`, `npm run test:live` skips itself with a message and exits 0 — that is
+the expected state for most contributors, not a failure to fix.

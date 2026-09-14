@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, isObservableArray, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -103,6 +103,7 @@ import RescheduleRunControl, {
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
 import {getValidationError} from '../elements/EndpointInput';
 import {getSelectOptions} from '../../special/instance-type-info';
+import {FallbackInstanceTypesInput} from '../../special/fallback-instance-types-input';
 import {
   correctLimitMountsParameterValue
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
@@ -265,6 +266,13 @@ export default class EditToolForm extends React.Component {
       return (this.props.awsRegions.value || []).map(r => r);
     }
     return [];
+  }
+
+  @computed
+  get fallbackInstanceTypesDisabled () {
+    // when no fallback instance types are allowed, the control is hidden
+    // and fallback instance types are not saved to the tool configuration
+    return (this.props.preferences.maximumFallbackInstanceTypes || 0) <= 0;
   }
 
   get isWindowsPlatform () {
@@ -440,6 +448,11 @@ export default class EditToolForm extends React.Component {
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
+          fallback_instance_types: !this.fallbackInstanceTypesDisabled &&
+            values.fallbackInstanceTypes &&
+            values.fallbackInstanceTypes.length > 0
+            ? values.fallbackInstanceTypes.slice()
+            : undefined,
           instance_image: values.instanceImage,
           friendly_url: prettyUrlGenerator.build(values.friendly_url),
           is_spot: `${values.is_spot}` === 'true',
@@ -491,6 +504,7 @@ export default class EditToolForm extends React.Component {
     switch (field) {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
+      case 'fallback_instance_types': return this.getFallbackInstanceTypesInitialValue();
       case 'instance_image': return this.getInstanceImageInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
@@ -505,6 +519,12 @@ export default class EditToolForm extends React.Component {
       (this.props.configuration && this.props.configuration.instance_size) ||
       (this.props.tool && this.props.tool.instanceType)
     );
+  };
+
+  getFallbackInstanceTypesInitialValue = () => {
+    const value = this.props.configuration &&
+      this.props.configuration.fallback_instance_types;
+    return Array.isArray(value) || isObservableArray(value) ? value.slice() : undefined;
   };
 
   getPrettyUrlInitialValue = () => {
@@ -1045,6 +1065,7 @@ export default class EditToolForm extends React.Component {
 
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
+      configurationFormFieldChanged('fallback_instance_types', 'fallbackInstanceTypes') ||
       configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
       configurationFormFieldChanged(
@@ -1574,6 +1595,31 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              {!this.fallbackInstanceTypesDisabled && (
+                <Form.Item
+                  {...this.formItemLayout}
+                  label=" "
+                  colon={false}
+                  style={{marginBottom: 10}}
+                >
+                  {getFieldDecorator('fallbackInstanceTypes', {
+                    initialValue: this.getFallbackInstanceTypesInitialValue()
+                  })(
+                    <FallbackInstanceTypesInput
+                      disabled={
+                        this.state.pending ||
+                        this.props.readOnly || (
+                          this.props.allowedInstanceTypes && (
+                            this.props.allowedInstanceTypes.changed ||
+                            this.props.allowedInstanceTypes.pending
+                          )
+                        )}
+                      instanceTypes={this.allowedInstanceTypes}
+                      showReservationTag
+                    />
+                  )}
+                </Form.Item>
+              )}
               <Row>
                 <Col
                   xs={24}
