@@ -96,6 +96,7 @@ PyJWT==2.13.0
 click==8.5.0
 wheel==0.44.0
 flask==2.3.3
+Flask-HTTPAuth==4.4.0
 botocore==1.32.7
 boto3==1.29.0
 azure-common==1.1.28

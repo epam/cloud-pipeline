@@ -58,7 +58,11 @@ function install_prerequisites {
     return $_pkg_result
   fi
 
-  $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS flask==1.1.1 Flask-HTTPAuth==3.3.0
+  if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS flask==1.1.1 Flask-HTTPAuth==3.3.0
+  else
+    $CP_PYTHON_PATH -m pip install $CP_PIP3_EXTRA_ARGS flask==2.3.3 Flask-HTTPAuth==4.4.0
+  fi
   _py_result=$?
   if [ $_py_result -ne 0 ]; then
     pipe_log_fail "[ERROR] Cannot install python prerequisites for DCV" "$DCV_INSTALL_TASK"
