@@ -217,6 +217,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .resume(getLastRunId(), nameWithoutGroup(tool))
                 .waitUntilPauseButtonAppear(getLastRunId())
                 .showLog(getLastRunId())
+                .waitForEndpointLink()
                 .ensure(ENDPOINT, visible)
                 .ensure(SSH_LINK, visible);
     }
