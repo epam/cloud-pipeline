@@ -75,11 +75,9 @@ RUN yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDi
                         xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
                         compat-db-headers compat-db47 libpipeline man-db \
     && yum install -y -q gridengine \
-                        gridengine-debuginfo \
                         gridengine-devel \
                         gridengine-drmaa4ruby \
                         gridengine-execd \
-                        gridengine-guiinst \
                         gridengine-qmaster \
                         gridengine-qmon
 ENV CP_CAP_SGE_PREINSTALLED="true"
