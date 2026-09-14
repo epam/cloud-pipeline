@@ -165,6 +165,45 @@
 # tar -zcvf kube-1.28.2.tgz kube && \
 # aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.el8.tgz
 
+# EL9
+#
+# yum install epel-release -y
+# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+# [kubernetes]
+# name=Kubernetes
+# baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+# EOF
+# yum -q makecache -y --enablerepo kubernetes --nogpg && \
+# mkdir kube && \
+# yum install -y \
+#             --downloadonly \
+#             --downloaddir=$(pwd)/kube \
+#             kubeadm-1.28.2 \
+#             kubectl-1.28.2 \
+#             kubelet-1.28.2 \
+#             cpp \
+#             gcc \
+#             libgcc \
+#             glibc \
+#             glibc-common \
+#             gettext \
+#             gettext-libs \
+#             iproute \
+#             iptables \
+#             kernel-headers \
+#             libmnl \
+#             libmpc \
+#             libnetfilter_conntrack \
+#             libnfnetlink \
+#             libunistring \
+#             mpfr \
+#             tcp_wrappers-libs && \
+# tar -zcvf kube-1.28.2.tgz kube && \
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.el9.tgz
+
 
 ##########################################
 # Kube system pods images download command
@@ -224,7 +263,7 @@ function download_distr() {
         "$_distr_url" \
         -O $_distr_file &> $_kube_install_log
     if [ $? -ne 0 ]; then
-        pipe_log_fail "[ERROR] Cannot download distribution tarball from $_distr_dir" "$_kube_common_setup_task_name"
+        pipe_log_fail "[ERROR] Cannot download distribution tarball from $_distr_url" "$_kube_common_setup_task_name"
         return 1
     fi
     tar -zxf $_distr_file -C $_distr_dir &> $_kube_install_log
