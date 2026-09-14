@@ -63,6 +63,7 @@ enum CloudRegionParameters {
     DNS_HOSTED_ZONE_BASE,
     RUN_SHIFT_ENABLED,
     AWS_S3_ENDPOINT,
+    AWS_S3_SEND_QUERY_AS_SIGNED,
     AWS_KEY_ID,
     AWS_ACCESS_KEY,
     USER_NAME,
