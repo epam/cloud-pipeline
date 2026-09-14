@@ -379,11 +379,9 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                             compat-db-headers compat-db47 libpipeline man-db
 
         yum install -y -q gridengine \
-                            gridengine-debuginfo \
                             gridengine-devel \
                             gridengine-drmaa4ruby \
                             gridengine-execd \
-                            gridengine-guiinst \
                             gridengine-qmaster \
                             gridengine-qmon
     fi
