@@ -76,6 +76,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     private static final String UPDATED_DNS_HOSTED_ZONE_ID = "updatedDnsHostedZoneId";
     private static final String DNS_HOSTED_ZONE_BASE = "dnsHostedZoneBase";
     private static final String UPDATED_DNS_HOSTED_ZONE_BASE = "updatedDnsHostedZoneBase";
+    private static final String S3_ENDPOINT = "https://filer.example.com:9021";
+    private static final String UPDATED_S3_ENDPOINT = "https://updated-filer.example.com:9021";
     private static final double RAM = 3.75;
     private static final int CPU = 2;
     private static final int GPU = 1;
@@ -159,6 +161,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         expectedRegion.setPolicy(POLICY);
         expectedRegion.setKmsKeyId(KMS_KEY_ID);
         expectedRegion.setKmsKeyArn(KMS_KEY_ARN);
+        expectedRegion.setS3Endpoint(S3_ENDPOINT);
+        expectedRegion.setS3SendQueryAsSigned(true);
         final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
         final AwsRegion actualRegion = loadAndCheckType(createdRegion.getId(), AwsRegion.class);
         assertRegionEquals(expectedRegion, actualRegion);
@@ -267,6 +271,7 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         originRegion.setDnsHostedZoneBase(DNS_HOSTED_ZONE_BASE);
         originRegion.setMountObjectStorageRule(MOUNT_OBJECT_STORAGE_RULE);
         originRegion.setMountFileStorageRule(MOUNT_FILE_STORAGE_RULE);
+        originRegion.setS3Endpoint(S3_ENDPOINT);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion);
         final AwsRegion updatedRegion = getAwsRegion();
         updatedRegion.setId(savedRegion.getId());
@@ -280,6 +285,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         updatedRegion.setDnsHostedZoneBase(UPDATED_DNS_HOSTED_ZONE_BASE);
         updatedRegion.setMountObjectStorageRule(UPDATED_MOUNT_OBJECT_STORAGE_RULE);
         updatedRegion.setMountFileStorageRule(UPDATED_MOUNT_FILE_STORAGE_RULE);
+        updatedRegion.setS3Endpoint(UPDATED_S3_ENDPOINT);
+        updatedRegion.setS3SendQueryAsSigned(true);
 
         cloudRegionDao.update(updatedRegion, null);
         final AwsRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AwsRegion.class);
@@ -388,6 +395,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertThat(expectedRegion.getBackupDuration(), is(actualRegion.getBackupDuration()));
         assertThat(expectedRegion.isVersioningEnabled(), is(actualRegion.isVersioningEnabled()));
         assertThat(expectedRegion.getIamRole(), is(actualRegion.getIamRole()));
+        assertThat(expectedRegion.getS3Endpoint(), is(actualRegion.getS3Endpoint()));
+        assertThat(expectedRegion.getS3SendQueryAsSigned(), is(actualRegion.getS3SendQueryAsSigned()));
     }
 
     private void assertRegionEquals(final AzureRegion expectedRegion, final AzureRegion actualRegion) {

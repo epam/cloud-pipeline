@@ -50,4 +50,14 @@ public class AwsRegion extends AbstractCloudRegion implements VersioningAwareReg
     private boolean versioningEnabled;
     private String iamRole;
     private String s3Endpoint;
+    /**
+     * Shall be enabled for the {@link #s3Endpoint} which validates a request signature against a query string
+     * exactly as it was received. Otherwise any request with a space, an asterisk or a tilde
+     * in a query parameter fails with 403 SignatureDoesNotMatch, f.e. a listing of a folder
+     * which name contains a space.
+     *
+     * The option is configurable using API only, therefore it is nullable to be kept as it is
+     * if an update request does not specify it.
+     */
+    private Boolean s3SendQueryAsSigned;
 }

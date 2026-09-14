@@ -50,6 +50,7 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, AwsRegi
         params.addValue(CloudRegionParameters.AWS_OMICS_SERVICE_ROLE.name(), region.getOmicsServiceRole());
         params.addValue(CloudRegionParameters.AWS_OMICS_ECR_URL.name(), region.getOmicsEcrUrl());
         params.addValue(CloudRegionParameters.AWS_S3_ENDPOINT.name(), region.getS3Endpoint());
+        params.addValue(CloudRegionParameters.AWS_S3_SEND_QUERY_AS_SIGNED.name(), region.getS3SendQueryAsSigned());
         Optional.ofNullable(credentials).ifPresent(creds -> {
             params.addValue(CloudRegionParameters.AWS_KEY_ID.name(), creds.getKeyId());
             params.addValue(CloudRegionParameters.AWS_ACCESS_KEY.name(), creds.getAccessKey());
@@ -79,6 +80,10 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, AwsRegi
         region.setOmicsServiceRole(rs.getString(CloudRegionParameters.AWS_OMICS_SERVICE_ROLE.name()));
         region.setOmicsEcrUrl(rs.getString(CloudRegionParameters.AWS_OMICS_ECR_URL.name()));
         region.setS3Endpoint(rs.getString(CloudRegionParameters.AWS_S3_ENDPOINT.name()));
+        final boolean sendQueryAsSigned = rs.getBoolean(CloudRegionParameters.AWS_S3_SEND_QUERY_AS_SIGNED.name());
+        if (!rs.wasNull()) {
+            region.setS3SendQueryAsSigned(sendQueryAsSigned);
+        }
         return region;
     }
 

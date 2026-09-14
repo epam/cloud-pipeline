@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
+import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.SignerFactory;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -34,6 +36,10 @@ import java.util.Objects;
  * Provides methods for AWS S3 operations in specified region.
  */
 public class RegionAwareS3Helper extends S3Helper {
+
+    static {
+        SignerFactory.registerSigner(Rfc3986QueryS3V4Signer.SIGNER_TYPE, Rfc3986QueryS3V4Signer.class);
+    }
 
     private final AwsRegion region;
     private final AwsRegionCredentials credentials;
@@ -56,6 +62,10 @@ public class RegionAwareS3Helper extends S3Helper {
                     new AwsClientBuilder.EndpointConfiguration(region.getS3Endpoint(), null)
             );
             clientBuilder.withPathStyleAccessEnabled(true);
+            if (Boolean.TRUE.equals(region.getS3SendQueryAsSigned())) {
+                clientBuilder.withClientConfiguration(PredefinedClientConfigurations.defaultConfig()
+                        .withSignerOverride(Rfc3986QueryS3V4Signer.SIGNER_TYPE));
+            }
         } else {
             clientBuilder.withRegion(region.getRegionCode());
         }
