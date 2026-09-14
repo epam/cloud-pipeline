@@ -69,7 +69,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(DESCRIPTION, context().find(byText("Description")).find(byId("description"))),
                 entry(LABELS, context().find(button("+ New Label"))),
                 entry(PORT, context().find(byText("Port:")).closest(".ant-row-flex-top")),
-                entry(ENDPOINT, context().find(byText("Name:")).closest(".ant-row-flex-top")),
+                entry(ENDPOINT, context().find(byText("Name:")).closest(".ant-row-flex-middle")),
                 entry(NEW_ENDPOINT, context().find(button("Add endpoint"))),
                 entry(LABEL_INPUT_FIELD, context().find(withText("Labels")).closest(".ant-row")
                         .find(tagName("input"))),
@@ -109,6 +109,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         click(NEW_ENDPOINT);
         resetMouse();
         get(PORT).find(byClassName("ant-input")).should(appear).setValue(endpoint);
+        get(ENDPOINT).find(byClassName("ant-input")).should(appear).setValue("E2E-Endpoint");
         return this;
     }
 
