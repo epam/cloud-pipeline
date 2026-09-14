@@ -655,20 +655,5 @@ public class PreferencesAO extends SettingsPageAO {
                             "%s preference was not found.", LAUNCH_PARAMETERS
                     )));
         }
-
-        public LaunchAO setLaunchSystemParameters(final UnaryOperator<String> action) {
-            final String launchSystemParameters = getLaunchSystemParameters();
-            final String edited = action.apply(launchSystemParameters);
-            if (launchSystemParameters.equals(edited)) {
-                return this;
-            }
-            final SelenideElement launchSystemParameter = $$(byClassName("preference-group__preference-row")).stream()
-                    .filter(s -> s.getText().startsWith(LAUNCH_PARAMETERS))
-                    .findFirst()
-                    .orElseThrow(() -> new NoSuchElementException(format(
-                            "%s preference was not found.", LAUNCH_PARAMETERS
-                    )));
-            return this;
-        }
     }
 }
