@@ -237,7 +237,7 @@ public class AggregatingToolScanManagerTest {
         when(dockerRegistryManager.load(testTool.getRegistryId())).thenReturn(testRegistry);
         when(dockerClientFactory.getDockerClient(eq(testRegistry), anyString())).thenReturn(mockDockerClient);
 
-        when(mockDockerClient.getManifest(any(), Mockito.anyString(), Mockito.anyString()))
+        when(mockDockerClient.resolveImageManifest(any(), Mockito.anyString(), Mockito.anyString()))
             .thenReturn(Optional.of(testManifest));
 
         when(mockDockerClient.getVersionAttributes(any(), eq(TEST_IMAGE), eq(LATEST_VERSION)))
