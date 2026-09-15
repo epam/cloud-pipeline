@@ -304,6 +304,7 @@ def get_daemon():
     queue_gpu_resource_name = params.queue.gpu_resource_name.get()
     queue_mem_resource_name = params.queue.mem_resource_name.get()
     queue_exc_resource_name = params.queue.exc_resource_name.get()
+    transfer_requests_to_pipe = params.queue.transfer_requests_to_pipe.get()
 
     host_storage_file = os.path.join(cluster_work_dir, '.autoscaler.%s.storage' % queue_name)
     host_storage_static_file = os.path.join(cluster_work_dir, '.autoscaler.%s.static.storage' % queue_name)
@@ -542,6 +543,8 @@ def get_daemon():
                                           instance_supply.exc)
                                   for instance, instance_supply
                                   in zip(instances, instance_supplies))))
+    if transfer_requests_to_pipe:
+        Logger.info('Enabled transferring requests to pipe.')
 
     instance_launch_params = fetch_instance_launch_params(api, launch_adapter, cluster_master_run_id,
                                                           instance_inheritable_params,
@@ -564,7 +567,8 @@ def get_daemon():
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_launch_params=instance_launch_params,
-                                                clock=clock)
+                                                clock=clock,
+                                                transfer_requests_to_pipe=transfer_requests_to_pipe)
     if dry_run:
         scale_up_handler = DoNothingScaleUpHandler()
     scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler,
