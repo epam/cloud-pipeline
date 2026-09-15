@@ -397,10 +397,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO resume(final String runId, final String pipelineName) {
         $("#run-" + runId + "-resume-button").shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to resume %s", pipelineName))
+        new ResumePopupAO<>(this)
+                .ensureResumeTitleIs(format("Do you want to resume %s", pipelineName))
                 .sleep(1, SECONDS)
-                .click(button("RESUME"));
+                .ok();
         return this;
     }
 

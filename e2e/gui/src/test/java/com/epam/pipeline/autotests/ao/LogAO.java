@@ -245,10 +245,10 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO resume(final String pipelineName) {
         get(RESUME).shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to resume %s?", pipelineName))
+        new ResumePopupAO<>(this)
+                .ensureResumeTitleIs(format("Do you want to resume %s?", pipelineName))
                 .sleep(2, SECONDS)
-                .click(button(RESUME.name()));
+                .ok();
         return this;
     }
 

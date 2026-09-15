@@ -1,0 +1,23 @@
+[
+  {
+    "type": "CPU",
+    "enabled": true,
+    "thresholdPercent": 80,
+    "gracePeriodMinutes": 2,
+    "actionTimeoutMinutes": 2,
+    "action": "NOTIFY"
+  },
+  {
+    "type": "GPU",
+    "enabled": true,
+    "gracePeriodMinutes": 2,
+    "actionTimeoutMinutes": 2,
+    "action": "{{action}}"
+  },
+  {
+    "type": "ABSOLUTE",
+    "enabled": true,
+    "actionTimeoutMinutes": 2,
+    "action": "NOTIFY"
+  }
+]

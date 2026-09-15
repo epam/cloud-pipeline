@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.function.UnaryOperator;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -374,10 +373,6 @@ public class PreferencesAO extends SettingsPageAO {
 
     public class SystemTabAO extends PreferencesAO {
 
-        private final By maxIdleTimeout = getByField("system.max.idle.timeout.minutes");
-        private final By idleActionTimeout = getByField("system.idle.action.timeout.minutes");
-        private final By idleCpuThreshold = getByField("system.idle.cpu.threshold");
-        private final By idleAction = getByField("system.idle.action");
         private final By ldapUserBlockMonitor = getByCheckbox("system.ldap.user.block.monitor.enable");
         private final By userMonitor = getByCheckbox("system.user.monitor.enable");
         private final By systemMaintenanceMode = getByCheckbox("system.maintenance.mode");
@@ -385,38 +380,6 @@ public class PreferencesAO extends SettingsPageAO {
 
         SystemTabAO(final PipelinesLibraryAO parentAO) {
             super(parentAO);
-        }
-
-        public SystemTabAO setMaxIdleTimeout(final String value) {
-            return setSystemValue(maxIdleTimeout, value);
-        }
-
-        public String getMaxIdleTimeout() {
-            return getSystemValue(maxIdleTimeout);
-        }
-
-        public SystemTabAO setIdleActionTimeout(final String value) {
-            return setSystemValue(idleActionTimeout, value);
-        }
-
-        public String getIdleActionTimeout() {
-            return getSystemValue(idleActionTimeout);
-        }
-
-        public SystemTabAO setIdleCpuThreshold(final String value) {
-            return setSystemValue(idleCpuThreshold, value);
-        }
-
-        public String getIdleCpuThreshold() {
-            return getSystemValue(idleCpuThreshold);
-        }
-
-        public SystemTabAO setIdleAction(final String value) {
-            return setSystemValue(idleAction, value);
-        }
-
-        public String getIdleAction() {
-            return getSystemValue(idleAction);
         }
 
         public SystemTabAO setSystemMaintenanceModeBanner(final String value) {

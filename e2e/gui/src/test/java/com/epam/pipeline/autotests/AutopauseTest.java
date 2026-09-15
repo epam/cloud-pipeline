@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
-import com.epam.pipeline.autotests.ao.PreferencesAO.SystemTabAO;
 import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -26,11 +25,10 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import static com.epam.pipeline.autotests.utils.Utils.SPOT;
+import static java.lang.Boolean.parseBoolean;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import java.util.function.Function;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.hidden;
@@ -45,23 +43,23 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
-    private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String diskSize = "15";
+    private final String instanceType = C.DEFAULT_GPU_INSTANCE;
+    private final String diskSize = "30";
     private final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
+    private final String SYSTEM_IDLE_MONITORING_CONFIG = "system.idle.monitoring.config";
+    private static final String SYSTEMIDLEMONITORINGCONFIG_JSON = "/systemIdleMonitoringConfig.json";
 
-    private String maxIdleTimeout;
-    private String idleActionTimeout;
-    private String idleCpuThreshold;
-    private String idleAction;
+    private String[] systemIdleMonitoringConfigInit;
     private boolean userIsAdvancedUser;
 
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
-            maxIdleTimeout = getSystemValue(SystemTabAO::getMaxIdleTimeout);
-            idleActionTimeout = getSystemValue(SystemTabAO::getIdleActionTimeout);
-            idleCpuThreshold = getSystemValue(SystemTabAO::getIdleCpuThreshold);
-            idleAction = getSystemValue(SystemTabAO::getIdleAction);
+            systemIdleMonitoringConfigInit = navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .searchPreference(SYSTEM_IDLE_MONITORING_CONFIG)
+                    .getPreference(SYSTEM_IDLE_MONITORING_CONFIG);
             EditUserPopup editUserPopup = navigationMenu()
                     .settings()
                     .switchToUserManagement()
@@ -78,7 +76,8 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
     @AfterClass(alwaysRun = true)
     public void fallBackPreferences() {
-        setSystemPreferences(maxIdleTimeout, idleActionTimeout, idleCpuThreshold, idleAction);
+        setSystemPreferences(systemIdleMonitoringConfigInit[0],
+                parseBoolean(systemIdleMonitoringConfigInit[1]));
         if(!userIsAdvancedUser) {
             navigationMenu()
                     .settings()
@@ -94,7 +93,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     @Test
     @TestCase({"EPMCMBIBPC-2633"})
     public void autopauseValidationStop() {
-        setSystemPreferences("2", "2", "30", "STOP");
+        setSystemPreferences(configJson("STOP"), true);
         relogin();
 
         final String run1 = launchTool(ON_DEMAND, enabled);
@@ -113,7 +112,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     @Test
     @TestCase({"EPMCMBIBPC-2634"})
     public void autopauseValidationPauseOrStop() {
-        setSystemPreferences("2", "2", "30", "PAUSE_OR_STOP");
+        setSystemPreferences(configJson("PAUSE_OR_STOP"), true);
         relogin();
 
         final String run1 = launchTool(ON_DEMAND, enabled);
@@ -135,7 +134,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     @Test
     @TestCase({"EPMCMBIBPC-2635"})
     public void autopauseValidationPause() {
-        setSystemPreferences("2", "2", "30", "PAUSE");
+        setSystemPreferences(configJson("PAUSE"), true);
         relogin();
 
         final String runId = launchTool(ON_DEMAND, enabled);
@@ -159,19 +158,19 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         return getLastRunId();
     }
 
-    private void setSystemPreferences(final String maxIdleTimeout,
-                                      final String idleActionTimeout,
-                                      final String idleCpuThreshold,
-                                      final String idleAction) {
+    private String configJson(final String action) {
+        return Utils.readResourceFully(SYSTEMIDLEMONITORINGCONFIG_JSON)
+                .replace("{{action}}", action);
+    }
+
+    private void setSystemPreferences(final String idleConfig, final boolean bool) {
         loginAsAdminAndPerform(() ->
                 navigationMenu()
                         .settings()
                         .switchToPreferences()
-                        .switchToSystem()
-                        .setIdleActionTimeout(idleActionTimeout)
-                        .setIdleCpuThreshold(idleCpuThreshold)
-                        .setIdleAction(idleAction)
-                        .setMaxIdleTimeout(maxIdleTimeout)
+                        .switchToPreferences()
+                        .searchPreference(SYSTEM_IDLE_MONITORING_CONFIG)
+                        .updateCodeText(SYSTEM_IDLE_MONITORING_CONFIG, idleConfig, bool)
                         .saveIfNeeded()
         );
     }
@@ -179,12 +178,5 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     private void relogin() {
         logout();
         loginAs(user);
-    }
-
-    private String getSystemValue(final Function<SystemTabAO, String> getValueFunction) {
-        return getValueFunction.apply(navigationMenu()
-                .settings()
-                .switchToPreferences()
-                .switchToSystem());
     }
 }
