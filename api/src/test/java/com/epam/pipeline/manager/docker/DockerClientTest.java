@@ -63,12 +63,27 @@ public class DockerClientTest {
     private static final String MANIFEST_MEDIA_TYPE = "application/vnd.docker.distribution.manifest.v2+json";
     private static final String MANIFEST_LIST_MEDIA_TYPE =
             "application/vnd.docker.distribution.manifest.list.v2+json";
+    private static final String OCI_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json";
+    private static final String OCI_INDEX_MEDIA_TYPE = "application/vnd.oci.image.index.v1+json";
+    private static final String ACCEPTED_MANIFEST_FORMATS = MANIFEST_MEDIA_TYPE + "," + MANIFEST_LIST_MEDIA_TYPE
+            + "," + OCI_MANIFEST_MEDIA_TYPE + "," + OCI_INDEX_MEDIA_TYPE;
     private static final String EMPTY_MANIFEST_LIST = "{\"schemaVersion\":2,\"mediaType\":\""
             + MANIFEST_LIST_MEDIA_TYPE + "\",\"manifests\":[]}";
+    private static final String CONFIG_DIGEST = "sha256:config";
     private static final String MANIFEST_BODY = "{\"schemaVersion\":2,\"mediaType\":\"" + MANIFEST_MEDIA_TYPE
             + "\",\"config\":{\"mediaType\":\"application/vnd.docker.container.image.v1+json\",\"size\":1,"
-            + "\"digest\":\"sha256:config\"},\"layers\":[{\"mediaType\":\""
+            + "\"digest\":\"" + CONFIG_DIGEST + "\"},\"layers\":[{\"mediaType\":\""
             + "application/vnd.docker.image.rootfs.diff.tar.gzip\",\"size\":2,\"digest\":\"sha256:layer\"}]}";
+    private static final String LIST_DIGEST =
+            "sha256:1f0e3dad99908345f7439f8ffabdffc418e4d3f7c3d4e5a6b7c8d9e0f1a2b3c4";
+    private static final String AMD_DIGEST = "sha256:3c59dc048e8850243be8079a5c74d079e2f4d9d8e1a8f0b3c9d2e1f0a9b8c7d6";
+    private static final String ARM_DIGEST = "sha256:b6d767d2f8ed5d21a44b0e5886680cb9c1b1b2b3c4d5e6f708192a3b4c5d6e7f";
+    private static final String ATTESTATION_DIGEST =
+            "sha256:37693cfc748049e45d87b8c7d8b9aacd1e4a3f6a2b3c4d5e6f708192a3b4c5d6";
+    private static final String LINUX_OS = "linux";
+    private static final String AMD_ARCHITECTURE = "amd64";
+    private static final String ARM_ARCHITECTURE = "arm64";
+    private static final String UNKNOWN_PLATFORM = "unknown";
     private static final String TAGS_BODY = "{\"name\":\"library/image\",\"tags\":[\"1.0\"]}";
     private static final String DOCKER_CONTENT_DIGEST = "Docker-Content-Digest";
 
@@ -206,6 +221,90 @@ public class DockerClientTest {
         assertThrows(DockerConnectionException.class, () -> dockerClient.findImageTags(REGISTRY_PATH, IMAGE));
     }
 
+    @Test
+    public void shouldRequestManifestsOfAllSupportedFormats() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.ACCEPT, ACCEPTED_MANIFEST_FORMATS))
+                .andRespond(manifestResponse(MANIFEST_MEDIA_TYPE, DIGEST, MANIFEST_BODY));
+
+        assertTrue(dockerClient.getManifest(registry(), IMAGE, TAG).isPresent());
+        server.verify();
+    }
+
+    @Test
+    public void shouldResolveManifestListToImageManifestOfDefaultPlatform() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_LIST_MEDIA_TYPE, LIST_DIGEST,
+                        manifestList(MANIFEST_LIST_MEDIA_TYPE,
+                                reference(ARM_DIGEST, LINUX_OS, ARM_ARCHITECTURE),
+                                reference(AMD_DIGEST, LINUX_OS, AMD_ARCHITECTURE))));
+        server.expect(requestTo(digestUrl(AMD_DIGEST)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_MEDIA_TYPE, AMD_DIGEST, MANIFEST_BODY));
+
+        final Optional<ManifestV2> manifest = dockerClient.resolveImageManifest(registry(), IMAGE, TAG);
+
+        assertTrue(manifest.isPresent());
+        assertEquals(CONFIG_DIGEST, manifest.get().getConfig().getDigest());
+        // a digest of the manifest, a tag points to, identifies an image version and shall be preserved
+        assertEquals(LIST_DIGEST, manifest.get().getDigest());
+        server.verify();
+    }
+
+    @Test
+    public void shouldSkipManifestsOfUnknownPlatformWhileResolvingOciIndex() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(OCI_INDEX_MEDIA_TYPE, LIST_DIGEST,
+                        manifestList(OCI_INDEX_MEDIA_TYPE,
+                                reference(ATTESTATION_DIGEST, UNKNOWN_PLATFORM, UNKNOWN_PLATFORM),
+                                reference(ARM_DIGEST, LINUX_OS, ARM_ARCHITECTURE))));
+        server.expect(requestTo(digestUrl(ARM_DIGEST)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(OCI_MANIFEST_MEDIA_TYPE, ARM_DIGEST, MANIFEST_BODY));
+
+        final Optional<ManifestV2> manifest = dockerClient.resolveImageManifest(registry(), IMAGE, TAG);
+
+        assertTrue(manifest.isPresent());
+        assertEquals(CONFIG_DIGEST, manifest.get().getConfig().getDigest());
+        server.verify();
+    }
+
+    @Test
+    public void shouldFailManifestResolutionIfReferencedManifestIsNotFound() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_LIST_MEDIA_TYPE, LIST_DIGEST,
+                        manifestList(MANIFEST_LIST_MEDIA_TYPE, reference(AMD_DIGEST, LINUX_OS, AMD_ARCHITECTURE))));
+        server.expect(requestTo(digestUrl(AMD_DIGEST)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+
+        assertThrows(DockerConnectionException.class,
+            () -> dockerClient.resolveImageManifest(registry(), IMAGE, TAG));
+        server.verify();
+    }
+
+    @Test
+    public void shouldDeleteManifestListItselfRatherThanReferencedImageManifest() {
+        // the deletion of a referenced image manifest leaves a tag pointing to a broken manifest list behind
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_LIST_MEDIA_TYPE, LIST_DIGEST,
+                        manifestList(MANIFEST_LIST_MEDIA_TYPE, reference(AMD_DIGEST, LINUX_OS, AMD_ARCHITECTURE))));
+        server.expect(requestTo(digestUrl(LIST_DIGEST)))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.ACCEPTED));
+
+        final Optional<ManifestV2> manifest = dockerClient.deleteImage(registry(), IMAGE, TAG);
+
+        assertTrue(manifest.isPresent());
+        assertEquals(LIST_DIGEST, manifest.get().getDigest());
+        server.verify();
+    }
+
     private DefaultResponseCreator manifestResponse(final String mediaType, final String digest, final String body) {
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(mediaType));
@@ -217,6 +316,16 @@ public class DockerClientTest {
         final HttpHeaders headers = new HttpHeaders();
         headers.add(DOCKER_CONTENT_DIGEST, digest);
         return withStatus(status).headers(headers);
+    }
+
+    private String manifestList(final String mediaType, final String... references) {
+        return "{\"schemaVersion\":2,\"mediaType\":\"" + mediaType + "\",\"manifests\":["
+                + String.join(",", references) + "]}";
+    }
+
+    private String reference(final String digest, final String os, final String architecture) {
+        return "{\"mediaType\":\"" + MANIFEST_MEDIA_TYPE + "\",\"size\":100,\"digest\":\"" + digest
+                + "\",\"platform\":{\"architecture\":\"" + architecture + "\",\"os\":\"" + os + "\"}}";
     }
 
     private String digestUrl(final String digest) {

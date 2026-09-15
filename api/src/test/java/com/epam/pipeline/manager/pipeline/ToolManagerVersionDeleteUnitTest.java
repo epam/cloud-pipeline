@@ -152,6 +152,18 @@ public class ToolManagerVersionDeleteUnitTest {
         verifyVersionIsKeptInDatabase();
     }
 
+    @Test
+    public void shouldNotDeleteBlobsOfManifestListDuringHardToolDeletion() {
+        // a manifest list references no blobs itself, its image manifests have them
+        doReturn(Collections.singletonList(VERSION)).when(dockerRegistryManager).loadImageTags(registry, IMAGE);
+        doReturn(Optional.of(manifestList())).when(dockerRegistryManager).deleteImage(registry, IMAGE, VERSION);
+
+        toolManager.delete(REGISTRY_PATH, IMAGE, true);
+
+        verify(dockerRegistryManager).deleteImage(registry, IMAGE, VERSION);
+        verify(dockerRegistryManager, never()).deleteLayer(any(DockerRegistry.class), anyString(), anyString());
+    }
+
     private void verifyVersionIsKeptInDatabase() {
         verify(toolVulnerabilityDao, never()).deleteToolVersionScan(anyLong(), anyString());
         verify(toolVersionManager, never()).deleteToolVersion(anyLong(), anyString());
@@ -178,6 +190,14 @@ public class ToolManagerVersionDeleteUnitTest {
         manifest.setDigest(DIGEST);
         manifest.setConfig(new ManifestV2.Config(DIGEST, 0L));
         manifest.setLayers(Collections.singletonList(new ManifestV2.Config(DIGEST, 0L)));
+        return manifest;
+    }
+
+    private ManifestV2 manifestList() {
+        final ManifestV2 manifest = new ManifestV2();
+        manifest.setDigest(DIGEST);
+        manifest.setManifests(Collections.singletonList(
+                new ManifestV2.ManifestReference(DIGEST, 0L, null, new ManifestV2.Platform("amd64", "linux"))));
         return manifest;
     }
 }
