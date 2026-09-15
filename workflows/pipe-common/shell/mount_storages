@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 MOUNT_ROOT=$1
 TMP_DIR=$2
 MOUNT_TASK_NAME=$3
+MOUNT_LOG_FILE=$4
 
 # Check global variables
 if [ -z "$API" ]
@@ -49,4 +50,49 @@ if [ -z "$MOUNT_TASK_NAME" ]
 	exit 1
 fi
 
-$CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}"
+if [ -z "$MOUNT_LOG_FILE" ]
+  then
+    MOUNT_LOG_FILE="$LOG_DIR/${MOUNT_TASK_NAME}.log"
+fi
+
+MOUNT_CHECK_INTERVAL="${MOUNT_CHECK_INTERVAL:-1}"
+INIT_MOUNT_STATUS_FILE=$TMP_DIR/.init_mount_status
+
+function check_mount_status() {
+    [[ ! -f "$INIT_MOUNT_STATUS_FILE" ]] && return 2
+    case "$(cat "$INIT_MOUNT_STATUS_FILE")" in
+        SUCCESS) return 0 ;;
+        FAILURE) return 1 ;;
+        *) return 2 ;;
+    esac
+}
+
+is_process_running() {
+    local pid="$1"
+    kill -0 "$pid" &> /dev/null
+}
+
+nohup $CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" \
+                       --mount-root "${MOUNT_ROOT}" \
+                       --tmp-dir "${TMP_DIR}" \
+                       --task "${MOUNT_TASK_NAME}" \
+                       --status-file "${INIT_MOUNT_STATUS_FILE}" \
+                       1>/dev/null 2> $MOUNT_LOG_FILE &
+MOUNT_STORAGE_PID="$!"
+
+while is_process_running "$MOUNT_STORAGE_PID"; do
+    check_mount_status
+    status=$?
+
+    case $status in
+        0|1) exit $status ;;
+        2) sleep "$MOUNT_CHECK_INTERVAL" ;;
+    esac
+done
+
+check_mount_status
+mount_status_exit_code=$?
+
+rm -f $INIT_MOUNT_STATUS_FILE
+
+exit $mount_status_exit_code
