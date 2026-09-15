@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.entity.scan.clair.ClairVulnerabilities;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
+import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -377,9 +378,15 @@ public class AggregatingToolScanManager implements ToolScanManager {
     private ManifestV2 getManifest(final Tool tool, final String tag, final DockerRegistry registry)
             throws ToolScanExternalServiceException {
         final DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
-        return dockerClient.getManifest(registry, tool.getImage(), tag)
-                .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
-                        MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
+        try {
+            return dockerClient.getManifest(registry, tool.getImage(), tag)
+                    .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                            MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
+        } catch (DockerConnectionException e) {
+            // a registry communication error shall fail a scan of a single version only, not of the whole tool
+            throw new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                    MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage()), e);
+        }
     }
 
     private List<String> fetchLayers(final ManifestV2 manifest) {
