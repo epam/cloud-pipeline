@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+    test.override: |
+          hosts { 
+              <Cluster-IP> <cp-edge-external-host>
+              <Cluster-IP> <cp-api-srv-external-host>
+              <Cluster-IP> <Public-IP>
+              fallthrough
+          }
