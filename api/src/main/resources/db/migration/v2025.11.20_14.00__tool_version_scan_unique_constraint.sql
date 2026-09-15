@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool_version_scan ADD CONSTRAINT tool_id_version_unique_key UNIQUE (tool_id, version);
