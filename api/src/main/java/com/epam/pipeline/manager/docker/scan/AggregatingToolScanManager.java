@@ -379,7 +379,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
             throws ToolScanExternalServiceException {
         final DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
         try {
-            return dockerClient.getManifest(registry, tool.getImage(), tag)
+            return dockerClient.resolveImageManifest(registry, tool.getImage(), tag)
                     .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
                             MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
         } catch (DockerConnectionException e) {
