@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
+import com.epam.pipeline.autotests.ao.PreferencesAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -302,7 +303,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
     }
 
-    private SettingsPageAO.PreferencesAO setSystemMaintenanceModeBanner(String textBanner) {
+    private PreferencesAO setSystemMaintenanceModeBanner(String textBanner) {
         return navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -311,7 +312,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .saveIfNeeded();
     }
 
-    private SettingsPageAO.PreferencesAO setEnableSystemMaintenanceMode() {
+    private PreferencesAO setEnableSystemMaintenanceMode() {
         return navigationMenu()
                 .settings()
                 .switchToPreferences()
@@ -320,7 +321,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .saveIfNeeded();
     }
 
-    private SettingsPageAO.PreferencesAO setDisableSystemMaintenanceMode() {
+    private PreferencesAO setDisableSystemMaintenanceMode() {
         return navigationMenu()
                 .settings()
                 .switchToPreferences()

@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.PreferencesAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.ao.UserManagementAO;
@@ -56,7 +57,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
-            final SettingsPageAO.PreferencesAO preferencesAO = navigationMenu()
+            final PreferencesAO preferencesAO = navigationMenu()
                     .settings()
                     .switchToPreferences();
             userMonitor = preferencesAO.switchToSystem().getUserMonitor();
@@ -87,7 +88,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
                     .disableLdapUserBlockMonitor()
                     .saveIfNeeded();
         }
-        final SettingsPageAO.PreferencesAO preferencesAO = navigationMenu()
+        final PreferencesAO preferencesAO = navigationMenu()
                 .settings()
                 .switchToPreferences();
         Stream.of(
