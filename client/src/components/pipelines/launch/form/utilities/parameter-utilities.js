@@ -344,6 +344,7 @@ window.launchFormVerbose = function (vb = true) {
  * @property {string} name
  * @property {string} type
  * @property {string} [description]
+ * @property {string} [placeholder]
  * @property {string|boolean} [value]
  * @property readOnly
  * @property required
@@ -974,6 +975,7 @@ export function getParameterConfig (
         visible,
         validation,
         description,
+        placeholder,
         fallbackConfig = false,
         // eslint-disable-next-line camelcase
         pretty_name,
@@ -1043,6 +1045,7 @@ export function getParameterConfig (
         prettyName,
         type,
         description,
+        placeholder,
         value: typedValue(parameterValue),
         readOnly: asBoolean(readOnlyComputed),
         readOnlyFromConfiguration: asBoolean(readOnly),
@@ -1960,6 +1963,7 @@ export function parameterConfigToPayloadConfig (parameterConfig) {
     resolvedValue: parameterConfig.resolvedValue,
     validation: parameterConfig.validation,
     description: parameterConfig.description,
+    placeholder: parameterConfig.placeholder,
     scheme: objectParameterSchemeToPayload(parameterConfig.scheme),
     pretty_name: parameterConfig.prettyName,
     metadata_config: parameterConfig.metadata_config,
