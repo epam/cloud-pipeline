@@ -454,7 +454,7 @@ public class ToolManager implements SecuredEntityManager {
                 for (String tag : tags) {
                     Optional<ManifestV2> manifestOpt =
                             dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), tag);
-                    manifestOpt.ifPresent(manifest -> {
+                    manifestOpt.filter(this::hasBlobs).ifPresent(manifest -> {
                         dockerRegistryManager.deleteLayer(dockerRegistry, image, manifest.getConfig().getDigest());
 
                         Collections.reverse(manifest.getLayers());
@@ -470,6 +470,14 @@ public class ToolManager implements SecuredEntityManager {
             toolVersionManager.deleteToolVersions(tool.getId());
         }
         toolDao.deleteTool(tool.getId());
+    }
+
+    /**
+     * A manifest list (a multi platform image) references no blobs itself: blobs of the image manifests
+     * it refers to are removed by a registry garbage collection.
+     */
+    private boolean hasBlobs(final ManifestV2 manifest) {
+        return Objects.nonNull(manifest.getConfig()) && Objects.nonNull(manifest.getLayers());
     }
 
     private void deleteToolVersionScan(Long toolId, String version) {
