@@ -23,5 +23,14 @@ RUN apk add nginx \
 ADD update_nginx_config.sh /update_nginx_config.sh
 RUN chmod +x /update_nginx_config.sh
 
+# A repair of the broken tags requires bash, curl and jq, while sha256sum, base64, flock, crond
+# and crontab are provided by a busybox
+RUN apk add bash \
+            curl \
+            jq
+ADD repair-dangling-tags.sh /repair-dangling-tags.sh
+ADD setup_cron.sh /setup_cron.sh
+RUN chmod +x /repair-dangling-tags.sh /setup_cron.sh
+
 ENTRYPOINT ["/bin/sh", "-c"]
-CMD ["/update_nginx_config.sh; /update_config.sh; /entrypoint.sh /etc/docker/registry/config.yml"]
+CMD ["/update_nginx_config.sh; /update_config.sh; /setup_cron.sh; /entrypoint.sh /etc/docker/registry/config.yml"]
