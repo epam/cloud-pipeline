@@ -17,15 +17,13 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
-import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
+import com.epam.pipeline.autotests.ao.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.SPOT;
-import static java.lang.Boolean.parseBoolean;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -37,12 +35,16 @@ import static com.epam.pipeline.autotests.ao.Primitive.AUTO_PAUSE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.runWithId;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.SPOT;
+
+import static java.lang.Boolean.parseBoolean;
+import java.util.stream.Stream;
 
 public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements Tools, Authorization {
 
-    private final String tool = C.TESTING_TOOL_NAME;
+    private final String tool = C.ANOTHER_TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
-    private final String group = C.DEFAULT_GROUP;
+    private final String group = "library";
     private final String instanceType = C.DEFAULT_GPU_INSTANCE;
     private final String diskSize = "30";
     private final String ROLE_ADVANCED_USER = "ROLE_ADVANCED_USER";
@@ -98,15 +100,20 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         final String run1 = launchTool(ON_DEMAND, enabled);
         final String run2 = launchTool(SPOT, hidden);
-        runsMenu()
-                .activeRuns()
-                .ensure(runWithId(run2), visible)
-                .ensure(runWithId(run1), visible)
-                .waitForCompletion(run2)
-                .waitForCompletion(run1)
-                .completedRuns()
-                .ensure(runWithId(run2), visible)
-                .ensure(runWithId(run1), visible);
+        try {
+            runsMenu()
+                    .activeRuns()
+                    .ensure(runWithId(run2), visible)
+                    .ensure(runWithId(run1), visible)
+                    .waitForCompletion(run2)
+                    .waitForCompletion(run1)
+                    .completedRuns()
+                    .ensure(runWithId(run2), visible)
+                    .ensure(runWithId(run1), visible);
+        } finally {
+            Stream.of(run1, run2)
+                    .forEach(runId -> navigationMenu().runs().stopRunIfPresent(runId));
+        }
     }
 
     @Test
@@ -117,18 +124,24 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         final String run1 = launchTool(ON_DEMAND, enabled);
         final String run2 = launchTool(SPOT, hidden);
-        runsMenu()
-                .activeRuns()
-                .waitUntilResumeButtonAppear(run1)
-                .validateStatus(run1, LogAO.Status.PAUSED)
-                .waitForCompletion(run2)
-                .ensure(runWithId(run2), hidden)
-                .completedRuns()
-                .ensure(runWithId(run2), visible)
-                .activeRuns()
-                .resume(run1, nameWithoutGroup(tool))
-                .waitUntilStopButtonAppear(run1)
-                .stopRun(run1);
+        try {
+            runsMenu()
+                    .activeRuns()
+                    .waitUntilResumeButtonAppear(run1)
+                    .validateStatus(run1, LogAO.Status.PAUSED)
+                    .waitForCompletion(run2)
+                    .ensure(runWithId(run2), hidden)
+                    .completedRuns()
+                    .ensure(runWithId(run2), visible)
+                    .activeRuns()
+                    .resume(run1, nameWithoutGroup(tool))
+                    .waitUntilStopButtonAppear(run1)
+                    .stopRun(run1);
+        } finally {
+            Stream.of(run1, run2)
+                    .forEach(runId -> navigationMenu().runs().stopRunIfPresent(runId));
+        }
+
     }
 
     @Test
@@ -138,14 +151,18 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         final String runId = launchTool(ON_DEMAND, enabled);
-
-        runsMenu()
-                .activeRuns()
-                .waitUntilResumeButtonAppear(runId)
-                .validateStatus(runId, LogAO.Status.PAUSED)
-                .resume(runId, nameWithoutGroup(tool))
-                .waitUntilStopButtonAppear(runId)
-                .stopRun(runId);
+        try {
+            runsMenu()
+                    .activeRuns()
+                    .waitUntilTagAppears(runId, "IDLE_GPU")
+                    .waitUntilResumeButtonAppear(runId)
+                    .validateStatus(runId, LogAO.Status.PAUSED)
+                    .resume(runId, nameWithoutGroup(tool))
+                    .waitUntilStopButtonAppear(runId)
+                    .stopRun(runId);
+        } finally {
+            navigationMenu().runs().stopRunIfPresent(runId);
+        }
     }
 
     private String launchTool(final String priceType, final Condition autoPause) {

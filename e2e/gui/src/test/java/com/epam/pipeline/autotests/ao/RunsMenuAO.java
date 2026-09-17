@@ -24,6 +24,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.COMMIT_APPEARING_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
@@ -398,7 +399,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO resume(final String runId, final String pipelineName) {
         $("#run-" + runId + "-resume-button").shouldBe(visible).click();
         new ResumePopupAO<>(this)
-                .ensureResumeTitleIs(format("Do you want to resume %s", pipelineName))
+                .ensureResumeTitleIs(format("Do you want to resume%s?", pipelineName))
                 .sleep(1, SECONDS)
                 .ok();
         return this;
@@ -473,8 +474,16 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public boolean isActiveRun(final String id) {
-        return $(tagName("tbody")).shouldBe(visible)
-                .findAll(tagName("tr")).findBy(text(id)).is(exist);
+        return (!$(byClassName("ant-table-placeholder")).exists()) ?
+                $(tagName("tbody")).shouldBe(visible)
+                .findAll(tagName("tr")).findBy(text(id)).is(exist) : false;
+    }
+
+    public RunsMenuAO waitUntilTagAppears(String runId, String tag) {
+        $(className(format("run-%s", runId))).should(exist)
+                .$(className("un-table-columns__tags-column"))
+                .$(byId(tag)).shouldBe(visible, ofMillis(COMMIT_APPEARING_TIMEOUT));
+        return this;
     }
 
     public String getRunIdByTag(final String runTag) {
