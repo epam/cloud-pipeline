@@ -149,7 +149,13 @@ export LAYERS_COUNT_TO_SQUASH=${13}
 
 
 export TASK_NAME="PausePipelineRun"
-export CP_PYTHON2_PATH=python
+if command -v python3 &>/dev/null; then
+    export CP_PYTHON_VERSION="3"
+    export CP_PYTHON_PATH=$(command -v python3)
+else
+    export CP_PYTHON_VERSION="2"
+    export CP_PYTHON_PATH=$(command -v python)
+fi
 export RUNS_ROOT='/runs'
 
 export COMMON_REPO_DIR="$(pwd)/pipe-common"
