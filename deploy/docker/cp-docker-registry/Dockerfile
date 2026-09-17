@@ -23,11 +23,13 @@ RUN apk add nginx \
 ADD update_nginx_config.sh /update_nginx_config.sh
 RUN chmod +x /update_nginx_config.sh
 
-# A repair of the broken tags requires bash, curl and jq, while sha256sum, base64, flock, crond
-# and crontab are provided by a busybox
+# A repair of the broken tags requires bash, curl and jq, while openssl signs the storage requests
+# of a fallback removal of the tag files, see repair-dangling-tags.sh; sha256sum, base64, od, flock,
+# crond and crontab are provided by a busybox
 RUN apk add bash \
             curl \
-            jq
+            jq \
+            openssl
 ADD repair-dangling-tags.sh /repair-dangling-tags.sh
 ADD setup_cron.sh /setup_cron.sh
 RUN chmod +x /repair-dangling-tags.sh /setup_cron.sh

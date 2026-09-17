@@ -35,6 +35,29 @@
 # The script only reports the findings unless DRY_RUN is set to false. A tag, that cannot be
 # reliably classified as broken, is never removed.
 #
+# A removal is verified by a tags listing, because a registry 2.7 and 2.8 with an object storage
+# backend reports a success, while keeping the tag as is. Its S3 driver removes a tag directory by
+# a key prefix and stops at the very first key, that is not a part of that directory, whereas
+# a storage lists the keys in a binary order and both `-` and `.` precede a `/`. Therefore the files
+# of a tag `1.0` are never removed, as long as a `1.0-alpine` or a `1.0.1` tag exists in the very
+# same image. A registry 3.0 skips the foreign keys instead of stopping at them, i.e. it removes
+# such a tag as expected.
+#
+# Such a tag is only reported as failed, unless CP_DOCKER_STORAGE_FALLBACK is set to true: then
+# the files of that very tag are removed from an S3 backend of a registry directly, which is
+# an equivalent of
+#   aws s3 rm --recursive \
+#     s3://${bucket}/${rootdirectory}/docker/registry/v2/repositories/${image}/_manifests/tags/${tag}/
+# A trailing slash is what makes it safe: the tags of a similar name are kept, while a registry
+# itself lists the keys without it. Only the files of a tag are removed, so the manifests and
+# the blobs of an image are left to a registry garbage collection, as usual.
+#
+# TODO: an upgrade to a registry 3.0 is the real fix, that turns this fallback into a dead code,
+# therefore the fallback is kept as small as possible: the storage requests are signed by the script
+# itself rather than issued by an AWS CLI, which is not packaged for an alpine of a registry image
+# at all and adds over 130MB of a python runtime to a 25MB one. A CLI is only worth revisiting,
+# if a removal ever grows beyond a single tag directory.
+#
 # The script is a part of a cp-docker-registry service and by default is configured from the very
 # same environment, as a registry itself, see setup_cron.sh for a periodic execution.
 #
@@ -49,8 +72,9 @@
 #   CP_DOCKER_REGISTRY_PASSWORD  a password of a user, ${CP_API_JWT_ADMIN} by default
 #   CP_DOCKER_REGISTRY_TOKEN     a bearer token to use instead of a user and a password
 #   CP_DOCKER_REGISTRY_CA_CERT   a path to a CA certificate of a registry
-#   CP_DOCKER_REGISTRY_INSECURE  set to false to verify a TLS certificate of a registry,
-#                                true by default, as a registry certificate is self signed
+#   CP_DOCKER_REGISTRY_INSECURE  set to false to verify a TLS certificate of a registry and
+#                                of a storage endpoint, true by default, as a registry certificate
+#                                is self signed
 #   CP_DOCKER_REPOSITORIES       a space separated list of images to check
 #   CP_DOCKER_EXCLUDE_REPOSITORIES  a space separated list of images to skip, wildcards
 #                                are supported, e.g. `archive/* library/legacy-*` skips all
@@ -81,6 +105,9 @@
 #   CP_DOCKER_TOKEN_REFRESH_INTERVAL  reissue an authentication token, once it is that old,
 #                                20s by default
 #   CP_DOCKER_VERBOSE            set to true to log every image being checked
+#   CP_DOCKER_STORAGE_FALLBACK   set to true to remove the files of a tag from an S3 backend of
+#                                a registry, if a registry has kept them, see the removal issues
+#                                above; false by default
 #
 # If a registry uses a Cloud Pipeline authentication, then CP_DOCKER_REGISTRY_USER is a Cloud
 # Pipeline user and CP_DOCKER_REGISTRY_PASSWORD is that user's access token, exactly as they are
@@ -99,12 +126,20 @@
 # A registry has to be configured with `storage: delete: enabled: true`, otherwise the deletion
 # requests are rejected with 405.
 #
+# A removal of the tag files from a storage is configured from the very same variables, as a registry
+# storage backend itself, i.e. CP_DOCKER_STORAGE_CONTAINER, CP_DOCKER_STORAGE_ROOT_DIR,
+# CP_DOCKER_STORAGE_REGION, CP_DOCKER_STORAGE_ENDPOINT, CP_DOCKER_STORAGE_KEY_NAME and
+# CP_DOCKER_STORAGE_KEY_SECRET, see update_config.sh. If the keys are not configured, then
+# the credentials of ${CP_CLOUD_CREDENTIALS_LOCATION} or an instance profile of a node are used,
+# just like an AWS SDK of a registry does. The requests are signed with an AWS Signature Version 4
+# by the script itself, so that no AWS CLI is required.
+#
 # All the messages are written to stderr, so a cron job shall redirect both streams to a log file,
 # as setup_cron.sh does.
 # The script exits with a non zero code, if any tag could not be checked or removed, so that
 # a monitoring of a cron job reports the registry and the authentication issues.
 #
-# Requires: bash, curl, jq, sha256sum, base64.
+# Requires: bash, curl, jq, sha256sum, base64, and openssl with od for a storage fallback only.
 #
 
 set -o errexit
@@ -141,6 +176,18 @@ CATALOG_TIMEOUT="${CP_DOCKER_CATALOG_TIMEOUT:-600}"
 REGISTRY_SCOPE_ACTIONS="${CP_DOCKER_REGISTRY_SCOPE_ACTIONS:-*}"
 TOKEN_REFRESH_INTERVAL="${CP_DOCKER_TOKEN_REFRESH_INTERVAL:-20}"
 VERBOSE="${CP_DOCKER_VERBOSE:-false}"
+# A removal of the tag files from a storage reuses a storage configuration of a registry itself
+STORAGE_FALLBACK="${CP_DOCKER_STORAGE_FALLBACK:-false}"
+STORAGE_TYPE="${CP_DOCKER_STORAGE_TYPE:-}"
+STORAGE_BUCKET="${CP_DOCKER_STORAGE_CONTAINER:-}"
+STORAGE_ROOT_DIR="${CP_DOCKER_STORAGE_ROOT_DIR:-}"
+STORAGE_REGION="${CP_DOCKER_STORAGE_REGION:-${CP_CLOUD_REGION_ID:-}}"
+STORAGE_ENDPOINT="${CP_DOCKER_STORAGE_ENDPOINT:-}"
+STORAGE_KEY_NAME="${CP_DOCKER_STORAGE_KEY_NAME:-}"
+STORAGE_KEY_SECRET="${CP_DOCKER_STORAGE_KEY_SECRET:-}"
+CLOUD_PLATFORM="${CP_CLOUD_PLATFORM:-}"
+CLOUD_CREDENTIALS="${CP_CLOUD_CREDENTIALS_LOCATION:-}"
+DEPLOYMENT_ID="${CP_DEPLOYMENT_ID:-}"
 
 MANIFEST_FORMATS="application/vnd.docker.distribution.manifest.v2+json"
 MANIFEST_FORMATS="${MANIFEST_FORMATS},application/vnd.docker.distribution.manifest.list.v2+json"
@@ -148,6 +195,14 @@ MANIFEST_FORMATS="${MANIFEST_FORMATS},application/vnd.oci.image.manifest.v1+json
 MANIFEST_FORMATS="${MANIFEST_FORMATS},application/vnd.oci.image.index.v1+json"
 MANIFEST_LIST_FORMAT="application/vnd.docker.distribution.manifest.list.v2+json"
 EMPTY_MANIFEST_LIST="{\"schemaVersion\":2,\"mediaType\":\"${MANIFEST_LIST_FORMAT}\",\"manifests\":[]}"
+
+# A SHA256 of an empty string: the storage requests of the script carry no payload at all
+EMPTY_PAYLOAD_HASH="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+# A link local address of an instance metadata service, that provides an instance profile
+METADATA_URL="http://169.254.169.254"
+# A maximum number of the listing pages of a single tag directory, i.e. up to 100k files, that is
+# a safety guard rather than a limit: a directory of a tag holds a handful of the files
+STORAGE_MAX_PAGES=100
 
 WORK_DIR=
 BODY_FILE=
@@ -158,6 +213,12 @@ CURRENT_SCOPE=
 AUTH_TIME=0
 CURL_ARGS=()
 AUTH_ARGS=()
+STORAGE_ARGS=()
+STORAGE_KEY_TOKEN=
+STORAGE_HOST=
+STORAGE_URL=
+STORAGE_URI_PREFIX=
+STORAGE_PREFIX=
 BROKEN_COUNT=0
 REMOVED_COUNT=0
 FAILED_COUNT=0
@@ -406,7 +467,14 @@ function classify_tag() {
     fi
     children="$(jq -r '.manifests[]?.digest' < "$BODY_FILE")"
     if [ -z "$children" ]; then
-        echo "OK"
+        # A manifest list without any image manifests cannot be pulled for any platform at all.
+        # It is also exactly what an interrupted removal leaves behind, see remove_tag, while
+        # a regular single platform manifest has no `manifests` field whatsoever
+        if jq -e 'has("manifests") and (.manifests | length) == 0' < "$BODY_FILE" > /dev/null 2>&1; then
+            echo "BROKEN_LIST"
+        else
+            echo "OK"
+        fi
         return 0
     fi
     total=0
@@ -495,7 +563,7 @@ function classify_tags() {
 function remove_tag() {
     local repository="$1"
     local tag="$2"
-    local status digest
+    local status digest remaining
     status="$(registry_request PUT "/v2/${repository}/manifests/${tag}" \
                               --header "Content-Type: ${MANIFEST_LIST_FORMAT}" \
                               --data-binary "@${MANIFEST_FILE}")"
@@ -514,11 +582,374 @@ function remove_tag() {
 "status: ${status}$(response_details)"
         return 1
     fi
-    if list_tags "$repository" | grep -qx "$tag"; then
-        log "ERROR: tag ${tag} of ${repository} is still listed by a registry after its removal"
+    if ! remaining="$(list_tags "$repository")"; then
+        log "ERROR: cannot check, whether a tag ${tag} of ${repository} is removed"
+        return 1
+    fi
+    # A tag name is matched literally, as it may contain the regular expression characters
+    if ! echo "$remaining" | grep -qxF -- "$tag"; then
+        return 0
+    fi
+    log "WARN: tag ${tag} of ${repository} is still listed by a registry after its removal, "\
+"a manifest deletion status: ${status}"
+    report_shadowing_tags "$tag" "$remaining"
+    if [ "$STORAGE_FALLBACK" != "true" ]; then
+        log "ERROR: the files of the tag have to be removed from a registry storage directly, "\
+"set CP_DOCKER_STORAGE_FALLBACK=true to let the script do it"
+        return 1
+    fi
+    remove_tag_from_storage "$repository" "$tag" || return 1
+    if ! remaining="$(list_tags "$repository")"; then
+        log "ERROR: cannot check, whether a tag ${tag} of ${repository} is removed from a storage"
+        return 1
+    fi
+    if echo "$remaining" | grep -qxF -- "$tag"; then
+        log "ERROR: tag ${tag} of ${repository} is still listed by a registry even after "\
+"a removal of its files from a storage"
         return 1
     fi
     return 0
+}
+
+# Reports the tags, that prevent a registry from removing the files of the given tag from an object
+# storage, see the removal issues in a header of the script.
+function report_shadowing_tags() {
+    local tag="$1"
+    local tags="$2"
+    local shadowing="" other
+    for other in $tags; do
+        case "$other" in
+            "${tag}."*|"${tag}-"*)
+                shadowing="${shadowing}${other} "
+                ;;
+        esac
+    done
+    if [ -n "$shadowing" ]; then
+        log "WARN: a registry has silently kept the files of the tag, as the following tags "\
+"shadow them in a storage listing: ${shadowing}"
+    fi
+}
+
+# ------------------------------------------------------------------------------------------------
+# A removal of the tag files from an S3 backend of a registry, that is only performed, if a registry
+# has kept them, see the removal issues in a header of the script. The requests are signed with
+# an AWS Signature Version 4, so that no AWS CLI is required in a registry image.
+# ------------------------------------------------------------------------------------------------
+
+# Prints a percent encoded value. A slash is kept as is, if a second argument is `path`, i.e. for
+# a request URI, and is encoded otherwise, i.e. for a query string.
+function uri_encode() {
+    local value="$1"
+    local slashes="${2:-}"
+    local encoded="" index=0 char
+    while [ "$index" -lt "${#value}" ]; do
+        char="${value:index:1}"
+        case "$char" in
+            [A-Za-z0-9._~-])
+                encoded="${encoded}${char}"
+                ;;
+            /)
+                if [ "$slashes" == "path" ]; then
+                    encoded="${encoded}/"
+                else
+                    encoded="${encoded}%2F"
+                fi
+                ;;
+            *)
+                encoded="${encoded}$(printf '%%%02X' "'${char}")"
+                ;;
+        esac
+        index=$((index + 1))
+    done
+    printf '%s' "$encoded"
+}
+
+# Prints a hexadecimal representation of a value, that is read from stdin.
+function to_hex() {
+    od -A n -t x1 -v | tr -d ' \n'
+}
+
+# Prints a HMAC-SHA256 of the given value in hex, signed with the given hexadecimal key.
+function hmac_hex() {
+    local key="$1"
+    local value="$2"
+    printf '%s' "$value" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:${key}" | awk '{ print $NF }'
+}
+
+# Prints the values of the given XML tag of a response, that is read from stdin.
+function xml_values() {
+    tr '<' '\n' | sed -n "s|^$1>||p"
+}
+
+# Performs a signed storage request and prints a response status code, 000 if a request has failed.
+# Only the requests without a payload are supported, i.e. a listing and a removal of a single file.
+function storage_request() {
+    local method="$1"
+    local uri="$2"
+    local query="$3"
+    local timestamp date_stamp headers signed request scope key signature url
+    local args=()
+    timestamp="$(date -u '+%Y%m%dT%H%M%SZ')"
+    date_stamp="${timestamp%%T*}"
+    # The headers to sign are joined by a newline and are sorted by a name
+    headers="host:${STORAGE_HOST}
+x-amz-content-sha256:${EMPTY_PAYLOAD_HASH}
+x-amz-date:${timestamp}
+"
+    signed="host;x-amz-content-sha256;x-amz-date"
+    if [ -n "$STORAGE_KEY_TOKEN" ]; then
+        headers="${headers}x-amz-security-token:${STORAGE_KEY_TOKEN}
+"
+        signed="${signed};x-amz-security-token"
+    fi
+    request="${method}
+${uri}
+${query}
+${headers}
+${signed}
+${EMPTY_PAYLOAD_HASH}"
+    scope="${date_stamp}/${STORAGE_REGION}/s3/aws4_request"
+    key="$(printf 'AWS4%s' "$STORAGE_KEY_SECRET" | to_hex)"
+    key="$(hmac_hex "$key" "$date_stamp")"
+    key="$(hmac_hex "$key" "$STORAGE_REGION")"
+    key="$(hmac_hex "$key" "s3")"
+    key="$(hmac_hex "$key" "aws4_request")"
+    signature="$(hmac_hex "$key" "AWS4-HMAC-SHA256
+${timestamp}
+${scope}
+$(printf '%s' "$request" | sha256sum | cut -d' ' -f1)")"
+    args=(--header "x-amz-content-sha256: ${EMPTY_PAYLOAD_HASH}"
+          --header "x-amz-date: ${timestamp}"
+          --header "Authorization: AWS4-HMAC-SHA256 Credential=${STORAGE_KEY_NAME}/${scope}, \
+SignedHeaders=${signed}, Signature=${signature}")
+    if [ -n "$STORAGE_KEY_TOKEN" ]; then
+        args+=(--header "x-amz-security-token: ${STORAGE_KEY_TOKEN}")
+    fi
+    url="${STORAGE_URL}${uri}"
+    if [ -n "$query" ]; then
+        url="${url}?${query}"
+    fi
+    reset_response
+    curl ${STORAGE_ARGS[@]+"${STORAGE_ARGS[@]}"} "${args[@]}" \
+         --request "$method" \
+         --dump-header "$HEADERS_FILE" \
+         --output "$BODY_FILE" \
+         --write-out '%{http_code}' \
+         "$url" || true
+}
+
+# Prints the storage keys, that start with the given prefix.
+function storage_list_keys() {
+    local prefix="$1"
+    local token="" query status page=0
+    while : ; do
+        query="list-type=2&prefix=$(uri_encode "$prefix")"
+        if [ -n "$token" ]; then
+            # A canonical query string of a signature has the parameters sorted by a name
+            query="continuation-token=$(uri_encode "$token")&${query}"
+        fi
+        status="$(storage_request GET "${STORAGE_URI_PREFIX}/" "$query")"
+        if [ "$status" != "200" ]; then
+            log "ERROR: cannot list the files of ${prefix} in ${STORAGE_URL}, "\
+"status: ${status}$(response_details)"
+            return 1
+        fi
+        xml_values Key < "$BODY_FILE"
+        grep -q '<IsTruncated>true</IsTruncated>' "$BODY_FILE" || break
+        token="$(xml_values NextContinuationToken < "$BODY_FILE" | head -n 1)"
+        [ -n "$token" ] || break
+        page=$((page + 1))
+        # A storage, that keeps reporting a truncated listing, e.g. because it repeats a continuation
+        # token, shall not hang a whole run: a tag directory never has that many files
+        if [ "$page" -ge "$STORAGE_MAX_PAGES" ]; then
+            log "ERROR: a listing of the files of ${prefix} in ${STORAGE_URL} is still not complete "\
+"after ${STORAGE_MAX_PAGES} pages, a removal is aborted"
+            return 1
+        fi
+    done
+}
+
+# Removes a single file from a storage.
+function storage_delete_key() {
+    local key="$1"
+    local status
+    status="$(storage_request DELETE "${STORAGE_URI_PREFIX}/$(uri_encode "$key" path)" "")"
+    # A missing file is not an error, so that a removal is idempotent
+    if [ "$status" != "204" ] && [ "$status" != "200" ] && [ "$status" != "404" ]; then
+        log "ERROR: cannot remove ${key} from ${STORAGE_URL}, status: ${status}$(response_details)"
+        return 1
+    fi
+}
+
+# Removes the files of a tag from a storage, i.e. does what a registry has failed to do. A prefix
+# ends with a slash, so that the tags of a similar name are not affected: it is exactly a lack of it,
+# that breaks a removal of a registry itself.
+function remove_tag_from_storage() {
+    local repository="$1"
+    local tag="$2"
+    local prefix keys key removed=0
+    prefix="${STORAGE_PREFIX}repositories/${repository}/_manifests/tags/${tag}/"
+    if ! keys="$(storage_list_keys "$prefix")"; then
+        return 1
+    fi
+    if [ -z "$keys" ]; then
+        log "ERROR: no files of ${repository}:${tag} are found in ${STORAGE_URL} by ${prefix}"
+        return 1
+    fi
+    # A listing is verified as a whole before a first removal, so that an unexpected key
+    # does not leave a tag half removed
+    while read -r key; do
+        [ -n "$key" ] || continue
+        case "$key" in
+            "${prefix}"?*)
+                ;;
+            *)
+                log "ERROR: a storage has listed a foreign file ${key} for ${prefix}, "\
+"a removal is aborted"
+                return 1
+                ;;
+        esac
+    done <<EOF
+${keys}
+EOF
+    while read -r key; do
+        [ -n "$key" ] || continue
+        storage_delete_key "$key" || return 1
+        removed=$((removed + 1))
+    done <<EOF
+${keys}
+EOF
+    log "Removed ${removed} file(s) of ${repository}:${tag} from ${STORAGE_URL} by ${prefix}"
+}
+
+# Resolves the credentials to sign the storage requests with: an explicitly configured pair,
+# a cloud credentials file of a deployment or an instance profile of a node, just like an AWS SDK
+# of a registry does. Returns a non zero code, if no credentials are found.
+function resolve_storage_credentials() {
+    local token role credentials
+    local metadata_args=(--silent --max-time 5)
+    if [ -n "$STORAGE_KEY_NAME" ] && [ -n "$STORAGE_KEY_SECRET" ]; then
+        log "Signing the storage requests with CP_DOCKER_STORAGE_KEY_NAME"
+        return 0
+    fi
+    if [ -n "$CLOUD_CREDENTIALS" ] && [ -f "$CLOUD_CREDENTIALS" ]; then
+        STORAGE_KEY_NAME="$(credentials_value aws_access_key_id)"
+        STORAGE_KEY_SECRET="$(credentials_value aws_secret_access_key)"
+        if [ -n "$STORAGE_KEY_NAME" ] && [ -n "$STORAGE_KEY_SECRET" ]; then
+            log "Signing the storage requests with the credentials of ${CLOUD_CREDENTIALS}"
+            return 0
+        fi
+    fi
+    # An IMDSv2 requires a session token to be requested first, while an IMDSv1 ignores it
+    token="$(curl "${metadata_args[@]}" --request PUT \
+                  --header 'X-aws-ec2-metadata-token-ttl-seconds: 60' \
+                  "${METADATA_URL}/latest/api/token" 2>/dev/null || true)"
+    if [ -n "$token" ]; then
+        metadata_args+=(--header "X-aws-ec2-metadata-token: ${token}")
+    fi
+    role="$(curl "${metadata_args[@]}" \
+                 "${METADATA_URL}/latest/meta-data/iam/security-credentials/" 2>/dev/null \
+            | head -n 1 || true)"
+    [ -n "$role" ] || return 1
+    credentials="$(curl "${metadata_args[@]}" \
+                        "${METADATA_URL}/latest/meta-data/iam/security-credentials/${role}" \
+                   2>/dev/null || true)"
+    STORAGE_KEY_NAME="$(echo "$credentials" | jq -r '.AccessKeyId // empty' 2>/dev/null || true)"
+    STORAGE_KEY_SECRET="$(echo "$credentials" | jq -r '.SecretAccessKey // empty' 2>/dev/null || true)"
+    STORAGE_KEY_TOKEN="$(echo "$credentials" | jq -r '.Token // empty' 2>/dev/null || true)"
+    if [ -z "$STORAGE_KEY_NAME" ] || [ -z "$STORAGE_KEY_SECRET" ]; then
+        return 1
+    fi
+    log "Signing the storage requests with an instance profile ${role} of a node"
+}
+
+# Prints a value of the given key of a cloud credentials file, e.g. an aws_access_key_id.
+function credentials_value() {
+    sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*//p" "$CLOUD_CREDENTIALS" \
+        | head -n 1 | tr -d '\r"'
+}
+
+# Reports a reason and disables a removal of the tag files from a storage: a registry removes most
+# of the tags by itself, so a run is still worth performing.
+function disable_storage_fallback() {
+    STORAGE_FALLBACK="false"
+    log "WARN: a removal of the tag files from a storage is disabled: $*"
+}
+
+# Prepares a removal of the tag files from a storage: validates a configuration of a registry storage
+# backend and resolves the credentials to sign the requests with.
+function setup_storage_fallback() {
+    local required scheme host
+    [ "$STORAGE_FALLBACK" == "true" ] || return 0
+    for required in openssl od; do
+        if ! command -v "$required" > /dev/null 2>&1; then
+            disable_storage_fallback "${required} is not installed"
+            return 0
+        fi
+    done
+    # Only an S3 driver of a registry keeps the files of a shadowed tag, see the removal issues
+    if [ "$STORAGE_TYPE" != "obj" ] || [ "$CLOUD_PLATFORM" != "aws" ]; then
+        disable_storage_fallback "an S3 backend of a registry is required, while "\
+"CP_DOCKER_STORAGE_TYPE is \"${STORAGE_TYPE}\" and CP_CLOUD_PLATFORM is \"${CLOUD_PLATFORM}\""
+        return 0
+    fi
+    if [ -z "$STORAGE_BUCKET" ]; then
+        disable_storage_fallback "CP_DOCKER_STORAGE_CONTAINER is not set"
+        return 0
+    fi
+    if [ -z "$STORAGE_REGION" ]; then
+        disable_storage_fallback "neither CP_DOCKER_STORAGE_REGION nor CP_CLOUD_REGION_ID is set"
+        return 0
+    fi
+    if ! resolve_storage_credentials; then
+        disable_storage_fallback "no credentials of a storage are found, "\
+"set CP_DOCKER_STORAGE_KEY_NAME and CP_DOCKER_STORAGE_KEY_SECRET"
+        return 0
+    fi
+    # A registry defaults a root directory the very same way, see update_config.sh
+    if [ -z "$STORAGE_ROOT_DIR" ]; then
+        STORAGE_ROOT_DIR="cloud-pipeline-${DEPLOYMENT_ID:-dockers}"
+    fi
+    STORAGE_PREFIX="$(echo "$STORAGE_ROOT_DIR" | sed -e 's|^/*||' -e 's|/*$||')"
+    if [ -n "$STORAGE_PREFIX" ]; then
+        STORAGE_PREFIX="${STORAGE_PREFIX}/"
+    fi
+    STORAGE_PREFIX="${STORAGE_PREFIX}docker/registry/v2/"
+    if [ -n "$STORAGE_ENDPOINT" ]; then
+        # A path style addressing is used with a custom endpoint, exactly as a registry driver does
+        scheme="$(echo "$STORAGE_ENDPOINT" | sed -n 's|^\([A-Za-z]*\)://.*|\1|p' \
+                  | tr '[:upper:]' '[:lower:]')"
+        scheme="${scheme:-https}"
+        host="$(echo "$STORAGE_ENDPOINT" | sed -e 's|^[A-Za-z]*://||' -e 's|/.*$||')"
+        # A default port of a schema is stripped, because curl omits it in a Host header, while
+        # a storage verifies a signature against the headers, that are actually sent
+        case "${scheme}://${host}" in
+            https://*:443)
+                host="${host%:443}"
+                ;;
+            http://*:80)
+                host="${host%:80}"
+                ;;
+        esac
+        STORAGE_HOST="$host"
+        STORAGE_URL="${scheme}://${host}"
+        STORAGE_URI_PREFIX="/${STORAGE_BUCKET}"
+    else
+        STORAGE_HOST="${STORAGE_BUCKET}.s3.${STORAGE_REGION}.amazonaws.com"
+        STORAGE_URL="https://${STORAGE_HOST}"
+        STORAGE_URI_PREFIX=""
+    fi
+    STORAGE_ARGS=(--silent --show-error --max-time "$REQUEST_TIMEOUT")
+    # A custom storage endpoint of a deployment may carry a self signed certificate, exactly as
+    # a registry itself does, therefore the very same setting is honored, see authenticate.
+    # A CA certificate of a registry is not passed on purpose: it would replace a whole trust store
+    # of a system, that a certificate of a deployment is added to by update_config.sh anyway,
+    # and thus would break a verification of a public certificate of an AWS endpoint
+    if [ "$REGISTRY_INSECURE" == "true" ]; then
+        STORAGE_ARGS+=(--insecure)
+    fi
+    log "A removal of the tag files from ${STORAGE_URL}/${STORAGE_PREFIX} is enabled, "\
+"if a registry keeps them"
 }
 
 # Reports a broken tag and removes it, if it is allowed. Runs in a main process only, so that
@@ -654,6 +1085,7 @@ function main() {
 
     log "Checking the tags of ${REGISTRY_URL}, dry run: ${DRY_RUN}, "\
 "parallel checks: ${PARALLEL_CHECKS}"
+    setup_storage_fallback
     # A registry API root either serves a request or asks to authenticate, any other response
     # means the given endpoint is not a registry API endpoint at all
     status="$(execute_request GET "/v2/")"
