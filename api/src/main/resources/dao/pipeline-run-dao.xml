@@ -1424,7 +1424,8 @@
                             p.node_start_date,
                             p.project_id,
                             p.parameters_json,
-                            p.logs_storage_path
+                            p.logs_storage_path,
+                            p.initialized
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1489,7 +1490,8 @@
                             c.node_start_date,
                             c.project_id,
                             c.parameters_json,
-                            c.logs_storage_path
+                            c.logs_storage_path,
+                            c.initialized
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
