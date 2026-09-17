@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 
 public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements Tools, Authorization {
 
-    private final String tool = C.ANOTHER_TESTING_TOOL_NAME;
+    private final String tool = C.GPU_TESTING_TOOL;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = "library";
     private final String instanceType = C.DEFAULT_GPU_INSTANCE;

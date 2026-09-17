@@ -130,6 +130,7 @@ public class C {
         SSH_CLOUD_REGION = conf.getProperty("e2e.ssh.cloud.region");
         DEFAULT_INSTANCE_PRICE_TYPE_TOOL = conf.getProperty("e2e.ui.default.instance.price.type.tool");
         DEFAULT_GPU_INSTANCE = conf.getProperty("e2e.ui.default.gpu.instance");
+        GPU_TESTING_TOOL = conf.getProperty("e2e.ui.gpu.testing.tool");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -239,4 +240,5 @@ public class C {
     public static final String SSH_CLOUD_REGION;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
     public static final String DEFAULT_GPU_INSTANCE;
+    public static final String GPU_TESTING_TOOL;
 }
