@@ -315,6 +315,11 @@ public class AggregatingToolScanManager implements ToolScanManager {
                     clairResults);
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
+        } catch (DockerConnectionException | IllegalArgumentException e) {
+            // a registry communication error shall fail a scan of a single version only: the scheduler handles
+            // ToolScanExternalServiceException per version, while any other error aborts a scan of the whole tool
+            throw new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                    MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage(), tag), e);
         }
     }
 
