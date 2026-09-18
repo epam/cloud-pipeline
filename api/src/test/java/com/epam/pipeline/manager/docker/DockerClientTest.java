@@ -74,6 +74,10 @@ public class DockerClientTest {
             + "\",\"config\":{\"mediaType\":\"application/vnd.docker.container.image.v1+json\",\"size\":1,"
             + "\"digest\":\"" + CONFIG_DIGEST + "\"},\"layers\":[{\"mediaType\":\""
             + "application/vnd.docker.image.rootfs.diff.tar.gzip\",\"size\":2,\"digest\":\"sha256:layer\"}]}";
+    /**
+     * A manifest, that references no image configuration, e.g. a legacy schema 1 one
+     */
+    private static final String MANIFEST_WITHOUT_CONFIG_BODY = "{\"schemaVersion\":1,\"name\":\"library/image\"}";
     private static final String LIST_DIGEST =
             "sha256:1f0e3dad99908345f7439f8ffabdffc418e4d3f7c3d4e5a6b7c8d9e0f1a2b3c4";
     private static final String AMD_DIGEST = "sha256:3c59dc048e8850243be8079a5c74d079e2f4d9d8e1a8f0b3c9d2e1f0a9b8c7d6";
@@ -302,6 +306,70 @@ public class DockerClientTest {
 
         assertTrue(manifest.isPresent());
         assertEquals(LIST_DIGEST, manifest.get().getDigest());
+        server.verify();
+    }
+
+    @Test
+    public void shouldFailManifestResolutionIfManifestListReferencesNoImageManifests() {
+        // an empty manifest list, e.g. a temporary one of a dangling tag, describes no image at all
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_LIST_MEDIA_TYPE, EMPTY_MANIFEST_LIST_DIGEST,
+                        EMPTY_MANIFEST_LIST));
+
+        assertThrows(DockerConnectionException.class,
+            () -> dockerClient.resolveImageManifest(registry(), IMAGE, TAG));
+        server.verify();
+    }
+
+    @Test
+    public void shouldFailManifestResolutionIfManifestDescribesNoImage() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_MEDIA_TYPE, DIGEST, MANIFEST_WITHOUT_CONFIG_BODY));
+
+        assertThrows(DockerConnectionException.class,
+            () -> dockerClient.resolveImageManifest(registry(), IMAGE, TAG));
+        server.verify();
+    }
+
+    @Test
+    public void shouldDeleteTagPointingToEmptyManifestList() {
+        // a dangling tag, that has been repointed to an empty manifest list, shall still be deletable
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(manifestResponse(MANIFEST_LIST_MEDIA_TYPE, EMPTY_MANIFEST_LIST_DIGEST,
+                        EMPTY_MANIFEST_LIST));
+        server.expect(requestTo(digestUrl(EMPTY_MANIFEST_LIST_DIGEST)))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.ACCEPTED));
+
+        assertTrue(dockerClient.deleteImage(registry(), IMAGE, TAG).isPresent());
+        server.verify();
+    }
+
+    @Test
+    public void shouldFailManifestRetrievalIfRegistryReturnsNoDigest() {
+        // a digest is the only way to address a manifest, e.g. to delete it
+        final HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(MANIFEST_MEDIA_TYPE));
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.OK).headers(headers).body(MANIFEST_BODY));
+
+        assertThrows(DockerConnectionException.class, () -> dockerClient.getManifest(registry(), IMAGE, TAG));
+    }
+
+    @Test
+    public void shouldFailDeletionIfRegistryFails() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.PUT))
+                .andRespond(digestResponse(HttpStatus.CREATED, DIGEST));
+        server.expect(requestTo(digestUrl(DIGEST)))
+                .andExpect(method(HttpMethod.DELETE))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(DockerConnectionException.class, () -> dockerClient.untagImage(registry(), IMAGE, TAG));
         server.verify();
     }
 
