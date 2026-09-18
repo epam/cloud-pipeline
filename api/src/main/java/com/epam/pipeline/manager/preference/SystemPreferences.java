@@ -52,6 +52,7 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.eventsourcing.EventTopic;
 import com.epam.pipeline.eventsourcing.EventType;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
@@ -1528,7 +1529,12 @@ public class SystemPreferences {
             return dockerRegistryManager.loadAllDockerRegistry().stream().anyMatch(registry -> {
                 DockerClient client = dockerClientFactory.getDockerClient(registry, dockerRegistryManager.getImageToken(
                         registry, pref));
-                return client.getManifest(registry, pref, "latest").isPresent();
+                try {
+                    return client.getManifest(registry, pref, "latest").isPresent();
+                } catch (DockerConnectionException e1) {
+                    // a registry, that cannot be reached, shall not fail a validation of the whole preference
+                    return false;
+                }
             });
         }
     };

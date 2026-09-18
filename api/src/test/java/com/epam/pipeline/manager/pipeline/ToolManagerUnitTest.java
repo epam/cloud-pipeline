@@ -21,9 +21,10 @@ import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
-import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.exception.docker.DockerConnectionException;
+import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -55,8 +57,8 @@ public class ToolManagerUnitTest {
     private static final String SYMLINK_IMAGE = "personal/symlink";
     private static final String LATEST_TAG = "latest";
     private static final String SOME_TAG = "tag";
-    private static final Long GROUP_ID = CommonCreatorConstants.ID;
     private static final Long DOES_NOT_EXIST_ID = 999L;
+    private static final String REGISTRY_ERROR = "Registry is not available";
 
     private final ToolManager manager = new ToolManager();
     private final ToolDao toolDao = mock(ToolDao.class);
@@ -295,6 +297,21 @@ public class ToolManagerUnitTest {
         doReturn(null).when(toolDao).loadTool(DOES_NOT_EXIST_ID);
 
         manager.updateWhiteListWithToolVersionStatus(DOES_NOT_EXIST_ID, LATEST_TAG, true);
+    }
+
+    @Test
+    public void shouldFallBackToZeroImageSizeIfRegistryIsNotAvailable() {
+        // an image size is used to adjust a disk size only, hence a registry error shall not fail an operation
+        final Tool tool = getTool();
+        mockTool(tool);
+        doReturn(getRegistry()).when(dockerRegistryManager).load(REGISTRY_ID);
+        final DockerClient dockerClient = mock(DockerClient.class);
+        doReturn(dockerClient).when(dockerRegistryManager)
+                .getDockerClient(any(DockerRegistry.class), eq(TOOL_IMAGE));
+        doThrow(new DockerConnectionException(REGISTRY, REGISTRY_ERROR))
+                .when(dockerClient).getVersionAttributes(any(DockerRegistry.class), eq(TOOL_IMAGE), any());
+
+        assertThat(manager.getCurrentImageSize(String.valueOf(TOOL_ID)), is(0L));
     }
 
     private Tool getTool() {

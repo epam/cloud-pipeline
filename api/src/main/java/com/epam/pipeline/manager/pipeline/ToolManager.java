@@ -454,7 +454,7 @@ public class ToolManager implements SecuredEntityManager {
                 for (String tag : tags) {
                     Optional<ManifestV2> manifestOpt =
                             dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), tag);
-                    manifestOpt.ifPresent(manifest -> {
+                    manifestOpt.filter(this::hasBlobs).ifPresent(manifest -> {
                         dockerRegistryManager.deleteLayer(dockerRegistry, image, manifest.getConfig().getDigest());
 
                         Collections.reverse(manifest.getLayers());
@@ -470,6 +470,14 @@ public class ToolManager implements SecuredEntityManager {
             toolVersionManager.deleteToolVersions(tool.getId());
         }
         toolDao.deleteTool(tool.getId());
+    }
+
+    /**
+     * A manifest list (a multi platform image) references no blobs itself: blobs of the image manifests
+     * it refers to are removed by a registry garbage collection.
+     */
+    private boolean hasBlobs(final ManifestV2 manifest) {
+        return Objects.nonNull(manifest.getConfig()) && Objects.nonNull(manifest.getLayers());
     }
 
     private void deleteToolVersionScan(Long toolId, String version) {
@@ -491,11 +499,26 @@ public class ToolManager implements SecuredEntityManager {
         Tool tool = loadTool(registry, image);
         validateToolNotNull(tool, image);
         validateToolCanBeModified(tool);
+        deleteToolVersionFromRegistry(tool, version);
         deleteToolVersionScan(tool.getId(), version);
         toolVersionManager.deleteToolVersion(tool.getId(), version);
-        DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
-        dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), version);
         return tool;
+    }
+
+    /**
+     * Removes a tool version (a tag) from a docker registry.
+     */
+    private void deleteToolVersionFromRegistry(final Tool tool, final String version) {
+        final DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
+        final String image = tool.getImage();
+        dockerRegistryManager.deleteImage(dockerRegistry, image, version);
+        if (!dockerRegistryManager.findImageTags(dockerRegistry, image).contains(version)) {
+            return;
+        }
+        LOGGER.warn("Version {} of tool {} is still listed by registry {} after the deletion of its manifest, "
+                + "trying to remove a dangling tag", version, image, dockerRegistry.getPath());
+        Assert.isTrue(dockerRegistryManager.untagImage(dockerRegistry, image, version),
+                messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_DELETE_FAILED, version, image));
     }
 
     public List<String> loadTags(Long id) {
@@ -895,7 +918,8 @@ public class ToolManager implements SecuredEntityManager {
                 return 0;
             }
             return toolVersion.getSize();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | DockerConnectionException e) {
+            // an unavailable registry shall not fail an operation, that only adjusts a disk size by an image size
             LOGGER.error("An error occurred while getting image size: {} ", e.getMessage());
             return 0;
         }
