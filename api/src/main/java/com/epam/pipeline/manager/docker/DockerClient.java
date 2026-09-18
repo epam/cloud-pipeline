@@ -63,6 +63,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
@@ -343,6 +344,11 @@ public class DockerClient {
                 return false;
             }
             throw new DockerConnectionException(url, e.getMessage());
+        } catch (HttpServerErrorException e) {
+            // a registry failure shall be reported the same way as any other registry communication error:
+            // the callers rely on DockerConnectionException to detect a failed deletion
+            LOGGER.error(e.getMessage(), e);
+            throw new DockerConnectionException(url, e.getMessage());
         }
     }
 
@@ -475,8 +481,9 @@ public class DockerClient {
                 response = getRestTemplate().exchange(uri, HttpMethod.GET, getV2AuthHeaders(),
                                                       new ParameterizedTypeReference<ManifestV2>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
-                ManifestV2 manifest = response.getBody();
-                manifest.setDigest(response.getHeaders().getFirst(DOCKER_CONTENT_DIGEST_HEADER));
+                final ManifestV2 manifest = Optional.ofNullable(response.getBody())
+                        .orElseThrow(() -> new DockerConnectionException(url, "Manifest response has no body"));
+                manifest.setDigest(getManifestDigest(response, url));
                 return Optional.of(manifest);
             } else {
                 throw new UnexpectedResponseStatusException(response.getStatusCode());
@@ -494,6 +501,18 @@ public class DockerClient {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
+    }
+
+    /**
+     * Extracts a digest of a manifest from a registry response. A digest identifies a manifest in a registry
+     * and is the only way to address it, e.g. to delete it, therefore a response without the digest header
+     * cannot be processed and shall be reported as an error rather than silently accepted.
+     */
+    private String getManifestDigest(final ResponseEntity<ManifestV2> response, final String url) {
+        return Optional.ofNullable(response.getHeaders().getFirst(DOCKER_CONTENT_DIGEST_HEADER))
+                .filter(StringUtils::isNotBlank)
+                .orElseThrow(() -> new DockerConnectionException(url,
+                        String.format("Manifest response has no %s header", DOCKER_CONTENT_DIGEST_HEADER)));
     }
 
     /**
@@ -519,32 +538,56 @@ public class DockerClient {
                                            final ManifestV2 manifest) {
         ManifestV2 resolved = manifest;
         for (int depth = 0; depth < MANIFEST_RESOLUTION_DEPTH && isManifestList(resolved); depth++) {
-            final String digest = findImageManifestDigest(resolved);
+            final String digest = findImageManifestDigest(registry, imageName, resolved);
             LOGGER.debug("Resolving manifest list {} of image {} to image manifest {}",
                     resolved.getDigest(), imageName, digest);
             resolved = getManifest(registry, imageName, digest)
                     .orElseThrow(() -> new DockerConnectionException(registry.getPath(), String.format(
                             "Image manifest %s of image %s is not found", digest, imageName)));
         }
-        if (isManifestList(resolved)) {
-            throw new DockerConnectionException(registry.getPath(), String.format(
-                    "Image manifest of image %s cannot be resolved from manifest list %s",
-                    imageName, manifest.getDigest()));
-        }
+        validateImageManifest(registry, imageName, manifest, resolved);
         resolved.setDigest(manifest.getDigest());
         return resolved;
     }
 
+    /**
+     * Fails if a manifest does not describe an image: it is either a manifest list, that has not been resolved
+     * within the allowed depth, or a manifest without an image configuration, e.g. the empty manifest list,
+     * {@link #untagImage} temporary pushes, or a legacy schema 1 manifest. Such a manifest must never be returned
+     * as an image manifest, since none of the image attributes may be read from it.
+     */
+    private void validateImageManifest(final DockerRegistry registry, final String imageName,
+                                       final ManifestV2 manifest, final ManifestV2 resolved) {
+        if (isManifestList(resolved) || Objects.isNull(resolved.getConfig())) {
+            throw new DockerConnectionException(registry.getPath(), String.format(
+                    "Image manifest of image %s cannot be resolved from manifest %s",
+                    imageName, manifest.getDigest()));
+        }
+    }
+
+    /**
+     * Detects a manifest list (an OCI index) rather than an image manifest. Note that a manifest list may
+     * reference no image manifests at all, hence the media type is checked as well: such an empty list
+     * still describes no image and shall not be mistaken for an image manifest.
+     */
     private boolean isManifestList(final ManifestV2 manifest) {
-        return CollectionUtils.isNotEmpty(manifest.getManifests());
+        return CollectionUtils.isNotEmpty(manifest.getManifests())
+                || MANIFEST_LIST_FORMAT.equalsIgnoreCase(manifest.getMediaType())
+                || OCI_INDEX_FORMAT.equalsIgnoreCase(manifest.getMediaType());
     }
 
     /**
      * Selects an image manifest, that describes an image the best: a manifest of the default platform is preferred,
      * otherwise the first manifest of a known platform is used.
      */
-    private String findImageManifestDigest(final ManifestV2 manifestList) {
-        final List<ManifestV2.ManifestReference> references = manifestList.getManifests();
+    private String findImageManifestDigest(final DockerRegistry registry, final String imageName,
+                                          final ManifestV2 manifestList) {
+        final List<ManifestV2.ManifestReference> references = ListUtils.emptyIfNull(manifestList.getManifests());
+        if (references.isEmpty()) {
+            throw new DockerConnectionException(registry.getPath(), String.format(
+                    "Manifest list %s of image %s references no image manifests",
+                    manifestList.getDigest(), imageName));
+        }
         return references.stream()
                 .filter(this::isDefaultPlatform)
                 .findFirst()
