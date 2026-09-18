@@ -63,8 +63,8 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
@@ -242,7 +242,7 @@ public class DockerClient {
             }
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
-        } catch (URISyntaxException | UnexpectedResponseStatusException e) {
+        } catch (URISyntaxException | UnexpectedResponseStatusException | RestClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
@@ -344,9 +344,9 @@ public class DockerClient {
                 return false;
             }
             throw new DockerConnectionException(url, e.getMessage());
-        } catch (HttpServerErrorException e) {
-            // a registry failure shall be reported the same way as any other registry communication error:
-            // the callers rely on DockerConnectionException to detect a failed deletion
+        } catch (RestClientException e) {
+            // a registry failure or an unreachable registry shall be reported the same way as any other registry
+            // communication error: the callers rely on DockerConnectionException to detect a failed deletion
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
@@ -427,7 +427,7 @@ public class DockerClient {
             return Optional.ofNullable(response.getHeaders().getFirst(DOCKER_CONTENT_DIGEST_HEADER))
                     .filter(StringUtils::isNotBlank)
                     .orElseGet(() -> SHA_256_PREFIX + DigestUtils.sha256Hex(manifest));
-        } catch (URISyntaxException | UnexpectedResponseStatusException | HttpClientErrorException e) {
+        } catch (URISyntaxException | UnexpectedResponseStatusException | RestClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
@@ -488,9 +488,6 @@ public class DockerClient {
             } else {
                 throw new UnexpectedResponseStatusException(response.getStatusCode());
             }
-        } catch (URISyntaxException | UnexpectedResponseStatusException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new DockerConnectionException(url, e.getMessage());
         } catch (HttpClientErrorException e) {
             // only a missing manifest is reported as an empty value, any other client error (an expired token,
             // insufficient permissions, etc.) shall not be mistaken for a nonexistent image version
@@ -498,6 +495,9 @@ public class DockerClient {
                 LOGGER.debug("Manifest is not found at {}: {}", url, e.getMessage());
                 return Optional.empty();
             }
+            LOGGER.error(e.getMessage(), e);
+            throw new DockerConnectionException(url, e.getMessage());
+        } catch (URISyntaxException | UnexpectedResponseStatusException | RestClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }

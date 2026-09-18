@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.scan.*;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
+import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -74,6 +75,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrowsChecked;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -88,6 +90,8 @@ public class AggregatingToolScanManagerTest {
     private static final int MAX_HIGH_VULNERABILITIES = 3;
     private static final int MAX_MEDIUM_VULNERABILITIES = -1;
     private static final String TEST_IMAGE = "testImage";
+    private static final String TEST_REGISTRY_PATH = "registry:443";
+    private static final String REGISTRY_ERROR = "Registry is not available";
     private static final String LATEST_VERSION = "latest";
     private static final String ACTUAL_SCANNED_VERSION = "actual";
     private static final String TEST_VULNERABILITY_NAME = "testVulnerability";
@@ -381,6 +385,17 @@ public class AggregatingToolScanManagerTest {
         when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
                 .thenReturn(Optional.of(scanResult));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void shouldReportRegistryErrorAsScanFailureOfASingleVersion() {
+        // a scheduler handles ToolScanExternalServiceException per version, while any other error aborts
+        // a scan of all the remaining versions of a tool
+        when(mockDockerClient.getImageHistory(any(), eq(TEST_IMAGE), eq(LATEST_VERSION)))
+                .thenThrow(new DockerConnectionException(TEST_REGISTRY_PATH, REGISTRY_ERROR));
+
+        assertThrowsChecked(ToolScanExternalServiceException.class,
+            () -> aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false));
     }
 
     @Test
