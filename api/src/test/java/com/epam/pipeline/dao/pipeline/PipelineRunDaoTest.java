@@ -499,6 +499,29 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void eagerSearchGroupingRun() {
+        Pipeline testPipeline = getPipeline();
+        PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
+        PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
+        PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
+        parent.getInstance().setFallbackInstanceTypes(Arrays.asList(NODE_TYPE, NODE_TYPE_2));
+        pipelineRunDao.updateRunInstance(parent);
+        PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+        filterVO.setStatuses(Collections.singletonList(TaskStatus.SUCCESS));
+
+        List<PipelineRun> runs = pipelineRunDao.eagerSearchPipelineParentRuns(filterVO, null);
+        assertEquals(2, runs.size());
+        assertEquals(lonely.getId(), runs.get(0).getId());
+        assertEquals(parent.getId(), runs.get(1).getId());
+        assertEquals(1, runs.get(1).getChildRuns().size());
+        assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
+        assertThat(runs.get(1).getInstance().getFallbackInstanceTypes(),
+                hasItems(NODE_TYPE, NODE_TYPE_2));
+    }
+
+    @Test
     public void searchPipelineRuns() {
         Pipeline testPipeline2 = getPipeline();
 

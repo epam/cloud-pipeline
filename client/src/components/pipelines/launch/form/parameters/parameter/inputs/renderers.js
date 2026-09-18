@@ -55,7 +55,8 @@ export function renderParameter (props) {
   const {
     readOnly: readOnlyValue = false,
     required = false,
-    enumeration
+    enumeration,
+    placeholder
   } = config;
   const readOnly = rawEdit ? false : readOnlyValue;
   if (typeof type !== 'string') {
@@ -84,6 +85,7 @@ export function renderParameter (props) {
     onChange: onParameterValueChange,
     disabled: readOnly || disabled,
     required,
+    placeholder,
     ...rest
   };
   const Renderer = getRenderer(type);
