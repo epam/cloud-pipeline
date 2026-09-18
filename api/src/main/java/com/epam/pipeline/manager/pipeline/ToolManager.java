@@ -507,12 +507,6 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Removes a tool version (a tag) from a docker registry.
-     *
-     * It shall be done before the corresponding version data is removed from the database: if a version cannot
-     * be deleted from a registry, the whole operation is rolled back. Otherwise a version, that is still listed
-     * by a registry, remains shown in the UI, but without any details (an OS, a digest, a size, etc.),
-     * cannot be scanned and cannot be deleted anymore, since there is no data to delete in the database
-     * and a preceding deletion attempt has already made its manifest unresolvable.
      */
     private void deleteToolVersionFromRegistry(final Tool tool, final String version) {
         final DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
@@ -523,11 +517,7 @@ public class ToolManager implements SecuredEntityManager {
         }
         LOGGER.warn("Version {} of tool {} is still listed by registry {} after the deletion of its manifest, "
                 + "trying to remove a dangling tag", version, image, dockerRegistry.getPath());
-        if (!dockerRegistryManager.untagImage(dockerRegistry, image, version)) {
-            LOGGER.warn("Temporary manifest of version {} of tool {} was not deleted from registry {}",
-                    version, image, dockerRegistry.getPath());
-        }
-        Assert.isTrue(!dockerRegistryManager.findImageTags(dockerRegistry, image).contains(version),
+        Assert.isTrue(dockerRegistryManager.untagImage(dockerRegistry, image, version),
                 messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_DELETE_FAILED, version, image));
     }
 

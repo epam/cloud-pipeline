@@ -31,6 +31,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.response.DefaultResponseCreator;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -89,6 +90,7 @@ public class DockerClientTest {
     private static final String ARM_ARCHITECTURE = "arm64";
     private static final String UNKNOWN_PLATFORM = "unknown";
     private static final String TAGS_BODY = "{\"name\":\"library/image\",\"tags\":[\"1.0\"]}";
+    private static final String CONNECTION_ERROR = "Connection refused";
     private static final String DOCKER_CONTENT_DIGEST = "Docker-Content-Digest";
 
     private DockerClient dockerClient;
@@ -168,6 +170,49 @@ public class DockerClientTest {
                 .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 
         assertThrows(DockerConnectionException.class, () -> dockerClient.getManifest(registry(), IMAGE, TAG));
+    }
+
+    @Test
+    public void shouldFailManifestRetrievalIfRegistryFails() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+
+        assertThrows(DockerConnectionException.class, () -> dockerClient.getManifest(registry(), IMAGE, TAG));
+    }
+
+    @Test
+    public void shouldFailManifestRetrievalIfRegistryIsNotReachable() {
+        // a registry, that cannot be reached at all, shall be reported as any other registry communication error
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(request -> {
+                    throw new IOException(CONNECTION_ERROR);
+                });
+
+        assertThrows(DockerConnectionException.class, () -> dockerClient.getManifest(registry(), IMAGE, TAG));
+    }
+
+    @Test
+    public void shouldFailTagsListingIfRegistryIsNotReachable() {
+        server.expect(requestTo(TAGS_URL))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(request -> {
+                    throw new IOException(CONNECTION_ERROR);
+                });
+
+        assertThrows(DockerConnectionException.class, () -> dockerClient.findImageTags(REGISTRY_PATH, IMAGE));
+    }
+
+    @Test
+    public void shouldFailTagRemovalIfRegistryIsNotReachable() {
+        server.expect(requestTo(MANIFEST_URL))
+                .andExpect(method(HttpMethod.PUT))
+                .andRespond(request -> {
+                    throw new IOException(CONNECTION_ERROR);
+                });
+
+        assertThrows(DockerConnectionException.class, () -> dockerClient.untagImage(registry(), IMAGE, TAG));
     }
 
     @Test

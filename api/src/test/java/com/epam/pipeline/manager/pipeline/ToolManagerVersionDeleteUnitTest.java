@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
@@ -43,8 +44,8 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class ToolManagerVersionDeleteUnitTest {
 
@@ -74,8 +75,8 @@ public class ToolManagerVersionDeleteUnitTest {
     @InjectMocks
     private ToolManager toolManager;
 
-    private final DockerRegistry registry = registry();
-    private final Tool tool = tool();
+    private final DockerRegistry registry = buildRegistry();
+    private final Tool tool = buildTool();
 
     @Before
     public void setUp() {
@@ -113,9 +114,7 @@ public class ToolManagerVersionDeleteUnitTest {
     @Test
     public void shouldRemoveTagLeftBehindAfterManifestDeletion() {
         // a registry may delete a manifest and fail to remove a tag pointing to it afterwards
-        when(dockerRegistryManager.findImageTags(registry, IMAGE))
-                .thenReturn(Collections.singletonList(VERSION))
-                .thenReturn(Collections.emptyList());
+        doReturn(Collections.singletonList(VERSION)).when(dockerRegistryManager).findImageTags(registry, IMAGE);
         doReturn(true).when(dockerRegistryManager).untagImage(registry, IMAGE, VERSION);
 
         toolManager.deleteToolVersion(REGISTRY_PATH, IMAGE, VERSION);
@@ -126,11 +125,22 @@ public class ToolManagerVersionDeleteUnitTest {
     }
 
     @Test
+    public void shouldTrustTagRemovalRatherThanRepeatedTagListing() {
+        // a tag listing may lag behind the deletion, hence it shall not be used to verify a removed tag:
+        // the registry responses of the removal itself are the only reliable outcome of the operation
+        doReturn(Collections.singletonList(VERSION)).when(dockerRegistryManager).findImageTags(registry, IMAGE);
+        doReturn(true).when(dockerRegistryManager).untagImage(registry, IMAGE, VERSION);
+
+        toolManager.deleteToolVersion(REGISTRY_PATH, IMAGE, VERSION);
+
+        verify(dockerRegistryManager, times(1)).findImageTags(registry, IMAGE);
+        verify(toolVersionManager).deleteToolVersion(TOOL_ID, VERSION);
+    }
+
+    @Test
     public void shouldRemoveDanglingTagIfItsManifestCannotBeResolved() {
         doReturn(Optional.empty()).when(dockerRegistryManager).deleteImage(registry, IMAGE, VERSION);
-        when(dockerRegistryManager.findImageTags(registry, IMAGE))
-                .thenReturn(Collections.singletonList(VERSION))
-                .thenReturn(Collections.emptyList());
+        doReturn(Collections.singletonList(VERSION)).when(dockerRegistryManager).findImageTags(registry, IMAGE);
         doReturn(true).when(dockerRegistryManager).untagImage(registry, IMAGE, VERSION);
 
         toolManager.deleteToolVersion(REGISTRY_PATH, IMAGE, VERSION);
@@ -149,6 +159,7 @@ public class ToolManagerVersionDeleteUnitTest {
             () -> toolManager.deleteToolVersion(REGISTRY_PATH, IMAGE, VERSION));
 
         verify(dockerRegistryManager).untagImage(registry, IMAGE, VERSION);
+        verify(messageHelper).getMessage(MessageConstants.ERROR_TOOL_VERSION_DELETE_FAILED, VERSION, IMAGE);
         verifyVersionIsKeptInDatabase();
     }
 
@@ -169,14 +180,14 @@ public class ToolManagerVersionDeleteUnitTest {
         verify(toolVersionManager, never()).deleteToolVersion(anyLong(), anyString());
     }
 
-    private DockerRegistry registry() {
+    private DockerRegistry buildRegistry() {
         final DockerRegistry dockerRegistry = new DockerRegistry();
         dockerRegistry.setId(REGISTRY_ID);
         dockerRegistry.setPath(REGISTRY_PATH);
         return dockerRegistry;
     }
 
-    private Tool tool() {
+    private Tool buildTool() {
         final Tool result = new Tool();
         result.setId(TOOL_ID);
         result.setImage(IMAGE);

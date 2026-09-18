@@ -21,7 +21,6 @@ import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
-import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
@@ -58,7 +57,6 @@ public class ToolManagerUnitTest {
     private static final String SYMLINK_IMAGE = "personal/symlink";
     private static final String LATEST_TAG = "latest";
     private static final String SOME_TAG = "tag";
-    private static final Long GROUP_ID = CommonCreatorConstants.ID;
     private static final Long DOES_NOT_EXIST_ID = 999L;
     private static final String REGISTRY_ERROR = "Registry is not available";
 
