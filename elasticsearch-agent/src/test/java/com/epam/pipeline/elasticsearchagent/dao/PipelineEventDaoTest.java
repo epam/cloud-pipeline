@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -43,7 +44,7 @@ class PipelineEventDaoTest extends AbstractSpringApplicationTest {
         expectedPipelineEvent.setEventType(EventType.INSERT);
         expectedPipelineEvent.setObjectType(PipelineEvent.ObjectType.PIPELINE);
         expectedPipelineEvent.setObjectId(1L);
-        expectedPipelineEvent.setCreatedDate(LocalDateTime.now());
+        expectedPipelineEvent.setCreatedDate(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS));
         expectedPipelineEvent.setData("{\"tag\": {\"type\": \"string\", \"value\": \"admin\"}}");
     }
 

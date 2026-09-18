@@ -20,15 +20,14 @@ import com.epam.pipeline.elasticsearch.model.BulkResponse;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Arrays;
-
 @RequiredArgsConstructor
 @Builder
 public class BulkResponseV7 implements BulkResponse {
-    final org.opensearch.action.bulk.BulkResponse response;
+
+    private final org.opensearch.client.opensearch.core.BulkResponse response;
 
     public BulkItemResponseV7[] getItems() {
-        return Arrays.stream(response.getItems())
+        return response.items().stream()
                 .map(BulkItemResponseV7::new)
                 .toArray(BulkItemResponseV7[]::new);
     }

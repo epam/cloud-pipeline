@@ -24,11 +24,6 @@ const metadata = 'metadata';
 const metadataFolder = 'metadataFolder';
 const projectHistory = 'projectHistory';
 
-const fireCloud = 'fireCloud';
-const fireCloudMethod = 'fireCloudMethod';
-const fireCloudMethodVersion = 'fireCloudMethodVersion';
-const fireCloudMethodConfiguration = 'fireCloudMethodVersion';
-
 export const ItemTypes = {
   folder,
   pipeline,
@@ -38,11 +33,7 @@ export const ItemTypes = {
   configuration,
   metadata,
   metadataFolder,
-  projectHistory,
-  fireCloud,
-  fireCloudMethod,
-  fireCloudMethodVersion,
-  fireCloudMethodConfiguration
+  projectHistory
 };
 
 export function generateUrl (item) {
@@ -98,7 +89,6 @@ function nameSorter (pA, pB) {
  * @property {*} [metadata]
  * @property {number|string} [id]
  * @property {*} [objectMetadata]
- * @property {*} [fireCloud]
  */
 
 /**
@@ -128,8 +118,7 @@ export function generateTreeData (
     configurations,
     metadata,
     id,
-    objectMetadata,
-    fireCloud
+    objectMetadata
   } = libraryTree || {};
   const {
     ignoreChildren = false,
@@ -163,58 +152,6 @@ export function generateTreeData (
   const configurationsSorted = (configurations || []).map(f => f);
   if (sortRoot) {
     configurationsSorted.sort(nameSorter);
-  }
-  if (fireCloud && (!types || types.indexOf(ItemTypes.fireCloud) >= 0)) {
-    const fireCloudItem = {
-      id: ItemTypes.fireCloud,
-      key: ItemTypes.fireCloud,
-      name: 'FireCloud',
-      type: ItemTypes.fireCloud,
-      url () {
-        return generateUrl(this);
-      }
-    };
-    if (
-      fireCloud.methods &&
-      fireCloud.methods.length > 0 &&
-      (!types || types.indexOf(ItemTypes.fireCloudMethod) >= 0)
-    ) {
-      fireCloudItem.children = [];
-      for (let i = 0; i < fireCloud.methods.length; i++) {
-        const method = fireCloud.methods[i];
-        const fireCloudMethod = {
-          id: method.name,
-          key: `${ItemTypes.fireCloudMethod}_${method.namespace}_${method.name}`,
-          name: method.name,
-          namespace: method.namespace,
-          type: ItemTypes.fireCloudMethod,
-          parent: fireCloudItem
-        };
-        if (
-          method.snapshotIds &&
-          method.snapshotIds.length > 0 &&
-          (!types || types.indexOf(ItemTypes.fireCloudMethodVersion) >= 0)
-        ) {
-          fireCloudMethod.children = [];
-          for (let j = 0; j < method.snapshotIds.length; j++) {
-            const snapshotId = method.snapshotIds[j];
-            const fireCloudMethodVersion = {
-              id: snapshotId,
-              key: `${ItemTypes.fireCloudMethodVersion}_${snapshotId}`,
-              name: snapshotId,
-              type: ItemTypes.fireCloudMethodVersion,
-              parent: fireCloudMethod,
-              isLeaf: true
-            };
-            fireCloudMethod.children.push(fireCloudMethodVersion);
-          }
-        }
-        fireCloudMethod.isLeaf = !fireCloudMethod.children || fireCloudMethod.children.length === 0;
-        fireCloudItem.children.push(fireCloudMethod);
-      }
-    }
-    fireCloudItem.isLeaf = !fireCloudItem.children || fireCloudItem.children.length === 0;
-    children.push(fireCloudItem);
   }
   if (childFoldersSorted.length) {
     for (let i = 0; i < childFoldersSorted.length; i++) {

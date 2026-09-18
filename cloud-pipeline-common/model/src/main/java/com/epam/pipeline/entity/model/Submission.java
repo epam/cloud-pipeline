@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.model;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import lombok.experimental.Wither;
 
 import java.nio.file.Path;
@@ -28,6 +29,7 @@ import java.util.Map;
  */
 @Value
 @Builder
+@Jacksonized
 @Wither
 public class Submission {
     private final String runId;

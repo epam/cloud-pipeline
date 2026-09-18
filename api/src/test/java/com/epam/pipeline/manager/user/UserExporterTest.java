@@ -20,7 +20,7 @@ import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;

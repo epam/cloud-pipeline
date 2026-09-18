@@ -23,11 +23,11 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolGroupWithIssues;
 import com.epam.pipeline.acl.docker.ToolGroupApiService;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
+@Tag(name = "tool-group-controller", description = "Tool Group Controller")
 public class ToolGroupController extends AbstractRestController {
     private static final String TOOL_GROUP_URL = "/toolGroup";
 
@@ -59,12 +60,11 @@ public class ToolGroupController extends AbstractRestController {
     }
 
     @GetMapping("/toolGroup/{id}/issuesCount")
-    @ApiOperation(
-            value = "Loads tool group with number of issues for each tool in group.",
-            notes = "Loads tool group with number of issues for each tool in group.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads tool group with number of issues for each tool in group.",
+            description = "Loads tool group with number of issues for each tool in group.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<ToolGroupWithIssues> loadToolGroupWithIssuesCount(@PathVariable Long id) {
         return Result.success(toolGroupApiService.loadToolsWithIssuesCount(id));
@@ -76,12 +76,11 @@ public class ToolGroupController extends AbstractRestController {
     }
 
     @RequestMapping(value = TOOL_GROUP_URL, method = RequestMethod.PUT)
-    @ApiOperation(
-        value = "Updates a tool group.",
-        notes = "Updates a tool group. The only field, that is allowed for update is description",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+        summary = "Updates a tool group.",
+        description = "Updates a tool group. The only field, that is allowed for update is description")
     @ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
         })
     public Result<ToolGroup> update(@RequestBody ToolGroup group) {
         return Result.success(toolGroupApiService.update(group));

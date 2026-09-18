@@ -19,8 +19,10 @@ package com.epam.pipeline.elasticsearch.model.v7.action.search;
 import com.epam.pipeline.elasticsearch.model.MultiSearchResponseInner;
 import com.epam.pipeline.elasticsearch.model.SearchResponse;
 import lombok.RequiredArgsConstructor;
+import org.opensearch.client.opensearch.core.MsearchResponse;
+import org.opensearch.client.opensearch.core.msearch.MultiSearchResponseItem;
 
-import java.util.Arrays;
+import java.util.Map;
 
 @RequiredArgsConstructor
 public class MultiSearchResponseV7 implements MultiSearchResponseInner {
@@ -28,19 +30,19 @@ public class MultiSearchResponseV7 implements MultiSearchResponseInner {
     @RequiredArgsConstructor
     public static class Item implements MultiSearchResponseInner.Item {
 
-        private final org.opensearch.action.search.MultiSearchResponse.Item inner;
+        private final MultiSearchResponseItem<Map<String, Object>> inner;
 
         @Override
         public SearchResponse getResponse() {
-            return new SearchResponseV7(inner.getResponse());
+            return new SearchResponseV7(inner.result());
         }
     }
 
-    private final org.opensearch.action.search.MultiSearchResponse inner;
+    private final MsearchResponse<Map<String, Object>> inner;
 
     @Override
     public MultiSearchResponseInner.Item[] getResponses() {
-        return Arrays.stream(inner.getResponses())
+        return inner.responses().stream()
                 .map(MultiSearchResponseV7.Item::new)
                 .toArray(MultiSearchResponseInner.Item[]::new);
     }

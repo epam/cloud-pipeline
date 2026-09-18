@@ -17,11 +17,13 @@
 package com.epam.pipeline.entity.git;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * A VO, that represents version data from Gitlab
  */
 @Data
+@NoArgsConstructor
 public class GitlabVersion {
     private String version;
     private String revision;

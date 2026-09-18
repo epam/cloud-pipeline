@@ -20,11 +20,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.jackson.Jacksonized;
 
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
+@Jacksonized
 public class PipelineRunWithTool {
     private PipelineRun pipelineRun;
     private Tool tool;

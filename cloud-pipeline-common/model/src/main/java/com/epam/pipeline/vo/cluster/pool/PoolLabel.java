@@ -16,10 +16,20 @@
 
 package com.epam.pipeline.vo.cluster.pool;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 @Value
 public class PoolLabel {
     String value;
     boolean monitored;
+
+    @JsonCreator
+    public PoolLabel(
+            @JsonProperty("value") final String value,
+            @JsonProperty("monitored") final boolean monitored) {
+        this.value = value;
+        this.monitored = monitored;
+    }
 }

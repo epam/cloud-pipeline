@@ -613,15 +613,6 @@ public final class MessageConstants {
     public static final String ERROR_PREFERENCE_VALUE_INVALID = "error.preference.value.invalid";
     public static final String ERROR_PREFERENCE_REQUIREMENTS_NOT_MET = "error.preference.requirements.not.met";
 
-    //Google and Firecloud
-    public static final String ERROR_GOOGLE_CREDENTIALS = "error.google.credentials";
-    public static final String ERROR_GOOGLE_AUTH_CODE_MISSING = "error.google.auth.code.missing";
-    public static final String ERROR_GOOGLE_SCOPES_MISSING = "error.google.scopes.missing";
-    public static final String ERROR_GOOGLE_REDIRECT_URL_MISSING = "error.google.redirect.uri.missing";
-    public static final String ERROR_GOOGLE_SECRET_MISSING = "error.google.secret.json.missing";
-    public static final String ERROR_GOOGLE_INVALID_SECRET_JSON = "error.google.secret.json.invalid";
-    public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
-
     //DTS
     public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";

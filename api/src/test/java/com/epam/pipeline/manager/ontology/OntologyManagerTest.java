@@ -22,16 +22,17 @@ import com.epam.pipeline.entity.ontology.OntologyEntity;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.test.creator.ontology.OntologyCreatorsUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
@@ -46,7 +47,7 @@ public class OntologyManagerTest {
     private final Ontology ontology = OntologyCreatorsUtils.ontology(null);
     private final OntologyEntity ontologyEntity = OntologyCreatorsUtils.ontologyEntity(null);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         doReturn(ontologyEntity).when(mapper).toEntity(any());
         doReturn(ontology).when(mapper).toDto(any());
@@ -54,29 +55,29 @@ public class OntologyManagerTest {
 
     @Test
     public void shouldCreateOntology() {
-        doReturn(null).when(ontologyRepository).findOne(anyLong());
+        doReturn(Optional.empty()).when(ontologyRepository).findById(anyLong());
         manager.create(ontology);
         verify(ontologyRepository).save((OntologyEntity) any());
     }
 
     @Test
     public void shouldGetOntologyById() {
-        doReturn(ontologyEntity).when(ontologyRepository).findOne(anyLong());
+        doReturn(Optional.of(ontologyEntity)).when(ontologyRepository).findById(anyLong());
         manager.get(ID);
-        verify(ontologyRepository).findOne(anyLong());
+        verify(ontologyRepository).findById(anyLong());
     }
 
     @Test
     public void shouldFailGetIfIdIsNotCorrect() {
-        doReturn(null).when(ontologyRepository).findOne(anyLong());
+        doReturn(Optional.empty()).when(ontologyRepository).findById(anyLong());
         assertThrows(IllegalArgumentException.class, () -> manager.get(ID));
     }
 
     @Test
     public void shouldUpdateOntologyById() {
-        doReturn(ontologyEntity).when(ontologyRepository).findOne(anyLong());
+        doReturn(Optional.of(ontologyEntity)).when(ontologyRepository).findById(anyLong());
         manager.update(ID, ontology);
-        verify(ontologyRepository).findOne(anyLong());
+        verify(ontologyRepository).findById(anyLong());
         verify(ontologyRepository).save((OntologyEntity) any());
     }
 
@@ -94,15 +95,15 @@ public class OntologyManagerTest {
         mockOntologyTree();
 
         final List<Ontology> tree = manager.getTree(OntologyType.QUAL, ID, 1);
-        Assert.assertThat(tree.size(), is(2));
+        assertThat(tree.size(), is(2));
     }
 
     @Test
     public void shouldDeleteOntologyNonRecursive() {
-        doReturn(ontologyEntity).when(ontologyRepository).findOne(ID);
+        doReturn(Optional.of(ontologyEntity)).when(ontologyRepository).findById(ID);
         doReturn(EMPTY_ITERABLE).when(ontologyRepository).findByParent_Id(ID);
         manager.delete(ID, false);
-        verify(ontologyRepository).delete(ID);
+        verify(ontologyRepository).deleteById(ID);
     }
 
     @Test
@@ -118,9 +119,9 @@ public class OntologyManagerTest {
 
         manager.delete(ID, true);
 
-        verify(ontologyRepository).delete(ID);
-        verify(ontologyRepository).delete(ID_2);
-        verify(ontologyRepository).delete(ID_3);
+        verify(ontologyRepository).deleteById(ID);
+        verify(ontologyRepository).deleteById(ID_2);
+        verify(ontologyRepository).deleteById(ID_3);
     }
 
     private void mockOntologyTree() {
@@ -130,7 +131,7 @@ public class OntologyManagerTest {
         parentOntology.toBuilder().id(ID).build();
         doReturn(parentOntology).when(mapper).toDto(parentOntologyEntity);
         doReturn(parentOntologyEntity).when(mapper).toEntity(parentOntology);
-        doReturn(parentOntologyEntity).when(ontologyRepository).findOne(ID);
+        doReturn(Optional.of(parentOntologyEntity)).when(ontologyRepository).findById(ID);
 
         final OntologyEntity ontologyEntity1 = mockOntology(parentOntologyEntity, parentOntology, ID_2);
         final OntologyEntity ontologyEntity2 = mockOntology(parentOntologyEntity, parentOntology, ID_3);

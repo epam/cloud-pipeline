@@ -17,13 +17,14 @@
 package com.epam.pipeline.manager.metadata.parser;
 
 import static com.epam.pipeline.manager.utils.MetadataParsingUtils.CSV_DELIMITER;
-import static org.junit.Assert.assertEquals;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 
 import com.epam.pipeline.exception.MetadataReadingException;
 import com.google.common.io.ByteSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MetadataEntityHeaderParserTest {
     private static final String TAB_HEADER = "Sample:ID\tname\ttype\tpatient:Participant:ID\tmembership:pairs:Pair:ID";
@@ -62,16 +63,28 @@ public class MetadataEntityHeaderParserTest {
         assertEquals(expectedHeader, omittedClassHeader);
     }
 
-    @Test(expected = MetadataReadingException.class)
+    @Test
     public void testReadInvalidFieldsColumn() throws IOException {
-        new MetadataEntityHeaderParser(CSV_DELIMITER, FALLBACK_CLASS_NAME)
-                .readHeader(ByteSource.wrap(INVALID_FIELD_HEADER.getBytes()).openStream());
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                new MetadataEntityHeaderParser(CSV_DELIMITER, FALLBACK_CLASS_NAME)
+                    .readHeader(ByteSource.wrap(INVALID_FIELD_HEADER.getBytes()).openStream());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
-    @Test(expected = MetadataReadingException.class)
+    @Test
     public void testReadBlankHeader() throws IOException {
-        new MetadataEntityHeaderParser(CSV_DELIMITER, FALLBACK_CLASS_NAME)
-                .readHeader(ByteSource.wrap(BLANK_HEADER.getBytes()).openStream());
+        assertThrows(MetadataReadingException.class, () -> {
+            try {
+                new MetadataEntityHeaderParser(CSV_DELIMITER, FALLBACK_CLASS_NAME)
+                    .readHeader(ByteSource.wrap(BLANK_HEADER.getBytes()).openStream());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     private MetadataHeader getMetadataHeader(final String className, final boolean classColumnPresent) {

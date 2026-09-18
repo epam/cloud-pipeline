@@ -19,6 +19,7 @@ package com.epam.pipeline.test.acl;
 import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.plugin.PluginAssignmentService;
 import com.epam.pipeline.acl.plugin.PluginService;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -91,11 +92,9 @@ import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.execution.CommandBuilder;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.log.storage.StorageRequestManager;
@@ -342,9 +341,6 @@ public class AclTestBeans {
     protected DtsRegistryManager mockDtsRegistryManager;
 
     @MockBean
-    protected FirecloudManager mockFirecloudManager;
-
-    @MockBean
     protected MetadataUploadManager mockMetadataUploadManager;
 
     @MockBean
@@ -427,9 +423,6 @@ public class AclTestBeans {
 
     @MockBean
     protected CommandBuilder mockCommandBuilder;
-
-    @MockBean
-    protected CredentialsManager mockCredentialsManager;
 
     @MockBean
     protected RunStatusDao mockRunStatusDao;
@@ -570,6 +563,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected JdbcIndexedSessionRepository mockJdbcIndexedSessionRepository;
 
     @MockBean
     protected PipelineRunAsManager mockPipelineRunAsManager;

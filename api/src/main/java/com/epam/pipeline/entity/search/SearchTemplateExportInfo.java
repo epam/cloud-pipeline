@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.search;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class SearchTemplateExportInfo {
     private String fullPath;
     private String storagePath;

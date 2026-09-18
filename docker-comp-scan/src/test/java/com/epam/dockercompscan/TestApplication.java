@@ -28,7 +28,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @SpringBootConfiguration
 @ComponentScan(basePackages = {"com.epam.dockercompscan.dockerregistry", "com.epam.dockercompscan.owasp",
-        "com.epam.dockercompscan.scan"})
+    "com.epam.dockercompscan.scan"})
 @TestPropertySource(value={"classpath:test-application.properties"})
 public class TestApplication {
 

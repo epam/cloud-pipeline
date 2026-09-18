@@ -19,14 +19,16 @@ package com.epam.pipeline.entity.git;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.NoArgsConstructor;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-@Slf4j
 @Data
+@Slf4j
+@NoArgsConstructor
 public class GitCommitEntry {
 
     private String id;

@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.git.azure;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
+@NoArgsConstructor
 public class AzureDevOpsAuthor {
     private String name;
     private String email;

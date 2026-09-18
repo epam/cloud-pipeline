@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.dts.common.rest;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
@@ -54,7 +54,7 @@ public final class Result<T> {
         return message;
     }
 
-    @ApiModelProperty(value = "it defines the status with which an operation may result in",
+    @Schema(description = "it defines the status with which an operation may result in",
             allowableValues = "OK, INFO, WARN, ERROR", required = true)
     public ResultStatus getStatus() {
         return status;

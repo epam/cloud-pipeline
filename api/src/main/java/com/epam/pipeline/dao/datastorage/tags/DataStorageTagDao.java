@@ -208,10 +208,10 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
         }
 
         public static MapSqlParameterSource getParameters(final Long root, final DataStorageTag tag) {
-            return getParameters(root, tag.getObject(), tag.getKey())
-                    .addValue(TAG_VALUE.name(), tag.getValue())
+            return getParameters(root, tag.object(), tag.key())
+                    .addValue(TAG_VALUE.name(), tag.value())
                     .addValue(CREATED_DATE.name(), DateUtils.convertUTCLocalDateTimeToSystemLocalDateTime(
-                            tag.getCreatedDate()));
+                            tag.createdDate()));
         }
 
         public static MapSqlParameterSource getParameters(final Long root,
@@ -230,8 +230,8 @@ public class DataStorageTagDao extends NamedParameterJdbcDaoSupport {
 
         public static MapSqlParameterSource getParameters(final Long root, final DataStorageObject object) {
             return getParameters(root)
-                    .addValue(DATASTORAGE_PATH.name(), object.getPath())
-                    .addValue(DATASTORAGE_VERSION.name(), Optional.ofNullable(object.getVersion()).orElse(LATEST));
+                    .addValue(DATASTORAGE_PATH.name(), object.path())
+                    .addValue(DATASTORAGE_VERSION.name(), Optional.ofNullable(object.version()).orElse(LATEST));
         }
 
         private static MapSqlParameterSource getParameters(final Long root) {

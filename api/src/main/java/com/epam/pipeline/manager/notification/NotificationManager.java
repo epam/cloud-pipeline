@@ -362,7 +362,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), type, settings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
                 .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
-                .collect(Collectors.toList());
+                .toList();
 
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),

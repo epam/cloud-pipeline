@@ -24,19 +24,16 @@ import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.issue.IssueManager;
-import com.epam.pipeline.manager.security.SecuredEntityManager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Arrays;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -62,7 +59,7 @@ public class DataStorageEventServiceTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldAddS3Event() {
-        doNothing().when(entityManager).setManagers(anyListOf(SecuredEntityManager.class));
+        doNothing().when(entityManager).setManagers(anyList());
 
         when(issueManager.loadIssuesForEntity(any()))
                 .thenReturn(Arrays.asList(Issue.builder().id(1L).build(), Issue.builder().id(2L).build()));
@@ -80,7 +77,7 @@ public class DataStorageEventServiceTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldAddNFSEvent() {
-        doNothing().when(entityManager).setManagers(anyListOf(SecuredEntityManager.class));
+        doNothing().when(entityManager).setManagers(anyList());
 
         when(issueManager.loadIssuesForEntity(any()))
                 .thenReturn(Arrays.asList(Issue.builder().id(1L).build(), Issue.builder().id(2L).build()));

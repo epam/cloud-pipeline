@@ -17,10 +17,12 @@ package com.epam.pipeline.entity.cluster.pool;
 
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.Map;
 
 
 @Data
+@NoArgsConstructor
 public class InstanceRequest {
     private RunInstance instance;
     private Map<String, String> runtimeParameters;

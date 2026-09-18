@@ -11,9 +11,10 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DtsMonitoringManager extends AbstractSchedulingManager {
+public class DtsMonitoringManager extends AbstractSchedulingManager implements InitializingBean {
 
     private static final Duration FALLBACK_OFFLINE_TIMEOUT = Duration.ofMinutes(5);
 
@@ -30,8 +31,8 @@ public class DtsMonitoringManager extends AbstractSchedulingManager {
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(this::monitor, SystemPreferences.DTS_MONITORING_PERIOD_SECONDS,
                 TimeUnit.SECONDS, "Data Transfer Service Monitoring");
     }

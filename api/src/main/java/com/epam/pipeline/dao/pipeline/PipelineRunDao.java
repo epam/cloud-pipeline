@@ -49,7 +49,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
@@ -76,6 +76,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 @Slf4j
@@ -1539,260 +1541,250 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         run.setServiceUrl(loadServiceUrlByRunId(run.getId()));
         return Optional.of(run);
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(pipelineRunSequence, "Required query pipelineRunSequence is not set");
+        Assert.notNull(createPipelineRunQuery, "Required query createPipelineRunQuery is not set");
+        Assert.notNull(loadAllRunsByVersionIdQuery, "Required query loadAllRunsByVersionIdQuery is not set");
+        Assert.notNull(updateRunStatusQuery, "Required query updateRunStatusQuery is not set");
+        Assert.notNull(updateRunCommitStatusQuery, "Required query updateRunCommitStatusQuery is not set");
+        Assert.notNull(loadRunByIdQuery, "Required query loadRunByIdQuery is not set");
+        Assert.notNull(loadPipelineRunsWithPipelineByIdsQuery,
+                "Required query loadPipelineRunsWithPipelineByIdsQuery is not set");
+        Assert.notNull(loadAllRunsByPipelineIdQuery, "Required query loadAllRunsByPipelineIdQuery is not set");
+        Assert.notNull(loadAllRunsByPipelineIdAndVersionQuery,
+                "Required query loadAllRunsByPipelineIdAndVersionQuery is not set");
+        Assert.notNull(loadRunningAndTerminatedPipelineRunsQuery,
+                "Required query loadRunningAndTerminatedPipelineRunsQuery is not set");
+        Assert.notNull(loadActiveServicesQuery, "Required query loadActiveServicesQuery is not set");
+        Assert.notNull(countActiveServicesQuery, "Required query countActiveServicesQuery is not set");
+        Assert.notNull(loadTerminatingPipelineRunsQuery, "Required query loadTerminatingPipelineRunsQuery is not set");
+        Assert.notNull(searchPipelineRunsBaseQuery, "Required query searchPipelineRunsBaseQuery is not set");
+        Assert.notNull(countFilteredPipelineRunsBaseQuery,
+                "Required query countFilteredPipelineRunsBaseQuery is not set");
+        Assert.notNull(updateRunInstanceQuery, "Required query updateRunInstanceQuery is not set");
+        Assert.notNull(updateRunInstanceStartDateQuery, "Required query updateRunInstanceStartDateQuery is not set");
+        Assert.notNull(updatePodIPQuery, "Required query updatePodIPQuery is not set");
+        Assert.notNull(loadSshPasswordQuery, "Required query loadSshPasswordQuery is not set");
+        Assert.notNull(loadRunsGroupingQuery, "Required query loadRunsGroupingQuery is not set");
+        Assert.notNull(loadRunsCountGroupingQuery, "Required query loadRunsCountGroupingQuery is not set");
+        Assert.notNull(createPipelineRunSidsQuery, "Required query createPipelineRunSidsQuery is not set");
+        Assert.notNull(deleteRunSidsByRunIdQuery, "Required query deleteRunSidsByRunIdQuery is not set");
+        Assert.notNull(loadRunSidsQuery, "Required query loadRunSidsQuery is not set");
+        Assert.notNull(countRunGroupsQuery, "Required query countRunGroupsQuery is not set");
+        Assert.notNull(updatePodStatusQuery, "Required query updatePodStatusQuery is not set");
+        Assert.notNull(loadEnvVarsQuery, "Required query loadEnvVarsQuery is not set");
+        Assert.notNull(updateProlongedAtTimeQuery, "Required query updateProlongedAtTimeQuery is not set");
+        Assert.notNull(updateRunQuery, "Required query updateRunQuery is not set");
+        Assert.notNull(loadRunByPrettyUrlQuery, "Required query loadRunByPrettyUrlQuery is not set");
+        Assert.notNull(loadRunningPipelineRunsQuery, "Required query loadRunningPipelineRunsQuery is not set");
+        Assert.notNull(loadRunsByStatusesAndOriginalOwnerQuery,
+                "Required query loadRunsByStatusesAndOriginalOwnerQuery is not set");
+    }
 
-    @Required
+
     public void setPipelineRunSequence(String pipelineRunSequence) {
         this.pipelineRunSequence = pipelineRunSequence;
     }
 
-    @Required
     public void setCreatePipelineRunQuery(String createPipelineRunQuery) {
         this.createPipelineRunQuery = createPipelineRunQuery;
     }
 
-    @Required
     public void setLoadAllRunsByVersionIdQuery(String loadAllRunsByVersionIdQuery) {
         this.loadAllRunsByVersionIdQuery = loadAllRunsByVersionIdQuery;
     }
 
-    @Required
     public void setUpdateRunStatusQuery(String updateRunStatusQuery) {
         this.updateRunStatusQuery = updateRunStatusQuery;
     }
 
-    @Required
     public void setUpdateRunCommitStatusQuery(String updateRunCommitStatusQuery) {
         this.updateRunCommitStatusQuery = updateRunCommitStatusQuery;
     }
 
-    @Required
     public void setLoadRunByIdQuery(String loadRunByIdQuery) {
         this.loadRunByIdQuery = loadRunByIdQuery;
     }
 
-    @Required
     public void setLoadPipelineRunsWithPipelineByIdsQuery(String loadPipelineRunsWithPipelineByIdsQuery) {
         this.loadPipelineRunsWithPipelineByIdsQuery = loadPipelineRunsWithPipelineByIdsQuery;
     }
 
-    @Required
     public void setLoadAllRunsByPipelineIdQuery(String loadAllRunsByPipelineIdQuery) {
         this.loadAllRunsByPipelineIdQuery = loadAllRunsByPipelineIdQuery;
     }
 
-    @Required
     public void setLoadAllRunsByPipelineIdAndVersionQuery(String loadAllRunsByPipelineIdAndVersionQuery) {
         this.loadAllRunsByPipelineIdAndVersionQuery = loadAllRunsByPipelineIdAndVersionQuery;
     }
 
-    @Required
     public void setLoadRunningAndTerminatedPipelineRunsQuery(String loadRunningAndTerminatedPipelineRunsQuery) {
         this.loadRunningAndTerminatedPipelineRunsQuery = loadRunningAndTerminatedPipelineRunsQuery;
     }
 
-    @Required
     public void setLoadActiveServicesQuery(String loadActiveServicesQuery) {
         this.loadActiveServicesQuery = loadActiveServicesQuery;
     }
 
-    @Required
     public void setCountActiveServicesQuery(String countActiveServicesQuery) {
         this.countActiveServicesQuery = countActiveServicesQuery;
     }
 
-    @Required
     public void setLoadTerminatingPipelineRunsQuery(String loadTerminatingPipelineRunsQuery) {
         this.loadTerminatingPipelineRunsQuery = loadTerminatingPipelineRunsQuery;
     }
 
-    @Required
     public void setSearchPipelineRunsBaseQuery(String searchPipelineRunsBaseQuery) {
         this.searchPipelineRunsBaseQuery = searchPipelineRunsBaseQuery;
     }
 
-    @Required
     public void setCountFilteredPipelineRunsBaseQuery(String countFilteredPipelineRunsBaseQuery) {
         this.countFilteredPipelineRunsBaseQuery = countFilteredPipelineRunsBaseQuery;
     }
 
-    @Required
     public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
         this.updateRunInstanceQuery = updateRunInstanceQuery;
     }
 
-    @Required
     public void setUpdateRunInstanceStartDateQuery(String updateRunInstanceStartDateQuery) {
         this.updateRunInstanceStartDateQuery = updateRunInstanceStartDateQuery;
     }
 
-    @Required
     public void setUpdatePodIPQuery(String updatePodIPQuery) {
         this.updatePodIPQuery = updatePodIPQuery;
     }
 
-    @Required
     public void setLoadSshPasswordQuery(String loadSshPasswordQuery) {
         this.loadSshPasswordQuery = loadSshPasswordQuery;
     }
 
-    @Required
     public void setLoadRunsGroupingQuery(String loadRunsGroupingQuery) {
         this.loadRunsGroupingQuery = loadRunsGroupingQuery;
     }
 
-    @Required
     public void setLoadRunsCountGroupingQuery(String loadRunsCountGroupingQuery) {
         this.loadRunsCountGroupingQuery = loadRunsCountGroupingQuery;
     }
 
-    @Required
     public void setCreatePipelineRunSidsQuery(String createPipelineRunSidsQuery) {
         this.createPipelineRunSidsQuery = createPipelineRunSidsQuery;
     }
 
-    @Required
     public void setDeleteRunSidsByRunIdQuery(String deleteRunSidsByRunIdQuery) {
         this.deleteRunSidsByRunIdQuery = deleteRunSidsByRunIdQuery;
     }
 
-    @Required
     public void setLoadRunSidsQuery(String loadRunSidsQuery) {
         this.loadRunSidsQuery = loadRunSidsQuery;
     }
 
-    @Required
     public void setCountRunGroupsQuery(String countRunGroupsQuery) {
         this.countRunGroupsQuery = countRunGroupsQuery;
     }
 
-    @Required
     public void setUpdatePodStatusQuery(String updatePodStatusQuery) {
         this.updatePodStatusQuery = updatePodStatusQuery;
     }
 
-    @Required
     public void setUpdateProlongedAtTimeQuery(String updateProlongedAtTimeQuery) {
         this.updateProlongedAtTimeQuery = updateProlongedAtTimeQuery;
     }
 
-    @Required
     public void setLoadEnvVarsQuery(String loadEnvVarsQuery) {
         this.loadEnvVarsQuery = loadEnvVarsQuery;
     }
 
-    @Required
     public void setUpdateRunQuery(String updateRunQuery) {
         this.updateRunQuery = updateRunQuery;
     }
 
-    @Required
     public void setLoadRunByPrettyUrlQuery(String loadRunByPrettyUrlQuery) {
         this.loadRunByPrettyUrlQuery = loadRunByPrettyUrlQuery;
     }
 
-    @Required
     public void setLoadRunningPipelineRunsQuery(String loadRunningPipelineRunsQuery) {
         this.loadRunningPipelineRunsQuery = loadRunningPipelineRunsQuery;
     }
 
-    @Required
     public void setLoadRunSidsQueryForList(final String loadRunSidsQueryForList) {
         this.loadRunSidsQueryForList = loadRunSidsQueryForList;
     }
 
-    @Required
     public void setUpdateTagsQuery(final String updateTagsQuery) {
         this.updateTagsQuery = updateTagsQuery;
     }
 
-    @Required
     public void setLoadAllRunsPossiblyActiveInPeriodQuery(final String loadAllRunsPossiblyActiveInPeriodQuery) {
         this.loadAllRunsPossiblyActiveInPeriodQuery = loadAllRunsPossiblyActiveInPeriodQuery;
     }
 
-    @Required
     public void setLoadAllRunsPossiblyActiveInPeriodWithArchiveQuery(
             final String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery) {
         this.loadAllRunsPossiblyActiveInPeriodWithArchiveQuery = loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     }
 
-    @Required
     public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
         this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
     }
 
-    @Required
     public void setLoadRunsByStatusesAndOriginalOwnerQuery(final String loadRunsByStatusesAndOriginalOwnerQuery) {
         this.loadRunsByStatusesAndOriginalOwnerQuery = loadRunsByStatusesAndOriginalOwnerQuery;
     }
 
-    @Required
     public void setLoadAllRunsByIdsQuery(final String loadAllRunsByIdsQuery) {
         this.loadAllRunsByIdsQuery = loadAllRunsByIdsQuery;
     }
 
-    @Required
     public void setLoadRunByPodIPQuery(final String loadRunByPodIPQuery) {
         this.loadRunByPodIPQuery = loadRunByPodIPQuery;
     }
 
-    @Required
     public void setLoadRunsByNodeNameQuery(final String loadRunsByNodeNameQuery) {
         this.loadRunsByNodeNameQuery = loadRunsByNodeNameQuery;
     }
 
-    @Required
     public void setUpdateClusterPriceQuery(final String updateClusterPriceQuery) {
         this.updateClusterPriceQuery = updateClusterPriceQuery;
     }
 
-    @Required
     public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
         this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
     }
 
-    @Required
     public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
         this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
     }
 
-    @Required
     public void setUpdatePipelineNameForRunsQuery(final String updatePipelineNameForRunsQuery) {
         this.updatePipelineNameForRunsQuery = updatePipelineNameForRunsQuery;
     }
 
-    @Required
     public void setClearPipelineIdForRunsQuery(final String clearPipelineIdForRunsQuery) {
         this.clearPipelineIdForRunsQuery = clearPipelineIdForRunsQuery;
     }
 
-    @Required
     public void setLoadRunsChartsQuery(final String loadRunsChartsQuery) {
         this.loadRunsChartsQuery = loadRunsChartsQuery;
     }
 
-    @Required
     public void setLoadRunsByOwnerAndEndDateBeforeAndStatusInQuery(
             final String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery) {
         this.loadRunsByOwnerAndEndDateBeforeAndStatusInQuery = loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
     }
 
-    @Required
     public void setDeleteRunsByIdInQuery(final String deleteRunsByIdInQuery) {
         this.deleteRunsByIdInQuery = deleteRunsByIdInQuery;
     }
 
-    @Required
     public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
         this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
     }
 
-    @Required
     public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
         this.checkIfRunExistsQuery = checkIfRunExistsQuery;
     }
 
-    @Required
     public void setUpdateRunInitializedQuery(final String updateRunInitializedQuery) {
         this.updateRunInitializedQuery = updateRunInitializedQuery;
     }

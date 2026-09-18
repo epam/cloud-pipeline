@@ -16,10 +16,9 @@
 
 package com.epam.pipeline.vo.notification;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.Map;
@@ -29,8 +28,7 @@ import java.util.Map;
  */
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Jacksonized
 public class NotificationMessageVO {
 
     /**

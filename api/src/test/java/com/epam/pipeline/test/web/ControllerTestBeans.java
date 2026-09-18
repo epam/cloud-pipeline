@@ -66,8 +66,6 @@ import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.manager.access.UnsecuredAccessService;
 import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
-import com.epam.pipeline.manager.firecloud.FirecloudApiService;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.acl.notification.NotificationApiService;
 import com.epam.pipeline.acl.notification.NotificationSettingsApiService;
@@ -88,6 +86,7 @@ import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.template.TemplateManager;
 import com.epam.pipeline.acl.user.RoleApiService;
 import com.epam.pipeline.acl.user.UserApiService;
+import com.epam.pipeline.acl.session.PipelineSessionService;
 import com.epam.pipeline.security.UserAccessService;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
@@ -95,8 +94,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.saml.SAMLAuthenticationProvider;
-import org.springframework.security.saml.SAMLEntryPoint;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
 
 @Configuration
@@ -124,12 +121,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected EntityApiService entityApiService;
-
-    @MockBean
-    protected FirecloudApiService firecloudApiService;
-
-    @MockBean
-    protected CredentialsManager credentialsManager;
 
     @MockBean
     protected IssueApiService issueApiService;
@@ -198,7 +189,7 @@ public class ControllerTestBeans {
     protected UserApiService userApiService;
 
     @MockBean
-    protected SAMLAuthenticationProvider samlAuthenticationProvider;
+    protected PipelineSessionService pipelineSessionService;
 
     @MockBean
     protected PreferenceManager preferenceManager;
@@ -238,9 +229,6 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UserAccessService userAccessService;
-
-    @MockBean
-    protected SAMLEntryPoint samlEntryPoint;
 
     @MockBean
     protected JwtTokenVerifier jwtTokenVerifier;

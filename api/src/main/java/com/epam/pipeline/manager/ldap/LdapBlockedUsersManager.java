@@ -131,7 +131,7 @@ public class LdapBlockedUsersManager {
 
     private Set<String> getEntityNames(final List<LdapEntity> entities) {
         return entities.stream()
-                .map(LdapEntity::getName)
+                .map(LdapEntity::name)
                 .filter(StringUtils::isNotBlank)
                 .map(StringUtils::upperCase)
                 .collect(Collectors.toSet());
@@ -152,7 +152,7 @@ public class LdapBlockedUsersManager {
     private List<LdapEntity> resolveInvalidEntities(final List<LdapEntity> entities) {
         final Set<String> invalidEntityNames = getLdapInvalidEntityNames();
         return entities.stream()
-                .filter(entity -> invalidEntityNames.contains(StringUtils.upperCase(entity.getName())))
+                .filter(entity -> invalidEntityNames.contains(StringUtils.upperCase(entity.name())))
                 .collect(Collectors.toList());
     }
 
@@ -245,6 +245,6 @@ public class LdapBlockedUsersManager {
     }
 
     private String getEntityNamesString(final List<LdapEntity> invalidEntities) {
-        return invalidEntities.stream().map(LdapEntity::getName).collect(Collectors.joining(", "));
+        return invalidEntities.stream().map(LdapEntity::name).collect(Collectors.joining(", "));
     }
 }

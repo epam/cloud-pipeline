@@ -18,26 +18,28 @@ package com.epam.pipeline.elasticsearch.model.v7.search;
 
 import com.epam.pipeline.elasticsearch.model.SearchHit;
 import lombok.RequiredArgsConstructor;
+import org.opensearch.client.opensearch.core.search.Hit;
 
 import java.util.Map;
 
 @RequiredArgsConstructor
 public class SearchHitV7 implements SearchHit {
 
-    private final org.opensearch.search.SearchHit inner;
+    private final Hit<Map<String, Object>> inner;
 
     @Override
     public String getIndex() {
-        return inner.getIndex();
+        return inner.index();
     }
 
     @Override
     public String getId() {
-        return inner.getId();
+        return inner.id();
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> getSourceAsMap() {
-        return inner.getSourceAsMap();
+        return inner.source();
     }
 }

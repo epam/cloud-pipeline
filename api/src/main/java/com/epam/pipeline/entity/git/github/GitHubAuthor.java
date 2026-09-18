@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.git.github;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class GitHubAuthor {
     private String name;
     private String email;

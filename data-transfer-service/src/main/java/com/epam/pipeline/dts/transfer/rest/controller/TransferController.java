@@ -26,12 +26,11 @@ import com.epam.pipeline.dts.transfer.rest.mapper.StorageItemMapper;
 import com.epam.pipeline.dts.transfer.rest.mapper.TransferTaskMapper;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.transfer.service.TransferService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -46,13 +45,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.API_STATUS_DESCRIPTION;
-import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.HTTP_STATUS_OK;
 
 @RequestMapping("transfer")
-@Api(value = "Transfer tasks management")
-@ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
+@Tag(name = "Transfer tasks management")
+@ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
 @RestController
 @AllArgsConstructor
 public class TransferController extends AbstractRestController {
@@ -63,9 +59,8 @@ public class TransferController extends AbstractRestController {
     private TransferTaskMapper taskMapper;
 
     @PostMapping
-    @ApiOperation(
-            value = "Creates and schedules a new transfer task.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Creates and schedules a new transfer task.")
     public Result<TransferDTO> createTask(@RequestBody TaskCreationDTO taskCreationDTO) {
         TransferTask task = transferService.runTransferTask(
                 storageItemMapper.dtoToModel(taskCreationDTO.getSource()),
@@ -79,9 +74,8 @@ public class TransferController extends AbstractRestController {
     }
 
     @PutMapping(path = "/{taskId}")
-    @ApiOperation(
-            value = "Updates status of existing task.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Updates status of existing task.")
     public Result<TransferDTO> updateStatus(@PathVariable Long taskId,
                                             @RequestParam TaskStatus status,
                                             @RequestParam(required = false) String reason) {
@@ -90,26 +84,23 @@ public class TransferController extends AbstractRestController {
     }
 
     @GetMapping(path = "/{taskId}")
-    @ApiOperation(
-            value = "Returns an existing task by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns an existing task by id.")
     public Result<TransferDTO> getTask(@PathVariable Long taskId) {
         return Result.success(taskMapper.modelToDto(taskService.loadTask(taskId)));
     }
 
     @DeleteMapping(path = "/{taskId}")
-    @ApiOperation(
-            value = "Deletes an existing task by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes an existing task by id.")
     public Result deleteTask(@PathVariable Long taskId) {
         taskService.deleteTask(taskId);
         return Result.success(null);
     }
 
     @GetMapping
-    @ApiOperation(
-            value = "Returns all tasks.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Returns all tasks.")
     public Result<List<TransferDTO>> getAll() {
         return Result.success(taskService
                 .loadAll()

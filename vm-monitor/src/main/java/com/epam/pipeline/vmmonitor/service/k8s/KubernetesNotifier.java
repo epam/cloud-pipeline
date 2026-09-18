@@ -56,7 +56,7 @@ public class KubernetesNotifier {
     }
 
     public void notifyMissingDeployment(final String deploymentName) {
-        notificationService.sendMessage(Collections.singletonMap("deploymentName", deploymentName),
+        notificationService.sendMessage(Collections.singletonMap("deployment", deploymentName),
                 missingDeploymentSubject, missingDeploymentTemplate);
     }
 
