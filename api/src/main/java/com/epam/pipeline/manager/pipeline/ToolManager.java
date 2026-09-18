@@ -928,7 +928,8 @@ public class ToolManager implements SecuredEntityManager {
                 return 0;
             }
             return toolVersion.getSize();
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | DockerConnectionException e) {
+            // an unavailable registry shall not fail an operation, that only adjusts a disk size by an image size
             LOGGER.error("An error occurred while getting image size: {} ", e.getMessage());
             return 0;
         }

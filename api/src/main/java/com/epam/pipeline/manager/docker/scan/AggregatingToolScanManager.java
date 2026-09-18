@@ -325,8 +325,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
             ToolVersionScanResult vs = versionScanResult.get();
             LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_ALREADY_SCANNED, tool.getImage()));
             DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
-            String dockerRef = dockerClient.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
-            boolean isActual = vs.getDigest() != null && dockerRef.equals(vs.getDigest());
+            final String dockerRef = findVersionDigest(dockerClient, registry, tool, tag);
+            boolean isActual = vs.getDigest() != null && dockerRef != null && dockerRef.equals(vs.getDigest());
 
             if (isActual) {
                 vs.setScanDate(DateUtils.now());
@@ -337,6 +337,24 @@ public class AggregatingToolScanManager implements ToolScanManager {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Resolves a digest of a version in a registry to check whether an existing scan is still actual.
+     *
+     * A registry communication error shall not be propagated from here: it would abort a scan of all
+     * the remaining versions of a tool. An unknown digest just means, that an existing scan cannot be
+     * considered actual, so a version is rescanned and a registry error is reported per version by the scan itself.
+     */
+    private String findVersionDigest(final DockerClient dockerClient, final DockerRegistry registry,
+                                     final Tool tool, final String tag) {
+        try {
+            return dockerClient.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
+        } catch (DockerConnectionException | IllegalArgumentException e) {
+            LOGGER.warn("Digest of version {} of tool {} cannot be resolved in registry {}: {}",
+                    tag, tool.getImage(), registry.getPath(), e.getMessage());
+            return null;
+        }
     }
 
     private String scanDockerComp(final Tool tool, final String tag, final DockerRegistry registry,
@@ -390,7 +408,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
     }
 
     private List<String> fetchLayers(final ManifestV2 manifest) {
-        return manifest.getLayers()
+        return ListUtils.emptyIfNull(manifest.getLayers())
             .stream()
             .map(ManifestV2.Config::getDigest)
             .collect(Collectors.toList());
