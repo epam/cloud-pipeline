@@ -16,10 +16,14 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Selectors.byId;
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
@@ -27,6 +31,7 @@ import org.openqa.selenium.WebElement;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.text;
@@ -137,6 +142,21 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     private SelenideElement activeRunCardByRunId(String runId) {
         return get(RUNS).find(byXpath(format(".//*[contains(text(), 'pipeline-%s')]", runId)))
                 .ancestor(".ant-card-body");
+    }
+
+    public NavigationHomeAO checkTagIs(String runId, String tag, Condition condition) {
+        activeRunCardByRunId(runId).$(byId(tag)).shouldBe(condition, ofMillis(COMPLETION_TIMEOUT));
+        return this;
+    }
+
+    public NavigationHomeAO checkTagsVisible(String runId, String ... tags) {
+        Stream.of(tags).forEach(tag -> checkTagIs(runId, tag, visible));
+        return this;
+    }
+
+    public NavigationHomeAO checkTagsNotVisible(String runId, String ... tags) {
+        Stream.of(tags).forEach(tag -> checkTagIs(runId, tag, not(visible)));
+        return this;
     }
 
     public NavigationHomeAO checkPauseLinkIsDisabledOnActiveRunsPanel(String runId) {

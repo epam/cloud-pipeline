@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.CollectionCondition.empty;
 import static com.codeborne.selenide.CollectionCondition.*;
@@ -479,11 +480,28 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .findAll(tagName("tr")).findBy(text(id)).is(exist) : false;
     }
 
-    public RunsMenuAO waitUntilTagAppears(String runId, String tag) {
+    public RunsMenuAO checkTagIs(String runId, String tag, Condition condition) {
         $(className(format("run-%s", runId))).should(exist)
                 .$(className("un-table-columns__tags-column"))
-                .$(byId(tag)).shouldBe(visible, ofMillis(COMMIT_APPEARING_TIMEOUT));
+                .$(byId(tag)).shouldBe(condition, ofMillis(COMMIT_APPEARING_TIMEOUT));
         return this;
+    }
+
+    public RunsMenuAO checkTagsVisible(String runId, String ... tags) {
+        Stream.of(tags).forEach(tag -> checkTagIs(runId, tag, visible));
+        return this;
+    }
+
+    public RunsMenuAO checkTagsNotVisible(String runId, String ... tags) {
+        Stream.of(tags).forEach(tag -> checkTagIs(runId, tag, not(visible)));
+        return this;
+    }
+
+    public NodePage openMonitorPageViaTag(String runId, String tag) {
+        $(className(format("run-%s", runId))).should(exist)
+                .$(className("un-table-columns__tags-column"))
+                .$(byId(tag)).click();
+        return new NodePage();
     }
 
     public String getRunIdByTag(final String runTag) {

@@ -19,6 +19,7 @@ package com.epam.pipeline.autotests.mixins;
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
+import com.epam.pipeline.autotests.ao.NotificationsPageAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolsPage;
@@ -72,6 +73,10 @@ public interface Navigation {
         $(runsPageSelector).shouldBe(visible).click();
         $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
+    }
+
+    default NotificationsPageAO notifications() {
+        return navigationMenu().notifications();
     }
 
     default NavigationHomeAO stopImpersonation() {

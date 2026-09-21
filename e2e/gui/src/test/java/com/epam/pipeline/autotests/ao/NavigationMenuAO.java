@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.LOGIN_DELAY_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
@@ -30,6 +29,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.utils.C.LOGIN_DELAY_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.time.Duration.ofMillis;
@@ -88,6 +88,12 @@ public class NavigationMenuAO {
         sleep(1, SECONDS);
         $(byClassName("earch__search-container")).shouldBe(visible, ofMillis(LOGIN_DELAY_TIMEOUT));
         return new GlobalSearchAO();
+    }
+
+    public NotificationsPageAO notifications() {
+        $(byId("navigation-button-notifications")).shouldBe(visible).click();
+        $(byClassName("notification-browser__notifications-container")).shouldBe(exist, ofMillis(LOGIN_DELAY_TIMEOUT));
+        return new NotificationsPageAO();
     }
 
     public PipelineLibraryContentAO createPipeline(final Template template, final String name) {

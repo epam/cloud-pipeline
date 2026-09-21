@@ -154,7 +154,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         try {
             runsMenu()
                     .activeRuns()
-                    .waitUntilTagAppears(runId, "IDLE_GPU")
+                    .checkTagIs(runId, "IDLE_GPU", visible)
                     .waitUntilResumeButtonAppear(runId)
                     .validateStatus(runId, LogAO.Status.PAUSED)
                     .resume(runId, nameWithoutGroup(tool))
@@ -184,7 +184,6 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         loginAsAdminAndPerform(() ->
                 navigationMenu()
                         .settings()
-                        .switchToPreferences()
                         .switchToPreferences()
                         .searchPreference(SYSTEM_IDLE_MONITORING_CONFIG)
                         .updateCodeText(SYSTEM_IDLE_MONITORING_CONFIG, idleConfig, bool)

@@ -20,6 +20,7 @@ import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -505,6 +506,26 @@ public class LogAO implements AccessObject<LogAO> {
     public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
         cpCapLimitMountsParameter(storage).click();
         return new StorageContentAO();
+    }
+
+    public LogAO checkTagIs(String tagName, Condition condition) {
+        $(byId(tagName)).shouldBe(condition, ofMillis(COMPLETION_TIMEOUT));
+        return this;
+    }
+
+    public LogAO checkTagsVisible(String ... tags) {
+        Stream.of(tags).forEach(tag -> checkTagIs(tag, visible));
+        return this;
+    }
+
+    public LogAO checkTagsNotVisible(String ... tags) {
+        Stream.of(tags).forEach(tag -> checkTagIs(tag, not(visible)));
+        return this;
+    }
+
+    public NodePage clickTag(String tagName) {
+        $(byId(tagName)).click();
+        return new NodePage();
     }
 
     public static By log() {
