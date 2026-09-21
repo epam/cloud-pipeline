@@ -38,7 +38,8 @@ LaunchFormParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
+  placeholder: PropTypes.string
 };
 
 export default LaunchFormParameterInput;

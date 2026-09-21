@@ -15,7 +15,8 @@ function LaunchFormStringParameterInput (props) {
     currentMetadataEntity,
     currentProjectMetadata,
     rootEntityId,
-    metadataAutoComplete
+    metadataAutoComplete,
+    placeholder
   } = props;
   return (
     <MetadataAutoComplete
@@ -30,6 +31,7 @@ function LaunchFormStringParameterInput (props) {
       currentProjectMetadata={currentProjectMetadata}
       rootEntityId={rootEntityId}
       defaultInput={!metadataAutoComplete}
+      placeholder={placeholder}
     />
   );
 }
@@ -46,7 +48,8 @@ LaunchFormStringParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
+  placeholder: PropTypes.string
 };
 
 export default LaunchFormStringParameterInput;

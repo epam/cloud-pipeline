@@ -1377,6 +1377,7 @@
                             p.terminating,
                             p.pod_id,
                             p.node_type,
+                            p.instance_fallback_types,
                             p.node_disk,
                             p.node_ip,
                             p.node_id,
@@ -1423,7 +1424,8 @@
                             p.node_start_date,
                             p.project_id,
                             p.parameters_json,
-                            p.logs_storage_path
+                            p.logs_storage_path,
+                            p.initialized
                         FROM (SELECT *
                             FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
@@ -1441,6 +1443,7 @@
                             c.terminating,
                             c.pod_id,
                             c.node_type,
+                            c.instance_fallback_types,
                             c.node_disk,
                             c.node_ip,
                             c.node_id,
@@ -1487,7 +1490,8 @@
                             c.node_start_date,
                             c.project_id,
                             c.parameters_json,
-                            c.logs_storage_path
+                            c.logs_storage_path,
+                            c.initialized
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1503,6 +1507,7 @@
                         runs.terminating,
                         runs.pod_id,
                         runs.node_type,
+                        runs.instance_fallback_types,
                         runs.node_disk,
                         runs.node_ip,
                         runs.node_id,
