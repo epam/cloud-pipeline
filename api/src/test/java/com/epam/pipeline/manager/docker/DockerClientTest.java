@@ -66,8 +66,9 @@ public class DockerClientTest {
             "application/vnd.docker.distribution.manifest.list.v2+json";
     private static final String OCI_MANIFEST_MEDIA_TYPE = "application/vnd.oci.image.manifest.v1+json";
     private static final String OCI_INDEX_MEDIA_TYPE = "application/vnd.oci.image.index.v1+json";
-    private static final String ACCEPTED_MANIFEST_FORMATS = MANIFEST_MEDIA_TYPE + "," + MANIFEST_LIST_MEDIA_TYPE
-            + "," + OCI_MANIFEST_MEDIA_TYPE + "," + OCI_INDEX_MEDIA_TYPE;
+    private static final String[] ACCEPTED_MANIFEST_FORMATS = {
+        MANIFEST_MEDIA_TYPE, MANIFEST_LIST_MEDIA_TYPE, OCI_MANIFEST_MEDIA_TYPE, OCI_INDEX_MEDIA_TYPE
+    };
     private static final String EMPTY_MANIFEST_LIST = "{\"schemaVersion\":2,\"mediaType\":\""
             + MANIFEST_LIST_MEDIA_TYPE + "\",\"manifests\":[]}";
     private static final String CONFIG_DIGEST = "sha256:config";
@@ -271,7 +272,9 @@ public class DockerClientTest {
     }
 
     @Test
-    public void shouldRequestManifestsOfAllSupportedFormats() {
+    public void shouldRequestManifestsOfAllSupportedFormatsAsSeparateAcceptHeaders() {
+        // some registries negotiate an OCI index/manifest list off individual Accept header values and report
+        // a manifest of such a format as missing if all the formats are joined into a single comma-separated value
         server.expect(requestTo(MANIFEST_URL))
                 .andExpect(method(HttpMethod.GET))
                 .andExpect(header(HttpHeaders.ACCEPT, ACCEPTED_MANIFEST_FORMATS))
