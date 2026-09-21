@@ -177,6 +177,25 @@ export default class PermissionsForm extends React.Component {
     return [];
   }
 
+  @computed
+  get predefinedRoleNames () {
+    const {roles: rolesRequest} = this.props;
+    if (rolesRequest && rolesRequest.loaded) {
+      return (rolesRequest.value || [])
+        .filter(role => role.predefined)
+        .map(role => role.name);
+    }
+    return [];
+  }
+
+  /**
+   * Whether a group or role `name` is a system (predefined) role, and not a user group:
+   * the API gives a group's permissions priority over a role's ones.
+   * @param name {string} group or role name
+   * @returns {boolean}
+   */
+  isPredefinedRole = (name) => this.predefinedRoleNames.includes(name);
+
   get permissionsChanged () {
     const {
       originalOwner,
@@ -450,16 +469,22 @@ export default class PermissionsForm extends React.Component {
       const {mask, sid = {}} = granted[d];
       const maskToCheck = mask & subObjectsPermissionsMaskToCheck;
       const {name, principal} = sid;
+      const sidToCheck = principal
+        ? sid
+        : {...sid, predefined: this.isPredefinedRole(name)};
       const rolesToCheck = [];
       if (principal) {
         const userInfo = this.allUsers.find(u => u.name === name);
-        if (userInfo && userInfo.roles) {
+        if (userInfo) {
           rolesToCheck.push(
-            ...(userInfo.roles || []).map(({name}) => ({name, principal: false}))
+            ...(userInfo.roles || [])
+              .map(({name, predefined}) => ({name, principal: false, predefined})),
+            ...(userInfo.groups || [])
+              .map((group) => ({name: group, principal: false, predefined: false}))
           );
         }
       } else {
-        rolesToCheck.push({name: 'ROLE_USER', principal: false});
+        rolesToCheck.push({name: 'ROLE_USER', principal: false, predefined: true});
       }
       for (let o = 0; o < subObjectsPermissions.length; o++) {
         const subObjectPermission = subObjectsPermissions[o];
@@ -469,7 +494,7 @@ export default class PermissionsForm extends React.Component {
           execute
         } = roleModel.checkObjectPermissionsConflict(
           maskToCheck,
-          sid,
+          sidToCheck,
           rolesToCheck,
           subObjectPermission.owner,
           subObjectPermission.permissions
