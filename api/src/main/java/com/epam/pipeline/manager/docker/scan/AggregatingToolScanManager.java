@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
 import com.epam.pipeline.entity.scan.clair.ClairVulnerabilities;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
+import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -331,6 +332,11 @@ public class AggregatingToolScanManager implements ToolScanManager, Initializing
                     clairResults);
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
+        } catch (DockerConnectionException | IllegalArgumentException e) {
+            // a registry communication error shall fail a scan of a single version only: the scheduler handles
+            // ToolScanExternalServiceException per version, while any other error aborts a scan of the whole tool
+            throw new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                    MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage(), tag), e);
         }
     }
 
@@ -341,8 +347,8 @@ public class AggregatingToolScanManager implements ToolScanManager, Initializing
             ToolVersionScanResult vs = versionScanResult.get();
             LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_TOOL_SCAN_ALREADY_SCANNED, tool.getImage()));
             DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
-            String dockerRef = dockerClient.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
-            boolean isActual = vs.getDigest() != null && dockerRef.equals(vs.getDigest());
+            final String dockerRef = findVersionDigest(dockerClient, registry, tool, tag);
+            boolean isActual = vs.getDigest() != null && dockerRef != null && dockerRef.equals(vs.getDigest());
 
             if (isActual) {
                 vs.setScanDate(DateUtils.now());
@@ -353,6 +359,24 @@ public class AggregatingToolScanManager implements ToolScanManager, Initializing
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Resolves a digest of a version in a registry to check whether an existing scan is still actual.
+     *
+     * A registry communication error shall not be propagated from here: it would abort a scan of all
+     * the remaining versions of a tool. An unknown digest just means, that an existing scan cannot be
+     * considered actual, so a version is rescanned and a registry error is reported per version by the scan itself.
+     */
+    private String findVersionDigest(final DockerClient dockerClient, final DockerRegistry registry,
+                                     final Tool tool, final String tag) {
+        try {
+            return dockerClient.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
+        } catch (DockerConnectionException | IllegalArgumentException e) {
+            LOGGER.warn("Digest of version {} of tool {} cannot be resolved in registry {}: {}",
+                    tag, tool.getImage(), registry.getPath(), e.getMessage());
+            return null;
+        }
     }
 
     private String scanDockerComp(final Tool tool, final String tag, final DockerRegistry registry,
@@ -394,13 +418,19 @@ public class AggregatingToolScanManager implements ToolScanManager, Initializing
     private ManifestV2 getManifest(final Tool tool, final String tag, final DockerRegistry registry)
             throws ToolScanExternalServiceException {
         final DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
-        return dockerClient.getManifest(registry, tool.getImage(), tag)
-                .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
-                        MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
+        try {
+            return dockerClient.resolveImageManifest(registry, tool.getImage(), tag)
+                    .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                            MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
+        } catch (DockerConnectionException e) {
+            // a registry communication error shall fail a scan of a single version only, not of the whole tool
+            throw new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                    MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage()), e);
+        }
     }
 
     private List<String> fetchLayers(final ManifestV2 manifest) {
-        return manifest.getLayers()
+        return ListUtils.emptyIfNull(manifest.getLayers())
             .stream()
             .map(ManifestV2.Config::getDigest)
             .collect(Collectors.toList());

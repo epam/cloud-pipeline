@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import okhttp3.ResponseBody;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -41,7 +41,7 @@ public final class RestApiUtils {
             if (response.isSuccessful()) {
                 return response;
             } else {
-                throw new UnexpectedResponseStatusException(HttpStatus.valueOf(response.code()),
+                throw new UnexpectedResponseStatusException(HttpStatusCode.valueOf(response.code()),
                         response.errorBody() != null ? response.errorBody().string() : "");
             }
         } catch (IOException e) {

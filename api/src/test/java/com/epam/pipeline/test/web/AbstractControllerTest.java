@@ -153,7 +153,7 @@ public abstract class AbstractControllerTest {
         return mockMvc.perform(requestBuilder
                 .contentType(contentType))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(contentType))
+                .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(contentType))
                 .andReturn();
     }
 
@@ -164,7 +164,7 @@ public abstract class AbstractControllerTest {
         return mockMvc.perform(requestBuilder
                 .contentType(requestContentType))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.content().contentType(responseContentType))
+                .andExpect(MockMvcResultMatchers.content().contentTypeCompatibleWith(responseContentType))
                 .andReturn();
     }
 

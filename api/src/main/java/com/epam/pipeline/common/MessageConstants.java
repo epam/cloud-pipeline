@@ -91,6 +91,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_ICON_TOO_LARGE = "error.tool.icon.too.large";
     public static final String ERROR_TOOL_INVALID_IMAGE = "error.tool.invalid.image";
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
+    public static final String ERROR_TOOL_VERSION_DELETE_FAILED = "error.tool.version.delete.failed";
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
