@@ -92,6 +92,8 @@ configured this machine yet: run the `configure-dev-environment` skill before an
 toolchain.** Attended only — unattended, the runner's toolchain belongs to the workflow, so just report
 what is missing.
 
+**A git worktree for this repository lives at `.worktrees/<branch>`, gitignored.**
+
 ## Files agents must not read
 
 `.env`, `.env.local` and `.env.<environment>.local` files, `secrets/`, keystores and private keys,
@@ -115,6 +117,7 @@ Things that have gone wrong here before, or that are expensive to undo:
   itself, not the exemption — the `implement-task` skill → "Docs".
 - **Don't review your own diff.** It goes to an agent that did not write it; where none can be
   spawned, review it as its own pass and say so — the `implement-task` skill → "Fresh-eyes review".
+- **Don't commit without reading the `commit-changes` skill.**
 - **Don't edit an applied Flyway migration.** Add a new one.
 - **Don't modernize a build file casually.** `compile`/`testCompile` and `bootRepackage` are still in
   use, and a construct that looks obsolete may be load-bearing. Toolchain levels are per-module and
