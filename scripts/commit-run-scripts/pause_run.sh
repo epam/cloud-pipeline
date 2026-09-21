@@ -154,7 +154,7 @@ if command -v python3 &>/dev/null; then
     export CP_PYTHON_PATH=$(command -v python3)
 else
     export CP_PYTHON_VERSION="2"
-    export CP_PYTHON_PATH=$(command -v python)
+    export CP_PYTHON_PATH=$(command -v python2)
 fi
 export RUNS_ROOT='/runs'
 
