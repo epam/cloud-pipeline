@@ -118,8 +118,8 @@ public class DockerClient {
      * is reported by a registry as a missing one, therefore all the formats, an image may be pushed in,
      * shall be listed here.
      */
-    private static final String ACCEPTED_MANIFEST_FORMATS = String.join(",",
-            V2_MANIFEST_FORMAT, MANIFEST_LIST_FORMAT, OCI_MANIFEST_FORMAT, OCI_INDEX_FORMAT);
+    private static final List<String> ACCEPTED_MANIFEST_FORMATS =
+            Arrays.asList(V2_MANIFEST_FORMAT, MANIFEST_LIST_FORMAT, OCI_MANIFEST_FORMAT, OCI_INDEX_FORMAT);
     private static final String DEFAULT_OS = "linux";
     private static final String DEFAULT_ARCHITECTURE = "amd64";
     /**
@@ -637,7 +637,7 @@ public class DockerClient {
 
     private HttpEntity getV2AuthHeaders() {
         HttpHeaders headers = getHttpHeaders();
-        headers.add(HttpHeaders.ACCEPT, ACCEPTED_MANIFEST_FORMATS);
+        ACCEPTED_MANIFEST_FORMATS.forEach(format -> headers.add(HttpHeaders.ACCEPT, format));
         return new HttpEntity(headers);
     }
 
