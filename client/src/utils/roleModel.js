@@ -290,10 +290,9 @@ const checkObjectPermissionsConflict = (mask, sid, sidRoles, objectOwner, object
   }))]
     .reduce((acc, testSid) => {
       const type = getSidType(testSid);
-      return {
-        ...acc,
-        [type]: [...(acc[type] || []), findConflicts(testSid)]
-      };
+      acc[type] = acc[type] || [];
+      acc[type].push(findConflicts(testSid));
+      return acc;
     }, {});
   const getResolution = permission => {
     for (const sidType of SID_TYPES_PRIORITY) {
