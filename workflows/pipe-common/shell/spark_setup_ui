@@ -49,7 +49,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.send_response(code=200)
             self.send_header("Content-type", "text/plain")
             self.end_headers()
-            self.wfile.write("OK")
+            self.wfile.write(b"OK")
             return
 
         # redirect if we are hitting the home page
@@ -92,7 +92,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
             self.send_header("Location", URL_PREFIX + "proxy:" + SPARK_MASTER_HOST)
             self.end_headers()
         else:
-            raise Exception("Unsupported response: " + resCode)
+            raise Exception("Unsupported response: " + str(resCode))
 
     def extractUrlDetails(self, path):
         if path.startswith("/proxy:"):
@@ -106,6 +106,8 @@ class ProxyHandler(BaseHTTPRequestHandler):
         return (targetHost, path)
 
     def rewriteLinks(self, page, targetHost):
+        if isinstance(page, bytes):
+            page = page.decode('utf-8', errors='replace')
         target = "{0}proxy:{1}/".format(URL_PREFIX, targetHost)
         page = page.replace('href="/', 'href="' + target)
         page = page.replace("'<div><a href=' + logUrl + '>'",
@@ -116,7 +118,7 @@ class ProxyHandler(BaseHTTPRequestHandler):
         page = page.replace('action="', 'action="' + target)
         page = page.replace('"/api/v1/', '"' + target + 'api/v1/')
         page = page.replace('{{uiroot}}/history', '{{uiroot}}' + target + 'history')
-        return page
+        return page.encode('utf-8')
 
 
 if __name__ == '__main__':
