@@ -16,11 +16,16 @@
 
 package com.epam.pipeline.dao.pipeline;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatusInfo;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -28,7 +33,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
+@Slf4j
 @RequiredArgsConstructor
 public class RunStatusDao extends DryRunJdbcDaoSupport {
 
@@ -38,6 +45,7 @@ public class RunStatusDao extends DryRunJdbcDaoSupport {
     private String loadRunStatusByListWithArchivedQuery;
     private String deleteRunStatusQuery;
     private String deleteRunStatusByIdsQuery;
+    private String updatePriceInLastRunStatusChangeQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void saveStatus(RunStatus runStatus) {
@@ -75,11 +83,28 @@ public class RunStatusDao extends DryRunJdbcDaoSupport {
         getNamedParameterJdbcTemplate(dryRun).update(deleteRunStatusByIdsQuery, params);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updatePriceForCurrentActiveRunStatus(PipelineRun pipelineRun) {
+        final RunStatusInfo runStatusInfo = RunStatusInfo.of(pipelineRun.getPricePerHour(),
+                pipelineRun.getComputePricePerHour(), pipelineRun.getDiskPricePerHour());
+        if (runStatusInfo == null) {
+            log.debug("Skipping run status price update for run {} as its compute price is not resolved yet.",
+                    pipelineRun.getId());
+            return;
+        }
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(RunStatusParameters.RUN_ID.name(), pipelineRun.getId());
+        params.addValue(RunStatusParameters.RUN_STATUS_INFO.name(),
+                JsonMapper.convertDataToJsonStringForQuery(runStatusInfo));
+        getNamedParameterJdbcTemplate().update(updatePriceInLastRunStatusChangeQuery, params);
+    }
+
     enum RunStatusParameters {
         RUN_ID,
         STATUS,
         REASON,
-        DATE;
+        DATE,
+        RUN_STATUS_INFO;
 
         static MapSqlParameterSource getParameters(RunStatus runStatus) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -87,6 +112,10 @@ public class RunStatusDao extends DryRunJdbcDaoSupport {
             params.addValue(STATUS.name(), runStatus.getStatus().getId());
             params.addValue(DATE.name(), runStatus.getTimestamp());
             params.addValue(REASON.name(), runStatus.getReason());
+            params.addValue(RUN_STATUS_INFO.name(),
+                    Optional.ofNullable(runStatus.getRunStatusInfo())
+                            .map(JsonMapper::convertDataToJsonStringForQuery)
+                            .orElse(null));
             return params;
         }
 
@@ -100,6 +129,12 @@ public class RunStatusDao extends DryRunJdbcDaoSupport {
                 final String reason = rs.getString(REASON.name());
                 if (!rs.wasNull()) {
                     restartRun.setReason(reason);
+                }
+
+                final String runStatusInfoJson = rs.getString(RUN_STATUS_INFO.name());
+                if (!rs.wasNull()) {
+                    restartRun.setRunStatusInfo(JsonMapper.parseData(runStatusInfoJson,
+                            new TypeReference<RunStatusInfo>() {}));
                 }
 
                 return restartRun;
@@ -130,5 +165,9 @@ public class RunStatusDao extends DryRunJdbcDaoSupport {
 
     public void setLoadRunStatusByListWithArchivedQuery(final String loadRunStatusByListWithArchivedQuery) {
         this.loadRunStatusByListWithArchivedQuery = loadRunStatusByListWithArchivedQuery;
+    }
+
+    public void setUpdatePriceInLastRunStatusChangeQuery(final String updatePriceInLastRunStatusChangeQuery) {
+        this.updatePriceInLastRunStatusChangeQuery = updatePriceInLastRunStatusChangeQuery;
     }
 }

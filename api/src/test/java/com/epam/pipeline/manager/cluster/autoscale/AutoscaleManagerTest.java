@@ -131,7 +131,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, Boolean.FALSE.toString());
+                runRegionShiftHandler, metadataManager, Boolean.FALSE.toString(), null);
         ReflectionTestUtils.setField(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -284,7 +284,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
+                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString(), null);
         ReflectionTestUtils.setField(haCoreNotMaster, "preferenceManager", preferenceManager);
 
         haCoreNotMaster.runAutoscaling();
@@ -303,7 +303,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString());
+                runRegionShiftHandler, metadataManager, Boolean.TRUE.toString(), null);
         ReflectionTestUtils.setField(haCoreIsMaster, "preferenceManager", preferenceManager);
 
         haCoreIsMaster.runAutoscaling();
