@@ -340,9 +340,28 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 .getImageTags(registry.getPath(), image);
     }
 
+    /**
+     * Lists tags of a specified image. Unlike {@link #loadImageTags(DockerRegistry, String)} an empty list
+     * is returned if an image is not found in a registry instead of failing.
+     */
+    public List<String> findImageTags(final DockerRegistry registry, final String image) {
+        final String token = getImageToken(registry, image);
+        return dockerClientFactory.getDockerClient(registry, token)
+                .findImageTags(registry.getPath(), image);
+    }
+
     public Optional<ManifestV2> deleteImage(DockerRegistry registry, String image, String tag) {
         String token = getImageToken(registry, image);
         return dockerClientFactory.getDockerClient(registry, token).deleteImage(registry, image, tag);
+    }
+
+    /**
+     * Removes a tag of the given image from a registry even if a manifest, the tag points to,
+     * cannot be resolved, see {@link DockerClient#untagImage(DockerRegistry, String, String)}.
+     */
+    public boolean untagImage(final DockerRegistry registry, final String image, final String tag) {
+        final String token = getImageToken(registry, image);
+        return dockerClientFactory.getDockerClient(registry, token).untagImage(registry, image, tag);
     }
 
     public void deleteLayer(DockerRegistry registry, String image, String digest) {
