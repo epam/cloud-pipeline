@@ -1839,6 +1839,20 @@ never updates it, so the run of such a node received no `NODE_UNAVAILABLE` tag a
 `NodeAvailabilityMonitor` log entry, and was never stopped once the unavailability grace period had
 elapsed — it hung on its current task instead.
 
-Currently, all the state conditions of a node are inspected, and the grace period is counted from the
-`kubelet`'s own last report. See [11.6. Node availability monitoring](../../manual/11_Manage_Runs/11.6._Node_availability_monitoring.md)
+Currently, a node is recognised as unavailable by its `Ready` condition, wherever that condition is
+listed: the node is unavailable once the status of that condition becomes `Unknown`, or if the node has
+no such condition at all. The grace period is counted from the last report of the `Ready` condition, and
+the run is tagged and logged before its node is stopped. See [11.6. Node availability monitoring](../../manual/11_Manage_Runs/11.6._Node_availability_monitoring.md)
 for details.
+
+The same fix applies when a new node registers: the Platform waits for its `Ready` condition to become
+`True`, wherever that condition is listed, rather than for the fourth condition in the list.
+
+> **_Note_**: on a `canal`/`flannel` deployment, the runs whose nodes stopped reporting were previously
+> left running, and now fail once their grace period has elapsed. If such a node stopped reporting more
+> than a grace period ago, the first check after the upgrade writes the `NodeAvailabilityMonitor` entry
+> to the run's log and stops the node at once, so the run is never displayed with the `NODE_UNAVAILABLE`
+> label. To review such runs first, raise the `cluster.node.unavailable.grace.period.minutes` preference
+> above the time their nodes have been silent, before the upgrade — the
+> `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` parameter of a run is set at its launch, so it cannot be raised
+> for a run that is already running.
