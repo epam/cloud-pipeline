@@ -94,6 +94,10 @@ what is missing.
 
 **A git worktree for this repository lives at `.worktrees/<branch>`, gitignored.**
 
+**Work, reason and reply in English**, whatever language a request arrives in — issues, pull
+requests, commit messages, and comments included, with no exceptions. Write plainly: short
+replies, short sentences, simple words, no idioms.
+
 ## Files agents must not read
 
 `.env`, `.env.local` and `.env.<environment>.local` files, `secrets/`, keystores and private keys,

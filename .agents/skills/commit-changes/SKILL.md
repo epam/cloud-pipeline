@@ -100,7 +100,8 @@ owes you, so leaving it implicit reads as failure rather than the next step. Plu
 the branch, and the base it was cut from, since whoever opens the pull request needs the base and
 cannot infer it from the branch, plus `intel/artificial 🤖` for the pull request they open.
 
-Then Aftercare, once the change is pushed: on the issue, `state/underway` gives way to `state/verify`,
-and `intel/artificial 🤖` is added. Leave `intel/natural 🧐` alone where the issue carries it —
-`CONTRIBUTIONS.md` → "Authorship labels". Attended, confirm first; unattended, do it as part of the
-same trigger and say so in the hand-back.
+Then Aftercare, once the change is pushed: add `intel/artificial 🤖` to the issue, plus `state/has-doc`
+if the diff added docs, and `state/has-case` / `state/has-e2e` only if it added those. Leave
+`intel/natural 🧐` alone where the issue carries it — `CONTRIBUTIONS.md` → "Authorship labels". Never
+set `state/verify` or `state/ready`. Attended, confirm first; unattended, do it as part of the same
+trigger and say so in the hand-back.
