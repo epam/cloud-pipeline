@@ -27,6 +27,7 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_CONFIGURATION;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION;
@@ -34,7 +35,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
-import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
@@ -79,7 +79,7 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
     public PipelineConfigurationTabAO editConfiguration(final String profileName, final Consumer<Profile> action) {
         click(profileWithName(profileName));
         final Profile profile = new Profile();
-        profile.expandTab(INSTANCE);
+        profile.expandTab(ADVANCED_PANEL);
         profile.expandTab(PARAMETERS);
         profile.context().shouldBe(visible);
         action.accept(profile);

@@ -78,7 +78,6 @@ public class Profile implements AccessObject<Profile> {
                 entry(SAVE, context().find(byId("save-pipeline-configuration-button"))),
                 entry(NAME, context().find(byId("configuration.name"))),
                 entry(ESTIMATED_PRICE, context().find(byText("Estimated price per hour:"))),
-                entry(INSTANCE, context().find(byId("launch-pipeline-advanced-panel"))),
                 entry(IMAGE, context().find(inputOf(fieldWithLabel("Docker image")))),
                 entry(DISK, context().find(byId("exec.disk"))),
                 entry(TIMEOUT, context().find(byId("advanced.timeout"))),

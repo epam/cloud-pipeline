@@ -73,7 +73,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(NEW_ENDPOINT, context().find(button("Add endpoint"))),
                 entry(LABEL_INPUT_FIELD, context().find(withText("Labels")).closest(".ant-row")
                         .find(tagName("input"))),
-                entry(EXEC_ENVIRONMENT, context().find(byText("EXECUTION ENVIRONMENT")).parent()),
+                entry(EXEC_ENVIRONMENT, context().find(byText("EXECUTION ENVIRONMENT"))
+                        .closest(".ant-collapse-item")),
                 entry(DEFAULT_COMMAND, context().find(byText("Cmd template:")).closest(".ant-row")
                         .find(byClassName("tools__code-editor"))),
                 entry(INSTANCE, context().find(byClassName("ant-select-selection-selected-value"))),

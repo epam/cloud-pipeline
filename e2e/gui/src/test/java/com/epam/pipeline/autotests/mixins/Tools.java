@@ -62,6 +62,7 @@ public interface Tools extends Navigation {
     ) {
         tools().performWithin(registryName, groupName, toolName, description ->
                 description.settings().sleep(1, SECONDS)
+                        .expandTab(EXEC_ENVIRONMENT)
                         .also(removeAllEndpoints())
                         .also(addEndpoint(endpoint))
                         .performIf(DEFAULT_COMMAND, not(text(command)), setDefaultCommand(command))
