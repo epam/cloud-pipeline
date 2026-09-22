@@ -170,27 +170,29 @@ public class ScaleDownHandler {
 
         final Optional<PipelineRun> pipelineRun = findRun(node);
         final Duration grace = findNodeUnavailableGraceDuration(pipelineRun, defaultGrace);
+        final boolean graceExpired = !now.minus(grace).isBefore(timestamp);
 
-        if (now.minus(grace).isBefore(timestamp)) {
-            if (isUnavailableNodeLabeled(client, node)) {
-                return;
-            }
-            log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
-            labelUnavailableNode(node, timestamp);
-
-            pipelineRun.ifPresent(run -> {
-                labelUnavailableNodeRun(run, timestamp);
-                logUnavailableNodeRun(run, timestamp);
-            });
-
-            // check if instance already stopped or preempted/un-spotted and if so - scale down
-            if (!isNodeAliveOnCloud(node)) {
+        if (isUnavailableNodeLabeled(client, node)) {
+            if (graceExpired) {
                 scaleDownUnavailableNode(client, node);
             }
-
             return;
         }
-        scaleDownUnavailableNode(client, node);
+
+        // the node and its run are marked even if the grace period has already expired,
+        // so that the run log records why the run is stopped
+        log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
+        labelUnavailableNode(node, timestamp);
+
+        pipelineRun.ifPresent(run -> {
+            labelUnavailableNodeRun(run, timestamp);
+            logUnavailableNodeRun(run, timestamp);
+        });
+
+        // check if instance already stopped or preempted/un-spotted and if so - scale down
+        if (graceExpired || !isNodeAliveOnCloud(node)) {
+            scaleDownUnavailableNode(client, node);
+        }
     }
 
     private boolean isUnavailableNodeLabeled(final KubernetesClient client, final Node node) {
@@ -460,7 +462,7 @@ public class ScaleDownHandler {
                 .map(run -> MapUtils.emptyIfNull(run.getEnvVars()).get(NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES))
                 .filter(StringUtils::isNotBlank)
                 .filter(StringUtils::isNumeric)
-                .map(NumberUtils::toInt)
+                .map(value -> NumberUtils.toInt(value, -1))
                 .filter(intValue -> intValue >= 0)
                 .map(Duration::ofMinutes)
                 .orElse(defaultDuration);
