@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -94,7 +93,6 @@ public final class KubernetesConstants {
     protected static final String EVENT_SELECTOR = "involvedObject.name";
 
     // node condition types
-    protected static final String OUT_OF_DISK = "OutOfDisk";
     protected static final String READY = "Ready";
     protected static final String MEMORY_PRESSURE = "MemoryPressure";
     protected static final String DISK_PRESSURE = "DiskPressure";
@@ -108,18 +106,11 @@ public final class KubernetesConstants {
     protected static final String UNKNOWN = "Unknown";
 
     protected static final Set<String> NODE_CONDITION_TYPES =
-            Stream.of(OUT_OF_DISK, READY, MEMORY_PRESSURE, DISK_PRESSURE,
+            Stream.of(READY, MEMORY_PRESSURE, DISK_PRESSURE,
                     NETWORK_UNAVAILABLE, CONFIG_OK, PID_PRESSURE)
                     .collect(Collectors.toSet());
 
     protected static final String TCP = "TCP";
-
-    public static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
-
-    static {
-        NODE_OUT_OF_ORDER_REASONS.add("KubeletOutOfDisk");
-        NODE_OUT_OF_ORDER_REASONS.add("NodeStatusUnknown");
-    }
 
     public static final List<DockerMount> DEFAULT_DOCKER_IN_DOCKER_MOUNTS = new ArrayList<>();
 

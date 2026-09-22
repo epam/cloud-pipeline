@@ -18,16 +18,20 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.MachineType;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.util.KubernetesTestUtils;
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeAddress;
+import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.api.model.NodeStatus;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -51,10 +55,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doReturn;
 
 public class NodesManagerTest {
@@ -64,6 +70,12 @@ public class NodesManagerTest {
     private static final String ANOTHER_TEST_ADDRESS = "222";
     private static final String TEST_NODENAME = "TEST";
     private static final String TEST_UUID = "0cd07fdc-4364-11eb-b378-0242ac130002";
+    private static final String MASTER_LABEL = "node-role.kubernetes.io/master";
+    private static final String READY_MASTER = "ready-master";
+    private static final String NOT_READY_MASTER = "not-ready-master";
+    private static final String UNKNOWN_MASTER = "unknown-master";
+    private static final String MASTER_WITHOUT_CONDITIONS = "master-without-conditions";
+    private static final int MASTER_PORT = 6443;
 
     private FilterNodesVO filterNodesVO;
     private Map<String, String> labels;
@@ -79,6 +91,9 @@ public class NodesManagerTest {
 
     @Mock
     private PipelineRunCRUDService mockRunCRUDService;
+
+    @Mock
+    private PreferenceManager mockPreferenceManager;
 
     @InjectMocks
     @Autowired
@@ -181,5 +196,50 @@ public class NodesManagerTest {
 
         doReturn(Arrays.asList(stopped, successful)).when(mockRunCRUDService).loadRunsForNodeName(eq(TEST_NODENAME));
         assertThat(nodesManager.loadRunIdForNode(TEST_NODENAME).getRunId()).isEqualTo(successful.getId());
+    }
+
+    @Test
+    public void shouldReturnOnlyReadyMasterNodes() {
+        final NonNamespaceOperation<Node, NodeList, DoneableNode, Resource<Node, DoneableNode>> mockMasters =
+                new KubernetesTestUtils.MockNodes()
+                        .mockWithLabel(MASTER_LABEL)
+                        .mockNodeList(Arrays.asList(
+                                masterNode(READY_MASTER, KubernetesConstants.TRUE),
+                                masterNode(NOT_READY_MASTER, KubernetesConstants.FALSE),
+                                masterNode(UNKNOWN_MASTER, KubernetesConstants.UNKNOWN),
+                                masterNode(MASTER_WITHOUT_CONDITIONS, null)))
+                        .and()
+                        .getMockedEntity();
+        doReturn(mockKubernetesClient).when(mockKubernetesManager).getKubernetesClient();
+        doReturn(mockMasters).when(mockKubernetesClient).nodes();
+        doCallRealMethod().when(mockKubernetesManager).isNodeReady(any());
+        doReturn(MASTER_PORT).when(mockPreferenceManager).getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT);
+
+        final List<MasterNode> masters = nodesManager.getMasterNodes();
+
+        assertThat(masters.stream().map(MasterNode::getName).collect(Collectors.toList()))
+                .containsExactly(READY_MASTER);
+        assertThat(masters.get(0).getPort()).isEqualTo(String.valueOf(MASTER_PORT));
+    }
+
+    private Node masterNode(final String name, final String readyStatus) {
+        final ObjectMeta metadata = new ObjectMeta();
+        metadata.setUid(TEST_UUID);
+        metadata.setName(name);
+        metadata.setLabels(Collections.singletonMap(MASTER_LABEL, ""));
+
+        final NodeStatus status = new NodeStatus();
+        status.setAddresses(Collections.emptyList());
+        if (readyStatus != null) {
+            final NodeCondition ready = new NodeCondition();
+            ready.setType(KubernetesConstants.READY);
+            ready.setStatus(readyStatus);
+            status.setConditions(Collections.singletonList(ready));
+        }
+
+        final Node node = new Node();
+        node.setMetadata(metadata);
+        node.setStatus(status);
+        return node;
     }
 }

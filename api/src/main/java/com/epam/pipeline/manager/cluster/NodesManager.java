@@ -305,7 +305,7 @@ public class NodesManager {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             return client.nodes().withLabel(MASTER_LABEL).list().getItems()
                     .stream()
-                    .filter(this::nodeIsReady)
+                    .filter(kubernetesManager::isNodeReady)
                     .map(node -> MasterNode.fromNode(node, defMasterPort))
                     .collect(Collectors.toList());
         }
@@ -328,13 +328,6 @@ public class NodesManager {
                         .map(NodeInstance::getPipelineRun))
             .map(run -> new RunInfo(run.getId()))
             .orElse(null);
-    }
-
-    private boolean nodeIsReady(final Node node) {
-        return CollectionUtils.emptyIfNull(node.getStatus().getConditions())
-                .stream().anyMatch(
-                    nc -> nc.getType().equalsIgnoreCase(KubernetesConstants.READY) &&
-                            nc.getStatus().equalsIgnoreCase(KubernetesConstants.TRUE));
     }
 
     /**

@@ -166,7 +166,7 @@ public class ScaleDownHandler {
 
     private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration defaultGrace) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        final LocalDateTime timestamp = kubernetesManager.getReadyHeartbeatDateTime(node).orElse(now);
 
         final Optional<PipelineRun> pipelineRun = findRun(node);
         final Duration grace = findNodeUnavailableGraceDuration(pipelineRun, defaultGrace);
@@ -286,7 +286,7 @@ public class ScaleDownHandler {
 
     private void processRecoveredNode(final Node node) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        final LocalDateTime timestamp = kubernetesManager.getReadyHeartbeatDateTime(node).orElse(now);
         log.debug("Marking recovered node {} #{}", getNodeName(node), getNodeLabel(node));
         labelRecoveredNode(node);
         findRun(node).ifPresent(run -> {

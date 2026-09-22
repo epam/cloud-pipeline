@@ -41,8 +41,8 @@ public class KubernetesManagerTest {
     private static final String MEMORY_PRESSURE = "MemoryPressure";
     private static final String DISK_PRESSURE = "DiskPressure";
     private static final String PID_PRESSURE = "PIDPressure";
-    private static final String OUT_OF_DISK = "OutOfDisk";
     private static final String READY = "Ready";
+    private static final String KERNEL_DEADLOCK = "KernelDeadlock";
 
     private static final String TRUE = "True";
     private static final String FALSE = "False";
@@ -50,12 +50,14 @@ public class KubernetesManagerTest {
 
     private static final String FLANNEL_IS_UP = "FlannelIsUp";
     private static final String NODE_STATUS_UNKNOWN = "NodeStatusUnknown";
-    private static final String KUBELET_OUT_OF_DISK = "KubeletOutOfDisk";
+    private static final String NODE_STATUS_NEVER_UPDATED = "NodeStatusNeverUpdated";
     private static final String KUBELET_READY = "KubeletReady";
     private static final String KUBELET_NOT_READY = "KubeletNotReady";
     private static final String KUBELET_HAS_SUFFICIENT_MEMORY = "KubeletHasSufficientMemory";
+    private static final String KUBELET_HAS_INSUFFICIENT_MEMORY = "KubeletHasInsufficientMemory";
     private static final String KUBELET_HAS_NO_DISK_PRESSURE = "KubeletHasNoDiskPressure";
     private static final String KUBELET_HAS_SUFFICIENT_PID = "KubeletHasSufficientPID";
+    private static final String KERNEL_HAS_NO_DEADLOCK = "KernelHasNoDeadlock";
 
     private final KubernetesManager manager = new KubernetesManager();
 
@@ -80,11 +82,17 @@ public class KubernetesManagerTest {
     }
 
     @Test
-    public void nodeShouldBeUnavailableIfKubeletIsOutOfDisk() {
+    public void nodeShouldBeUnavailableIfReadyConditionIsMissing() {
         assertTrue(manager.isNodeUnavailable(node(Arrays.asList(
                 condition(NETWORK_UNAVAILABLE, FALSE, FLANNEL_IS_UP, FLANNEL_HEARTBEAT),
-                condition(OUT_OF_DISK, TRUE, KUBELET_OUT_OF_DISK, KUBELET_HEARTBEAT),
-                condition(READY, TRUE, KUBELET_READY, KUBELET_HEARTBEAT)))));
+                condition(MEMORY_PRESSURE, FALSE, KUBELET_HAS_SUFFICIENT_MEMORY, KUBELET_HEARTBEAT)))));
+    }
+
+    @Test
+    public void nodeShouldBeUnavailableIfKubeletNeverPostedItsStatus() {
+        assertTrue(manager.isNodeUnavailable(node(Arrays.asList(
+                condition(NETWORK_UNAVAILABLE, FALSE, FLANNEL_IS_UP, FLANNEL_HEARTBEAT),
+                condition(READY, UNKNOWN, NODE_STATUS_NEVER_UPDATED, KUBELET_HEARTBEAT)))));
     }
 
     @Test
@@ -95,32 +103,73 @@ public class KubernetesManagerTest {
     }
 
     @Test
-    public void nodeShouldStayAvailableIfConditionsCarryNoReason() {
-        // a condition without a reason tells nothing about the node being out of order,
-        // and shall not become a termination trigger of its own
+    public void nodeShouldStayAvailableIfAnotherConditionKeepsStaleUnknownStatus() {
+        assertFalse(manager.isNodeUnavailable(node(Arrays.asList(
+                condition(NETWORK_UNAVAILABLE, FALSE, FLANNEL_IS_UP, FLANNEL_HEARTBEAT),
+                condition(MEMORY_PRESSURE, UNKNOWN, NODE_STATUS_UNKNOWN, FLANNEL_HEARTBEAT),
+                condition(READY, TRUE, KUBELET_READY, KUBELET_HEARTBEAT)))));
+    }
+
+    @Test
+    public void nodeAvailabilityShouldNotDependOnConditionReasons() {
+        assertTrue(manager.isNodeUnavailable(node(Arrays.asList(
+                condition(NETWORK_UNAVAILABLE, FALSE, null, FLANNEL_HEARTBEAT),
+                condition(READY, UNKNOWN, null, KUBELET_HEARTBEAT)))));
         assertFalse(manager.isNodeUnavailable(node(Arrays.asList(
                 condition(NETWORK_UNAVAILABLE, FALSE, null, FLANNEL_HEARTBEAT),
                 condition(READY, TRUE, null, KUBELET_HEARTBEAT)))));
     }
 
     @Test
-    public void lastConditionDateTimeShouldBeTakenFromReadyCondition() {
-        assertEquals(Optional.of(KUBELET_HEARTBEAT_DATE_TIME),
-                manager.getLastConditionDateTime(nodeWithDeadKubelet()));
+    public void nodeShouldBeReadyOnlyIfReadyStatusIsTrue() {
+        assertTrue(manager.isNodeReady(healthyNode()));
+        assertFalse(manager.isNodeReady(nodeWithDeadKubelet()));
+        assertFalse(manager.isNodeReady(node(Collections.singletonList(
+                condition(READY, FALSE, KUBELET_NOT_READY, KUBELET_HEARTBEAT)))));
+        assertFalse(manager.isNodeReady(node(Collections.singletonList(
+                condition(MEMORY_PRESSURE, FALSE, KUBELET_HAS_SUFFICIENT_MEMORY, KUBELET_HEARTBEAT)))));
+        assertFalse(manager.isNodeReady(node(null)));
+        assertFalse(manager.isNodeReady(null));
     }
 
     @Test
-    public void lastConditionDateTimeShouldIgnoreHeartbeatsOfOtherConditions() {
-        assertFalse(manager.getLastConditionDateTime(node(Arrays.asList(
+    public void readyHeartbeatDateTimeShouldBeTakenFromReadyCondition() {
+        assertEquals(Optional.of(KUBELET_HEARTBEAT_DATE_TIME),
+                manager.getReadyHeartbeatDateTime(nodeWithDeadKubelet()));
+    }
+
+    @Test
+    public void readyHeartbeatDateTimeShouldIgnoreHeartbeatsOfOtherConditions() {
+        assertFalse(manager.getReadyHeartbeatDateTime(node(Arrays.asList(
                 condition(NETWORK_UNAVAILABLE, FALSE, FLANNEL_IS_UP, FLANNEL_HEARTBEAT),
                 condition(MEMORY_PRESSURE, UNKNOWN, NODE_STATUS_UNKNOWN, KUBELET_HEARTBEAT)))).isPresent());
     }
 
     @Test
-    public void lastConditionDateTimeShouldBeEmptyWithoutHeartbeats() {
-        assertFalse(manager.getLastConditionDateTime(node(Collections.emptyList())).isPresent());
-        assertFalse(manager.getLastConditionDateTime(node(Collections.singletonList(
+    public void readyHeartbeatDateTimeShouldBeEmptyWithoutHeartbeats() {
+        assertFalse(manager.getReadyHeartbeatDateTime(node(Collections.emptyList())).isPresent());
+        assertFalse(manager.getReadyHeartbeatDateTime(node(Collections.singletonList(
                 condition(READY, UNKNOWN, NODE_STATUS_UNKNOWN, null)))).isPresent());
+    }
+
+    @Test
+    public void nodeStatusShouldListFailedAndUnrecognisedConditions() {
+        final Node node = node(Arrays.asList(
+                condition(NETWORK_UNAVAILABLE, FALSE, FLANNEL_IS_UP, FLANNEL_HEARTBEAT),
+                condition(MEMORY_PRESSURE, TRUE, KUBELET_HAS_INSUFFICIENT_MEMORY, KUBELET_HEARTBEAT),
+                condition(DISK_PRESSURE, FALSE, KUBELET_HAS_NO_DISK_PRESSURE, KUBELET_HEARTBEAT),
+                condition(KERNEL_DEADLOCK, FALSE, KERNEL_HAS_NO_DEADLOCK, KUBELET_HEARTBEAT),
+                condition(READY, UNKNOWN, NODE_STATUS_UNKNOWN, KUBELET_HEARTBEAT)));
+
+        assertEquals("MemoryPressure (True KubeletHasInsufficientMemory), "
+                        + "KernelDeadlock (False KernelHasNoDeadlock), "
+                        + "Ready (Unknown NodeStatusUnknown)",
+                manager.updateStatusWithNodeConditions(new StringBuilder(), node));
+    }
+
+    @Test
+    public void nodeStatusShouldStayUnchangedIfAllConditionsAreHealthy() {
+        assertEquals("", manager.updateStatusWithNodeConditions(new StringBuilder(), healthyNode()));
     }
 
     private Node nodeWithDeadKubelet() {

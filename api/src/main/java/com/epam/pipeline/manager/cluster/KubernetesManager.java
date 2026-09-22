@@ -340,7 +340,7 @@ public class KubernetesManager {
         List<NodeCondition> conditions = node.getStatus().getConditions();
         if (!CollectionUtils.isEmpty(conditions)) {
             for (NodeCondition condition : conditions) {
-                if (isOutOfDiskFailure(condition) || isReadyFailure(condition) || isMemoryPressureFailure(condition)
+                if (isReadyFailure(condition) || isMemoryPressureFailure(condition)
                         || isDiskPressureFailure(condition) || isNetworkUnavailableFailure(condition)
                         || isConfigOKFailure(condition)) {
                     updateStatus(status, condition);
@@ -743,10 +743,7 @@ public class KubernetesManager {
 
     private boolean isReadyNode(String nodeName, KubernetesClient client) {
         Node node = client.nodes().withName(nodeName).get();
-        return node != null && node.getStatus().getConditions().stream()
-                .filter(nodeCondition -> nodeCondition.getType().equals(KubernetesConstants.READY))
-                .allMatch(nodeCondition -> nodeCondition.getStatus().equals(KubernetesConstants.TRUE))
-                && systemPodsReady(client, nodeName);
+        return isNodeReady(node) && systemPodsReady(client, nodeName);
     }
 
     private boolean systemPodsReady(KubernetesClient client, String nodeName) {
@@ -942,11 +939,6 @@ public class KubernetesManager {
                 .append(String.format(" (%s %s)", condition.getStatus(), condition.getReason()));
     }
 
-    private boolean isOutOfDiskFailure(NodeCondition condition) {
-        return condition.getType().equals(KubernetesConstants.OUT_OF_DISK)
-                && condition.getStatus().equals(KubernetesConstants.TRUE);
-    }
-
     private boolean isReadyFailure(NodeCondition condition) {
         return condition.getType().equals(KubernetesConstants.READY)
                 && (condition.getStatus().equals(KubernetesConstants.FALSE)
@@ -985,42 +977,46 @@ public class KubernetesManager {
     }
 
     public boolean isNodeAvailable(final Node node) {
-        return !isNodeOutOfOrder(node);
+        return !isNodeUnavailable(node);
     }
 
     public boolean isNodeUnavailable(final Node node) {
-        return isNodeOutOfOrder(node);
+        // only the node lifecycle controller sets the Ready status to Unknown, once the kubelet stops posting
+        // the node status, while the kubelet itself reports either True or False and rewrites it on recovery
+        final boolean unavailable = findNodeCondition(node, KubernetesConstants.READY)
+                .map(condition -> KubernetesConstants.UNKNOWN.equals(condition.getStatus()))
+                .orElse(true);
+        if (unavailable) {
+            log.debug("Node {} is out of order: {}", getNodeName(node), getConditions(node));
+        }
+        return unavailable;
     }
 
-    private boolean isNodeOutOfOrder(final Node node) {
-        final List<NodeCondition> conditions = getConditions(node);
-        if (CollectionUtils.isEmpty(conditions)) {
-            return true;
-        }
-        // any condition may carry an out of order reason: the node lifecycle controller marks the conditions
-        // it owns as NodeStatusUnknown, while the ones owned by a network plugin keep their original reasons
-        final boolean outOfOrder = conditions.stream().anyMatch(this::isOutOfOrderCondition);
-        if (outOfOrder) {
-            log.debug("Node is out of order: {}", conditions);
-        }
-        return outOfOrder;
-    }
-
-    private boolean isOutOfOrderCondition(final NodeCondition condition) {
-        return Optional.ofNullable(condition.getReason())
-                .map(reason -> KubernetesConstants.NODE_OUT_OF_ORDER_REASONS.stream().anyMatch(reason::contains))
+    public boolean isNodeReady(final Node node) {
+        return findNodeCondition(node, KubernetesConstants.READY)
+                .map(condition -> KubernetesConstants.TRUE.equals(condition.getStatus()))
                 .orElse(false);
     }
 
-    public Optional<LocalDateTime> getLastConditionDateTime(final Node node) {
+    public Optional<LocalDateTime> getReadyHeartbeatDateTime(final Node node) {
         // the Ready heartbeat is the kubelet liveness signal, the conditions owned by a network plugin
         // stop being updated long before the kubelet does
-        return getConditions(node).stream()
-                .filter(condition -> KubernetesConstants.READY.equals(condition.getType()))
+        return findNodeCondition(node, KubernetesConstants.READY)
                 .map(NodeCondition::getLastHeartbeatTime)
-                .filter(Objects::nonNull)
-                .findFirst()
                 .map(dateTime -> LocalDateTime.parse(dateTime, KubernetesConstants.KUBE_DATE_FORMATTER));
+    }
+
+    private Optional<NodeCondition> findNodeCondition(final Node node, final String type) {
+        return getConditions(node).stream()
+                .filter(condition -> type.equals(condition.getType()))
+                .findFirst();
+    }
+
+    private String getNodeName(final Node node) {
+        return Optional.ofNullable(node)
+                .map(Node::getMetadata)
+                .map(ObjectMeta::getName)
+                .orElse(null);
     }
 
     private List<NodeCondition> getConditions(final Node node) {
