@@ -108,6 +108,13 @@ class KubeProvider(object):
         pykube.Node(self.api, obj).update()
         utils.pipe_log('Instance {} is assigned to RunID: {}\n-'.format(nodename, run_id))
 
+    @staticmethod
+    def is_node_ready(node_conditions):
+        for condition in node_conditions:
+            if condition.get('type') == u'Ready':
+                return condition.get('status') == u'True'
+        return False
+
     def verify_regnode(self, ins_id, nodename, nodename_full, num_rep, time_rep):
 
         utils.pipe_log('Waiting for instance {} registration in cluster with name {}'.format(ins_id, nodename))
@@ -128,8 +135,8 @@ class KubeProvider(object):
             rep = 0
             while rep <= num_rep:
                 node = pykube.Node.objects(self.api).filter(field_selector={'metadata.name': ret_namenode})
-                status = node.response['items'][0]['status']['conditions'][3]['status']
-                if status == u'True':
+                node_conditions = node.response['items'][0]['status']['conditions']
+                if self.is_node_ready(node_conditions):
                     utils.pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                     break
                 rep = utils.increment_or_fail(num_rep, rep,

@@ -703,6 +703,13 @@ def get_nodename(api, nodename):
         return ''
 
 
+def is_node_ready(node_conditions):
+    for condition in node_conditions:
+        if condition.get("type") == u"Ready":
+            return condition.get("status") == u"True"
+    return False
+
+
 def verify_regnode(ins_id, num_rep, time_rep, api):
     ret_namenode = ''
     rep = 0
@@ -719,8 +726,8 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
         rep = 0
         while rep <= num_rep:
             node = pykube.Node.objects(api).filter(field_selector={'metadata.name': ret_namenode})
-            status = node.response['items'][0]['status']['conditions'][3]['status']
-            if status == u'True':
+            node_conditions = node.response['items'][0]['status']['conditions']
+            if is_node_ready(node_conditions):
                 pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                 break
             rep = increment_or_fail(num_rep, rep,
