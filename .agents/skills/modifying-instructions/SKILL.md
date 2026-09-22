@@ -33,6 +33,18 @@ Prefer a skill over a Claude subagent definition.
 the default: cut anything derivable from the file it describes. When you cut something a reader still
 needs, **move** it.
 
+## Voice
+
+State a rule directly, imperative — never "this skill/file says" about itself.
+
+Don't narrate the reasoning behind a decision, and don't cite `.claude/settings.json` or another
+instruction file as the authority for a rule stated here.
+
+Illustrate a rule with what decides the outcome, not a directory's current state — repository
+structure and coupling facts in root `AGENTS.md` are the exception, named directly.
+
+Cut removed content outright, with no "X was removed" or "X is not relevant here" left behind.
+
 ## What each vendor actually does
 
 **Vendor** is the tool an agent runs inside — Claude Code, Cursor, Copilot. Copilot is two of them:
