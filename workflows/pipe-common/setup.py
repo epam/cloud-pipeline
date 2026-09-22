@@ -15,7 +15,7 @@
 import sys
 from setuptools import setup, find_packages
 
-_PY3  = sys.version_info >= (3,)
+_PY3_12  = sys.version_info >= (3, 12)
 
 # Same version for both Python 2 and 3
 _deps_shared = [
@@ -88,8 +88,8 @@ _deps_py3 = [
 
 _install_requires = (
     _deps_shared
-    + (_deps_py3 if _PY3 else _deps_py2)
-    + ['setuptools==68.0' if _PY3 else 'setuptools==44.1.1']
+    + (_deps_py3 if _PY3_12 else _deps_py2)
+    + ['setuptools==68.0' if _PY3_12 else 'setuptools==44.1.1']
 )
 
 setup(name='pipeline',
