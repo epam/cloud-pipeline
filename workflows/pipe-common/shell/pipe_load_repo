@@ -30,7 +30,7 @@ then
     PIPELINE_MOUNT=${REPOSITORY_MOUNT}/${PIPELINE_NAME}
     mkdir -p ${REPOSITORY_MOUNT}
     mkdir -p ${PIPELINE_MOUNT}
-    MOUNT_COMMAND=$($CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/clone_pipeline.py --pipeline ${PIPELINE_NAME})
+    MOUNT_COMMAND=$($CP_PYTHON_PATH ${COMMON_REPO_DIR}/scripts/clone_pipeline.py --pipeline ${PIPELINE_NAME})
     gitfs  "${MOUNT_COMMAND}" "${PIPELINE_MOUNT}" -o log=${LOG_DIR}/gitfs.log,allow_other=true
     if [ $? -ne 0 ]
     then

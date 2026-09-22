@@ -26,6 +26,16 @@ try:
 except ImportError:
     from urllib import quote
 
+try:
+    _UTC = datetime.timezone.utc
+except AttributeError:
+    class _UTC(datetime.tzinfo):
+        _ZERO = datetime.timedelta(0)
+        def utcoffset(self, dt): return self._ZERO
+        def tzname(self, dt): return 'UTC'
+        def dst(self, dt): return self._ZERO
+    _UTC = _UTC()
+
 from .region import CloudRegion
 from .datastorage import DataStorage, FileShareMount, DataStorageWithShareMount
 from .token import StaticToken
@@ -149,7 +159,7 @@ class CommmitStatus:
 class LogEntry:
     def __init__(self, run_id, status, text, task, instance):
         self.runId = run_id
-        self.date = datetime.datetime.utcnow().strftime(DATE_FORMAT)
+        self.date = datetime.datetime.now(_UTC).strftime(DATE_FORMAT)
         self.status = status
         self.logText = text
         self.taskName = task
@@ -163,7 +173,7 @@ class LogEntry:
 # Represents a status entry in format supported by Pipeline API
 class StatusEntry:
     def __init__(self, status):
-        self.endDate = datetime.datetime.utcnow().strftime(DATE_FORMAT)
+        self.endDate = datetime.datetime.now(_UTC).strftime(DATE_FORMAT)
         self.status = status
 
     def to_json(self):
@@ -340,7 +350,7 @@ class PipelineAPI:
                     result = response.json()
                     return result['payload'] if 'payload' in result else None
             except Exception as e:
-                sys.stderr.write('An error has occurred during request to API: {}'.format(str(e.message)))
+                sys.stderr.write('An error has occurred during request to API: {}'.format(str(e)))
             time.sleep(self.timeout)
         raise RuntimeError('Exceeded maximum retry count {} for API request'.format(self.attempts))
 
@@ -492,7 +502,7 @@ class PipelineAPI:
             result = self.execute_request(str(self.api_url) + self.GET_RUN_URL.format(run_id))
             return {} if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to load run.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load run.", "Error message: {}".format(str(e)))
 
     def load_task(self, run_id, task_name, parameters=None):
         url = self.GET_TASK_URL.format(run_id, task_name)
@@ -501,7 +511,7 @@ class PipelineAPI:
         try:
             return self.execute_request(str(self.api_url) + url)
         except Exception as e:
-            raise RuntimeError("Failed to load task {}. API response: {}".format(run_id, str(e.message)))
+            raise RuntimeError("Failed to load task {}. API response: {}".format(run_id, str(e)))
     
     def launch_pipeline(self, pipeline_id, pipeline_version, parameters,
                         cmd=None, docker=None, instance=None, disk=None, parent_node_id=None, parent_run_id=None):
@@ -619,7 +629,7 @@ class PipelineAPI:
                     print("Failed to save logs to file")
         except Exception as e:
             if not omit_console:
-                print("Failed to save task log: " + str(e.message))
+                print("Failed to save task log: " + str(e))
 
     def docker_registry_load_all(self):
         try:
@@ -720,7 +730,7 @@ class PipelineAPI:
             return [DataStorage.from_json(item) for item in result]
         except Exception as e:
             raise RuntimeError("Failed to load storages with READ and WRITE permissions. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def load_available_storages(self):
         try:
@@ -730,7 +740,7 @@ class PipelineAPI:
             return [DataStorage.from_json(item) for item in result]
         except Exception as e:
             raise RuntimeError("Failed to load storages with READ and WRITE permissions. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def load_available_storages_with_share_mount(self, from_region_id=None):
         try:
@@ -743,7 +753,7 @@ class PipelineAPI:
             return [DataStorageWithShareMount.from_json(item) for item in result]
         except Exception as e:
             raise RuntimeError("Failed to load storages with READ and WRITE permissions. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def load_metadata(self, entity_id, entity_class):
         try:
@@ -759,7 +769,7 @@ class PipelineAPI:
             return result[0]["data"]
         except Exception as e:
             raise RuntimeError("Failed to load metadata for the given entity. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def search_metadata(self, entity_key, entity_value, entity_class):
         try:
@@ -773,7 +783,7 @@ class PipelineAPI:
             return result
         except Exception as e:
             raise RuntimeError("Failed to search metadata for the given entity. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def load_metadata_efficiently(self, entity_id, entity_class):
         all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
@@ -783,6 +793,15 @@ class PipelineAPI:
         data = [{"entityId": entity_id, "entityClass": entity_class} for entity_id in entity_ids]
         return self._request('POST', self.LOAD_METADATA, data=data) or []
 
+    def load_entities(self, entities_ids):
+        try:
+            result = self.execute_request(str(self.api_url) + self.LOAD_ENTITIES_DATA, method='post',
+                                          data="[%s]" % entities_ids)
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to load entities data. "
+                               "Error message: {}".format(str(e)))
+
     def save_metadata_entity(self, entity):
         try:
             result = self.execute_request(str(self.api_url) + self.SAVE_METADATA_ENTITY, method='post',
@@ -790,7 +809,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to save metadata entities. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     # {
     #     "entityId": 1,
@@ -809,7 +828,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to update metadata entities. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def find_metadata_entity(self, folder_id, external_id, class_name):
         try:
@@ -819,7 +838,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to find metadata entities. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def download_metadata_entities(self, output_path, folder_id, entity_class, entity_ids=None, file_format=None):
         endpoint = 'metadataEntity/download?folderId={}&entityClass={}'.format(folder_id, entity_class)
@@ -835,7 +854,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to load DTS registry. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def load_configuration(self, configuration_id):
         try:
@@ -843,7 +862,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to load configuration. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def get_preference(self, preference_name):
         try:
@@ -851,7 +870,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to get system preference %s. "
-                               "Error message: %s" % (preference_name, e.message))
+                               "Error message: %s" % (preference_name, str(e)))
 
     def get_contextual_preference(self, preference_name, preference_level, resource_id):
         try:
@@ -863,7 +882,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
-                               "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+                               "Error message: %s" % (preference_name, preference_level, str(resource_id), str(e)))
 
     def search_contextual_preferences(self, preference_name):
         try:
@@ -875,7 +894,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to get contextual preference %s. "
-                               "Error message: %s" % (preference_name, e.message))
+                               "Error message: %s" % (preference_name, str(e)))
 
     # "preference_level" accepts only "TOOL" value for now. Any other value will throw an error
     # "resource_id"=-1 is used when you don't need to consider the tool's setting. Only user and group
@@ -897,7 +916,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to search contextual preference %s for %s level and resource id %s. "
-                               "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+                               "Error message: %s" % (preference_name, preference_level, str(resource_id), str(e)))
 
     def load_tool_version_settings(self, tool_id, version):
         get_tool_version_settings_url = self.TOOL_VERSION_SETTINGS % tool_id
@@ -908,7 +927,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to load settings for tool %d. "
-                               "Error message: %s" % (tool_id, e.message))
+                               "Error message: %s" % (tool_id, str(e)))
 
     def create_setting_for_tool_version(self, tool_id, version, settings):
         tool_version_settings_url = self.TOOL_VERSION_SETTINGS % tool_id
@@ -919,7 +938,7 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to load settings for tool %d. "
-                               "Error message: %s" % (tool_id, e.message))
+                               "Error message: %s" % (tool_id, str(e)))
 
     def add_pipeline_repository_hook(self, pipeline_id):
         try:
@@ -943,7 +962,7 @@ class PipelineAPI:
             return {} if result is None else result
         except Exception as e:
             raise RuntimeError('Search failed for query %s and %s types' % (query, ','.join(types)),
-                               "Error message: %s" % e.message)
+                               "Error message: %s" % str(e))
 
     def create_folder(self, name, parent_id=None):
         try:
@@ -957,7 +976,7 @@ class PipelineAPI:
             return {} if result is None else result
         except Exception as e:
             raise RuntimeError("Failed to create folder with name %s." % name,
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def delete_folder(self, folder_id):
         try:
@@ -965,7 +984,7 @@ class PipelineAPI:
                                  method="delete")
         except Exception as e:
             raise RuntimeError("Failed to delete folder with ID %d." % folder_id,
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def create_pipeline(self, pipeline_data):
         try:
@@ -973,7 +992,7 @@ class PipelineAPI:
                                           data=json.dumps(pipeline_data))
             return {} if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to create pipeline.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to create pipeline.", "Error message: {}".format(str(e)))
 
     def delete_pipeline(self, pipeline_id):
         try:
@@ -981,7 +1000,7 @@ class PipelineAPI:
                                  method="delete")
         except Exception as e:
             raise RuntimeError("Failed to delete pipeline with ID %d." % pipeline_id,
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def datastorage_create(self, datastorage_data, process_on_cloud=True):
         try:
@@ -989,7 +1008,7 @@ class PipelineAPI:
             result = self.execute_request(url, method="post", data=json.dumps(datastorage_data))
             return {} if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to create pipeline.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to create pipeline.", "Error message: {}".format(str(e)))
 
     def delete_datastorage(self, datastorage_id, process_on_cloud=True):
         try:
@@ -997,7 +1016,7 @@ class PipelineAPI:
             self.execute_request(str(self.api_url) + url, method="delete")
         except Exception as e:
             raise RuntimeError("Failed to delete data storage with ID %d." % datastorage_id,
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def create_issue(self, name, text, entity_id, entity_class):
         try:
@@ -1012,13 +1031,13 @@ class PipelineAPI:
             result = self.execute_request(str(self.api_url) + self.ISSUE_URL, method="post", data=json.dumps(data))
             return {} if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to create issue.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to create issue.", "Error message: {}".format(str(e)))
 
     def delete_issue(self, issue_id):
         try:
             self.execute_request(str(self.api_url) + self.ISSUE_URL + "/" + issue_id, method="delete")
         except Exception as e:
-            raise RuntimeError("Failed to delete issue.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to delete issue.", "Error message: {}".format(str(e)))
 
     def create_comment(self, issue_id, text):
         try:
@@ -1029,7 +1048,7 @@ class PipelineAPI:
                                           method="post", data=json.dumps(data))
             return {} if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to create issue comment.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to create issue comment.", "Error message: {}".format(str(e)))
 
     def create_notification(self, subject, body, to_user, copy_users=None, parameters=None):
         try:
@@ -1044,7 +1063,7 @@ class PipelineAPI:
                                           data=json.dumps(data))
             return {} if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to create a notification.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to create a notification.", "Error message: {}".format(str(e)))
 
     def generate_temporary_credentials(self, actions):
         try:
@@ -1062,14 +1081,14 @@ class PipelineAPI:
             else:
                 raise RuntimeError("No actions are specified to generate credentials for.")
         except Exception as e:
-            raise RuntimeError("Failed to generate temporary credentials.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to generate temporary credentials.", "Error message: {}".format(str(e)))
 
     def get_regions(self):
         try:
             result = self.execute_request(str(self.api_url) + self.REGION_URL, method="get")
             return [] if result is None else [CloudRegion.from_json(region_json) for region_json in result]
         except Exception as e:
-            raise RuntimeError("Failed to get all regions.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to get all regions.", "Error message: {}".format(str(e)))
 
     def find_datastorage(self, id):
         """
@@ -1083,7 +1102,7 @@ class PipelineAPI:
             return {} if result is None else DataStorage.from_json(result)
         except Exception as e:
             raise RuntimeError("Failed to find storage by its id or name. "
-                               "Error message: {}".format(str(e.message)))
+                               "Error message: {}".format(str(e)))
 
     def get_allowed_instance_types(self, region_id, spot=False):
         try:
@@ -1091,7 +1110,7 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to get allowed instances for region %s." % region_id,
-                               "Error message: %s" % str(e.message))
+                               "Error message: %s" % str(e))
 
     def get_storage_download_url(self, storage_id, paths):
         try:
@@ -1103,7 +1122,7 @@ class PipelineAPI:
             return [] if result is None else result
         except Exception as e:
             raise RuntimeError("Failed to load generated download url for storage ID {}. "
-                               "Error message: {}".format(str(storage_id), str(e.message)))
+                               "Error message: {}".format(str(storage_id), str(e)))
 
     def get_storage_upload_url(self, storage_id, paths):
         try:
@@ -1112,7 +1131,7 @@ class PipelineAPI:
             return [] if result is None else result
         except Exception as e:
             raise RuntimeError("Failed to load generated upload url for storage ID {}. "
-                               "Error message: {}".format(str(storage_id), str(e.message)))
+                               "Error message: {}".format(str(storage_id), str(e)))
 
     def load_profile_credentials(self, profile_id, region_id=None):
         try:
@@ -1122,7 +1141,7 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to generate profile credentials for profile ID '{}'. "
-                               "Error message: {}".format(str(profile_id), str(e.message)))
+                               "Error message: {}".format(str(profile_id), str(e)))
 
     def load_profiles_for_user(self, user_id=None):
         try:
@@ -1132,7 +1151,7 @@ class PipelineAPI:
             result = self.execute_request(url, method='get')
             return [] if result is None else result
         except Exception as e:
-            raise RuntimeError("Failed to load profile credentials. Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load profile credentials. Error message: {}".format(str(e)))
 
     def get_region(self, region_id):
         try:
@@ -1140,14 +1159,14 @@ class PipelineAPI:
             return self.execute_request(url, method="get")
         except Exception as e:
             raise RuntimeError("Failed to get region by ID '{}'. Error message: {}".format(str(region_id),
-                                                                                           str(e.message)))
+                                                                                           str(e)))
 
     def load_current_user(self):
         try:
             url = str(self.api_url) + self.LOAD_CURRENT_USER
             return self.execute_request(url, method='get')
         except Exception as e:
-            raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load current user. Error message: {}".format(str(e)))
 
     def generate_user_token(self, user_name=None, duration=None):
         try:
@@ -1161,7 +1180,7 @@ class PipelineAPI:
                 url += '?' + '&'.join(params)
             return self.execute_request(url, method='get')
         except Exception as e:
-            raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load user token. Error message: {}".format(str(e)))
 
     def list_named_tokens(self, user_id=None):
         try:
@@ -1171,7 +1190,7 @@ class PipelineAPI:
             result = self.execute_request(url, method='get')
             return result if result is not None else []
         except Exception as e:
-            raise RuntimeError("Failed to list named tokens. Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to list named tokens. Error message: {}".format(str(e)))
 
     def revoke_named_token_for_current_user(self, jti):
         try:
@@ -1180,7 +1199,7 @@ class PipelineAPI:
             return self.execute_request(url, method='delete')
         except Exception as e:
             raise RuntimeError(
-                "Failed to revoke named token for current user. Error message: {}".format(str(e.message)))
+                "Failed to revoke named token for current user. Error message: {}".format(str(e)))
 
     def generate_user_token_efficiently(self, user_name=None, duration=None):
         args = {}
@@ -1197,35 +1216,35 @@ class PipelineAPI:
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
         except Exception as e:
-            raise RuntimeError("Failed to load roles.", "Error message: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load roles.", "Error message: {}".format(str(e)))
 
     def load_role(self, role_id):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLE.format(role_id))
         except Exception as e:
             raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
-                                                                                             str(e.message)))
+                                                                                             str(e)))
 
     def load_user_by_name(self, user):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_USER_BY_NAME.format(user))
         except Exception as e:
             raise RuntimeError("Failed to load user by name '{}'.", "Error message: {}".format(str(user),
-                                                                                               str(e.message)))
+                                                                                               str(e)))
 
     def load_user(self, user_id):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_USER.format(user_id))
         except Exception as e:
             raise RuntimeError("Failed to load user by id '{}'.", "Error message: {}".format(str(user_id),
-                                                                                             str(e.message)))
+                                                                                             str(e)))
 
     def load_role_by_name(self, name):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLE_BY_NAME.format(name))
         except Exception as e:
             raise RuntimeError("Failed to load role by name '{}'.", "Error message: {}".format(str(name),
-                                                                                               str(e.message)))
+                                                                                               str(e)))
 
     def load_users(self):
         return self._request('GET', 'users') or []
@@ -1237,7 +1256,7 @@ class PipelineAPI:
             return [] if result is None else result
         except Exception as e:
             raise RuntimeError("Failed to launch configuration {}. "
-                               "Error message: {}".format(str(data['id']), str(e.message)))
+                               "Error message: {}".format(str(data['id']), str(e)))
 
     def get_edge_external_url(self, region=None):
         endpoint = 'cluster/edge/externalUrl'
@@ -1251,7 +1270,7 @@ class PipelineAPI:
                                         self.LIFECYCLE_RULES_FOR_STORAGE_URL.format(id=datastorage_id))
         except Exception as e:
             raise RuntimeError("Failed to load lifecycle rules by datastorage ID '{}'.",
-                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+                               "Error message: {}".format(str(datastorage_id), str(e)))
 
     def load_lifecycle_rule(self, datastorage_id, rule_id):
         try:
@@ -1260,7 +1279,7 @@ class PipelineAPI:
                                             id=datastorage_id, rule_id=rule_id))
         except Exception as e:
             raise RuntimeError("Failed to load lifecycle rule by ID '{}'.",
-                               "Error message: {}".format(str(rule_id), str(e.message)))
+                               "Error message: {}".format(str(rule_id), str(e)))
 
     def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
         try:
@@ -1269,7 +1288,7 @@ class PipelineAPI:
                                         method='post')
         except Exception as e:
             raise RuntimeError("Failed to create lifecycle rule execution for rule ID '{}'.",
-                               "Error message: {}".format(str(rule_id), str(e.message)))
+                               "Error message: {}".format(str(rule_id), str(e)))
 
     def create_lifecycle_rule(self, datastorage_id, rule):
         try:
@@ -1277,7 +1296,7 @@ class PipelineAPI:
                                             id=datastorage_id), data=json.dumps(rule), method='post')
         except Exception as e:
             raise RuntimeError("Failed to create lifecycle rule for datastorage ID '{}'.",
-                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+                               "Error message: {}".format(str(datastorage_id), str(e)))
 
     def delete_lifecycle_rule(self, datastorage_id, rule_id):
         try:
@@ -1285,7 +1304,7 @@ class PipelineAPI:
                                             id=datastorage_id, rule_id=rule_id), method='delete')
         except Exception as e:
             raise RuntimeError("Failed to create lifecycle rule for datastorage ID '{}'.",
-                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+                               "Error message: {}".format(str(datastorage_id), str(e)))
 
     def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
 
@@ -1307,7 +1326,7 @@ class PipelineAPI:
                                             id=datastorage_id, rule_id=rule_id, filter=params if params else ""))
         except Exception as e:
             raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}'.",
-                               "Error message: {}".format(str(rule_id), str(e.message)))
+                               "Error message: {}".format(str(rule_id), str(e)))
 
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
         try:
@@ -1316,7 +1335,7 @@ class PipelineAPI:
                                             id=datastorage_id, execution_id=execution_id, status=status), method='put')
         except Exception as e:
             raise RuntimeError("Failed to update lifecycle rule execution status by ID '{}' status to update: {}.",
-                               "Error message: {}".format(str(execution_id), status, str(e.message)))
+                               "Error message: {}".format(str(execution_id), status, str(e)))
 
     def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
         try:
@@ -1325,7 +1344,7 @@ class PipelineAPI:
                                             id=datastorage_id, execution_id=execution_id), method='delete')
         except Exception as e:
             raise RuntimeError("Failed to delete lifecycle rule execution by ID '{}'.",
-                               "Error message: {}".format(str(execution_id), str(e.message)))
+                               "Error message: {}".format(str(execution_id), str(e)))
 
     def prolong_lifecycle_rule(self, datastorage_id, rule_id, path, days, force=False):
         try:
@@ -1333,7 +1352,7 @@ class PipelineAPI:
                                             id=datastorage_id, rule_id=rule_id, path=path, days=days, force=force))
         except Exception as e:
             raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
-                               "Error message: {}".format(str(rule_id), str(e.message)))
+                               "Error message: {}".format(str(rule_id), str(e)))
 
     def load_datastorage_item_content(self, storage_id, path, version=None):
         try:
@@ -1343,7 +1362,7 @@ class PipelineAPI:
             return self._request(endpoint=formed_url, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage item content: storage_id - '{}', path - '{}', version - '{}'.",
-                               "Error message: {}".format(storage_id, path, version, str(e.message)))
+                               "Error message: {}".format(storage_id, path, version, str(e)))
 
     def search_datastorage_items_by_tag(self, request):
         try:
@@ -1352,14 +1371,14 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to search datastorage items by tag: request - '{}'.",
-                               "Error message: {}".format(request, str(e.message)))
+                               "Error message: {}".format(request, str(e)))
 
     def load_datastorage(self, storage_id):
         try:
             return self._request(endpoint=self.DATA_STORAGE_LOAD_URL.format(id=storage_id), http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage by id: '{}'.",
-                               "Error message: {}".format(storage_id, str(e.message)))
+                               "Error message: {}".format(storage_id, str(e)))
 
     def load_datastorage_item_with_tags(self, storage_id, path, show_versions=False):
         try:
@@ -1369,7 +1388,7 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to load datastorage item with tags: storage_id - '{}', path - '{}', show_versions - '{}'.",
-                               "Error message: {}".format(storage_id, path, show_versions, str(e.message)))
+                               "Error message: {}".format(storage_id, path, show_versions, str(e)))
 
     def insert_datastorage_item_tags(self, storage_id, request):
         try:
@@ -1378,7 +1397,7 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to batch insert tags: request - '{}'.",
-                               "Error message: {}".format(request, str(e.message)))
+                               "Error message: {}".format(request, str(e)))
 
     def upsert_datastorage_item_tags(self, storage_id, request):
         try:
@@ -1387,7 +1406,7 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to batch upsert tags: request - '{}'.",
-                               "Error message: {}".format(request, str(e.message)))
+                               "Error message: {}".format(request, str(e)))
 
     def delete_datastorage_item_tags(self, storage_id, request):
         try:
@@ -1396,7 +1415,7 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to batch delete tags: request - '{}'.",
-                               "Error message: {}".format(request, str(e.message)))
+                               "Error message: {}".format(request, str(e)))
 
     def delete_all_datastorage_item_tags(self, storage_id, request):
         try:
@@ -1405,19 +1424,19 @@ class PipelineAPI:
             )
         except Exception as e:
             raise RuntimeError("Failed to batch delete all tags: request - '{}'.",
-                               "Error message: {}".format(request, str(e.message)))
+                               "Error message: {}".format(request, str(e)))
 
     def load_notification_templates(self):
         try:
             return self.execute_request(str(self.api_url) + self.NOTIFICATION_TEMPLATE_URL)
         except Exception as e:
-            raise RuntimeError("Failed to load notification templates. Error message {}", str(e.message))
+            raise RuntimeError("Failed to load notification templates. Error message {}", str(e))
 
     def load_notification_settings(self):
         try:
             return self.execute_request(str(self.api_url) + self.NOTIFICATION_SETTING_URL)
         except Exception as e:
-            raise RuntimeError("Failed to load notification settings. Error message {}", str(e.message))
+            raise RuntimeError("Failed to load notification settings. Error message {}", str(e))
 
     def filter_lifecycle_restore_action(self, datastorage_id, filter_obj):
         try:
@@ -1427,7 +1446,7 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError(
                 "Failed to load lifecycle restore actions for storage: '{}', and filters: '{}'.".format(
-                    str(datastorage_id), filter_obj), "Error message: {}".format(str(e.message)))
+                    str(datastorage_id), filter_obj), "Error message: {}".format(str(e)))
 
     def update_lifecycle_restore_action(self, datastorage_id, restore_action):
         try:
@@ -1437,7 +1456,7 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError(
                 "Failed to update lifecycle restore actions for storage: '{}', action: '{}'.".format(
-                    str(datastorage_id), restore_action), "Error message: {}".format(str(e.message)))
+                    str(datastorage_id), restore_action), "Error message: {}".format(str(e)))
 
     def get_paths_size(self, paths):
         try:
@@ -1446,13 +1465,13 @@ class PipelineAPI:
                                         data=json.dumps(paths), method='post')
         except Exception as e:
             raise RuntimeError(
-                "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e.message)))
+                "Failed get size for paths: '{}'. Error message: {}".format(','.join(paths), str(e)))
 
     def load_categorical_attributes_dictionary(self):
         try:
             return self._request(endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="get")
         except Exception as e:
-            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e)))
 
     def upsert_categorical_attribute(self, attribute):
         try:
@@ -1460,7 +1479,7 @@ class PipelineAPI:
                 endpoint=self.CATEGORICAL_ATTRIBUTE_URL, http_method="post", data=attribute
             )
         except Exception as e:
-            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load categorical attributes dictionary: {}".format(str(e)))
 
     def grant_permissions(self, permissions_object):
         try:
@@ -1468,7 +1487,7 @@ class PipelineAPI:
                 endpoint=self.GRANT_PERMISSIONS_URL, http_method="post", data=permissions_object
             )
         except Exception as e:
-            raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e.message)))
+            raise RuntimeError("Failed to grant permissions, object: {} error: {}".format(permissions_object, str(e)))
 
     def get_permissions(self, entity_id, entity_class):
         try:
@@ -1476,7 +1495,7 @@ class PipelineAPI:
                                    .format(entity_id, entity_class), http_method="get")
             return result['permissions'] if 'permissions' in result else None
         except Exception as e:
-            raise RuntimeError("Failed to load permissions, entity_id: {} error: {}".format(entity_id, str(e.message)))
+            raise RuntimeError("Failed to load permissions, entity_id: {} error: {}".format(entity_id, str(e)))
 
     def terminate_run(self, run_id):
         try:
@@ -1521,7 +1540,7 @@ class PipelineAPI:
 
     def stop_run(self, run_id):
         try:
-            data = {'status': 'STOPPED', 'endDate': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')}
+            data = {'status': 'STOPPED', 'endDate': datetime.datetime.now(_UTC).strftime('%Y-%m-%d %H:%M:%S.%f')}
             return self._request(endpoint='run/{}/status'.format(str(run_id)), http_method="post", data=data)
         except Exception as e:
             raise RuntimeError("Failed to stop run. \n {}".format(e))
@@ -1620,7 +1639,7 @@ class PipelineAPI:
             result = self._request(endpoint=self.DATA_STORAGE_MOUNT_LOAD.format(id=mount_id), http_method="get")
             return {} if result is None else FileShareMount.from_json(result)
         except Exception as e:
-            raise RuntimeError("Failed to load file share mount: {}".format(str(e.message)))
+            raise RuntimeError("Failed to load file share mount: {}".format(str(e)))
 
 
     def log_pipeline_run_engine_task_events(self, run_id, events):

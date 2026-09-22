@@ -448,7 +448,7 @@ export CP_CAP_AUTOSCALE_LOGGING_LEVEL_CONSOLE="INFO"
 export CP_CAP_AUTOSCALE_LOGGING_FORMAT="%(message)s"
 export CP_CAP_AUTOSCALE_DRY_INIT="true"
 source "{autoscaling_profile_path}"
-"$CP_PYTHON2_PATH" "{autoscaling_script_path}"
+"$CP_PYTHON_PATH" "{autoscaling_script_path}"
             """.format(autoscaling_profile_path=profile.path_queue,
                        autoscaling_script_path=autoscaling_script_path),
                                    logger=self._logger_warning)
@@ -462,7 +462,7 @@ source "{autoscaling_profile_path}"
         self._logger.debug('Launching grid engine queue {} autoscaling...'.format(profile.name))
         self._executor.execute("""
 source "{autoscaling_profile_path}"
-nohup "$CP_PYTHON2_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+nohup "$CP_PYTHON_PATH" "{autoscaling_script_path}" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
         """.format(autoscaling_profile_path=profile.path_queue,
                    autoscaling_script_path=autoscaling_script_path))
         self._logger.info('Grid engine {} autoscaling has been launched.'.format(profile.name))

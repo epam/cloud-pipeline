@@ -1,0 +1,17 @@
+# Files AI agents must not read. Cursor's native equivalent of the Read deny rules
+# in .claude/settings.json — keep the two lists in sync. See AGENTS.md.
+#
+# This is a hygiene control, not a security boundary: it stops secrets from ending
+# up in a model's context or a commit. It does not stop a subprocess from opening
+# the file itself.
+
+# A file holding real values must be named .env, .env.local or .env.<environment>.local.
+# Templates are .env.example and stay readable — see AGENTS.md.
+.env
+.env.local
+.env.*.local
+secrets/
+*.pem
+*.p12
+*.jks
+*.keystore

@@ -261,7 +261,7 @@ class GridEngineScaleUpHandler:
 
     def _await_pod_initialization(self, run_id):
         Logger.info('Waiting for additional worker #%s pod to initialize...' % run_id)
-        attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
+        attempts = self.polling_timeout // self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
             run = self.api.load_run_efficiently(run_id)
@@ -287,7 +287,7 @@ class GridEngineScaleUpHandler:
 
     def _await_worker_initialization(self, run_id):
         Logger.info('Waiting for additional worker #%s to initialize...' % run_id)
-        attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
+        attempts = self.polling_timeout // self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts > 0:
             run = self.api.load_run_efficiently(run_id)
@@ -313,7 +313,7 @@ class GridEngineScaleUpHandler:
 
     def _enable_worker_in_grid_engine(self, pod):
         Logger.info('Enabling additional worker %s in grid engine...' % pod.name)
-        attempts = self.ge_polling_timeout / self.polling_delay if self.polling_delay \
+        attempts = self.ge_polling_timeout // self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._GE_POLL_ATTEMPTS
         while attempts > 0:
             try:

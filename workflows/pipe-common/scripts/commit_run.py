@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import os
 import pipeline.api
 import sys
@@ -27,7 +29,7 @@ def get_group_info_by_id(tool_group_id, max_attempts=10):
         try:
             tool_group = api.tool_group_load(tool_group_id)
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     if tool_group is not None:
         return tool_group
     raise RuntimeError("Failed to load group info for: {}".format(tool_group))
@@ -41,7 +43,7 @@ def get_tool_from_run(api, run_id, max_attempts=10):
             run_info = api.load_run(run_id)
             return api.load_tool(image=run_info['dockerImage'], registry='')
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to fetch tool from run for run_id: {}.".format(run_id))
 
 
@@ -52,7 +54,7 @@ def update_commit_status(api, run_id, commit_status, max_attempts=10):
         try:
             return api.update_commit_status(run_id, commit_status)
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to update commit status for run_id: {}.".format(run_id))
 
 
@@ -63,7 +65,7 @@ def enable_tool(api, tool, max_attempts=10):
         try:
             return api.enable_tool(tool)
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to enable tool: {}/{}.".format(tool.registry, tool.image))
 
 
@@ -74,7 +76,7 @@ def update_tool(api, tool, max_attempts=10):
         try:
             return api.update_tool(tool)
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to update tool: {}/{}.".format(tool.registry, tool.image))
 
 
@@ -85,7 +87,7 @@ def stop_pipeline(api, run_id, max_attempts=10):
         try:
             return api.update_status(run_id, pipeline.api.StatusEntry(pipeline.api.TaskStatus.STOPPED))
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to stop_pipeline with id: {}".format(run_id))
 
 
@@ -109,7 +111,7 @@ def tool_version_exist(new_image_name, version, max_attempts=10):
             tool_versions_list = api.load_tool_versions(new_tool.tool_id)
             return True if tool_versions_list and version in tool_versions_list else False
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'.format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to invoke tool_version_exist for tool: {}".format(new_image_name))
 
 
@@ -120,8 +122,8 @@ def get_tool_version_settings(tool_id, version, max_attempts=10):
         try:
             return api.load_tool_version_settings(tool_id, version)
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'\
-                .format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'\
+                .format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to invoke get_tool_version_settings for tool: {}".format(tool_id))
 
 
@@ -136,8 +138,8 @@ def create_settings_for_tool_version(tool_id, version, settings, max_attempts=10
         try:
             return api.create_setting_for_tool_version(tool_id, version, settings[0]['settings'])
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})' \
-                .format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})' \
+                .format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to invoke create_settings_for_tool_version")
 
 
@@ -148,8 +150,8 @@ def load_tool(image, max_attempts=10):
         try:
             return api.load_tool(image=image, registry='')
         except Exception as e:
-            print 'There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'\
-                .format(e=e, attempts=attempts, max_attempts=max_attempts)
+            print('There is exception with message:{e} \n Retry: ({attempts}/{max_attempts})'\
+                .format(e=e, attempts=attempts, max_attempts=max_attempts))
     raise RuntimeError("Failed to invoke load_tool.")
 
 
@@ -199,12 +201,12 @@ if __name__ == '__main__':
         tool_group_id = int(sys.argv[3])
         #remove tag if it exists <group>/<image name>:<tag>
         new_image_name =  str.split(sys.argv[4], ':')[0]
-        print tool_exist(tool_group_id, new_image_name)
+        print(tool_exist(tool_group_id, new_image_name))
 
     elif command == "ive":
         new_tool_name = sys.argv[3]
         version_to_check = sys.argv[4]
-        print tool_version_exist(new_tool_name, version_to_check)
+        print(tool_version_exist(new_tool_name, version_to_check))
 
     elif command == "etwc":
 
@@ -216,7 +218,7 @@ if __name__ == '__main__':
 
         retry_time = int(sys.argv[7])
         backoff_time = 5
-        retry_count = retry_time / backoff_time
+        retry_count = retry_time // backoff_time
 
         template = get_tool_from_run(api, run_id)
         template.registry = new_registry

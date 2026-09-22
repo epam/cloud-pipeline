@@ -30,7 +30,7 @@ fi
 
 # Call storage API
 CMD="import pipeline.storage; storage=pipeline.storage.S3Bucket(); storage.rm_folder_s3(\"${STORAGE_COPY_SOURCE}\", ${STORAGE_COPY_ATTEMPTS})"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"
 result=$?
 
 exit $result

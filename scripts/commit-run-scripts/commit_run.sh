@@ -22,7 +22,7 @@ commit_hook ${CONTAINER_ID} "pre" ${CLEAN_UP} ${STOP_PIPELINE} ${PRE_COMMIT_COMM
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
                         "[INFO] Temporary container was successfully committed with name: $image_name" \
-                        "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
+                        "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
 export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${FULL_NEW_IMAGE_NAME} 1d`
 
@@ -35,7 +35,7 @@ ENVS_TO_UNSET=`docker exec "${tmp_container}" sh -c "chmod +x /cleanup_container
 
 check_last_exit_code $? "[ERROR] There are some troubles while clean up pipeline's container." \
                         "[INFO] Clean up for pipeline's container was successfully performed." \
-                        "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
+                        "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
 pipe_exec "docker commit --pause=false --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DATE= RUN_TIME= AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= AWS_DEFAULT_REGION= \
            CLUSTER_NAME= BUCKETS= MOUNT_OPTIONS= MOUNT_POINTS= OWNER= SSH_PASS= GIT_USER= GIT_TOKEN= cluster_role= \
@@ -44,7 +44,7 @@ pipe_exec "docker commit --pause=false --change=\'ENV $ENVS_TO_UNSET API_TOKEN= 
 
 check_last_exit_code $? "[ERROR] Error occurred while committing container" \
                         "[INFO] Container was successfully committed with name: ${FULL_NEW_IMAGE_NAME}" \
-                        "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
+                        "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
 docker stop ${tmp_container}
 
@@ -53,21 +53,21 @@ if [[ "$DOCKER_LOGIN" && "$DOCKER_PASSWORD" ]]; then
     docker login -u "$DOCKER_LOGIN" -p "$DOCKER_PASSWORD" "${REGISTRY_TO_PUSH}"
     check_last_exit_code $? "[ERROR] Error occurred while logging into ${REGISTRY_TO_PUSH}." \
                             "[INFO] Login to  ${REGISTRY_TO_PUSH} was successfully performed." \
-                            "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
+                            "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 fi
 
-IS_TOOL_EXISTS=`python $COMMON_REPO_DIR/scripts/commit_run.py ite $RUN_ID $TOOL_GROUP_ID $NEW_IMAGE_NAME`
+IS_TOOL_EXISTS=`$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ite $RUN_ID $TOOL_GROUP_ID $NEW_IMAGE_NAME`
 echo "IS_TOOL_EXISTS = $IS_TOOL_EXISTS"
 
 pipe_log_info "[INFO] Pushing to ${REGISTRY_TO_PUSH} ..." "$TASK_NAME"
 pipe_exec "docker push ${FULL_NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
 check_last_exit_code $? "[ERROR] Error occurred while pushing image" \
                         "[INFO] Image was successfully pushed." \
-                        "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
+                        "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
 if [[ "$IS_TOOL_EXISTS" = "False" ]]; then
     pipe_log_info "[INFO] Applying setting from the parent image ..." "$TASK_NAME"
-    pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py etwc $RUN_ID $REGISTRY_TO_PUSH $REGISTRY_TO_PUSH_ID $TOOL_GROUP_ID $NEW_IMAGE_NAME 600 > /dev/null" "$TASK_NAME"
+    pipe_exec "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py etwc $RUN_ID $REGISTRY_TO_PUSH $REGISTRY_TO_PUSH_ID $TOOL_GROUP_ID $NEW_IMAGE_NAME 600 > /dev/null" "$TASK_NAME"
     if [[ $? -ne 0 ]]; then
         pipe_log_info "[WARN] Can't apply settings from parent image to committed one. You have to do in manually." "$TASK_NAME"
     else
@@ -75,7 +75,7 @@ if [[ "$IS_TOOL_EXISTS" = "False" ]]; then
     fi
 fi
 
-IS_VERSION_EXISTS=`python $COMMON_REPO_DIR/scripts/commit_run.py ive $RUN_ID $FULL_NEW_IMAGE_NAME latest`
+IS_VERSION_EXISTS=`$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ive $RUN_ID $FULL_NEW_IMAGE_NAME latest`
 echo "IS_VERSION_EXISTS = $IS_VERSION_EXISTS"
 
 if [[ "$IS_VERSION_EXISTS" = "False" ]]; then
@@ -98,19 +98,19 @@ if [[ "$IS_VERSION_EXISTS" = "False" ]]; then
 fi
 
 echo "Applying configuration settings from initial tool to a new one"
-pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py evs $RUN_ID $REGISTRY_TO_PUSH $NEW_IMAGE_NAME > /dev/null" "$TASK_NAME"
+pipe_exec "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py evs $RUN_ID $REGISTRY_TO_PUSH $NEW_IMAGE_NAME > /dev/null" "$TASK_NAME"
 if [[ $? -ne 0 ]]; then
      pipe_log_warn "[WARN] Error occurred while applying settings to ${FULL_NEW_IMAGE_NAME}." "$TASK_NAME"
 else
      pipe_log_info "[INFO] Settings successfully applied to ${FULL_NEW_IMAGE_NAME}" "$TASK_NAME"
 fi
 
-pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID SUCCESS > /dev/null" "$TASK_NAME"
+pipe_exec "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID SUCCESS > /dev/null" "$TASK_NAME"
 pipe_log_success "[INFO] Commit pipeline run task succeeded" "$TASK_NAME"
 
 if [[ "$STOP_PIPELINE" = true || "$STOP_PIPELINE" = TRUE ]]; then
     pipe_log_info "[INFO] STOP_PIPELINE flag was got. Pipeline will be stopped." "$TASK_NAME"
-	pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py sp $RUN_ID > /dev/null" "$TASK_NAME"
+	pipe_exec "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py sp $RUN_ID > /dev/null" "$TASK_NAME"
 	if [[ $? -ne 0 ]]; then
 		docker stop "$CONTAINER_ID"
         pipe_log_info "[WARN] Pipeline was stopped by force." "$TASK_NAME"

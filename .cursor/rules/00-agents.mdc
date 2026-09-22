@@ -1,0 +1,7 @@
+---
+description: Cloud Pipeline repository conventions, commands and architecture
+alwaysApply: true
+---
+
+Follow the repository conventions in @AGENTS.md, and the `<directory>/AGENTS.md` covering the files
+you are changing.

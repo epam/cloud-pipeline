@@ -77,7 +77,7 @@ COPY_COMMAND="storage.${API_METHOD_NAME}(\"${STORAGE_COPY_SOURCE}\", \"${STORAGE
 
 # Call storage API
 CMD="import pipeline.storage; storage=pipeline.storage.S3Bucket(); ${COPY_COMMAND}"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"
 result=$?
 
 exit $result

@@ -91,7 +91,7 @@ def refresh_token():
         api_token = os.getenv("API_TOKEN")
     if not api_token:
         raise RuntimeError("[ERROR] API_TOKEN was not provided")
-    token_payload = jwt.decode(api_token, verify=False)
+    token_payload = jwt.decode(api_token, options={"verify_signature": False}, algorithms=["HS256", "RS256"])
     token_expiration_date = token_payload.get('exp', None)
     if not token_expiration_date:
         raise RuntimeError("[ERROR] Cannot determine expiration date for current token")
