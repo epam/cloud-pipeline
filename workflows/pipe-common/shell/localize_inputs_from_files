@@ -134,7 +134,7 @@ fi
 # Run localization job once again to download any remotes
 pipe_log_info "Running data localization for the matched remotes" "$LOCALIZE_FROM_FILES_TASK_NAME"
 _input_env_from_files=${RUN_DIR}/input-env-from-files.txt
-python2 ${COMMON_REPO_DIR}/scripts/transfer_parameters.py \
+$CP_PYTHON_PATH ${COMMON_REPO_DIR}/scripts/transfer_parameters.py \
         --input-dir ${INPUT_DIR} \
         --analysis-dir ${ANALYSIS_DIR} \
         --common-dir ${COMMON_DIR} \

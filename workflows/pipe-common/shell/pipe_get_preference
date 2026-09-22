@@ -49,7 +49,7 @@ fi
 CMD="import pipeline.api;"
 CMD="${CMD} pipe=pipeline.api.PipelineAPI(\"${API}\", \"${LOG_DIR}\");"
 CMD="${CMD} print(pipe.get_preference('${PREFERENCE}').get('value', ''))"
-VALUE=$($CP_PYTHON2_PATH -c "$CMD")
+VALUE=$($CP_PYTHON_PATH -c "$CMD")
 if [[ "$?" == "0" && "$VALUE" ]]
 then
   echo "$VALUE"

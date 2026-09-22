@@ -36,6 +36,25 @@ yum install -y  nc \
 yum install -y iproute-tc
 curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
+function install_python3_packages {
+      local _install_path="$1"
+      local _tmp_install_dir="/tmp/"
+      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      CP_PYTHON3_DISTRO_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz"
+
+      echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
+      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
+
+      tar zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/python3.tgz"
+
+      ln -sf "${_install_path}/python3.12/bin/python3.12" "/usr/bin/python3"
+      ln -sf "${_install_path}/python3.12/bin/pip3.12"    "/usr/bin/pip3"
+      echo "Python3 distro is installed into ${_install_path}/python3.12"
+}
+
+install_python3_packages "/usr/local"
+
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
 chmod +x /usr/bin/jq

@@ -95,7 +95,7 @@ class CreateWorkerNodes(Task):
             Logger.success('All workers started', task_name=self.task_name)
             return worker_pods
         except Exception as e:
-            self.fail_task(e.message)
+            self.fail_task(str(e))
 
     def launch_workers(self, nodes_number, image, type, disk, cmd, parent_id):
         result = []
@@ -169,7 +169,7 @@ class BuildHostfile(Task):
                     self.add_to_hosts(pod)
             Logger.success('Successfully created hostfile {}'.format(path), task_name=self.task_name)
         except Exception as e:
-            self.fail_task(e.message)
+            self.fail_task(str(e))
 
     def execute_command(self, cmd):
         process = subprocess.Popen(cmd, shell=True)
@@ -196,7 +196,7 @@ class ShutDownCluster(Task):
                 api.update_status(pod.run_id, status)
             Logger.success('Successfully scaled cluster down', task_name=self.task_name)
         except Exception as e:
-            self.fail_task(e.message)
+            self.fail_task(str(e))
 
 
 def get_env_value(default_name, user_name):
@@ -231,7 +231,7 @@ def main():
                                           run_id, master_shared_dir, worker_shared_dir)
         BuildHostfile().run(workers, hostfile, run_id)
     except Exception as e:
-        Logger.warn(e.message)
+        Logger.warn(str(e))
         status = StatusEntry(TaskStatus.FAILURE)
         ShutDownCluster().run(workers, status)
     if status.status == TaskStatus.FAILURE:

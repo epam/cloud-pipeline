@@ -139,7 +139,7 @@ class DataTransferServiceClient:
             else:
                 return None
         except BaseException as e:
-            raise RuntimeError('An error during call to data transfer service: %s' % e.message)
+            raise RuntimeError('An error during call to data transfer service: %s' % str(e))
 
     def __headers(self):
         return {

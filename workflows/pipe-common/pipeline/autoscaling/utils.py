@@ -239,7 +239,7 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 entries.append(command_pattern.format(url=url, cert=cert))
             return " && ".join(entries)
     return ""
@@ -299,7 +299,7 @@ def replace_swap(swap_size, init_script):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    payload = jwt.decode(api_token, verify=False)
+    payload = jwt.decode(api_token, options={"verify_signature": False}, algorithms=["HS256", "RS256"])
     if 'sub' in payload:
         subject = payload['sub']
         user_data_script = user_data_script \
