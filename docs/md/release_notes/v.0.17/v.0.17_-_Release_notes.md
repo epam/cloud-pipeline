@@ -66,6 +66,7 @@
     - [Inner data storages navigation bar fails to navigate](#inner-data-storages-navigation-bar-fails-to-navigate)
     - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
     - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
+    - [Node unavailability is not detected when a network plugin condition goes first](#node-unavailability-is-not-detected-when-a-network-plugin-condition-goes-first)
 
 ***
 
@@ -1826,3 +1827,18 @@ Previously, `PAUSE` and `COMMIT` operations failed with the `NullPointerExceptio
 
 - In **Groups**/**Roles** membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.
 - At the **Billing reports** page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.
+
+### Node unavailability is not detected when a network plugin condition goes first
+
+[#4585](https://github.com/epam/cloud-pipeline/issues/4585)
+
+Previously, a node that had stopped reporting its state was not recognised as unavailable, if the first
+state condition of that node belonged to the cluster's network plugin rather than to the `kubelet` — the
+case for a `canal`/`flannel` deployment. Only that first condition was inspected, and the network plugin
+never updates it, so the run of such a node received no `NODE_UNAVAILABLE` tag and no
+`NodeAvailabilityMonitor` log entry, and was never stopped once the unavailability grace period had
+elapsed — it hung on its current task instead.
+
+Currently, all the state conditions of a node are inspected, and the grace period is counted from the
+`kubelet`'s own last report. See [11.6. Node availability monitoring](../../manual/11_Manage_Runs/11.6._Node_availability_monitoring.md)
+for details.
