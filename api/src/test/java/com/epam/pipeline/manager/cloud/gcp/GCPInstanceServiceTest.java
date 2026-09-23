@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.exception.cloud.gcp.GCPException;
+import com.google.api.services.compute.model.Instance;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,8 +32,13 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static com.epam.pipeline.manager.execution.SystemParams.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 public class GCPInstanceServiceTest {
+
+    private static final String NODE_LABEL = "1";
 
     private static final String CRED_TEMPLATE = "{\n" +
             "  \"type\": \"service_account\",\n" +
@@ -49,6 +57,9 @@ public class GCPInstanceServiceTest {
     private GCPRegion regionWithoutAuthFile;
     private GCPInstanceService service = new GCPInstanceService(
             null, null, null, null, null, null, null, null, null);
+    private final GCPVMService vmService = mock(GCPVMService.class);
+    private final GCPInstanceService vmBackedService = new GCPInstanceService(
+            null, null, vmService, null, null, null, null, null, null);
 
     @Before
     public void setup() throws IOException {
@@ -90,6 +101,30 @@ public class GCPInstanceServiceTest {
                     + regionWithoutAuthFile.getId()));
         }
         Assert.assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + regionWithoutAuthFile.getId()));
+    }
+
+    @Test
+    public void shouldReportRunningStateOfRunningInstance() throws IOException {
+        doReturn(new Instance().setStatus(GCPInstanceStatus.RUNNING.name()))
+                .when(vmService).findInstanceByNameTag(region, NODE_LABEL);
+
+        Assert.assertEquals(CloudInstanceState.RUNNING, vmBackedService.getInstanceState(region, NODE_LABEL));
+    }
+
+    @Test
+    public void shouldReportTerminatedStateIfInstanceIsNotFound() throws IOException {
+        doThrow(new GCPException("instance not found"))
+                .when(vmService).findInstanceByNameTag(region, NODE_LABEL);
+
+        Assert.assertEquals(CloudInstanceState.TERMINATED, vmBackedService.getInstanceState(region, NODE_LABEL));
+    }
+
+    @Test(expected = GCPException.class)
+    public void shouldFailIfInstanceStateCannotBeRequested() throws IOException {
+        doThrow(new IOException("rate limit exceeded"))
+                .when(vmService).findInstanceByNameTag(region, NODE_LABEL);
+
+        vmBackedService.getInstanceState(region, NODE_LABEL);
     }
 
 }

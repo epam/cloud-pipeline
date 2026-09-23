@@ -286,23 +286,27 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final GCPRegion region, final String nodeLabel) {
+        final Instance instance;
         try {
-            final Instance instance = vmService.findInstanceByNameTag(region, nodeLabel);
-            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
-            if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
-                return CloudInstanceState.RUNNING;
-            }
-            if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
-                return CloudInstanceState.STOPPED;
-            }
-            if (GCPInstanceStatus.STOPPING.equals(instanceStatus)) {
-                return CloudInstanceState.STOPPING;
-            }
-            return CloudInstanceState.TERMINATED;
-        } catch (IOException | GCPException e) {
+            instance = vmService.findInstanceByNameTag(region, nodeLabel);
+        } catch (GCPException e) {
             log.error(e.getMessage(), e);
             return CloudInstanceState.TERMINATED;
+        } catch (IOException e) {
+            // a failed request says nothing about the instance, so it shall not read as terminated
+            throw new GCPException(e);
         }
+        final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+        if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
+            return CloudInstanceState.RUNNING;
+        }
+        if (GCPInstanceStatus.getStopStatuses().contains(instanceStatus)) {
+            return CloudInstanceState.STOPPED;
+        }
+        if (GCPInstanceStatus.STOPPING.equals(instanceStatus)) {
+            return CloudInstanceState.STOPPING;
+        }
+        return CloudInstanceState.TERMINATED;
     }
 
     private String buildNodeUpCommand(final GCPRegion region, final String nodeLabel, final RunInstance instance,
