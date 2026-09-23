@@ -50,6 +50,7 @@
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
+- [Read-only access to all storages](#read-only-access-to-all-storages)
 
 ***
 
@@ -1741,6 +1742,14 @@ Feature is not available:
 - for worker or cluster runs
 
 More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
+
+## Read-only access to all storages
+
+Previously, read access to all data storages of the Platform could be given only by the permission settings of the storages (or of their parent folders) - or by the **ROLE\_ADMIN**/**ROLE\_STORAGE\_ADMIN** roles, which also give write and owner access.  
+In the current version, the new role **ROLE\_STORAGE\_READER** was introduced. It gives the user **READ** permission to every data storage in the Platform, regardless of the storage permission settings, and nothing else: the user is able to browse storages, download their data and view storage attributes, tags and permission settings, while any write access still has to be granted explicitly.  
+The runs, launched by such a user, mount all the storages of the Platform in a read-only mode (except the storages the user was granted write access to).
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#storage-reader-role).
 
 ***
 
