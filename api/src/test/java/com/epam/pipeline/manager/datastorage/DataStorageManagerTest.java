@@ -18,9 +18,16 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemActionTypes;
+import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.dto.datastorage.permissions.StorageFolderListPermissionsContainer;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
@@ -39,6 +46,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -50,6 +58,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.util.TestUtils;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
@@ -57,10 +66,16 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,8 +93,14 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DataStorageManagerTest extends AbstractSpringTest {
@@ -113,6 +134,13 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public static final String DAV_MOUNT_TAG = "dav-mount";
     public static final long SECS_IN_HOUR = 3600L;
     public static final long SECS_IN_MIN = 60L;
+    private static final String STORAGE_OWNER = "storage_owner";
+    private static final String STORAGE_READER = "storage_reader";
+    private static final String ROLE_STORAGE_READER = "ROLE_STORAGE_READER";
+    private static final String TEST_BUCKET_PREFIX = "bucket-";
+    private static final String TEST_FILE_PATH = "folder/file";
+    private static final String TEST_FILE_COPY_PATH = "another_folder/file";
+    private static final String TEST_FOLDER = "folder";
 
 
     @Mock
@@ -133,6 +161,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @MockBean
     private CloudRegionManager regionManager;
+
+    @SpyBean
+    private StoragePathPermissionsService storagePathPermissionsService;
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -666,6 +697,125 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         assertResolvedSizeMasks(sizeMasks, firstStorageName, mask1, mask2, mask3, mask4, mask5);
         assertResolvedSizeMasks(sizeMasks, secondStorageName, mask1, mask2, mask4, mask5);
         assertResolvedSizeMasks(sizeMasks, thirdStorageName, mask1, mask2);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void getDataStorageItemsShouldAddReadToPathPermissionsForStorageReader() {
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_READER, ROLE_STORAGE_READER);
+            doThrow(new AccessDeniedException("Access is denied")).when(storagePathPermissionsService)
+                    .getFolderListPermissions(eq(storage.getId()), any());
+            doReturn(new DataStorageListing()).when(storageProviderManager)
+                    .getItems(any(S3bucketDataStorage.class), any(), any(), any(), any(),
+                            any(StorageFolderListPermissionsContainer.class));
+
+            storageManager.getDataStorageItems(storage.getId(), null, false, null, null, true);
+
+            final ArgumentCaptor<StorageFolderListPermissionsContainer> container =
+                    ArgumentCaptor.forClass(StorageFolderListPermissionsContainer.class);
+            verify(storageProviderManager).getItems(any(S3bucketDataStorage.class), any(), any(), any(), any(),
+                    container.capture());
+            assertThat(container.getValue().getFolderMask())
+                    .isEqualTo(new AclPermission(AclPermission.READ.getMask()).getSimpleMask());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void getDataStorageItemsShouldKeepPathWritePermissionsForStorageReader() {
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_READER, ROLE_STORAGE_READER);
+            final int read = new AclPermission(AclPermission.READ.getMask()).getSimpleMask();
+            final int write = new AclPermission(AclPermission.WRITE.getMask()).getSimpleMask();
+            doReturn(StorageFolderListPermissionsContainer.builder()
+                    .folderMask(write)
+                    .files(Collections.singletonMap(TEST_FILE_PATH, 0))
+                    .folders(Collections.singletonMap(TEST_FOLDER, write))
+                    .build())
+                    .when(storagePathPermissionsService).getFolderListPermissions(eq(storage.getId()), any());
+            doReturn(new DataStorageListing()).when(storageProviderManager)
+                    .getItems(any(S3bucketDataStorage.class), any(), any(), any(), any(),
+                            any(StorageFolderListPermissionsContainer.class));
+
+            storageManager.getDataStorageItems(storage.getId(), null, false, null, null, true);
+
+            final ArgumentCaptor<StorageFolderListPermissionsContainer> captor =
+                    ArgumentCaptor.forClass(StorageFolderListPermissionsContainer.class);
+            verify(storageProviderManager).getItems(any(S3bucketDataStorage.class), any(), any(), any(), any(),
+                    captor.capture());
+            final StorageFolderListPermissionsContainer container = captor.getValue();
+            assertThat(container.getFolderMask()).isEqualTo(read | write);
+            assertThat(container.getFiles()).containsEntry(TEST_FILE_PATH, read);
+            assertThat(container.getFolders()).containsEntry(TEST_FOLDER, read | write);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void updateDataStorageItemsShouldNotCheckCopySourceReadPermissionsForStorageReader() {
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_READER, ROLE_STORAGE_READER);
+            doNothing().when(storagePathPermissionsService).canWriteToFile(storage.getId(), TEST_FILE_COPY_PATH);
+            doNothing().when(storagePathPermissionsService).canWriteToFolder(storage.getId(), TEST_FILE_COPY_PATH);
+            doThrow(new AccessDeniedException("Access is denied")).when(storagePathPermissionsService)
+                    .canReadFile(anyLong(), anyString());
+            doThrow(new AccessDeniedException("Access is denied")).when(storagePathPermissionsService)
+                    .canReadFolder(anyLong(), anyString());
+            doReturn(new DataStorageFile()).when(storageProviderManager)
+                    .copyFile(any(S3bucketDataStorage.class), eq(TEST_FILE_PATH), eq(TEST_FILE_COPY_PATH));
+            final UpdateDataStorageItemVO item = new UpdateDataStorageItemVO();
+            item.setType(DataStorageItemType.File);
+            item.setAction(UpdateDataStorageItemActionTypes.Copy);
+            item.setOldPath(TEST_FILE_PATH);
+            item.setPath(TEST_FILE_COPY_PATH);
+
+            storageManager.updateDataStorageItems(storage.getId(), Collections.singletonList(item));
+
+            verify(storageProviderManager).copyFile(any(S3bucketDataStorage.class), eq(TEST_FILE_PATH),
+                    eq(TEST_FILE_COPY_PATH));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void getDataStorageItemContentShouldNotCheckPathPermissionsForStorageReader() {
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_READER, ROLE_STORAGE_READER);
+            doReturn(new DataStorageItemContent()).when(storageProviderManager)
+                    .getFile(any(S3bucketDataStorage.class), eq(TEST_FILE_PATH), any(), any());
+
+            storageManager.getDataStorageItemContent(storage.getId(), TEST_FILE_PATH, null);
+
+            verify(storagePathPermissionsService, never()).canReadFile(anyLong(), anyString());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private AbstractDataStorage createStorageOwnedByAnotherUser(final boolean pathPermissionsEnabled) {
+        authenticate(STORAGE_OWNER);
+        final DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION,
+                DataStorageType.S3, TEST_BUCKET_PREFIX + UUID.randomUUID(), STS_DURATION, LTS_DURATION,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
+        storageVO.setPathPermissionsEnabled(pathPermissionsEnabled);
+        return storageManager.create(storageVO, false, false, false).getEntity();
+    }
+
+    private void authenticate(final String userName, final String... authorities) {
+        final User user = new User(userName, "", AuthorityUtils.createAuthorityList(authorities));
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(user, null, AuthorityUtils.createAuthorityList(authorities)));
     }
 
     private void assertResolvedSizeMasks(final Map<String, Set<String>> masksMapping, final String storageName,

@@ -17,6 +17,7 @@ package com.epam.pipeline.manager.security.storage;
 
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
@@ -63,28 +64,44 @@ public class StoragePermissionManagerTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
-    public void filterStorageWithoutScopedReaderShouldKeepOnlyGrantedStorages() {
-        initStorages();
-        final List<AbstractDataStorage> storages = mutableListOf(grantedStorage, notGrantedStorage);
-
-        storagePermissionManager.filterStorageWithoutScopedReader(storages, READ_OR_WRITE, false);
-
-        assertThat(storages).containsExactly(grantedStorage);
-        assertThat(grantedStorage.getMask()).isEqualTo(READ_AND_WRITE_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
-    public void filterStorageWithoutScopedReaderShouldKeepOnlyGrantedStoragesInReadOnlyMode() {
+    public void filterStorageShouldKeepEveryStorageReadOnlyForStorageReaderInReadOnlyMode() {
         initStorages();
         doReturn(Optional.of(new AppliedQuota())).when(mockQuotaService)
                 .findActiveActionForUser(any(), any(), any());
         final List<AbstractDataStorage> storages = mutableListOf(grantedStorage, notGrantedStorage);
 
-        storagePermissionManager.filterStorageWithoutScopedReader(storages, READ_OR_WRITE, false);
+        storagePermissionManager.filterStorage(storages, READ_OR_WRITE, false);
+
+        assertThat(storages).containsExactly(grantedStorage, notGrantedStorage);
+        assertThat(grantedStorage.getMask()).isEqualTo(READ_PERMISSION);
+        assertThat(notGrantedStorage.getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void filterStorageShouldKeepReadOnlyNfsStorageReadOnlyForStorageReader() {
+        final AbstractDataStorage nfsStorage =
+                DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.READ_ONLY, ANOTHER_SIMPLE_USER);
+        initAclEntity(nfsStorage, new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask()));
+        mockAuthUser(SIMPLE_USER);
+        final List<AbstractDataStorage> storages = mutableListOf(nfsStorage);
+
+        storagePermissionManager.filterStorage(storages, READ_OR_WRITE, false);
+
+        assertThat(storages).containsExactly(nfsStorage);
+        assertThat(nfsStorage.getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void filterStorageShouldKeepOnlyGrantedStoragesWithoutStorageReader() {
+        initStorages();
+        final List<AbstractDataStorage> storages = mutableListOf(grantedStorage, notGrantedStorage);
+
+        storagePermissionManager.filterStorage(storages, READ_OR_WRITE, false);
 
         assertThat(storages).containsExactly(grantedStorage);
-        assertThat(grantedStorage.getMask()).isEqualTo(READ_PERMISSION);
+        assertThat(grantedStorage.getMask()).isEqualTo(READ_AND_WRITE_PERMISSION);
     }
 
     @Test
