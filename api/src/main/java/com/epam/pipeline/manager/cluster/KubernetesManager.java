@@ -670,21 +670,6 @@ public class KubernetesManager {
         }
     }
 
-    public Map<String, String> getNodeLabels(final KubernetesClient client, final String nodeName) {
-        if (StringUtils.isBlank(nodeName)) {
-            return Collections.emptyMap();
-        }
-        try {
-            return findNode(client, nodeName)
-                    .map(Node::getMetadata)
-                    .map(ObjectMeta::getLabels)
-                    .orElseGet(Collections::emptyMap);
-        } catch (KubernetesClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            return Collections.emptyMap();
-        }
-    }
-
     private Node getNode(final KubernetesClient client, final String nodeName) {
         return findNode(client, nodeName).orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                 MessageConstants.ERROR_NODE_NOT_FOUND, nodeName)));

@@ -121,11 +121,11 @@ public class ScaleDownHandler {
 
         if (isUnavailable(node)) {
             log.debug("Processing unavailable node {} #{}...", name, label);
-            processUnavailableNode(client, node, grace);
+            processUnavailableNode(node, grace);
             return;
         }
 
-        if (isRecovered(node)) {
+        if (isUnavailableNodeLabeled(node)) {
             log.debug("Processing recovered node {} #{}...", name, label);
             processRecoveredNode(node);
         }
@@ -164,17 +164,17 @@ public class ScaleDownHandler {
         return kubernetesManager.isNodeUnavailable(node);
     }
 
-    private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration defaultGrace) {
+    private void processUnavailableNode(final Node node, final Duration defaultGrace) {
         final LocalDateTime now = DateUtils.nowUTC();
         final LocalDateTime timestamp = kubernetesManager.getReadyHeartbeatDateTime(node).orElse(now);
 
-        final Optional<PipelineRun> pipelineRun = findRun(node);
-        final Duration grace = findNodeUnavailableGraceDuration(pipelineRun, defaultGrace);
+        final Optional<PipelineRun> activeRun = findActiveRun(node);
+        final Duration grace = findNodeUnavailableGraceDuration(activeRun, defaultGrace);
         final boolean graceExpired = !now.minus(grace).isBefore(timestamp);
 
-        if (isUnavailableNodeLabeled(client, node)) {
+        if (isUnavailableNodeLabeled(node)) {
             if (graceExpired) {
-                scaleDownUnavailableNode(client, node);
+                scaleDownUnavailableNode(node, activeRun);
             }
             return;
         }
@@ -184,20 +184,42 @@ public class ScaleDownHandler {
         log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
         labelUnavailableNode(node, timestamp);
 
-        pipelineRun.ifPresent(run -> {
-            labelUnavailableNodeRun(run, timestamp);
-            logUnavailableNodeRun(run, timestamp);
-        });
+        // a run already tagged with this timestamp means the node label was not saved on a previous pass,
+        // while the node has stayed silent since the same heartbeat
+        activeRun.filter(run -> !isUnavailableNodeRunLabeledSince(run, timestamp))
+                .ifPresent(run -> markUnavailableNodeRun(run, timestamp));
 
         // check if instance already stopped or preempted/un-spotted and if so - scale down
         if (graceExpired || !isNodeAliveOnCloud(node)) {
-            scaleDownUnavailableNode(client, node);
+            scaleDownUnavailableNode(node, activeRun);
         }
     }
 
-    private boolean isUnavailableNodeLabeled(final KubernetesClient client, final Node node) {
-        return kubernetesManager.getNodeLabels(client, getNodeName(node))
-                .containsKey(KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+    private boolean isUnavailableNodeLabeled(final Node node) {
+        return getLabels(node).containsKey(KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+    }
+
+    private boolean isUnavailableNodeRunLabeled(final PipelineRun run) {
+        return MapUtils.emptyIfNull(run.getTags()).containsKey(NODE_UNAVAILABLE_TAG);
+    }
+
+    private boolean isUnavailableNodeRunLabeledSince(final PipelineRun run, final LocalDateTime timestamp) {
+        final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+        return getTimestampTag(NODE_UNAVAILABLE_TAG)
+                .map(tags::get)
+                .filter(DATE_TIME_FORMATTER.format(timestamp)::equals)
+                .isPresent();
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void markUnavailableNodeRun(final PipelineRun run, final LocalDateTime timestamp) {
+        // the node shall be scaled down even if its run cannot be marked
+        try {
+            labelUnavailableNodeRun(run, timestamp);
+            logUnavailableNodeRun(run, timestamp);
+        } catch (RuntimeException e) {
+            log.error("Run {} of an unavailable node has not been marked.", run.getId(), e);
+        }
     }
 
     private void labelUnavailableNode(final Node node, final LocalDateTime timestamp) {
@@ -243,11 +265,11 @@ public class ScaleDownHandler {
         return state == CloudInstanceState.RUNNING;
     }
 
-    private void scaleDownUnavailableNode(final KubernetesClient client, final Node node) {
+    private void scaleDownUnavailableNode(final Node node, final Optional<PipelineRun> activeRun) {
         if (isPooled(node)) {
             scaleDownUnavailablePoolNode(node);
         } else {
-            scaleDownUnavailableRunNode(client, node);
+            scaleDownUnavailableRunNode(node, activeRun);
         }
     }
 
@@ -258,11 +280,11 @@ public class ScaleDownHandler {
         cloudFacade.scaleDownPoolNode(label);
     }
 
-    private void scaleDownUnavailableRunNode(final KubernetesClient client, final Node node) {
+    private void scaleDownUnavailableRunNode(final Node node, final Optional<PipelineRun> activeRun) {
         final String name = getNodeName(node);
         final String label = getNodeLabel(node);
         final Long runId = Long.parseLong(label);
-        if (autoscalerService.getPreviousRunInstance(label, client) != null) {
+        if (activeRun.isPresent()) {
             log.debug("Failing run of unavailable node {} #{}.", name, label);
             pipelineRunManager.updatePipelineStatusIfNotFinal(runId, TaskStatus.FAILURE);
             updatePodStatus(node, runId);
@@ -273,10 +295,6 @@ public class ScaleDownHandler {
 
     private boolean isPooled(final Node node) {
         return getNodeLabel(node).startsWith(AutoscaleContants.NODE_POOL_PREFIX);
-    }
-
-    private boolean isRecovered(final Node node) {
-        return getLabels(node).containsKey(KubernetesConstants.UNAVAILABLE_NODE_LABEL);
     }
 
     private Map<String, String> getLabels(final Node node) {
@@ -291,7 +309,8 @@ public class ScaleDownHandler {
         final LocalDateTime timestamp = kubernetesManager.getReadyHeartbeatDateTime(node).orElse(now);
         log.debug("Marking recovered node {} #{}", getNodeName(node), getNodeLabel(node));
         labelRecoveredNode(node);
-        findRun(node).ifPresent(run -> {
+        // a run tagged while it was active is untagged even if it has finished since
+        findRun(node).filter(this::isUnavailableNodeRunLabeled).ifPresent(run -> {
             labelRecoveredNodeRun(run);
             logRecoveredNodeRun(run, timestamp);
         });
@@ -318,6 +337,11 @@ public class ScaleDownHandler {
                 .map(NumberUtils::toLong)
                 .filter(runId -> runId > 0)
                 .flatMap(pipelineRunManager::findRun);
+    }
+
+    // a free node keeps the run id label of the run it served last, after that run has finished
+    private Optional<PipelineRun> findActiveRun(final Node node) {
+        return findRun(node).filter(run -> !run.getStatus().isFinal());
     }
 
     private boolean isAssigned(final Node node, final Set<String> runs, final Set<String> pods) {

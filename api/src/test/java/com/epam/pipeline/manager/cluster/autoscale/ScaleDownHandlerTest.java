@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
@@ -43,17 +44,22 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -71,6 +77,9 @@ public class ScaleDownHandlerTest {
     private static final String GRACE_ENV_VAR = "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES";
     private static final String NODE_UNAVAILABLE_TAG = "NODE_UNAVAILABLE";
     private static final String DATE_SUFFIX = "_date";
+    private static final String POD_STATUS = "Ready (Unknown NodeStatusUnknown)";
+    private static final DateTimeFormatter TAG_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE);
 
     private final AutoscalerService autoscalerService = mock(AutoscalerService.class);
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
@@ -100,15 +109,16 @@ public class ScaleDownHandlerTest {
         doReturn(new PodList()).when(kubernetesManager).getPodList(client);
         doReturn(nodes).when(kubernetesManager).getAvailableNodes(client);
         doReturn(true).when(kubernetesManager).isNodeUnavailable(node);
-        doReturn(Collections.emptyMap()).when(kubernetesManager).getNodeLabels(client, NODE_NAME);
-        doReturn("").when(kubernetesManager).updateStatusWithNodeConditions(any(), any());
+        doReturn(Optional.empty()).when(kubernetesManager).getReadyHeartbeatDateTime(node);
+        doReturn(POD_STATUS).when(kubernetesManager).updateStatusWithNodeConditions(any(), any());
         doReturn(GRACE_MINUTES).when(preferenceManager)
                 .getPreference(SystemPreferences.CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES);
         doReturn(DATE_SUFFIX).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         doReturn(Optional.of(run)).when(pipelineRunManager).findRun(RUN_ID);
         doReturn(run).when(runCRUDService).loadRunById(RUN_ID);
-        doReturn(new RunningInstance()).when(autoscalerService).getPreviousRunInstance(RUN_LABEL, client);
         doReturn(CloudInstanceState.RUNNING).when(cloudFacade).getInstanceState(RUN_ID);
+        // any run stored in the database has a previous instance, whether it has finished or not
+        doReturn(new RunningInstance()).when(autoscalerService).getPreviousRunInstance(RUN_LABEL, client);
     }
 
     @Test
@@ -150,6 +160,54 @@ public class ScaleDownHandlerTest {
     }
 
     @Test
+    public void shouldScaleDownUnavailableNodeIfGracePeriodHasExpiredAndRunCannotBeMarked() {
+        mockUnavailableFor(PAST_GRACE);
+        doThrow(new IllegalArgumentException("run tags cannot be updated"))
+                .when(pipelineRunManager).updateTags(eq(RUN_ID), any(TagsVO.class), eq(false));
+
+        checkFreeNodes();
+
+        verifyNodeScaledDown();
+    }
+
+    @Test
+    public void shouldNotMarkRunAgainIfItIsTaggedAlthoughNodeIsNotLabeled() {
+        mockRunTaggedSince(mockUnavailableFor(WITHIN_GRACE));
+
+        checkFreeNodes();
+
+        verify(kubernetesManager)
+                .addNodeLabel(eq(NODE_NAME), eq(KubernetesConstants.UNAVAILABLE_NODE_LABEL), anyString());
+        verifyRunNotMarked();
+        verify(cloudFacade).getInstanceState(RUN_ID);
+        verifyNodeNotScaledDown();
+    }
+
+    @Test
+    public void shouldMarkRunAgainIfItIsTaggedForEarlierUnavailability() {
+        mockUnavailableFor(WITHIN_GRACE);
+        mockRunTaggedSince(DateUtils.nowUTC().minus(PAST_GRACE));
+
+        checkFreeNodes();
+
+        verifyNodeMarked();
+        verifyNodeNotScaledDown();
+    }
+
+    @Test
+    public void shouldNotScaleDownUnavailableNodeWithinGracePeriodIfInstanceStateCannotBeRequested() {
+        mockUnavailableFor(WITHIN_GRACE);
+        doThrow(new IllegalStateException("instance state cannot be requested"))
+                .when(cloudFacade).getInstanceState(RUN_ID);
+
+        checkFreeNodes();
+
+        verifyNodeMarked();
+        verify(cloudFacade).getInstanceState(RUN_ID);
+        verifyNodeNotScaledDown();
+    }
+
+    @Test
     public void shouldSkipMarkedUnavailableNodeWithinGracePeriod() {
         mockUnavailableFor(WITHIN_GRACE);
         mockNodeMarked();
@@ -172,39 +230,115 @@ public class ScaleDownHandlerTest {
     }
 
     @Test
-    public void shouldPreferRunGracePeriodToDefaultOne() {
+    public void shouldNotMarkFinishedRunOfUnavailableNode() {
+        mockUnavailableFor(WITHIN_GRACE);
+        run.setStatus(TaskStatus.SUCCESS);
+
+        checkFreeNodes();
+
+        verify(kubernetesManager)
+                .addNodeLabel(eq(NODE_NAME), eq(KubernetesConstants.UNAVAILABLE_NODE_LABEL), anyString());
+        verifyRunNotMarked();
+        verify(cloudFacade).getInstanceState(RUN_ID);
+        verifyNodeNotScaledDown();
+    }
+
+    @Test
+    public void shouldScaleDownUnavailableNodeOfFinishedRunWithoutUpdatingRun() {
         mockUnavailableFor(PAST_GRACE);
         mockNodeMarked();
+        run.setStatus(TaskStatus.SUCCESS);
+
+        checkFreeNodes();
+
+        verify(pipelineRunManager, never()).updatePipelineStatusIfNotFinal(anyLong(), any(TaskStatus.class));
+        verify(pipelineRunManager, never()).updatePodStatus(anyLong(), anyString());
+        verify(cloudFacade).scaleDownNode(RUN_ID);
+    }
+
+    @Test
+    public void shouldUnmarkActiveRunOfRecoveredNode() {
+        doReturn(false).when(kubernetesManager).isNodeUnavailable(node);
+        mockNodeMarked();
+        mockRunTaggedSince(DateUtils.nowUTC().minus(WITHIN_GRACE));
+
+        checkFreeNodes(Collections.singleton(RUN_LABEL));
+
+        verifyRunUnmarked();
+    }
+
+    @Test
+    public void shouldUnmarkFinishedRunOfRecoveredNodeIfItIsTagged() {
+        doReturn(false).when(kubernetesManager).isNodeUnavailable(node);
+        mockNodeMarked();
+        mockRunTaggedSince(DateUtils.nowUTC().minus(WITHIN_GRACE));
+        run.setStatus(TaskStatus.STOPPED);
+
+        checkFreeNodes(Collections.singleton(RUN_LABEL));
+
+        verifyRunUnmarked();
+    }
+
+    @Test
+    public void shouldNotUpdateUntaggedFinishedRunOfRecoveredNode() {
+        doReturn(false).when(kubernetesManager).isNodeUnavailable(node);
+        mockNodeMarked();
+        run.setStatus(TaskStatus.SUCCESS);
+
+        checkFreeNodes(Collections.singleton(RUN_LABEL));
+
+        verify(kubernetesManager).removeNodeLabel(NODE_NAME, KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+        verify(pipelineRunManager).findRun(RUN_ID);
+        verify(pipelineRunManager, never()).updateTags(anyLong(), any(TagsVO.class), anyBoolean());
+        verify(runLogManager, never()).saveLog(any(RunLog.class));
+    }
+
+    @Test
+    public void shouldPreferRunGracePeriodToDefaultOne() {
+        mockUnavailableFor(PAST_GRACE);
         run.setEnvVars(Collections.singletonMap(GRACE_ENV_VAR, "120"));
 
         checkFreeNodes();
 
+        // the instance state is requested only while the grace period lasts
+        verify(cloudFacade).getInstanceState(RUN_ID);
         verifyNodeNotScaledDown();
     }
 
     @Test
     public void shouldIgnoreRunGracePeriodThatDoesNotFitIntoInteger() {
-        mockUnavailableFor(WITHIN_GRACE);
+        mockUnavailableFor(PAST_GRACE);
         mockNodeMarked();
         run.setEnvVars(Collections.singletonMap(GRACE_ENV_VAR, "3000000000"));
 
         checkFreeNodes();
 
-        verifyNodeNotScaledDown();
+        verifyNodeScaledDown();
     }
 
     private void checkFreeNodes() {
-        scaleDownHandler.checkFreeNodes(Collections.emptySet(), client, Collections.emptySet());
+        checkFreeNodes(Collections.emptySet());
     }
 
-    private void mockUnavailableFor(final Duration duration) {
-        doReturn(Optional.of(DateUtils.nowUTC().minus(duration)))
-                .when(kubernetesManager).getReadyHeartbeatDateTime(node);
+    private void checkFreeNodes(final Set<String> scheduledRuns) {
+        scaleDownHandler.checkFreeNodes(scheduledRuns, client, Collections.emptySet());
+    }
+
+    private LocalDateTime mockUnavailableFor(final Duration duration) {
+        final LocalDateTime heartbeat = DateUtils.nowUTC().minus(duration);
+        doReturn(Optional.of(heartbeat)).when(kubernetesManager).getReadyHeartbeatDateTime(node);
+        return heartbeat;
     }
 
     private void mockNodeMarked() {
-        doReturn(Collections.singletonMap(KubernetesConstants.UNAVAILABLE_NODE_LABEL, "timestamp"))
-                .when(kubernetesManager).getNodeLabels(client, NODE_NAME);
+        node.getMetadata().getLabels().put(KubernetesConstants.UNAVAILABLE_NODE_LABEL, "timestamp");
+    }
+
+    private void mockRunTaggedSince(final LocalDateTime timestamp) {
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(NODE_UNAVAILABLE_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        tags.put(NODE_UNAVAILABLE_TAG + DATE_SUFFIX, TAG_DATE_FORMATTER.format(timestamp));
+        run.setTags(tags);
     }
 
     private void verifyNodeMarked() {
@@ -220,18 +354,33 @@ public class ScaleDownHandlerTest {
 
     private void verifyNodeNotMarked() {
         verify(kubernetesManager, never()).addNodeLabel(anyString(), anyString(), anyString());
+        verifyRunNotMarked();
+    }
+
+    private void verifyRunNotMarked() {
         verify(pipelineRunManager, never()).updateTags(anyLong(), any(TagsVO.class), eq(false));
         verify(runLogManager, never()).saveLog(any(RunLog.class));
     }
 
+    private void verifyRunUnmarked() {
+        verify(kubernetesManager).removeNodeLabel(NODE_NAME, KubernetesConstants.UNAVAILABLE_NODE_LABEL);
+        final ArgumentCaptor<TagsVO> tags = ArgumentCaptor.forClass(TagsVO.class);
+        verify(pipelineRunManager).updateTags(eq(RUN_ID), tags.capture(), eq(true));
+        assertThat(tags.getValue().getTags())
+                .doesNotContainKey(NODE_UNAVAILABLE_TAG)
+                .doesNotContainKey(NODE_UNAVAILABLE_TAG + DATE_SUFFIX);
+        verify(runLogManager).saveLog(any(RunLog.class));
+    }
+
     private void verifyNodeScaledDown() {
         verify(pipelineRunManager).updatePipelineStatusIfNotFinal(RUN_ID, TaskStatus.FAILURE);
+        verify(pipelineRunManager).updatePodStatus(RUN_ID, POD_STATUS);
         verify(cloudFacade).scaleDownNode(RUN_ID);
     }
 
     private void verifyNodeNotScaledDown() {
-        // the handler logs and swallows any failure, so the check has to reach the scale down decision
-        verify(kubernetesManager).getNodeLabels(client, NODE_NAME);
+        // the handler logs and swallows any failure, so the check has to reach the run lookup
+        verify(pipelineRunManager).findRun(RUN_ID);
         verify(pipelineRunManager, never()).updatePipelineStatusIfNotFinal(anyLong(), any(TaskStatus.class));
         verify(cloudFacade, never()).scaleDownNode(anyLong());
     }
@@ -253,6 +402,7 @@ public class ScaleDownHandlerTest {
         instance.setNodeId(INSTANCE_ID);
         final PipelineRun run = new PipelineRun();
         run.setId(RUN_ID);
+        run.setStatus(TaskStatus.RUNNING);
         run.setInstance(instance);
         return run;
     }
