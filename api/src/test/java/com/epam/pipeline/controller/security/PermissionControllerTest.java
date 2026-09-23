@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import org.junit.Test;
@@ -27,11 +28,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.Collections;
+import java.util.List;
+
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.ACL_SECURED_ENTRY_TYPE;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.ENTITY_PERMISSION_LIST_TYPE;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.ENTITY_WITH_PERMISSION_VO_TYPE;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getAclSecuredEntry;
+import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getEntityPermission;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getEntityPermissionVO;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVO;
 import static org.mockito.Mockito.doReturn;
@@ -46,8 +52,10 @@ public class PermissionControllerTest extends AbstractControllerTest {
     private static final String ALL_PERMISSIONS_URL = GRANT_URL + "/all";
     private static final String OWNER_URL = GRANT_URL + "/owner";
     private static final String PERMISSIONS_URL = SERVLET_PATH + "/permissions";
+    private static final String USER_PERMISSIONS_URL = PERMISSIONS_URL + "/user";
     private static final String ID_AS_STRING = String.valueOf(ID);
     private static final String ID_PARAM = "id";
+    private static final String USER_ID_PARAM = "userId";
     private static final String ACL_CLASS_PARAM = "aclClass";
     private static final AclClass DATA_STORAGE = AclClass.DATA_STORAGE;
     private static final String DATA_STORAGE_STRING = AclClass.DATA_STORAGE.name();
@@ -171,5 +179,24 @@ public class PermissionControllerTest extends AbstractControllerTest {
 
         verify(mockPermissionApiService).loadEntityPermission(ID, DATA_STORAGE);
         assertResponse(mvcResult, entityPermissionVO, ENTITY_WITH_PERMISSION_VO_TYPE);
+    }
+
+    @Test
+    public void shouldFailLoadUserEntitiesPermissionsForUnauthorizedUser() {
+        performUnauthorizedRequest(get(USER_PERMISSIONS_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadUserEntitiesPermissions() {
+        final List<EntityPermission> entityPermissions = Collections.singletonList(getEntityPermission());
+        doReturn(entityPermissions).when(mockPermissionApiService).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+
+        final MvcResult mvcResult = performRequest(get(USER_PERMISSIONS_URL)
+                .params(multiValueMapOf(USER_ID_PARAM, ID_AS_STRING,
+                                        ACL_CLASS_PARAM, DATA_STORAGE_STRING)));
+
+        verify(mockPermissionApiService).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+        assertResponse(mvcResult, entityPermissions, ENTITY_PERMISSION_LIST_TYPE);
     }
 }
