@@ -33,6 +33,7 @@ from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
 from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents, pack_powershell_script_contents
+from pipeline.autoscaling.kubeprovider import KubeProvider
 import jwt
 
 VM_NAME_PREFIX = "az-"
@@ -703,13 +704,6 @@ def get_nodename(api, nodename):
         return ''
 
 
-def is_node_ready(node_conditions):
-    for condition in node_conditions:
-        if condition.get("type") == u"Ready":
-            return condition.get("status") == u"True"
-    return False
-
-
 def verify_regnode(ins_id, num_rep, time_rep, api):
     ret_namenode = ''
     rep = 0
@@ -727,7 +721,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
         while rep <= num_rep:
             node = pykube.Node.objects(api).filter(field_selector={'metadata.name': ret_namenode})
             node_conditions = node.response['items'][0]['status']['conditions']
-            if is_node_ready(node_conditions):
+            if KubeProvider.is_node_ready(node_conditions):
                 pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                 break
             rep = increment_or_fail(num_rep, rep,
