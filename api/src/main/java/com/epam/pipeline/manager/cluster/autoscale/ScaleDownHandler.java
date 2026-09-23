@@ -256,7 +256,8 @@ public class ScaleDownHandler {
         final CloudInstanceState state;
         if (isPooled(node)) {
             final NodeRegionLabels cloudRegion = kubernetesManager.getNodeRegion(label);
-            state = cloudFacade.getInstanceState(cloudRegion, instanceId);
+            // providers find an instance by the tag it was launched with, which for a pool node is its label
+            state = cloudFacade.getInstanceState(cloudRegion, label);
         } else {
             final Long runId = Long.parseLong(label);
             state = cloudFacade.getInstanceState(runId);

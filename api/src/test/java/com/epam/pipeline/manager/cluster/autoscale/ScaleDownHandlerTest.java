@@ -19,11 +19,13 @@ package com.epam.pipeline.manager.cluster.autoscale;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
+import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
@@ -71,7 +73,10 @@ public class ScaleDownHandlerTest {
     private static final String RUN_LABEL = String.valueOf(RUN_ID);
     private static final String NODE_NAME = "node-1";
     private static final String INSTANCE_ID = "i-1";
+    private static final String POOL_LABEL = AutoscaleContants.NODE_POOL_PREFIX + "1";
+    private static final String REGION_CODE = "us-east-1";
     private static final int GRACE_MINUTES = 30;
+    private static final String GRACE_MINUTES_OVER_INTEGER = "3000000000";
     private static final Duration WITHIN_GRACE = Duration.ofMinutes(10);
     private static final Duration PAST_GRACE = Duration.ofMinutes(60);
     private static final String GRACE_ENV_VAR = "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES";
@@ -309,11 +314,38 @@ public class ScaleDownHandlerTest {
     public void shouldIgnoreRunGracePeriodThatDoesNotFitIntoInteger() {
         mockUnavailableFor(PAST_GRACE);
         mockNodeMarked();
-        run.setEnvVars(Collections.singletonMap(GRACE_ENV_VAR, "3000000000"));
+        run.setEnvVars(Collections.singletonMap(GRACE_ENV_VAR, GRACE_MINUTES_OVER_INTEGER));
 
         checkFreeNodes();
 
         verifyNodeScaledDown();
+    }
+
+    @Test
+    public void shouldNotTakeRunGracePeriodThatDoesNotFitIntoIntegerForZero() {
+        mockUnavailableFor(WITHIN_GRACE);
+        mockNodeMarked();
+        run.setEnvVars(Collections.singletonMap(GRACE_ENV_VAR, GRACE_MINUTES_OVER_INTEGER));
+
+        checkFreeNodes();
+
+        verifyNodeNotScaledDown();
+    }
+
+    @Test
+    public void shouldNotScaleDownUnavailablePoolNodeWithinGracePeriodIfInstanceIsRunning() {
+        mockUnavailableFor(WITHIN_GRACE);
+        node.getMetadata().getLabels().put(KubernetesConstants.RUN_ID_LABEL, POOL_LABEL);
+        final NodeRegionLabels region = new NodeRegionLabels(CloudProvider.AWS, REGION_CODE);
+        doReturn(region).when(kubernetesManager).getNodeRegion(POOL_LABEL);
+        doReturn(CloudInstanceState.RUNNING).when(cloudFacade).getInstanceState(region, POOL_LABEL);
+
+        checkFreeNodes();
+
+        verify(kubernetesManager)
+                .addNodeLabel(eq(NODE_NAME), eq(KubernetesConstants.UNAVAILABLE_NODE_LABEL), anyString());
+        verify(cloudFacade).getInstanceState(region, POOL_LABEL);
+        verify(cloudFacade, never()).scaleDownPoolNode(anyString());
     }
 
     private void checkFreeNodes() {
