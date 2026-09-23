@@ -71,6 +71,10 @@ public class StoragePermissionManager {
             || permissionHelper.isScopedAdmin(AclClass.DATA_STORAGE);
     }
 
+    public boolean isStorageReader() {
+        return permissionHelper.isScopedReader(AclClass.DATA_STORAGE);
+    }
+
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
         return grantPermissionManager.storagePermission(storage, permissionName);

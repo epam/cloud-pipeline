@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.manager.security;
 
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
+import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
 import static org.junit.Assert.assertEquals;
 
@@ -36,11 +38,13 @@ public class GrantPermissionManagerTest extends AbstractAclTest {
     private static final String GROUP_1_AUTHORITY = "GROUP_1";
     private static final String GROUP_2_AUTHORITY = "GROUP_2";
     private static final String ROLE_USER = "ROLE_USER";
+    private static final String ROLE_STORAGE_READER = "ROLE_STORAGE_READER";
     private static final int SIMPLE_MASK_WRITE = new AclPermission(AclPermission.WRITE.getMask()).getSimpleMask();
     private static final int SIMPLE_MASK_READ = new AclPermission(AclPermission.READ.getMask()).getSimpleMask();
 
     private final Folder folder = getFolder(ID, null, ANOTHER_SIMPLE_USER);
     private final Folder anotherFolder = getFolder(ID_2, ID, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage s3bucket = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
 
     @Autowired
     private GrantPermissionManager permissionManager;
@@ -240,5 +244,17 @@ public class GrantPermissionManagerTest extends AbstractAclTest {
 
         int permissionsMask = permissionManager.getPermissionsMask(anotherFolder, true, true);
         assertEquals(SIMPLE_MASK_WRITE, permissionsMask);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, authorities = ROLE_STORAGE_READER)
+    public void getPermissionsMaskReturnsExtendedReadMaskForStorageReaderWhenReadIsDenied() {
+        initAclEntity(s3bucket, Arrays.asList(
+                new UserPermission(SIMPLE_USER, AclPermission.NO_READ.getMask()),
+                new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
+        mockAuthUser(SIMPLE_USER);
+
+        int permissionsMask = permissionManager.getPermissionsMask(s3bucket, false, true);
+        assertEquals(AclPermission.READ.getMask() | AclPermission.WRITE.getMask(), permissionsMask);
     }
 }

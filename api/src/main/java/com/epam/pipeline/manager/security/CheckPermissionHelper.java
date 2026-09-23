@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -67,6 +68,9 @@ public class CheckPermissionHelper {
             return true;
         }
         if (isScopedAdmin(entity)) {
+            return true;
+        }
+        if (AclPermission.READ_NAME.equals(permissionName) && isScopedReader(entity)) {
             return true;
         }
         return permissionEvaluator
@@ -168,6 +172,27 @@ public class CheckPermissionHelper {
             return hasAnyRole(sids, DefaultRoles.ROLE_USER_ADMIN);
         }
         return false;
+    }
+
+    /**
+     * Checks whether the SIDs are granted READ on the entity by a role that grants it to every entity of
+     * its type, regardless of the entity's ACL. Unlike {@link #isScopedAdmin(AbstractSecuredEntity, List)},
+     * such a role grants nothing but READ.
+     */
+    public boolean isScopedReader(final AbstractSecuredEntity entity) {
+        return entity instanceof AbstractDataStorage && isScopedReader(entity, getSids());
+    }
+
+    public boolean isScopedReader(final AbstractSecuredEntity entity, final List<Sid> sids) {
+        return entity instanceof AbstractDataStorage && hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+    }
+
+    public boolean isScopedReader(final AclClass aclClass) {
+        return isScopedReader(aclClass, getSids());
+    }
+
+    public boolean isScopedReader(final AclClass aclClass, final List<Sid> sids) {
+        return aclClass == AclClass.DATA_STORAGE && hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
     }
 
     public boolean hasAnyRole(final DefaultRoles... roles) {
