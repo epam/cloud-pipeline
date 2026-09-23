@@ -1848,6 +1848,11 @@ for details.
 The same fix applies when a new node registers: the Platform waits for its `Ready` condition to become
 `True`, wherever that condition is listed, rather than for the fourth condition in the list.
 
+A free node whose last run has already finished is stopped without touching that run: the finished run is
+no longer tagged, logged or given a new pod status. On GCP, an error of the Compute API while the state of
+an unavailable node's instance is requested no longer counts as a terminated instance, so a live node is
+not stopped before its grace period is over.
+
 > **_Note_**: on a `canal`/`flannel` deployment, the runs whose nodes stopped reporting were previously
 > left running, and now fail once their grace period has elapsed. If such a node stopped reporting more
 > than a grace period ago, the first check after the upgrade writes the `NodeAvailabilityMonitor` entry
