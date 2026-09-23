@@ -67,6 +67,7 @@
     - [Region is being set incorrectly when trying to rerun pipeline](#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline)
     - [`PAUSE` and `COMMIT` operations fail for the jobs with an autoscaled disk](#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk)
     - [Node unavailability is not detected when a network plugin condition goes first](#node-unavailability-is-not-detected-when-a-network-plugin-condition-goes-first)
+    - [Unavailable node without a heartbeat is never stopped](#unavailable-node-without-a-heartbeat-is-never-stopped)
 
 ***
 
@@ -1864,3 +1865,17 @@ other while its instance is running.
 > above the time their nodes have been silent, before the upgrade — the
 > `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` parameter of a run is set at its launch, so it cannot be raised
 > for a run that is already running.
+
+### Unavailable node without a heartbeat is never stopped
+
+[#4587](https://github.com/epam/cloud-pipeline/issues/4587)
+
+Previously, an unavailable node that had no `Ready` condition, or whose `Ready` condition had no
+heartbeat, was never stopped: its grace period was counted from the moment of each check, so it started
+over on every check and never ran out, and the run of that node hung.
+
+Currently, the grace period of such a node is counted from the node's registration in the cluster, as
+Kubernetes itself does for a node that has never reported. Such a node is stopped once the grace period
+has elapsed since then — on the check that first finds it, if the node registered longer ago than that.
+See [11.6. Node availability monitoring](../../manual/11_Manage_Runs/11.6._Node_availability_monitoring.md)
+for details.
