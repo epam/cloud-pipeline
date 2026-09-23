@@ -47,6 +47,7 @@ public enum DefaultRoles {
             null, null, null, null)),
     ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null)),
     ROLE_STORAGE_ADMIN(new Role(null, "ROLE_STORAGE_ADMIN", true, false, null, null, null, null)),
+    ROLE_STORAGE_READER(new Role(null, "ROLE_STORAGE_READER", true, false, null, null, null, null)),
     ROLE_TOOL_ADMIN(new Role(null, "ROLE_TOOL_ADMIN", true, false, null, null, null, null)),
     ROLE_USER_ADMIN(new Role(null, "ROLE_USER_ADMIN", true, false, null, null, null, null)),
     ROLE_PIPELINE_ADMIN(new Role(null, "ROLE_PIPELINE_ADMIN", true, false, null, null, null, null)),
