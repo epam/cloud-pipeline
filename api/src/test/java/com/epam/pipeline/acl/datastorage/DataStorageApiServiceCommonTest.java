@@ -856,6 +856,129 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
                 dataStorageApiService.generateCredentials(dataStorageActionList));
     }
 
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldReturnDataStoragesWithReadMaskForStorageReader() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
+
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
+
+        assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
+        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldReturnDataStoragesWithReadMaskForStorageReaderWhenReadIsDenied() {
+        initAclEntity(s3bucket, AclPermission.NO_READ);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
+
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
+
+        assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
+        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldKeepGrantedWriteInMaskForStorageReader() {
+        initAclEntity(s3bucket, AclPermission.WRITE);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
+
+        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
+
+        assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
+        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_AND_WRITE_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldReturnEmptyWritableDataStorageListForStorageReader() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
+
+        assertThat(dataStorageApiService.getWritableStorages()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldLoadDataStorageForStorageReader() {
+        initAclEntity(s3bucket);
+        doReturn(s3bucket).when(mockDataStorageManager).load(ID);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+
+        final AbstractDataStorage returnedDataStorage = dataStorageApiService.load(ID);
+
+        assertThat(returnedDataStorage).isEqualTo(s3bucket);
+        assertThat(returnedDataStorage.getMask()).isEqualTo(READ_PERMISSION);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldDenyLoadNotSharedDataStorageForExternalStorageReader() {
+        final AbstractDataStorage notSharedStorage =
+                DatastorageCreatorUtils.getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER, false);
+        initAclEntity(notSharedStorage);
+        doReturn(notSharedStorage).when(mockDataStorageManager).load(ID);
+        initUserAndEntityMocks(SIMPLE_USER, notSharedStorage, externalContext);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.load(ID));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldDenyUpdateDataStorageForStorageReader() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(dataStorageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(dataStorageVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldDenyRequestDavMountForStorageReader() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.requestDataStorageDavMount(s3bucket.getId(), SECS_IN_HOUR));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldGenerateReadCredentialsForStorageReader() {
+        final DataStorageAction dataStorageAction = DatastorageCreatorUtils.getDataStorageAction();
+        dataStorageAction.setRead(true);
+        final List<DataStorageAction> dataStorageActionList = Collections.singletonList(dataStorageAction);
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThat(dataStorageApiService.generateCredentials(dataStorageActionList)).isEqualTo(temporaryCredentials);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldDenyGenerateWriteCredentialsForStorageReader() {
+        final DataStorageAction dataStorageAction = DatastorageCreatorUtils.getDataStorageAction();
+        dataStorageAction.setRead(true);
+        dataStorageAction.setWrite(true);
+        final List<DataStorageAction> dataStorageActionList = Collections.singletonList(dataStorageAction);
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+        doReturn(temporaryCredentials).when(mockTemporaryCredentialsManager).generate(dataStorageActionList);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.generateCredentials(dataStorageActionList));
+    }
+
     private void mockDataStorageMgmtRestrictedMode(final boolean enabled, final AbstractDataStorage storage) {
         final ContextualPreference preference = new ContextualPreference(
                 SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED.getKey(), enabled ? "true" : "false",

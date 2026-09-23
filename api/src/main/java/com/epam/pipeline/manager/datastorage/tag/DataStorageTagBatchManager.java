@@ -246,6 +246,9 @@ public class DataStorageTagBatchManager {
         if (storagePermissionManager.isStorageAdmin()) {
             return null;
         }
+        if (mask == AclPermission.READ.getMask() && storagePermissionManager.isStorageReader()) {
+            return null;
+        }
         final AbstractDataStorage storage = storageDao.loadDataStorage(storageId);
         if (Objects.isNull(storage)) {
             log.debug("Storage '{}' was not found.", storageId);

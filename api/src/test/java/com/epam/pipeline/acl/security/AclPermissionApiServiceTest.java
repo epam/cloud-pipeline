@@ -108,6 +108,27 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldGetPermissionForStorageReader() {
+        initAclEntity(anotherS3bucket);
+        doReturn(aclSecuredEntry).when(spyPermissionManager).getPermissions(ID, AclClass.DATA_STORAGE);
+        mockSecurityContext();
+        mockUser(SIMPLE_USER);
+
+        assertThat(aclPermissionApiService.getPermissions(ID, AclClass.DATA_STORAGE)).isEqualTo(aclSecuredEntry);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldDenySetPermissionForStorageReader() {
+        initAclEntity(anotherS3bucket);
+        mockSecurityContext();
+        mockUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class, () -> aclPermissionApiService.setPermissions(permissionGrantVO));
+    }
+
+    @Test
     @WithMockUser
     public void shouldDenyGetPermissionForNotOwner() {
         initAclEntity(s3bucket);

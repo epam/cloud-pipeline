@@ -15,3 +15,4 @@
 | [**3751_2**](3751_allow_to_grant_permissions_to_group/3751_2.md) | WRITE grant permissions to User Group |
 | [**3970_1**](3970_storage_permissions_restrictions/3970_1.md) | Storage permissions restrictions |
 | [**3970_2**](3970_storage_permissions_restrictions/3970_2.md) | Storage permissions restrictions for all groups/roles |
+| [**4593_1**](4593_storage_reader_role/4593_1.md) | ROLE_STORAGE_READER: read-only access to existing storages |
