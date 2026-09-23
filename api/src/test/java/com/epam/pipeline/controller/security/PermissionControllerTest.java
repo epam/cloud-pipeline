@@ -1,0 +1,81 @@
+/*
+ * Copyright 2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.controller.security;
+
+import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
+import com.epam.pipeline.entity.security.acl.AclSid;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
+import com.epam.pipeline.manager.security.AclPermissionApiService;
+import com.epam.pipeline.test.web.AbstractControllerTest;
+import com.fasterxml.jackson.core.type.TypeReference;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MvcResult;
+
+import java.util.Collections;
+import java.util.List;
+
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+@WebMvcTest(controllers = PermissionController.class)
+public class PermissionControllerTest extends AbstractControllerTest {
+
+    private static final String USER_PERMISSIONS_URL = SERVLET_PATH + "/permissions/user";
+    private static final String USER_ID_PARAM = "userId";
+    private static final String ACL_CLASS_PARAM = "aclClass";
+    private static final TypeReference<Result<List<EntityPermission>>> ENTITY_PERMISSION_LIST_TYPE =
+            new TypeReference<Result<List<EntityPermission>>>() {};
+
+    @Autowired
+    private AclPermissionApiService mockPermissionApiService;
+
+    @Test
+    public void shouldFailLoadUserEntitiesPermissionsForUnauthorizedUser() {
+        performUnauthorizedRequest(get(USER_PERMISSIONS_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadUserEntitiesPermissions() {
+        final List<EntityPermission> entityPermissions = Collections.singletonList(getEntityPermission());
+        doReturn(entityPermissions).when(mockPermissionApiService)
+                .loadUserEntitiesPermissions(ID, AclClass.DATA_STORAGE);
+
+        final MvcResult mvcResult = performRequest(get(USER_PERMISSIONS_URL)
+                .params(multiValueMapOf(USER_ID_PARAM, String.valueOf(ID),
+                                        ACL_CLASS_PARAM, AclClass.DATA_STORAGE.name())));
+
+        verify(mockPermissionApiService).loadUserEntitiesPermissions(ID, AclClass.DATA_STORAGE);
+        assertResponse(mvcResult, entityPermissions, ENTITY_PERMISSION_LIST_TYPE);
+    }
+
+    private EntityPermission getEntityPermission() {
+        final EntityPermission entityPermission = new EntityPermission();
+        entityPermission.setPermissions(Collections.singleton(
+                new AclPermissionEntry(new AclSid(TEST_STRING, true), TEST_INT)));
+        return entityPermission;
+    }
+}

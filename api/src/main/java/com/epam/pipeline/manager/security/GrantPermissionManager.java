@@ -120,6 +120,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -152,6 +153,9 @@ public class GrantPermissionManager {
     private static final String OWNER = "OWNER";
     private static final String WRITE = "WRITE";
     private static final String READ = "READ";
+    // the classes whose entity manager can load all entities together with their parents
+    private static final Set<AclClass> USER_ENTITIES_PERMISSIONS_CLASSES =
+            EnumSet.of(AclClass.DATA_STORAGE, AclClass.PIPELINE);
 
     @Autowired private PermissionEvaluator permissionEvaluator;
 
@@ -731,6 +735,33 @@ public class GrantPermissionManager {
         return result;
     }
 
+    /**
+     * Loads the permissions granted to a user on every entity of a class: the ACL entries of each entity,
+     * merged with the ones inherited from its parents, as {@link #loadEntityPermission(AclClass, Long)}
+     * returns them, restricted to the SIDs of the user, its roles and its groups. Entities without such
+     * entries are omitted.
+     * The result reflects the ACL only: access given by a role regardless of the ACL, by ownership,
+     * or reduced by a quota or by the mount status of a storage is not included.
+     */
+    public List<EntityPermission> loadUserEntitiesPermissions(final Long userId, final AclClass aclClass) {
+        Assert.isTrue(USER_ENTITIES_PERMISSIONS_CLASSES.contains(aclClass),
+                messageHelper.getMessage(MessageConstants.ERROR_USER_PERMISSIONS_CLASS_NOT_SUPPORTED, aclClass));
+        final Set<AclSid> userSids = convertUserToSids(new UserContext(userManager.load(userId))).stream()
+                .map(AclSid::new)
+                .collect(toSet());
+        final Collection<? extends AbstractSecuredEntity> entities =
+                entityManager.loadAllWithParents(aclClass, null, null);
+        final Map<AbstractSecuredEntity, List<AclPermissionEntry>> allPermissions = getEntitiesPermissions(entities);
+        return entities.stream().distinct()
+                .sorted(Comparator.comparingLong(BaseEntity::getId))
+                .map(entity -> getEntityPermission(allPermissions, entity))
+                .peek(entry -> entry.setPermissions(entry.getPermissions().stream()
+                        .filter(permission -> userSids.contains(permission.getSid()))
+                        .collect(toSet())))
+                .filter(entry -> CollectionUtils.isNotEmpty(entry.getPermissions()))
+                .collect(toList());
+    }
+
     private EntityPermission getEntityPermission(Map<AbstractSecuredEntity, List<AclPermissionEntry>> allPermissions,
                                                  AbstractSecuredEntity entity) {
         AbstractSecuredEntity aclEntity = getAclEntity(entity);
@@ -886,9 +917,17 @@ public class GrantPermissionManager {
         String principal = user.toUpperCase();
         UserContext eventOwner = userManager.loadUserContext(user.toUpperCase());
         Assert.notNull(eventOwner, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, principal));
+        return convertUserToSids(principal, eventOwner);
+    }
+
+    private List<Sid> convertUserToSids(final UserContext user) {
+        return convertUserToSids(user.getUsername().toUpperCase(), user);
+    }
+
+    private List<Sid> convertUserToSids(final String principal, final UserContext user) {
         List<Sid> sids = new ArrayList<>();
         sids.add(new PrincipalSid(principal));
-        sids.addAll(eventOwner.getAuthorities().stream()
+        sids.addAll(user.getAuthorities().stream()
                 .map(GrantedAuthoritySid::new)
                 .collect(toList()));
         return sids;

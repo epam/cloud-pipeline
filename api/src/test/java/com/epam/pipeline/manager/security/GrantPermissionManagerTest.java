@@ -15,11 +15,20 @@
  */
 package com.epam.pipeline.manager.security;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
+import com.epam.pipeline.entity.security.acl.AclSid;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AclImpl;
@@ -27,11 +36,18 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.folder.FolderCreatorUtils.getFolder;
+import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipeline;
+import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.doReturn;
 
 public class GrantPermissionManagerTest extends AbstractAclTest {
 
@@ -256,5 +272,127 @@ public class GrantPermissionManagerTest extends AbstractAclTest {
 
         int permissionsMask = permissionManager.getPermissionsMask(s3bucket, false, true);
         assertEquals(AclPermission.READ.getMask() | AclPermission.WRITE.getMask(), permissionsMask);
+    }
+
+    @Test
+    public void loadUserEntitiesPermissionsShouldKeepOnlyEntriesOfUserItsRolesAndGroups() {
+        mockUserWithAuthorities();
+        final S3bucketDataStorage storage = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
+        mockStorages(storage);
+        initAclEntity(Collections.singletonList(acl(storage,
+                new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
+                new UserPermission(ANOTHER_SIMPLE_USER, AclPermission.WRITE.getMask()),
+                new AuthorityPermission(AclPermission.WRITE.getMask(), GROUP_1_AUTHORITY),
+                new AuthorityPermission(AclPermission.WRITE.getMask(), GROUP_2_AUTHORITY),
+                new AuthorityPermission(AclPermission.EXECUTE.getMask(), ROLE_USER))));
+
+        final List<EntityPermission> result = permissionManager.loadUserEntitiesPermissions(ID,
+                AclClass.DATA_STORAGE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getEntity()).isEqualTo(storage);
+        assertThat(result.get(0).getPermissions()).containsOnly(
+                entry(SIMPLE_USER, true, AclPermission.READ.getMask()),
+                entry(GROUP_1_AUTHORITY, false, AclPermission.WRITE.getMask()),
+                entry(ROLE_USER, false, AclPermission.EXECUTE.getMask()));
+    }
+
+    @Test
+    public void loadUserEntitiesPermissionsShouldIncludeEntriesInheritedFromParent() {
+        mockUserWithAuthorities();
+        final Folder parent = getFolder(ID, null, ANOTHER_SIMPLE_USER);
+        final S3bucketDataStorage storage = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
+        storage.setParent(parent);
+        mockStorages(storage);
+        initAclEntity(Arrays.asList(
+                acl(parent, new AuthorityPermission(AclPermission.WRITE.getMask(), GROUP_1_AUTHORITY)),
+                acl(storage)));
+
+        final List<EntityPermission> result = permissionManager.loadUserEntitiesPermissions(ID,
+                AclClass.DATA_STORAGE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPermissions()).containsOnly(
+                entry(GROUP_1_AUTHORITY, false, AclPermission.WRITE.getMask()));
+    }
+
+    @Test
+    public void loadUserEntitiesPermissionsShouldOmitEntitiesWithoutEntriesOfUser() {
+        mockUserWithAuthorities();
+        final S3bucketDataStorage granted = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
+        final S3bucketDataStorage notGranted = getS3bucketDataStorage(ID_2, ANOTHER_SIMPLE_USER);
+        final S3bucketDataStorage empty = getS3bucketDataStorage(ID_3, ANOTHER_SIMPLE_USER);
+        mockStorages(granted, notGranted, empty);
+        initAclEntity(Arrays.asList(
+                acl(granted, new UserPermission(SIMPLE_USER, AclPermission.READ.getMask())),
+                acl(notGranted, new UserPermission(ANOTHER_SIMPLE_USER, AclPermission.READ.getMask()),
+                        new AuthorityPermission(AclPermission.READ.getMask(), GROUP_2_AUTHORITY)),
+                acl(empty)));
+
+        final List<EntityPermission> result = permissionManager.loadUserEntitiesPermissions(ID,
+                AclClass.DATA_STORAGE);
+
+        assertThat(result).extracting(EntityPermission::getEntity).containsExactly(granted);
+    }
+
+    @Test
+    public void loadUserEntitiesPermissionsShouldKeepDenyingEntriesOfUser() {
+        mockUserWithAuthorities();
+        final S3bucketDataStorage storage = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
+        mockStorages(storage);
+        initAclEntity(Collections.singletonList(acl(storage,
+                new UserPermission(SIMPLE_USER, AclPermission.NO_READ.getMask()))));
+
+        final List<EntityPermission> result = permissionManager.loadUserEntitiesPermissions(ID,
+                AclClass.DATA_STORAGE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getPermissions()).containsOnly(
+                entry(SIMPLE_USER, true, AclPermission.NO_READ.getMask()));
+    }
+
+    @Test
+    public void loadUserEntitiesPermissionsShouldLoadPipelines() {
+        mockUserWithAuthorities();
+        final Pipeline granted = getPipeline(ID, ANOTHER_SIMPLE_USER, null);
+        final Pipeline notGranted = getPipeline(ID_2, ANOTHER_SIMPLE_USER, null);
+        doReturn(new HashSet<>(Arrays.asList(granted, notGranted))).when(mockEntityManager)
+                .loadAllWithParents(AclClass.PIPELINE, null, null);
+        initAclEntity(Arrays.asList(
+                acl(granted, new AuthorityPermission(AclPermission.EXECUTE.getMask(), GROUP_1_AUTHORITY)),
+                acl(notGranted)));
+
+        final List<EntityPermission> result = permissionManager.loadUserEntitiesPermissions(ID, AclClass.PIPELINE);
+
+        assertThat(result).extracting(EntityPermission::getEntity).containsExactly(granted);
+        assertThat(result.get(0).getPermissions()).containsOnly(
+                entry(GROUP_1_AUTHORITY, false, AclPermission.EXECUTE.getMask()));
+    }
+
+    @Test
+    public void loadUserEntitiesPermissionsShouldFailForUnsupportedClass() {
+        assertThrows(IllegalArgumentException.class,
+            () -> permissionManager.loadUserEntitiesPermissions(ID, AclClass.FOLDER));
+    }
+
+    private void mockUserWithAuthorities() {
+        final PipelineUser user = getPipelineUser(SIMPLE_USER, ID);
+        user.setRoles(Collections.singletonList(new Role(ROLE_USER)));
+        user.setGroups(Collections.singletonList(GROUP_1_AUTHORITY));
+        doReturn(user).when(mockUserManager).load(ID);
+    }
+
+    private void mockStorages(final S3bucketDataStorage... storages) {
+        doReturn(Arrays.asList(storages)).when(mockEntityManager)
+                .loadAllWithParents(AclClass.DATA_STORAGE, null, null);
+    }
+
+    private Pair<AbstractSecuredEntity, List<AbstractGrantPermission>> acl(final AbstractSecuredEntity entity,
+                                                                            final AbstractGrantPermission... entries) {
+        return Pair.of(entity, Arrays.asList(entries));
+    }
+
+    private AclPermissionEntry entry(final String sid, final boolean principal, final int mask) {
+        return new AclPermissionEntry(new AclSid(sid, principal), mask);
     }
 }

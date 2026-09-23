@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.manager.security.AclPermissionApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -36,6 +37,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.List;
 
 @Controller
 @Api(value = "Permissions")
@@ -125,5 +128,27 @@ public class PermissionController extends AbstractRestController {
             })
     public Result<EntityPermissionVO> loadEntityPermissions(@RequestParam Long id, @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.loadEntityPermission(id, aclClass));
+    }
+
+    @GetMapping(value = "permissions/user")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads permissions granted to a user on all entities of a class.",
+            notes = "Loads permissions granted to the user specified by ID on all entities of the class: for each "
+                    + "entity, its permissions merged with the inherited ones, as the 'permissions' method returns "
+                    + "them, keeping only the entries of the user, its roles and its groups. Entities without such "
+                    + "entries are omitted. Requires ADMIN, USER_ADMIN or USER_READER role, or READ permission "
+                    + "on the user. Admins get all entities, other users only the ones they can read. "
+                    + "Only granted permissions are returned: access given by a role regardless of ACL "
+                    + "(e.g. ROLE_ADMIN, ROLE_STORAGE_ADMIN, ROLE_STORAGE_READER), by ownership, or reduced "
+                    + "by a quota or by the mount status of a storage is not reflected. "
+                    + "Supported classes: DATA_STORAGE, PIPELINE.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<EntityPermission>> loadUserEntitiesPermissions(@RequestParam final Long userId,
+                                                                      @RequestParam final AclClass aclClass) {
+        return Result.success(permissionApiService.loadUserEntitiesPermissions(userId, aclClass));
     }
 }
