@@ -147,6 +147,9 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
                 || storage.getOwner().equalsIgnoreCase(authManager.getAuthorizedUser())) {
             return true;
         }
+        if (!action.isWrite() && storagePermissionManager.isStorageReader()) {
+            return true;
+        }
         return DataStorageItemType.File.equals(action.getItemType())
                 ? isActionAllowedForFilePath(storage.getId(), action)
                 : isActionAllowedForFolderPath(storage.getId(), action);
