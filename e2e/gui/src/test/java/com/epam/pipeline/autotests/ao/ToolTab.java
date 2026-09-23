@@ -145,7 +145,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
     }
 
     public ToolSettings settings() {
-        return onTab(ToolSettings.class);
+        return onTab(ToolSettings.class).expandTab(EXEC_ENVIRONMENT);
     }
 
     public ConfirmationPopupAO<ToolGroup> delete() {
