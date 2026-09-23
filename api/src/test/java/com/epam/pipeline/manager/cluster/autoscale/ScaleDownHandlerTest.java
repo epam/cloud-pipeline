@@ -115,6 +115,7 @@ public class ScaleDownHandlerTest {
         doReturn(nodes).when(kubernetesManager).getAvailableNodes(client);
         doReturn(true).when(kubernetesManager).isNodeUnavailable(node);
         doReturn(Optional.empty()).when(kubernetesManager).getReadyHeartbeatDateTime(node);
+        doReturn(Optional.empty()).when(kubernetesManager).getCreationDateTime(node);
         doReturn(POD_STATUS).when(kubernetesManager).updateStatusWithNodeConditions(any(), any());
         doReturn(GRACE_MINUTES).when(preferenceManager)
                 .getPreference(SystemPreferences.CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES);
@@ -232,6 +233,54 @@ public class ScaleDownHandlerTest {
 
         verifyNodeNotMarked();
         verifyNodeScaledDown();
+    }
+
+    @Test
+    public void shouldMarkNodeWithoutReadyHeartbeatSinceRegistrationBeforeScalingItDownIfGracePeriodHasExpired() {
+        final LocalDateTime registration = mockRegisteredFor(PAST_GRACE);
+
+        checkFreeNodes();
+
+        verifyNodeMarked();
+        final ArgumentCaptor<TagsVO> tags = ArgumentCaptor.forClass(TagsVO.class);
+        verify(pipelineRunManager).updateTags(eq(RUN_ID), tags.capture(), eq(false));
+        assertThat(tags.getValue().getTags())
+                .containsEntry(NODE_UNAVAILABLE_TAG + DATE_SUFFIX, TAG_DATE_FORMATTER.format(registration));
+        verifyNodeScaledDown();
+        verify(cloudFacade, never()).getInstanceState(anyLong());
+    }
+
+    @Test
+    public void shouldScaleDownMarkedNodeWithoutReadyHeartbeatIfGracePeriodSinceRegistrationHasExpired() {
+        mockRegisteredFor(PAST_GRACE);
+        mockNodeMarked();
+
+        checkFreeNodes();
+
+        verifyNodeNotMarked();
+        verifyNodeScaledDown();
+    }
+
+    @Test
+    public void shouldSkipMarkedNodeWithoutReadyHeartbeatWithinGracePeriodSinceRegistration() {
+        mockRegisteredFor(WITHIN_GRACE);
+        mockNodeMarked();
+
+        checkFreeNodes();
+
+        verifyNodeNotMarked();
+        verifyNodeNotScaledDown();
+    }
+
+    @Test
+    public void shouldCountGracePeriodFromReadyHeartbeatRatherThanRegistration() {
+        mockUnavailableFor(WITHIN_GRACE);
+        mockRegisteredFor(PAST_GRACE);
+        mockNodeMarked();
+
+        checkFreeNodes();
+
+        verifyNodeNotScaledDown();
     }
 
     @Test
@@ -360,6 +409,12 @@ public class ScaleDownHandlerTest {
         final LocalDateTime heartbeat = DateUtils.nowUTC().minus(duration);
         doReturn(Optional.of(heartbeat)).when(kubernetesManager).getReadyHeartbeatDateTime(node);
         return heartbeat;
+    }
+
+    private LocalDateTime mockRegisteredFor(final Duration duration) {
+        final LocalDateTime registration = DateUtils.nowUTC().minus(duration);
+        doReturn(Optional.of(registration)).when(kubernetesManager).getCreationDateTime(node);
+        return registration;
     }
 
     private void mockNodeMarked() {

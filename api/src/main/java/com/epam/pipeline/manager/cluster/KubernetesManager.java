@@ -991,6 +991,13 @@ public class KubernetesManager {
                 .map(dateTime -> LocalDateTime.parse(dateTime, KubernetesConstants.KUBE_DATE_FORMATTER));
     }
 
+    public Optional<LocalDateTime> getCreationDateTime(final Node node) {
+        return Optional.ofNullable(node)
+                .map(Node::getMetadata)
+                .map(ObjectMeta::getCreationTimestamp)
+                .map(dateTime -> LocalDateTime.parse(dateTime, KubernetesConstants.KUBE_DATE_FORMATTER));
+    }
+
     private Optional<NodeCondition> findNodeCondition(final Node node, final String type) {
         return getConditions(node).stream()
                 .filter(condition -> type.equals(condition.getType()))

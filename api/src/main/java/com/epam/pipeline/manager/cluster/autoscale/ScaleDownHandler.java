@@ -166,7 +166,9 @@ public class ScaleDownHandler {
 
     private void processUnavailableNode(final Node node, final Duration defaultGrace) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime timestamp = kubernetesManager.getReadyHeartbeatDateTime(node).orElse(now);
+        // a node without a Ready heartbeat is silent since its registration, as the node lifecycle controller has it
+        final LocalDateTime timestamp = kubernetesManager.getReadyHeartbeatDateTime(node)
+                .orElseGet(() -> kubernetesManager.getCreationDateTime(node).orElse(now));
 
         final Optional<PipelineRun> activeRun = findActiveRun(node);
         final Duration grace = findNodeUnavailableGraceDuration(activeRun, defaultGrace);

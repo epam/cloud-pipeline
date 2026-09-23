@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeStatus;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,8 @@ public class KubernetesManagerTest {
     private static final String KUBELET_HEARTBEAT = "2026-09-22T08:49:06Z";
     private static final String FLANNEL_HEARTBEAT = "2026-09-22T08:43:40Z";
     private static final LocalDateTime KUBELET_HEARTBEAT_DATE_TIME = LocalDateTime.parse("2026-09-22T08:49:06");
+    private static final String CREATION_TIMESTAMP = "2026-09-22T08:12:31Z";
+    private static final LocalDateTime CREATION_DATE_TIME = LocalDateTime.parse("2026-09-22T08:12:31");
 
     private static final String NETWORK_UNAVAILABLE = "NetworkUnavailable";
     private static final String MEMORY_PRESSURE = "MemoryPressure";
@@ -150,6 +153,26 @@ public class KubernetesManagerTest {
         assertFalse(manager.getReadyHeartbeatDateTime(node(Collections.emptyList())).isPresent());
         assertFalse(manager.getReadyHeartbeatDateTime(node(Collections.singletonList(
                 condition(READY, UNKNOWN, NODE_STATUS_UNKNOWN, null)))).isPresent());
+    }
+
+    @Test
+    public void creationDateTimeShouldBeTakenFromNodeMetadata() {
+        final Node node = node(Collections.emptyList());
+        final ObjectMeta metadata = new ObjectMeta();
+        metadata.setCreationTimestamp(CREATION_TIMESTAMP);
+        node.setMetadata(metadata);
+
+        assertEquals(Optional.of(CREATION_DATE_TIME), manager.getCreationDateTime(node));
+    }
+
+    @Test
+    public void creationDateTimeShouldBeEmptyWithoutCreationTimestamp() {
+        final Node node = node(Collections.emptyList());
+        node.setMetadata(new ObjectMeta());
+
+        assertFalse(manager.getCreationDateTime(node).isPresent());
+        assertFalse(manager.getCreationDateTime(new Node()).isPresent());
+        assertFalse(manager.getCreationDateTime(null).isPresent());
     }
 
     @Test
