@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from urllib import quote_plus
-from git_share_group import GitShareGroup
+from ..compat import to_bytes, quote_plus
+from .git_share_group import GitShareGroup
 
 
 class GitProject(object):
@@ -29,9 +29,9 @@ class GitProject(object):
         if 'id' in json:
             instance.id = int(json['id'])
         if 'name' in json:
-            instance.name = json['name'].encode('utf-8')
+            instance.name = to_bytes(json['name'])
         if 'path_with_namespace' in json:
-            instance.path_with_namespace = quote_plus(json['path_with_namespace'].encode('utf-8'))
+            instance.path_with_namespace = quote_plus(to_bytes(json['path_with_namespace']))
         if 'shared_with_groups' in json:
             for share_group_json in json['shared_with_groups']:
                 instance.shared_with_groups.append(GitShareGroup.load(share_group_json))

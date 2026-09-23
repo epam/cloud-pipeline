@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from role_model import RoleModel
+from .role_model import RoleModel
 from ..config import Config
+from ..compat import to_bytes
 
 class UserModel(object):
     def __init__(self):
@@ -51,7 +52,7 @@ class UserModel(object):
     @classmethod
     def get_username_safe(cls, name):
         if name:
-            return name.encode('utf8').split('@')[0]
+            return to_bytes(name).split('@')[0]
         else:
             return None
 
