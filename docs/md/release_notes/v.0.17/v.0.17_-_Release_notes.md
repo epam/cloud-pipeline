@@ -1851,7 +1851,10 @@ The same fix applies when a new node registers: the Platform waits for its `Read
 A free node whose last run has already finished is stopped without touching that run: the finished run is
 no longer tagged, logged or given a new pod status. On GCP, an error of the Compute API while the state of
 an unavailable node's instance is requested no longer counts as a terminated instance, so a live node is
-not stopped before its grace period is over.
+not stopped before its grace period is over. An unavailable node of a hot node pool is no longer stopped as
+soon as it is found: its instance was looked up by its ID rather than by the pool label it was launched
+with, so the instance always read as terminated. Such a node now waits for its grace period like any
+other while its instance is running.
 
 > **_Note_**: on a `canal`/`flannel` deployment, the runs whose nodes stopped reporting were previously
 > left running, and now fail once their grace period has elapsed. If such a node stopped reporting more
