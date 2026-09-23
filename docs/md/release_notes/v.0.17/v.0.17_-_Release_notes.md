@@ -51,6 +51,7 @@
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
 - [Read-only access to all storages](#read-only-access-to-all-storages)
+- [Permissions granted to a user](#permissions-granted-to-a-user)
 
 ***
 
@@ -1750,6 +1751,15 @@ In the current version, the new role **ROLE\_STORAGE\_READER** was introduced. I
 The runs, launched by such a user, mount all the storages of the Platform in a read-only mode (except the storages the user was granted write access to).
 
 More details see [here](../../manual/13_Permissions/13._Permissions.md#storage-reader-role).
+
+***
+
+## Permissions granted to a user
+
+Previously, the permissions could be viewed only per object - for all users and groups granted access to it. To check which objects a specific user was granted access to, the permissions of every object had to be loaded and matched against the user's name, groups and roles.  
+In the current version, the new API method `GET /permissions/user?userId=<user ID>&aclClass=<object type>` was introduced. For the specified user, it returns all objects of the type (data storages or pipelines) with the permissions granted to the user, to the user's groups or roles - including the ones inherited from the parent folders. The method is available to admins and to the users allowed to view the specified user (**ROLE\_USER\_ADMIN**, **ROLE\_USER\_READER** or **READ** permission to that user). Admins get all objects, other users - only the objects they have read access to.
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#permissions-granted-to-a-user).
 
 ***
 
