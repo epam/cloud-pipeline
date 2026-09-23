@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.graph.TaskNode;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.manager.CmdExecutor;
+import com.epam.pipeline.manager.utils.PythonExecutableUtils;
 import org.springframework.util.StringUtils;
 
 public class GraphReader {
@@ -44,7 +45,7 @@ public class GraphReader {
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
     public TaskGraphVO readGraph(String graphScript, String pathToScript, String configFile) {
-        String command = Stream.of("python", graphScript, pathToScript, configFile)
+        String command = Stream.of(PythonExecutableUtils.getPythonExecutable(), graphScript, pathToScript, configFile)
                 .collect(Collectors.joining(" "));
         String output = cmdExecutor.executeCommand(command);
         return createGraphFromScriptOutput(output);
