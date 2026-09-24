@@ -33,12 +33,15 @@ def verify_storage_path_permissions_allowed(storage):
     sys.exit(1)
 
 
+STORAGE_ADMIN_ROLES = ['ROLE_ADMIN', 'ROLE_STORAGE_ADMIN']
+
+
 def is_user_admin_or_owner(user, storage_owner):
     if user.get('admin', False):
         return True
-    if [r for r in user.get('roles', []) if r.get('name', '').upper() == 'ROLE_ADMIN']:
+    if [r for r in user.get('roles', []) if r.get('name', '').upper() in STORAGE_ADMIN_ROLES]:
         return True
-    if [g for g in user.get('groups', []) if g.upper() == 'ROLE_ADMIN']:
+    if [g for g in user.get('groups', []) if g.upper() in STORAGE_ADMIN_ROLES]:
         return True
     if user.get('userName').upper() == str(storage_owner).upper():
         return True
