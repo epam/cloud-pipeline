@@ -31,10 +31,17 @@ def execute(command, logger=None):
     return out, err
 
 
-def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
+def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None, start_lock=None):
     stdout, stderr = _get_stdout_and_stderr()
-    p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable,
-                         universal_newlines=True)
+    if start_lock:
+        # Python 2 marks the new pipes close-on-exec only after creating them. If another thread starts
+        # a process in between, a daemon it spawns can hold these pipes open and communicate() never returns.
+        with start_lock:
+            p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable,
+                                 universal_newlines=True)
+    else:
+        p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable,
+                             universal_newlines=True)
     out, err = p.communicate()
     if not silent and err:
         print(err)
@@ -43,8 +50,8 @@ def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=
     return p.returncode, out, err
 
 
-def execute_cmd_command(command, silent=False, executable=None):
-    exit_code, _, _ = execute_cmd_command_and_get_stdout_stderr(command, silent, executable)
+def execute_cmd_command(command, silent=False, executable=None, start_lock=None):
+    exit_code, _, _ = execute_cmd_command_and_get_stdout_stderr(command, silent, executable, start_lock=start_lock)
     return exit_code
 
 

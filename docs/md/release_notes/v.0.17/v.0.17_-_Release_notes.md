@@ -22,6 +22,7 @@
 - [Sensitive storages](#sensitive-storages)
 - [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
+- [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 - [Hot node pools](#hot-node-pools)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
@@ -902,6 +903,21 @@ If it's exceeded - the user is being warned with the following wording and asked
 - Warning does not prohibit the run launching, user can start it at his own discretion changing nothing.
 - If the **`storage.mounts.per.gb.ratio`** is not set - no checks are being performed, no warning appears.
 - Before the launch, only the _object storages_ count is being calculated, _file mounts_ do not introduce this limitation.
+
+## Parallel mounting of data storages
+
+Previously, a job mounted its data storages one by one. When the user has hundreds of available storages, the `MountDataStorages` task could take a long time before the job started.
+
+In the current version, a new launch parameter **`CP_CAP_MOUNT_THREADS`** (_int_) is introduced. It sets the number of threads that mount the data storages in parallel (e.g. `4`, `8` or `16`).  
+By default, it is `1` - storages are mounted one by one, as before. To go back to the previous behavior, set the parameter to `1` or remove it.
+
+**_Note_**:
+
+- If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished.
+- Storages mounted with `pipe` FUSE request their details and credentials from the API. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a job (or a cluster) starts. It also uses more CPU on small nodes. Start with a small value, e.g. `4`.
+- If `pipe` FUSE mounts fail by a timeout under a high load, consider increasing **`CP_PIPE_FUSE_MOUNT_TIMEOUT`**. By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the **`CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES`** parameter.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#mount-storages-in-parallel).
 
 ## Hot node pools
 
