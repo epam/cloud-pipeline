@@ -26,7 +26,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import com.epam.pipeline.vo.EntityVO;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -75,6 +78,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticsearchServiceClient elasticsearchServiceClient;
     private final ElasticIndexService elasticIndexService;
     private final NFSStorageMounter nfsMounter;
+    private final String storageExcludeKey;
+    private final String storageExcludeValue;
     protected final Map<Long, AbstractCloudRegion> cloudRegions;
 
     public NFSSynchronizer(@Value("${sync.nfs-file.index.mapping}") String indexSettingsPath,
@@ -85,7 +90,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                            CloudPipelineAPIClient cloudPipelineAPIClient,
                            ElasticsearchServiceClient elasticsearchServiceClient,
                            ElasticIndexService elasticIndexService,
-                           NFSStorageMounter nfsMounter) {
+                           NFSStorageMounter nfsMounter,
+                           @Value("${sync.nfs-file.storage.exclude.metadata.key:Billing status}")
+                               String storageExcludeKey,
+                           @Value("${sync.nfs-file.storage.exclude.metadata.value:Exclude}")
+                               String storageExcludeValue) {
         this.indexSettingsPath = indexSettingsPath;
         this.rootMountPoint = rootMountPoint;
         this.indexPrefix = indexPrefix;
@@ -95,6 +104,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.elasticsearchServiceClient = elasticsearchServiceClient;
         this.elasticIndexService = elasticIndexService;
         this.nfsMounter = nfsMounter;
+        this.storageExcludeKey = storageExcludeKey;
+        this.storageExcludeValue = storageExcludeValue;
         this.cloudRegions = ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllRegions()).stream()
                 .map(r -> ImmutablePair.of(r.getId(), r))
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
@@ -103,10 +114,20 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started NFS synchronization");
+        final Set<Long> excludedStorageIds = loadExcludedStorageIds();
 
         cloudPipelineAPIClient.loadAllDataStoragesWithMounts().stream()
                 .filter(dataStorage -> dataStorage.getStorage().getType() == DataStorageType.NFS)
+                .filter(dataStorage -> !excludedStorageIds.contains(dataStorage.getStorage().getId()))
                 .forEach(this::createIndexAndDocuments);
+    }
+
+    protected Set<Long> loadExcludedStorageIds() {
+        return ListUtils.emptyIfNull(cloudPipelineAPIClient.searchEntriesByMetadata(AclClass.DATA_STORAGE,
+                        storageExcludeKey, storageExcludeValue))
+                .stream()
+                .map(EntityVO::getEntityId)
+                .collect(Collectors.toSet());
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")

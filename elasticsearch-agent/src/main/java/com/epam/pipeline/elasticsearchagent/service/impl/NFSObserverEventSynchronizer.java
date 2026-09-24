@@ -115,12 +115,16 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                             Integer eventsFileChunkSize,
                                         final @Value("${sync.nfs-file.observer.sync.pool.size:4}")
                                             Integer poolSize,
+                                        final @Value("${sync.nfs-file.storage.exclude.metadata.key:Billing status}")
+                                            String storageExcludeKey,
+                                        final @Value("${sync.nfs-file.storage.exclude.metadata.value:Exclude}")
+                                            String storageExcludeValue,
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
                                         final NFSStorageMounter nfsMounter) {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, cloudPipelineAPIClient,
-              elasticsearchServiceClient, elasticIndexService, nfsMounter);
+              elasticsearchServiceClient, elasticIndexService, nfsMounter, storageExcludeKey, storageExcludeValue);
 
         this.eventsFileChunkSize = eventsFileChunkSize;
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
@@ -138,7 +142,9 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .stream()
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
         final AbstractDataStorage eventsStorage = storagePathMapping.get(eventsBucketName);
-        storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS);
+        final Set<Long> excludedStorageIds = loadExcludedStorageIds();
+        storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS
+                || excludedStorageIds.contains(dataStorage.getId()));
         loadEventsFilesGroupedByProducer(getListingCredentials(eventsStorage))
             .forEach((producer, fileList) ->
                          processEventsFromFilesInChunks(storagePathMapping, eventsStorage, producer, fileList));
