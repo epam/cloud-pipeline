@@ -27,6 +27,7 @@
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
 - [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
+- [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 
 ***
@@ -545,6 +546,15 @@ By default, it is `1` - storages are mounted one by one, as before. To go back t
 - If `pipe` FUSE mounts fail by a timeout under a high load, consider increasing **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** (see [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)).
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#mount-storages-in-parallel).
+
+## Checking of the Docker image version in `pipe run`
+
+Previously, `pipe run` did not check the version (tag) of the Docker image specified via the `-di` (`--docker-image`) option. A run with a mistyped version, e.g. `library/ubuntu:latet`, was scheduled and failed only on the node, when the image could not be pulled.
+
+In the current version, `pipe run` checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - `pipe` prints an error with the list of the available versions and exits with the code `1`.  
+If the tool versions can't be loaded, `pipe` prints a warning and continues the launch.
+
+For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
 ## `pipe storage mount` waits for the mount point
 
