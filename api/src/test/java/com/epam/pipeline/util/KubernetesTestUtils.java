@@ -39,6 +39,7 @@ import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 /**
  * A test utils class, that simplifies mocking Kubernetes response entities
@@ -73,7 +74,7 @@ public class KubernetesTestUtils {
 
         public MockFilter<MockNodes, Node, NodeList> mockWithLabel(Matcher<String> matcher) {
             MockFilter<MockNodes, Node, NodeList> mockFilter = new MockFilter<>(this);
-            when(nodes.withLabel(Mockito.argThat(matcher))).thenReturn(mockFilter.getFilter());
+            when(nodes.withLabel(argThat(matcher))).thenReturn(mockFilter.getFilter());
             return mockFilter;
         }
 
@@ -83,7 +84,7 @@ public class KubernetesTestUtils {
 
         public MockFilter<MockNodes, Node, NodeList> mockWithLabels(Matcher<Map<String, String>> matcher) {
             MockFilter<MockNodes, Node, NodeList> mockFilter = new MockFilter<>(this);
-            when(nodes.withLabels(Mockito.argThat(matcher))).thenReturn(mockFilter.getFilter());
+            when(nodes.withLabels(argThat(matcher))).thenReturn(mockFilter.getFilter());
             return mockFilter;
         }
 
@@ -118,7 +119,7 @@ public class KubernetesTestUtils {
 
         public MockNamespace mockNamespace(Matcher<String> matcher) {
             MockNamespace mockNamespace = new MockNamespace(this);
-            when(pods.inNamespace(Mockito.argThat(matcher))).thenReturn(mockNamespace.getNamespace());
+            when(pods.inNamespace(argThat(matcher))).thenReturn(mockNamespace.getNamespace());
             return mockNamespace;
         }
 
@@ -154,7 +155,7 @@ public class KubernetesTestUtils {
 
         public MockFilter<T, E, EL> mockWithoutLabel(Matcher<String> matcher) {
             MockFilter<T, E, EL> mockFilter = new MockFilter<>(parent);
-            when(filter.withoutLabel(Mockito.argThat(matcher))).thenReturn(mockFilter.getFilter());
+            when(filter.withoutLabel(argThat(matcher))).thenReturn(mockFilter.getFilter());
             return mockFilter;
         }
 
@@ -164,7 +165,7 @@ public class KubernetesTestUtils {
 
         public MockFilter<T, E, EL> mockWithLabel(Matcher<String> matcher) {
             MockFilter<T, E, EL> mockFilter = new MockFilter<>(parent);
-            when(filter.withLabel(Mockito.argThat(matcher))).thenReturn(mockFilter.getFilter());
+            when(filter.withLabel(argThat(matcher))).thenReturn(mockFilter.getFilter());
             return mockFilter;
         }
 
@@ -211,7 +212,7 @@ public class KubernetesTestUtils {
 
         public MockPodResource mockWithName(Matcher<String> matcher) {
             MockPodResource mockPodResource = new MockPodResource(mockPods);
-            when(namespace.withName(Mockito.argThat(matcher))).thenReturn(mockPodResource.podResource);
+            when(namespace.withName(argThat(matcher))).thenReturn(mockPodResource.podResource);
             return mockPodResource;
         }
     }

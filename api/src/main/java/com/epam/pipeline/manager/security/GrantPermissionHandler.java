@@ -63,8 +63,8 @@ public class GrantPermissionHandler {
         if (CollectionUtils.isNotEmpty(entriesToEvict)) {
             Optional.ofNullable(cacheManager.getCache(CacheConfiguration.ACL_CACHE))
                 .ifPresent(cache -> entriesToEvict.forEach(entry -> {
-                    cache.evict(entry.getAclEntityId());
-                    cache.evict(new ObjectIdentityImpl(entry.getAclClass(), entry.getObjectId()));
+                    cache.evict(entry.aclEntityId());
+                    cache.evict(new ObjectIdentityImpl(entry.aclClass(), entry.objectId()));
                 }));
         }
     }

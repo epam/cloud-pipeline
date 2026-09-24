@@ -41,7 +41,7 @@ import retrofit2.http.Query;
 
 import java.util.List;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "checkstyle:LineLength"})
 public interface GitHubApi {
 
     String PATH = "path";
@@ -147,7 +147,6 @@ public interface GitHubApi {
                                       @Query(PAGE) Integer page,
                                       @Query(PAGE_LENGTH) Integer pageLength);
 
-    //CHECKSTYLE:OFF: Line is longer than 120 characters
     /**
      * List installations for the authenticated app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#list-installations-for-the-authenticated-app">API Docs</a>
@@ -157,12 +156,10 @@ public interface GitHubApi {
      * @param pageLength The number of results per page (max 100).
      * @return Allowed installations.
      */
-    //CHECKSTYLE:ON
     @GET("app/installations")
     Call<List<GitHubInstallation>> getAppInstallations(@Query(PAGE) Integer page,
                                                        @Query(PAGE_LENGTH) Integer pageLength);
 
-    //CHECKSTYLE:OFF: Line is longer than 120 characters
     /**
      * Get a repository installation for the authenticated app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#get-a-repository-installation-for-the-authenticated-app">API Docs</a>
@@ -172,12 +169,10 @@ public interface GitHubApi {
      * @param repository The name of the repository without the .git extension. The name is not case-sensitive.
      * @return Repository.
      */
-    //CHECKSTYLE:ON
     @GET("repos/{workspace}/{repository}/installation")
     Call<GitHubInstallation> getRepositoryInstallation(@Path(WORKSPACE) String workspace,
                                                        @Path(REPOSITORY) String repository);
 
-    //CHECKSTYLE:OFF: Line is longer than 120 characters
     /**
      * Get an installation for the authenticated app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#get-an-installation-for-the-authenticated-app">API Docs</a>
@@ -186,11 +181,9 @@ public interface GitHubApi {
      * @param installationId The unique identifier of the installation.
      * @return Installation.
      */
-    //CHECKSTYLE:ON
     @GET("app/installations/{installation_id}")
     Call<GitHubInstallation> getAppInstallation(@Path(INSTALLATION_ID) Long installationId);
 
-    //CHECKSTYLE:OFF: Line is longer than 120 characters
     /**
      * Create an installation access token for an app. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/apps?apiVersion=2026-03-10#create-an-installation-access-token-for-an-app">API Docs</a>
@@ -199,11 +192,9 @@ public interface GitHubApi {
      * @param installationId The unique identifier of the installation.
      * @return Access token.
      */
-    //CHECKSTYLE:ON
     @POST("app/installations/{installation_id}/access_tokens")
     Call<GitHubAccessToken> createInstallationAccessToken(@Path(INSTALLATION_ID) Long installationId);
 
-    //CHECKSTYLE:OFF: Line is longer than 120 characters
     /**
      * List repositories that an app installation can access. For more information, see
      * <a href="https://docs.github.com/en/rest/apps/installations?apiVersion=2026-03-10#list-repositories-accessible-to-the-app-installation">API Docs</a>
@@ -214,7 +205,6 @@ public interface GitHubApi {
      * @param pageLength The number of results per page (max 100).
      * @return List of allowed repositories.
      */
-    //CHECKSTYLE:ON
     @GET("installation/repositories")
     Call<GitHubInstallationRepositories> getInstallationRepositories(@Query(PAGE) Integer page,
                                                                      @Query(PAGE_LENGTH) Integer pageLength);

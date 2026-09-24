@@ -20,8 +20,8 @@ import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -36,9 +36,9 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
@@ -97,7 +97,7 @@ public class DockerClientTest {
     private DockerClient dockerClient;
     private MockRestServiceServer server;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         dockerClient = new DockerClient(registry(), new ObjectMapper(), TOKEN);
         final RestTemplate restTemplate = (RestTemplate) ReflectionTestUtils.getField(dockerClient, "restTemplate");

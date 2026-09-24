@@ -44,6 +44,11 @@ import org.junit.*;
 
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Slf4j
 public class MonitoringESDaoTest {
@@ -65,7 +70,7 @@ public class MonitoringESDaoTest {
     private static final LocalDateTime NOW = DateUtils.nowUTC();
     private Client client;
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws Exception {
         Settings settings = Settings.builder()
             .put("path.home", "target/elasticsearch")
@@ -135,8 +140,8 @@ public class MonitoringESDaoTest {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         client = node.client();
         final RestClientBuilder lowLevelClientBuilder = RestClient.builder(
                 new HttpHost("localhost", ELASTICSEARCH_DEFAULT_PORT, "http"));
@@ -155,7 +160,7 @@ public class MonitoringESDaoTest {
 
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() throws Exception {
         node.close();
     }
@@ -165,9 +170,9 @@ public class MonitoringESDaoTest {
         Map<String, Double> stats = monitoringESDao.loadMetrics(ELKUsageMetric.CPU,
                 Arrays.asList(NODE1_NAME, NODE2_NAME), NOW.minusMinutes(HALF_AN_HOUR), NOW);
 
-        Assert.assertEquals(2, stats.size());
-        Assert.assertEquals(3, stats.get(NODE1_NAME), TEST_DELTA);
-        Assert.assertEquals(3, stats.get(NODE2_NAME), TEST_DELTA);
+        assertEquals(2, stats.size());
+        assertEquals(3, stats.get(NODE1_NAME), TEST_DELTA);
+        assertEquals(3, stats.get(NODE2_NAME), TEST_DELTA);
     }
 
     @Test
@@ -186,7 +191,7 @@ public class MonitoringESDaoTest {
             .prepareState().get()
             .getState().metaData().getConcreteAllIndices();
 
-        Assert.assertEquals(4, Arrays.stream(indices).filter(i -> i.startsWith(HEAPSTER_TOKEN)).count());
+        assertEquals(4, Arrays.stream(indices).filter(i -> i.startsWith(HEAPSTER_TOKEN)).count());
     }
 
     private static final class PluginConfigurableNode extends Node {

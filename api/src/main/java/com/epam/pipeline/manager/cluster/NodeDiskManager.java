@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -57,9 +57,9 @@ public class NodeDiskManager {
 
     private void validateRequests(final List<DiskRegistrationRequest> requests) {
         for (final DiskRegistrationRequest request : requests) {
-            Assert.notNull(request.getSize(), messageHelper.getMessage(MessageConstants.ERROR_DISK_SIZE_MISSING));
-            Assert.isTrue(request.getSize() > 0, messageHelper.getMessage(
-                    MessageConstants.ERROR_DISK_SIZE_INVALID, request.getSize()));
+            Assert.notNull(request.size(), messageHelper.getMessage(MessageConstants.ERROR_DISK_SIZE_MISSING));
+            Assert.isTrue(request.size() > 0, messageHelper.getMessage(
+                    MessageConstants.ERROR_DISK_SIZE_INVALID, request.size()));
         }
     }
 }

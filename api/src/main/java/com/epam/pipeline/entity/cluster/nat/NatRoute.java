@@ -19,11 +19,13 @@ package com.epam.pipeline.entity.cluster.nat;
 import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder(toBuilder = true)
+@Jacksonized
 @ToString
 public class NatRoute {
 

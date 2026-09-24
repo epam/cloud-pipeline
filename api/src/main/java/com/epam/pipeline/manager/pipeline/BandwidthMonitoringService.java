@@ -19,17 +19,18 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 
 @Service
 @RequiredArgsConstructor
-public class BandwidthMonitoringService extends AbstractSchedulingManager {
+public class BandwidthMonitoringService extends AbstractSchedulingManager implements InitializingBean {
     private final BandwidthMonitoringServiceCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_POD_BANDWIDTH_MONITOR_DELAY,
                 "BandwidthMonitor");
     }

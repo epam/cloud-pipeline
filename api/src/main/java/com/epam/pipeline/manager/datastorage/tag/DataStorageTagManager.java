@@ -6,7 +6,7 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageTag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

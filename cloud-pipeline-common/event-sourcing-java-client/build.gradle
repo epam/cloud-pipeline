@@ -14,42 +14,40 @@
  * limitations under the License.
  */
 
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'jacoco'
+}
+
 group 'com.epam.pipeline'
 
-apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'jacoco'
-
-sourceCompatibility = 1.8
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+    withSourcesJar() // Modern way to create sources jar
+}
 
 repositories { mavenCentral() }
 
 dependencies {
     //Event sourcing
-    compile group: 'org.redisson', name: 'redisson', version: '3.33.0'
+    implementation group: 'org.redisson', name: 'redisson', version: '3.33.0'
 
     //Lombok
-    compileOnly "org.projectlombok:lombok:1.16.16"
-    testCompileOnly "org.projectlombok:lombok:1.16.16"
+    implementation 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.2.0'
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.2.0'
-    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.2.0'
-    testCompile group: 'org.junit.platform', name: 'junit-platform-engine', version: '1.2.0'
-    testCompile group: 'org.mockito', name: 'mockito-junit-jupiter', version: '2.19.0'
-    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.19.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.2.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.2.0'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.2.0'
+    testImplementation group: 'org.junit.platform', name: 'junit-platform-engine', version: '1.2.0'
+    testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter', version: '2.19.0'
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '2.19.0'
 }
 
 test {
     useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
-}
-
-task sourcesJar(type: Jar) {
-    from sourceSets.main.allJava
-    classifier = 'sources'
+    reports.html.required = true
 }

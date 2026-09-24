@@ -16,7 +16,12 @@
 
 package com.epam.pipeline.notifier.app;
 
+import com.epam.pipeline.notifier.service.task.MicrosoftGraphAPINotificationManager;
+import com.epam.pipeline.notifier.service.task.NotificationDLQAwareService;
+import com.epam.pipeline.notifier.service.task.SMTPNotificationManager;
+import com.epam.pipeline.notifier.service.task.UserNotificationManager;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +46,27 @@ public class AppConfiguration {
         ThreadPoolExecutor pool = (ThreadPoolExecutor) Executors.newFixedThreadPool(submitThreads);
         pool.prestartAllCoreThreads();
         return pool;
+    }
+
+    @Bean(name = "userNotificationDlqAwareService")
+    @ConditionalOnProperty(name = "notification.enable.ui", havingValue = "true")
+    public NotificationDLQAwareService userNotificationDlqAwareService(
+            final UserNotificationManager userNotificationManager) {
+        return new NotificationDLQAwareService(userNotificationManager);
+    }
+
+    @Bean(name = "smtpNotificationDlqAwareService")
+    @ConditionalOnProperty(name = "notification.enable.smtp", havingValue = "true")
+    public NotificationDLQAwareService smtpNotificationDlqAwareService(
+            final SMTPNotificationManager smtpNotificationManager) {
+        return new NotificationDLQAwareService(smtpNotificationManager);
+    }
+
+    @Bean(name = "microsoftGraphAPINotificationDlqAwareService")
+    @ConditionalOnProperty(name = "notification.enable.azure", havingValue = "true")
+    public NotificationDLQAwareService microsoftGraphAPINotificationDlqAwareService(
+            final MicrosoftGraphAPINotificationManager microsoftGraphAPINotificationManager) {
+        return new NotificationDLQAwareService(microsoftGraphAPINotificationManager);
     }
 
 }

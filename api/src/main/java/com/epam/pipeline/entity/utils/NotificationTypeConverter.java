@@ -2,7 +2,7 @@ package com.epam.pipeline.entity.utils;
 
 import com.epam.pipeline.entity.notification.NotificationType;
 
-import javax.persistence.AttributeConverter;
+import jakarta.persistence.AttributeConverter;
 
 public class NotificationTypeConverter implements AttributeConverter<NotificationType, Long>  {
 

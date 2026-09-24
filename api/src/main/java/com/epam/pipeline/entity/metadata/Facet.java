@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.metadata;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 import java.util.Map;
 
 @Getter
 @Builder
+@Jacksonized
 public class Facet {
     private Map<String, Integer> counts;
     private Integer empty;

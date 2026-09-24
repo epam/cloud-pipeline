@@ -17,42 +17,31 @@
 package com.epam.pipeline.dts.configuration;
 
 import com.epam.pipeline.dts.common.json.JsonMapper;
-import com.epam.pipeline.dts.listing.configuration.ListingRestConfiguration;
-import com.epam.pipeline.dts.submission.configuration.SubmissionRestConfiguration;
-import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.web.servlet.ServletRegistrationBean;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
-import org.springframework.web.servlet.DispatcherServlet;
+import org.springframework.http.converter.xml.MappingJackson2XmlHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.util.UrlPathHelper;
-import springfox.documentation.builders.PathSelectors;
-import springfox.documentation.builders.RequestHandlerSelectors;
-import springfox.documentation.service.ApiInfo;
-import springfox.documentation.service.Contact;
-import springfox.documentation.spi.DocumentationType;
-import springfox.documentation.spring.web.paths.RelativePathProvider;
-import springfox.documentation.spring.web.plugins.Docket;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.servlet.ServletContext;
 import java.util.List;
 
 @Configuration
-@EnableSwagger2
+@OpenAPIDefinition(info = @Info(title = "Data Transfer Service - REST API"))
 public class RestConfiguration implements WebMvcConfigurer {
 
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        MappingJackson2HttpMessageConverter converter =
-                new MappingJackson2HttpMessageConverter();
-        converter.setObjectMapper(objectMapper());
-        converters.add(converter);
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        converters.removeIf(MappingJackson2XmlHttpMessageConverter.class::isInstance);
+        converters.stream()
+                .filter(MappingJackson2HttpMessageConverter.class::isInstance)
+                .map(MappingJackson2HttpMessageConverter.class::cast)
+                .forEach(converter -> converter.setObjectMapper(objectMapper()));
     }
 
     @Override
@@ -65,52 +54,5 @@ public class RestConfiguration implements WebMvcConfigurer {
     @Bean
     public ObjectMapper objectMapper() {
         return new JsonMapper();
-    }
-
-    @Bean
-    public Docket api(ServletContext servletContext) {
-        return new Docket(DocumentationType.SWAGGER_2)
-                .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.any())
-                .build()
-                .apiInfo(apiInfo())
-                .pathProvider(new RelativePathProvider(servletContext) {
-                    @Override
-                    protected String applicationPath() {
-                        return servletContext.getContextPath() + "/restapi";
-                    }
-                    @Override
-                    protected String getDocumentationPath() {
-                        return "/";
-                    }});
-    }
-
-    @Bean
-    public ServletRegistrationBean dispatcherRegistration(){
-        DispatcherServlet dispatcherServlet = new DispatcherServlet();
-        ServletRegistrationBean<DispatcherServlet> bean =
-                new ServletRegistrationBean<>(dispatcherServlet, "/restapi/*");
-        bean.setAsyncSupported(true);
-        bean.setName("dts");
-        bean.setLoadOnStartup(1);
-        AnnotationConfigWebApplicationContext applicationContext = new AnnotationConfigWebApplicationContext();
-        applicationContext.register(
-                ListingRestConfiguration.class,
-                TransferRestConfiguration.class,
-                SubmissionRestConfiguration.class);
-        dispatcherServlet.setApplicationContext(applicationContext);
-        return bean;
-    }
-
-    private ApiInfo apiInfo() {
-        return new ApiInfo(
-                "Template REST API",
-                "Some custom description of API.",
-                "API TOS",
-                "Terms of service",
-                new Contact("dev", "url", "email"),
-                "License of API",
-                "API license URL");
     }
 }

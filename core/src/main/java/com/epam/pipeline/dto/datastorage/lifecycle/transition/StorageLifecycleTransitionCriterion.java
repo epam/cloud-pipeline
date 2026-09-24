@@ -20,6 +20,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -28,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 @Value
 @Builder(toBuilder = true)
 @EqualsAndHashCode
+@Jacksonized
 public class StorageLifecycleTransitionCriterion {
 
     StorageLifecycleTransitionCriterionType type;

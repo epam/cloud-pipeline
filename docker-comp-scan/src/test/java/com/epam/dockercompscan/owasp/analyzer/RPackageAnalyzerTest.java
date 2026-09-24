@@ -16,17 +16,19 @@
 
 package com.epam.dockercompscan.owasp.analyzer;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.owasp.dependencycheck.analyzer.exception.AnalysisException;
 import org.owasp.dependencycheck.dependency.Dependency;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class RPackageAnalyzerTest {
 
     private RPackageAnalyzer rPackageAnalyzer;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         rPackageAnalyzer = new RPackageAnalyzer();
     }
@@ -38,9 +40,9 @@ public class RPackageAnalyzerTest {
                 "owasp/analyzer/positive/DESCRIPTION").getPath());
         rPackageAnalyzer.analyzeDependency(dependency, null);
 
-        Assert.assertEquals(RPackageAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
-        Assert.assertEquals("PositiveTest", dependency.getName());
-        Assert.assertEquals("1.0", dependency.getVersion());
+        assertEquals(RPackageAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
+        assertEquals("PositiveTest", dependency.getName());
+        assertEquals("1.0", dependency.getVersion());
     }
 
     @Test
@@ -50,6 +52,6 @@ public class RPackageAnalyzerTest {
                 "owasp/analyzer/negative/etc/DESCRIPTION").getPath());
         rPackageAnalyzer.analyzeDependency(dependency, null);
 
-        Assert.assertNull(dependency.getEcosystem());
+        assertNull(dependency.getEcosystem());
     }
 }

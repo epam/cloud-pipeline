@@ -17,11 +17,13 @@
 package com.epam.pipeline.dts.submission.configuration;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Data
 @Component
+@NoArgsConstructor
 @ConfigurationProperties("dts.submission")
 public class SubmissionPreference {
     private String workdir;

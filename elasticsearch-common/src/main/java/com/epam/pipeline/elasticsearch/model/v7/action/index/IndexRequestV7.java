@@ -17,47 +17,46 @@
 package com.epam.pipeline.elasticsearch.model.v7.action.index;
 
 import com.epam.pipeline.elasticsearch.model.IndexRequestInner;
-import lombok.Getter;
-import org.opensearch.action.index.IndexRequest;
 
 import java.util.Map;
 
-@Getter
 @SuppressWarnings("PMD.ShortMethodName")
 public class IndexRequestV7 implements IndexRequestInner {
 
-    private final IndexRequest inner;
+    private String index;
+    private String id;
+    private Map<String, Object> source;
 
     public IndexRequestV7(final String indexName) {
-        this.inner = new IndexRequest(indexName);
+        this.index = indexName;
     }
 
     public IndexRequestV7(final String indexName, final String objectId) {
-        final IndexRequest request = new IndexRequest(indexName);
-        request.id(objectId);
-        this.inner = request;
+        this.index = indexName;
+        this.id = objectId;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public IndexRequestInner source(final Map<String, ?> content) {
-        inner.source(content);
+        this.source = (Map<String, Object>) content;
         return this;
     }
 
     @Override
     public IndexRequestInner id(final String id) {
-        inner.id(id);
+        this.id = id;
         return this;
     }
 
     @Override
     public String id() {
-        return inner.id();
+        return id;
     }
 
     @Override
     public String index() {
-        return inner.index();
+        return index;
     }
 
     @Override
@@ -67,6 +66,6 @@ public class IndexRequestV7 implements IndexRequestInner {
 
     @Override
     public Map<String, ?> sourceAsMap() {
-        return inner.sourceAsMap();
+        return source;
     }
 }

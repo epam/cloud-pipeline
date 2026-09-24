@@ -29,10 +29,11 @@ import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
+import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
@@ -44,8 +45,8 @@ import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -213,7 +214,7 @@ public class QuotaServiceTest {
     public void shouldFailUpdateIfQuotaValueNotSpecified() {
         final Quota dto = quota(null);
         dto.setValue(null);
-        doReturn(quotaEntity(null)).when(quotaRepository).findOne(ID);
+        doReturn(Optional.of(quotaEntity(null))).when(quotaRepository).findById(ID);
 
         assertThrows(IllegalArgumentException.class, () -> quotaService.update(ID, dto));
     }
@@ -222,7 +223,7 @@ public class QuotaServiceTest {
     public void shouldFailUpdateIfQuotaSubjectNotSpecifiedForNonGlobal() {
         final Quota dto = quota(null);
         dto.setSubject(null);
-        doReturn(quotaEntity(null)).when(quotaRepository).findOne(ID);
+        doReturn(Optional.of(quotaEntity(null))).when(quotaRepository).findById(ID);
 
         assertThrows(IllegalStateException.class, () -> quotaService.update(ID, dto));
     }
@@ -235,7 +236,7 @@ public class QuotaServiceTest {
         quotaActionEntity.getActions().add(QuotaActionType.READ_MODE);
         entity.setActions(Collections.singletonList(quotaActionEntity));
         entity.setQuotaGroup(QuotaGroup.COMPUTE_INSTANCE);
-        doReturn(entity).when(quotaRepository).findOne(ID);
+        doReturn(Optional.of(entity)).when(quotaRepository).findById(ID);
         doReturn(entity).when(quotaMapper).quotaToEntity(dto);
 
         assertThrows(IllegalStateException.class, () -> quotaService.update(ID, dto));
@@ -249,7 +250,7 @@ public class QuotaServiceTest {
         quotaActionEntity.getActions().add(QuotaActionType.DISABLE_NEW_JOBS);
         entity.setActions(Collections.singletonList(quotaActionEntity));
         entity.setQuotaGroup(QuotaGroup.STORAGE);
-        doReturn(entity).when(quotaRepository).findOne(ID);
+        doReturn(Optional.of(entity)).when(quotaRepository).findById(ID);
         doReturn(entity).when(quotaMapper).quotaToEntity(dto);
 
         assertThrows(IllegalStateException.class, () -> quotaService.update(ID, dto));
@@ -261,7 +262,7 @@ public class QuotaServiceTest {
         final QuotaEntity oldEntity = quotaEntity(null);
         final QuotaActionEntity oldAction = quotaActionEntity(null);
         oldEntity.setActions(Collections.singletonList(oldAction));
-        doReturn(oldEntity).when(quotaRepository).findOne(ID);
+        doReturn(Optional.of(oldEntity)).when(quotaRepository).findById(ID);
 
         final QuotaEntity newEntity = quotaEntity(null);
         final QuotaActionEntity newAction = quotaActionEntity(null);
@@ -271,7 +272,7 @@ public class QuotaServiceTest {
 
         quotaService.update(ID, dto);
 
-        verify(quotaActionRepository).delete(ID);
+        verify(quotaActionRepository).deleteById(ID);
 
         final ArgumentCaptor<QuotaEntity> repoCaptor = ArgumentCaptor.forClass(QuotaEntity.class);
         verify(quotaRepository).save(repoCaptor.capture());
@@ -291,13 +292,13 @@ public class QuotaServiceTest {
     public void shouldUpdateQuotaWithoutActions() {
         final Quota dto = quota(null);
         final QuotaEntity oldEntity = quotaEntity(null);
-        doReturn(oldEntity).when(quotaRepository).findOne(ID);
+        doReturn(Optional.of(oldEntity)).when(quotaRepository).findById(ID);
 
         final QuotaEntity newEntity = quotaEntity(null);
         doReturn(newEntity).when(quotaMapper).quotaToEntity(any());
 
         quotaService.update(ID, dto);
-        notInvoked(quotaActionRepository).delete(ID);
+        notInvoked(quotaActionRepository).deleteById(ID);
 
         final ArgumentCaptor<QuotaEntity> repoCaptor = ArgumentCaptor.forClass(QuotaEntity.class);
         verify(quotaRepository).save(repoCaptor.capture());

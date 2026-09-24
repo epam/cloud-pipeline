@@ -17,15 +17,12 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
-import lombok.Value;
 
 /**
  * Google Cloud Provider resource price request.
  */
-@Value
-public class GCPResourceRequest {
-    private final GCPResourceType type;
-    private final GCPBilling billing;
-    private final AbstractGCPObject object;
-    private final GCPResourceMapping mapping;
+public record GCPResourceRequest(GCPResourceType type,
+                                 GCPBilling billing,
+                                 AbstractGCPObject object,
+                                 GCPResourceMapping mapping) {
 }

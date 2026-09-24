@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Icon} from 'antd';
-import {isDtsEnvironment, isFireCloudEnvironment} from './utilities';
+import {isDtsEnvironment} from './utilities';
 
 const ExecEnvironment = inject(
   'dtsList',
@@ -35,8 +35,6 @@ const ExecEnvironment = inject(
         const dts = (dtsList.value || []).find((d) => d.id === dtsId);
         result = dts ? dts.name : `${dtsId}`;
       }
-    } else if (isFireCloudEnvironment(run)) {
-      result = 'FireCloud';
     } else if (preferences) {
       (preferences.fetchIfNeededOrWait)();
       result = preferences.deploymentName || 'EPAM Cloud Pipeline';

@@ -19,12 +19,14 @@ package com.epam.pipeline.entity.pipeline;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class KubernetesService {
     private String name;
     private String hostName;

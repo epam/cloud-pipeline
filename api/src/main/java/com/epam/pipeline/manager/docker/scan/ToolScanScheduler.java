@@ -20,11 +20,12 @@ import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+
+import jakarta.annotation.PreDestroy;
 import java.util.concurrent.Future;
 
 /**
@@ -32,7 +33,7 @@ import java.util.concurrent.Future;
  * either in a regular fashion, when all the Tools are
  */
 @Service
-public class ToolScanScheduler extends AbstractSchedulingManager {
+public class ToolScanScheduler extends AbstractSchedulingManager implements InitializingBean {
     private final ToolScanSchedulerCore core;
 
     @Autowired
@@ -40,8 +41,8 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         this.core = core;
     }
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleSecured(core::scheduledToolScan, SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON,
                 "Tool Security Scan");
     }

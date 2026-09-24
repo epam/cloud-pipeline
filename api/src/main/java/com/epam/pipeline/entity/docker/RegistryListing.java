@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.docker;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @Data
+@NoArgsConstructor
 public class RegistryListing {
     private Set<String> repositories;
 }

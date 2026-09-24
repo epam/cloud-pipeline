@@ -17,9 +17,11 @@
 package com.epam.pipeline.entity.git.azure;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class AzureDevOpsObjectList<R> {
     private List<R> value;
     private Integer cont;

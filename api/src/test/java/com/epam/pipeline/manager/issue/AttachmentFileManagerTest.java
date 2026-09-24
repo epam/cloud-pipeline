@@ -17,8 +17,8 @@
 package com.epam.pipeline.manager.issue;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,15 +36,16 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.stubbing.Answer;
 import org.springframework.security.access.AccessDeniedException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AttachmentFileManagerTest {
     private static final String TEST_SYSTEM_DATA_STORAGE = "testStorage";
@@ -68,7 +69,7 @@ public class AttachmentFileManagerTest {
     private final S3bucketDataStorage testSystemDataStorage =
             new S3bucketDataStorage(1L, TEST_SYSTEM_DATA_STORAGE, "test");
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
@@ -84,8 +85,8 @@ public class AttachmentFileManagerTest {
         when(dataStorageManager.createDataStorageFile(Mockito.eq(1L), Mockito.anyString(), Mockito.anyString(),
                                                       Mockito.any(InputStream.class)))
             .then((Answer<DataStorageFile>) invocation -> {
-                String path = invocation.getArgumentAt(1, String.class);
-                String name = invocation.getArgumentAt(2, String.class);
+                String path = invocation.getArgument(1, String.class);
+                String name = invocation.getArgument(2, String.class);
                 DataStorageFile file = new DataStorageFile();
                 file.setPath(path + "/" + name);
                 return file;
@@ -93,7 +94,7 @@ public class AttachmentFileManagerTest {
 
         when(attachmentManager.load(Mockito.anyLong())).thenAnswer(invocation -> {
             Attachment attachment = new Attachment();
-            attachment.setId(invocation.getArgumentAt(0, Long.class));
+            attachment.setId(invocation.getArgument(0, Long.class));
             attachment.setName(TEST_ATTACHMENT_NAME);
             attachment.setPath(TEST_ATTACHMENT_PATH);
             return attachment;
@@ -110,10 +111,10 @@ public class AttachmentFileManagerTest {
     public void testUploadAttachment() {
         Attachment attachment = attachmentFileManager.uploadAttachment(new ByteArrayInputStream(new byte[]{1}),
                                                                        TEST_ATTACHMENT_NAME);
-        Assert.assertNotNull(attachment.getPath());
-        Assert.assertTrue(attachment.getPath().startsWith("attachments/"));
-        Assert.assertTrue(attachment.getPath().endsWith(TEST_ATTACHMENT_NAME));
-        Assert.assertEquals(TEST_ATTACHMENT_NAME, attachment.getName());
+        assertNotNull(attachment.getPath());
+        assertTrue(attachment.getPath().startsWith("attachments/"));
+        assertTrue(attachment.getPath().endsWith(TEST_ATTACHMENT_NAME));
+        assertEquals(TEST_ATTACHMENT_NAME, attachment.getName());
 
         verify(dataStorageManager).loadByNameOrId(TEST_SYSTEM_DATA_STORAGE);
         verify(dataStorageManager).createDataStorageFile(eq(testSystemDataStorage.getId()), eq("attachments"),
@@ -122,14 +123,14 @@ public class AttachmentFileManagerTest {
 
         ArgumentCaptor<Attachment> attachmentCaptor = ArgumentCaptor.forClass(Attachment.class);
         verify(attachmentManager).create(attachmentCaptor.capture());
-        Assert.assertEquals(TEST_USER, attachmentCaptor.getValue().getOwner());
+        assertEquals(TEST_USER, attachmentCaptor.getValue().getOwner());
     }
 
     @Test
     public void testDownloadAttachment() {
         DataStorageStreamingContent content = attachmentFileManager.downloadAttachment(1L);
-        Assert.assertNotNull(content.getContent());
-        Assert.assertEquals(TEST_ATTACHMENT_NAME, content.getName());
+        assertNotNull(content.getContent());
+        assertEquals(TEST_ATTACHMENT_NAME, content.getName());
 
         verify(dataStorageManager).loadByNameOrId(TEST_SYSTEM_DATA_STORAGE);
         verify(attachmentManager).load(1L);

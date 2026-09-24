@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.scan.clair;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class ClairFeature {
     private String name;
     private String version;

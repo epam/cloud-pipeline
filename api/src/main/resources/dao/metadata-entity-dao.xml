@@ -78,8 +78,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
-                        e.created_date,
-                        c.external_class_name
+                        e.created_date
                     FROM
                         pipeline.metadata_entity e
                     INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
@@ -98,8 +97,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
-                        e.created_date,
-                        c.external_class_name
+                        e.created_date
                      FROM
                         pipeline.metadata_entity e
                      INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
@@ -143,8 +141,7 @@
                         null as class_id,
                         null as entity_name,
                         null as external_id,
-                        e.created_date,
-                        c.external_class_name
+                        e.created_date
                     FROM
                         pipeline.metadata_entity e
                     INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
@@ -164,8 +161,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
-                        e.created_date,
-                        c.external_class_name
+                        e.created_date
                      FROM
                         pipeline.metadata_entity e
                      INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
@@ -263,8 +259,7 @@
                       e.entity_name,
                       e.external_id,
                       e.data,
-                      e.created_date,
-                      c.external_class_name
+                      e.created_date
                     FROM
                       children f
                         LEFT JOIN metadata_entity e ON f.folder_id = e.parent_id
@@ -287,8 +282,7 @@
                       e.entity_name,
                       e.external_id,
                       e.data,
-                      e.created_date,
-                      c.external_class_name
+                      e.created_date
                     FROM
                       metadata_entity e
                         INNER JOIN metadata_entity_class c ON e.class_id = c.class_id
@@ -398,8 +392,7 @@
                       m.entity_id,
                       m.key,
                       m.data->m.key->>'type' as type,
-                      m.created_date,
-                      m.external_class_name
+                      m.created_date
                     FROM (
                       WITH RECURSIVE children AS (
                         SELECT
@@ -428,8 +421,7 @@
                         m.entity_id,
                         jsonb_object_keys(m.data) as key,
                         m.data,
-                        m.created_date,
-                        c.external_class_name
+                        m.created_date
                       FROM metadata_entity m
                         INNER JOIN
                         children ON children.folder_id = m.parent_id
@@ -471,8 +463,7 @@
                         e.entity_name,
                         e.external_id,
                         NULL as data,
-                        e.created_date,
-                        c.c.external_class_name
+                        e.created_date
                     FROM pipeline.metadata_entity e
                     INNER JOIN folders ON folders.folder_id = e.parent_id
                     INNER JOIN metadata_entity_class c on c.class_id = e.class_id
@@ -491,8 +482,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
-                        e.created_date,
-                        c.external_class_name
+                        e.created_date
                      FROM
                         pipeline.metadata_entity e
                      INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
@@ -514,8 +504,7 @@
                         e.entity_name,
                         e.external_id,
                         e.data,
-                        e.created_date,
-                        c.external_class_name
+                        e.created_date
                      FROM
                         pipeline.metadata_entity e
                      INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
@@ -540,8 +529,7 @@
                           p.field_type,
                           p.field_value,
                           p.data,
-                          p.created_date,
-						  p.external_class_name
+                          p.created_date
                         FROM (SELECT
                                 entity_id,
                                 external_id,
@@ -558,8 +546,7 @@
                                         WHEN value->>'value' LIKE '[%' THEN (value->>'value')::jsonb
                                         ELSE jsonb_build_array(value->'value')
                                     END
-                                ) AS field_value,
-								c.external_class_name AS external_class_name
+                                ) AS field_value
                               FROM
                                 metadata_entity m
                                 LEFT JOIN metadata_entity_class c ON c.class_id = m.class_id,
@@ -579,8 +566,7 @@
                           d.field_type,
                           d.field_value,
                           d.data,
-                          d.created_date,
-						  d.external_class_name
+                          d.created_date
                         FROM (SELECT
                                 entity_id,
                                 external_id,
@@ -597,8 +583,7 @@
                                         WHEN value->>'value' LIKE '[%' THEN (value->>'value')::jsonb
                                         ELSE jsonb_build_array(value->'value')
                                     END
-                                ) AS field_value,
-							    c.external_class_name AS external_class_name
+                                ) AS field_value
                               FROM
                                 metadata_entity m
                                 LEFT JOIN metadata_entity_class c ON c.class_id = m.class_id,
@@ -614,8 +599,7 @@
                       external_id,
                       parent_id,
                       data,
-                      created_date,
-					  external_class_name
+                      created_date
                     FROM links;
                 ]]>
             </value>

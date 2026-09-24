@@ -17,9 +17,9 @@
 package com.epam.pipeline.manager.metadata.processor;
 
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BucketPostProcessorImplTest {
 

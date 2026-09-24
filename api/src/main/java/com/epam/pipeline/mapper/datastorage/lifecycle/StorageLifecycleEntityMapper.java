@@ -98,7 +98,6 @@ public interface StorageLifecycleEntityMapper {
         }
         return user.getId();
     }
-
     @Named(ID_TO_PIPELINE_USER)
     static PipelineUser idToPipelineUser(final Long id) {
         return PipelineUser.builder().id(id).build();
@@ -139,7 +138,6 @@ public interface StorageLifecycleEntityMapper {
         }
         return OBJECT_MAPPER.writeValueAsString(transitionCriterion);
     }
-
     @Named(TRANSITION_CRITERION_JSON_TO_DTO)
     static StorageLifecycleTransitionCriterion transitionCriterionJsonToDto(
             final String transitionCriterionJson) throws IOException {

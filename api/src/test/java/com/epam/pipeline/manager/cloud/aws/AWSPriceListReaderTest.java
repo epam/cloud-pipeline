@@ -3,7 +3,7 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,9 +13,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @SuppressWarnings("checkstyle:magicnumber")
 public class AWSPriceListReaderTest {

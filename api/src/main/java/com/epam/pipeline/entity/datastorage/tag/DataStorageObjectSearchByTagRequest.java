@@ -16,13 +16,11 @@
 
 package com.epam.pipeline.entity.datastorage.tag;
 
-import lombok.Value;
-
 import java.util.List;
 import java.util.Map;
 
-@Value
-public class DataStorageObjectSearchByTagRequest {
-    List<Long> datastorageIds;
-    Map<String, String> tags;
+public record DataStorageObjectSearchByTagRequest(
+    List<Long> datastorageIds,
+    Map<String, String> tags
+) {
 }

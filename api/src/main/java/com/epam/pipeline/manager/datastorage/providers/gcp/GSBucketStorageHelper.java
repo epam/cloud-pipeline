@@ -547,7 +547,7 @@ public class GSBucketStorageHelper {
         final ObjectMapper policyMapper = JsonMapper.newInstance()
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         final List<com.google.api.services.storage.model.Policy.Bindings> rawPolicy = ListUtils.emptyIfNull(
-                JsonMapper.parseData(region.getPolicy(),
+            JsonMapper.parseData(region.getPolicy(),
                 new TypeReference<List<com.google.api.services.storage.model.Policy.Bindings>>() {}, policyMapper));
 
         final Map<Role, Set<Identity>> resultPolicy = new HashMap<>();

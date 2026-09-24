@@ -32,7 +32,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 
 @Getter
 @Setter

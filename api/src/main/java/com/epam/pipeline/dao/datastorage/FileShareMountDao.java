@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -36,13 +36,13 @@ public class FileShareMountDao extends NamedParameterJdbcDaoSupport {
 
     private final DaoHelper daoHelper;
 
-    @Setter(onMethod_={@Required}) private String loadShareMountByIdQuery;
-    @Setter(onMethod_={@Required}) private String loadAllShareMountByRegionIdQuery;
-    @Setter(onMethod_={@Required}) private String loadAllShareMounts;
-    @Setter(onMethod_={@Required}) private String createShareMountQuery;
-    @Setter(onMethod_={@Required}) private String updateShareMountQuery;
-    @Setter(onMethod_={@Required}) private String deleteShareMountQuery;
-    @Setter(onMethod_={@Required}) private String fileShareMountSequence;
+    @Setter private String loadShareMountByIdQuery;
+    @Setter private String loadAllShareMountByRegionIdQuery;
+    @Setter private String loadAllShareMounts;
+    @Setter private String createShareMountQuery;
+    @Setter private String updateShareMountQuery;
+    @Setter private String deleteShareMountQuery;
+    @Setter private String fileShareMountSequence;
 
 
     public Optional<FileShareMount> loadById(final long id) {

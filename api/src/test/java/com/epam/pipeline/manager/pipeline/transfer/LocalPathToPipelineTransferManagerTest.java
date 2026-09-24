@@ -10,8 +10,8 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +19,7 @@ import java.util.Arrays;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.matches;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -42,8 +42,7 @@ public class LocalPathToPipelineTransferManagerTest {
     private final LocalPathToPipelineTransferManager manager = new LocalPathToPipelineTransferManager(
             gitManager, userManager, messageHelper, cmdExecutor, TRANSFER_SCRIPT);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(GIT_CREDENTIALS)
                 .when(gitManager).getGitCredentials(CommonCreatorConstants.ID, false, false);
         doReturn(USER).when(userManager).loadUserByName(USER_NAME);

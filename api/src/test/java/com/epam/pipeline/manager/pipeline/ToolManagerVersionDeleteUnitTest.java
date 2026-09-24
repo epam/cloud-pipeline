@@ -26,8 +26,8 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -38,9 +38,9 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -78,9 +78,9 @@ public class ToolManagerVersionDeleteUnitTest {
     private final DockerRegistry registry = buildRegistry();
     private final Tool tool = buildTool();
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         doReturn(registry).when(dockerRegistryManager).loadByNameOrId(REGISTRY_PATH);
         doReturn(registry).when(dockerRegistryManager).load(REGISTRY_ID);
         doReturn(tool).when(toolDao).loadTool(REGISTRY_ID, IMAGE);

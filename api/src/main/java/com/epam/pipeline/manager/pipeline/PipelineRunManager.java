@@ -1289,10 +1289,10 @@ public class PipelineRunManager {
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         if (overwrite) {
-            run.setTags(newTags.getTags());
+            run.setTags(newTags.tags());
         } else {
             final Map<String, String> currentTags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
-            currentTags.putAll(MapUtils.emptyIfNull(newTags.getTags()));
+            currentTags.putAll(MapUtils.emptyIfNull(newTags.tags()));
             run.setTags(currentTags);
         }
         pipelineRunDao.updateRunTags(run);
@@ -1428,10 +1428,10 @@ public class PipelineRunManager {
         Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING || pipelineRun.getStatus().isPause(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_ATTACHING_WRONG_STATUS, runId,
                         pipelineRun.getStatus()));
-        Assert.notNull(request.getSize(),
+        Assert.notNull(request.size(),
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
-        Assert.isTrue(request.getSize() > 0,
-                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        Assert.isTrue(request.size() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.size()));
         final Map<String, String> resourceTags = metadataManager.prepareCloudResourceTags(pipelineRun);
         nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
@@ -1645,7 +1645,7 @@ public class PipelineRunManager {
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
-        return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
+        return (int) disks.stream().mapToLong(InstanceDisk::size).sum();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {

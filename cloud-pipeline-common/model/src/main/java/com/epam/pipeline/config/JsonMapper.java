@@ -30,10 +30,10 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import javax.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.InitializingBean;
 
-public class JsonMapper extends ObjectMapper {
+public class JsonMapper extends ObjectMapper implements InitializingBean {
     private static final long serialVersionUID = -1414537788709027470L;
 
     /**
@@ -46,8 +46,8 @@ public class JsonMapper extends ObjectMapper {
 
     private static volatile JsonMapper instance;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() throws Exception {
         instance = this;
     }
 
@@ -105,12 +105,12 @@ public class JsonMapper extends ObjectMapper {
         return EMPTY_JSON;
     }
 
-    public static <T> T parseData(String data, TypeReference type) {
+    public static <T> T parseData(String data, TypeReference<T> type) {
         return parseData(data, type, instance);
     }
 
     public static <T> T parseData(final String data,
-                                  final TypeReference type,
+                                  final TypeReference<T> type,
                                   final ObjectMapper customMapper) {
         if (StringUtils.isBlank(data)) {
             return null;

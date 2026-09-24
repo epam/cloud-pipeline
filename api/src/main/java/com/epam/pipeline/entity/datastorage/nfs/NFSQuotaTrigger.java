@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.List;
 @Getter
 @EqualsAndHashCode
 @Builder(toBuilder = true)
+@Jacksonized
 public class NFSQuotaTrigger {
 
     private final Long storageId;

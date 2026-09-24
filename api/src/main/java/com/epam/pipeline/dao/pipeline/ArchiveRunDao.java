@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
@@ -61,12 +60,10 @@ public class ArchiveRunDao extends NamedParameterJdbcDaoSupport  {
                 .toArray(MapSqlParameterSource[]::new);
     }
 
-    @Required
     public void setCreateArchiveRunQuery(final String createArchiveRunQuery) {
         this.createArchiveRunQuery = createArchiveRunQuery;
     }
 
-    @Required
     public void setCreateArchiveRunStatusChangeQuery(final String createArchiveRunStatusChangeQuery) {
         this.createArchiveRunStatusChangeQuery = createArchiveRunStatusChangeQuery;
     }
