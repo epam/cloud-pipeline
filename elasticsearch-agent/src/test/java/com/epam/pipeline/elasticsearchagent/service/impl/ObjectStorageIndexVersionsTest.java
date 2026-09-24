@@ -19,6 +19,8 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.exception.PipelineResponseApiException;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -48,6 +51,9 @@ public class ObjectStorageIndexVersionsTest {
     private static final int BULK_SIZE = 1000;
     private static final String EXCLUDE_KEY = "key";
     private static final String EXCLUDE_VALUE = "value";
+    private static final Long DELETED_STORAGE_ID = 3L;
+    private static final String STORAGE_NAME = "storage";
+    private static final String DELETED_STORAGE_NAME = "deleted";
 
     private final Supplier<TemporaryCredentials> temporaryCredentials = () ->
             TemporaryCredentials.builder().region("").build();
@@ -100,6 +106,29 @@ public class ObjectStorageIndexVersionsTest {
         objectStorageIndex.indexStorage(dataStorage);
         verifyNumberOfInsertions(2);
     }
+
+    @Test
+    public void shouldIndexRemainingStoragesWhenStorageIsDeletedDuringSync() {
+        final StoragePolicy storagePolicy = new StoragePolicy();
+        storagePolicy.setVersioningEnabled(true);
+        final AbstractDataStorage dataStorage = new S3bucketDataStorage(
+                1L, STORAGE_NAME, STORAGE_NAME, storagePolicy, null
+        );
+        final AbstractDataStorage deletedStorage = new S3bucketDataStorage(
+                DELETED_STORAGE_ID, DELETED_STORAGE_NAME, DELETED_STORAGE_NAME, storagePolicy, null
+        );
+        setUpReturnValues(Arrays.asList(createVersion(TEST_BLOB_NAME_1), createVersion(TEST_BLOB_NAME_2)));
+        Mockito.doThrow(new PipelineResponseApiException("entity with id '3' and class 'DATA_STORAGE' was not found"))
+                .when(cloudPipelineAPIClient).loadPermissionsForEntity(DELETED_STORAGE_ID, AclClass.DATA_STORAGE);
+        Mockito.doReturn(Arrays.asList(deletedStorage, dataStorage))
+                .when(cloudPipelineAPIClient).loadAllDataStorages();
+
+        objectStorageIndex.synchronize(LocalDateTime.now(), LocalDateTime.now());
+
+        verify(objectStorageIndex).indexStorage(dataStorage);
+        verifyNumberOfInsertions(2);
+    }
+
     private void setUpReturnValues(final List<DataStorageFile> files) {
         Mockito.doAnswer(i -> temporaryCredentials.get())
                 .when(cloudPipelineAPIClient).generateTemporaryCredentials(any());
