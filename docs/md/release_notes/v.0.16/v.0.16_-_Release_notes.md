@@ -26,6 +26,7 @@
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
+- [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 
 ***
 
@@ -528,6 +529,21 @@ E.g. to mount the storage with `RW` access to the **OWNER**, `R` access to the *
 If the option `-m` isn't specified - the default permission mask will be set - `700` (full access to the **OWNER** (`RWX`), no access to the **GROUP** and **OTHERS**).
 
 For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+
+## Parallel mounting of data storages
+
+Previously, a job mounted its data storages one by one. When the user has hundreds of available storages, the `MountDataStorages` task could take a long time before the job started.
+
+In the current version, a new launch parameter **`CP_CAP_MOUNT_THREADS`** (_int_) is introduced. It sets the number of threads that mount the data storages in parallel (e.g. `4`, `8` or `16`).  
+By default, it is `1` - storages are mounted one by one, as before. To go back to the previous behavior, set the parameter to `1` or remove it.
+
+**_Note_**:
+
+- If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished.
+- Storages mounted with `pipe` FUSE request their details and credentials from the API. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a job (or a cluster) starts. It also uses more CPU on small nodes. Start with a small value, e.g. `4`.
+- **`CP_PIPE_FUSE_TIMEOUT`** (by default, `500` ms) sets how long `pipe` FUSE waits before it checks that the mount process is still running. Under a high load, consider increasing it, so that a mount process which fails later is reported.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#mount-storages-in-parallel).
 
 ***
 
