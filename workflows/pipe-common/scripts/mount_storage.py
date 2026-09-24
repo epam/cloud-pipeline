@@ -16,14 +16,17 @@
 # CP_S3_FUSE_TYPE_CACHE (default: 1m0s)
 # CP_S3_FUSE_ENSURE_DISKFREE (default: None)
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
+# CP_CAP_MOUNT_THREADS (default: 1)
 
 import argparse
 import platform
 import re
 import os
+import threading
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
+from multiprocessing.pool import ThreadPool
 
 from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount
 
@@ -55,6 +58,7 @@ MOUNT_LIMITS_PARENT_FOLDER_ID = 'folder:'
 SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
 STORAGE_MOUNT_OPTIONS_ENV_PREFIX = 'CP_CAP_MOUNT_OPTIONS_'
 STORAGE_MOUNT_PATH_ENV_PREFIX = 'CP_CAP_MOUNT_PATH_'
+MOUNT_THREADS_ENV = 'CP_CAP_MOUNT_THREADS'
 
 
 class MountOptions:
@@ -316,20 +320,11 @@ class MountStorageTask:
                     initialized_mounters.append(mounter)
 
             initialized_mounters.sort(key=lambda mnt: mnt.build_mount_point(mount_root))
-            failed_storages = []
-            for mnt in initialized_mounters:
-                try:
-                    mnt.mount(mount_root, self.task_name)
-                    self.api.log_audit_event('MOUNT ' + mnt.storage.path if mnt.storage.path else 'unknown',
-                                             os.environ.get('OWNER', ''), 
-                                             severity='INFO',
-                                             type='audit',
-                                             extra_args={'storageId': mnt.storage.id})
-                except RuntimeError:
-                    Logger.warn('Data storage {} mounting has failed: {}'
-                                .format(mnt.storage.name, traceback.format_exc()),
-                                task_name=self.task_name)
-                    failed_storages.append(mnt.storage.name)
+            mount_threads = self._get_mount_threads()
+            if mount_threads > 1:
+                failed_storages = self._mount_in_parallel(initialized_mounters, mount_root, mount_threads)
+            else:
+                failed_storages = self._mount_sequentially(initialized_mounters, mount_root)
             if failed_storages:
                 Logger.fail('The following data storages have not been mounted: {}'.format(', '.join(failed_storages)),
                             task_name=self.task_name)
@@ -339,6 +334,94 @@ class MountStorageTask:
             Logger.fail('Unhandled error during mount task: {}.'.format(traceback.format_exc()),
                         task_name=self.task_name)
             exit(1)
+
+    def _get_mount_threads(self):
+        mount_threads = os.getenv(MOUNT_THREADS_ENV)
+        if not mount_threads:
+            return 1
+        try:
+            mount_threads = int(mount_threads)
+        except ValueError:
+            mount_threads = 0
+        if mount_threads < 1:
+            Logger.warn('Unable to parse {}={}, it shall be a positive integer. Storages will be mounted one by one.'
+                        .format(MOUNT_THREADS_ENV, os.getenv(MOUNT_THREADS_ENV)), task_name=self.task_name)
+            return 1
+        return mount_threads
+
+    def _mount_sequentially(self, mounters, mount_root):
+        failed_storages = []
+        for mnt in mounters:
+            try:
+                mnt.mount(mount_root, self.task_name)
+                self.api.log_audit_event('MOUNT ' + mnt.storage.path if mnt.storage.path else 'unknown',
+                                         os.environ.get('OWNER', ''), 
+                                         severity='INFO',
+                                         type='audit',
+                                         extra_args={'storageId': mnt.storage.id})
+            except RuntimeError:
+                Logger.warn('Data storage {} mounting has failed: {}'
+                            .format(mnt.storage.name, traceback.format_exc()),
+                            task_name=self.task_name)
+                failed_storages.append(mnt.storage.name)
+        return failed_storages
+
+    def _mount_in_parallel(self, mounters, mount_root, mount_threads):
+        if not mounters:
+            return []
+        waves = self._split_into_waves(mounters, mount_root)
+        # More threads than the largest wave would never get a storage to mount
+        mount_threads = min(mount_threads, max(len(wave) for wave in waves))
+        Logger.info('Mounting {} storage(s) in {} thread(s), {} wave(s)'
+                    .format(len(mounters), mount_threads, len(waves)), task_name=self.task_name)
+        failed_storages = []
+        pool = ThreadPool(mount_threads)
+        StorageMounter.start_lock = threading.Lock()
+        try:
+            for wave in waves:
+                results = pool.map(lambda mnt: self._mount_safely(mnt, mount_root), wave, chunksize=1)
+                failed_storages.extend([storage_name for storage_name in results if storage_name])
+        finally:
+            pool.close()
+            pool.join()
+            StorageMounter.start_lock = None
+        return failed_storages
+
+    def _mount_safely(self, mnt, mount_root):
+        try:
+            mnt.mount(mount_root, self.task_name)
+            self.api.log_audit_event('MOUNT ' + mnt.storage.path if mnt.storage.path else 'unknown',
+                                     os.environ.get('OWNER', ''),
+                                     severity='INFO',
+                                     type='audit',
+                                     extra_args={'storageId': mnt.storage.id})
+            return None
+        except Exception:
+            Logger.warn('Data storage {} mounting has failed: {}'
+                        .format(mnt.storage.name, traceback.format_exc()),
+                        task_name=self.task_name)
+            return mnt.storage.name
+
+    @staticmethod
+    def _split_into_waves(mounters, mount_root):
+        # A storage mounted inside another storage's mount point goes to a later wave than that storage,
+        # otherwise the outer mount hides it. Storages with the same mount point keep their order the same way.
+        mount_points = [os.path.normcase(os.path.normpath(os.path.expandvars(mnt.build_mount_point(mount_root))))
+                        for mnt in mounters]
+        wave_by_index = {}
+        # Outer mount points are shorter, so they get their wave before the ones inside them
+        for index in sorted(range(len(mounters)), key=lambda i: (len(mount_points[i]), i)):
+            wave = 0
+            for other_index, other_wave in wave_by_index.items():
+                other_mount_point = mount_points[other_index]
+                if mount_points[index] == other_mount_point \
+                        or mount_points[index].startswith(other_mount_point.rstrip(os.sep) + os.sep):
+                    wave = max(wave, other_wave + 1)
+            wave_by_index[index] = wave
+        waves = [[] for _ in range(max(wave_by_index.values()) + 1)] if wave_by_index else []
+        for index, mnt in enumerate(mounters):
+            waves[wave_by_index[index]].append(mnt)
+        return waves
 
     def _get_storage_mount(self, storage, loaded_mounts):
         if storage.file_share_mount_id is None:
@@ -375,6 +458,8 @@ class StorageMounter:
 
     __metaclass__ = ABCMeta
     _cached_regions = []
+    # Set while storages are mounted in parallel, so that processes are started one at a time
+    start_lock = None
 
     def __init__(self, api, storage, share_mount, sensitive_policy, mount_options=None):
         self.api = api
@@ -454,7 +539,8 @@ class StorageMounter:
 
     @staticmethod
     def execute_mount(command, params, task_name):
-        result = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
+        result = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash',
+                                            start_lock=StorageMounter.start_lock)
         if result == 0:
             Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
         else:
@@ -485,6 +571,8 @@ class StorageMounter:
 class AzureMounter(StorageMounter):
     available = False
     fuse_tmp = '/tmp'
+    # /etc/hosts is rewritten in place, so parallel mounts shall not do it at the same time
+    etc_hosts_lock = threading.Lock()
 
     @staticmethod
     def scheme():
@@ -545,7 +633,9 @@ class AzureMounter(StorageMounter):
         command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
                   '&& cat > /etc/hosts <<< "$etc_hosts_clear" ' \
                   '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
-        exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
+        with AzureMounter.etc_hosts_lock:
+            exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(
+                command, silent=True, start_lock=StorageMounter.start_lock)
         if exit_code != 0:
             Logger.warn('Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr), task_name=task_name)
 

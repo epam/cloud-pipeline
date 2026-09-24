@@ -382,6 +382,13 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_MOUNT_THREADS",
+        "type": "int",
+        "description": "Allows to specify the number of threads used to mount data storages. Default: 1 (storages are mounted one by one)",
+        "defaultValue": "1",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_PIPE_FUSE_TIMEOUT",
         "type": "int",
         "description": "Allows to specify the pipe fuse timeout",
