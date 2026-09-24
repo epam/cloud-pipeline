@@ -11454,7 +11454,15 @@ hterm.ScrollPort.prototype.decorate = function(div, callback) {
 
   // Insert Iframe content asynchronously in FF.  Otherwise when the frame's
   // load event fires in FF it clears out the content of the iframe.
-  if ('mozInnerScreenX' in globalThis) { // detect a FF only property
+  // FIX firefox https://issuetracker.google.com/issues/487857181
+  // Firefox 148+: initial about:blank loads synchronously (bug 543435); older
+  // versions need the async iframe load path.
+  const agent = window.navigator.userAgent;
+  const versionMatch = agent.match(/rv:([\d.]+)/);
+  const ffRv = versionMatch ? Number(versionMatch[1]) : NaN;
+  const ffNeedsAsyncIframe =
+      'mozInnerScreenX' in window && !Number.isNaN(ffRv) && ffRv < 148;
+  if (ffNeedsAsyncIframe) {
     this.iframe_.addEventListener('load', () => onLoad());
   } else {
     onLoad();
