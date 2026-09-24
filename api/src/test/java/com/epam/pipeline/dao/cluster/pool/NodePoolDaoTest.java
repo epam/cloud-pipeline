@@ -16,6 +16,8 @@
 package com.epam.pipeline.dao.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodeScheduleCreatorUtils;
@@ -25,6 +27,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +38,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class NodePoolDaoTest extends AbstractJdbcTest {
 
     private static final String NEW_VALUE = "new";
+    private static final String OWNER = "pool-owner";
+    private static final LocalDateTime START_DATE = LocalDateTime.of(2026, 10, 1, 12, 0);
+    private static final LocalDateTime END_DATE = LocalDateTime.of(2026, 10, 3, 12, 0);
+    private static final int CPU_RESERVED = 4;
+    private static final String RAM_RESERVED = "2GiB";
 
     @Autowired
     private NodePoolDao poolDao;
@@ -90,6 +99,126 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         final NodePool second = createPoolWithSchedule();
         final List<NodePool> pools = poolDao.loadAll();
         assertThat(pools).containsOnly(first, second);
+    }
+
+    /**
+     * The columns added for capacity reservation. Equality alone cannot carry this: {@code owner} is not part
+     * of {@code NodePool}'s equality contract (it lives on {@code AbstractSecuredEntity}, which compares only
+     * ACL class and id), so each is asserted by value.
+     */
+    @Test
+    public void shouldRoundTripReservationColumns() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setOwner(OWNER);
+        pool.setPoolType(NodePoolType.SHARABLE_NODE);
+        pool.setCapacityReservation(true);
+        pool.setStartDate(START_DATE);
+        pool.setEndDate(END_DATE);
+        final NodePool created = poolDao.create(pool);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+
+        assertThat(loaded.getOwner()).isEqualTo(OWNER);
+        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHARABLE_NODE);
+        assertThat(loaded.isCapacityReservation()).isTrue();
+        assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
+        assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
+    }
+
+    @Test
+    public void shouldRoundTripLaunchConfigAsJson() {
+        final NodePoolLaunchConfig config = new NodePoolLaunchConfig();
+        config.setCpuRequestsEnabled(true);
+        config.setGpuRequestsEnabled(true);
+        config.setCpuRequestsReserved(CPU_RESERVED);
+        config.setRamRequestsReserved(RAM_RESERVED);
+        config.setAdditionalParameters(Collections.singletonMap("CP_CAP_SCHEDULING", "CAPACITY_BLOCK"));
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setLaunchConfig(config);
+        final NodePool created = poolDao.create(pool);
+
+        final NodePoolLaunchConfig loaded = poolDao.find(created.getId())
+                .orElseThrow(AssertionError::new)
+                .getLaunchConfig();
+
+        assertThat(loaded).isNotNull();
+        assertThat(loaded.isCpuRequestsEnabled()).isTrue();
+        assertThat(loaded.isRamRequestsEnabled()).isFalse();
+        assertThat(loaded.getCpuRequestsReserved()).isEqualTo(CPU_RESERVED);
+        assertThat(loaded.getRamRequestsReserved()).isEqualTo(RAM_RESERVED);
+        assertThat(loaded.getAdditionalParameters()).containsEntry("CP_CAP_SCHEDULING", "CAPACITY_BLOCK");
+    }
+
+    @Test
+    public void shouldDefaultPoolTypeToStandardAndReservationToFalse() {
+        final NodePool created = poolDao.create(NodePoolCreatorUtils.getPoolWithoutSchedule());
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+
+        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.STANDARD);
+        assertThat(loaded.isCapacityReservation()).isFalse();
+    }
+
+    /**
+     * {@code capacity_reservation} is write-once and {@code owner} is only writable through
+     * {@link NodePoolDao#updateOwner}, so an ordinary update must leave both untouched - a pool cannot gain
+     * or lose a reservation, or change hands, as a side effect of an edit.
+     */
+    @Test
+    public void shouldNotChangeReservationFlagOrOwnerOnUpdate() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setOwner(OWNER);
+        pool.setCapacityReservation(true);
+        final NodePool created = poolDao.create(pool);
+
+        created.setOwner(NEW_VALUE);
+        created.setCapacityReservation(false);
+        created.setCount(2);
+        poolDao.update(created);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getCount()).isEqualTo(2);
+        assertThat(loaded.isCapacityReservation()).isTrue();
+        assertThat(loaded.getOwner()).isEqualTo(OWNER);
+    }
+
+    /**
+     * The reservation lifecycle owns these, and the only caller of {@code update} builds its entity from a VO
+     * that carries none of them - so an ordinary edit must not null a pool's reservation window.
+     */
+    @Test
+    public void shouldNotClearLifecycleColumnsOnUpdate() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setPoolType(NodePoolType.SHARABLE_NODE);
+        pool.setStartDate(START_DATE);
+        pool.setEndDate(END_DATE);
+        final NodePool created = poolDao.create(pool);
+
+        final NodePool edit = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        edit.setPoolType(null);
+        edit.setStartDate(null);
+        edit.setEndDate(null);
+        edit.setName(NEW_VALUE);
+        poolDao.update(edit);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getName()).isEqualTo(NEW_VALUE);
+        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHARABLE_NODE);
+        assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
+        assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
+    }
+
+    @Test
+    public void shouldUpdateOwnerThroughItsOwnStatement() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setOwner(OWNER);
+        final NodePool created = poolDao.create(pool);
+
+        created.setOwner(NEW_VALUE);
+        poolDao.updateOwner(created);
+
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getOwner())
+                .isEqualTo(NEW_VALUE);
     }
 
     private void findAndAssertPool(final NodePool expected) {

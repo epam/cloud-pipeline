@@ -217,6 +217,14 @@ dependencies {
     compile group: "com.amazonaws", name: "aws-java-sdk-omics", version: "1.12.717"
     compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: '1.12.780'
 
+    // AWS SDK v2, alongside v1 above and used only by the capacity reservation service. v1 lacks
+    // StartDate/CommitmentDuration on CreateCapacityReservation, needed for future-dated reservations,
+    // and the ASSESSING/UNSUPPORTED/DELAYED reservation states - and still lacks them on its latest
+    // release, so bumping v1 is not an alternative. Declared with an explicit version rather than
+    // through the awssdk BOM: this module has no dependency-management plugin, and the platform()
+    // notation a BOM would need is Gradle 5+ while this build runs the 4.10.2 wrapper.
+    compile group: "software.amazon.awssdk", name: "ec2", version: "2.35.9"
+
 
     compile group: "com.azure", name: "azure-core", version: "1.54.0"
     //Azure Identity

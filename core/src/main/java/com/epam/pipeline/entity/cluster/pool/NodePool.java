@@ -15,21 +15,41 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * A pool of pre-provisioned compute nodes.
+ *
+ * <p>An ACL-secured entity with no parent: permissions are granted on the pool itself, and govern who may
+ * read, edit, delete or share it. Who may <em>schedule</em> runs on it is a separate question, answered by
+ * {@link #filter} and enforced when a run is assigned - an ACL grant is not a scheduling grant.
+ *
+ * <p>{@code id}, {@code name}, {@code owner}, {@code mask} and {@code locked} are inherited and must not be
+ * redeclared here.
+ */
 @Data
-public class NodePool implements NodePoolInfo {
+@EqualsAndHashCode(callSuper = true)
+public class NodePool extends AbstractSecuredEntity implements NodePoolInfo {
 
-    private Long id;
-    private String name;
+    private final AclClass aclClass = AclClass.NODE_POOL;
+    // There is no parent for a node pool
+    private final AbstractSecuredEntity parent = null;
+
+    /**
+     * When this pool row was created. Distinct from the inherited {@code createdDate}, which this entity
+     * does not persist - do not conflate the two.
+     */
     private LocalDateTime created;
     private Long regionId;
     private String instanceType;
@@ -48,8 +68,43 @@ public class NodePool implements NodePoolInfo {
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
 
+    /**
+     * How this pool's nodes are shared between runs. {@code STANDARD} for every pool that predates the
+     * column, and defaulted here rather than left null so a freshly built pool equals one loaded from the
+     * database - whose column is {@code NOT NULL DEFAULT 'STANDARD'}.
+     */
+    private NodePoolType poolType = NodePoolType.STANDARD;
+
+    /**
+     * The window this pool is usable in. Null means unbounded, which is the existing behaviour. Set from the
+     * linked capacity reservation once it becomes active.
+     */
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+
+    /**
+     * How runs divide one node of a sharable pool. Never populated yet - see {@link NodePoolLaunchConfig}.
+     */
+    private NodePoolLaunchConfig launchConfig;
+
+    /**
+     * Whether this pool is backed by a capacity reservation.
+     *
+     * <p>Write-once: set when the pool is inserted and never updated, because a pool cannot gain or lose a
+     * reservation afterwards. That immutability is what makes it safe to keep here rather than resolving it
+     * through the reservation table - unlike the reservation's status, which is mutable and is therefore
+     * deliberately <em>not</em> mirrored onto the pool.
+     */
+    private boolean capacityReservation;
+
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
+            return false;
+        }
+        if (startDate != null && timestamp.isBefore(startDate)) {
+            return false;
+        }
+        if (endDate != null && timestamp.isAfter(endDate)) {
             return false;
         }
         return Optional.ofNullable(schedule)
@@ -60,8 +115,8 @@ public class NodePool implements NodePoolInfo {
     @Override
     public String toString() {
         return "NodePool{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
+                "id=" + getId() +
+                ", name='" + getName() + '\'' +
                 ", regionId=" + regionId +
                 ", instanceType='" + instanceType + '\'' +
                 ", instanceDisk=" + instanceDisk +
