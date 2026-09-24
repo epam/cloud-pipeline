@@ -32,7 +32,8 @@ public enum AclClass {
     CLOUD_REGION,
     PIPELINE_USER,
     ROLE,
-    CATEGORICAL_ATTRIBUTE;
+    CATEGORICAL_ATTRIBUTE,
+    NODE_POOL;
 
     private final boolean supportsEntityManager;
 

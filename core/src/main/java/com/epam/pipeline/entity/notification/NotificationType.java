@@ -78,7 +78,13 @@ public enum NotificationType {
     IDLE_CPU_RUN(23, -1L, -1L, Collections.emptyList(), true,
             NotificationGroup.IDLE_RUN),
     IDLE_GPU_RUN(24, -1L, -1L, Collections.emptyList(), true,
-            NotificationGroup.IDLE_RUN);
+            NotificationGroup.IDLE_RUN),
+    CAPACITY_RESERVATION_REQUIRES_APPROVAL(25, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.CAPACITY_RESERVATION),
+    CAPACITY_RESERVATION_STATUS_CHANGED(26, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.CAPACITY_RESERVATION),
+    CAPACITY_RESERVATION_FINALIZING(27, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.CAPACITY_RESERVATION);
 
     private static final Map<Long, NotificationType> BY_ID;
 

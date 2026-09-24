@@ -228,6 +228,25 @@ public final class AclExpressions {
     public static final String ADMIN_OR_BILLING_MANAGER = ADMIN_ONLY + OR
             + "hasRole('ROLE_BILLING_MANAGER')";
 
+    public static final String NODE_POOL_MANAGER_ONLY = "hasRole('NODE_POOL_MANAGER')";
+    /**
+     * A node pool has no parent to hold a create permission, so the role itself is the gate - the same
+     * shape {@link #DTS_REGISTRY_PERMISSIONS} uses. Note this authorizes *opening* a capacity reservation
+     * request; whether that request is granted is decided separately by the approval policy.
+     */
+    public static final String NODE_POOL_CREATE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + NODE_POOL_MANAGER_ONLY;
+    public static final String NODE_POOL_ID_WRITE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'WRITE')";
+    public static final String NODE_POOL_ID_OWNER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'OWNER')";
+    // No NODE_POOL_READ_FILTER yet, deliberately. Filtering a pool list needs one element type, and
+    // NodePoolManager.loadAll returns bare NodePool when loadStatus is false and NodePoolWithUsage - a
+    // @Delegate wrapper that is NOT an AbstractSecuredEntity - when it is true. 'filterObject' fails to
+    // resolve an ACL class for the wrapper, and 'filterObject.pool' throws EL1008E on the bare pool, so
+    // no single expression is correct for both. Settling that return shape belongs with the endpoint
+    // work that first needs the filter; shipping a half-right expression now would only look correct.
+
     private AclExpressions() {
         // no op
     }
