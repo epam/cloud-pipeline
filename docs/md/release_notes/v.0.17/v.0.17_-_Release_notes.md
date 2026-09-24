@@ -50,6 +50,7 @@
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
+- [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
 
 ***
 
@@ -1741,6 +1742,15 @@ Feature is not available:
 - for worker or cluster runs
 
 More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
+
+## Checking of the Docker image version in `pipe run`
+
+Previously, `pipe run` did not check the version (tag) of the Docker image specified via the `-di` (`--docker-image`) option. A run with a mistyped version, e.g. `library/ubuntu:latet`, was scheduled and failed only on the node, when the image could not be pulled.
+
+In the current version, `pipe run` checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - `pipe` prints an error with the list of the available versions and exits with the code `1`.  
+If the tool versions can't be loaded, `pipe` prints a warning and continues the launch.
+
+For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
 ***
 
