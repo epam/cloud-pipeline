@@ -31,6 +31,7 @@
 - [Custom node images](#custom-node-images)
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
+- [Exclude NFS storages from file indexing](#exclude-nfs-storages-from-file-indexing)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [Disable Hyper-Threading](#disable-hyper-threading)
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
@@ -54,6 +55,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
     - [AWS deployment: unable to list more than 1000 files in the S3 bucket](#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket)
@@ -1280,6 +1282,15 @@ New features:
 
 For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
 
+## Exclude NFS storages from file indexing
+
+Previously, the files of object storages (AWS S3, Google Cloud Storage, Azure Blob storage) could be excluded from the search indexing by the storage attribute, but NFS storages could not - all NFS storages were indexed. The only option was to disable the NFS files indexing entirely.
+
+In **`v0.17`**, the same attribute works for NFS storages as well: the files of an NFS storage tagged by the attribute `Billing status` with the value `Exclude` are not indexed anymore.  
+The attribute key and value for NFS storages can be changed via the environment variables `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_KEY` and `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_VALUE` of the search service.
+
+For more details see [here](../../manual/19_Search/19._Global_search.md#exclude-storages-from-file-indexing).
+
 ## Explicitly "immutable" pipeline parameters
 
 Previously, if the pipeline parameter had a default value - it could not be changed in the detached configuration that used this pipeline.  
@@ -1745,6 +1756,15 @@ More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features
 ***
 
 ## Notable Bug fixes
+
+### Storage files indexing stops when a storage is deleted during the sync
+
+[#4598](https://github.com/epam/cloud-pipeline/issues/4598)
+
+Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.
+All storages after the deleted one were not re-indexed until the next cycle, so the search showed outdated files for them.
+This affected `NFS` storages and the object storages (`S3`, `GCS`, `Azure`).
+Now, the deleted storage is skipped, and the remaining storages are indexed as usual.
 
 ### Unable to view pipeline sources for previous draft versions
 

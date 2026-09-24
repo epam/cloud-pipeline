@@ -29,7 +29,9 @@ import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.vo.EntityPermissionVO;
+import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadRequest;
 import lombok.AccessLevel;
@@ -56,6 +58,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -83,6 +86,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticIndexService elasticIndexService;
     private final NFSStorageMounter nfsMounter;
     private final String tagDelimiter;
+    private final String storageExcludeKey;
+    private final String storageExcludeValue;
     private final StorageFileMapper fileMapper;
     protected final Map<Long, AbstractCloudRegion> cloudRegions;
 
@@ -96,7 +101,11 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
                            ElasticsearchServiceClient elasticsearchServiceClient,
                            ElasticIndexService elasticIndexService,
                            NFSStorageMounter nfsMounter,
-                           @Value("${sync.nfs-file.tag.value.delimiter:;}") String tagDelimiter) {
+                           @Value("${sync.nfs-file.tag.value.delimiter:;}") String tagDelimiter,
+                           @Value("${sync.nfs-file.storage.exclude.metadata.key:Billing status}")
+                               String storageExcludeKey,
+                           @Value("${sync.nfs-file.storage.exclude.metadata.value:Exclude}")
+                               String storageExcludeValue) {
         this.indexSettingsPath = indexSettingsPath;
         this.rootMountPoint = rootMountPoint;
         this.indexPrefix = indexPrefix;
@@ -108,6 +117,8 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         this.elasticIndexService = elasticIndexService;
         this.nfsMounter = nfsMounter;
         this.tagDelimiter = tagDelimiter;
+        this.storageExcludeKey = storageExcludeKey;
+        this.storageExcludeValue = storageExcludeValue;
         this.fileMapper = new StorageFileMapper();
         this.cloudRegions = ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllRegions()).stream()
                 .map(r -> ImmutablePair.of(r.getId(), r))
@@ -118,10 +129,20 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started NFS synchronization");
         fileMapper.updateSearchMasks(cloudPipelineAPIClient, log);
+        final Set<Long> excludedStorageIds = loadExcludedStorageIds();
 
         cloudPipelineAPIClient.loadAllDataStoragesWithMounts().stream()
                 .filter(dataStorage -> dataStorage.getStorage().getType() == DataStorageType.NFS)
+                .filter(dataStorage -> !excludedStorageIds.contains(dataStorage.getStorage().getId()))
                 .forEach(this::createIndexAndDocuments);
+    }
+
+    protected Set<Long> loadExcludedStorageIds() {
+        return ListUtils.emptyIfNull(cloudPipelineAPIClient.searchEntriesByMetadata(AclClass.DATA_STORAGE,
+                        storageExcludeKey, storageExcludeValue))
+                .stream()
+                .map(EntityVO::getEntityId)
+                .collect(Collectors.toSet());
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -129,17 +150,17 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         final AbstractDataStorage dataStorage = storageWithShareMount.getStorage();
         log.debug("Starting to  process storage: {}, id: {}.", dataStorage.getName(), dataStorage.getId());
         final String regionCode = getRegionCode(storageWithShareMount);
-        final EntityPermissionVO entityPermission = cloudPipelineAPIClient
-                .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
-
-        PermissionsContainer permissionsContainer = new PermissionsContainer();
-        if (entityPermission != null) {
-            permissionsContainer.add(entityPermission.getPermissions(), dataStorage.getOwner());
-        }
-
         String alias = indexPrefix + indexName + String.format("-%d", dataStorage.getId());
         String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
+            // A storage deleted after the list was loaded fails here, and shall not abort the rest of the cycle
+            final EntityPermissionVO entityPermission = cloudPipelineAPIClient
+                    .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
+            PermissionsContainer permissionsContainer = new PermissionsContainer();
+            if (entityPermission != null) {
+                permissionsContainer.add(entityPermission.getPermissions(), dataStorage.getOwner());
+            }
+
             String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexSettingsPath);
             Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
