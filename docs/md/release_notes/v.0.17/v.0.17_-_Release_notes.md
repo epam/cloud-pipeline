@@ -31,6 +31,7 @@
 - [Custom node images](#custom-node-images)
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
+- [Exclude NFS storages from file indexing](#exclude-nfs-storages-from-file-indexing)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [Disable Hyper-Threading](#disable-hyper-threading)
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
@@ -1279,6 +1280,15 @@ New features:
     For more details about the view of the results output see [here](../../manual/19_Search/19._Global_search.md#results-output-view).
 
 For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
+
+## Exclude NFS storages from file indexing
+
+Previously, the files of object storages (AWS S3, Google Cloud Storage, Azure Blob storage) could be excluded from the search indexing by the storage attribute, but NFS storages could not - all NFS storages were indexed. The only option was to disable the NFS files indexing entirely.
+
+In **`v0.17`**, the same attribute works for NFS storages as well: the files of an NFS storage tagged by the attribute `Billing status` with the value `Exclude` are not indexed anymore.  
+The attribute key and value for NFS storages can be changed via the environment variables `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_KEY` and `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_VALUE` of the search service.
+
+For more details see [here](../../manual/19_Search/19._Global_search.md#exclude-storages-from-file-indexing).
 
 ## Explicitly "immutable" pipeline parameters
 
