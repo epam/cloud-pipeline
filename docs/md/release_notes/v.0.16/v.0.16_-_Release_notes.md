@@ -27,6 +27,7 @@
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
 - [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
+- [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 
 ***
 
@@ -541,9 +542,25 @@ By default, it is `1` - storages are mounted one by one, as before. To go back t
 
 - If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished.
 - Storages mounted with `pipe` FUSE request their details and credentials from the API. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a job (or a cluster) starts. It also uses more CPU on small nodes. Start with a small value, e.g. `4`.
-- **`CP_PIPE_FUSE_TIMEOUT`** (by default, `500` ms) sets how long `pipe` FUSE waits before it checks that the mount process is still running. Under a high load, consider increasing it, so that a mount process which fails later is reported.
+- If `pipe` FUSE mounts fail by a timeout under a high load, consider increasing **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** (see [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)).
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#mount-storages-in-parallel).
+
+## `pipe storage mount` waits for the mount point
+
+Previously, `pipe storage mount` waited for a fixed time (the `-w` option, `1000` ms by default; for the jobs - the `CP_PIPE_FUSE_TIMEOUT` parameter, `500` ms by default) and then only checked that the mount process was still running. If the mount process failed later, the storage was reported as mounted, but it was missing.
+
+In the current version, `pipe storage mount` waits until the storage is actually mounted:
+
+- it checks the mount point every **`CP_PIPE_FUSE_MOUNT_DELAY`** ms (`500` by default) until it is mounted by `pipe` FUSE. If the mount point is a symlink, its target is checked
+- the `-w` (`--timeout`) option now sets the maximum time to wait, in ms. By default, it is `10000`
+- the mount fails if the mount process exits, or if the storage is not mounted by `pipe` FUSE when the timeout expires (e.g. something else stays mounted at the mount point). In the last case, the mount process is stopped
+
+For the jobs, the timeout is set by the new launch parameter **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** (_int_, `10000` by default). By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the **`CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES`** parameter.
+
+> **_Note_**: the **`CP_PIPE_FUSE_TIMEOUT`** parameter is not used anymore. If it is set for a job, tool or configuration, it is ignored. Use **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** instead. The new value is the maximum time to wait, not a fixed wait, so it shall not be set as low as the old one.
+
+For more details see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mount-a-storage).
 
 ***
 
