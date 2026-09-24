@@ -86,6 +86,7 @@ _debug_logging_level = 'DEBUG'
 _info_logging_level = 'INFO'
 _xattrs_operations = ['setxattr', 'getxattr', 'listxattr', 'removexattr']
 _xattrs_include_prefix = 'user'
+_storage_admin_roles = ['ROLE_ADMIN', 'ROLE_STORAGE_ADMIN']
 
 
 def start(mountpoint, webdav, bucket,
@@ -276,9 +277,9 @@ def need_to_load_path_permissions(user, storage, path_permissions_disabled):
         return False
     if user.get('admin', False):
         return False
-    if [r for r in user.get('roles', []) if r.get('name', '').upper() == 'ROLE_ADMIN']:
+    if [r for r in user.get('roles', []) if r.get('name', '').upper() in _storage_admin_roles]:
         return False
-    if [g for g in user.get('groups', []) if g.upper() == 'ROLE_ADMIN']:
+    if [g for g in user.get('groups', []) if g.upper() in _storage_admin_roles]:
         return False
     if user.get('userName').upper() == storage.owner.upper():
         return False
