@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@ from src.api.pipeline import Pipeline
 ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
 GPU_WITHOUT_CUDA_WARN_MSG = 'WARN: Requested GPU instance type but cuda is not available for specified configuration!'
+DOCKER_IMAGE_TAG_CHECK_WARN_MSG = 'WARN: Unable to check that docker image {} tag exists: {}'
+DEFAULT_IMAGE_TAG = 'latest'
 
 
 class PipelineRunOperations(object):
@@ -94,6 +96,8 @@ class PipelineRunOperations(object):
             friendly_url = cls._build_pretty_url(friendly_url)
 
         try:
+            if docker_image and not (pipeline and parameters):
+                cls._check_docker_image_tag(docker_image, quiet)
             if not pipeline and docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk,
                                                                            cmd_template):
                 instance_disk, instance_type, cmd_template = cls.load_missing_args(docker_image, instance_disk,
@@ -413,6 +417,32 @@ class PipelineRunOperations(object):
             cmd_template = tool['defaultCommand']
 
         return instance_disk, instance_type, cmd_template
+
+    @staticmethod
+    def _get_image_tag(docker_image):
+        # a tag can only follow the last '/', otherwise ':' belongs to a registry port
+        image_with_tag = docker_image.split('/')[-1]
+        parts = image_with_tag.split(':')
+        return parts[1] if len(parts) == 2 else DEFAULT_IMAGE_TAG
+
+    @classmethod
+    def _check_docker_image_tag(cls, docker_image, quiet):
+        # the check is a convenience only: the API decides whether the image can be run,
+        # so whenever tags can't be loaded the launch proceeds
+        image_tag = cls._get_image_tag(docker_image)
+        try:
+            tool = Tool().find_tool_by_name(docker_image)
+            if not tool or 'id' not in tool:
+                return
+            tags = Tool().load_tags(tool['id'])
+        except RuntimeError as e:
+            if not quiet:
+                click.echo(DOCKER_IMAGE_TAG_CHECK_WARN_MSG.format(docker_image, str(e)), err=True)
+            return
+        if tags and image_tag not in tags:
+            click.echo('Docker image {} has no tag "{}". Available tags: {}'
+                       .format(docker_image, image_tag, ', '.join(sorted(tags))), err=True)
+            sys.exit(1)
 
     @staticmethod
     def required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
