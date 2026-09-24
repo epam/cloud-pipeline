@@ -37,6 +37,7 @@ class MountRecorder:
         self.lock = threading.Lock()
         self.started = []
         self.finished = []
+        self.events = []
 
 
 def fake_mounter_class(recorder, behaviours=None):
@@ -69,11 +70,13 @@ def fake_mounter_class(recorder, behaviours=None):
         def mount(self, mount_root, task_name):
             with recorder.lock:
                 recorder.started.append(self.storage.mount_point)
+                recorder.events.append(('start', self.storage.mount_point))
             behaviour = behaviours.get(self.storage.name)
             if behaviour:
                 behaviour(self, recorder)
             with recorder.lock:
                 recorder.finished.append(self.storage.mount_point)
+                recorder.events.append(('finish', self.storage.mount_point))
 
     return FakeMounter
 
@@ -351,7 +354,7 @@ def test_run_mounts_in_parallel_with_several_threads(task, logger, monkeypatch):
         run_task(task, [storage(mp, mp, i + 1) for i, mp in enumerate(RUN_STORAGES)], recorder)
     sequential.assert_not_called()
     assert sorted(recorder.finished) == ['/cloud-data/a', '/cloud-data/a/c', '/cloud-data/b']
-    assert recorder.finished.index('/cloud-data/a') < recorder.started.index('/cloud-data/a/c')
+    assert recorder.events.index(('finish', '/cloud-data/a')) < recorder.events.index(('start', '/cloud-data/a/c'))
     logger.success.assert_called_once_with('Finished data storage mounting', task_name=TASK_NAME)
 
 
