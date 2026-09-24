@@ -30,7 +30,10 @@ from itertools import groupby
 from operator import itemgetter
 from random import randint
 import json
-from distutils.version import LooseVersion
+try:
+    from packaging.version import Version as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 import fnmatch
 import sys
 import math

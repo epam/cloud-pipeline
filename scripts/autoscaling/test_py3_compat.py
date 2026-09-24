@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Exercises the api-pod-side cluster-command scripts (issue #4589 Phase 4) under whichever
-# interpreter runs it. There was no test runner in this package before. Requires the same
+# Exercises the api-pod-side cluster-command scripts (issue #4589 Phase 4, extended in Phase 5)
+# under whichever interpreter runs it. There was no test runner in this package before. Requires the same
 # third-party packages requirements.txt lists (boto3, azure, google-api-python-client) plus
 # pykube/pytz/PyJWT/luigi, which workflows/pipe-common's own imports pull in transitively - install
 # them into an isolated virtualenv, never the interpreter running the rest of the toolchain.
@@ -162,6 +162,22 @@ class AwsNodeupNetworksConfigTest(unittest.TestCase):
         called_subnet_ids = ec2.describe_subnets.call_args[1]['SubnetIds']
         self.assertIsInstance(called_subnet_ids, list)
         self.assertEqual(called_subnet_ids, ['subnet-123'])
+
+
+class AwsNodeupVersionCompatTest(unittest.TestCase):
+    # Regression test (issue #4589 Phase 5): aws/nodeup.py's boto3-retry-config workaround
+    # imported `from distutils.version import LooseVersion` unconditionally. distutils was
+    # removed from the Python 3.12 stdlib - this only kept working by accident here because
+    # setuptools' deprecated `_distutils_hack` shim re-registers a `distutils` module at
+    # interpreter startup, which is not something to depend on. awsprovider.py already
+    # established the fix (prefer packaging.version.Version, fall back to distutils.version for
+    # Python 2) for the identical import; this proves aws/nodeup.py's import no longer hard-fails
+    # when distutils is unavailable, by blocking it outright rather than relying on that shim's
+    # presence. packaging is installed here, so this doesn't exercise the Python-2 fallback branch
+    # itself - that branch is unchanged from awsprovider.py's own, already-proven-in-production one.
+    def test_imports_without_distutils_available(self):
+        with mock.patch.dict(sys.modules, {'distutils': None, 'distutils.version': None}):
+            load_module('aws_nodeup_no_distutils', 'aws/nodeup.py')
 
 
 class DictViewIndexingRegressionTest(unittest.TestCase):

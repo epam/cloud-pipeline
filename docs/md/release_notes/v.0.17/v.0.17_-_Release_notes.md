@@ -1747,7 +1747,7 @@ More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features
 
 ## Python 3 support for backend services
 
-`pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way.
+`pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies (`boto3`, `botocore`, and `pipe-common` itself) installed too, so they run under either interpreter; the equivalents for Azure and GCP are still pending.
 
 ***
 

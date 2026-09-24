@@ -92,6 +92,12 @@ RUN pip install -I  awscli==1.16.314 \
                     boto3==1.10.50 \
                     botocore==1.13.50
 
+# AWS - specific packages, Python 3 (issue #4589)
+# TODO: Azure's and GCP's equivalent still needs a pip3 install before CP_PYTHON_VERSION=3 works
+# for their cluster-command scripts.
+RUN pip3 install -I  boto3==1.34.69 \
+                     botocore==1.34.69
+
 # Azure - specific packages
 # We install here portalocker==1.7.1 to solve the problem with not fixed dependency some where in azure dependencies tree
 RUN pip install -I  portalocker==1.7.1 \
@@ -163,6 +169,7 @@ RUN mkdir -p /tmp/pipe-temp && \
     cd /tmp/pipe-temp/ && \
     unzip -qq pipeline.jar && \
     pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    pip3 install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp
 
