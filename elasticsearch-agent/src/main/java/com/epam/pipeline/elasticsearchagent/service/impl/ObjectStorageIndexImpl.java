@@ -119,15 +119,16 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     @Override
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void indexStorage(final AbstractDataStorage dataStorage) {
-        final EntityPermissionVO entityPermission = cloudPipelineAPIClient
-                .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
-        final PermissionsContainer permissionsContainer = new PermissionsContainer();
-        permissionsContainer.add(Optional.ofNullable(entityPermission)
-                .map(EntityPermissionVO::getPermissions)
-                .orElse(Collections.emptySet()), dataStorage.getOwner());
         final String alias = indexPrefix + String.format("-%d", dataStorage.getId());
         final String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
+            // A storage deleted after the list was loaded fails here, and shall not abort the rest of the cycle
+            final EntityPermissionVO entityPermission = cloudPipelineAPIClient
+                    .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
+            final PermissionsContainer permissionsContainer = new PermissionsContainer();
+            permissionsContainer.add(Optional.ofNullable(entityPermission)
+                    .map(EntityPermissionVO::getPermissions)
+                    .orElse(Collections.emptySet()), dataStorage.getOwner());
             final String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexMappingFile);
             final Supplier<TemporaryCredentials> credentialsSupplier = () -> getTemporaryCredentials(dataStorage);
