@@ -150,17 +150,17 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
         final AbstractDataStorage dataStorage = storageWithShareMount.getStorage();
         log.debug("Starting to  process storage: {}, id: {}.", dataStorage.getName(), dataStorage.getId());
         final String regionCode = getRegionCode(storageWithShareMount);
-        final EntityPermissionVO entityPermission = cloudPipelineAPIClient
-                .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
-
-        PermissionsContainer permissionsContainer = new PermissionsContainer();
-        if (entityPermission != null) {
-            permissionsContainer.add(entityPermission.getPermissions(), dataStorage.getOwner());
-        }
-
         String alias = indexPrefix + indexName + String.format("-%d", dataStorage.getId());
         String indexName = generateRandomString(5).toLowerCase() + "-" + alias;
         try {
+            // A storage deleted after the list was loaded fails here, and shall not abort the rest of the cycle
+            final EntityPermissionVO entityPermission = cloudPipelineAPIClient
+                    .loadPermissionsForEntity(dataStorage.getId(), dataStorage.getAclClass());
+            PermissionsContainer permissionsContainer = new PermissionsContainer();
+            if (entityPermission != null) {
+                permissionsContainer.add(entityPermission.getPermissions(), dataStorage.getOwner());
+            }
+
             String currentIndexName = elasticsearchServiceClient.getIndexNameByAlias(alias);
             elasticIndexService.createIndexIfNotExist(indexName, indexSettingsPath);
             Path mountFolder = mountStorageToRootIfNecessary(dataStorage);
