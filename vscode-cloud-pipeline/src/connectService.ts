@@ -12,7 +12,8 @@ import {
 } from './config';
 import { getBrandName } from './extensionEnv';
 import { provisionPasswordlessKey } from './keyProvisioning';
-import { ensureRemoteSshForConnect } from './remoteSshExtension';
+import { MachineSettingsRequest } from './remoteMachineSettings';
+import { ensureRemoteSshForConnect, remoteServerDirName } from './remoteSshExtension';
 import { isSshBlockedByPauseState } from './runPauseResume';
 import {
   isSshInitialized,
@@ -219,6 +220,11 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
   const directTunnel = cfg.get<boolean>('directTunnel') ?? false;
   const hostPrefix = (cfg.get<string>('sshHostAliasPrefix') ?? 'cp-run-').trim() || 'cp-run-';
   const hostAlias = `${hostPrefix}${runId}`;
+  const machineSettingsValues = cfg.get<Record<string, unknown>>('remoteMachineSettings.values') ?? {};
+  const machineSettings: MachineSettingsRequest | undefined =
+    (cfg.get<boolean>('remoteMachineSettings.enabled') ?? true) && Object.keys(machineSettingsValues).length > 0
+      ? { serverDirName: remoteServerDirName(), settings: machineSettingsValues }
+      : undefined;
 
   const api = new CloudPipelineApi(auth.apiUrl, auth.accessKey);
   const run = await api.getRunWithTasks(runId);
@@ -387,7 +393,8 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
           runId,
           keysDir,
           authorizedUsers,
-          creds.username
+          creds.username,
+          machineSettings
         );
 
         const sshDir = sshConfigDir();
