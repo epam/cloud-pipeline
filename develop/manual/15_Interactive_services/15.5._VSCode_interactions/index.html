@@ -495,6 +495,22 @@ If it is not installed - you will be prompted to do so. Click <strong>Install Re
 <img alt="CP_VSCodeInteractions" src="../attachments/VSCode_15.png" /></li>
 </ul>
 <blockquote>
+<p>On connect, the extension adds the settings below to the <strong>Remote [SSH]</strong> settings of the instance (<code>~/.vscode-server/data/Machine/settings.json</code>, or <code>~/.cursor-server/data/Machine/settings.json</code> in Cursor).<br />
+They keep search, file watching and chat assistants (e.g. GitHub Copilot Chat) out of the mounted data storages under <code>~/cloud-data</code>. Without them a chat request may hang for a long time.  </p>
+<p><code>json
+{
+    "search.followSymlinks": false,
+    "search.exclude": { "**/cloud-data/**": true },
+    "files.exclude": { "**/cloud-data": true },
+    "files.watcherExclude": { "**/cloud-data/**": true }
+}</code></p>
+<ul>
+<li>only missing settings are added, values already set on the instance are kept</li>
+<li>the settings file shall be plain JSON. If it contains comments or trailing commas - nothing is added</li>
+<li><code>~/cloud-data</code> is hidden from the VSCode explorer, the storages stay available in the terminal</li>
+<li>to change the list - edit <code>cloudPipeline.remoteMachineSettings.values</code> in the VSCode settings. Set a key to <code>null</code> to skip it</li>
+<li>to disable this behavior - set <code>cloudPipeline.remoteMachineSettings.enabled</code> to <code>false</code></li>
+</ul>
 <p>To stop connection to the instance - close VSCode window with opened remote connection and select <strong>Stop SSH Tunnel</strong> option from the context menu (right-click the instance):<br />
 <img alt="CP_VSCodeInteractions" src="../attachments/VSCode_16.png" /><br />
 <em>OR</em> hover the instance in the list and click <strong>Stop SSH Tunnel</strong> icon:<br />
