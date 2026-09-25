@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ..compat import to_bytes
+
+
 class GitUser(object):
     def __init__(self):
         self.id = None
@@ -26,11 +29,11 @@ class GitUser(object):
         if 'id' in json:
             instance.id = int(json['id'])
         if 'username' in json:
-            instance.username = json['username'].encode('utf-8')
+            instance.username = to_bytes(json['username'])
         if 'name' in json:
-            instance.name = json['name'].encode('utf-8')
+            instance.name = to_bytes(json['name'])
         if 'email' in json:
-            instance.email = json['email'].encode('utf-8')
+            instance.email = to_bytes(json['email'])
         if 'access_level' in json:
             instance.access_level = int(json['access_level'])
         return instance

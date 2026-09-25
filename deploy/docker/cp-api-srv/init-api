@@ -16,6 +16,27 @@
 
 export CP_DOLLAR='$'
 
+# --- Python interpreter selection ---
+# Mirrors scripts/pipeline-launch/launch.sh's CP_PYTHON_VERSION/CP_PYTHON_PATH resolution (issue #4589),
+# so Java call sites resolving CP_PYTHON_PATH behave the same in this pod as in a job container.
+# CP_PYTHON_VERSION=2 (default) keeps existing behavior; both interpreters are already on the image.
+# The "|| command -v python" fallback (launch.sh has none) is needed here: this image's yum install
+# only provides "python" (Dockerfile:29-43), not a "python2" binary.
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
+export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
+export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$(command -v python3.12 || command -v python3)}"
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
+else
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+    export PATH="/usr/local/python3.12/bin:$PATH"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
+    exit 1
+fi
+echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
 function is_dir_empty {
     local dir_path="$1"
 

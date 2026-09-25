@@ -85,6 +85,7 @@ requests==2.34.2
 requests-oauthlib==1.3.0
 rsa==4.0
 six==1.15.0
+six==1.16.0
 tornado==6.4.0
 tzlocal==2.1
 urllib3==2.7.0
@@ -98,7 +99,9 @@ wheel==0.44.0
 flask==2.3.3
 Flask-HTTPAuth==4.4.0
 botocore==1.32.7
+botocore==1.34.69
 boto3==1.29.0
+boto3==1.34.69
 azure-common==1.1.28
 azure-mgmt-compute==31.0.0
 azure-mgmt-network==26.0.0

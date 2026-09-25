@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ..compat import to_bytes
+
+
 class GitShareGroup(object):
     def __init__(self):
         self.group_id = None
@@ -24,7 +27,7 @@ class GitShareGroup(object):
         if 'group_id' in json:
             instance.group_id = json['group_id']
         if 'group_name' in json:
-            instance.group_name = json['group_name'].encode('utf-8')
+            instance.group_name = to_bytes(json['group_name'])
         if 'group_access_level' in json:
             instance.group_access_level = int(json['group_access_level'])
         return instance
