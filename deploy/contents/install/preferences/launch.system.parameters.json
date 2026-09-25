@@ -633,6 +633,12 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_NODEUP_RETRY_COUNT",
+        "type": "int",
+        "description": "Overrides the maximal number of tries to start a node for the run (cluster.nodeup.retry.count)",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_CAP_GRID_ENGINE_NOTIFICATIONS",
         "type": "boolean",
         "defaultValue": "true",
