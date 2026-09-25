@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster.autoscale;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
@@ -58,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
@@ -65,6 +67,7 @@ import static org.mockito.Matchers.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -74,6 +77,9 @@ public class AutoscaleManagerTest {
     private static final Long TEST_RUN_ID = 111L;
     private static final String PRIMARY_INSTANCE_TYPE = "primary.type";
     private static final String FALLBACK_INSTANCE_TYPE = "fallback.type";
+    private static final int PREFERENCE_RETRY_COUNT = 2;
+    private static final int PARAMETER_RETRY_COUNT = 4;
+    private static final int NODEUP_GENERIC_FAILURE_EXIT_CODE = 1;
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -133,7 +139,8 @@ public class AutoscaleManagerTest {
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 
         // Mock preferences
-        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT)).thenReturn(2);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT))
+            .thenReturn(PREFERENCE_RETRY_COUNT);
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT_MAX_ATTEMPTS)).thenReturn(1);
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)).thenReturn(true);
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_MAX_SIZE)).thenReturn(1);
@@ -294,5 +301,72 @@ public class AutoscaleManagerTest {
         // DB is saved once with the primary type before the loop; fallback type is never written to DB
         assertThat(capturedNodeTypes, Matchers.contains(PRIMARY_INSTANCE_TYPE));
         verify(cloudFacade, times(2)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    @Test
+    public void testRunFailsAfterPreferenceNodeUpRetryCount() {
+        mockNodeUpFailure(NODEUP_GENERIC_FAILURE_EXIT_CODE);
+
+        runAutoscaling(PREFERENCE_RETRY_COUNT + 1);
+
+        verify(cloudFacade, times(PREFERENCE_RETRY_COUNT)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testNodeUpRetryCountOverriddenByRunParameter() {
+        mockNodeUpRetryCountParameter(String.valueOf(PARAMETER_RETRY_COUNT));
+        mockNodeUpFailure(NODEUP_GENERIC_FAILURE_EXIT_CODE);
+
+        runAutoscaling(PARAMETER_RETRY_COUNT);
+
+        verify(cloudFacade, times(PARAMETER_RETRY_COUNT)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager, never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, times(PARAMETER_RETRY_COUNT)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testInvalidNodeUpRetryCountRunParameterIgnored() {
+        mockNodeUpRetryCountParameter("invalid");
+        mockNodeUpFailure(NODEUP_GENERIC_FAILURE_EXIT_CODE);
+
+        runAutoscaling(PREFERENCE_RETRY_COUNT + 1);
+
+        verify(cloudFacade, times(PREFERENCE_RETRY_COUNT)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testRegionShiftRespectsNodeUpRetryCountRunParameter() {
+        mockNodeUpRetryCountParameter(String.valueOf(PARAMETER_RETRY_COUNT));
+        mockNodeUpFailure(AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE);
+
+        runAutoscaling(PARAMETER_RETRY_COUNT - 1);
+
+        verify(runRegionShiftHandler, never()).restartRunInAnotherRegion(eq(TEST_RUN_ID));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(runRegionShiftHandler).restartRunInAnotherRegion(eq(TEST_RUN_ID));
+    }
+
+    private void mockNodeUpRetryCountParameter(final String value) {
+        testRun.setPipelineRunParameters(Collections.singletonList(
+                new PipelineRunParameter(AutoscaleContants.CP_NODEUP_RETRY_COUNT, value)));
+    }
+
+    private void mockNodeUpFailure(final int exitCode) {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID), any(), any(), any()))
+            .thenThrow(new CmdExecutionException("", exitCode, ""));
+    }
+
+    private void runAutoscaling(final int times) {
+        IntStream.range(0, times).forEach(i -> autoscaleManagerCore.runAutoscaling());
     }
 }
