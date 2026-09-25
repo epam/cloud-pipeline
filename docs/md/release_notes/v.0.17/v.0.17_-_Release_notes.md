@@ -50,6 +50,7 @@
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
+- [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 
 ***
 
@@ -1741,6 +1742,13 @@ Feature is not available:
 - for worker or cluster runs
 
 More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
+
+## Node start retries for a specific run
+
+Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
+
+In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NODEUP_RETRY_COUNT`. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
+The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
 
 ***
 
