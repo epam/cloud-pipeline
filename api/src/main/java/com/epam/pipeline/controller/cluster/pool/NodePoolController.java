@@ -20,7 +20,6 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -34,6 +33,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,7 +53,7 @@ public class NodePoolController extends AbstractRestController {
     @GetMapping
     @ApiOperation(value = "Returns all registered node pools", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends NodePoolInfo>> loadAll(
+    public Result<List<NodePool>> loadAll(
             final @RequestParam(defaultValue = "false") boolean loadStatus) {
         return Result.success(apiService.loadAll(loadStatus));
     }
@@ -66,10 +66,18 @@ public class NodePoolController extends AbstractRestController {
     }
 
     @PostMapping
-    @ApiOperation(value = "Creates or updates a node pool", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Creates a node pool, optionally requesting a capacity reservation for it",
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePool> createOrUpdate(final @RequestBody NodePoolVO vo) {
-        return Result.success(apiService.createOrUpdate(vo));
+    public Result<NodePool> create(final @RequestBody NodePoolVO vo) {
+        return Result.success(apiService.create(vo));
+    }
+
+    @PutMapping("{id}")
+    @ApiOperation(value = "Updates an existing node pool", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<NodePool> update(final @PathVariable Long id, final @RequestBody NodePoolVO vo) {
+        return Result.success(apiService.update(id, vo));
     }
 
     @DeleteMapping("{id}")

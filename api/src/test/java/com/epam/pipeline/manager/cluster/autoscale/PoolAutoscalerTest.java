@@ -81,7 +81,7 @@ public class PoolAutoscalerTest {
 
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() + pool.getScaleStep());
-        verify(poolManager).createOrUpdate(eq(vo));
+        verify(poolManager).update(eq(pool.getId()), eq(vo));
     }
 
     @Test
@@ -91,7 +91,7 @@ public class PoolAutoscalerTest {
 
         poolAutoscaler.adjustPoolSizes();
 
-        verify(poolManager, times(0)).createOrUpdate(any());
+        verify(poolManager, times(0)).update(any(), any());
     }
 
     @Test
@@ -103,7 +103,7 @@ public class PoolAutoscalerTest {
 
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() - pool.getScaleStep());
-        verify(poolManager).createOrUpdate(eq(vo));
+        verify(poolManager).update(eq(pool.getId()), eq(vo));
     }
 
     private List<Node> buildNodes(final Long poolId, final List<String> nodeIds) {

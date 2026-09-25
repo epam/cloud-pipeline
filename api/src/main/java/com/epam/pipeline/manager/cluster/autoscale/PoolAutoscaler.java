@@ -87,6 +87,6 @@ public class PoolAutoscaler {
     private void updatePoolSize(final NodePool pool, final int newSize) {
         final NodePoolVO nodePoolVO = poolMapper.toVO(pool);
         nodePoolVO.setCount(newSize);
-        poolManager.createOrUpdate(nodePoolVO);
+        poolManager.update(pool.getId(), nodePoolVO);
     }
 }

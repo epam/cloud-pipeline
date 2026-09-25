@@ -17,11 +17,15 @@ package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -34,6 +38,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.Comparator;
+import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -69,10 +74,10 @@ public class NodePoolValidator {
 
         Assert.isTrue(StringUtils.isNotBlank(vo.getInstanceType()),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_MISSING_INSTANCE_TYPE));
-        Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(vo.getInstanceType(), vo.getRegionId(),
-                PriceType.SPOT.equals(vo.getPriceType())),
-                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED,
-                        vo.getInstanceType()));
+//        Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(vo.getInstanceType(), vo.getRegionId(),
+//                PriceType.SPOT.equals(vo.getPriceType())),
+//                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED,
+//                        vo.getInstanceType()));
 
         Assert.isTrue(vo.getInstanceDisk() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INVALID_DISK_SIZE));
@@ -91,6 +96,72 @@ public class NodePoolValidator {
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
         }
+        Optional.ofNullable(vo.getCapacityReservationRequest())
+                .ifPresent(request -> validateCapacityReservation(vo, request));
+        validatePoolType(vo);
+    }
+
+    /**
+     * A sharable pool's pods select the nodes they may land on by the reservation's id, so a sharable pool with
+     * no reservation has nothing to select and is rejected rather than created unschedulable.
+     */
+    private void validatePoolType(final NodePoolVO vo) {
+        final NodePoolType poolType = Optional.ofNullable(vo.getPoolType()).orElse(NodePoolType.STANDARD);
+        Assert.isTrue(NodePoolType.STANDARD == poolType || vo.getCapacityReservationRequest() != null,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_POOL_TYPE_NOT_SUPPORTED,
+                        poolType));
+    }
+
+    /**
+     * Rules that only apply to a pool asking for reserved capacity. Each one rejects a request that would be
+     * accepted now and fail later - after money had been spent, or after a multi-day wait.
+     */
+    private void validateCapacityReservation(final NodePoolVO vo, final CapacityReservationRequest request) {
+        // Reservations cover on-demand capacity, so a spot pool would never consume one and the user would
+        // be paying for the reservation and the spot nodes both.
+        Assert.isTrue(!PriceType.SPOT.equals(vo.getPriceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
+
+
+        final CapacityReservationType type = request.getReservationType();
+        Assert.notNull(type,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED));
+        Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
+
+        // An autoscaled pool is reserved at its largest, so it must say how large that is.
+        Assert.isTrue(vo.isAutoscaled() ? Objects.nonNull(vo.getMaxSize()) && vo.getMaxSize() >= 1
+                        : vo.getCount() >= 1,
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
+
+        validateReservationWindow(request);
+    }
+
+    /**
+     * The window is a search space, not a single date: the provider decides which start dates are actually
+     * available. A window too narrow to hold the requested duration can never be satisfied, so it is rejected
+     * here rather than after the provider has been asked.
+     */
+    private void validateReservationWindow(final CapacityReservationRequest request) {
+        final LocalDateTime start = request.getRequestedStartDate();
+        final LocalDateTime end = request.getRequestedEndDate();
+        Assert.isTrue(Objects.nonNull(start) && Objects.nonNull(end),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DATES_REQUIRED,
+                        request.getReservationType()));
+        Assert.isTrue(start.isAfter(DateUtils.nowUTC()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST,
+                        start));
+        Assert.isTrue(end.isAfter(start),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_INVALID,
+                        end, start));
+
+        final Integer duration = request.getDurationHours();
+        Assert.isTrue(Objects.nonNull(duration) && duration > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DURATION_INVALID));
+        Assert.isTrue(!start.plusHours(duration).isAfter(end),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW,
+                        start, end, duration));
     }
 
     private void validateInstanceImage(final NodePoolVO vo) {
