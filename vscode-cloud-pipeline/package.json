@@ -181,6 +181,27 @@
           "default": "cp-run-",
           "description": "SSH config Host alias prefix (alias = prefix + run id)."
         },
+        "cloudPipeline.remoteMachineSettings.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "On connect, add cloudPipeline.remoteMachineSettings.values to the run's Remote [SSH] machine settings (~/.vscode-server/data/Machine/settings.json, or ~/.cursor-server/... in Cursor). Only missing settings are added; values already set are kept."
+        },
+        "cloudPipeline.remoteMachineSettings.values": {
+          "type": "object",
+          "default": {
+            "search.followSymlinks": false,
+            "search.exclude": {
+              "**/cloud-data/**": true
+            },
+            "files.exclude": {
+              "**/cloud-data": true
+            },
+            "files.watcherExclude": {
+              "**/cloud-data/**": true
+            }
+          },
+          "description": "Settings added to the run's Remote [SSH] machine settings on connect. The defaults keep search, file watching and chat assistants out of the mounted data storages under ~/cloud-data. Set a key to null to skip it."
+        },
         "cloudPipeline.mcp.serverUrl": {
           "type": "string",
           "default": "",
