@@ -405,7 +405,7 @@
     {
         "name": "CP_PIPE_FUSE_MOUNT_TIMEOUT",
         "type": "int",
-        "description": "Allows to specify the pipe fuse timeout",
+        "description": "Allows to specify the maximum time in ms to wait for a pipe fuse mount. Default: 10000",
         "defaultValue": "10000",
         "passToWorkers": false
     },

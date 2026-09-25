@@ -22,6 +22,7 @@
 - [Sensitive storages](#sensitive-storages)
 - [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
+- [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 - [Hot node pools](#hot-node-pools)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
@@ -902,6 +903,22 @@ If it's exceeded - the user is being warned with the following wording and asked
 - Warning does not prohibit the run launching, user can start it at his own discretion changing nothing.
 - If the **`storage.mounts.per.gb.ratio`** is not set - no checks are being performed, no warning appears.
 - Before the launch, only the _object storages_ count is being calculated, _file mounts_ do not introduce this limitation.
+
+## `pipe storage mount` waits for the mount point
+
+In the previous versions, `pipe storage mount` waited for a fixed time (the `-w` option, `1000` ms by default; for the jobs - the `CP_PIPE_FUSE_TIMEOUT` parameter, `500` ms by default) and then only checked that the mount process was still running. If the mount process failed later, the storage was reported as mounted, but it was missing.
+
+In the current version, `pipe storage mount` waits until the storage is actually mounted:
+
+- it checks the mount point every **`CP_PIPE_FUSE_MOUNT_DELAY`** ms (`500` by default) until it is mounted by `pipe` FUSE. If the mount point is a symlink, its target is checked
+- the `-w` (`--timeout`) option now sets the maximum time to wait, in ms. By default, it is `10000`
+- the mount fails if the mount process exits, or if the storage is not mounted by `pipe` FUSE when the timeout expires (e.g. something else stays mounted at the mount point). In the last case, the mount process is stopped
+
+For the jobs, the timeout is set by the new launch parameter **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** (_int_, `10000` by default). By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the **`CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES`** parameter.
+
+> **_Note_**: the **`CP_PIPE_FUSE_TIMEOUT`** parameter is not used anymore. If it is set for a job, tool or configuration, it is ignored. Use **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** instead. The new value is the maximum time to wait, not a fixed wait, so it shall not be set as low as the old one.
+
+For more details see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mount-a-storage).
 
 ## Hot node pools
 
