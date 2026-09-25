@@ -771,6 +771,35 @@ public final class MessageConstants {
 
     //Persistent Nodes
     public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
+
+    // Capacity reservation
+    public static final String ERROR_CAPACITY_RESERVATION_NOT_FOUND = "error.capacity.reservation.not.found";
+    public static final String ERROR_CAPACITY_RESERVATION_SIZE_IMMUTABLE =
+            "error.capacity.reservation.size.immutable";
+    public static final String ERROR_CAPACITY_RESERVATION_NOT_TERMINAL =
+            "error.capacity.reservation.not.terminal";
+    public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
+            "error.capacity.reservation.illegal.transition";
+    public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
+            "error.capacity.reservation.spot.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_POOL_TYPE_NOT_SUPPORTED =
+            "error.capacity.reservation.pool.type.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
+            "error.capacity.reservation.type.required";
+    public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =
+            "error.capacity.reservation.type.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
+            "error.capacity.reservation.dates.required";
+    public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =
+            "error.capacity.reservation.start.date.in.past";
+    public static final String ERROR_CAPACITY_RESERVATION_WINDOW_INVALID =
+            "error.capacity.reservation.window.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_DURATION_INVALID =
+            "error.capacity.reservation.duration.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW =
+            "error.capacity.reservation.window.too.narrow";
+    public static final String ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID =
+            "error.capacity.reservation.instance.count.invalid";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";

@@ -240,12 +240,18 @@ public final class AclExpressions {
             + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'WRITE')";
     public static final String NODE_POOL_ID_OWNER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
             + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'OWNER')";
-    // No NODE_POOL_READ_FILTER yet, deliberately. Filtering a pool list needs one element type, and
-    // NodePoolManager.loadAll returns bare NodePool when loadStatus is false and NodePoolWithUsage - a
-    // @Delegate wrapper that is NOT an AbstractSecuredEntity - when it is true. 'filterObject' fails to
-    // resolve an ACL class for the wrapper, and 'filterObject.pool' throws EL1008E on the bare pool, so
-    // no single expression is correct for both. Settling that return shape belongs with the endpoint
-    // work that first needs the filter; shipping a half-right expression now would only look correct.
+    public static final String NODE_POOL_READ_FILTER = ADMIN_OR_CLUSTER_READER + OR
+            + "hasPermission(filterObject, 'READ')";
+    public static final String NODE_POOL_RETURN_OBJECT_READ = ADMIN_OR_CLUSTER_READER + OR
+            + "hasPermission(returnObject, 'READ')";
+
+    /**
+     * A capacity reservation is not a secured entity: authorization resolves to the pool it backs.
+     */
+    public static final String CAPACITY_RESERVATION_ID_READ = ADMIN_ONLY + OR
+            + "@capacityReservationPermissionManager.reservationPermission(#id, 'READ')";
+    public static final String CAPACITY_RESERVATION_ID_OWNER = ADMIN_ONLY + OR
+            + "@capacityReservationPermissionManager.reservationOwner(#id)";
 
     private AclExpressions() {
         // no op

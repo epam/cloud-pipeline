@@ -216,5 +216,16 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateNodePoolLaunchConfigQuery-->
+                <![CDATA[
+                    UPDATE pipeline.node_pool SET
+                        launch_config = :POOL_LAUNCH_CONFIG
+                    WHERE
+                        id = :POOL_ID
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>

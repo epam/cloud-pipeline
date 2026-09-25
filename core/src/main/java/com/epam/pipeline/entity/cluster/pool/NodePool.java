@@ -39,8 +39,10 @@ import java.util.Set;
  * redeclared here.
  */
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class NodePool extends AbstractSecuredEntity implements NodePoolInfo {
+// `usage` is excluded from equality on purpose: it is not persisted, so two instances of the same row would
+// otherwise compare unequal depending on whether the code path that loaded them happened to fill it in.
+@EqualsAndHashCode(callSuper = true, exclude = "usage")
+public class NodePool extends AbstractSecuredEntity {
 
     private final AclClass aclClass = AclClass.NODE_POOL;
     // There is no parent for a node pool
@@ -89,13 +91,14 @@ public class NodePool extends AbstractSecuredEntity implements NodePoolInfo {
 
     /**
      * Whether this pool is backed by a capacity reservation.
-     *
-     * <p>Write-once: set when the pool is inserted and never updated, because a pool cannot gain or lose a
-     * reservation afterwards. That immutability is what makes it safe to keep here rather than resolving it
-     * through the reservation table - unlike the reservation's status, which is mutable and is therefore
-     * deliberately <em>not</em> mirrored onto the pool.
      */
     private boolean capacityReservation;
+
+    /**
+     * How many of this pool's nodes are currently occupied. Populated on read from the cluster when the
+     * caller asks for it, not persisted - there is no column behind it.
+     */
+    private Long usage;
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {

@@ -187,6 +187,19 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
                         dockerClient));
     }
     
+    @Test
+    public void shouldRejectModificationOfUnknownTool() {
+        final Long unknownToolId = Long.MAX_VALUE;
+
+        assertThrows(IllegalArgumentException.class, () ->
+                toolVersionManager.createToolVersionSettings(
+                        unknownToolId, TEST_VERSION, true, Collections.emptyList()));
+        assertThrows(IllegalArgumentException.class, () ->
+                toolVersionManager.deleteToolVersion(unknownToolId, TEST_VERSION));
+        assertThrows(IllegalArgumentException.class, () ->
+                toolVersionManager.deleteToolVersions(unknownToolId));
+    }
+
     private static Throwable getThrowable() {
         return new IllegalArgumentException("This method should not be called.");
     }

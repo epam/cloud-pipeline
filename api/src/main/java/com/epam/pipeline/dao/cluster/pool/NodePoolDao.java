@@ -65,6 +65,7 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     private final String loadAllNodePoolsQuery;
     private final String loadNodePoolByIdQuery;
     private final String updateNodePoolOwnerQuery;
+    private final String updateNodePoolLaunchConfigQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool create(final NodePool pool) {
@@ -93,6 +94,18 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     public NodePool updateOwner(final NodePool pool) {
         getNamedParameterJdbcTemplate()
                 .update(updateNodePoolOwnerQuery, NodePoolParameters.getParameters(pool));
+        return pool;
+    }
+
+    /**
+     * The launch config is not writable through {@link #update(NodePool)} either - the generic update is driven
+     * by a VO that may not carry it, and naming it there would null a pool's config on every unrelated edit.
+     * It is also written once after creation, when the reservation id that its selector needs finally exists.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public NodePool updateLaunchConfig(final NodePool pool) {
+        getNamedParameterJdbcTemplate()
+                .update(updateNodePoolLaunchConfigQuery, NodePoolParameters.getParameters(pool));
         return pool;
     }
 
