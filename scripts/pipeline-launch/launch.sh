@@ -680,6 +680,35 @@ root hard nproc $_MAX_PROCS_LIMIT
 EOT
 }
 
+function update_sysctl_options() {
+    local _SYSCTL_OPTIONS="$1"
+    if [ -z "$_SYSCTL_OPTIONS" ]; then
+        return 0
+    fi
+
+    local _SYSCTL_OPTIONS_LIST=
+    IFS=',' read -r -a _SYSCTL_OPTIONS_LIST <<< "$_SYSCTL_OPTIONS"
+    local _SYSCTL_OPTION=
+    for _SYSCTL_OPTION in "${_SYSCTL_OPTIONS_LIST[@]}"
+    do
+        # Trim leading/trailing whitespaces
+        _SYSCTL_OPTION="${_SYSCTL_OPTION#"${_SYSCTL_OPTION%%[![:space:]]*}"}"
+        _SYSCTL_OPTION="${_SYSCTL_OPTION%"${_SYSCTL_OPTION##*[![:space:]]}"}"
+        if [ -z "$_SYSCTL_OPTION" ]; then
+            continue
+        fi
+        if [[ "$_SYSCTL_OPTION" != *"="* ]]; then
+            echo "[WARN] Sysctl option '$_SYSCTL_OPTION' is not a key=value pair, skipping"
+            continue
+        fi
+        echo "Applying sysctl option: $_SYSCTL_OPTION"
+        sysctl -w "$_SYSCTL_OPTION"
+        if [ $? -ne 0 ]; then
+            echo "[WARN] Failed to apply sysctl option '$_SYSCTL_OPTION'"
+        fi
+    done
+}
+
 function add_self_to_no_proxy() {
       local _self_hostname=$(hostname)
       # -I option prints all the IPs of the current machine, which are separated by a whitespace
@@ -1062,6 +1091,9 @@ fi
 
 # Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
 update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
+
+# Apply any kernel parameters requested via CP_SYSCTL_OPTIONS (e.g. "user.max_user_namespaces=15000,fs.inotify.max_user_watches=1111")
+update_sysctl_options "$CP_SYSCTL_OPTIONS"
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
