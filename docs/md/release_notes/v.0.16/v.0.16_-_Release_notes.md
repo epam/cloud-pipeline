@@ -29,6 +29,7 @@
 - [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 - [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
+- [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 
 ***
 
@@ -571,6 +572,13 @@ For the jobs, the timeout is set by the new launch parameter **`CP_PIPE_FUSE_MOU
 > **_Note_**: the **`CP_PIPE_FUSE_TIMEOUT`** parameter is not used anymore. If it is set for a job, tool or configuration, it is ignored. Use **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** instead. The new value is the maximum time to wait, not a fixed wait, so it shall not be set as low as the old one.
 
 For more details see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mount-a-storage).
+
+## Node start retries for a specific run
+
+Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
+
+In the current version, it can be overridden for a specific run by the new launch parameter **`CP_NODEUP_RETRY_COUNT`** (_int_). For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
+The parameter also defines when a run is relaunched in another region in case of insufficient capacity. If the value is not a positive integer, `cluster.nodeup.retry.count` is used. The parameter is passed to the worker nodes of a cluster.
 
 ***
 
