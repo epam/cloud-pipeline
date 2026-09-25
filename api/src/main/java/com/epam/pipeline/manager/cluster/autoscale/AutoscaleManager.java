@@ -79,6 +79,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.CP_NODEUP_RETRY_COUNT;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_LIMIT_EXCEEDED_EXIT_CODE;
 import static com.epam.pipeline.manager.cluster.autoscale.AutoscaleContants.NODEUP_SPOT_FAILED_EXIT_CODE;
@@ -322,19 +323,18 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 log.debug("Node with required ID {} already exists.", runId);
                 return;
             }
-            //check max nodeup retry count
-            int retryCount = nodeUpAttempts.getOrDefault(longId, 0); // TODO: should we lock here?
-            if (retryCount >= nodeUpRetryCount) {
-                log.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
-                        retryCount, runId);
-                pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
-                removeNodeUpTask(longId);
-                return;
-            }
-
             try {
                 final PipelineRun run = pipelineRunManager.findRun(longId)
                         .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longId));
+                //check max nodeup retry count
+                int retryCount = nodeUpAttempts.getOrDefault(longId, 0); // TODO: should we lock here?
+                if (retryCount >= getNodeUpRetryCount(run, nodeUpRetryCount)) {
+                    log.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
+                            retryCount, runId);
+                    pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
+                    removeNodeUpTask(longId);
+                    return;
+                }
                 InstanceRequest requiredInstance = getNewRunInstance(run, spotMaxAttempts, parametersMapping);
                 // check whether instance already exists
                 RunInstance instance = cloudFacade.describeInstance(longId, requiredInstance.getInstance());
@@ -556,6 +556,13 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             }
         }
 
+        private int getNodeUpRetryCount(final PipelineRun run, final int defaultRetryCount) {
+            return run.getParameterValue(CP_NODEUP_RETRY_COUNT)
+                    .map(value -> NumberUtils.toInt(value, 0))
+                    .filter(count -> count > 0)
+                    .orElse(defaultRetryCount);
+        }
+
         private void createNodeForRun(List<CompletableFuture<Void>> tasks, String runId,
                                       InstanceRequest requiredInstance) {
             if (!cloudFacade.instanceScalingSupported(requiredInstance.getInstance().getCloudRegionId())) {
@@ -631,12 +638,12 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
                         ((CmdExecutionException) e.getCause()).getExitCode())) {
                     final int retryCount = nodeUpAttempts.getOrDefault(longId, 0);
-                    final int nodeUpRetryCount = preferenceManager.getPreference(
-                            SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT);
 
                     final PipelineRun runToReschedule = pipelineRunManager.findRun(longId)
                             .orElseThrow(() -> new IllegalArgumentException(
                                     String.format("Cannot find run by id: %d", longId)));
+                    final int nodeUpRetryCount = getNodeUpRetryCount(runToReschedule,
+                            preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT));
 
                     if (retryCount >= nodeUpRetryCount && !runToReschedule.getStatus().isFinal()) {
                         pipelineRunManager.updateStateReasonMessageById(longId, preferenceManager
