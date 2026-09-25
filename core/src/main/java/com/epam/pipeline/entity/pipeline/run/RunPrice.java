@@ -1,11 +1,11 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,29 +16,19 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import com.epam.pipeline.entity.pipeline.TaskStatus;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-public class RunStatus {
-
-    private Long runId;
-    private TaskStatus status;
-    private LocalDateTime timestamp;
-    private RunStatusInfo runStatusInfo;
-
-    public RunStatus(Long runId, TaskStatus status, LocalDateTime timestamp) {
-        this.runId = runId;
-        this.status = status;
-        this.timestamp = timestamp;
-        this.runStatusInfo = null;
-    }
-
+@AllArgsConstructor
+public class RunPrice {
+    private BigDecimal pricePerHour;
+    private BigDecimal computePricePerHour;
+    private BigDecimal diskPricePerHour;
 }

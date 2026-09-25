@@ -52,7 +52,8 @@ public class ReassignHandlerTest {
             pipelineRunManager,
             new ArrayList<>(),
             metadataManager,
-            iamProfileVerifier);
+            iamProfileVerifier,
+            null);
 
     @Test
     public void shouldNotReassignWithCreateNewNodeParameter() {

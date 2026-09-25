@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
@@ -130,6 +131,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> poolNodeUpTaskInProgress = new ConcurrentHashMap<>();
         private final Map<Long, Integer> lostRunIds = new ConcurrentHashMap<>();
+        private final RunStatusManager runStatusManager;
 
         @Autowired
         AutoscaleManagerCore(final PipelineRunManager pipelineRunManager,
@@ -147,7 +149,8 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                              final PoolAutoscaler poolAutoscaler,
                              final RunRegionShiftHandler runRegionShiftHandler,
                              final MetadataManager metadataManager,
-                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled) {
+                             final @Value("${ha.deploy.enabled:false}") String haDeployEnabled,
+                             final RunStatusManager runStatusManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -164,6 +167,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             this.runRegionShiftHandler = runRegionShiftHandler;
             this.metadataManager = metadataManager;
             this.haDeployEnabled = haDeployEnabled;
+            this.runStatusManager = runStatusManager;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -590,12 +594,10 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
                                 requiredInstance.getTags()
                         );
                         //save instance ID and IP
-                        pipelineRunManager.updateRunInstance(longId, startedInstance);
-                        if (!initialInstanceType.equals(nodeType)) {
-                            pipelineRunManager.updateRunPrice(longId, startedInstance);
-                        }
+                        pipelineRunManager.updateRunInstanceAndPrices(longId, startedInstance);
                         pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
                         autoscalerService.registerDisks(longId, startedInstance);
+                        runStatusManager.updatePriceForCurrentActiveRunStatus(longId);
                         removeNodeUpTask(longId);
                         Instant end = Instant.now();
                         log.debug("Time to create a node for run {} : {} s.", runId,
@@ -703,7 +705,7 @@ public class AutoscaleManager extends AbstractSchedulingManager implements Initi
             if (instance.getSpot() != null && instance.getSpot() &&
                     spotNodeUpAttempts.getOrDefault(run.getId(), 0) >= spotMaxAttempts) {
                 instance.setSpot(false);
-                pipelineRunManager.updateRunInstance(run.getId(), instance);
+                pipelineRunManager.updateRunInstanceAndPrices(run.getId(), instance);
             }
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);

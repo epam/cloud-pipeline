@@ -122,6 +122,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String countFilteredPipelineRunsBaseQuery;
     private String loadPipelineRunsWithPipelineByIdsQuery;
     private String updateRunInstanceQuery;
+    private String updateRunInstanceAndPricesQuery;
     private String updateRunInstanceStartDateQuery;
     private String updatePodIPQuery;
     private String loadRunsGroupingQuery;
@@ -287,6 +288,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     public void updateRunInstance(PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updateRunInstanceQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateRunInstanceAndPrices(PipelineRun run) {
+        getNamedParameterJdbcTemplate().update(updateRunInstanceAndPricesQuery,
+                PipelineRunParameters.getParameters(run, getConnection()));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -1563,6 +1570,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         Assert.notNull(countFilteredPipelineRunsBaseQuery,
                 "Required query countFilteredPipelineRunsBaseQuery is not set");
         Assert.notNull(updateRunInstanceQuery, "Required query updateRunInstanceQuery is not set");
+        Assert.notNull(updateRunInstanceAndPricesQuery, "Required query updateRunInstanceAndPricesQuery is not set");
         Assert.notNull(updateRunInstanceStartDateQuery, "Required query updateRunInstanceStartDateQuery is not set");
         Assert.notNull(updatePodIPQuery, "Required query updatePodIPQuery is not set");
         Assert.notNull(loadSshPasswordQuery, "Required query loadSshPasswordQuery is not set");
@@ -1645,6 +1653,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     public void setUpdateRunInstanceQuery(String updateRunInstanceQuery) {
         this.updateRunInstanceQuery = updateRunInstanceQuery;
+    }
+
+    public void setUpdateRunInstanceAndPricesQuery(String updateRunInstanceAndPricesQuery) {
+        this.updateRunInstanceAndPricesQuery = updateRunInstanceAndPricesQuery;
     }
 
     public void setUpdateRunInstanceStartDateQuery(String updateRunInstanceStartDateQuery) {

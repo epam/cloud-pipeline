@@ -57,6 +57,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 
@@ -92,6 +93,9 @@ public class DockerContainerOperationManagerTest {
     private static final int CANNOT_EXECUTE_EXIT_CODE = 126;
     private static final int PAUSE_TIMEOUT = 86400;
     public static final int DEFAULT_SSH_PORT = 22;
+    private static final BigDecimal UPDATED_PRICE_PER_HOUR = new BigDecimal("0.39");
+    private static final BigDecimal UPDATED_COMPUTE_PRICE_PER_HOUR = new BigDecimal("0.38400");
+    private static final BigDecimal UPDATED_DISK_PRICE_PER_HOUR = new BigDecimal("0.00026");
 
     @InjectMocks
     @Spy
@@ -140,6 +144,7 @@ public class DockerContainerOperationManagerTest {
     public void setUp() {
         //MockitoAnnotations.initMocks(this);
         when(runManager.updatePipelineStatus(any())).thenReturn(null);
+        when(runManager.updateRunInstanceAndPrices(any(), any())).thenReturn(runWithUpdatedPrices());
     }
 
     @Test
@@ -303,7 +308,10 @@ public class DockerContainerOperationManagerTest {
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, FALLBACK_NODE_TYPE);
         verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
         assertEquals(FALLBACK_NODE_TYPE, run.getInstance().getNodeType());
-        verify(runManager).updateRunInstance(RUN_ID, run.getInstance());
+        verify(runManager).updateRunInstanceAndPrices(RUN_ID, run.getInstance());
+        assertEquals(UPDATED_PRICE_PER_HOUR, run.getPricePerHour());
+        assertEquals(UPDATED_COMPUTE_PRICE_PER_HOUR, run.getComputePricePerHour());
+        assertEquals(UPDATED_DISK_PRICE_PER_HOUR, run.getDiskPricePerHour());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
 
@@ -322,7 +330,7 @@ public class DockerContainerOperationManagerTest {
 
         verify(cloudFacade, times(2)).startInstance(REGION_ID, NODE_ID);
         assertEquals(TaskStatus.PAUSED, run.getStatus());
-        verify(runManager, never()).updateRunInstance(any(), any());
+        verify(runManager, never()).updateRunInstanceAndPrices(any(), any());
     }
 
     @Test
@@ -342,7 +350,7 @@ public class DockerContainerOperationManagerTest {
         verify(cloudFacade).changeInstanceType(REGION_ID, NODE_ID, NODE_TYPE);
         verify(cloudFacade, times(1)).startInstance(REGION_ID, NODE_ID);
         assertEquals(NODE_TYPE, run.getInstance().getNodeType());
-        verify(runManager, never()).updateRunInstance(any(), any());
+        verify(runManager, never()).updateRunInstanceAndPrices(any(), any());
         assertEquals(TaskStatus.RUNNING, run.getStatus());
     }
 
@@ -422,7 +430,7 @@ public class DockerContainerOperationManagerTest {
 
         verify(cloudFacade, times(1)).startInstance(REGION_ID, NODE_ID);
         assertEquals(TaskStatus.PAUSED, run.getStatus());
-        verify(runManager, never()).updateRunInstance(any(), any());
+        verify(runManager, never()).updateRunInstanceAndPrices(any(), any());
     }
 
     private void assertRunStateAfterPause(final PipelineRun run, final String... expectedTags) {
@@ -440,6 +448,15 @@ public class DockerContainerOperationManagerTest {
             result.addTag(tag, RunMonitor.TRUE_VALUE_STRING);
         }
         return result;
+    }
+
+    private PipelineRun runWithUpdatedPrices() {
+        final PipelineRun run = pipelineRun();
+        run.setId(RUN_ID);
+        run.setPricePerHour(UPDATED_PRICE_PER_HOUR);
+        run.setComputePricePerHour(UPDATED_COMPUTE_PRICE_PER_HOUR);
+        run.setDiskPricePerHour(UPDATED_DISK_PRICE_PER_HOUR);
+        return run;
     }
 
     private PipelineRun pipelineRun() {

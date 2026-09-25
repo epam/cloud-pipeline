@@ -28,7 +28,9 @@ import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunPrice;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatusInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -56,6 +58,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static java.util.Optional.ofNullable;
 
 @Data
 @Slf4j
@@ -153,7 +157,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private Optional<LocalDateTime> toStartOfDay(final LocalDateTime date) {
-        return Optional.ofNullable(date)
+        return ofNullable(date)
                 .map(LocalDateTime::toLocalDate)
                 .map(LocalDate::atStartOfDay);
     }
@@ -168,11 +172,11 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final RunStatus firstStatus = sortedStatuses.get(firstStatusIndex);
         final RunStatus lastStatus = sortedStatuses.get(lastStatusIndex);
 
-        final List<RunStatus> resultingStatuses = 
+        final List<RunStatus> resultingStatuses =
                 new ArrayList<>(sortedStatuses.subList(firstStatusIndex, lastStatusIndex + 1));
         if (firstStatus.getTimestamp().isAfter(start)) {
             if (firstStatus.getStatus() != TaskStatus.RUNNING) {
-                resultingStatuses.add(0, getSyntheticFirstRunningStatus(run, start));
+                resultingStatuses.add(0, getSyntheticFirstRunningStatus(run, start, firstStatus));
             }
         } else {
             resultingStatuses.set(0, getAdjustedStatus(firstStatus, start));
@@ -201,8 +205,9 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 .orElse(sortedStatuses.size() - 1);
     }
 
-    private RunStatus getSyntheticFirstRunningStatus(final PipelineRun run, final LocalDateTime date) {
-        return new RunStatus(run.getId(), TaskStatus.RUNNING, date);
+    private RunStatus getSyntheticFirstRunningStatus(final PipelineRun run, final LocalDateTime date,
+                                                     final RunStatus firstStatus) {
+        return new RunStatus(run.getId(), TaskStatus.RUNNING, date, firstStatus.getRunStatusInfo());
     }
 
     private RunStatus getSyntheticLastStoppedStatus(final PipelineRun run, final LocalDateTime date) {
@@ -210,7 +215,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private RunStatus getAdjustedStatus(final RunStatus status, final LocalDateTime date) {
-        return new RunStatus(status.getRunId(), status.getStatus(), date);
+        return new RunStatus(status.getRunId(), status.getStatus(), date, status.getRunStatusInfo());
     }
 
     private Optional<LocalDateTime> getStart(final PipelineRun run) {
@@ -222,7 +227,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private Optional<LocalDateTime> getDate(final PipelineRun run, final Function<PipelineRun, Date> function) {
-        return Optional.ofNullable(run).map(function).map(DateUtils::convertDateToLocalDateTime);
+        return ofNullable(run).map(function).map(DateUtils::convertDateToLocalDateTime);
     }
 
     private LocalDateTime min(final LocalDateTime first, final LocalDateTime second) {
@@ -266,15 +271,39 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         for (int i = 0; i < statuses.size() - 1; i++) {
             final RunStatus previous = statuses.get(i);
             final RunStatus current = statuses.get(i + 1);
+            final RunPrice segmentPrice = resolvePrice(previous, price);
             if (TaskStatus.RUNNING.equals(previous.getStatus())) {
-                billings.addAll(createRunBillingsForActivePeriod(previous.getTimestamp(), current.getTimestamp(), 
-                        run, price));
+                billings.addAll(createRunBillingsForActivePeriod(previous.getTimestamp(), current.getTimestamp(),
+                        run, segmentPrice));
             } else {
                 billings.addAll(createRunBillingsForInactivePeriod(previous.getTimestamp(), current.getTimestamp(),
-                        run, price));
+                        run, segmentPrice));
             }
         }
         return billings;
+    }
+
+    private RunPrice resolvePrice(final RunStatus status, final RunPrice runPrice) {
+        final RunPrice snapshot = ofNullable(status.getRunStatusInfo())
+                .map(RunStatusInfo::getPrice)
+                .orElse(null);
+        if (snapshot == null) {
+            return runPrice;
+        }
+
+        return new RunPrice(
+            scaledForUser(ofNullable(snapshot.getPricePerHour()).orElse(runPrice.getPricePerHour())),
+            scaledForBilling(ofNullable(snapshot.getComputePricePerHour()).orElse(runPrice.getComputePricePerHour())),
+            scaledForBilling(ofNullable(snapshot.getDiskPricePerHour()).orElse(runPrice.getDiskPricePerHour()))
+        );
+    }
+
+    private BigDecimal scaledForBilling(final BigDecimal price) {
+        return price.setScale(PRICE_SCALE, RoundingMode.CEILING);
+    }
+
+    private BigDecimal scaledForUser(final BigDecimal price) {
+        return price.setScale(USER_PRICE_SCALE, RoundingMode.CEILING);
     }
 
     private PipelineRunBillingInfo mergeBillings(final PipelineRunBillingInfo billing1,
@@ -369,7 +398,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     private Long getOldFashionedCosts(final Duration duration, final RunPrice price) {
-        return calculateCostsForPeriod(duration.getSeconds(), price.getOldFashionedPricePerHour());
+        return calculateCostsForPeriod(duration.getSeconds(), price.getPricePerHour());
     }
 
     private Long getComputeCosts(final Duration duration, final RunPrice price, final boolean active) {
