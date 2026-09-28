@@ -1172,6 +1172,10 @@ To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._Vie
 <td><code>-t</code> / <code>--threads</code></td>
 <td>Enable multithreading - allows several processes simultaneously interact with the mount point</td>
 </tr>
+<tr>
+<td><code>-w</code> / <code>--timeout</code></td>
+<td>Maximum time to wait for the storage to be mounted, in ms. By default, <code>10000</code>. The command fails if the storage is not mounted within this time</td>
+</tr>
 </tbody>
 </table>
 <p>In the example below we will mount the Object Storage named <strong>objstor</strong> into the directory "<strong>mountdir</strong>" and specify the file "<strong>mount.log</strong>" as log-file for mount operations:</p>
@@ -1185,6 +1189,7 @@ To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._Vie
 <blockquote>
 <p><strong><em>Note</em></strong>: if <code>-m</code> option isn't specified, during mounting the default permissions mask will be set - <code>700</code> (full access to the owner and no permissions to the group and others)</p>
 </blockquote>
+<p><code>pipe storage mount</code> finishes only when the storage is mounted. It checks the mount point every <code>500</code> ms - this delay can be changed by the <strong><code>CP_PIPE_FUSE_MOUNT_DELAY</code></strong> environment variable (in ms). If the mount point is a symlink, its target is checked. The command fails if the mount process exits, or if the storage is not mounted by <code>pipe</code> FUSE when the <code>-w</code> timeout expires (e.g. something else stays mounted at the mount point). In the last case, <code>pipe</code> stops the mount process. If <strong><code>CP_PIPE_FUSE_MOUNT_DELAY</code></strong> is not a positive integer, the default <code>500</code> ms is used.</p>
 <h3 id="unmount-a-storage">Unmount a storage</h3>
 <p>The command to unmount a mountpoint:</p>
 <pre><code class="language-bash">pipe storage umount [OPTIONS] &lt;Mountpoint&gt;

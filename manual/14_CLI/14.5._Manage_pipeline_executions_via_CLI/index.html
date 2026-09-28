@@ -676,7 +676,8 @@ In the example below the pipeline <strong>simplepipeline</strong> will be launch
 </code></pre>
 <p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_04.png" /></p>
 <blockquote>
-<p><strong><em>Note</em></strong>: for the <code>-di</code> (<code>--docker-image</code>) option shall specify a full path to the Docker image including its version.</p>
+<p><strong><em>Note</em></strong>: for the <code>-di</code> (<code>--docker-image</code>) option shall specify a full path to the Docker image including its version.<br />
+The version is checked before the launch, see <a href="#run-a-tool">Run a tool</a>.</p>
 </blockquote>
 <h3 id="change-advanced-options">Change advanced options</h3>
 <p>You can change advanced options for a pipeline execution by setting the following options: <code>-pt</code> (<code>--price-type</code>), <code>-t</code> (<code>--timeout</code>), <code>-cmd</code> (<code>--cmd-template</code>).<br />
@@ -730,6 +731,16 @@ In the example below we will launch the Docker image <strong>ubuntu:latest</stro
 <p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_08.png" /></p>
 <blockquote>
 <p><strong><em>Note</em></strong>: Docker image path shall be specified in a full manner including version.</p>
+</blockquote>
+<p>Before the launch, <code>pipe</code> checks that the specified version (tag) of the Docker image exists. If the version is not specified, <code>latest</code> is checked.<br />
+If the tool has no such version, the run is not scheduled - <code>pipe</code> prints an error with the list of the available versions and exits with the code <code>1</code>, e.g.:</p>
+<pre><code class="language-bash">pipe run -di library/ubuntu:latet -it n1-highcpu-2 -id 27 -cmd &quot;sleep infinity&quot; -y
+</code></pre>
+<pre><code class="language-text">Docker image library/ubuntu:latet has no tag &quot;latet&quot;. Available tags: 18.04, latest
+</code></pre>
+<p>The same check is performed when the <code>-di</code> (<code>--docker-image</code>) option is used to change the Docker image of a pipeline run.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: if <code>pipe</code> can't load the tool versions (e.g. the user has no <code>READ</code> permission on the tool, or the Docker registry is unavailable), it prints a warning and continues the launch. Whether the run is allowed is still decided by the Cloud Pipeline API.</p>
 </blockquote>
 <h3 id="generate-pipeline-launch-command-via-the-gui">Generate pipeline launch command via the GUI</h3>
 <p>The construction of the correct <code>run</code> command sometimes could be hard for users, so users can generate necessary launch commands via the GUI.<br />

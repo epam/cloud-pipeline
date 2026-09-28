@@ -156,6 +156,8 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pipe-storage-mount-waits-for-the-mount-point">pipe storage mount waits for the mount point</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#parallel-mounting-of-data-storages">Parallel mounting of data storages</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#hot-node-pools">Hot node pools</a>
@@ -235,6 +237,8 @@
     <li class="toctree-l2"><a class="reference internal" href="#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions using pipe storage cp/mv commands</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in pipe run</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
@@ -640,6 +644,7 @@
 <li><a href="#sensitive-storages">Sensitive storages</a></li>
 <li><a href="#versioned-storages">Versioned storages</a></li>
 <li><a href="#updates-of-limit-mounts-for-object-storages">Updates of "Limit mounts" for object storages</a></li>
+<li><a href="#pipe-storage-mount-waits-for-the-mount-point"><code>pipe storage mount</code> waits for the mount point</a></li>
 <li><a href="#parallel-mounting-of-data-storages">Parallel mounting of data storages</a></li>
 <li><a href="#hot-node-pools">Hot node pools</a></li>
 <li><a href="#fs-quotas">FS quotas</a></li>
@@ -669,6 +674,7 @@
 <li><a href="#aws-seamless-authentication">AWS: seamless authentication</a></li>
 <li><a href="#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions</a></li>
 <li><a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of regions for launched jobs in case of insufficient capacity</a></li>
+<li><a href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in <code>pipe run</code></a></li>
 </ul>
 <hr />
 <ul>
@@ -1371,6 +1377,19 @@ If it's exceeded - the user is being warned with the following wording and asked
 <li>If the <strong><code>storage.mounts.per.gb.ratio</code></strong> is not set - no checks are being performed, no warning appears.</li>
 <li>Before the launch, only the <em>object storages</em> count is being calculated, <em>file mounts</em> do not introduce this limitation.</li>
 </ul>
+<h2 id="pipe-storage-mount-waits-for-the-mount-point"><code>pipe storage mount</code> waits for the mount point</h2>
+<p>In the previous versions, <code>pipe storage mount</code> waited for a fixed time (the <code>-w</code> option, <code>1000</code> ms by default; for the jobs - the <code>CP_PIPE_FUSE_TIMEOUT</code> parameter, <code>500</code> ms by default) and then only checked that the mount process was still running. If the mount process failed later, the storage was reported as mounted, but it was missing.</p>
+<p>In the current version, <code>pipe storage mount</code> waits until the storage is actually mounted:</p>
+<ul>
+<li>it checks the mount point every <strong><code>CP_PIPE_FUSE_MOUNT_DELAY</code></strong> ms (<code>500</code> by default) until it is mounted by <code>pipe</code> FUSE. If the mount point is a symlink, its target is checked</li>
+<li>the <code>-w</code> (<code>--timeout</code>) option now sets the maximum time to wait, in ms. By default, it is <code>10000</code></li>
+<li>the mount fails if the mount process exits, or if the storage is not mounted by <code>pipe</code> FUSE when the timeout expires (e.g. something else stays mounted at the mount point). In the last case, the mount process is stopped</li>
+</ul>
+<p>For the jobs, the timeout is set by the new launch parameter <strong><code>CP_PIPE_FUSE_MOUNT_TIMEOUT</code></strong> (<em>int</em>, <code>10000</code> by default). By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the <strong><code>CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES</code></strong> parameter.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: the <strong><code>CP_PIPE_FUSE_TIMEOUT</code></strong> parameter is not used anymore. If it is set for a job, tool or configuration, it is ignored. Use <strong><code>CP_PIPE_FUSE_MOUNT_TIMEOUT</code></strong> instead. The new value is the maximum time to wait, not a fixed wait, so it shall not be set as low as the old one.</p>
+</blockquote>
+<p>For more details see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mount-a-storage">here</a>.</p>
 <h2 id="parallel-mounting-of-data-storages">Parallel mounting of data storages</h2>
 <p>Previously, a job mounted its data storages one by one. When the user has hundreds of available storages, the <code>MountDataStorages</code> task could take a long time before the job started.</p>
 <p>In the current version, a new launch parameter <strong><code>CP_CAP_MOUNT_THREADS</code></strong> (<em>int</em>) is introduced. It sets the number of threads that mount the data storages in parallel (e.g. <code>4</code>, <code>8</code> or <code>16</code>).<br />
@@ -2086,6 +2105,11 @@ If a new instance is not available with a new region - relaunch will be performe
 <li>for worker or cluster runs</li>
 </ul>
 <p>More details see <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">here</a>.</p>
+<h2 id="checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in <code>pipe run</code></h2>
+<p>Previously, <code>pipe run</code> did not check the version (tag) of the Docker image specified via the <code>-di</code> (<code>--docker-image</code>) option. A run with a mistyped version, e.g. <code>library/ubuntu:latet</code>, was scheduled and failed only on the node, when the image could not be pulled.</p>
+<p>In the current version, <code>pipe run</code> checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - <code>pipe</code> prints an error with the list of the available versions and exits with the code <code>1</code>.<br />
+If the tool versions can't be loaded, <code>pipe</code> prints a warning and continues the launch.</p>
+<p>For more details see <a href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/#run-a-tool">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</h3>
