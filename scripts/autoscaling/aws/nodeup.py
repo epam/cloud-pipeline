@@ -811,7 +811,7 @@ def get_swap_ratio(swap_params):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    payload = jwt.decode(api_token, verify=False)
+    payload = jwt.decode(api_token, options={"verify_signature": False}, algorithms=["RS256"])
     if 'sub' in payload:
         subject = payload['sub']
         user_data_script = user_data_script\
