@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS pipeline.capacity_reservation (
   duration_hours INT,
   instance_platform TEXT NOT NULL DEFAULT 'Linux/UNIX',
   attempt INT NOT NULL DEFAULT 0,
+  granted_commitment_seconds BIGINT,
   CONSTRAINT capacity_reservation_node_pool_fkey FOREIGN KEY (node_pool_id)
       REFERENCES pipeline.node_pool (id),
   CONSTRAINT capacity_reservation_origin_fkey FOREIGN KEY (origin_id)

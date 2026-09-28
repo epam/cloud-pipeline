@@ -23,12 +23,15 @@ import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
@@ -38,9 +41,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.Comparator;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -54,12 +64,32 @@ public class NodePoolValidator {
     private static final double HUNDRED_PERCENT = 100.0;
     private static final String WINDOWS = "windows";
 
+    /**
+     * AWS accepts a future-dated reservation request between 5 and 120 days ahead of the start date, and holds the
+     * requester to a commitment of at least 14 days once the capacity is delivered.
+     *
+     * <p>Only AWS offers this today, so the limits live here rather than behind a per-provider abstraction that
+     * would have exactly one implementation. A second provider is the point at which that changes.
+     */
+    private static final int MIN_RESERVATION_LEAD_DAYS = 5;
+    private static final int MAX_RESERVATION_LEAD_DAYS = 120;
+    private static final int MIN_RESERVATION_COMMITMENT_HOURS = 14 * 24;
+
+    /**
+     * The operating systems AWS will reserve capacity for. A closed, documented set on the provider's side - unlike
+     * the instance families, which move often enough to belong in a preference - so it is spelled out here and an
+     * unlisted value is refused rather than sent on to be rejected.
+     */
+    private static final Set<String> SUPPORTED_INSTANCE_PLATFORMS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("Linux/UNIX", "Red Hat Enterprise Linux", "SUSE Linux")));
+
     private final MessageHelper messageHelper;
     private final CloudRegionManager regionManager;
     private final InstanceOfferManager instanceOfferManager;
     private final NodeScheduleManager scheduleManager;
     private final ToolManager toolManager;
     private final CloudFacade cloudFacade;
+    private final PreferenceManager preferenceManager;
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -136,6 +166,48 @@ public class NodePoolValidator {
                         MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
         validateReservationWindow(request);
+        validateReservationInstance(vo, request);
+    }
+
+    /**
+     * What the provider is willing to reserve, as opposed to what it is willing to run.
+     *
+     * <p>A future-dated reservation accepts a narrower set of instance types and a fixed list of platforms than
+     * ordinary on-demand capacity does, so a pool that would launch perfectly well may still be impossible to
+     * reserve. Catching that here turns a multi-day wait ending in a provider refusal into an immediate answer.
+     */
+    private void validateReservationInstance(final NodePoolVO vo, final CapacityReservationRequest request) {
+        final String platform = StringUtils.defaultIfBlank(request.getInstancePlatform(),
+                CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
+        Assert.isTrue(SUPPORTED_INSTANCE_PLATFORMS.contains(platform),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED,
+                        platform));
+
+        final String family = instanceFamily(vo.getInstanceType());
+        final Set<String> supportedFamilies = supportedInstanceFamilies();
+        Assert.isTrue(supportedFamilies.isEmpty() || supportedFamilies.contains(family),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED,
+                        vo.getInstanceType(), String.join(", ", supportedFamilies)));
+    }
+
+    /**
+     * The letters an instance type begins with - {@code p5.48xlarge} is {@code p}, {@code trn1.32xlarge} is
+     * {@code trn}.
+     */
+    private static String instanceFamily(final String instanceType) {
+        if (StringUtils.isBlank(instanceType)) {
+            return StringUtils.EMPTY;
+        }
+        final int firstDigit = StringUtils.indexOfAny(instanceType, "0123456789".split(StringUtils.EMPTY));
+        return (firstDigit < 0 ? instanceType : instanceType.substring(0, firstDigit)).toLowerCase(Locale.ROOT);
+    }
+
+    private Set<String> supportedInstanceFamilies() {
+        return Arrays.stream(StringUtils.split(StringUtils.defaultString(preferenceManager.getPreference(
+                                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)), ','))
+                .map(family -> family.trim().toLowerCase(Locale.ROOT))
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -162,6 +234,25 @@ public class NodePoolValidator {
         Assert.isTrue(!start.plusHours(duration).isAfter(end),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW,
                         start, end, duration));
+
+        validateProviderLimits(start, duration);
+    }
+
+    /**
+     * The limits the cloud provider imposes on a future-dated reservation, checked here so a request that cannot
+     * possibly be accepted is refused at once instead of being approved, submitted and rejected days later.
+     */
+    private void validateProviderLimits(final LocalDateTime start, final int duration) {
+        final long leadDays = Duration.between(DateUtils.nowUTC(), start).toDays();
+        Assert.isTrue(leadDays >= MIN_RESERVATION_LEAD_DAYS && leadDays <= MAX_RESERVATION_LEAD_DAYS,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID,
+                        start, MIN_RESERVATION_LEAD_DAYS, MAX_RESERVATION_LEAD_DAYS));
+
+        // The duration is the commitment: the provider holds the requester to it once the capacity is delivered,
+        // and will not accept a commitment shorter than this.
+        Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_HOURS,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT,
+                        duration, MIN_RESERVATION_COMMITMENT_HOURS));
     }
 
     private void validateInstanceImage(final NodePoolVO vo) {

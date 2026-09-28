@@ -651,6 +651,13 @@ public class SystemPreferences {
                                    new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
                                    isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
 
+    /**
+     * The instance families a future-dated capacity reservation may be requested for, comma separated and matched
+     * against the letters that begin an instance type ({@code p5.48xlarge} is family {@code p}).
+     */
+    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new StringPreference(
+            "cluster.capacity.reservation.instance.families", "c,m,r,i,t,g", CLUSTER_GROUP, pass);
+
     public static final ObjectPreference<CapacityReservationMonitorSettings>
             CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(
                     "cluster.capacity.reservation.monitor.settings",

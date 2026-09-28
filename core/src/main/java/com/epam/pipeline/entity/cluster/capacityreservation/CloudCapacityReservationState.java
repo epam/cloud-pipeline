@@ -26,10 +26,16 @@ package com.epam.pipeline.entity.cluster.capacityreservation;
 public enum CloudCapacityReservationState {
 
     /**
-     * The provider has the request but has not decided yet, so there is nothing to do but ask again later.
-     * AWS: {@code assessing}, {@code delayed}, {@code payment-pending}.
+     * Nothing to do but ask again later: the provider either has not decided yet, or has decided in our favour and
+     * is simply not there yet.
      */
     PENDING,
+
+    /**
+     * The provider accepted the request but cannot deliver by the requested date, and is not asking to be paid for
+     * being late: it waives the commitment, so the reservation can be handed back for nothing.
+     */
+    DELAYED,
 
     /**
      * The provider has accepted the request for a future date but the capacity is not usable yet.
@@ -43,9 +49,8 @@ public enum CloudCapacityReservationState {
     ACTIVE,
 
     /**
-     * The provider cannot satisfy this request as asked. For a future-dated request this is not final - another
-     * start date may work - so the monitor treats it as "try the next candidate" rather than as failure.
-     * AWS: {@code unsupported}.
+     * The provider will not deliver this request. For a future-dated request that is not final - another start date
+     * may work - so the monitor treats it as "try the next candidate" rather than as failure.
      */
     UNSUPPORTED,
 

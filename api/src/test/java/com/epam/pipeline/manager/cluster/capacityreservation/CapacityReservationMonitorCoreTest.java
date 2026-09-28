@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,6 +62,8 @@ public class CapacityReservationMonitorCoreTest {
     private static final int DURATION_HOURS = 24;
     private static final int WINDOW_DAYS = 3;
     private static final int WITHIN_LEAD_MINUTES = 30;
+    /** 10 days, shorter than the 24h-per-day duration the fixture requests. */
+    private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
 
     @Mock
     private CapacityReservationService reservationService;
@@ -272,6 +275,100 @@ public class CapacityReservationMonitorCoreTest {
     }
 
     /**
+     * AWS may agree to a shorter commitment than was asked for, and the requester is then bound to the shorter one.
+     * Reporting the requested figure back would be untrue about what they owe.
+     */
+    @Test
+    public void shouldRecordTheCommitmentTheProviderActuallyGranted() {
+        final CapacityReservation reservation = assessing();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.SCHEDULED)
+                .grantedCommitmentSeconds(GRANTED_COMMITMENT_SECONDS)
+                .build());
+
+        monitor.processAssessing();
+
+        assertThat(reservation.getGrantedCommitmentSeconds()).isEqualTo(GRANTED_COMMITMENT_SECONDS);
+    }
+
+    /**
+     * Later polls need not repeat it, and a poll that omits it must not erase what was already learned.
+     */
+    @Test
+    public void shouldKeepAGrantedCommitmentThatALaterPollOmits() {
+        final CapacityReservation reservation = scheduled();
+        reservation.setGrantedCommitmentSeconds(GRANTED_COMMITMENT_SECONDS);
+        givenStatus(CapacityReservationStatus.SCHEDULED, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.SCHEDULED)
+                .build());
+
+        monitor.processScheduled();
+
+        assertThat(reservation.getGrantedCommitmentSeconds()).isEqualTo(GRANTED_COMMITMENT_SECONDS);
+    }
+
+    /**
+     * A delayed reservation is still owed to us, so it has to be handed back before another date is requested -
+     * otherwise the platform holds two reservations and has erased the id of the first.
+     */
+    @Test
+    public void shouldReleaseADelayedReservationBeforeAskingForAnotherDate() {
+        final CapacityReservation reservation = assessing();
+        final int attemptBefore = reservation.getAttempt();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.DELAYED)
+                .build());
+
+        monitor.processAssessing();
+
+        verify(cloudFacade).cancel(reservation);
+        assertThat(reservation.getAttempt()).isEqualTo(attemptBefore + 1);
+        assertThat(reservation.getCloudReservationId()).isNull();
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+    }
+
+    /**
+     * Failing to hand it back must leave the id intact for the next cycle. Sliding anyway would abandon a
+     * reservation the provider still intends to deliver, with nothing left pointing at it.
+     */
+    @Test
+    public void shouldKeepTheReservationWhenReleasingADelayedOneFails() {
+        final CapacityReservation reservation = assessing();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.DELAYED)
+                .build());
+        doThrow(new IllegalStateException("provider unreachable")).when(cloudFacade).cancel(reservation);
+
+        monitor.processAssessing();
+
+        assertThat(reservation.getCloudReservationId()).isEqualTo(CLOUD_ID);
+        verify(statusService, never())
+                .transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+    }
+
+    /**
+     * An unsupported reservation was never delivered, so there is nothing to give back - and AWS refuses to cancel
+     * one anyway. Asking would turn a clean slide into an error.
+     */
+    @Test
+    public void shouldNotTryToReleaseAReservationThatWasNeverDelivered() {
+        final CapacityReservation reservation = assessing();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.UNSUPPORTED)
+                .build());
+
+        monitor.processAssessing();
+
+        verify(cloudFacade, never()).cancel(any());
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+    }
+
+    /**
      * Once no start date in the window can still fit the duration, the request has genuinely failed - and the
      * reason has to say so in terms the requester can act on.
      */
@@ -341,6 +438,42 @@ public class CapacityReservationMonitorCoreTest {
 
         verify(statusService).transition(reservation, CapacityReservationStatus.FINISHED, null);
         verify(reservationService).deactivatePool(reservation);
+    }
+
+    /**
+     * A future-dated reservation is created with no end date, because AWS forbids one inside the commitment
+     * duration - so nothing at the provider ends it on our behalf. Without this cancel the capacity keeps billing
+     * after the pool has stopped using it.
+     */
+    @Test
+    public void shouldGiveTheCapacityBackToTheProviderOnFinish() {
+        final CapacityReservation reservation = active();
+        reservation.setStatus(CapacityReservationStatus.FINALIZING);
+        reservation.setEndDate(DateUtils.nowUTC().minusMinutes(1));
+        givenStatus(CapacityReservationStatus.FINALIZING, reservation);
+
+        monitor.processFinalizing();
+
+        verify(cloudFacade).cancel(reservation);
+    }
+
+    /**
+     * Failing to hand the capacity back must leave the reservation where the next cycle will try again. Marking it
+     * finished first would abandon something still being paid for.
+     */
+    @Test
+    public void shouldNotMarkFinishedWhenTheProviderCancelFails() {
+        final CapacityReservation reservation = active();
+        reservation.setStatus(CapacityReservationStatus.FINALIZING);
+        reservation.setEndDate(DateUtils.nowUTC().minusMinutes(1));
+        givenStatus(CapacityReservationStatus.FINALIZING, reservation);
+        doThrow(new IllegalStateException("provider unreachable")).when(cloudFacade).cancel(reservation);
+
+        monitor.processFinalizing();
+
+        verify(statusService, never())
+                .transition(eq(reservation), eq(CapacityReservationStatus.FINISHED), any());
+        verify(reservationService, never()).deactivatePool(any());
     }
 
     @Test

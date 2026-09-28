@@ -223,7 +223,7 @@ dependencies {
     // release, so bumping v1 is not an alternative. Declared with an explicit version rather than
     // through the awssdk BOM: this module has no dependency-management plugin, and the platform()
     // notation a BOM would need is Gradle 5+ while this build runs the 4.10.2 wrapper.
-    compile group: "software.amazon.awssdk", name: "ec2", version: "2.35.9"
+    compile group: "software.amazon.awssdk", name: "ec2", version: "2.55.6"
 
 
     compile group: "com.azure", name: "azure-core", version: "1.54.0"
