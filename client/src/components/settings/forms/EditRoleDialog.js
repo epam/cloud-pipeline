@@ -50,6 +50,7 @@ import {
   METADATA_PANEL_KEY
 } from '../../special/splitPanel';
 import PermissionsForm, {PERMISSION_COLUMNS, PERMISSIONS} from '../../roleModel/PermissionsForm';
+import {isUserDefaultEditable} from './role-edit-permissions';
 import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -803,6 +804,14 @@ class EditRoleDialog extends React.Component {
             <Checkbox
               checked={this.state.userDefault}
               onChange={this.onChangeUserDefault}
+              disabled={
+                !isUserDefaultEditable({
+                  admin: this.isAdmin,
+                  usersAdmin: this.isUsersAdmin,
+                  readOnly,
+                  pending: this.state.operationInProgress
+                })
+              }
             >
               <b>Default {roleType}</b>
             </Checkbox>

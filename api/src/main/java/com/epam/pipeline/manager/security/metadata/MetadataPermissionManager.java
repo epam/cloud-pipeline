@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -87,7 +88,9 @@ public class MetadataPermissionManager {
 
     /**
      * - For basic ACL entities (FOLDER, PIPELINE, etc.) owner and admins are allowed to modify metadata
-     * - For ROLE entity only admins are allowed to modify metadata
+     * - For ROLE entity admins are allowed to modify metadata, users with WRITE permission granted are allowed
+     * to modify metadata keys of a non-predefined role, except for restricted keys. Operations on the whole
+     * metadata entry (delete, upload from file) are allowed to the owner and admins only
      * - For PIPELINE_USER admins have full access to metadata, users are allowed to modify own metadata,
      * except for restricted keys defined by {@code SystemPreferences.MISC_METADATA_SENSITIVE_KEYS}
      * @param metadataVO
@@ -131,7 +134,7 @@ public class MetadataPermissionManager {
         if (allowUser && entityClass.equals(AclClass.PIPELINE_USER)) {
             return isMetadataEditAllowedForUser(metadataVO);
         }
-        if (entityClass.equals(AclClass.ROLE)) {
+        if (allowUser && entityClass.equals(AclClass.ROLE)) {
             return isMetadataEditAllowedForRole(metadataVO);
         }
         if (AclClass.TOOL.equals(entityClass) && isMetadataContainsRestrictedInstanceValues(metadataVO)) {
@@ -154,9 +157,8 @@ public class MetadataPermissionManager {
         if (metadataHasSensitiveKeys(metadataVO)){
             return false;
         }
-        final Long entityId = metadataVO.getEntity().getEntityId();
-        return permissionHelper.isAllowed("WRITE",
-                entityManager.load(AclClass.ROLE, entityId));
+        final Role role = (Role) entityManager.load(AclClass.ROLE, metadataVO.getEntity().getEntityId());
+        return !role.isPredefined() && permissionHelper.isAllowed("WRITE", role);
     }
 
     private boolean metadataHasSensitiveKeys(MetadataVO metadataVO) {
