@@ -20,7 +20,9 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunPrice;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatusInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
@@ -30,12 +32,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Transactional
@@ -44,6 +52,12 @@ public class RunStatusDaoTest extends AbstractJdbcTest {
     private static final String TEST_NAME = "TEST";
     private static final String TEST_REPOSITORY = "///";
     private static final String TEST_REPOSITORY_SSH = "git@test";
+    private static final BigDecimal PRICE_PER_HOUR = new BigDecimal("0.10");
+    private static final BigDecimal COMPUTE_PRICE_PER_HOUR = new BigDecimal("0.09600");
+    private static final BigDecimal DISK_PRICE_PER_HOUR = new BigDecimal("0.00013");
+    private static final BigDecimal UPDATED_PRICE_PER_HOUR = new BigDecimal("0.39");
+    private static final BigDecimal UPDATED_COMPUTE_PRICE_PER_HOUR = new BigDecimal("0.38400");
+    private static final BigDecimal UPDATED_DISK_PRICE_PER_HOUR = new BigDecimal("0.00026");
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -98,6 +112,101 @@ public class RunStatusDaoTest extends AbstractJdbcTest {
         createStatus();
         runStatusDao.deleteRunStatus(testRun.getId());
         assertTrue(runStatusDao.loadRunStatus(testRun.getId()).isEmpty());
+    }
+
+    @Test
+    public void shouldSaveAndLoadRunStatusInfo() {
+        runStatusDao.saveStatus(RunStatus.builder()
+                .runId(testRun.getId())
+                .status(TaskStatus.RUNNING)
+                .timestamp(DateUtils.nowUTC())
+                .runStatusInfo(RunStatusInfo.of(PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR))
+                .build());
+
+        final List<RunStatus> statuses = runStatusDao.loadRunStatus(testRun.getId());
+        assertThat(statuses, hasSize(1));
+        assertPrices(statuses.get(0), PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
+    }
+
+    @Test
+    public void shouldLoadRunStatusWithoutRunStatusInfo() {
+        createStatus();
+
+        final List<RunStatus> statuses = runStatusDao.loadRunStatus(testRun.getId());
+        assertThat(statuses, hasSize(1));
+        assertNull(statuses.get(0).getRunStatusInfo());
+    }
+
+    @Test
+    public void shouldUpdatePriceOfTheLatestRunStatusOnly() {
+        final LocalDateTime now = DateUtils.nowUTC();
+        runStatusDao.saveStatus(RunStatus.builder()
+                .runId(testRun.getId())
+                .status(TaskStatus.RUNNING)
+                .timestamp(now.minusHours(1))
+                .runStatusInfo(RunStatusInfo.of(PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR))
+                .build());
+        runStatusDao.saveStatus(RunStatus.builder()
+                .runId(testRun.getId())
+                .status(TaskStatus.PAUSED)
+                .timestamp(now)
+                .runStatusInfo(RunStatusInfo.of(PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR))
+                .build());
+
+        testRun.setPricePerHour(UPDATED_PRICE_PER_HOUR);
+        testRun.setComputePricePerHour(UPDATED_COMPUTE_PRICE_PER_HOUR);
+        testRun.setDiskPricePerHour(UPDATED_DISK_PRICE_PER_HOUR);
+        runStatusDao.updatePriceForCurrentActiveRunStatus(testRun);
+
+        final Map<TaskStatus, RunStatus> statuses = runStatusDao.loadRunStatus(testRun.getId()).stream()
+                .collect(Collectors.toMap(RunStatus::getStatus, Function.identity()));
+        assertPrices(statuses.get(TaskStatus.RUNNING), PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
+        assertPrices(statuses.get(TaskStatus.PAUSED), UPDATED_PRICE_PER_HOUR, UPDATED_COMPUTE_PRICE_PER_HOUR,
+                UPDATED_DISK_PRICE_PER_HOUR);
+    }
+
+    @Test
+    public void shouldUpdatePriceOfRunStatusWithoutPricePerHour() {
+        createStatus();
+
+        testRun.setPricePerHour(null);
+        testRun.setComputePricePerHour(UPDATED_COMPUTE_PRICE_PER_HOUR);
+        testRun.setDiskPricePerHour(null);
+        runStatusDao.updatePriceForCurrentActiveRunStatus(testRun);
+
+        final List<RunStatus> statuses = runStatusDao.loadRunStatus(testRun.getId());
+        assertThat(statuses, hasSize(1));
+        assertPrices(statuses.get(0), null, UPDATED_COMPUTE_PRICE_PER_HOUR, null);
+    }
+
+    @Test
+    public void shouldSkipPriceUpdateIfComputePriceIsMissing() {
+        createStatus();
+
+        testRun.setPricePerHour(UPDATED_PRICE_PER_HOUR);
+        testRun.setComputePricePerHour(null);
+        testRun.setDiskPricePerHour(UPDATED_DISK_PRICE_PER_HOUR);
+        runStatusDao.updatePriceForCurrentActiveRunStatus(testRun);
+
+        final List<RunStatus> statuses = runStatusDao.loadRunStatus(testRun.getId());
+        assertThat(statuses, hasSize(1));
+        assertNull(statuses.get(0).getRunStatusInfo());
+    }
+
+    private void assertPrices(final RunStatus status, final BigDecimal pricePerHour,
+                              final BigDecimal computePricePerHour, final BigDecimal diskPricePerHour) {
+        final RunPrice price = status.getRunStatusInfo().getPrice();
+        assertPrice(pricePerHour, price.getPricePerHour());
+        assertPrice(computePricePerHour, price.getComputePricePerHour());
+        assertPrice(diskPricePerHour, price.getDiskPricePerHour());
+    }
+
+    private void assertPrice(final BigDecimal expected, final BigDecimal actual) {
+        if (expected == null) {
+            assertNull(actual);
+            return;
+        }
+        assertThat(actual.compareTo(expected), equalTo(0));
     }
 
     private RunStatus createStatus() {

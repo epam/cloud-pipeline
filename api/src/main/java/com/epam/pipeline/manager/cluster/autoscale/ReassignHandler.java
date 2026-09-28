@@ -30,6 +30,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +59,7 @@ public class ReassignHandler {
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
+    private final RunStatusManager runStatusManager;
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
     private final MetadataManager metadataManager;
     private final IAMProfileVerifier iamProfileVerifier;
@@ -67,13 +69,15 @@ public class ReassignHandler {
                            final PipelineRunManager pipelineRunManager,
                            final List<PoolFilterHandler> filterHandlers,
                            final MetadataManager metadataManager,
-                           final IAMProfileVerifier iamProfileVerifier) {
+                           final IAMProfileVerifier iamProfileVerifier,
+                           final RunStatusManager runStatusManager) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
         this.metadataManager = metadataManager;
         this.iamProfileVerifier = iamProfileVerifier;
+        this.runStatusManager = runStatusManager;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -192,8 +196,9 @@ public class ReassignHandler {
         final RunInstance reassignedInstance = StringUtils.isBlank(instance.getNodeId()) ?
                 cloudFacade.describeInstance(runId, instance) : instance;
         reassignedInstance.setPoolId(instance.getPoolId());
-        pipelineRunManager.updateRunInstance(runId, reassignedInstance);
+        pipelineRunManager.updateRunInstanceAndPrices(runId, reassignedInstance);
         pipelineRunManager.updateRunInstanceStartDate(runId, DateUtils.nowUTC());
+        runStatusManager.updatePriceForCurrentActiveRunStatus(runId);
         final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                 runId);
         if (CollectionUtils.isNotEmpty(disks)) {

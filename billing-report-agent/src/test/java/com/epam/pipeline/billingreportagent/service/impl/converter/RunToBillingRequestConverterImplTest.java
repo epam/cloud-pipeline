@@ -31,7 +31,9 @@ import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunPrice;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatusInfo;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.junit.jupiter.api.Test;
@@ -54,6 +56,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("checkstyle:magicnumber")
@@ -788,5 +791,437 @@ public class RunToBillingRequestConverterImplTest {
 
     private PipelineRunWithType runEntity(final PipelineRun run, final List<NodeDisk> disks) {
         return new PipelineRunWithType(run, ToolAddress.empty(), null, null, disks, ComputeType.CPU);
+    }
+
+    // ========== GRANULAR PRICING TESTS ==========
+
+    @Test
+    public void testGranularPricingShouldUsePriceSnapshotFromStatus() {
+        // Scenario: run with price snapshot in status should use snapshot price, not run-level price
+        final BigDecimal runLevelComputePrice = new BigDecimal("2.43200");
+        final BigDecimal runLevelDiskPrice = new BigDecimal("0.00013");
+        final BigDecimal snapshotComputePrice = new BigDecimal("0.09700");
+        final BigDecimal snapshotDiskPrice = new BigDecimal("0.00013");
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 11, 40, 38),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                        snapshotComputePrice, snapshotDiskPrice),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 12, 30, 0)));
+        run.setPricePerHour(runLevelComputePrice.add(runLevelDiskPrice));
+        run.setComputePricePerHour(runLevelComputePrice);
+        run.setDiskPricePerHour(runLevelDiskPrice);
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+
+        // 30 minutes = 1800 seconds
+        // Formula: duration * price / 3600, scale to 2 decimals with CEILING, * 10000
+        // compute cost = (1800 * 0.097) / 3600 = 0.0485, rounded to 0.05 (CEILING), * 10000 = 500
+        // 500 hundredths of cents = 5 cents = $0.05
+        // Expected: 500 (using snapshot price 0.097, not run-level 2.432)
+        assertEquals(500L, billing.getComputeCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingShouldFallbackToRunLevelPriceWhenNoSnapshot() {
+        // Scenario: status without price snapshot should use run-level price
+        final BigDecimal runLevelComputePrice = new BigDecimal("2.43200");
+        final BigDecimal runLevelDiskPrice = new BigDecimal("0.00013");
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 11, 40, 38),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 12, 30, 0)));
+        run.setPricePerHour(new BigDecimal("2.44"));
+        run.setComputePricePerHour(runLevelComputePrice);
+        run.setDiskPricePerHour(runLevelDiskPrice);
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+
+        // 30 minutes = 1800 seconds
+        // Formula: (duration * price / 3600), scale to 2 decimals with CEILING, * 10000
+        // compute cost = (1800 * 2.432) / 3600 = 1.216, rounded to 1.22 (CEILING), * 10000 = 12200
+        // 12200 hundredths of cents = 122 cents = $1.22
+        assertEquals(12200L, billing.getComputeCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingDiskCostCalculation() {
+        // Scenario: a run is paused for 30 minutes and resumed on another instance type,
+        // so both its compute and its disk price change. Every segment has to be billed
+        // by the price snapshot of the status it starts with, and never by the run level price.
+        final BigDecimal beforeResumeComputePrice = new BigDecimal("0.09600");
+        final BigDecimal beforeResumeDiskPrice = new BigDecimal("0.00100"); // $0.001 per GB per hour
+        final BigDecimal afterResumeComputePrice = new BigDecimal("0.38400");
+        final BigDecimal afterResumeDiskPrice = new BigDecimal("0.00200"); // $0.002 per GB per hour
+
+        final List<NodeDisk> disks = Arrays.asList(
+                disk(100L, LocalDateTime.of(2026, 9, 22, 12, 0, 0))); // 100 GB disk
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                // 1 hour of running on the original instance type
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                        beforeResumeComputePrice, beforeResumeDiskPrice),
+                // 30 minutes of being paused, the price is not changed yet
+                statusWithPrice(TaskStatus.PAUSED, LocalDateTime.of(2026, 9, 22, 13, 0, 0),
+                        beforeResumeComputePrice, beforeResumeDiskPrice),
+                // 1 hour of running on the instance type the run was resumed on
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 13, 30, 0),
+                        afterResumeComputePrice, afterResumeDiskPrice),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 14, 30, 0)));
+        // the run level price differs from both snapshots, so any fallback to it is visible
+        run.setPricePerHour(new BigDecimal("2.44"));
+        run.setComputePricePerHour(new BigDecimal("2.43200"));
+        run.setDiskPricePerHour(new BigDecimal("0.00500"));
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, disks))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+
+        assertEquals(120L, billing.getUsageMinutes().longValue()); // 60 + 60 active minutes
+        assertEquals(30L, billing.getPausedMinutes().longValue());
+
+        // Every segment is priced separately and rounded to cents with CEILING.
+        // Compute, the paused segment is inactive and adds nothing:
+        //   1 hour * 0.096 = 0.096 -> 0.10 -> 1000
+        //   1 hour * 0.384 = 0.384 -> 0.39 -> 3900
+        assertEquals(4900L, billing.getComputeCost().longValue());
+        // Disk, 100 GB, charged for the paused segment as well:
+        //   1 hour * 100 GB * 0.001 = 0.10 -> 1000
+        //   30 min * 100 GB * 0.001 = 0.05 -> 500
+        //   1 hour * 100 GB * 0.002 = 0.20 -> 2000
+        assertEquals(3500L, billing.getDiskCost().longValue());
+        assertEquals(8400L, billing.getCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingBillsPausingAndResumingStatusesAsInactive() {
+        // Full pause/resume cycle: only RUNNING segments are billed as compute,
+        // PAUSING/PAUSED/RESUMING segments are billed as paused regardless of their price snapshot
+        final BigDecimal beforePauseComputePrice = new BigDecimal("2.43200");
+        final BigDecimal afterResumeComputePrice = new BigDecimal("0.09700");
+        final BigDecimal diskPrice = new BigDecimal("0.00013");
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                        beforePauseComputePrice, diskPrice),
+                statusWithPrice(TaskStatus.PAUSING, LocalDateTime.of(2026, 9, 22, 13, 0, 0),
+                        beforePauseComputePrice, diskPrice),
+                statusWithPrice(TaskStatus.PAUSED, LocalDateTime.of(2026, 9, 22, 13, 15, 0),
+                        beforePauseComputePrice, diskPrice),
+                statusWithPrice(TaskStatus.RESUMING, LocalDateTime.of(2026, 9, 22, 13, 45, 0),
+                        afterResumeComputePrice, diskPrice),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 14, 0, 0),
+                        afterResumeComputePrice, diskPrice),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 16, 0, 0)));
+        // Run level prices differ from both snapshots, so they cannot produce the expected values
+        run.setPricePerHour(new BigDecimal("9.99"));
+        run.setComputePricePerHour(new BigDecimal("9.99000"));
+        run.setDiskPricePerHour(new BigDecimal("0.00500"));
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+
+        // Active segments (RUNNING is the status that begins them):
+        //   12:00-13:00 (1 h)  * 2.43200 = 2.43200 -> CEILING 2.44 -> 24400
+        //   14:00-16:00 (2 h)  * 0.09700 = 0.19400 -> CEILING 0.20 -> 2000
+        // Inactive segments (PAUSING, PAUSED and RESUMING begin them): no compute cost at all,
+        //   even though PAUSING and PAUSED carry the expensive 2.43200 snapshot
+        assertEquals(180L, billing.getUsageMinutes().longValue());
+        assertEquals(60L, billing.getPausedMinutes().longValue());
+        assertEquals(26400L, billing.getComputeCost().longValue());
+        // No disks are attached, so the total cost is the compute cost only
+        assertEquals(0L, billing.getDiskCost().longValue());
+        assertEquals(26400L, billing.getCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingPauseAndResumeOnAnotherInstanceType() {
+        // Scenario from the issue: 3 hours on a cheap instance type, then 3 hours on an expensive one
+        final BigDecimal initialComputePrice = new BigDecimal("0.09600");
+        final BigDecimal resumedComputePrice = new BigDecimal("0.38400");
+        final BigDecimal diskPrice = new BigDecimal("0.00013");
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 6, 0, 0),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 6, 0, 0),
+                        initialComputePrice, diskPrice),
+                statusWithPrice(TaskStatus.PAUSED, LocalDateTime.of(2026, 9, 22, 9, 0, 0),
+                        initialComputePrice, diskPrice),
+                // resumed on a bigger instance type, the price snapshot is already updated
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 10, 0, 0),
+                        resumedComputePrice, diskPrice),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 13, 0, 0)));
+        // the run level price holds the latest instance type price only
+        run.setPricePerHour(new BigDecimal("0.39"));
+        run.setComputePricePerHour(resumedComputePrice);
+        run.setDiskPricePerHour(diskPrice);
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+
+        // 3 hours * 0.096 = 0.288 -> 0.29 (CEILING) -> 2900
+        // 3 hours * 0.384 = 1.152 -> 1.16 (CEILING) -> 11600
+        assertEquals(14500L, billing.getComputeCost().longValue());
+        assertEquals(360L, billing.getUsageMinutes().longValue());
+        assertEquals(60L, billing.getPausedMinutes().longValue());
+    }
+
+    @Test
+    public void testGranularPricingSyntheticFirstRunningStatusInheritsFollowingSnapshot() {
+        final BigDecimal beforePausePrice = new BigDecimal("2.43200");
+        final BigDecimal afterResumePrice = new BigDecimal("0.09700");
+        final BigDecimal diskPrice = new BigDecimal("0.00013");
+
+        // the run was active since 12:00, but the first recorded status is the pause at 13:00
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                statusWithPrice(TaskStatus.PAUSED, LocalDateTime.of(2026, 9, 22, 13, 0, 0),
+                        beforePausePrice, diskPrice),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 14, 0, 0),
+                        afterResumePrice, diskPrice),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 15, 0, 0)));
+        // run level price differs from both snapshots to make sure it is not used
+        run.setPricePerHour(new BigDecimal("9.99"));
+        run.setComputePricePerHour(new BigDecimal("9.99000"));
+        run.setDiskPricePerHour(diskPrice);
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2026, 9, 22).atStartOfDay(),
+                LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0)),
+                status(TaskStatus.PAUSED, LocalDateTime.of(2026, 9, 22, 13, 0, 0)),
+                status(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 14, 0, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 15, 0, 0)));
+        // the synthetic running status is priced as the pause it precedes
+        assertEquals(beforePausePrice,
+                adjustedStatuses.get(0).getRunStatusInfo().getPrice().getComputePricePerHour());
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+
+        // 1 hour * 2.432 = 2.432 -> 2.44 (CEILING) -> 24400 for the synthetic running period
+        // 1 hour paused -> no compute costs
+        // 1 hour * 0.097 = 0.097 -> 0.10 (CEILING) -> 1000
+        assertEquals(25400L, billing.getComputeCost().longValue());
+        assertEquals(120L, billing.getUsageMinutes().longValue());
+        assertEquals(60L, billing.getPausedMinutes().longValue());
+    }
+
+    @Test
+    public void testGranularPricingAdjustedStatusesKeepSnapshots() {
+        final BigDecimal computePrice = new BigDecimal("0.09700");
+        final BigDecimal diskPrice = new BigDecimal("0.00013");
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 21, 12, 0, 0),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 21, 12, 0, 0),
+                        computePrice, diskPrice));
+
+        final List<RunStatus> adjustedStatuses = converter.adjustStatuses(run,
+                LocalDate.of(2026, 9, 22).atStartOfDay(),
+                LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertRunsActivityStats(adjustedStatuses,
+                status(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 0, 0, 0)),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 23, 0, 0, 0)));
+        // the running status shifted to the period start keeps its snapshot
+        assertEquals(computePrice,
+                adjustedStatuses.get(0).getRunStatusInfo().getPrice().getComputePricePerHour());
+        // the synthetic stopped status closes the period and requires no snapshot
+        assertNull(adjustedStatuses.get(1).getRunStatusInfo());
+    }
+
+    @Test
+    public void testGranularPricingShouldFallbackToRunLevelPriceWhenSnapshotComputePriceIsMissing() {
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                        RunStatusInfo.builder().price(RunPrice.builder()
+                                .pricePerHour(new BigDecimal("0.10"))
+                                .build()).build()),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 13, 0, 0)));
+        run.setPricePerHour(new BigDecimal("2.44"));
+        run.setComputePricePerHour(new BigDecimal("2.43200"));
+        run.setDiskPricePerHour(new BigDecimal("0.00013"));
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        // 1 hour * run level 2.432 -> 2.44 (CEILING) -> 24400
+        assertEquals(24400L, billings.iterator().next().getComputeCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingShouldUseSnapshotPricesWhenSnapshotPricePerHourIsMissing() {
+        // the price which is missing in the snapshot is taken from the run level price,
+        // the ones which are present are still taken from the snapshot
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                        RunStatusInfo.builder().price(RunPrice.builder()
+                                .computePricePerHour(new BigDecimal("0.09700"))
+                                .diskPricePerHour(new BigDecimal("0.00013"))
+                                .build()).build()),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 13, 0, 0)));
+        run.setPricePerHour(new BigDecimal("2.44"));
+        run.setComputePricePerHour(new BigDecimal("2.43200"));
+        run.setDiskPricePerHour(new BigDecimal("0.00013"));
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        // 1 hour * snapshot 0.097 -> 0.10 (CEILING) -> 1000
+        assertEquals(1000L, billings.iterator().next().getComputeCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingShouldFallbackToRunLevelPriceWhenSnapshotDiskPriceIsMissing() {
+        final List<NodeDisk> disks = Arrays.asList(
+                disk(100L, LocalDateTime.of(2026, 9, 22, 12, 0, 0)));
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 12, 0, 0),
+                        RunStatusInfo.builder().price(RunPrice.builder()
+                                .pricePerHour(new BigDecimal("0.10"))
+                                .computePricePerHour(new BigDecimal("0.09700"))
+                                .build()).build()),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 22, 13, 0, 0)));
+        run.setPricePerHour(new BigDecimal("2.44"));
+        run.setComputePricePerHour(new BigDecimal("2.43200"));
+        run.setDiskPricePerHour(new BigDecimal("0.00100"));
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, disks))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 23).atStartOfDay());
+
+        assertEquals(1, billings.size());
+        final PipelineRunBillingInfo billing = billings.iterator().next();
+        // 1 hour * snapshot 0.097 -> 0.10 (CEILING) -> 1000
+        assertEquals(1000L, billing.getComputeCost().longValue());
+        // 1 hour * 100 GB * run level 0.001 -> 0.10 (CEILING) -> 1000
+        assertEquals(1000L, billing.getDiskCost().longValue());
+    }
+
+    @Test
+    public void testGranularPricingShouldSplitSegmentPricesBetweenDays() {
+        final BigDecimal beforeResumePrice = new BigDecimal("0.09600");
+        final BigDecimal afterResumePrice = new BigDecimal("0.38400");
+        final BigDecimal diskPrice = new BigDecimal("0.00013");
+
+        final PipelineRun run = run(
+                LocalDateTime.of(2026, 9, 22, 22, 0, 0),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 22, 22, 0, 0),
+                        beforeResumePrice, diskPrice),
+                statusWithPrice(TaskStatus.RUNNING, LocalDateTime.of(2026, 9, 23, 2, 0, 0),
+                        afterResumePrice, diskPrice),
+                status(TaskStatus.STOPPED, LocalDateTime.of(2026, 9, 23, 4, 0, 0)));
+        run.setPricePerHour(new BigDecimal("0.39"));
+        run.setComputePricePerHour(afterResumePrice);
+        run.setDiskPricePerHour(diskPrice);
+
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+                .entity(runEntity(run, Collections.emptyList()))
+                .build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+                converter.convertRunToBillings(runContainer,
+                        LocalDate.of(2026, 9, 22).atStartOfDay(),
+                        LocalDate.of(2026, 9, 24).atStartOfDay());
+
+        final Map<LocalDate, PipelineRunBillingInfo> reports = billings.stream()
+                .collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
+        assertEquals(2, reports.size());
+        // 22.09: 2 hours * 0.096 = 0.192 -> 0.20 (CEILING) -> 2000
+        assertEquals(2000L, reports.get(LocalDate.of(2026, 9, 22)).getComputeCost().longValue());
+        // 23.09: 2 hours * 0.096 = 0.192 -> 0.20 -> 2000 and 2 hours * 0.384 = 0.768 -> 0.77 -> 7700
+        assertEquals(9700L, reports.get(LocalDate.of(2026, 9, 23)).getComputeCost().longValue());
+    }
+
+    private RunStatus statusWithPrice(final TaskStatus status, final LocalDateTime date,
+                                      final BigDecimal computePricePerHour,
+                                      final BigDecimal diskPricePerHour) {
+        final RunStatusInfo priceInfo = RunStatusInfo.of(computePricePerHour.add(diskPricePerHour),
+                computePricePerHour, diskPricePerHour);
+        return new RunStatus(RUN_ID, status, date, priceInfo);
     }
 }

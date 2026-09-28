@@ -784,6 +784,17 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateRunInstanceAndPrices(Long id, RunInstance instance) {
+        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
+        if (!instance.isEmpty()) {
+            pipelineRun.setInstance(instance);
+            setRunPrice(instance, pipelineRun);
+            pipelineRunDao.updateRunInstanceAndPrices(pipelineRun);
+        }
+        return pipelineRun;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void applyRunInstanceConfig(final Long runId, final RunInstanceConfigVO vo) {
         Assert.notNull(vo, "RunInstanceConfigVO must not be null");
         final PipelineRun pipelineRun = loadPipelineRun(runId);
@@ -804,7 +815,7 @@ public class PipelineRunManager {
                 pipelineRun.getPipelineId() != null,
                 true
         );
-        updateRunInstance(pipelineRun.getId(), instance);
+        updateRunInstanceAndPrices(pipelineRun.getId(), instance);
     }
 
     private void validateCPURunIsNotUpgradedToGPU(final RunInstance instance, final RunInstanceConfigVO vo) {
@@ -1471,20 +1482,6 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
         return pipelineRunDao.loadRunsByStatuses(statuses);
-    }
-
-    /**
-     * Adjusts run price per hour including provided node disks.
-     *
-     * @param runId of {@link PipelineRun} to update price for.
-     * @param disks of {@link PipelineRun} instance.
-     * @return Updated pipeline run.
-     */
-    @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateRunPrice(final Long runId, final RunInstance instance) {
-        final PipelineRun run = loadPipelineRun(runId, false);
-        setRunPrice(instance, run);
-        return updateRunInfo(run);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
