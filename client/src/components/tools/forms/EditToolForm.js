@@ -61,6 +61,7 @@ import {
   parseChildNodeInstanceConfiguration,
   getNodeUpRetryCountParameter,
   getNodeUpRetryCountFieldValue,
+  getMaxNodeUpRetryCount,
   nodeUpRetryCountChanged
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import {
@@ -1662,6 +1663,7 @@ export default class EditToolForm extends React.Component {
                   disabled={this.state.pending || this.props.readOnly}
                   initialValue={getNodeUpRetryCountFieldValue(this.defaultNodeUpRetryCount)}
                   placeholder={`${this.props.preferences.defaultNodeUpRetryCount}`}
+                  max={getMaxNodeUpRetryCount(this.props.preferences)}
                 />
               )}
               <Row>

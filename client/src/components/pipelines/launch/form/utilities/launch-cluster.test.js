@@ -19,6 +19,8 @@ import {
   getNodeUpRetryCountParameter,
   getNodeUpRetryCountFieldValue,
   nodeUpRetryCountChanged,
+  nodeUpRetryCountExceedsMax,
+  getMaxNodeUpRetryCount,
   getAllSkippedSystemParametersList,
   getSkippedSystemParametersList
 } from './launch-cluster';
@@ -67,6 +69,28 @@ describe('getNodeUpRetryCountParameter', () => {
     expect(getNodeUpRetryCountParameter('-1', preferences)).toBeUndefined();
   });
 
+  it('is undefined for a value above the maximum', () => {
+    expect(getNodeUpRetryCountParameter('1000', preferences)).toBeUndefined();
+    expect(getNodeUpRetryCountParameter('99999999999', preferences)).toBeUndefined();
+  });
+
+  it('allows a value above 999 when the preference itself is higher', () => {
+    expect(getNodeUpRetryCountParameter('5000', {...preferences, defaultNodeUpRetryCount: 5000}))
+      .toEqual({
+        type: 'int',
+        required: false,
+        value: 5000
+      });
+  });
+
+  it('returns the parameter config for the maximum value', () => {
+    expect(getNodeUpRetryCountParameter('999', preferences)).toEqual({
+      type: 'int',
+      required: false,
+      value: 999
+    });
+  });
+
   it('returns the parameter config even when the value equals the preference default', () => {
     expect(getNodeUpRetryCountParameter('5', preferences)).toEqual({
       type: 'int',
@@ -94,6 +118,37 @@ describe('getNodeUpRetryCountFieldValue', () => {
   it('is the trimmed string for a stored value', () => {
     expect(getNodeUpRetryCountFieldValue(7)).toBe('7');
     expect(getNodeUpRetryCountFieldValue(' 7 ')).toBe('7');
+  });
+});
+
+describe('getMaxNodeUpRetryCount', () => {
+  it('is 999 when the preference is lower, or missing', () => {
+    expect(getMaxNodeUpRetryCount({defaultNodeUpRetryCount: 5})).toBe(999);
+    expect(getMaxNodeUpRetryCount({})).toBe(999);
+    expect(getMaxNodeUpRetryCount(undefined)).toBe(999);
+  });
+
+  it('is the preference value when that is higher, so the placeholder stays typeable', () => {
+    expect(getMaxNodeUpRetryCount({defaultNodeUpRetryCount: 5000})).toBe(5000);
+  });
+});
+
+describe('nodeUpRetryCountExceedsMax', () => {
+  it('is false for a value up to the maximum', () => {
+    expect(nodeUpRetryCountExceedsMax('1', 999)).toBe(false);
+    expect(nodeUpRetryCountExceedsMax('999', 999)).toBe(false);
+  });
+
+  it('is true for a value above the maximum', () => {
+    expect(nodeUpRetryCountExceedsMax('1000', 999)).toBe(true);
+    expect(nodeUpRetryCountExceedsMax(1000, 999)).toBe(true);
+  });
+
+  it('is false for a value that is not set or not a positive integer, ' +
+    'since the pattern rule reports those', () => {
+    expect(nodeUpRetryCountExceedsMax(undefined, 999)).toBe(false);
+    expect(nodeUpRetryCountExceedsMax('', 999)).toBe(false);
+    expect(nodeUpRetryCountExceedsMax('abc', 999)).toBe(false);
   });
 });
 

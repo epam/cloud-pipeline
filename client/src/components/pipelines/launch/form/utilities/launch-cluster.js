@@ -144,6 +144,33 @@ export function getNodeUpRetryCountSkippedParameters (preferences) {
 }
 
 export const NODE_UP_RETRY_COUNT_PATTERN = /^[1-9]\d*$/;
+export const MAX_NODE_UP_RETRY_COUNT = 999;
+
+/**
+ * Returns the greatest value the field accepts. `cluster.nodeup.retry.count` has no upper
+ * bound of its own, so a deployment may set it higher, and then that value is the bound
+ * instead: the field shows the preference as its placeholder, and a placeholder the user
+ * is not allowed to type would be a contradiction
+ * @param {*} preferences
+ * @returns {number}
+ */
+export function getMaxNodeUpRetryCount (preferences) {
+  return Math.max(
+    MAX_NODE_UP_RETRY_COUNT,
+    (preferences && preferences.defaultNodeUpRetryCount) || 0
+  );
+}
+
+/**
+ * The pattern rule reports a value that is not a positive integer, so this reports
+ * nothing for one
+ * @param {*} value
+ * @param {number} max
+ * @returns {boolean}
+ */
+export function nodeUpRetryCountExceedsMax (value, max) {
+  return NODE_UP_RETRY_COUNT_PATTERN.test(`${value}`) && +value > max;
+}
 
 /**
  * Returns the node up retry count field value for a stored parameter value;
@@ -169,7 +196,11 @@ export function getNodeUpRetryCountParameter (rawValue, preferences) {
     return undefined;
   }
   const value = getNodeUpRetryCountFieldValue(rawValue);
-  if (!value || !NODE_UP_RETRY_COUNT_PATTERN.test(value)) {
+  if (
+    !value ||
+    !NODE_UP_RETRY_COUNT_PATTERN.test(value) ||
+    nodeUpRetryCountExceedsMax(value, getMaxNodeUpRetryCount(preferences))
+  ) {
     return undefined;
   }
   return {

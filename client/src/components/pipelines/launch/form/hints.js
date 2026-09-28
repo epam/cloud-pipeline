@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Icon, Popover, Row} from 'antd';
+import {MAX_NODE_UP_RETRY_COUNT} from './utilities/launch-cluster';
 import styles from './LaunchPipelineForm.css';
 
 function renderHint (localizedStringFn, hint, placement, style) {
@@ -84,9 +85,12 @@ const fallbackInstanceTypesHint = (localizedStringFn) => (
 const nodeUpRetryCountHint = () => (
   <Row style={{maxWidth: 300}}>
     The number of attempts to start a compute node before the run fails
-    or is rescheduled to another region. If empty, the tool's or pipeline's
-    default value is used if there is one, and otherwise the current value of
+    or is rescheduled to another region.
+    If empty, the tool's or pipeline's default value is used if there is one,
+    and otherwise the current value of
     the <b>cluster.nodeup.retry.count</b> system preference.
+    The maximum is {MAX_NODE_UP_RETRY_COUNT}, or that preference's value
+    if it is higher.
   </Row>
 );
 

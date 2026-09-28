@@ -78,6 +78,7 @@ import {
   parseChildNodeInstanceConfiguration,
   getNodeUpRetryCountParameter,
   getNodeUpRetryCountFieldValue,
+  getMaxNodeUpRetryCount,
   LAUNCH_CLUSTER_MODES,
   CLUSTER_TYPE
 } from './utilities/launch-cluster';
@@ -3133,6 +3134,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`)
         )}
         placeholder={`${this.props.preferences.defaultNodeUpRetryCount}`}
+        max={getMaxNodeUpRetryCount(this.props.preferences)}
       />
     );
   };

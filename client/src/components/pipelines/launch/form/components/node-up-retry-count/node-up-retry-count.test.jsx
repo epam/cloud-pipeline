@@ -18,7 +18,10 @@ import React from 'react';
 import {Form} from 'antd';
 import {render, screen, click, change, keyDown, waitFor} from '@test';
 import NodeUpRetryCountFormItem from './index.jsx';
-import {getNodeUpRetryCountParameter} from '../../utilities/launch-cluster';
+import {
+  getNodeUpRetryCountParameter,
+  getMaxNodeUpRetryCount
+} from '../../utilities/launch-cluster';
 
 const preferences = {allowNodeUpRetryCount: true, defaultNodeUpRetryCount: 5};
 
@@ -27,7 +30,7 @@ const preferences = {allowNodeUpRetryCount: true, defaultNodeUpRetryCount: 5};
 // launch form and the tool settings would send
 class Harness extends React.Component {
   render () {
-    const {form, onForm, initialValue, disabled} = this.props;
+    const {form, onForm, initialValue, disabled, max} = this.props;
     onForm(form);
     return (
       <Form>
@@ -36,6 +39,7 @@ class Harness extends React.Component {
           initialValue={initialValue}
           disabled={disabled}
           placeholder={`${preferences.defaultNodeUpRetryCount}`}
+          max={max}
         />
       </Form>
     );
@@ -46,7 +50,13 @@ const HarnessForm = Form.create()(Harness);
 
 function renderField (props = {}) {
   let form;
-  render(<HarnessForm onForm={(f) => { form = f; }} {...props} />);
+  render(
+    <HarnessForm
+      onForm={(f) => { form = f; }}
+      max={getMaxNodeUpRetryCount(preferences)}
+      {...props}
+    />
+  );
   return {
     getForm: () => form,
     input: screen.getByLabelText('Capacity retries')
@@ -109,6 +119,30 @@ test('rejects a value that is not a positive integer', async () => {
   expect(await validate(getForm())).toBeTruthy();
   expect(await screen.findByText('Please enter a valid positive integer number'))
     .toBeInTheDocument();
+});
+
+test('accepts 999, and rejects a value above it', async () => {
+  const {getForm, input} = renderField();
+
+  await change(input, '999');
+  expect(await validate(getForm())).toBeFalsy();
+  expect(sentParameter(getForm())).toEqual({type: 'int', required: false, value: 999});
+
+  await change(input, '1000');
+  expect(await validate(getForm())).toBeTruthy();
+  expect(await screen.findByText('Maximum value is 999')).toBeInTheDocument();
+  expect(sentParameter(getForm())).toBeUndefined();
+});
+
+test('takes its bound from the max prop, so a higher preference raises it', async () => {
+  const {getForm, input} = renderField({max: 5000});
+
+  await change(input, '1000');
+  expect(await validate(getForm())).toBeFalsy();
+
+  await change(input, '5001');
+  expect(await validate(getForm())).toBeTruthy();
+  expect(await screen.findByText('Maximum value is 5000')).toBeInTheDocument();
 });
 
 test('offers no clear button when disabled', () => {
