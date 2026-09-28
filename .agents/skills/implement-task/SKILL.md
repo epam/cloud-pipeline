@@ -85,6 +85,8 @@ permanently unusable. Given a name, use it exactly.
 on it rather than inventing a `-2`. Where you cannot tell whose branch an existing one is, treat it as
 someone else's and pick another name.
 
+Once the branch exists, add `state/underway` to the issue if it doesn't carry it already.
+
 ### Worktree
 
 **A new branch is what gets a worktree.** **Attended, ask whether to work in one**, together with the
