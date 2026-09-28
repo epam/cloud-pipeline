@@ -27,7 +27,8 @@ function NodeUpRetryCountFormItem (
     formItemLayout,
     getFieldDecorator,
     disabled,
-    initialValue
+    initialValue,
+    hasFeedback
   }
 ) {
   return (
@@ -36,7 +37,7 @@ function NodeUpRetryCountFormItem (
       {...formItemLayout}
       label="Node up retry count"
       required
-      hasFeedback
+      hasFeedback={hasFeedback}
     >
       {getFieldDecorator('nodeUpRetryCount',
         {
@@ -64,7 +65,12 @@ NodeUpRetryCountFormItem.propTypes = {
   formItemLayout: PropTypes.object,
   getFieldDecorator: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
-  initialValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  initialValue: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  hasFeedback: PropTypes.bool
+};
+
+NodeUpRetryCountFormItem.defaultProps = {
+  hasFeedback: true
 };
 
 export default NodeUpRetryCountFormItem;
