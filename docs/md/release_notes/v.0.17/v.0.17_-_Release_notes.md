@@ -23,6 +23,7 @@
 - [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
+- [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 - [Hot node pools](#hot-node-pools)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
@@ -51,6 +52,7 @@
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
+- [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
 
 ***
 
@@ -920,6 +922,21 @@ For the jobs, the timeout is set by the new launch parameter **`CP_PIPE_FUSE_MOU
 
 For more details see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mount-a-storage).
 
+## Parallel mounting of data storages
+
+Previously, a job mounted its data storages one by one. When the user has hundreds of available storages, the `MountDataStorages` task could take a long time before the job started.
+
+In the current version, a new launch parameter **`CP_CAP_MOUNT_THREADS`** (_int_) is introduced. It sets the number of threads that mount the data storages in parallel (e.g. `4`, `8` or `16`).  
+By default, it is `1` - storages are mounted one by one, as before. To go back to the previous behavior, set the parameter to `1` or remove it.
+
+**_Note_**:
+
+- If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished.
+- Storages mounted with `pipe` FUSE request their details and credentials from the API. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a job (or a cluster) starts. It also uses more CPU on small nodes. Start with a small value, e.g. `4`.
+- If `pipe` FUSE mounts fail by a timeout under a high load, consider increasing **`CP_PIPE_FUSE_MOUNT_TIMEOUT`**. By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the **`CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES`** parameter.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#mount-storages-in-parallel).
+
 ## Hot node pools
 
 For some jobs, a waiting for a node launch can be too long. It is convenient to have some scope of the running nodes in the background that will be always or on schedule be available.
@@ -1758,6 +1775,15 @@ Feature is not available:
 - for worker or cluster runs
 
 More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
+
+## Checking of the Docker image version in `pipe run`
+
+Previously, `pipe run` did not check the version (tag) of the Docker image specified via the `-di` (`--docker-image`) option. A run with a mistyped version, e.g. `library/ubuntu:latet`, was scheduled and failed only on the node, when the image could not be pulled.
+
+In the current version, `pipe run` checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - `pipe` prints an error with the list of the available versions and exits with the code `1`.  
+If the tool versions can't be loaded, `pipe` prints a warning and continues the launch.
+
+For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
 ***
 

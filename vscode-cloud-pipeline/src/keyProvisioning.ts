@@ -2,6 +2,8 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Client, ConnectConfig } from 'ssh2';
+import { getBrandName } from './extensionEnv';
+import { applyRemoteMachineSettings, MachineSettingsRequest } from './remoteMachineSettings';
 
 function randomKeyName(runId: number): string {
   return `vscode-cp-${runId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -59,13 +61,16 @@ function shellEscapeDoubleQuoted(s: string): string {
 /**
  * Provisions a throwaway RSA key on the run, adds to authorized_keys for sshUsers, downloads private key.
  * Mirrors pipe-cli generate_remote_openssh_and_putty_keys + copy keys (OpenSSH path only, no putty).
+ * When `machineSettings` is given, also merges them into the editor server's machine settings
+ * in the SSH user's home; a failure there is logged and does not fail the key provisioning.
  */
 export async function provisionPasswordlessKey(
   connect: ConnectConfig,
   runId: number,
   keysDir: string,
   authorizedUsers: string[],
-  sshConfigUser: string
+  sshConfigUser: string,
+  machineSettings?: MachineSettingsRequest
 ): Promise<KeyProvisionResult> {
   const keyName = randomKeyName(runId);
   const localPrivate = path.join(keysDir, keyName);
@@ -153,6 +158,17 @@ done
     const hostBody = hostRsa.toString('utf8').trim();
     const parts = hostBody.split(/\s+/);
     hostRsaPubKeyBody = parts.length >= 2 ? `${parts[0]} ${parts[1]}` : hostBody;
+
+    if (machineSettings) {
+      try {
+        await applyRemoteMachineSettings(client, remoteHome, machineSettings);
+      } catch (e) {
+        console.warn(
+          `[${getBrandName()}] Could not update remote machine settings for run ${runId}: ` +
+            (e instanceof Error ? e.message : String(e))
+        );
+      }
+    }
   } finally {
     client.end();
   }
