@@ -17,7 +17,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Form, Icon, Input} from 'antd';
-import {NODE_UP_RETRY_COUNT_PATTERN} from '../../utilities/launch-cluster';
+import {
+  MAX_NODE_UP_RETRY_COUNT,
+  NODE_UP_RETRY_COUNT_PATTERN,
+  nodeUpRetryCountExceedsMax
+} from '../../utilities/launch-cluster';
 import styles from './node-up-retry-count.css';
 
 const FormItem = Form.Item;
@@ -94,7 +98,10 @@ function NodeUpRetryCountFormItem (
     getFieldDecorator,
     disabled,
     initialValue,
-    placeholder
+    placeholder,
+    // falls back to the constant rather than to no bound at all, so a caller
+    // that forgets the prop still gets a bounded field
+    max = MAX_NODE_UP_RETRY_COUNT
   }
 ) {
   return (
@@ -109,6 +116,13 @@ function NodeUpRetryCountFormItem (
             {
               pattern: NODE_UP_RETRY_COUNT_PATTERN,
               message: 'Please enter a valid positive integer number'
+            },
+            {
+              validator: (rule, value, callback) => callback(
+                nodeUpRetryCountExceedsMax(value, max)
+                  ? `Maximum value is ${max}`
+                  : undefined
+              )
             }
           ],
           initialValue
@@ -129,7 +143,8 @@ NodeUpRetryCountFormItem.propTypes = {
   getFieldDecorator: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
   initialValue: PropTypes.string,
-  placeholder: PropTypes.string
+  placeholder: PropTypes.string,
+  max: PropTypes.number
 };
 
 export default NodeUpRetryCountFormItem;
