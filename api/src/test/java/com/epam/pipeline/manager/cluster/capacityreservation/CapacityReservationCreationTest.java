@@ -64,13 +64,24 @@ import static org.mockito.Mockito.when;
 @Transactional
 public class CapacityReservationCreationTest extends AbstractManagerTest {
 
-    private static final String POOL_NAME = "p5 reserved pool";
-    private static final String INSTANCE_TYPE = "p5.48xlarge";
+    private static final String POOL_NAME = "g5 reserved pool";
+    /**
+     * A G-family type, because AWS reserves future-dated capacity for the C, M, R, I, T and G families only - a
+     * P-family request would be refused before it reached the provider.
+     */
+    private static final String INSTANCE_TYPE = "g5.48xlarge";
     private static final long REGION_ID = 1L;
     private static final int INSTANCE_DISK = 100;
     private static final int INSTANCE_COUNT = 2;
-    private static final int DURATION_HOURS = 24;
-    private static final int WINDOW_DAYS = 10;
+    /**
+     * Within AWS's limits for a future-dated request: at least 5 days of lead time, and a commitment of at least
+     * 14 days that still fits inside the window.
+     */
+    private static final int DURATION_HOURS = 14 * 24;
+    private static final int LEAD_DAYS = 7;
+    private static final int WINDOW_DAYS = 30;
+    /** Well inside AWS's minimum commitment, so a request asking for it must be refused. */
+    private static final int ONE_DAY_HOURS = 24;
     private static final String OWNER = "requester";
     private static final int CALLER_CPU_RESERVED = 4;
 
@@ -259,6 +270,104 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
+     * AWS will not assess a future-dated request for a date less than 5 days out, so accepting one here would
+     * approve a request that is certain to be refused - after the approval, and after the wait.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectAStartDateTooSoonForTheProvider() {
+        final NodePoolVO vo = reservationPoolVO();
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(2);
+        vo.getCapacityReservationRequest().setRequestedStartDate(start);
+        vo.getCapacityReservationRequest().setRequestedEndDate(start.plusDays(WINDOW_DAYS));
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * The other end of the same window: AWS looks no further ahead than 120 days.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectAStartDateTooFarAheadForTheProvider() {
+        final NodePoolVO vo = reservationPoolVO();
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(200);
+        vo.getCapacityReservationRequest().setRequestedStartDate(start);
+        vo.getCapacityReservationRequest().setRequestedEndDate(start.plusDays(WINDOW_DAYS));
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * The duration is the commitment, and AWS holds the requester to at least 14 days of it. Rejecting a shorter
+     * one is deliberately not the same as quietly rounding it up: that would bill two weeks for a request nobody
+     * made.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectADurationShorterThanTheProvidersMinimumCommitment() {
+        final NodePoolVO vo = reservationPoolVO();
+        vo.getCapacityReservationRequest().setDurationHours(ONE_DAY_HOURS);
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * AWS reserves future-dated capacity for the C, M, R, I, T and G families only - which notably excludes the P
+     * families, the obvious choice for GPU work. Refusing here is the difference between an immediate, explicable
+     * error and a provider rejection days later.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectAnInstanceFamilyTheProviderWillNotReserve() {
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setInstanceType("p5.48xlarge");
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * The family is the letters before the first digit, not the first letter: {@code trn1} is Trainium and is not
+     * the {@code t} family, so matching on the initial alone would let it through to be refused by AWS.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldNotMistakeALongerFamilyPrefixForASupportedOne() {
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setInstanceType("trn1.32xlarge");
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * The supported families are the provider's list and it changes, so an administrator can widen it without
+     * waiting for a release.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldAllowAFamilyAnAdministratorHasEnabled() {
+        setInstanceFamilies("c,m,r,i,t,g,p");
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setInstanceType("p5.48xlarge");
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    /**
+     * An operating system AWS does not reserve capacity for cannot be satisfied at any date.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectAnInstancePlatformTheProviderDoesNotKnow() {
+        final NodePoolVO vo = reservationPoolVO();
+        vo.getCapacityReservationRequest().setInstancePlatform("Plan 9");
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
      * A matching AUTO_APPROVE policy is how an administrator pre-authorizes a <em>shape</em> of request - this
      * instance family, under this duration - rather than approving each one by hand.
      */
@@ -315,9 +424,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
     }
 
-    /** Matches the request: its instance type is p5.48xlarge. */
+    /** Matches the request: its instance type is g5.48xlarge. */
     private static String autoApproveOnInstanceType() {
-        return policy("AUTO_APPROVE", logical("instance.type", "=", "p5.*"));
+        return policy("AUTO_APPROVE", logical("instance.type", "=", "g5.*"));
     }
 
     /** Also matches it: the requested duration is 24 hours. */
@@ -344,6 +453,13 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(preference));
     }
 
+    private void setInstanceFamilies(final String families) {
+        final Preference preference =
+                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES.toPreference();
+        preference.setValue(families);
+        preferenceManager.update(Collections.singletonList(preference));
+    }
+
     private CapacityReservationStatus statusOf(final NodePool pool) {
         return reservationDao.findByNodePoolId(pool.getId())
                 .orElseThrow(AssertionError::new)
@@ -365,7 +481,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final NodePoolVO vo = basePoolVO();
         final CapacityReservationRequest request = new CapacityReservationRequest();
         request.setReservationType(CapacityReservationType.FUTURE_DATED);
-        final LocalDateTime start = DateUtils.nowUTC().plusDays(1);
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(LEAD_DAYS);
         request.setRequestedStartDate(start);
         request.setRequestedEndDate(start.plusDays(WINDOW_DAYS));
         request.setDurationHours(DURATION_HOURS);

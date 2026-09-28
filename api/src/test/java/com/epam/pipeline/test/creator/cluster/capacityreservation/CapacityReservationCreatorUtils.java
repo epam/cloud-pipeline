@@ -26,19 +26,30 @@ import java.time.temporal.ChronoUnit;
 
 public final class CapacityReservationCreatorUtils {
 
-    public static final String RESERVATION_NAME = "p5 reservation";
+    public static final String RESERVATION_NAME = "g5 reservation";
     public static final long REGION_ID = 1L;
-    public static final String INSTANCE_TYPE = "p5.48xlarge";
+    /** G family: the P families cannot be reserved with a future-dated reservation. */
+    public static final String INSTANCE_TYPE = "g5.48xlarge";
     public static final int INSTANCE_COUNT = 2;
-    public static final int DURATION_HOURS = 48;
+    /**
+     * 14 days, the shortest commitment AWS accepts for a future-dated reservation. Fixtures use a realistic value
+     * so they exercise requests the provider would actually take.
+     */
+    public static final int DURATION_HOURS = 14 * 24;
     public static final String INSTANCE_PLATFORM = "Linux/UNIX";
     public static final String OWNER = "user";
     public static final String AVAILABILITY_ZONE = "us-east-1c";
     public static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     public static final String CLIENT_TOKEN = "cp-cr-1-0";
     public static final String STATUS_REASON = "Capacity unavailable for the requested date";
-    private static final int REQUEST_LEAD_DAYS = 1;
-    private static final int REQUEST_WINDOW_DAYS = 30;
+    /** 10 days: less than DURATION_HOURS, so the granted and requested values cannot be confused. */
+    public static final long GRANTED_COMMITMENT_SECONDS = 864000L;
+    /**
+     * AWS assesses a future-dated request only 5 to 120 days ahead, so a fixture asking for tomorrow would be
+     * rejected before it reached the provider.
+     */
+    private static final int REQUEST_LEAD_DAYS = 7;
+    private static final int REQUEST_WINDOW_DAYS = 60;
 
     private CapacityReservationCreatorUtils() {
         //no op
@@ -92,6 +103,9 @@ public final class CapacityReservationCreatorUtils {
         reservation.setStartDate(reservation.getRequestedStartDate());
         reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
         reservation.setAttempt(1);
+        // Deliberately shorter than DURATION_HOURS: a provider may grant less than was asked for, and the column
+        // exists precisely to keep the two apart.
+        reservation.setGrantedCommitmentSeconds(GRANTED_COMMITMENT_SECONDS);
         return reservation;
     }
 }

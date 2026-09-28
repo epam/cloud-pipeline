@@ -146,7 +146,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
         END_DATE,
         DURATION_HOURS,
         INSTANCE_PLATFORM,
-        ATTEMPT;
+        ATTEMPT,
+        GRANTED_COMMITMENT_SECONDS;
 
         static MapSqlParameterSource getParameters(final CapacityReservation reservation) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -180,6 +181,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                     Optional.ofNullable(reservation.getInstancePlatform())
                             .orElse(CapacityReservation.DEFAULT_INSTANCE_PLATFORM));
             params.addValue(ATTEMPT.name(), reservation.getAttempt());
+            params.addValue(GRANTED_COMMITMENT_SECONDS.name(),
+                    reservation.getGrantedCommitmentSeconds());
             return params;
         }
 
@@ -211,6 +214,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 applyInteger(rs, DURATION_HOURS.name(), reservation::setDurationHours);
                 reservation.setInstancePlatform(rs.getString(INSTANCE_PLATFORM.name()));
                 reservation.setAttempt(rs.getInt(ATTEMPT.name()));
+                applyLong(rs, GRANTED_COMMITMENT_SECONDS.name(),
+                        reservation::setGrantedCommitmentSeconds);
                 return reservation;
             };
         }

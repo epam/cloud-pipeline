@@ -123,4 +123,14 @@ public class CapacityReservation {
      * Incremented for every deliberately new candidate submitted, and feeds {@code clientToken}.
      */
     private int attempt;
+
+    /**
+     * The commitment the cloud provider actually granted, in seconds, once it has assessed the request - as opposed
+     * to {@link #durationHours}, which is what was asked for.
+     *
+     * <p>They can differ: AWS may decide it can support a shorter commitment than requested and schedule the
+     * reservation on that basis, which leaves the requester committed for less time than they asked for. Null until
+     * the provider has decided, and null for a provider that has no such concept.
+     */
+    private Long grantedCommitmentSeconds;
 }

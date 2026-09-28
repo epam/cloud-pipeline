@@ -59,4 +59,10 @@ public class CloudCapacityReservation {
      * summarised, because a capacity refusal is usually only actionable in the provider's own terms.
      */
     private String stateReason;
+
+    /**
+     * The commitment the provider granted, in seconds, which can be shorter than the one requested. Null until it
+     * has decided, and null for a provider with no commitment concept.
+     */
+    private Long grantedCommitmentSeconds;
 }

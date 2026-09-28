@@ -59,6 +59,8 @@ public class CapacityReservationMonitorCore {
      */
     protected static final int SLIDE_WINDOW_STEP_DAYS = 1;
 
+    private static final int SECONDS_PER_HOUR = 3600;
+
     private final CapacityReservationService reservationService;
     private final CapacityReservationStatusService statusService;
     private final CapacityReservationCloudFacade cloudFacade;
@@ -165,6 +167,8 @@ public class CapacityReservationMonitorCore {
         final CloudCapacityReservationState state = cloud.getState();
         log.debug("Capacity reservation {} is {} at its provider", reservation.getId(), state);
 
+        recordGrantedCommitment(reservation, cloud);
+
         switch (state) {
             case ACTIVE:
                 activate(reservation, cloud);
@@ -179,8 +183,14 @@ public class CapacityReservationMonitorCore {
                 }
                 break;
             case UNSUPPORTED:
-                // Not a refusal of the request, only of this date. Try the next one the requester allowed.
+                // Not a refusal of the request, only of this date, and nothing was ever delivered - so the next
+                // candidate can be asked for directly.
                 slideOrFail(reservation, cloud.getStateReason());
+                break;
+            case DELAYED:
+                // The provider still owes us this reservation, so it has to be handed back before another is
+                // asked for - otherwise we would hold two.
+                releaseAndSlide(reservation, cloud.getStateReason());
                 break;
             case FAILED:
                 statusService.transition(reservation, CapacityReservationStatus.FAILED, cloud.getStateReason());
@@ -207,6 +217,32 @@ public class CapacityReservationMonitorCore {
         Optional.ofNullable(cloud.getAvailabilityZone()).ifPresent(reservation::setAvailabilityZone);
         statusService.transition(reservation, CapacityReservationStatus.ACTIVE, null);
         reservationService.activatePool(reservation);
+    }
+
+    /**
+     * Records what the provider committed us to, whenever it says.
+     */
+    private void recordGrantedCommitment(final CapacityReservation reservation,
+                                         final CloudCapacityReservation cloud) {
+        Optional.ofNullable(cloud.getGrantedCommitmentSeconds())
+                .filter(granted -> !granted.equals(reservation.getGrantedCommitmentSeconds()))
+                .ifPresent(granted -> {
+                    if (reservation.getDurationHours() != null
+                            && granted < (long) reservation.getDurationHours() * SECONDS_PER_HOUR) {
+                        log.warn("Capacity reservation {} was granted a commitment of {}s, shorter than the {}h "
+                                        + "requested", reservation.getId(), granted,
+                                reservation.getDurationHours());
+                    }
+                    reservation.setGrantedCommitmentSeconds(granted);
+                });
+    }
+
+    /**
+     * Gives a reservation back to the provider and then asks for another date.
+     */
+    private void releaseAndSlide(final CapacityReservation reservation, final String reason) {
+        cloudFacade.cancel(reservation);
+        slideOrFail(reservation, reason);
     }
 
     /**
@@ -250,12 +286,20 @@ public class CapacityReservationMonitorCore {
         }
     }
 
+    /**
+     * Ends the reservation once its period is over - at the provider as well as in the database.
+     *
+     * <p>The cancel goes first, and an unchanged status is the deliberate consequence of it failing - a reservation
+     * left in {@code FINALIZING} is retried on the next cycle, whereas marking it {@code FINISHED} first would
+     * abandon a paid reservation that nothing would ever look at again.
+     */
     @Transactional
     void finishIfEnded(final CapacityReservation reservation) {
         if (reservation.getEndDate() == null) {
             return;
         }
         if (!DateUtils.nowUTC().isBefore(reservation.getEndDate())) {
+            cloudFacade.cancel(reservation);
             statusService.transition(reservation, CapacityReservationStatus.FINISHED, null);
             reservationService.deactivatePool(reservation);
         }
