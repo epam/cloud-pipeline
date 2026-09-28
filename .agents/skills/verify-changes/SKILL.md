@@ -22,6 +22,9 @@ rather than a complete one.
 and half a day, and belong to post-merge CI or to release time by hand. Never escalate to a heavier
 check because a lighter one was unavailable.
 
+A change **inside** `e2e/gui` is the exception: the tests it touches are the check it owes. Read
+`e2e/gui/AGENTS.md` first.
+
 **A partial toolchain is the normal case here.** Most contributors have one language's tooling and not
 the others, so you satisfy a check by running it *or* by recording that the tool was absent. A declared
 skip is a correct outcome; a silent one is not.
@@ -51,5 +54,8 @@ and commit what it regenerates.
 **Any `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.cursor/`, `.github/instructions/`, `.agents/`** —
 `.agents/skills/modifying-instructions/scripts/verify-instructions.sh`
 
+**`e2e/gui/`** — `e2e/gui/AGENTS.md`, and its own `e2e/gui/gradlew`: a standalone build, so no root
+`:<module>:` task reaches it.
+
 Where that search finds nothing, nothing else will check the path later either — `deploy/`, `docs/`
-and `e2e/` are the large cases — so reading the diff is the verification.
+and the rest of `e2e/` are the large cases — so reading the diff is the verification.
