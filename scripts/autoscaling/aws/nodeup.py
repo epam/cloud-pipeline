@@ -458,7 +458,8 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
                  availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network,
-                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load):
+                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load,
+                 capacity_reservation_id=None):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
@@ -469,14 +470,16 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
-                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
+                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags,
+                                                capacity_reservation_id)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, pool_id, user_data_script, num_rep, time_rep, swap_size,
                            kube_client, instance_additional_spec, availability_zone, security_groups, subnet,
-                           network_interface, is_dedicated, performance_network, input_tags):
+                           network_interface, is_dedicated, performance_network, input_tags,
+                           capacity_reservation_id=None):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = instance_additional_spec if instance_additional_spec else {}
@@ -551,6 +554,25 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                 'Tenancy': "dedicated"
             }
         })
+
+    if capacity_reservation_id:
+        # A reservation created with TARGETED match criteria is consumed only by an instance that names it.
+        # Without this the instance launches as ordinary on-demand while the reserved capacity sits idle and
+        # paid for - no error, just waste.
+        additional_args.update({
+            'CapacityReservationSpecification': {
+                'CapacityReservationTarget': {
+                    'CapacityReservationId': capacity_reservation_id
+                }
+            }
+        })
+        # The zone still has to match: a reservation lives in exactly one. Checked again here because this
+        # function is also reachable programmatically, not only through main().
+        if subnet_id is None and not availability_zone:
+            raise RuntimeError('Capacity reservation {} was requested without an availability zone. A reservation exists in exactly one zone, so an instance launched elsewhere would not consume it - it would run as ordinary on-demand while the reserved capacity sits idle and paid for. Refusing to launch.'.format(capacity_reservation_id))
+        pipe_log('- Capacity reservation {} will be targeted (AZ {}, subnet {})'
+                 .format(capacity_reservation_id, availability_zone, subnet_id))
+
     if 'MetadataOptions' not in additional_args:
         additional_args.update({'MetadataOptions': {
             'HttpTokens': 'optional',
@@ -1586,6 +1608,7 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--availability_zone", type=str, required=False)
+    parser.add_argument("--capacity_reservation_id", type=str, required=False)
     parser.add_argument("--network_interface", type=str, required=False)
     parser.add_argument("--performance_network", type=bool, required=False)
     parser.add_argument("--subnet_id", type=str, required=False)
@@ -1624,6 +1647,13 @@ def main():
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     availability_zone = args.availability_zone
+    capacity_reservation_id = args.capacity_reservation_id
+
+    # Refuse rather than risk it: launching into the wrong zone costs money silently, and a failed node is a
+    # visible, retryable event whereas a node quietly not consuming its reservation is neither.
+    if capacity_reservation_id and not availability_zone:
+        raise RuntimeError('Capacity reservation {} was requested without an availability zone. A reservation exists in exactly one zone, so an instance launched elsewhere would not consume it - it would run as ordinary on-demand while the reserved capacity sits idle and paid for. Refusing to launch.'.format(capacity_reservation_id))
+
     network_interface = args.network_interface
     performance_network = args.performance_network
     security_groups = args.security_groups
@@ -1736,7 +1766,8 @@ def main():
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
                                           availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags,
-                                          docker_data_root, docker_storage_driver, skip_system_images_load)
+                                          docker_data_root, docker_storage_driver, skip_system_images_load,
+                                          capacity_reservation_id)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 

@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.cluster.pool;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
@@ -85,6 +86,14 @@ public class NodePoolController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<NodePool> delete(final @PathVariable Long id) {
         return Result.success(apiService.delete(id));
+    }
+
+    @PostMapping("/filter")
+    @ApiOperation(value = "Returns node pools matching the given filter",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<NodePool>> filter(final @RequestBody NodePoolFilterVO filter) {
+        return Result.success(apiService.filter(filter));
     }
 
     @PostMapping("/usage")

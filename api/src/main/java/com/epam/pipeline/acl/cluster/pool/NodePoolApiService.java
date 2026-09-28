@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.cluster.pool;
 
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
@@ -44,6 +45,14 @@ public class NodePoolApiService {
     @PostFilter(AclExpressions.NODE_POOL_READ_FILTER)
     public List<NodePool> loadAll(final boolean loadStatus) {
         return nodeManager.loadAll(loadStatus);
+    }
+
+    /**
+     * Filtered the same way {@code loadAll} is: a narrower query must not be a way to see more.
+     */
+    @PostFilter(AclExpressions.NODE_POOL_READ_FILTER)
+    public List<NodePool> filter(final NodePoolFilterVO filter) {
+        return nodeManager.filter(filter);
     }
 
     @PostAuthorize(AclExpressions.NODE_POOL_RETURN_OBJECT_READ)

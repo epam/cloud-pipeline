@@ -1,0 +1,63 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.manager.cluster.capacityreservation.cloud;
+
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
+import com.epam.pipeline.entity.region.CloudProvider;
+
+import java.util.Optional;
+
+/**
+ * Everything the reservation lifecycle needs from a cloud provider. One implementation per provider, selected by
+ * {@link #getProvider()}.
+ *
+ * <p>Implementations are the only code in the platform that calls a provider's reservation API. The monitor
+ * drives them and never sees a provider's own types or state names - see
+ * {@link com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState}.
+ */
+public interface CapacityReservationCloudService {
+
+    CloudProvider getProvider();
+
+    /**
+     * Asks the provider to hold capacity from a future date.
+     *
+     * <p>Spends money, so it must be idempotent with respect to {@code reservation.clientToken}: called twice
+     * with the same token it must yield the one reservation, not two. A caller that cannot get a response - a
+     * timeout, a restart mid-call - relies on that, and on {@link #findByClientToken} to find out what happened.
+     */
+    CloudCapacityReservation createFutureDated(CapacityReservation reservation);
+
+    /**
+     * The provider's current view of a reservation we already hold.
+     */
+    CloudCapacityReservation describe(CapacityReservation reservation);
+
+    /**
+     * Gives up a reservation. May incur a cancellation charge during a commitment period.
+     */
+    void cancel(CapacityReservation reservation);
+
+    /**
+     * Finds a reservation created with the given idempotency token, if one exists.
+     *
+     * <p>This is how a submission that may or may not have landed is reconciled: rather than retrying the
+     * purchase and risking a second one, the caller asks whether the first already succeeded.
+     */
+    Optional<CloudCapacityReservation> findByClientToken(CapacityReservation reservation, String clientToken);
+}

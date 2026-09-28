@@ -654,7 +654,7 @@ public class SystemPreferences {
     public static final ObjectPreference<CapacityReservationMonitorSettings>
             CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(
                     "cluster.capacity.reservation.monitor.settings",
-                    new CapacityReservationMonitorSettings(1, 1),
+                    new CapacityReservationMonitorSettings(1),
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
                     isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {}), true);
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",

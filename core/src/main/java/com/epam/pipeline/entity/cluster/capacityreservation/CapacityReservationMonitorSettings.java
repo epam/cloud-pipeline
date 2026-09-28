@@ -30,13 +30,6 @@ import lombok.NoArgsConstructor;
 public class CapacityReservationMonitorSettings {
 
     /**
-     * How far to move a future-dated start date forward, in days, when the cloud provider reports the
-     * current candidate is not available. A small step over a wide window searches thoroughly but can take
-     * a long time to exhaust, since each candidate costs a provider assessment cycle.
-     */
-    private Integer slideWindowStepDays;
-
-    /**
      * How long before its end date a reservation is flagged as finalizing, so the people with work on the
      * pool are warned while they can still act.
      */
