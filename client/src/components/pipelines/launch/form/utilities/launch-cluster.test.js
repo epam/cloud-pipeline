@@ -16,6 +16,7 @@
 
 import {
   getNodeUpRetryCountSkippedParameters,
+  getNodeUpRetryCountParameter,
   getAllSkippedSystemParametersList,
   getSkippedSystemParametersList
 } from './launch-cluster';
@@ -36,15 +37,57 @@ describe('getNodeUpRetryCountSkippedParameters', () => {
   });
 });
 
+describe('getNodeUpRetryCountParameter', () => {
+  const preferences = {allowNodeUpRetryCount: true, defaultNodeUpRetryCount: 5};
+
+  it('is undefined when the preference is off', () => {
+    expect(getNodeUpRetryCountParameter('10', {...preferences, allowNodeUpRetryCount: false}))
+      .toBeUndefined();
+  });
+
+  it('is undefined when preferences are missing', () => {
+    expect(getNodeUpRetryCountParameter('10', undefined)).toBeUndefined();
+  });
+
+  it('is undefined for an empty value', () => {
+    expect(getNodeUpRetryCountParameter('', preferences)).toBeUndefined();
+    expect(getNodeUpRetryCountParameter(undefined, preferences)).toBeUndefined();
+    expect(getNodeUpRetryCountParameter(null, preferences)).toBeUndefined();
+  });
+
+  it('is undefined for zero, since it is not a positive integer', () => {
+    expect(getNodeUpRetryCountParameter('0', preferences)).toBeUndefined();
+    expect(getNodeUpRetryCountParameter('00', preferences)).toBeUndefined();
+  });
+
+  it('is undefined for a non-integer value', () => {
+    expect(getNodeUpRetryCountParameter('abc', preferences)).toBeUndefined();
+    expect(getNodeUpRetryCountParameter('-1', preferences)).toBeUndefined();
+  });
+
+  it('is undefined when the value equals the preference default', () => {
+    expect(getNodeUpRetryCountParameter('5', preferences)).toBeUndefined();
+  });
+
+  it('returns the parameter config when the value overrides the default', () => {
+    expect(getNodeUpRetryCountParameter('10', preferences)).toEqual({
+      type: 'int',
+      required: true,
+      value: 10
+    });
+  });
+});
+
 describe('getAllSkippedSystemParametersList', () => {
   it('does not skip CP_NODEUP_RETRY_COUNT when the preference is off', () => {
     expect(getAllSkippedSystemParametersList({allowNodeUpRetryCount: false}))
       .not.toContain(CP_NODEUP_RETRY_COUNT);
   });
 
-  it('skips CP_NODEUP_RETRY_COUNT when the preference is on', () => {
+  it('does not skip CP_NODEUP_RETRY_COUNT when the preference is on, since this list has ' +
+    'no dedicated field for it', () => {
     expect(getAllSkippedSystemParametersList({allowNodeUpRetryCount: true}))
-      .toContain(CP_NODEUP_RETRY_COUNT);
+      .not.toContain(CP_NODEUP_RETRY_COUNT);
   });
 });
 
@@ -59,16 +102,18 @@ describe('getSkippedSystemParametersList', () => {
     expect(getSkippedSystemParametersList(controller)).not.toContain(CP_NODEUP_RETRY_COUNT);
   });
 
-  it('skips CP_NODEUP_RETRY_COUNT when the preference is on, without a cluster', () => {
+  it('does not skip CP_NODEUP_RETRY_COUNT when the preference is on, without a cluster, ' +
+    'since this list has no dedicated field for it', () => {
     const controller = buildController({allowNodeUpRetryCount: true});
-    expect(getSkippedSystemParametersList(controller)).toContain(CP_NODEUP_RETRY_COUNT);
+    expect(getSkippedSystemParametersList(controller)).not.toContain(CP_NODEUP_RETRY_COUNT);
   });
 
-  it('skips CP_NODEUP_RETRY_COUNT when the preference is on, with an autoscaled cluster', () => {
+  it('does not skip CP_NODEUP_RETRY_COUNT when the preference is on, with an autoscaled ' +
+    'cluster, since this list has no dedicated field for it', () => {
     const controller = buildController(
       {allowNodeUpRetryCount: true},
       {launchCluster: true, autoScaledCluster: true}
     );
-    expect(getSkippedSystemParametersList(controller)).toContain(CP_NODEUP_RETRY_COUNT);
+    expect(getSkippedSystemParametersList(controller)).not.toContain(CP_NODEUP_RETRY_COUNT);
   });
 });

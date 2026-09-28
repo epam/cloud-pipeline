@@ -143,6 +143,31 @@ export function getNodeUpRetryCountSkippedParameters (preferences) {
     : [];
 }
 
+export const NODE_UP_RETRY_COUNT_PATTERN = /^[1-9]\d*$/;
+
+export function getNodeUpRetryCountParameter (rawValue, preferences) {
+  if (!preferences || !preferences.allowNodeUpRetryCount) {
+    return undefined;
+  }
+  if (rawValue === undefined || rawValue === null || `${rawValue}`.trim() === '') {
+    return undefined;
+  }
+  const value = `${rawValue}`.trim();
+  if (!NODE_UP_RETRY_COUNT_PATTERN.test(value)) {
+    return undefined;
+  }
+  const numeric = +value;
+  const defaultValue = +preferences.defaultNodeUpRetryCount;
+  if (!Number.isNaN(defaultValue) && numeric === defaultValue) {
+    return undefined;
+  }
+  return {
+    type: 'int',
+    required: true,
+    value: numeric
+  };
+}
+
 export function getSkippedSystemParametersList (controller) {
   if (controller && controller.state && controller.state.launchCluster &&
     (
@@ -165,8 +190,7 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_RESCHEDULE_RUN,
       ...CP_CAP_FS_PARAMETERS,
       ...getRunCapabilitiesSkippedParameters(),
-      ...getGPUScalingSkippedParameters(controller.props.preferences),
-      ...getNodeUpRetryCountSkippedParameters(controller.props.preferences)
+      ...getGPUScalingSkippedParameters(controller.props.preferences)
     ];
   }
   return [
@@ -174,10 +198,7 @@ export function getSkippedSystemParametersList (controller) {
     CP_CAP_AUTOSCALE_WORKERS,
     CP_CAP_RESCHEDULE_RUN,
     ...CP_CAP_FS_PARAMETERS,
-    ...getRunCapabilitiesSkippedParameters(),
-    ...getNodeUpRetryCountSkippedParameters(controller && controller.props
-      ? controller.props.preferences
-      : undefined)
+    ...getRunCapabilitiesSkippedParameters()
   ];
 }
 
@@ -194,8 +215,7 @@ export function getAllSkippedSystemParametersList (preferences) {
     CP_CAP_AUTOSCALE_PRICE_TYPE,
     ...CP_CAP_FS_PARAMETERS,
     ...getRunCapabilitiesSkippedParameters(),
-    ...getGPUScalingSkippedParameters(preferences),
-    ...getNodeUpRetryCountSkippedParameters(preferences)
+    ...getGPUScalingSkippedParameters(preferences)
   ];
 }
 
