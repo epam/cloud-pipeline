@@ -18,9 +18,12 @@ package com.epam.pipeline.acl.security;
 
 import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -31,11 +34,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.List;
+
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getAclSecuredEntry;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getEntityPermissionVO;
 import static com.epam.pipeline.test.creator.security.PermissionCreatorUtils.getPermissionGrantVO;
+import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -48,6 +55,8 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
     private final EntityPermissionVO entityPermissionVO = getEntityPermissionVO();
     private final S3bucketDataStorage s3bucket = getS3bucketDataStorage(ID, SIMPLE_USER);
     private final S3bucketDataStorage anotherS3bucket = getS3bucketDataStorage(ID, ANOTHER_SIMPLE_USER);
+    private final S3bucketDataStorage anotherS3bucket2 = getS3bucketDataStorage(ID_2, ANOTHER_SIMPLE_USER);
+    private final PipelineUser targetUser = getPipelineUser(ANOTHER_SIMPLE_USER, ID);
 
     @Autowired
     private GrantPermissionManager spyPermissionManager;
@@ -296,5 +305,83 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class,
             () -> aclPermissionApiService.loadEntityPermission(ID, AclClass.DATA_STORAGE));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldLoadUserEntitiesPermissionsOfAllEntitiesForAdmin() {
+        final List<EntityPermission> permissions = mutableListOf(
+                getEntityPermission(anotherS3bucket), getEntityPermission(anotherS3bucket2));
+        doReturn(permissions).when(spyPermissionManager).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+
+        assertThat(aclPermissionApiService.loadUserEntitiesPermissions(ID, DATA_STORAGE))
+                .extracting(EntityPermission::getEntity)
+                .containsExactly(anotherS3bucket, anotherS3bucket2);
+    }
+
+    @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldLoadUserEntitiesPermissionsOfReadableEntitiesOnlyForNonAdmin() {
+        initAclEntity(targetUser, AclPermission.READ);
+        initAclEntity(anotherS3bucket, AclPermission.READ);
+        initAclEntity(anotherS3bucket2);
+        final List<EntityPermission> permissions = mutableListOf(
+                getEntityPermission(anotherS3bucket), getEntityPermission(anotherS3bucket2));
+        doReturn(permissions).when(spyPermissionManager).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThat(aclPermissionApiService.loadUserEntitiesPermissions(ID, DATA_STORAGE))
+                .extracting(EntityPermission::getEntity)
+                .containsExactly(anotherS3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = USER_READER_ROLE)
+    public void shouldLoadUserEntitiesPermissionsOfReadableEntitiesOnlyForUserReader() {
+        initAclEntity(anotherS3bucket, AclPermission.READ);
+        initAclEntity(anotherS3bucket2);
+        final List<EntityPermission> permissions = mutableListOf(
+                getEntityPermission(anotherS3bucket), getEntityPermission(anotherS3bucket2));
+        doReturn(permissions).when(spyPermissionManager).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThat(aclPermissionApiService.loadUserEntitiesPermissions(ID, DATA_STORAGE))
+                .extracting(EntityPermission::getEntity)
+                .containsExactly(anotherS3bucket);
+    }
+
+    @Test
+    @WithMockUser(SIMPLE_USER)
+    public void shouldDenyLoadUserEntitiesPermissionsWithoutReadPermissionOnUser() {
+        initAclEntity(targetUser);
+        initAclEntity(anotherS3bucket, AclPermission.READ);
+        doReturn(mutableListOf(getEntityPermission(anotherS3bucket)))
+                .when(spyPermissionManager).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThrows(AccessDeniedException.class,
+            () -> aclPermissionApiService.loadUserEntitiesPermissions(ID, DATA_STORAGE));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER, roles = STORAGE_READER_ROLE)
+    public void shouldLoadUserEntitiesPermissionsOfAllStoragesForStorageReader() {
+        initAclEntity(targetUser, AclPermission.READ);
+        initAclEntity(anotherS3bucket);
+        initAclEntity(anotherS3bucket2);
+        final List<EntityPermission> permissions = mutableListOf(
+                getEntityPermission(anotherS3bucket), getEntityPermission(anotherS3bucket2));
+        doReturn(permissions).when(spyPermissionManager).loadUserEntitiesPermissions(ID, DATA_STORAGE);
+        mockAuthUser(SIMPLE_USER);
+
+        assertThat(aclPermissionApiService.loadUserEntitiesPermissions(ID, DATA_STORAGE))
+                .extracting(EntityPermission::getEntity)
+                .containsExactly(anotherS3bucket, anotherS3bucket2);
+    }
+
+    private EntityPermission getEntityPermission(final AbstractSecuredEntity entity) {
+        final EntityPermission entityPermission = new EntityPermission();
+        entityPermission.setEntity(entity);
+        return entityPermission;
     }
 }
