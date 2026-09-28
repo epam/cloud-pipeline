@@ -17,6 +17,8 @@
 import {
   getNodeUpRetryCountSkippedParameters,
   getNodeUpRetryCountParameter,
+  getNodeUpRetryCountFieldValue,
+  nodeUpRetryCountChanged,
   getAllSkippedSystemParametersList,
   getSkippedSystemParametersList
 } from './launch-cluster';
@@ -65,16 +67,50 @@ describe('getNodeUpRetryCountParameter', () => {
     expect(getNodeUpRetryCountParameter('-1', preferences)).toBeUndefined();
   });
 
-  it('is undefined when the value equals the preference default', () => {
-    expect(getNodeUpRetryCountParameter('5', preferences)).toBeUndefined();
+  it('returns the parameter config even when the value equals the preference default', () => {
+    expect(getNodeUpRetryCountParameter('5', preferences)).toEqual({
+      type: 'int',
+      required: false,
+      value: 5
+    });
   });
 
-  it('returns the parameter config when the value overrides the default', () => {
-    expect(getNodeUpRetryCountParameter('10', preferences)).toEqual({
+  it('returns the parameter config for a value that differs from the default', () => {
+    expect(getNodeUpRetryCountParameter(' 10 ', preferences)).toEqual({
       type: 'int',
-      required: true,
+      required: false,
       value: 10
     });
+  });
+});
+
+describe('getNodeUpRetryCountFieldValue', () => {
+  it('is undefined for a value that is not set', () => {
+    expect(getNodeUpRetryCountFieldValue(undefined)).toBeUndefined();
+    expect(getNodeUpRetryCountFieldValue(null)).toBeUndefined();
+    expect(getNodeUpRetryCountFieldValue(' ')).toBeUndefined();
+  });
+
+  it('is the trimmed string for a stored value', () => {
+    expect(getNodeUpRetryCountFieldValue(7)).toBe('7');
+    expect(getNodeUpRetryCountFieldValue(' 7 ')).toBe('7');
+  });
+});
+
+describe('nodeUpRetryCountChanged', () => {
+  it('is false when neither value is set', () => {
+    expect(nodeUpRetryCountChanged(undefined, '')).toBe(false);
+    expect(nodeUpRetryCountChanged(null, undefined)).toBe(false);
+  });
+
+  it('is false when the field keeps the stored value', () => {
+    expect(nodeUpRetryCountChanged(7, '7')).toBe(false);
+  });
+
+  it('is true when a value is set, changed or cleared', () => {
+    expect(nodeUpRetryCountChanged(undefined, '5')).toBe(true);
+    expect(nodeUpRetryCountChanged(7, '8')).toBe(true);
+    expect(nodeUpRetryCountChanged(7, undefined)).toBe(true);
   });
 });
 
