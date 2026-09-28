@@ -13,6 +13,7 @@ import SystemParametersBrowser from '../../dialogs/SystemParametersBrowser';
 import {
   getSkippedParameters as getGPUScalingSkippedParameters
 } from '../utilities/enable-gpu-scaling';
+import {getNodeUpRetryCountSkippedParameters} from '../utilities/launch-cluster';
 
 @inject('preferences')
 @observer
@@ -42,7 +43,8 @@ class AddParameterButton extends React.Component {
     };
     const skipped = parameters.map((p) => p.name)
       .concat(reservedParameters)
-      .concat(preferences.loaded ? getGPUScalingSkippedParameters(preferences) : []);
+      .concat(preferences.loaded ? getGPUScalingSkippedParameters(preferences) : [])
+      .concat(preferences.loaded ? getNodeUpRetryCountSkippedParameters(preferences) : []);
     return (
       <Button
         id="add-system-parameter-button"

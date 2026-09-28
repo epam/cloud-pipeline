@@ -107,6 +107,17 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get allowNodeUpRetryCount () {
+    return true;
+    return `${this.getPreferenceValue('ui.launch.allow.nodeup.count')}` === 'true';
+  }
+
+  @computed
+  get defaultNodeUpRetryCount () {
+    return +this.getPreferenceValue('cluster.nodeup.retry.count') || 5;
+  }
+
+  @computed
   get searchEnabled () {
     return !!this.getPreferenceValue('search.elastic.host');
   }

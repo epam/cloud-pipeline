@@ -81,6 +81,13 @@ const fallbackInstanceTypesHint = (localizedStringFn) => (
   </Row>
 );
 
+const nodeUpRetryCountHint = () => (
+  <Row style={{maxWidth: 300}}>
+    Overrides, for this run only, the number of attempts to start a compute node
+    before the run fails or is rescheduled to another region.
+  </Row>
+);
+
 const diskHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
     Define <b>disk storage</b> for the selected calculation instance type.
@@ -208,6 +215,7 @@ const hints = {
   dockerImageHint,
   instanceTypeHint,
   fallbackInstanceTypesHint,
+  nodeUpRetryCountHint,
   awsRegionHint,
   runCapabilitiesHint,
   awsRegionRestrictedByToolSettingsHint,

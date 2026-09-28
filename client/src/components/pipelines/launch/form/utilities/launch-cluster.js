@@ -51,7 +51,8 @@ import {
   CP_CAP_SHARE_FS_DEPLOYMENT_TYPE,
   CP_CAP_SHARE_FS_SIZE,
   CP_CAP_SHARE_FS_THROUGHPUT,
-  CP_CAP_SHARE_FS_IOPS
+  CP_CAP_SHARE_FS_IOPS,
+  CP_NODEUP_RETRY_COUNT
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 import {
@@ -136,6 +137,12 @@ export const CLUSTER_TYPE = {
   autoScaledCluster: 2
 };
 
+export function getNodeUpRetryCountSkippedParameters (preferences) {
+  return preferences && preferences.allowNodeUpRetryCount
+    ? [CP_NODEUP_RETRY_COUNT]
+    : [];
+}
+
 export function getSkippedSystemParametersList (controller) {
   if (controller && controller.state && controller.state.launchCluster &&
     (
@@ -158,7 +165,8 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_RESCHEDULE_RUN,
       ...CP_CAP_FS_PARAMETERS,
       ...getRunCapabilitiesSkippedParameters(),
-      ...getGPUScalingSkippedParameters(controller.props.preferences)
+      ...getGPUScalingSkippedParameters(controller.props.preferences),
+      ...getNodeUpRetryCountSkippedParameters(controller.props.preferences)
     ];
   }
   return [
@@ -166,7 +174,10 @@ export function getSkippedSystemParametersList (controller) {
     CP_CAP_AUTOSCALE_WORKERS,
     CP_CAP_RESCHEDULE_RUN,
     ...CP_CAP_FS_PARAMETERS,
-    ...getRunCapabilitiesSkippedParameters()
+    ...getRunCapabilitiesSkippedParameters(),
+    ...getNodeUpRetryCountSkippedParameters(controller && controller.props
+      ? controller.props.preferences
+      : undefined)
   ];
 }
 
@@ -183,7 +194,8 @@ export function getAllSkippedSystemParametersList (preferences) {
     CP_CAP_AUTOSCALE_PRICE_TYPE,
     ...CP_CAP_FS_PARAMETERS,
     ...getRunCapabilitiesSkippedParameters(),
-    ...getGPUScalingSkippedParameters(preferences)
+    ...getGPUScalingSkippedParameters(preferences),
+    ...getNodeUpRetryCountSkippedParameters(preferences)
   ];
 }
 
