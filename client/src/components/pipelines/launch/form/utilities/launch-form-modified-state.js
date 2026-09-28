@@ -28,7 +28,8 @@ import {
 } from './launch-cluster';
 import {
   CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_LIMIT_MOUNTS
+  CP_CAP_LIMIT_MOUNTS,
+  CP_NODEUP_RETRY_COUNT
 } from './parameters';
 import {
   checkRunCapabilitiesModified,
@@ -201,6 +202,24 @@ function limitMountsCheck (form, parameters) {
     return true;
   }
   return formValue !== initial;
+}
+
+function nodeUpRetryCountCheck (form, parameters) {
+  if (!formItemInitialized(form, `${EXEC_ENVIRONMENT}.nodeUpRetryCount`)) {
+    return false;
+  }
+  const initial = parameters.parameters && parameters.parameters[CP_NODEUP_RETRY_COUNT]
+    ? parameters.parameters[CP_NODEUP_RETRY_COUNT].value
+    : undefined;
+  const isNull = o => o === null || o === undefined || `${o}`.trim() === '';
+  const formValue = form.getFieldValue(`${EXEC_ENVIRONMENT}.nodeUpRetryCount`);
+  if (isNull(formValue) && isNull(initial)) {
+    return false;
+  }
+  if (isNull(formValue) || isNull(initial)) {
+    return true;
+  }
+  return `${formValue}` !== `${initial}`;
 }
 function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
@@ -386,6 +405,8 @@ export default function (props, state, options) {
     modified(form, parameters, `${ADVANCED}.endpointName`, 'endpointName') ||
     // limit mounts check
     limitMountsCheck(form, parameters) ||
+    // node up retry count check
+    nodeUpRetryCountCheck(form, parameters) ||
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters

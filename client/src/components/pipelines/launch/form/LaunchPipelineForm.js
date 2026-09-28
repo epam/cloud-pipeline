@@ -122,6 +122,7 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_RESCHEDULE_RUN,
+  CP_NODEUP_RETRY_COUNT,
   RUN_CAPABILITIES,
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
@@ -1419,6 +1420,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: values[ADVANCED].limitMounts
         };
       }
+      if (
+        this.props.preferences.allowNodeUpRetryCount &&
+        values[EXEC_ENVIRONMENT].nodeUpRetryCount !== undefined
+      ) {
+        payload.parameters[CP_NODEUP_RETRY_COUNT] = {
+          type: 'int',
+          required: true,
+          value: +values[EXEC_ENVIRONMENT].nodeUpRetryCount
+        };
+      }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
         payload.parameters[CP_CAP_AUTOSCALE] = {
           type: 'boolean',
@@ -1646,6 +1657,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         type: 'string',
         required: false,
         value: values[ADVANCED].limitMounts
+      };
+    }
+    if (
+      this.props.preferences.allowNodeUpRetryCount &&
+      values[EXEC_ENVIRONMENT].nodeUpRetryCount !== undefined
+    ) {
+      payload.params[CP_NODEUP_RETRY_COUNT] = {
+        type: 'int',
+        required: true,
+        value: +values[EXEC_ENVIRONMENT].nodeUpRetryCount
       };
     }
     const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
@@ -3093,6 +3114,46 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             displayRegion={this.instanceTypesMergedForRegions}
             showReservationTag={!this.props.detached}
           />
+        )}
+      </FormItem>
+    );
+  };
+
+  renderNodeUpRetryCountFormItem = () => {
+    if (this.state.fireCloudMethodName) {
+      return undefined;
+    }
+    if (!this.props.preferences.allowNodeUpRetryCount) {
+      return undefined;
+    }
+    const disabled = this.props.readOnly && !this.props.canExecute;
+    const existingValue = this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`);
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItem, 'nodeUpRetryCount')}
+        {...this.formItemLayout}
+        label="Node up retry count"
+        required
+        hasFeedback
+      >
+        {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('nodeUpRetryCount',
+          {
+            rules: [
+              {
+                pattern: /^\d+$/,
+                message: 'Please enter a valid positive integer number'
+              },
+              {
+                required: true,
+                message: 'Node up retry count is required'
+              }
+            ],
+            initialValue: existingValue !== undefined
+              ? `${existingValue}`
+              : `${this.props.preferences.defaultNodeUpRetryCount}`
+          }
+        )(
+          <Input disabled={disabled} />
         )}
       </FormItem>
     );
@@ -5417,6 +5478,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       this.renderFormItemRow(
                         this.renderFallbackInstanceTypesSelection,
                         hints.fallbackInstanceTypesHint
+                      )
+                    }
+                    {
+                      this.renderFormItemRow(
+                        this.renderNodeUpRetryCountFormItem,
+                        hints.nodeUpRetryCountHint
                       )
                     }
                     {this.renderReservationParametersSelector()}
