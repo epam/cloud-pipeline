@@ -37,6 +37,11 @@ if platform.system() == 'Windows':
     import win32api
 
 MS_IN_SEC = 1000
+DEFAULT_MOUNT_DELAY_MS = 500
+MOUNT_STOP_TIMEOUT_SEC = 5
+MOUNT_STOP_POLLING_DELAY_SEC = 0.1
+# Python 2 has no monotonic clock
+_monotonic = getattr(time, 'monotonic', time.time)
 
 
 class AbstractMount(object):
@@ -211,37 +216,78 @@ class Mount(object):
             self._wait_mount_point(mount_timeout, mount_aps_proc, mountpoint)
 
     def _wait_mount_point(self, mount_timeout, mount_aps_proc, mountpoint):
-        pooling_delay = int(os.environ.get('CP_PIPE_FUSE_MOUNT_DELAY', 500))
+        pooling_delay = self._get_mount_delay()
         max_init_try = int(mount_timeout / pooling_delay) or 1
         pooling_delay = float(pooling_delay) / MS_IN_SEC
+        # A mount point given as a symlink is mounted at its target, and the symlink itself is never a mount point
+        checked_mountpoint = mountpoint if platform.system() == 'Windows' else os.path.realpath(mountpoint)
+        mounted, fs_name = False, None
         for iteration in range(0, max_init_try):
             time.sleep(pooling_delay)
             self._check_mount_proc_is_alive(mount_aps_proc)
-            if os.path.ismount(mountpoint):
-                self._validate_fs_name(mountpoint)
-                return
-        click.echo('Failed to mount storages: timeout expired.', err=True)
-        if mount_aps_proc.poll() is None:
-            mount_aps_proc.terminate()
+            if os.path.ismount(checked_mountpoint):
+                # Something else may be mounted there already, and pipe fuse mounts on top of it a bit later
+                mounted, fs_name = True, self._get_fs_name(os.path.realpath(mountpoint))
+                if fs_name == self.PIPE_FUSE_FS_NAME:
+                    return
+        if fs_name:
+            click.echo('Failed to mount storages: unexpected FS name: {}; expected: {}.'
+                       .format(fs_name, self.PIPE_FUSE_FS_NAME), err=True)
+        elif mounted:
+            click.echo('Failed to mount storages: failed to determine FS name.', err=True)
+        else:
+            click.echo('Failed to mount storages: timeout expired.', err=True)
+        self._stop_mount_proc(mount_aps_proc)
         sys.exit(1)
 
-    def _validate_fs_name(self, mountpoint):
-        mountpoint = os.path.realpath(mountpoint)
-        fs_name = self._get_fs_name(mountpoint)
-        if fs_name == self.PIPE_FUSE_FS_NAME:
-            return
-        click.echo('Failed to mount storages: unexpected FS name: {}; expected: {}.', fs_name, self.PIPE_FUSE_FS_NAME,
-                   err=True)
-        sys.exit(1)
+    @staticmethod
+    def _get_mount_delay():
+        try:
+            mount_delay = int(os.environ.get('CP_PIPE_FUSE_MOUNT_DELAY', DEFAULT_MOUNT_DELAY_MS))
+        except ValueError:
+            mount_delay = 0
+        return mount_delay if mount_delay > 0 else DEFAULT_MOUNT_DELAY_MS
+
+    @staticmethod
+    def _stop_mount_proc(mount_aps_proc):
+        # A frozen pipe starts pipe-fuse from a bash or powershell script, so pipe-fuse is a child of the mount process.
+        # Stopping the children first lets the script remove its temporary files before it exits.
+        try:
+            children = psutil.Process(mount_aps_proc.pid).children(recursive=True)
+        except psutil.Error:
+            children = []
+        for child in children:
+            try:
+                child.terminate()
+            except psutil.Error:
+                pass
+        _, alive = psutil.wait_procs(children, timeout=MOUNT_STOP_TIMEOUT_SEC)
+        for child in alive:
+            try:
+                child.kill()
+            except psutil.Error:
+                pass
+        stop_deadline = _monotonic() + MOUNT_STOP_TIMEOUT_SEC
+        while mount_aps_proc.poll() is None and _monotonic() < stop_deadline:
+            time.sleep(MOUNT_STOP_POLLING_DELAY_SEC)
+        if mount_aps_proc.poll() is None:
+            mount_aps_proc.terminate()
 
     @staticmethod
     def _get_fs_name_linux(mountpoint):
         if str(mountpoint).endswith(os.path.sep):
             mountpoint = mountpoint[:-1]
+        # macOS paths are case-insensitive by default, and its mount table keeps the case stored on disk
+        if platform.system() == 'Darwin':
+            mountpoint = mountpoint.lower()
+        fs_name = None
+        # The mount table lists the file systems mounted at the same point from the bottom to the top one
         for partition in psutil.disk_partitions(all=True):
-            if mountpoint == partition.mountpoint:
-                return partition.device
-        return None
+            partition_mountpoint = partition.mountpoint.lower() if platform.system() == 'Darwin' \
+                else partition.mountpoint
+            if mountpoint == partition_mountpoint:
+                fs_name = partition.device
+        return fs_name
 
     @staticmethod
     def _get_fs_name_windows(mountpoint):
@@ -251,12 +297,8 @@ class Mount(object):
         return volume_info[4] if volume_info and len(volume_info) == 5 else None
 
     def _get_fs_name(self, mountpoint):
-        fs_name = self._get_fs_name_windows(mountpoint) if platform.system() == 'Windows' else \
+        return self._get_fs_name_windows(mountpoint) if platform.system() == 'Windows' else \
             self._get_fs_name_linux(mountpoint)
-        if fs_name:
-            return fs_name
-        click.echo('Failed to mount storages: failed to determine FS name.', err=True)
-        sys.exit(1)
 
     @staticmethod
     def _check_mount_proc_is_alive(mount_aps_proc):
