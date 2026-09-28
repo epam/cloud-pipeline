@@ -28,7 +28,7 @@ Gradle build. The version is declared in the root `build.gradle`.
 | `data-transfer-service` | "DTS" — the service run on-premise, moving data between local filesystems and cloud storages, and reporting to `api` |
 | `deploy` | a `cp-*` Dockerfile per platform component — including third-party ones (Clair, GitLab, the IdP) and `deploy/docker/cp-tools/`, the end-user tool images — plus the `pipectl` installer and CI helper scripts (the workflows themselves are in `.github/workflows/`) |
 | `docker-comp-scan` | scans a container image with OWASP dependency-check and reports its packages — Python, R, OS and NVIDIA/CUDA are the enabled analyzers |
-| `e2e` | `cli` (pytest), `gui` (its own Gradle wrapper) and `load`. Long-running, and never yours |
+| `e2e` | `cli` (pytest), `gui` (its own Gradle wrapper, and its own `AGENTS.md`) and `load`. Long-running; `cli` and `load` are never yours to launch |
 | `elasticsearch-agent` | Spring Boot; indexes platform entities into Elasticsearch, and `api` serves the searches over that index |
 | `elasticsearch-common` | the shared search client, abstracting Elasticsearch V6 from OpenSearch V7 so callers write one query |
 | `fs-browser` | python/flask service exposing a compute node's filesystem; needs `pipe` on the node. `fs-browser/fs-browser-client/` is its companion client subproject |
