@@ -1750,7 +1750,7 @@ Previously, the number of tries to start a node for a run could only be set glob
 In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NODEUP_RETRY_COUNT`. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
 The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
 
-If the system preference `ui.launch.allow.nodeup.count` is set to `true`, a required "Node up retry count" field appears on the launch form, next to the fallback instance types, pre-filled with `cluster.nodeup.retry.count`. Its value is sent as `CP_NODEUP_RETRY_COUNT` and is not shown separately among the run's parameters.
+If the system preference `ui.launch.allow.nodeup.count` is set to `true`, an optional "Capacity retries" field appears on the launch form, next to the fallback instance types, and in a tool's default settings. On the launch form, a value in the field is sent as `CP_NODEUP_RETRY_COUNT` and is not shown separately among the run's parameters. In a tool's default settings, a value is saved as the tool's default `CP_NODEUP_RETRY_COUNT` parameter. If the field is empty, nothing is sent or saved, and the run uses the tool's or pipeline's default value if there is one, and otherwise the current value of `cluster.nodeup.retry.count`. The field shows the value of `cluster.nodeup.retry.count` as a placeholder.
 
 ***
 
