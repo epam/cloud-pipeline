@@ -108,7 +108,6 @@ class PreferencesLoad extends Remote {
 
   @computed
   get allowNodeUpRetryCount () {
-    return true;
     return `${this.getPreferenceValue('ui.launch.allow.nodeup.count')}` === 'true';
   }
 
