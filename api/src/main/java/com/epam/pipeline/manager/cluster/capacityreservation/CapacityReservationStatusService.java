@@ -52,9 +52,10 @@ public class CapacityReservationStatusService {
      * The state machine. A reservation may only move along an edge declared here; anything else is a bug in a
      * caller and is rejected rather than silently written.
      *
-     * <p>{@code ACTIVE} is reachable only from {@code SCHEDULED}, never straight from {@code APPROVED}: every
-     * reservation is submitted to the provider and then assessed by it. The edges out of {@code APPROVED} and
-     * {@code SCHEDULED} that lead there are unreachable until the monitor exists.
+     * <p>{@code ACTIVE} is never reachable straight from {@code APPROVED}: every reservation is submitted, then
+     * assessed by the provider, and only then can capacity exist. The path is
+     * {@code APPROVED → ASSESSING_BY_CLOUD_PROVIDER → SCHEDULED → ACTIVE}, with a refusal at either of the middle
+     * two steps returning to {@code APPROVED} to try another date.
      */
     private static final Map<CapacityReservationStatus, Set<CapacityReservationStatus>> ALLOWED =
             buildAllowedTransitions();
@@ -140,13 +141,22 @@ public class CapacityReservationStatusService {
                 CapacityReservationStatus.APPROVED,
                 CapacityReservationStatus.CANCELLED));
         allowed.put(CapacityReservationStatus.APPROVED, EnumSet.of(
-                CapacityReservationStatus.SCHEDULED,
+                CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER,
                 CapacityReservationStatus.PURCHASE_FAILED,
+                CapacityReservationStatus.FAILED,
+                CapacityReservationStatus.CANCELLED));
+        allowed.put(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, EnumSet.of(
+                CapacityReservationStatus.SCHEDULED,
+                // A provider may also skip straight to live if the start date has effectively arrived.
+                CapacityReservationStatus.ACTIVE,
+                // A candidate the provider will not honour goes back to be resubmitted for another date.
+                CapacityReservationStatus.APPROVED,
                 CapacityReservationStatus.FAILED,
                 CapacityReservationStatus.CANCELLED));
         allowed.put(CapacityReservationStatus.SCHEDULED, EnumSet.of(
                 CapacityReservationStatus.ACTIVE,
-                // A future-dated candidate the provider rejects goes back to be resubmitted for another date.
+                // Agreement is not irrevocable - a provider can still withdraw a scheduled reservation, and the
+                // answer to that is the same as before: try another date within the requested window.
                 CapacityReservationStatus.APPROVED,
                 CapacityReservationStatus.FAILED,
                 CapacityReservationStatus.CANCELLED));

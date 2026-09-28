@@ -92,10 +92,9 @@ public class CapacityReservationPolicyTest {
     @Test
     public void shouldDeserializeMonitorSettings() {
         final CapacityReservationMonitorSettings settings = JsonMapper.parseData(
-                "{\"slideWindowStepDays\": 3, \"finalizingLeadHours\": 6}",
+                "{\"finalizingLeadHours\": 6}",
                 new TypeReference<CapacityReservationMonitorSettings>() {}, MAPPER);
 
-        assertThat(settings.getSlideWindowStepDays()).isEqualTo(3);
         assertThat(settings.getFinalizingLeadHours()).isEqualTo(6);
     }
 

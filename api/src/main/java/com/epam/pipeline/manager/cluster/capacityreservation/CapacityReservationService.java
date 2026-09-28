@@ -24,18 +24,26 @@ import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.pool.NodePoolLaunchConfigBuilder;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -51,9 +59,18 @@ public class CapacityReservationService {
     private final CapacityReservationDao reservationDao;
     private final CapacityReservationApprovalService approvalService;
     private final CapacityReservationStatusService statusService;
+    private final CapacityReservationCloudFacade cloudFacade;
     private final CloudRegionManager regionManager;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
+
+    /**
+     * Lazy because {@code NodePoolManager} depends on this service in turn - creating a pool is what creates a
+     * reservation. A constructor edge either way round would be a cycle Spring could not resolve.
+     */
+    @Autowired
+    @Lazy
+    private NodePoolManager poolManager;
 
     /**
      * Creates the reservation backing a newly persisted pool.
@@ -71,6 +88,10 @@ public class CapacityReservationService {
                 created.getId(), pool.getId(), status);
         statusService.notifyCreated(created);
         return created;
+    }
+
+    public Optional<CapacityReservation> find(final Long id) {
+        return reservationDao.find(id);
     }
 
     public Optional<CapacityReservation> findByNodePoolId(final Long nodePoolId) {
@@ -91,14 +112,67 @@ public class CapacityReservationService {
         return reservationDao.loadByOwner(owner);
     }
 
+    public List<CapacityReservation> loadByStatus(final CapacityReservationStatus status) {
+        return reservationDao.loadByStatus(status);
+    }
+
+    /**
+     * Makes the pool behind a now-active reservation usable.
+     *
+     * <p>The pool has existed since the request was made; what was missing is a node count, which is exactly what
+     * kept it inert. Setting it is therefore the whole of "activation" - nothing is created here. The dates come
+     * across so the pool stops being schedulable when the capacity ends, and the label is what a sharable pool's
+     * pods select on.
+     */
+    @Transactional
+    public void activatePool(final CapacityReservation reservation) {
+        final NodePool pool = poolManager.load(reservation.getNodePoolId());
+        pool.setCount(reservation.getInstanceCount());
+        pool.setStartDate(reservation.getStartDate());
+        pool.setEndDate(reservation.getEndDate());
+        pool.setKubeLabels(withReservationLabel(pool.getKubeLabels(), reservation.getId()));
+        poolManager.applyReservationState(pool);
+        log.debug("Activated node pool {} with {} nodes for capacity reservation {}",
+                pool.getId(), reservation.getInstanceCount(), reservation.getId());
+    }
+
+    /**
+     * Returns the pool to the inert state it was created in, by the same mechanism that kept it there: a count of
+     * zero. Runs already on its nodes are not touched - the capacity ending does not make them stop.
+     */
+    @Transactional
+    public void deactivatePool(final CapacityReservation reservation) {
+        final NodePool pool = poolManager.load(reservation.getNodePoolId());
+        pool.setCount(0);
+        poolManager.applyReservationState(pool);
+        log.debug("Deactivated node pool {} after capacity reservation {} finished",
+                pool.getId(), reservation.getId());
+    }
+
+    private Map<String, PoolLabel> withReservationLabel(final Map<String, PoolLabel> existing,
+                                                        final Long reservationId) {
+        final Map<String, PoolLabel> labels = new HashMap<>(MapUtils.emptyIfNull(existing));
+        labels.put(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL,
+                new PoolLabel(String.valueOf(reservationId), false));
+        return labels;
+    }
+
     @Transactional
     public CapacityReservation approve(final Long id) {
         return statusService.transition(load(id), CapacityReservationStatus.APPROVED, null);
     }
 
+    /**
+     * Gives up a reservation, releasing the provider's hold on it first.
+     *
+     * <p>The provider call comes before the status write so that a failure to release leaves the reservation
+     * visibly uncancelled rather than marked cancelled while still billing.
+     */
     @Transactional
     public CapacityReservation cancel(final Long id) {
-        return statusService.transition(load(id), CapacityReservationStatus.CANCELLED, null);
+        final CapacityReservation reservation = load(id);
+        cloudFacade.cancel(reservation);
+        return statusService.transition(reservation, CapacityReservationStatus.CANCELLED, null);
     }
 
     public void assertPoolEditable(final NodePool existing, final NodePoolVO vo) {

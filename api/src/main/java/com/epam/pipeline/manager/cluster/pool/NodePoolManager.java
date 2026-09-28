@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster.pool;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -92,6 +93,27 @@ public class NodePoolManager implements SecuredEntityManager {
                 : allPools;
     }
 
+    /**
+     * The pools matching a filter. Unset fields are ignored, so an empty filter returns everything the caller may
+     * see - the authorization layer, not this method, decides what that is.
+     */
+    public List<NodePool> filter(final NodePoolFilterVO filter) {
+        final LocalDateTime timestamp = DateUtils.nowUTC();
+        return ListUtils.emptyIfNull(poolDao.loadAll()).stream()
+                .filter(pool -> matches(filter.getInstanceType(), pool.getInstanceType()))
+                .filter(pool -> matches(filter.getRegionId(), pool.getRegionId()))
+                .filter(pool -> matches(filter.getPriceType(), pool.getPriceType()))
+                .filter(pool -> matches(filter.getPoolType(), pool.getPoolType()))
+                .filter(pool -> matches(filter.getCapacityReservation(), pool.isCapacityReservation()))
+                .filter(pool -> filter.getActive() == null
+                        || filter.getActive() == pool.isActive(timestamp))
+                .collect(Collectors.toList());
+    }
+
+    private static boolean matches(final Object requested, final Object actual) {
+        return requested == null || requested.equals(actual);
+    }
+
     public Optional<NodePool> find(final Long poolId) {
         return poolDao.find(poolId);
     }
@@ -100,6 +122,19 @@ public class NodePoolManager implements SecuredEntityManager {
         return find(poolId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, poolId)));
+    }
+
+    /**
+     * Persists the columns the reservation lifecycle owns - the node count and the window it is usable in, plus
+     * the kube labels its pods select on.
+     *
+     * <p>Separate from {@link #update(Long, NodePoolVO)} on purpose: that path is driven by a caller's VO and
+     * validates it, neither of which applies to the monitor writing back what a provider decided.
+     */
+    @Transactional
+    public NodePool applyReservationState(final NodePool pool) {
+        poolDao.update(pool);
+        return pool;
     }
 
     private Long reservationIdOf(final NodePool pool) {

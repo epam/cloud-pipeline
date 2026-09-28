@@ -40,6 +40,7 @@ import com.epam.pipeline.utils.condition.field.CapacityReservationField;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
@@ -62,6 +63,14 @@ public class CapacityReservationApprovalService {
     private final ConditionExpressionEvaluator<CapacityReservation> evaluator;
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
+
+    /**
+     * Lazy: this service is constructed as part of the reservation service's own graph, so an eager edge back to
+     * it would be a cycle.
+     */
+    @Autowired
+    @Lazy
+    private CapacityReservationService reservationService;
 
     @Autowired
     public CapacityReservationApprovalService(final PreferenceManager preferenceManager,
@@ -89,6 +98,11 @@ public class CapacityReservationApprovalService {
      *         {@link CapacityReservationStatus#REQUIRED_APPROVE} when it must wait for one.
      */
     public CapacityReservationStatus evaluate(final CapacityReservation reservation) {
+        if (inheritsApproval(reservation)) {
+            log.debug("Capacity reservation for node pool {} inherits the approval of reservation {}",
+                    reservation.getNodePoolId(), reservation.getOriginId());
+            return CapacityReservationStatus.APPROVED;
+        }
         if (authManager.isAdmin()) {
             log.debug("Capacity reservation for node pool {} auto-approved: requester is an administrator",
                     reservation.getNodePoolId());
@@ -106,6 +120,49 @@ public class CapacityReservationApprovalService {
             return CapacityReservationStatus.APPROVED;
         }
         return CapacityReservationStatus.REQUIRED_APPROVE;
+    }
+
+    /**
+     * Whether this request may reuse the approval already given to the one it retries.
+     *
+     * <p>Only from a {@code FAILED} original, and only when nothing material changed. {@code FAILED} is the one
+     * terminal state that means the request was approved, submitted, and then refused by the provider - so a
+     * human has already agreed to this spend and the refusal was not the requester's doing. Every other state
+     * fails the check for a reason:
+     *
+     * <ul>
+     *   <li>{@code PURCHASE_FAILED} - our own call errored, so the provider may never have seen it and nobody
+     *       has agreed to anything beyond the first attempt;</li>
+     *   <li>{@code CANCELLED} - somebody deliberately gave this capacity up, and inheriting would quietly
+     *       undo that;</li>
+     *   <li>{@code FINISHED} - a reservation that ran its course is not evidence that another one is wanted;</li>
+     *   <li>anything non-terminal - still in flight, so there is nothing settled to inherit.</li>
+     * </ul>
+     *
+     * <p>A missing original also fails the check rather than passing: its pool may have been deleted, and an
+     * unresolvable reference must not become a free pass.
+     */
+    private boolean inheritsApproval(final CapacityReservation reservation) {
+        return Optional.ofNullable(reservation.getOriginId())
+                .flatMap(reservationService::find)
+                .filter(origin -> CapacityReservationStatus.FAILED == origin.getStatus())
+                .filter(origin -> sameEssentials(origin, reservation))
+                .isPresent();
+    }
+
+    /**
+     * The parameters that determine what is being bought and at what cost. A retry that changes any of them is a
+     * different request and needs its own decision; the dates deliberately are not compared, since retrying a
+     * window that found nothing is the normal reason to retry at all.
+     */
+    private boolean sameEssentials(final CapacityReservation origin, final CapacityReservation retry) {
+        return Objects.equals(origin.getInstanceType(), retry.getInstanceType())
+                && origin.getInstanceCount() == retry.getInstanceCount()
+                && Objects.equals(origin.getDurationHours(), retry.getDurationHours())
+                && Objects.equals(origin.getReservationType(), retry.getReservationType())
+                && Objects.equals(origin.getCloudProvider(), retry.getCloudProvider())
+                && Objects.equals(origin.getRegionId(), retry.getRegionId())
+                && Objects.equals(origin.getOwner(), retry.getOwner());
     }
 
     private boolean matchesAny(final List<CapacityReservationPolicy> policies,

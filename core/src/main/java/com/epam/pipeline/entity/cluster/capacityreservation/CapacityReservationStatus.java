@@ -48,8 +48,15 @@ public enum CapacityReservationStatus {
     PURCHASE_FAILED(true),
 
     /**
-     * Submitted to the cloud provider and accepted by it, but not yet active - the provider is still
-     * assessing the requested dates, or payment is pending.
+     * Submitted, and the cloud provider is deciding whether it can honour the requested date.
+     */
+    ASSESSING_BY_CLOUD_PROVIDER(false),
+
+    /**
+     * The cloud provider has agreed to hold the capacity, but the reservation has not started yet.
+     *
+     * <p>This is a real commitment - the capacity is spoken for from the start date - it simply is not consumable
+     * until then.
      */
     SCHEDULED(false),
 

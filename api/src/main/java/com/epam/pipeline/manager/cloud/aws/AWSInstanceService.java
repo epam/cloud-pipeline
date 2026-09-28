@@ -34,6 +34,8 @@ import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -50,6 +52,7 @@ import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +60,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -85,6 +89,14 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
+
+    /**
+     * Lazy: the reservation service reaches the pool manager, which is collected as a secured entity manager at
+     * startup, so an eager edge from here would widen that graph into the launch path.
+     */
+    @Autowired
+    @Lazy
+    private CapacityReservationService reservationService;
     private final InstanceOfferManager instanceOfferManager;
     private final CommonCloudInstanceService instanceService;
     private final ClusterCommandService commandService;
@@ -140,8 +152,34 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                        final NodePool node) {
         final RunInstance instance = node.toRunInstance();
         final String command = buildNodeUpCommand(region, nodeIdLabel, instance, getPoolLabels(node),
-                Collections.emptyMap(), Collections.emptyMap());
+                Collections.emptyMap(), Collections.emptyMap(), reservationOf(node));
         return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars(region));
+    }
+
+    /**
+     * The reservation this pool's nodes must consume, if it has one.
+     *
+     * <p>The flag on the pool is checked first so the overwhelming majority of pools - which have no reservation
+     * at all - cost nothing here. Only an active reservation is used: capacity that has not been granted yet, or
+     * has already ended, cannot be consumed, and targeting it would fail the launch rather than fall back.
+     */
+    private CapacityReservation reservationOf(final NodePool node) {
+        if (!node.isCapacityReservation()) {
+            return null;
+        }
+        final CapacityReservation reservation = reservationService.findByNodePoolId(node.getId())
+                .filter(active -> CapacityReservationStatus.ACTIVE == active.getStatus())
+                .orElse(null);
+        if (reservation != null && StringUtils.isBlank(reservation.getAvailabilityZone())) {
+            // The launch script refuses this rather than risk landing outside the reservation's zone, where the
+            // node would run as plain on-demand while the reserved capacity idles. Logged here as well so the
+            // reason is visible against the pool, not only in the node's own launch output.
+            log.error("Capacity reservation {} is active but has no availability zone recorded, so node launch "
+                    + "for pool {} will be refused. The zone is resolved when the reservation is granted; a "
+                    + "reservation missing it indicates the provider response was not fully persisted.",
+                    reservation.getId(), node.getId());
+        }
+        return reservation;
     }
 
     @Override
@@ -415,10 +453,25 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                       final Map<String, String> labels,
                                       final Map<String, String> runtimeParameters,
                                       final Map<String, String> tags) {
+        return buildNodeUpCommand(region, nodeLabel, instance, labels, runtimeParameters, tags, null);
+    }
+
+    private String buildNodeUpCommand(final AwsRegion region,
+                                      final String nodeLabel,
+                                      final RunInstance instance,
+                                      final Map<String, String> labels,
+                                      final Map<String, String> runtimeParameters,
+                                      final Map<String, String> tags,
+                                      final CapacityReservation reservation) {
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder = commandService
                 .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
                 .sshKey(region.getSshKeyName())
                 .tags(tags);
+
+        if (reservation != null) {
+            commandBuilder.capacityReservationId(reservation.getCloudReservationId());
+            commandBuilder.availabilityZone(reservation.getAvailabilityZone());
+        }
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
