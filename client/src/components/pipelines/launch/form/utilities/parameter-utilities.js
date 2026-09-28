@@ -20,7 +20,8 @@ import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDef
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import {
   systemCapabilitiesParameters,
-  reservedParameters
+  reservedParameters,
+  CP_NODEUP_RETRY_COUNT
 } from './parameters';
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
@@ -956,7 +957,8 @@ export function getParameterConfig (
       isCapabilityParameter(name) ||
       isReservationRequestParameter(name) ||
       isReservedParameter(name) ||
-      isGPUScalingParameter(name);
+      isGPUScalingParameter(name) ||
+      isNodeUpRetryCountParameter(name);
     if (typeof parameter === 'object') {
       const {
         type: pType = 'string',
@@ -1361,6 +1363,7 @@ function validateParameter (parameter, parameters, rawEdit = false) {
         isCapabilityParameter(parameter.name) ||
         isReservationRequestParameter(parameter.name) ||
         isGPUScalingParameter(parameter.name) ||
+        isNodeUpRetryCountParameter(parameter.name) ||
         isSystemParameter(parameter.name))
     ) {
       throw new Error(`Name is reserved`);
@@ -1934,6 +1937,23 @@ export function isGPUScalingParameter (parameterName, options = {}) {
 }
 
 /**
+ * Checks if parameter is the node up retry count parameter, and it is exposed
+ * through the dedicated launch form field rather than the general parameters list
+ * @param {string} parameterName
+ * @param {{preferences}} [options]
+ * @returns {boolean}
+ */
+export function isNodeUpRetryCountParameter (parameterName, options = {}) {
+  const {
+    preferences: prefs = preferences
+  } = options || {};
+  if (!prefs || !prefs.allowNodeUpRetryCount) {
+    return false;
+  }
+  return `${parameterName}`.toLowerCase() === CP_NODEUP_RETRY_COUNT.toLowerCase();
+}
+
+/**
  * @param {ObjectParameterScheme} [scheme]
  */
 export function objectParameterSchemeToPayload (scheme) {
@@ -1994,6 +2014,7 @@ export function parametersToPayloadParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
+      !isNodeUpRetryCountParameter(parameter.name) &&
       !isReservedParameter(parameter.name))
     .reduce((acc, cur) => ({
       ...acc,
@@ -2038,6 +2059,7 @@ export function parametersToConfigurationParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
+      !isNodeUpRetryCountParameter(parameter.name) &&
       !isReservedParameter(parameter.name));
   for (const parameter of filtered) {
     const current = findParameterConfig(parameter, parameters);
@@ -2204,7 +2226,8 @@ function getVisibleParameters (
       !isReservedParameter(parameter.name) &&
       !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
-      !isGPUScalingParameter(parameter.name)
+      !isGPUScalingParameter(parameter.name) &&
+      !isNodeUpRetryCountParameter(parameter.name)
       : !parameter.system)
     .map((parameter) => isSystem ? mapSystemParameter(parameter, {
       runDefaultParameters,

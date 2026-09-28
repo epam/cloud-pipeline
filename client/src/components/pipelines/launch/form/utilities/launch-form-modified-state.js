@@ -204,14 +204,15 @@ function limitMountsCheck (form, parameters) {
   return formValue !== initial;
 }
 
-function nodeUpRetryCountCheck (form, parameters) {
+function nodeUpRetryCountCheck (form, parameters, defaultNodeUpRetryCount) {
   if (!formItemInitialized(form, `${EXEC_ENVIRONMENT}.nodeUpRetryCount`)) {
     return false;
   }
-  const initial = parameters.parameters && parameters.parameters[CP_NODEUP_RETRY_COUNT]
+  const isNull = o => o === null || o === undefined || `${o}`.trim() === '';
+  const rawInitial = parameters.parameters && parameters.parameters[CP_NODEUP_RETRY_COUNT]
     ? parameters.parameters[CP_NODEUP_RETRY_COUNT].value
     : undefined;
-  const isNull = o => o === null || o === undefined || `${o}`.trim() === '';
+  const initial = isNull(rawInitial) ? defaultNodeUpRetryCount : rawInitial;
   const formValue = form.getFieldValue(`${EXEC_ENVIRONMENT}.nodeUpRetryCount`);
   if (isNull(formValue) && isNull(initial)) {
     return false;
@@ -406,7 +407,7 @@ export default function (props, state, options) {
     // limit mounts check
     limitMountsCheck(form, parameters) ||
     // node up retry count check
-    nodeUpRetryCountCheck(form, parameters) ||
+    nodeUpRetryCountCheck(form, parameters, preferences.defaultNodeUpRetryCount) ||
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters

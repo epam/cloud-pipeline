@@ -76,6 +76,7 @@ import {
   getAutoScaledPriceTypeValue,
   applyChildNodeInstanceParameters,
   parseChildNodeInstanceConfiguration,
+  getNodeUpRetryCountParameter,
   LAUNCH_CLUSTER_MODES,
   CLUSTER_TYPE
 } from './utilities/launch-cluster';
@@ -164,6 +165,7 @@ import AddParameterButton from './parameters/add-parameter-button';
 import {getParameterKeyClassName} from './parameters/utilities';
 import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
+import NodeUpRetryCountFormItem from './components/node-up-retry-count';
 import {
   buildLaunchParametersFromReservationParameters,
   findReservationParameterConfig,
@@ -1420,15 +1422,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: values[ADVANCED].limitMounts
         };
       }
-      if (
-        this.props.preferences.allowNodeUpRetryCount &&
-        values[EXEC_ENVIRONMENT].nodeUpRetryCount !== undefined
-      ) {
-        payload.parameters[CP_NODEUP_RETRY_COUNT] = {
-          type: 'int',
-          required: true,
-          value: +values[EXEC_ENVIRONMENT].nodeUpRetryCount
-        };
+      const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
+        values[EXEC_ENVIRONMENT].nodeUpRetryCount,
+        this.props.preferences
+      );
+      if (nodeUpRetryCountParameter) {
+        payload.parameters[CP_NODEUP_RETRY_COUNT] = nodeUpRetryCountParameter;
       }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
         payload.parameters[CP_CAP_AUTOSCALE] = {
@@ -1659,15 +1658,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: values[ADVANCED].limitMounts
       };
     }
-    if (
-      this.props.preferences.allowNodeUpRetryCount &&
-      values[EXEC_ENVIRONMENT].nodeUpRetryCount !== undefined
-    ) {
-      payload.params[CP_NODEUP_RETRY_COUNT] = {
-        type: 'int',
-        required: true,
-        value: +values[EXEC_ENVIRONMENT].nodeUpRetryCount
-      };
+    const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
+      values[EXEC_ENVIRONMENT].nodeUpRetryCount,
+      this.props.preferences
+    );
+    if (nodeUpRetryCountParameter) {
+      payload.params[CP_NODEUP_RETRY_COUNT] = nodeUpRetryCountParameter;
     }
     const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
     const launchAutoScaledHybridCluster = launchAutoScaledCluster &&
@@ -3126,36 +3122,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!this.props.preferences.allowNodeUpRetryCount) {
       return undefined;
     }
-    const disabled = this.props.readOnly && !this.props.canExecute;
     const existingValue = this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`);
     return (
-      <FormItem
+      <NodeUpRetryCountFormItem
         className={getFormItemClassName(styles.formItem, 'nodeUpRetryCount')}
-        {...this.formItemLayout}
-        label="Node up retry count"
-        required
-        hasFeedback
-      >
-        {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('nodeUpRetryCount',
-          {
-            rules: [
-              {
-                pattern: /^\d+$/,
-                message: 'Please enter a valid positive integer number'
-              },
-              {
-                required: true,
-                message: 'Node up retry count is required'
-              }
-            ],
-            initialValue: existingValue !== undefined
-              ? `${existingValue}`
-              : `${this.props.preferences.defaultNodeUpRetryCount}`
-          }
-        )(
-          <Input disabled={disabled} />
-        )}
-      </FormItem>
+        formItemLayout={this.formItemLayout}
+        getFieldDecorator={this.getSectionFieldDecorator(EXEC_ENVIRONMENT)}
+        disabled={this.props.readOnly && !this.props.canExecute}
+        initialValue={
+          existingValue !== undefined && existingValue !== null
+            ? `${existingValue}`
+            : `${this.props.preferences.defaultNodeUpRetryCount}`
+        }
+      />
     );
   };
 
