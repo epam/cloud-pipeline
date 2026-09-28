@@ -156,6 +156,8 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#parallel-mounting-of-data-storages">Parallel mounting of data storages</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#hot-node-pools">Hot node pools</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#fs-quotas">FS quotas</a>
@@ -638,6 +640,7 @@
 <li><a href="#sensitive-storages">Sensitive storages</a></li>
 <li><a href="#versioned-storages">Versioned storages</a></li>
 <li><a href="#updates-of-limit-mounts-for-object-storages">Updates of "Limit mounts" for object storages</a></li>
+<li><a href="#parallel-mounting-of-data-storages">Parallel mounting of data storages</a></li>
 <li><a href="#hot-node-pools">Hot node pools</a></li>
 <li><a href="#fs-quotas">FS quotas</a></li>
 <li><a href="#pauseresume-runs-via-pipe">Pause/resume runs via <code>pipe</code></a></li>
@@ -1368,6 +1371,17 @@ If it's exceeded - the user is being warned with the following wording and asked
 <li>If the <strong><code>storage.mounts.per.gb.ratio</code></strong> is not set - no checks are being performed, no warning appears.</li>
 <li>Before the launch, only the <em>object storages</em> count is being calculated, <em>file mounts</em> do not introduce this limitation.</li>
 </ul>
+<h2 id="parallel-mounting-of-data-storages">Parallel mounting of data storages</h2>
+<p>Previously, a job mounted its data storages one by one. When the user has hundreds of available storages, the <code>MountDataStorages</code> task could take a long time before the job started.</p>
+<p>In the current version, a new launch parameter <strong><code>CP_CAP_MOUNT_THREADS</code></strong> (<em>int</em>) is introduced. It sets the number of threads that mount the data storages in parallel (e.g. <code>4</code>, <code>8</code> or <code>16</code>).<br />
+By default, it is <code>1</code> - storages are mounted one by one, as before. To go back to the previous behavior, set the parameter to <code>1</code> or remove it.</p>
+<p><strong><em>Note</em></strong>:</p>
+<ul>
+<li>If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished.</li>
+<li>Storages mounted with <code>pipe</code> FUSE request their details and credentials from the API. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a job (or a cluster) starts. It also uses more CPU on small nodes. Start with a small value, e.g. <code>4</code>.</li>
+<li>If <code>pipe</code> FUSE mounts fail by a timeout under a high load, consider increasing <strong><code>CP_PIPE_FUSE_MOUNT_TIMEOUT</code></strong>. By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the <strong><code>CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES</code></strong> parameter.</li>
+</ul>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#mount-storages-in-parallel">here</a>.</p>
 <h2 id="hot-node-pools">Hot node pools</h2>
 <p>For some jobs, a waiting for a node launch can be too long. It is convenient to have some scope of the running nodes in the background that will be always or on schedule be available.</p>
 <p>In the current version, the mechanism of "<strong>Hot node pools</strong>" was implemented. It allows controlling the number of persistent compute nodes (of the certain configuration) in the cluster during the certain schedule.<br />

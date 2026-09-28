@@ -140,6 +140,10 @@
     <li class="toctree-l3"><a class="reference internal" href="#example-create-a-configuration-that-uses-system-parameter">Example: Create a configuration that uses system parameter</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#example-limit-mounted-storages">Example: Limit mounted storages</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#mount-storages-in-parallel">Mount storages in parallel</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#example-configure-a-custom-node-image">Example: Configure a custom node image</a>
     </li>
@@ -462,7 +466,10 @@
 </li>
 <li><a href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a></li>
 <li><a href="#example-create-a-configuration-that-uses-system-parameter">Example: Create a configuration that uses system parameter</a></li>
-<li><a href="#example-limit-mounted-storages">Example: Limit mounted storages</a></li>
+<li><a href="#example-limit-mounted-storages">Example: Limit mounted storages</a><ul>
+<li><a href="#mount-storages-in-parallel">Mount storages in parallel</a></li>
+</ul>
+</li>
 <li><a href="#example-configure-a-custom-node-image">Example: Configure a custom node image</a></li>
 </ul>
 <blockquote>
@@ -708,6 +715,18 @@ Click the <strong>Save</strong> button, input a commit message and click the <st
     In this case, no storages will be mounted at all:<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_56.png" /></li>
 </ol>
+<h3 id="mount-storages-in-parallel">Mount storages in parallel</h3>
+<p>By default, the storages are mounted one by one during the <code>MountDataStorages</code> task. If many storages are mounted to a run, this task can take a long time.</p>
+<p>To mount the storages in parallel, add the <strong><code>CP_CAP_MOUNT_THREADS</code></strong> system parameter to the run and set it to the number of threads, e.g. <code>4</code>, <code>8</code> or <code>16</code>.</p>
+<ul>
+<li>The default value is <code>1</code>: the storages are mounted one by one. To go back to this behavior, set the parameter to <code>1</code> or remove it.</li>
+<li>If the value is not a positive integer, it is ignored with a warning in the <code>MountDataStorages</code> log, and the storages are mounted one by one.</li>
+<li>If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished. <code>pipe</code> FUSE finishes its mount command only once the storage is mounted. Some other mount tools (e.g. <code>goofys</code>, <code>s3fs</code>, <code>gcsfuse</code>) finish their command before the storage is fully mounted, as without this parameter.</li>
+<li>If some storages fail to mount, the other storages are still mounted. The <code>MountDataStorages</code> task fails at the end and lists the storages that were not mounted.</li>
+</ul>
+<blockquote>
+<p><strong><em>Note</em></strong>: storages mounted with <code>pipe</code> FUSE request the storage details and credentials from the API, one request per storage. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a run starts. This is especially true for a cluster, as each node of the cluster mounts the storages. It also uses more CPU on small nodes. Start with a small value, e.g. <code>4</code>. If <code>pipe</code> FUSE mounts fail by a timeout under a high load, increase the <strong><code>CP_PIPE_FUSE_MOUNT_TIMEOUT</code></strong> parameter as well (by default, <code>10000</code> ms). By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the <strong><code>CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES</code></strong> parameter.</p>
+</blockquote>
 <h2 id="example-configure-a-custom-node-image">Example: Configure a custom node image</h2>
 <p>Users can configure a custom image for the node - i.e. base image from which the cloud instance itself is being initialized and launched.  </p>
 <blockquote>
