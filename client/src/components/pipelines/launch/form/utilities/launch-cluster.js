@@ -145,26 +145,37 @@ export function getNodeUpRetryCountSkippedParameters (preferences) {
 
 export const NODE_UP_RETRY_COUNT_PATTERN = /^[1-9]\d*$/;
 
+/**
+ * Returns the node up retry count field value for a stored parameter value;
+ * an empty result means the value is not set, and is resolved at launch time
+ * from the `cluster.nodeup.retry.count` preference
+ * @param {*} value
+ * @returns {string|undefined}
+ */
+export function getNodeUpRetryCountFieldValue (value) {
+  if (value === undefined || value === null || `${value}`.trim() === '') {
+    return undefined;
+  }
+  return `${value}`.trim();
+}
+
+export function nodeUpRetryCountChanged (initialValue, fieldValue) {
+  return (getNodeUpRetryCountFieldValue(initialValue) || '') !==
+    (getNodeUpRetryCountFieldValue(fieldValue) || '');
+}
+
 export function getNodeUpRetryCountParameter (rawValue, preferences) {
   if (!preferences || !preferences.allowNodeUpRetryCount) {
     return undefined;
   }
-  if (rawValue === undefined || rawValue === null || `${rawValue}`.trim() === '') {
-    return undefined;
-  }
-  const value = `${rawValue}`.trim();
-  if (!NODE_UP_RETRY_COUNT_PATTERN.test(value)) {
-    return undefined;
-  }
-  const numeric = +value;
-  const defaultValue = +preferences.defaultNodeUpRetryCount;
-  if (!Number.isNaN(defaultValue) && numeric === defaultValue) {
+  const value = getNodeUpRetryCountFieldValue(rawValue);
+  if (!value || !NODE_UP_RETRY_COUNT_PATTERN.test(value)) {
     return undefined;
   }
   return {
     type: 'int',
-    required: true,
-    value: numeric
+    required: false,
+    value: +value
   };
 }
 

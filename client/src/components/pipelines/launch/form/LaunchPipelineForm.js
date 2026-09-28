@@ -77,6 +77,7 @@ import {
   applyChildNodeInstanceParameters,
   parseChildNodeInstanceConfiguration,
   getNodeUpRetryCountParameter,
+  getNodeUpRetryCountFieldValue,
   LAUNCH_CLUSTER_MODES,
   CLUSTER_TYPE
 } from './utilities/launch-cluster';
@@ -3122,18 +3123,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!this.props.preferences.allowNodeUpRetryCount) {
       return undefined;
     }
-    const existingValue = this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`);
     return (
       <NodeUpRetryCountFormItem
         className={getFormItemClassName(styles.formItem, 'nodeUpRetryCount')}
         formItemLayout={this.formItemLayout}
         getFieldDecorator={this.getSectionFieldDecorator(EXEC_ENVIRONMENT)}
         disabled={this.props.readOnly && !this.props.canExecute}
-        initialValue={
-          existingValue !== undefined && existingValue !== null
-            ? `${existingValue}`
-            : `${this.props.preferences.defaultNodeUpRetryCount}`
-        }
+        initialValue={getNodeUpRetryCountFieldValue(
+          this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`)
+        )}
+        placeholder={`${this.props.preferences.defaultNodeUpRetryCount}`}
       />
     );
   };

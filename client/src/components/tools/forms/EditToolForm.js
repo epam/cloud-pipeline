@@ -59,7 +59,9 @@ import {
   getAutoScaledPriceTypeValue,
   applyChildNodeInstanceParametersAsArray,
   parseChildNodeInstanceConfiguration,
-  getNodeUpRetryCountParameter
+  getNodeUpRetryCountParameter,
+  getNodeUpRetryCountFieldValue,
+  nodeUpRetryCountChanged
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -1034,18 +1036,10 @@ export default class EditToolForm extends React.Component {
       if (!this.props.preferences.allowNodeUpRetryCount) {
         return false;
       }
-      const isNull = o => o === null || o === undefined || `${o}`.trim() === '';
-      const fieldValue = this.props.form.getFieldValue('nodeUpRetryCount');
-      const initial = isNull(this.defaultNodeUpRetryCount)
-        ? this.props.preferences.defaultNodeUpRetryCount
-        : this.defaultNodeUpRetryCount;
-      if (isNull(fieldValue) && isNull(initial)) {
-        return false;
-      }
-      if (isNull(fieldValue) || isNull(initial)) {
-        return true;
-      }
-      return `${fieldValue}` !== `${initial}`;
+      return nodeUpRetryCountChanged(
+        this.defaultNodeUpRetryCount,
+        this.props.form.getFieldValue('nodeUpRetryCount')
+      );
     };
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
@@ -1666,13 +1660,8 @@ export default class EditToolForm extends React.Component {
                   formItemLayout={this.formItemLayout}
                   getFieldDecorator={getFieldDecorator}
                   disabled={this.state.pending || this.props.readOnly}
-                  hasFeedback={false}
-                  initialValue={
-                    this.defaultNodeUpRetryCount !== undefined &&
-                    this.defaultNodeUpRetryCount !== null
-                      ? `${this.defaultNodeUpRetryCount}`
-                      : `${this.props.preferences.defaultNodeUpRetryCount}`
-                  }
+                  initialValue={getNodeUpRetryCountFieldValue(this.defaultNodeUpRetryCount)}
+                  placeholder={`${this.props.preferences.defaultNodeUpRetryCount}`}
                 />
               )}
               <Row>

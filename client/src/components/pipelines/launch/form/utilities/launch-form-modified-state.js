@@ -24,7 +24,8 @@ import {
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
-  kubeEnabled
+  kubeEnabled,
+  nodeUpRetryCountChanged
 } from './launch-cluster';
 import {
   CP_CAP_AUTOSCALE_WORKERS,
@@ -204,24 +205,19 @@ function limitMountsCheck (form, parameters) {
   return formValue !== initial;
 }
 
-function nodeUpRetryCountCheck (form, parameters, defaultNodeUpRetryCount) {
+function nodeUpRetryCountCheck (form, parameters) {
   if (!formItemInitialized(form, `${EXEC_ENVIRONMENT}.nodeUpRetryCount`)) {
     return false;
   }
-  const isNull = o => o === null || o === undefined || `${o}`.trim() === '';
-  const rawInitial = parameters.parameters && parameters.parameters[CP_NODEUP_RETRY_COUNT]
+  const initial = parameters.parameters && parameters.parameters[CP_NODEUP_RETRY_COUNT]
     ? parameters.parameters[CP_NODEUP_RETRY_COUNT].value
     : undefined;
-  const initial = isNull(rawInitial) ? defaultNodeUpRetryCount : rawInitial;
-  const formValue = form.getFieldValue(`${EXEC_ENVIRONMENT}.nodeUpRetryCount`);
-  if (isNull(formValue) && isNull(initial)) {
-    return false;
-  }
-  if (isNull(formValue) || isNull(initial)) {
-    return true;
-  }
-  return `${formValue}` !== `${initial}`;
+  return nodeUpRetryCountChanged(
+    initial,
+    form.getFieldValue(`${EXEC_ENVIRONMENT}.nodeUpRetryCount`)
+  );
 }
+
 function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
   if (state.startIdle) {
@@ -407,7 +403,7 @@ export default function (props, state, options) {
     // limit mounts check
     limitMountsCheck(form, parameters) ||
     // node up retry count check
-    nodeUpRetryCountCheck(form, parameters, preferences.defaultNodeUpRetryCount) ||
+    nodeUpRetryCountCheck(form, parameters) ||
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
