@@ -59,6 +59,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
     - [AWS deployment: unable to list more than 1000 files in the S3 bucket](#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket)
@@ -1806,6 +1807,15 @@ The parameter also defines when a run is relaunched in another region in case of
 ***
 
 ## Notable Bug fixes
+
+### Storage files indexing stops when a storage is deleted during the sync
+
+[#4598](https://github.com/epam/cloud-pipeline/issues/4598)
+
+Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.
+All storages after the deleted one were not re-indexed until the next cycle, so the search showed outdated files for them.
+This affected `NFS` storages and the object storages (`S3`, `GCS`, `Azure`).
+Now, the deleted storage is skipped, and the remaining storages are indexed as usual.
 
 ### Unable to view pipeline sources for previous draft versions
 
