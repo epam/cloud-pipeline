@@ -115,7 +115,7 @@ def _pack_script_contents(script_contents, init_script_name, wrapping_script_tem
         compressed.addfile(*_tarfile(init_script_name, script_contents))
         for name, contents in embedded_scripts.items():
             compressed.addfile(*_tarfile(name, contents))
-    b64_contents = base64.b64encode(compressed_stream.getvalue())
+    b64_contents = base64.b64encode(compressed_stream.getvalue()).decode('utf-8')
     return wrapping_script_template.format(payload=b64_contents)
 
 
