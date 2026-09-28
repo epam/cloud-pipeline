@@ -30,6 +30,7 @@
 - [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
+- [Group permissions](#group-permissions)
 
 ***
 
@@ -579,6 +580,20 @@ Previously, the number of tries to start a node for a run could only be set glob
 
 In the current version, it can be overridden for a specific run by the new launch parameter **`CP_NODEUP_RETRY_COUNT`** (_int_). For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
 The parameter also defines when a run is relaunched in another region in case of insufficient capacity. If the value is not a positive integer, `cluster.nodeup.retry.count` is used. The parameter is passed to the worker nodes of a cluster.
+
+## Group permissions
+
+Admins can now let other users manage a group, in the same way as it's possible to let a user manage another user account.  
+Permissions are set at the new **PERMISSIONS** tab of the group settings pop-up:
+
+- **READ** - the user can see the group, its members and attributes
+- **WRITE** - the user can also change the group members, attributes (except sensitive keys) and default data storage
+
+Creating, deleting and blocking a group, the **Default group** flag, launch options and credentials profiles stay available to users with the **ROLE\_ADMIN** or **ROLE\_USER\_ADMIN** role only. Permissions can not be used to manage predefined system roles.
+
+The group settings pop-up also got the **Default group** checkbox: such a group is assigned to all new users upon the registration.
+
+For more details see [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#group-permissions).
 
 ***
 
