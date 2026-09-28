@@ -53,6 +53,7 @@
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
 - [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
+- [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 
 ***
 
@@ -1784,6 +1785,13 @@ In the current version, `pipe run` checks that the tool has the specified versio
 If the tool versions can't be loaded, `pipe` prints a warning and continues the launch.
 
 For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
+
+## Node start retries for a specific run
+
+Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
+
+In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NODEUP_RETRY_COUNT`. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
+The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
 
 ***
 
