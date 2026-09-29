@@ -240,6 +240,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#read-only-access-to-all-storages">Read-only access to all storages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#permissions-granted-to-a-user">Permissions granted to a user</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in pipe run</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#node-start-retries-for-a-specific-run">Node start retries for a specific run</a>
@@ -683,6 +687,8 @@
 <li><a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of regions for launched jobs in case of insufficient capacity</a></li>
 <li><a href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in <code>pipe run</code></a></li>
 <li><a href="#node-start-retries-for-a-specific-run">Node start retries for a specific run</a></li>
+<li><a href="#read-only-access-to-all-storages">Read-only access to all storages</a></li>
+<li><a href="#permissions-granted-to-a-user">Permissions granted to a user</a></li>
 </ul>
 <hr />
 <ul>
@@ -2119,6 +2125,16 @@ If a new instance is not available with a new region - relaunch will be performe
 <li>for worker or cluster runs</li>
 </ul>
 <p>More details see <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">here</a>.</p>
+<h2 id="read-only-access-to-all-storages">Read-only access to all storages</h2>
+<p>Previously, read access to all data storages of the Platform could be given only by the permission settings of the storages (or of their parent folders) - or by the <strong>ROLE_ADMIN</strong>/<strong>ROLE_STORAGE_ADMIN</strong> roles, which also give write and owner access.<br />
+In the current version, the new role <strong>ROLE_STORAGE_READER</strong> was introduced. It gives the user <strong>READ</strong> permission to every data storage in the Platform, regardless of the storage permission settings, and nothing else: the user is able to browse storages, download their data and view storage attributes, tags and permission settings, while any write access still has to be granted explicitly.<br />
+The runs, launched by such a user, mount all the storages of the Platform in a read-only mode (except the storages the user was granted write access to).</p>
+<p>More details see <a href="../../../manual/13_Permissions/13._Permissions/#storage-reader-role">here</a>.</p>
+<hr />
+<h2 id="permissions-granted-to-a-user">Permissions granted to a user</h2>
+<p>Previously, the permissions could be viewed only per object - for all users and groups granted access to it. To check which objects a specific user was granted access to, the permissions of every object had to be loaded and matched against the user's name, groups and roles.<br />
+In the current version, the new API method <code>GET /permissions/user?userId=&lt;user ID&gt;&amp;aclClass=&lt;object type&gt;</code> was introduced. For the specified user, it returns all objects of the type (data storages or pipelines) with the permissions granted to the user, to the user's groups or roles - including the ones inherited from the parent folders. The method is available to admins and to the users allowed to view the specified user (<strong>ROLE_USER_ADMIN</strong>, <strong>ROLE_USER_READER</strong> or <strong>READ</strong> permission to that user). Admins get all objects, other users - only the objects they have read access to.</p>
+<p>More details see <a href="../../../manual/13_Permissions/13._Permissions/#permissions-granted-to-a-user">here</a>.</p>
 <h2 id="checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in <code>pipe run</code></h2>
 <p>Previously, <code>pipe run</code> did not check the version (tag) of the Docker image specified via the <code>-di</code> (<code>--docker-image</code>) option. A run with a mistyped version, e.g. <code>library/ubuntu:latet</code>, was scheduled and failed only on the node, when the image could not be pulled.</p>
 <p>In the current version, <code>pipe run</code> checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - <code>pipe</code> prints an error with the list of the available versions and exits with the code <code>1</code>.<br />

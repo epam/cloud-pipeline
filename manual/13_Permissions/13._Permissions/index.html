@@ -265,9 +265,15 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#admin-role">Admin role</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#storage-reader-role">Storage reader role</a>
+    </li>
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#permission-settings">Permission settings</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#permissions-granted-to-a-user">Permissions granted to a user</a>
+    </li>
+        </ul>
     </li>
     </ul>
                   </li>
@@ -426,7 +432,10 @@
 <li><a href="#admin-role">Admin role</a></li>
 </ul>
 </li>
-<li><a href="#permission-settings">Permission settings</a></li>
+<li><a href="#permission-settings">Permission settings</a><ul>
+<li><a href="#permissions-granted-to-a-user">Permissions granted to a user</a></li>
+</ul>
+</li>
 </ul>
 <h2 id="overview">Overview</h2>
 <p><strong>Security Policies Scheme</strong> is organized by 2 principal tools: <strong>groups</strong> (user groups and system roles) and <strong>Access Control List</strong> defined for each CP's object.<br />
@@ -683,6 +692,17 @@ Object's Access Control List specifies who can work with the object and what he 
 <h3 id="admin-role">Admin role</h3>
 <p>Admin property can be given by assigning <strong>ROLE_ADMIN</strong> to a user (about roles see <a href="../../12_Manage_Settings/12._Manage_Settings/#roles">here</a>). The user gets Read/Write/Execute/Owner permissions to all objects in the system.<br />
 Initially, a user with <strong>ROLE_ADMIN</strong> shall be an authenticated domain account (SAML/OAuth/OpenID) defined during a system deployment (in some properties file or database).</p>
+<h3 id="storage-reader-role">Storage reader role</h3>
+<p>Read-only access to all data storages can be given by assigning <strong>ROLE_STORAGE_READER</strong> to a user. The user gets <strong>READ</strong> permission to every data storage in the Platform - even if the storage permission settings deny <strong>READ</strong> to that user or to their groups - and so is able to browse storages, download their data (via GUI or <code>pipe</code> CLI), view storage attributes and tags, and view the storage permission settings.</p>
+<p>The role grants nothing but <strong>READ</strong>:</p>
+<ul>
+<li><strong>WRITE</strong>, <strong>EXECUTE</strong> and <strong>OWNER</strong> permissions are still resolved from the storage permission settings - so if the user was granted <strong>WRITE</strong> to some storage, they keep it</li>
+<li>listing of object versions is not covered by the role - it still requires the <strong>OWNER</strong> permission to the storage</li>
+<li>archived objects are not covered by the role either - they still require the <strong>OWNER</strong> permission to the storage or one of the <strong>ROLE_STORAGE_ARCHIVE_MANAGER</strong>/<strong>ROLE_STORAGE_ARCHIVE_READER</strong> roles (see <a href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">Storage lifecycle</a>). As these roles take effect wherever the user has <strong>READ</strong>, a user having both <strong>ROLE_STORAGE_READER</strong> and <strong>ROLE_STORAGE_ARCHIVE_READER</strong> is able to view archived objects of every storage</li>
+<li>the global search results are not extended by the role - they still include only the storages the user has <strong>READ</strong> permission to by the storage permission settings</li>
+<li>the <code>mount</code> command inside a run is not allowed by the role - it is still available only for the users with the <strong>ROLE_ADMIN</strong> or <strong>ROLE_STORAGE_ADMIN</strong> role</li>
+<li>the runs, launched by the user, mount all the storages of the Platform - as for the users with the <strong>ROLE_STORAGE_ADMIN</strong> role - but in a read-only mode. A storage is mounted with the write access only if the user was granted <strong>WRITE</strong> to it and nothing else makes it read-only (e.g. a read-only mode of the storage quota or a sensitive run)</li>
+</ul>
 <h2 id="permission-settings">Permission settings</h2>
 <p>The permissions could be granted to a user in one of the following ways:</p>
 <ul>
@@ -707,6 +727,12 @@ To assign object's permissions to a user or user group you shall move to the obj
 <p><strong>Example 1:</strong> according to the picture above, a user will get <strong>WRITE</strong> and <strong>EXECUTE</strong> permissions for an object, and the <strong>READ</strong> permission will be inherited from the parent object.</p>
 <p><strong>Example 2:</strong> on the picture below we see <strong>Permission</strong> form of a run configuration. We grant a user <strong>READ</strong> and <strong>EXECUTE</strong> permissions, but deny <strong>WRITE</strong> permission. So the user is able to see the run configuration and run it, but he can not edit its parameters:<br />
 <img alt="CP_Permissions" src="../attachments/Permissions_6.png" /></p>
+<h3 id="permissions-granted-to-a-user">Permissions granted to a user</h3>
+<p>The <strong>"Permissions"</strong> form shows all users and groups granted permissions to a single object. The opposite view - permissions granted to a single user on all objects of a type - is available via the API method <code>GET /permissions/user?userId=&lt;user ID&gt;&amp;aclClass=&lt;object type&gt;</code>. Supported object types are <code>DATA_STORAGE</code> and <code>PIPELINE</code>.</p>
+<p>For each object, the method returns the object and the permission entries that concern the user - the ones set for the user itself, for one of the user's groups or for one of the user's roles. Each entry combines the permissions set on the object with the ones set on its parent folders: the permissions not set on the object are taken from the closest parent folder they are set on. So an entry may differ from the one shown in the <strong>"Permissions"</strong> form of the object, and an object may be returned only because of the permissions set on its parent folder. Each entry keeps both the allowed and the denied permissions. Objects without such entries are not included.</p>
+<p>The method is available to admins, to the users with the <strong>ROLE_USER_ADMIN</strong> or <strong>ROLE_USER_READER</strong> role, and to the users that have <strong>READ</strong> permission to the specified user. Admins get the objects of all the Platform, other users - only the objects they have <strong>READ</strong> permission to themselves.</p>
+<p><strong><em>Note</em></strong>: the method returns only the permissions set in the permission settings of the objects. It does not show the access the user gets by <a href="#owner-property">ownership</a> or by a role that gives access regardless of the permission settings (e.g. <a href="#admin-role">ROLE_ADMIN</a>, <strong>ROLE_STORAGE_ADMIN</strong>, <a href="#storage-reader-role">ROLE_STORAGE_READER</a>), nor the access limited by a storage quota or by the mount status of an NFS storage. So, a user may have access to an object that is missing in the result, or less access than the returned entries grant.</p>
+<p>More about <strong>Cloud Pipeline</strong> API see <a href="../../../api/API_tutorials/API_tutorials/">here</a>.</p>
               
             </div>
           </div><footer>
