@@ -200,6 +200,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#advanced-global-search-with-faceted-filters">Advanced global search with faceted filters</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#exclude-nfs-storages-from-file-indexing">Exclude NFS storages from file indexing</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#explicitly-immutable-pipeline-parameters">Explicitly "immutable" pipeline parameters</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#disable-hyper-threading">Disable Hyper-Threading</a>
@@ -240,8 +242,12 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in pipe run</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#node-start-retries-for-a-specific-run">Node start retries for a specific run</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#pipe-storage-ls-works-incorrectly-with-the-option-page">pipe storage ls works incorrectly with the option --page</a>
@@ -655,6 +661,7 @@
 <li><a href="#custom-node-images">Custom node images</a></li>
 <li><a href="#launch-a-tool-with-hosted-applications">Launch a tool with "hosted" applications</a></li>
 <li><a href="#advanced-global-search-with-faceted-filters">Advanced global search with faceted filters</a></li>
+<li><a href="#exclude-nfs-storages-from-file-indexing">Exclude NFS storages from file indexing</a></li>
 <li><a href="#explicitly-immutable-pipeline-parameters">Explicitly "immutable" pipeline parameters</a></li>
 <li><a href="#disable-hyper-threading">Disable Hyper-Threading</a></li>
 <li><a href="#saving-of-interim-data-for-jobs-stopped-by-a-timeout">Saving of interim data for jobs stopped by a timeout</a></li>
@@ -675,10 +682,12 @@
 <li><a href="#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions</a></li>
 <li><a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of regions for launched jobs in case of insufficient capacity</a></li>
 <li><a href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in <code>pipe run</code></a></li>
+<li><a href="#node-start-retries-for-a-specific-run">Node start retries for a specific run</a></li>
 </ul>
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a></li>
 <li><a href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a></li>
 <li><a href="#pipe-storage-ls-works-incorrectly-with-the-option-page"><code>pipe storage ls</code> works incorrectly with the option <code>--page</code></a></li>
 <li><a href="#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket">AWS deployment: unable to list more than 1000 files in the S3 bucket</a></li>
@@ -1718,6 +1727,11 @@ For more details about the view of the results output see <a href="../../../manu
 </li>
 </ul>
 <p>For more details about <strong>Advanced search</strong> see <a href="../../../manual/19_Search/19._Global_search/">here</a>.</p>
+<h2 id="exclude-nfs-storages-from-file-indexing">Exclude NFS storages from file indexing</h2>
+<p>Previously, the files of object storages (AWS S3, Google Cloud Storage, Azure Blob storage) could be excluded from the search indexing by the storage attribute, but NFS storages could not - all NFS storages were indexed. The only option was to disable the NFS files indexing entirely.</p>
+<p>In <strong><code>v0.17</code></strong>, the same attribute works for NFS storages as well: the files of an NFS storage tagged by the attribute <code>Billing status</code> with the value <code>Exclude</code> are not indexed anymore.<br />
+The attribute key and value for NFS storages can be changed via the environment variables <code>CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_KEY</code> and <code>CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_VALUE</code> of the search service.</p>
+<p>For more details see <a href="../../../manual/19_Search/19._Global_search/#exclude-storages-from-file-indexing">here</a>.</p>
 <h2 id="explicitly-immutable-pipeline-parameters">Explicitly "immutable" pipeline parameters</h2>
 <p>Previously, if the pipeline parameter had a default value - it could not be changed in the detached configuration that used this pipeline.<br />
 In different cases, it might be convenient to provide the ability to specify the own parameter value before the configuration launch or vice versa - the ability to launch the configuration with only defaults parameter values.  </p>
@@ -2110,8 +2124,18 @@ If a new instance is not available with a new region - relaunch will be performe
 <p>In the current version, <code>pipe run</code> checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - <code>pipe</code> prints an error with the list of the available versions and exits with the code <code>1</code>.<br />
 If the tool versions can't be loaded, <code>pipe</code> prints a warning and continues the launch.</p>
 <p>For more details see <a href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/#run-a-tool">here</a>.</p>
+<h2 id="node-start-retries-for-a-specific-run">Node start retries for a specific run</h2>
+<p>Previously, the number of tries to start a node for a run could only be set globally, by the system preference <code>cluster.nodeup.retry.count</code>. It applied to all runs.</p>
+<p>In <strong><code>v0.17</code></strong>, it can be overridden for a specific run by the parameter <code>CP_NODEUP_RETRY_COUNT</code>. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.<br />
+The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see <a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">above</a>). If the value is not a positive integer, <code>cluster.nodeup.retry.count</code> is used.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4598">#4598</a></p>
+<p>Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.
+All storages after the deleted one were not re-indexed until the next cycle, so the search showed outdated files for them.
+This affected <code>NFS</code> storages and the object storages (<code>S3</code>, <code>GCS</code>, <code>Azure</code>).
+Now, the deleted storage is skipped, and the remaining storages are indexed as usual.</p>
 <h3 id="unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/1353">#1353</a></p>
 <p>Previously, Pipeline's "<strong>Documents</strong>" and "<strong>Code</strong>" tabs always showed content of the last "<em>draft</em>" version of pipeline, even if one of the previous versions was forcibly specified in the url.</p>

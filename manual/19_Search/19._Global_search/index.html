@@ -325,6 +325,8 @@
     </li>
         </ul>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#exclude-storages-from-file-indexing">Exclude storages from file indexing</a>
+    </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
@@ -427,6 +429,7 @@
 </li>
 </ul>
 </li>
+<li><a href="#exclude-storages-from-file-indexing">Exclude storages from file indexing</a></li>
 </ul>
 <p>When the certain <strong>Cloud Pipeline</strong> deployment grows in terms of data and pipelines being added/implemented - it is crucial to be able to search for specific datasets or tools.<br />
 To find other data and objects, there are two types of the search - <strong>Simple</strong> and <strong>Advanced</strong>.</p>
@@ -590,6 +593,57 @@ In this preference, the additional attributes (tags) keys should be specified as
 <li>for the objects that have values for added attribute keys, they will be shown in the corresponding columns, e.g.:<br />
 <img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_20.png" /></li>
 </ul>
+<h2 id="exclude-storages-from-file-indexing">Exclude storages from file indexing</h2>
+<p>By default, the files of AWS S3, Google Cloud Storage, Azure Blob storage and NFS storages are indexed, so they can be found via the search.<br />
+Separate storages can be left out of the file indexing - e.g. a large NFS storage with many changing files that are not needed in the search.</p>
+<p>To exclude a storage, add the following attribute to it (how to add attributes see <a href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/#add-attributes">here</a>):</p>
+<ul>
+<li>key - <code>Billing status</code></li>
+<li>value - <code>Exclude</code></li>
+</ul>
+<p>This attribute can be added by any user who can manage the storage attributes - an admin or the storage owner.</p>
+<p>The search service checks this attribute at the start of each indexing cycle and skips the files of such storages.<br />
+It works for all four storage types above. For NFS storages, the file change events sent by the NFS observer (if it is configured) are skipped as well.</p>
+<p><strong><em>Notes</em></strong>:</p>
+<ul>
+<li>the storage itself stays in the search - it can still be found by its name. Only its files are not indexed</li>
+<li>the files that were indexed before the attribute was added stay in the search results, but they are not updated anymore</li>
+<li>the same attribute is used by default to exclude a storage from the billing reports. If a storage shall be excluded from only one of them - change the attribute via the environment variables below</li>
+</ul>
+<p>The attribute key and value can be changed separately for each storage type - via the environment variables of the search service (the <code>cp-config-global</code> config map):</p>
+<table>
+<thead>
+<tr>
+<th>Storage type</th>
+<th>Attribute key variable</th>
+<th>Attribute value variable</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AWS S3</td>
+<td><code>CP_SEARCH_S3_FILE_STORAGE_EXCLUDE_METADATA_KEY</code></td>
+<td><code>CP_SEARCH_S3_FILE_STORAGE_EXCLUDE_METADATA_VALUE</code></td>
+</tr>
+<tr>
+<td>Google Cloud Storage</td>
+<td><code>CP_SEARCH_GS_FILE_STORAGE_EXCLUDE_METADATA_KEY</code></td>
+<td><code>CP_SEARCH_GS_FILE_STORAGE_EXCLUDE_METADATA_VALUE</code></td>
+</tr>
+<tr>
+<td>Azure Blob storage</td>
+<td><code>CP_SEARCH_AZ_FILE_STORAGE_EXCLUDE_METADATA_KEY</code></td>
+<td><code>CP_SEARCH_AZ_FILE_STORAGE_EXCLUDE_METADATA_VALUE</code></td>
+</tr>
+<tr>
+<td>NFS</td>
+<td><code>CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_KEY</code></td>
+<td><code>CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_VALUE</code></td>
+</tr>
+</tbody>
+</table>
+<p>If these variables are not set, <code>Billing status</code> and <code>Exclude</code> are used.<br />
+The change of these variables is applied after the search service restart.</p>
               
             </div>
           </div><footer>
