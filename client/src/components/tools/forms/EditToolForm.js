@@ -58,11 +58,7 @@ import {
   kubeEnabled,
   getAutoScaledPriceTypeValue,
   applyChildNodeInstanceParametersAsArray,
-  parseChildNodeInstanceConfiguration,
-  getNodeUpRetryCountParameter,
-  getNodeUpRetryCountFieldValue,
-  getMaxNodeUpRetryCount,
-  nodeUpRetryCountChanged
+  parseChildNodeInstanceConfiguration
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -77,10 +73,8 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_RESCHEDULE_RUN,
-  CP_NODEUP_RETRY_COUNT,
   RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/parameters';
-import NodeUpRetryCountFormItem from '../../pipelines/launch/form/components/node-up-retry-count';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
   RUN_CAPABILITIES_MODE,
@@ -238,7 +232,6 @@ export default class EditToolForm extends React.Component {
   };
 
   @observable defaultLimitMounts;
-  @observable defaultNodeUpRetryCount;
   @observable defaultCommand;
   @observable defaultProperties;
   @observable defaultSystemProperties;
@@ -355,16 +348,6 @@ export default class EditToolForm extends React.Component {
             params.push({
               name: CP_CAP_LIMIT_MOUNTS,
               value: values.limitMounts
-            });
-          }
-          const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
-            values.nodeUpRetryCount,
-            this.props.preferences
-          );
-          if (nodeUpRetryCountParameter) {
-            params.push({
-              name: CP_NODEUP_RETRY_COUNT,
-              ...nodeUpRetryCountParameter
             });
           }
           if (this.state.launchCluster && this.state.autoScaledCluster) {
@@ -627,7 +610,6 @@ export default class EditToolForm extends React.Component {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
     this.defaultLimitMounts = null;
-    this.defaultNodeUpRetryCount = null;
     this.defaultProperties = [];
     this.defaultSystemProperties = [];
     this.defaultCommand = props.tool && props.tool.defaultCommand
@@ -730,14 +712,6 @@ export default class EditToolForm extends React.Component {
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               }
-              continue;
-            }
-            if (
-              key === CP_NODEUP_RETRY_COUNT &&
-              this.props.preferences.allowNodeUpRetryCount
-            ) {
-              this.defaultNodeUpRetryCount =
-                props.configuration.parameters[CP_NODEUP_RETRY_COUNT].value;
               continue;
             }
             if (
@@ -1033,15 +1007,6 @@ export default class EditToolForm extends React.Component {
       }
       return this.defaultLimitMounts !== fieldValue;
     };
-    const nodeUpRetryCountFieldChanged = () => {
-      if (!this.props.preferences.allowNodeUpRetryCount) {
-        return false;
-      }
-      return nodeUpRetryCountChanged(
-        this.defaultNodeUpRetryCount,
-        this.props.form.getFieldValue('nodeUpRetryCount')
-      );
-    };
     const cloudRegionFieldChanged = () => {
       return this.getCloudRegionInitialValue() !== this.props.form.getFieldValue('cloudRegionId');
     };
@@ -1133,7 +1098,7 @@ export default class EditToolForm extends React.Component {
         this.state.autoScaledCluster &&
         maxNodesCount !== this.state.maxNodesCount
       ) ||
-      limitMountsFieldChanged() || nodeUpRetryCountFieldChanged() ||
+      limitMountsFieldChanged() ||
       cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
       kubeLabelsHasChanges(
         this.state.initialKubeLabels,
@@ -1655,16 +1620,6 @@ export default class EditToolForm extends React.Component {
                     />
                   )}
                 </Form.Item>
-              )}
-              {this.props.preferences.allowNodeUpRetryCount && (
-                <NodeUpRetryCountFormItem
-                  formItemLayout={this.formItemLayout}
-                  getFieldDecorator={getFieldDecorator}
-                  disabled={this.state.pending || this.props.readOnly}
-                  initialValue={getNodeUpRetryCountFieldValue(this.defaultNodeUpRetryCount)}
-                  placeholder={`${this.props.preferences.defaultNodeUpRetryCount}`}
-                  max={getMaxNodeUpRetryCount(this.props.preferences)}
-                />
               )}
               <Row>
                 <Col

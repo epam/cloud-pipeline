@@ -957,8 +957,7 @@ export function getParameterConfig (
       isCapabilityParameter(name) ||
       isReservationRequestParameter(name) ||
       isReservedParameter(name) ||
-      isGPUScalingParameter(name) ||
-      isNodeUpRetryCountParameter(name);
+      isGPUScalingParameter(name);
     if (typeof parameter === 'object') {
       const {
         type: pType = 'string',
@@ -1363,7 +1362,6 @@ function validateParameter (parameter, parameters, rawEdit = false) {
         isCapabilityParameter(parameter.name) ||
         isReservationRequestParameter(parameter.name) ||
         isGPUScalingParameter(parameter.name) ||
-        isNodeUpRetryCountParameter(parameter.name) ||
         isSystemParameter(parameter.name))
     ) {
       throw new Error(`Name is reserved`);
@@ -1937,19 +1935,12 @@ export function isGPUScalingParameter (parameterName, options = {}) {
 }
 
 /**
- * Checks if parameter is the node up retry count parameter, and it is exposed
- * through the dedicated launch form field rather than the general parameters list
+ * Checks if parameter is the node up retry count parameter, which the launch form
+ * exposes through a dedicated field rather than the general parameters list
  * @param {string} parameterName
- * @param {{preferences}} [options]
  * @returns {boolean}
  */
-export function isNodeUpRetryCountParameter (parameterName, options = {}) {
-  const {
-    preferences: prefs = preferences
-  } = options || {};
-  if (!prefs || !prefs.allowNodeUpRetryCount) {
-    return false;
-  }
+export function isNodeUpRetryCountParameter (parameterName) {
   return `${parameterName}`.toLowerCase() === CP_NODEUP_RETRY_COUNT.toLowerCase();
 }
 
@@ -2005,7 +1996,8 @@ export function parameterConfigsToPayloadConfig (configs = []) {
  * @param {Parameter[]} parameters
  * @returns
  */
-export function parametersToPayloadParams (parameters = []) {
+export function parametersToPayloadParams (parameters = [], options = {}) {
+  const {hideNodeUpRetryCount = false} = options || {};
   const parameterToPayloadParameterConfig = (p) => {
     const cfg = findParameterConfig(p, parameters);
     return parameterConfigToPayloadConfig({...cfg, value: p.value});
@@ -2014,7 +2006,7 @@ export function parametersToPayloadParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
-      !isNodeUpRetryCountParameter(parameter.name) &&
+      !(hideNodeUpRetryCount && isNodeUpRetryCountParameter(parameter.name)) &&
       !isReservedParameter(parameter.name))
     .reduce((acc, cur) => ({
       ...acc,
@@ -2059,7 +2051,6 @@ export function parametersToConfigurationParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
-      !isNodeUpRetryCountParameter(parameter.name) &&
       !isReservedParameter(parameter.name));
   for (const parameter of filtered) {
     const current = findParameterConfig(parameter, parameters);
@@ -2211,13 +2202,16 @@ function parameterIsVisible (parameter = {}, showOptional = true) {
  * @param {boolean} rawEdit
  * @param {object} userInfo
  * @param {boolean} showOptional
+ * @param {boolean} hideNodeUpRetryCount - excludes CP_NODEUP_RETRY_COUNT, for callers
+ * that expose it through their own dedicated field instead
  */
 function getVisibleParameters (
   parameters = [],
   isSystem = false,
   rawEdit = false,
   userInfo,
-  showOptional = true
+  showOptional = true,
+  hideNodeUpRetryCount = false
 ) {
   return parameters
     .filter((parameter) => rawEdit || parameterIsVisible(parameter, showOptional))
@@ -2227,7 +2221,7 @@ function getVisibleParameters (
       !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
-      !isNodeUpRetryCountParameter(parameter.name)
+      !(hideNodeUpRetryCount && isNodeUpRetryCountParameter(parameter.name))
       : !parameter.system)
     .map((parameter) => isSystem ? mapSystemParameter(parameter, {
       runDefaultParameters,

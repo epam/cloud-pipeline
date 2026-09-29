@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Form} from 'antd';
-import {render, screen, click, change, keyDown, waitFor} from '@test';
+import {render, screen, change} from '@test';
 import NodeUpRetryCountFormItem from './index.jsx';
 import {
   getNodeUpRetryCountParameter,
@@ -38,7 +38,6 @@ class Harness extends React.Component {
           getFieldDecorator={form.getFieldDecorator}
           initialValue={initialValue}
           disabled={disabled}
-          placeholder={`${preferences.defaultNodeUpRetryCount}`}
           max={max}
         />
       </Form>
@@ -73,16 +72,6 @@ function sentParameter (form) {
   return getNodeUpRetryCountParameter(form.getFieldValue('nodeUpRetryCount'), preferences);
 }
 
-test('is empty, with the preference value as the placeholder, when nothing is stored', async () => {
-  const {getForm, input} = renderField();
-
-  expect(input).toHaveValue('');
-  expect(input).toHaveAttribute('placeholder', '5');
-  expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
-  expect(await validate(getForm())).toBeFalsy();
-  expect(sentParameter(getForm())).toBeUndefined();
-});
-
 test('shows a stored value, and sends it even when it equals the preference', () => {
   const {getForm, input} = renderField({initialValue: '5'});
 
@@ -90,29 +79,26 @@ test('shows a stored value, and sends it even when it equals the preference', ()
   expect(sentParameter(getForm())).toEqual({type: 'int', required: false, value: 5});
 });
 
-test('clearing a stored value leaves it unset, so nothing is sent', async () => {
-  const {getForm, input} = renderField({initialValue: '12'});
+test('is required: an empty value fails validation and nothing is sent', async () => {
+  const {getForm, input} = renderField({initialValue: '5'});
 
-  await click(screen.getByRole('button', {name: 'Clear'}));
+  await change(input, '');
 
-  await waitFor(() => expect(input).toHaveValue(''));
-  expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
+  expect(await validate(getForm())).toBeTruthy();
+  expect(await screen.findByText('Capacity retries is required')).toBeInTheDocument();
   expect(sentParameter(getForm())).toBeUndefined();
 });
 
-test('the clear button is focusable, and clears the value on Enter', async () => {
-  const {getForm, input} = renderField({initialValue: '12'});
-  const clear = screen.getByRole('button', {name: 'Clear'});
+test('a pre-filled default validates and is sent', async () => {
+  const {getForm, input} = renderField({initialValue: `${preferences.defaultNodeUpRetryCount}`});
 
-  expect(clear).toHaveAttribute('tabindex', '0');
-  await keyDown(clear, {key: 'Enter'});
-
-  await waitFor(() => expect(input).toHaveValue(''));
-  expect(sentParameter(getForm())).toBeUndefined();
+  expect(input).toHaveValue('5');
+  expect(await validate(getForm())).toBeFalsy();
+  expect(sentParameter(getForm())).toEqual({type: 'int', required: false, value: 5});
 });
 
 test('rejects a value that is not a positive integer', async () => {
-  const {getForm, input} = renderField();
+  const {getForm, input} = renderField({initialValue: '5'});
 
   await change(input, '0');
 
@@ -122,7 +108,7 @@ test('rejects a value that is not a positive integer', async () => {
 });
 
 test('accepts 999, and rejects a value above it', async () => {
-  const {getForm, input} = renderField();
+  const {getForm, input} = renderField({initialValue: '5'});
 
   await change(input, '999');
   expect(await validate(getForm())).toBeFalsy();
@@ -135,7 +121,7 @@ test('accepts 999, and rejects a value above it', async () => {
 });
 
 test('takes its bound from the max prop, so a higher preference raises it', async () => {
-  const {getForm, input} = renderField({max: 5000});
+  const {getForm, input} = renderField({initialValue: '5', max: 5000});
 
   await change(input, '1000');
   expect(await validate(getForm())).toBeFalsy();
@@ -145,9 +131,8 @@ test('takes its bound from the max prop, so a higher preference raises it', asyn
   expect(await screen.findByText('Maximum value is 5000')).toBeInTheDocument();
 });
 
-test('offers no clear button when disabled', () => {
+test('is disabled when asked to be', () => {
   renderField({initialValue: '12', disabled: true});
 
   expect(screen.getByLabelText('Capacity retries')).toBeDisabled();
-  expect(screen.queryByRole('button', {name: 'Clear'})).not.toBeInTheDocument();
 });

@@ -1424,13 +1424,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: values[ADVANCED].limitMounts
         };
       }
-      const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
-        values[EXEC_ENVIRONMENT].nodeUpRetryCount,
-        this.props.preferences
-      );
-      if (nodeUpRetryCountParameter) {
-        payload.parameters[CP_NODEUP_RETRY_COUNT] = nodeUpRetryCountParameter;
-      }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
         payload.parameters[CP_CAP_AUTOSCALE] = {
           type: 'boolean',
@@ -1601,7 +1594,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       pipelineId: this.props.pipeline ? this.props.pipeline.id : undefined,
       version: this.props.version,
       tags,
-      params: parameterUtilities.parametersToPayloadParams(this.getParameters(parametersPayloadId)),
+      params: parameterUtilities.parametersToPayloadParams(
+        this.getParameters(parametersPayloadId),
+        {hideNodeUpRetryCount: this.nodeUpRetryCountFieldVisible}
+      ),
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
@@ -1660,12 +1656,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: values[ADVANCED].limitMounts
       };
     }
-    const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
-      values[EXEC_ENVIRONMENT].nodeUpRetryCount,
-      this.props.preferences
-    );
-    if (nodeUpRetryCountParameter) {
-      payload.params[CP_NODEUP_RETRY_COUNT] = nodeUpRetryCountParameter;
+    if (this.nodeUpRetryCountFieldVisible) {
+      const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
+        values[EXEC_ENVIRONMENT].nodeUpRetryCount,
+        this.props.preferences
+      );
+      if (nodeUpRetryCountParameter) {
+        payload.params[CP_NODEUP_RETRY_COUNT] = nodeUpRetryCountParameter;
+      }
     }
     const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
     const launchAutoScaledHybridCluster = launchAutoScaledCluster &&
@@ -2843,6 +2841,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
         showOptionalParameters={this.showOptionalParameters}
+        hideNodeUpRetryCount={this.nodeUpRetryCountFieldVisible}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -2922,6 +2921,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return !this.state.fireCloudMethodName &&
       !this.props.detached &&
       !this.props.editConfigurationMode;
+  }
+
+  @computed
+  get nodeUpRetryCountFieldVisible () {
+    return !this.state.fireCloudMethodName &&
+      !this.props.detached &&
+      !this.props.editConfigurationMode &&
+      !this.props.launchProfile &&
+      this.props.preferences.allowNodeUpRetryCount;
   }
 
   get prettyUrlEnabled () {
@@ -3118,22 +3126,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderNodeUpRetryCountFormItem = () => {
-    if (this.state.fireCloudMethodName) {
+    if (!this.nodeUpRetryCountFieldVisible) {
       return undefined;
     }
-    if (!this.props.preferences.allowNodeUpRetryCount) {
-      return undefined;
-    }
+    const configuredValue = getNodeUpRetryCountFieldValue(
+      this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`)
+    );
     return (
       <NodeUpRetryCountFormItem
         className={getFormItemClassName(styles.formItem, 'nodeUpRetryCount')}
         formItemLayout={this.formItemLayout}
         getFieldDecorator={this.getSectionFieldDecorator(EXEC_ENVIRONMENT)}
         disabled={this.props.readOnly && !this.props.canExecute}
-        initialValue={getNodeUpRetryCountFieldValue(
-          this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`)
-        )}
-        placeholder={`${this.props.preferences.defaultNodeUpRetryCount}`}
+        initialValue={configuredValue || `${this.props.preferences.defaultNodeUpRetryCount}`}
         max={getMaxNodeUpRetryCount(this.props.preferences)}
       />
     );

@@ -15,7 +15,7 @@
  */
 
 import {stubApi} from '@test';
-import preferences from './PreferencesLoad';
+import preferences, {DEFAULT_NODE_UP_RETRY_COUNT} from './PreferencesLoad';
 
 describe('allowNodeUpRetryCount', () => {
   it('is false when the preference is absent', async () => {
@@ -52,12 +52,12 @@ describe('allowNodeUpRetryCount', () => {
 });
 
 describe('defaultNodeUpRetryCount', () => {
-  it('falls back to 5 when the preference is absent', async () => {
+  it('falls back to the default when the preference is absent', async () => {
     stubApi({'/preferences': []});
     preferences.invalidateCache();
     await preferences.fetch();
 
-    expect(preferences.defaultNodeUpRetryCount).toBe(5);
+    expect(preferences.defaultNodeUpRetryCount).toBe(DEFAULT_NODE_UP_RETRY_COUNT);
   });
 
   it('reads the numeric value of cluster.nodeup.retry.count', async () => {

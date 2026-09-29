@@ -7,13 +7,13 @@ import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import {addParameter, addSystemParameters} from '../utilities/parameter-utilities';
 import {
-  reservedParameters
+  reservedParameters,
+  CP_NODEUP_RETRY_COUNT
 } from '../utilities/parameters';
 import SystemParametersBrowser from '../../dialogs/SystemParametersBrowser';
 import {
   getSkippedParameters as getGPUScalingSkippedParameters
 } from '../utilities/enable-gpu-scaling';
-import {getNodeUpRetryCountSkippedParameters} from '../utilities/launch-cluster';
 
 @inject('preferences')
 @observer
@@ -44,7 +44,7 @@ class AddParameterButton extends React.Component {
     const skipped = parameters.map((p) => p.name)
       .concat(reservedParameters)
       .concat(preferences.loaded ? getGPUScalingSkippedParameters(preferences) : [])
-      .concat(preferences.loaded ? getNodeUpRetryCountSkippedParameters(preferences) : []);
+      .concat([CP_NODEUP_RETRY_COUNT]);
     return (
       <Button
         id="add-system-parameter-button"
