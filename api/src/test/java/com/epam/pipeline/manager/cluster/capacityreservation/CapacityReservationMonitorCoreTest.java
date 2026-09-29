@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationT
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.junit.Before;
@@ -133,6 +134,27 @@ public class CapacityReservationMonitorCoreTest {
         monitor.processApproved();
 
         verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.PURCHASE_FAILED), any());
+    }
+
+    /**
+     * A submission whose reply was lost may have bought the reservation. Ending it as {@code PURCHASE_FAILED} would
+     * never look at it again, so it stays {@code APPROVED} - the next cycle resubmits the same attempt, whose token
+     * finds what the lost call bought.
+     */
+    @Test
+    public void shouldKeepTheReservationApprovedWhenTheSubmissionOutcomeIsUncertain() {
+        final CapacityReservation reservation = approved();
+        final int attemptBefore = reservation.getAttempt();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.submit(any())).thenThrow(
+                new CapacityReservationSubmissionUncertainException("timed out", new IllegalStateException()));
+
+        monitor.processApproved();
+
+        verify(statusService).recordRetry(reservation, "timed out");
+        verify(statusService, never()).transition(any(), any(), any());
+        // The same attempt, so the retry carries the same token.
+        assertThat(reservation.getAttempt()).isEqualTo(attemptBefore);
     }
 
     /**

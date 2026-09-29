@@ -22,11 +22,16 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReserva
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
+import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.exception.SdkServiceException;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.ApplyCancellationCharges;
 import software.amazon.awssdk.services.ec2.model.CancelCapacityReservationRequest;
@@ -46,7 +51,11 @@ import software.amazon.awssdk.services.ec2.model.TagSpecification;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * AWS On-Demand Capacity Reservations, future-dated.
@@ -94,6 +103,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
 
     private static final String NAME_TAG = "Name";
     private static final int SECONDS_PER_HOUR = 3600;
+    private static final int HTTP_SERVER_ERROR = 500;
+    private static final Set<String> INSUFFICIENT_CAPACITY_ERROR_CODES = new HashSet<>(Arrays.asList(
+            "InsufficientCapacity", "InsufficientInstanceCapacity", "InsufficientReservedInstanceCapacity"));
 
     private final CloudRegionManager regionManager;
     private final AWSV2EC2ClientProvider clientProvider;
@@ -128,9 +140,11 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 reservation.getId(), region.getRegionCode(), reservation.getInstanceType(),
                 reservation.getStartDate());
 
-        try (Ec2Client client = clientProvider.client(region)) {
-            return toCloudReservation(client.createCapacityReservation(request.build()).capacityReservation());
-        }
+        return uncertainOnTransientFailure(reservation, () -> {
+            try (Ec2Client client = clientProvider.client(region)) {
+                return toCloudReservation(client.createCapacityReservation(request.build()).capacityReservation());
+            }
+        });
     }
 
     @Override
@@ -245,18 +259,61 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     public Optional<CloudCapacityReservation> findByClientToken(final CapacityReservation reservation,
                                                                final String clientToken) {
         final AwsRegion region = region(reservation);
-        try (Ec2Client client = clientProvider.client(region)) {
-            return ListUtils.emptyIfNull(client.describeCapacityReservations(
-                            DescribeCapacityReservationsRequest.builder()
-                                    .filters(Filter.builder()
-                                            .name("tag:" + CLIENT_TOKEN_TAG)
-                                            .values(clientToken)
-                                            .build())
-                                    .build())
-                            .capacityReservations()).stream()
-                    .findFirst()
-                    .map(AwsCapacityReservationService::toCloudReservation);
+        return uncertainOnTransientFailure(reservation, () -> {
+            try (Ec2Client client = clientProvider.client(region)) {
+                return ListUtils.emptyIfNull(client.describeCapacityReservations(
+                                DescribeCapacityReservationsRequest.builder()
+                                        .filters(Filter.builder()
+                                                .name("tag:" + CLIENT_TOKEN_TAG)
+                                                .values(clientToken)
+                                                .build())
+                                        .build())
+                                .capacityReservations()).stream()
+                        .findFirst()
+                        .map(AwsCapacityReservationService::toCloudReservation);
+            }
+        });
+    }
+
+    /**
+     * Separates a failure that leaves the outcome open from a definitive refusal.
+     *
+     * <p>A client-side failure - a timeout, a dropped connection - may have happened after AWS acted, and throttling
+     * or a 5xx is AWS saying "not now" rather than "no". Both are safe to retry with the same token and must be,
+     * or a reservation AWS did create is abandoned. Any other service error is a 4xx refusal of the request itself,
+     * which means nothing was created and a retry would be refused again - so it is left as it is.
+     *
+     * <p>EC2 reports running out of capacity as a 5xx, but it is a refusal like any 4xx: nothing was created, and
+     * retrying the same request would only ask for the same missing capacity again.
+     */
+    private static <T> T uncertainOnTransientFailure(final CapacityReservation reservation,
+                                                     final Supplier<T> call) {
+        try {
+            return call.get();
+        } catch (SdkClientException e) {
+            throw uncertain(reservation, e);
+        } catch (SdkServiceException e) {
+            if (e.isThrottlingException()
+                    || e.statusCode() >= HTTP_SERVER_ERROR && !isInsufficientCapacity(e)) {
+                throw uncertain(reservation, e);
+            }
+            throw e;
         }
+    }
+
+    private static boolean isInsufficientCapacity(final SdkServiceException e) {
+        return e instanceof AwsServiceException
+                && Optional.ofNullable(((AwsServiceException) e).awsErrorDetails())
+                        .map(AwsErrorDetails::errorCode)
+                        .filter(INSUFFICIENT_CAPACITY_ERROR_CODES::contains)
+                        .isPresent();
+    }
+
+    private static CapacityReservationSubmissionUncertainException uncertain(final CapacityReservation reservation,
+                                                                             final RuntimeException cause) {
+        return new CapacityReservationSubmissionUncertainException(String.format(
+                "AWS did not give a definitive answer for capacity reservation %d, will retry: %s",
+                reservation.getId(), cause.getMessage()), cause);
     }
 
     /**

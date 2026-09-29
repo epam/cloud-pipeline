@@ -100,6 +100,29 @@ public class CapacityReservationStatusService {
     }
 
     /**
+     * Records why a reservation is still where it was, without moving it.
+     *
+     * <p>For a step that will be retried rather than failed: the status does not change, so nobody is notified,
+     * but the reason is persisted so a reservation sitting in {@code APPROVED} says what it is waiting for.
+     *
+     * <p>Only the reason is written, and only if the status is still the one the caller saw. The caller's copy was
+     * loaded before a provider call that may have taken minutes to time out, and a user may have cancelled the
+     * reservation meanwhile; writing the whole row back would revive it, and the next cycle would buy it.
+     *
+     * @return whether the reservation was still where the caller saw it
+     */
+    @Transactional
+    public boolean recordRetry(final CapacityReservation reservation, final String statusReason) {
+        final boolean written = reservationDao.updateStatusReason(reservation.getId(), reservation.getStatus(),
+                statusReason, DateUtils.nowUTC());
+        if (!written) {
+            log.debug("Capacity reservation {} left {} while its retry was being recorded; leaving it as it is",
+                    reservation.getId(), reservation.getStatus());
+        }
+        return written;
+    }
+
+    /**
      * Announces a newly created reservation: administrators need to know when something is waiting on them,
      * and the requester needs to know when it is not.
      */
