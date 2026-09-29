@@ -1299,7 +1299,7 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-q', '--quiet', help='Enables quiet mode', is_flag=True)
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
-@click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
+@click.option('-w', '--timeout', required=False, help='Maximum time in ms to wait for the storage to be mounted',
               default=10000, type=int)
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @click.option('-p', '--fix-permissions', is_flag=True, help='Fix permission for new files uploaded using FUSE. '
