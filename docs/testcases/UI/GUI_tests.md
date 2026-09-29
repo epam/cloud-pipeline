@@ -6,7 +6,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Advanced_Search</b> (12 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**1836**](Advanced_Search/1836.md) | Advanced Search page |  |
 | [**1837_1**](Advanced_Search/1837_1.md) | Faceted Filter controls configure |  |
 | [**1837_2**](Advanced_Search/1837_2.md) | Faceted Filter controls |  |
@@ -26,7 +26,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Advanced_filter</b> (46 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-727**](Advanced_filter/EPMCMBIBPC-727.md) | [MANUAL] Check elements for "Advanced_filter" |  |
 | [**EPMCMBIBPC-728**](Advanced_filter/EPMCMBIBPC-728.md) | [MANUAL] Advanced_filter by equal id validation |  |
 | [**EPMCMBIBPC-729**](Advanced_filter/EPMCMBIBPC-729.md) | [MANUAL] Advanced_filter by equal run.id validation |  |
@@ -80,7 +80,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Billing</b> (9 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2580**](Billing/2580.md) | [Manual] Check that Data Storage can be excluded from the billing reports |  |
 | [**762_1**](Billing/762/762_1.md) | Check the Global quota creation |  |
 | [**762_2**](Billing/762/762_2.md) | Check creation and deletion of Global quota with the same and different quota period |  |
@@ -97,7 +97,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Cluster_nodes</b> (27 tests, 15 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1431**](Cluster_nodes/EPMCMBIBPC-1431.md) | [MANUAL] Validation of node monitor tab |  |
 | [**EPMCMBIBPC-267**](Cluster_nodes/EPMCMBIBPC-267.md) | Cluster nodes page | :white_check_mark: |
 | [**EPMCMBIBPC-269**](Cluster_nodes/EPMCMBIBPC-269.md) | Sorting by increase nodes by date | :white_check_mark: |
@@ -132,7 +132,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Dashboard</b> (16 tests, 2 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2356**](Dashboard/2356.md) | Allow to configure several "support" icons | :white_check_mark: |
 | [**897**](Dashboard/897.md) | Check the Support pop-up content | :white_check_mark: |
 | [**EPMCMBIBPC-2705**](Dashboard/EPMCMBIBPC-2705.md) | [MANUAL] Configure widgets |  |
@@ -156,7 +156,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Data_storages</b> (141 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**1469**](Data_storages/1469.md) | Check transfer between regions | :white_check_mark: |
 | [**EPMCMBIBPC-1017**](Data_storages/EPMCMBIBPC-1017.md) | Cross button validation if user delete bucket | :white_check_mark: |
 | [**EPMCMBIBPC-1035**](Data_storages/EPMCMBIBPC-1035.md) | Validation of navigation buttons in storage | :white_check_mark: |
@@ -305,7 +305,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Docker_commit</b> (20 tests, 14 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1350**](Docker_commit/EPMCMBIBPC-1350.md) | Check list of groups in the registry | :white_check_mark: |
 | [**EPMCMBIBPC-1352**](Docker_commit/EPMCMBIBPC-1352.md) | Commit docker validation in personal group | :white_check_mark: |
 | [**EPMCMBIBPC-1353**](Docker_commit/EPMCMBIBPC-1353.md) | Validation of commited docker | :white_check_mark: |
@@ -333,7 +333,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Global_search</b> (22 tests, 22 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-2653**](Global_search/EPMCMBIBPC-2653.md) | Prepare for search | :white_check_mark: |
 | [**EPMCMBIBPC-2654**](Global_search/EPMCMBIBPC-2654.md) | Search for folder | :white_check_mark: |
 | [**EPMCMBIBPC-2655**](Global_search/EPMCMBIBPC-2655.md) | Search for folder by Enter key | :white_check_mark: |
@@ -363,7 +363,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>HCS</b> (12 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2489_1**](HCS/2489_1.md) | Open preview for the HCS image |  |
 | [**2489_2**](HCS/2489_2.md) | [Manual] HCS files metadata |  |
 | [**2489_2758**](HCS/2489_2758.md) | [Manual] Channel panel and standard channels colors |  |
@@ -383,7 +383,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Issues</b> (14 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-2691**](Issues/EPMCMBIBPC-2691.md) | [MANUAL] Create issue |  |
 | [**EPMCMBIBPC-2692**](Issues/EPMCMBIBPC-2692.md) | [MANUAL] [NEGATIVE] Create issue |  |
 | [**EPMCMBIBPC-2693**](Issues/EPMCMBIBPC-2693.md) | [MANUAL] Edit issue |  |
@@ -405,7 +405,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Layouts</b> (2 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**1504**](Layouts/1504.md) | [MANUAL] Check layout in Groups/Roles membership view |  |
 | [**1505**](Layouts/1505.md) | [MANUAL] Check layout in the Billing Reports - near discounts links |  |
 
@@ -415,7 +415,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Notifications</b> (26 tests, 13 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1205**](Notifications/EPMCMBIBPC-1205.md) | Validation of "Systems events" menu | :white_check_mark: |
 | [**EPMCMBIBPC-1206**](Notifications/EPMCMBIBPC-1206.md) | Validation of create inactive info notification | :white_check_mark: |
 | [**EPMCMBIBPC-1209**](Notifications/EPMCMBIBPC-1209.md) | Validation of active notification | :white_check_mark: |
@@ -449,7 +449,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Object_attributes</b> (29 tests, 26 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1193**](Object_attributes/EPMCMBIBPC-1193.md) | [Negative] Try to enter wrong key-values of attributes | :white_check_mark: |
 | [**EPMCMBIBPC-1486**](Object_attributes/EPMCMBIBPC-1486.md) | [MANUAL] Add attributes focus validation |  |
 | [**EPMCMBIBPC-857**](Object_attributes/EPMCMBIBPC-857.md) | Add attributes to folder validation | :white_check_mark: |
@@ -486,7 +486,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Pipe_CLI</b> (5 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2847_introduce_extended_attributes_support**](Pipe_CLI/2847_introduce_extended_attributes_support.md) | Introduce extended attributes support in pipe fuse |  |
 | [**1948_1_check_pipe_cli_admin_run_as_user**](Pipe_CLI/1948_launch_run_as_different_user/1948_1_check_pipe_cli_admin_run_as_user.md) | Check Pipe CLI Admin Run As User |  |
 | [**1948_2_check_pipe_cli_user_run_as_user**](Pipe_CLI/1948_launch_run_as_different_user/1948_2_check_pipe_cli_user_run_as_user.md) | Check Pipe CLI User Run As User |  |
@@ -499,7 +499,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Pipeline_library</b> (206 tests, 150 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-2618**](Pipeline_library/Cluster_runs/EPMCMBIBPC-2618.md) | Validation of auto-scaled cluster | :white_check_mark: |
 | [**EPMCMBIBPC-2620**](Pipeline_library/Cluster_runs/EPMCMBIBPC-2620.md) | Validate error messages on "Configure cluster" pop-up | :white_check_mark: |
 | [**EPMCMBIBPC-2628**](Pipeline_library/Cluster_runs/EPMCMBIBPC-2628.md) | Validation of auto-scaled cluster with default child nodes | :white_check_mark: |
@@ -713,7 +713,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Platform_Usage</b> (1 tests, 1 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2433**](Platform_Usage/2433.md) | Show user statuses | :white_check_mark: |
 
 </details>
@@ -722,7 +722,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Restrictions</b> (16 tests, 16 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-2637**](Restrictions/EPMCMBIBPC-2637.md) | Preparation for validation of instance types restrictions | :white_check_mark: |
 | [**EPMCMBIBPC-2638**](Restrictions/EPMCMBIBPC-2638.md) | Validation of instance types restrictions (existing objects) | :white_check_mark: |
 | [**EPMCMBIBPC-2639**](Restrictions/EPMCMBIBPC-2639.md) | Validation of instance types restrictions (creating objects) | :white_check_mark: |
@@ -743,10 +743,10 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Role_Based_Access_Control</b> (29 tests, 14 automated)</summary>
+<summary><b>Role_Based_Access_Control</b> (30 tests, 14 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2144_impersonate_admin_as_general_user**](Role_Based_Access_Control/2144_impersonate_admin_as_general_user.md) | Allow to "impersonate" administrator as a general user |  |
 | [**EPMCMBIBPC-3014**](Role_Based_Access_Control/EPMCMBIBPC-3014.md) | Authentication in platform | :white_check_mark: |
 | [**EPMCMBIBPC-3015**](Role_Based_Access_Control/EPMCMBIBPC-3015.md) | [NEGATIVE] Failed authentication | :white_check_mark: |
@@ -776,6 +776,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4146_3_4**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_4.md) | ROLE_TOOL_ADMIN: managing tags of registry, group, tool |  |
 | [**4146_4_10**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_10.md) | ROLE_USER_ADMIN: impersonate admin user |  |
 | [**4146_4_11**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_11.md) | ROLE_USER_ADMIN: add admin roles to user |  |
+| [**4593_1**](Role_Based_Access_Control/4593_storage_reader_role/4593_1.md) | ROLE_STORAGE_READER: read-only access to existing storages |  |
 
 </details>
 
@@ -783,7 +784,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Role_model</b> (68 tests, 28 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1465**](Role_model/EPMCMBIBPC-1465.md) | [MANUAL] Permissions on completed runs validation |  |
 | [**EPMCMBIBPC-1487**](Role_model/EPMCMBIBPC-1487.md) | [MANUAL] Check accessibility of read-denied tool from detached configuration |  |
 | [**EPMCMBIBPC-1491**](Role_model/EPMCMBIBPC-1491.md) | [MANUAL] Commit tool with denied write permission to the tools group |  |
@@ -859,7 +860,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Run_tools_in_sandbox</b> (136 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**1949_write_access_to_bucket_with_runas**](Run_tools_in_sandbox/1949_write_access_to_bucket_with_runas.md) | User And Write Access To Bucket With Run As Option |  |
 | [**2338**](Run_tools_in_sandbox/2338.md) | Allow to disable COMMIT function for the tool | :white_check_mark: |
 | [**EPMCMBIBPC-1179**](Run_tools_in_sandbox/EPMCMBIBPC-1179.md) | [MANUAL] Validation of endpoint in tooltip |  |
@@ -1003,7 +1004,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Runs</b> (35 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-102**](Runs/EPMCMBIBPC-102.md) | [MANUAL] Status of working pipeline |  |
 | [**EPMCMBIBPC-103**](Runs/EPMCMBIBPC-103.md) | Platform usage info | :white_check_mark: |
 | [**EPMCMBIBPC-113**](Runs/EPMCMBIBPC-113.md) | [MANUAL] Pipeline log |  |
@@ -1046,7 +1047,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Sample_Processing_Module</b> (38 tests, 27 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**1569**](Sample_Processing_Module/1569.md) | Check the Metadata entities IDs autogeneration | :white_check_mark: |
 | [**1589**](Sample_Processing_Module/1589.md) | Check the "Created Date" field for Metadata entities | :white_check_mark: |
 | [**1613**](Sample_Processing_Module/1613.md) | Check an error on duplicated Metadata entities IDs | :white_check_mark: |
@@ -1092,7 +1093,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Ssh_Shell_Test</b> (3 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-583**](Ssh_Shell_Test/EPMCMBIBPC-583.md) | Validate of SSH access link is available | :white_check_mark: |
 | [**EPMCMBIBPC-584**](Ssh_Shell_Test/EPMCMBIBPC-584.md) | Click SSH link | :white_check_mark: |
 | [**EPMCMBIBPC-585**](Ssh_Shell_Test/EPMCMBIBPC-585.md) | Check shell functionality | :white_check_mark: |
@@ -1103,7 +1104,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>System_Management</b> (27 tests, 17 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2232_1**](System_Management/2232-2444_NAT_Gateway/2232_1.md) | Check "Add new route" form | :white_check_mark: |
 | [**2232_10**](System_Management/2232-2444_NAT_Gateway/2232_10.md) | Add several route records with the same server name but different ports | :white_check_mark: |
 | [**2232_2**](System_Management/2232-2444_NAT_Gateway/2232_2.md) | Creating a new route with specified IP address | :white_check_mark: |
@@ -1138,7 +1139,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Test_Environment</b> (8 tests, 3 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**2870_1**](Test_Environment/2870_1.md) | [Manual] Checking the notification that the certificate is about to expire |  |
 | [**2870_2**](Test_Environment/2870_2.md) | [Manual] Checking the notification that Nodes exceed thresholds |  |
 | [**3404**](Test_Environment/3404.md) | Allow to specify Lustre FS type and thoughput | :white_check_mark: |
@@ -1154,7 +1155,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Tools</b> (50 tests, 30 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1296**](Tools/EPMCMBIBPC-1296.md) | Run tool with custom settings validation (EXECUTION DEFAULTS aren't filled) | :white_check_mark: |
 | [**EPMCMBIBPC-1404**](Tools/EPMCMBIBPC-1404.md) | Delete tool validation | :white_check_mark: |
 | [**EPMCMBIBPC-1407**](Tools/EPMCMBIBPC-1407.md) | Enable tool validation | :white_check_mark: |
@@ -1212,7 +1213,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>Versioned_Storages</b> (13 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**1805_1**](Versioned_Storages/1805_1.md) | The creation of empty Versioned Storage |  |
 | [**1805_10**](Versioned_Storages/1805_10.md) | Rename file |  |
 | [**1805_11**](Versioned_Storages/1805_11.md) | Remove folder |  |
@@ -1233,7 +1234,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 <summary><b>WDL_editor</b> (21 tests, 20 automated)</summary>
 
 | Case ID | Description/name | Automated |
-| --- | --- | --- |
+| --- | --- | :---: |
 | [**EPMCMBIBPC-1509**](WDL_editor/EPMCMBIBPC-1509.md) | [MANUAL] Check of the content of the edit scatter pop-up name field |  |
 | [**EPMCMBIBPC-1538**](WDL_editor/EPMCMBIBPC-1538.md) | Closing pop-up after WDL pipeline commit | :white_check_mark: |
 | [**EPMCMBIBPC-588**](WDL_editor/EPMCMBIBPC-588.md) | Check buttons for edit wdl graph | :white_check_mark: |
