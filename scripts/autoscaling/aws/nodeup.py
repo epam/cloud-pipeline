@@ -447,10 +447,38 @@ def get_specified_subnet(subnet, availability_zone):
     return subnet
 
 
-def get_random_subnet(ec2):
-    subnets = ec2.describe_subnets()
+def get_random_subnet(ec2, availability_zone=None):
+    if availability_zone:
+        subnets = ec2.describe_subnets(Filters=[{'Name': 'availability-zone', 'Values': [availability_zone]}])
+        if not subnets.get('Subnets'):
+            return None
+    else:
+        subnets = ec2.describe_subnets()
     if "Subnets" in subnets:
         return random.choice(subnets['Subnets'])['SubnetId']
+    return None
+
+
+def get_reservation_subnet(ec2, capacity_reservation_id, availability_zone, subnet, allowed_networks):
+    """
+    Chooses the subnet a node consuming a capacity reservation is launched into, or refuses the launch.
+    Returns None when nothing constrains the subnet; the zone is then pinned through the placement instead.
+    """
+    if not availability_zone:
+        raise RuntimeError('Capacity reservation {} was requested without an availability zone. A reservation exists in exactly one zone, so an instance launched elsewhere would not consume it - it would run as ordinary on-demand while the reserved capacity sits idle and paid for. Refusing to launch.'.format(capacity_reservation_id))
+
+    if subnet:
+        subnet_zone = ec2.describe_subnets(SubnetIds=[subnet])['Subnets'][0]['AvailabilityZone']
+        if subnet_zone != availability_zone:
+            raise RuntimeError('Capacity reservation {} lives in AZ {}, but the specified subnet {} is in AZ {}. An instance launched there would not consume the reservation. Refusing to launch.'.format(capacity_reservation_id, availability_zone, subnet, subnet_zone))
+        return subnet
+
+    if allowed_networks and len(allowed_networks) > 0:
+        subnet_id = allowed_networks.get(availability_zone)
+        if not subnet_id:
+            raise RuntimeError('Capacity reservation {} lives in AZ {}, but no usable subnet is configured for that zone (usable zones: {}). A configured subnet is skipped when it has no free IP addresses or its zone does not offer the instance type. Refusing to launch.'.format(capacity_reservation_id, availability_zone, ', '.join(sorted(allowed_networks.keys()))))
+        return subnet_id
+
     return None
 
 
@@ -486,7 +514,12 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
 
     subnet_id = None
     az_name = None
-    if subnet:
+    if capacity_reservation_id:
+        subnet_id = get_reservation_subnet(ec2, capacity_reservation_id, availability_zone, subnet, allowed_networks)
+        az_name = availability_zone
+        pipe_log('- Capacity reservation {} is in AZ {}, subnet {} will be used'
+                 .format(capacity_reservation_id, availability_zone, subnet_id))
+    elif subnet:
         subnet_id = get_specified_subnet(subnet, availability_zone)
     elif allowed_networks and len(allowed_networks) > 0:
         if availability_zone:
@@ -517,7 +550,16 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         })
     elif performance_network:
         pipe_log('- Performance network requested.')
-        if not subnet or not subnet_id:
+        if capacity_reservation_id:
+            # The subnet chosen for the reservation already sits in its zone; only when none was chosen is a random
+            # one picked, and then only from that zone.
+            if not subnet_id:
+                pipe_log('- Subnet is not specified, trying to get a random one in AZ {}...'.format(availability_zone))
+                subnet_id = get_random_subnet(ec2, availability_zone)
+                if not subnet_id:
+                    raise RuntimeError('Capacity reservation {} lives in AZ {}, but no subnet was found in that zone for the performance network. Refusing to launch.'.format(capacity_reservation_id, availability_zone))
+                pipe_log('- Subnet: {} will be used.'.format(subnet_id))
+        elif not subnet or not subnet_id:
             pipe_log('- Subnet is not specified, trying to get a random one...')
             subnet_id = get_random_subnet(ec2)
             pipe_log('- Subnet: {} will be used.'.format(subnet_id))
@@ -566,10 +608,13 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                 }
             }
         })
-        # The zone still has to match: a reservation lives in exactly one. Checked again here because this
-        # function is also reachable programmatically, not only through main().
-        if subnet_id is None and not availability_zone:
-            raise RuntimeError('Capacity reservation {} was requested without an availability zone. A reservation exists in exactly one zone, so an instance launched elsewhere would not consume it - it would run as ordinary on-demand while the reserved capacity sits idle and paid for. Refusing to launch.'.format(capacity_reservation_id))
+        # The zone still has to match: a reservation lives in exactly one. A subnet chosen above already fixes it;
+        # without one the default subnet of a random zone would be used, so the zone is pinned explicitly. Merged
+        # into any existing placement, so a dedicated tenancy set above is kept.
+        if subnet_id is None:
+            placement = additional_args.get('Placement', {})
+            placement.update({'AvailabilityZone': availability_zone})
+            additional_args.update({'Placement': placement})
         pipe_log('- Capacity reservation {} will be targeted (AZ {}, subnet {})'
                  .format(capacity_reservation_id, availability_zone, subnet_id))
 

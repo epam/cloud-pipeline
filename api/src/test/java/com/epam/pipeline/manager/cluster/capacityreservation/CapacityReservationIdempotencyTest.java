@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,13 +45,15 @@ import static org.mockito.Mockito.when;
  * <p>The dangerous case is not a failed submission but an uncertain one: the provider accepted the request and we
  * never saw the reply - a timeout, a pod restart mid-call. Retrying blindly then buys a second reservation that
  * nothing in the platform knows about and nothing will ever cancel. So the token is deterministic, and a
- * reservation with a token but no provider id is looked up before anything is bought.
+ * reservation with no provider id is looked up by the token of its current attempt before anything is bought.
  */
 @RunWith(MockitoJUnitRunner.class)
 public class CapacityReservationIdempotencyTest {
 
     private static final Long RESERVATION_ID = 42L;
     private static final String EXISTING_CLOUD_ID = "cr-already-bought";
+    private static final String FIRST_ATTEMPT_TOKEN = "cp-cr-42-0";
+    private static final String SECOND_ATTEMPT_TOKEN = "cp-cr-42-1";
 
     @Mock
     private CapacityReservationCloudService awsService;
@@ -72,7 +75,7 @@ public class CapacityReservationIdempotencyTest {
 
         assertThat(CapacityReservationCloudFacade.clientToken(reservation))
                 .isEqualTo(CapacityReservationCloudFacade.clientToken(reservation))
-                .isEqualTo("cp-cr-42-0");
+                .isEqualTo(FIRST_ATTEMPT_TOKEN);
     }
 
     /**
@@ -92,9 +95,9 @@ public class CapacityReservationIdempotencyTest {
     public void shouldAdoptAnExistingReservationInsteadOfBuyingAnother() {
         final CapacityReservation reservation = reservation();
         // Submitted before, but the reply never arrived: a token was persisted and no provider id came back.
-        reservation.setClientToken("cp-cr-42-0");
+        reservation.setClientToken(FIRST_ATTEMPT_TOKEN);
         reservation.setCloudReservationId(null);
-        when(awsService.findByClientToken(any(), anyString())).thenReturn(Optional.of(
+        when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
                 CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
 
         final CloudCapacityReservation result = facade.submit(reservation);
@@ -107,26 +110,72 @@ public class CapacityReservationIdempotencyTest {
     public void shouldCreateWhenNothingWasEverSubmitted() {
         final CapacityReservation reservation = reservation();
         reservation.setClientToken(null);
+        when(awsService.findByClientToken(any(), anyString())).thenReturn(Optional.empty());
         when(awsService.createFutureDated(any()))
                 .thenReturn(CloudCapacityReservation.builder().cloudReservationId("cr-new").build());
 
         final CloudCapacityReservation result = facade.submit(reservation);
 
         assertThat(result.getCloudReservationId()).isEqualTo("cr-new");
-        // No token was persisted, so there is nothing a previous attempt could have created.
-        verify(awsService, never()).findByClientToken(any(), anyString());
+        verify(awsService).findByClientToken(reservation, FIRST_ATTEMPT_TOKEN);
+    }
+
+    /**
+     * A reply can be lost before the token was ever persisted - the token is only saved with the next status
+     * change, so a restart mid-call leaves none. It is derived from the id and attempt, so the lookup still finds
+     * what that call bought.
+     */
+    @Test
+    public void shouldAdoptALostReplyEvenWhenNoTokenWasPersisted() {
+        final CapacityReservation reservation = reservation();
+        reservation.setClientToken(null);
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
+                CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
+
+        final CloudCapacityReservation result = facade.submit(reservation);
+
+        assertThat(result.getCloudReservationId()).isEqualTo(EXISTING_CLOUD_ID);
+        verify(awsService, never()).createFutureDated(any());
+    }
+
+    /**
+     * After a slide the stored token still names the previous attempt, and the provider still holds the
+     * reservation it refused for the previous date. Looking up by the stored token would adopt that refusal
+     * again, so the new date would never be asked for - the request would slide on its own old answer until the
+     * window ran out.
+     */
+    @Test
+    public void shouldRequestTheNewDateAfterASlideInsteadOfAdoptingTheRefusedReservation() {
+        final CapacityReservation reservation = reservation();
+        // As left by a slide: the attempt moved on, the old provider id was cleared, the stored token was not.
+        reservation.setAttempt(1);
+        reservation.setClientToken(FIRST_ATTEMPT_TOKEN);
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
+                CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
+        when(awsService.findByClientToken(any(), eq(SECOND_ATTEMPT_TOKEN))).thenReturn(Optional.empty());
+        when(awsService.createFutureDated(any()))
+                .thenReturn(CloudCapacityReservation.builder().cloudReservationId("cr-new-date").build());
+
+        final CloudCapacityReservation result = facade.submit(reservation);
+
+        assertThat(result.getCloudReservationId()).isEqualTo("cr-new-date");
+        verify(awsService).findByClientToken(reservation, SECOND_ATTEMPT_TOKEN);
+        assertThat(reservation.getClientToken()).isEqualTo(SECOND_ATTEMPT_TOKEN);
     }
 
     @Test
     public void shouldPersistTheTokenBeforeSubmitting() {
         final CapacityReservation reservation = reservation();
         reservation.setClientToken(null);
+        when(awsService.findByClientToken(any(), anyString())).thenReturn(Optional.empty());
         when(awsService.createFutureDated(any()))
                 .thenReturn(CloudCapacityReservation.builder().build());
 
         facade.submit(reservation);
 
-        assertThat(reservation.getClientToken()).isEqualTo("cp-cr-42-0");
+        assertThat(reservation.getClientToken()).isEqualTo(FIRST_ATTEMPT_TOKEN);
     }
 
     @Test

@@ -50,21 +50,14 @@ public class CapacityReservationCloudFacade {
 
     /**
      * Submits a reservation, adopting one that already exists instead of creating a second.
-     *
-     * <p>Submission spends money and runs on a timer, so the dangerous case is not failure but uncertainty: the
-     * provider accepted the request and we never saw the response. Retrying blindly then buys a second
-     * reservation that nothing in the platform knows about, and nothing will ever cancel. So the token is
-     * computed and persisted first, and a reservation that has a token but no provider id is looked up before
-     * anything is bought.
      */
     public CloudCapacityReservation submit(final CapacityReservation reservation) {
         final CapacityReservationCloudService service = serviceFor(reservation);
         final String clientToken = clientToken(reservation);
 
-        if (StringUtils.isBlank(reservation.getCloudReservationId())
-                && StringUtils.isNotBlank(reservation.getClientToken())) {
+        if (StringUtils.isBlank(reservation.getCloudReservationId())) {
             final Optional<CloudCapacityReservation> existing =
-                    service.findByClientToken(reservation, reservation.getClientToken());
+                    service.findByClientToken(reservation, clientToken);
             if (existing.isPresent()) {
                 log.warn("Capacity reservation {} already exists at its provider as {}; adopting it instead of "
                                 + "creating another", reservation.getId(),
