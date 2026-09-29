@@ -29,6 +29,10 @@ const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
+// mirrors the api's own default for `cluster.nodeup.retry.count`
+// (SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT)
+export const DEFAULT_NODE_UP_RETRY_COUNT = 5;
+
 const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
   .reduce((acc, [name, parameter]) => ({
     ...acc,
@@ -113,7 +117,7 @@ class PreferencesLoad extends Remote {
 
   @computed
   get defaultNodeUpRetryCount () {
-    return +this.getPreferenceValue('cluster.nodeup.retry.count') || 5;
+    return +this.getPreferenceValue('cluster.nodeup.retry.count') || DEFAULT_NODE_UP_RETRY_COUNT;
   }
 
   @computed

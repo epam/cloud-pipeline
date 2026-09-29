@@ -24,7 +24,10 @@ import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_NODEUP_RETRY_COUNT
+} from '../../pipelines/launch/form/utilities/parameters';
 import roleModel from '../../../utils/roleModel';
 import styles from './EditToolFormParameters.css';
 
@@ -469,6 +472,7 @@ export default class EditToolFormParameters extends React.Component {
           notToShow={[
             ...this.state.parameters.map(p => p.name),
             CP_CAP_LIMIT_MOUNTS,
+            CP_NODEUP_RETRY_COUNT,
             ...this.skippedSystemParameters
           ]}
         />

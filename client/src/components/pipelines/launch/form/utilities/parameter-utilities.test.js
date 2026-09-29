@@ -15,59 +15,69 @@
  */
 
 import {CP_NODEUP_RETRY_COUNT} from './parameters';
+import {
+  isNodeUpRetryCountParameter,
+  getVisibleParameters,
+  parametersToPayloadParams,
+  parametersToConfigurationParams
+} from './parameter-utilities';
 
 describe('isNodeUpRetryCountParameter', () => {
-  let isNodeUpRetryCountParameter;
-
-  beforeAll(() => {
-    isNodeUpRetryCountParameter =
-      require('./parameter-utilities').isNodeUpRetryCountParameter;
+  it('is true for CP_NODEUP_RETRY_COUNT', () => {
+    expect(isNodeUpRetryCountParameter(CP_NODEUP_RETRY_COUNT)).toBe(true);
   });
 
-  it('is false when the preference is off', () => {
-    expect(isNodeUpRetryCountParameter(
-      CP_NODEUP_RETRY_COUNT,
-      {preferences: {allowNodeUpRetryCount: false}}
-    )).toBe(false);
+  it('is case-insensitive', () => {
+    expect(isNodeUpRetryCountParameter('cp_nodeup_retry_count')).toBe(true);
   });
 
-  it('is true for CP_NODEUP_RETRY_COUNT when the preference is on', () => {
-    expect(isNodeUpRetryCountParameter(
-      CP_NODEUP_RETRY_COUNT,
-      {preferences: {allowNodeUpRetryCount: true}}
-    )).toBe(true);
-  });
-
-  it('is false for any other parameter name, even when the preference is on', () => {
-    expect(isNodeUpRetryCountParameter(
-      'CP_CAP_LIMIT_MOUNTS',
-      {preferences: {allowNodeUpRetryCount: true}}
-    )).toBe(false);
+  it('is false for any other parameter name', () => {
+    expect(isNodeUpRetryCountParameter('CP_CAP_LIMIT_MOUNTS')).toBe(false);
   });
 });
 
-describe('getVisibleParameters, with the node-up-retry-count preference on', () => {
-  let getVisibleParameters;
-
-  beforeAll(() => {
-    jest.resetModules();
-    jest.doMock('../../../../../models/preferences/PreferencesLoad', () => ({
-      allowNodeUpRetryCount: true
-    }));
-    getVisibleParameters = require('./parameter-utilities').getVisibleParameters;
-  });
-
-  afterAll(() => {
-    jest.dontMock('../../../../../models/preferences/PreferencesLoad');
-    jest.resetModules();
-  });
-
+describe('getVisibleParameters', () => {
   const buildParameter = (name) => ({name, system: true});
+  const parameters = [buildParameter(CP_NODEUP_RETRY_COUNT), buildParameter('CP_CAP_SGE')];
 
-  it('hides CP_NODEUP_RETRY_COUNT from the system parameters list', () => {
-    const parameters = [buildParameter(CP_NODEUP_RETRY_COUNT), buildParameter('CP_CAP_SGE')];
-    const visible = getVisibleParameters(parameters, true, false, undefined, true)
+  it('hides CP_NODEUP_RETRY_COUNT from the system parameters list when asked to', () => {
+    const visible = getVisibleParameters(parameters, true, false, undefined, true, true)
       .map((p) => p.name);
     expect(visible).not.toContain(CP_NODEUP_RETRY_COUNT);
+  });
+
+  it('shows CP_NODEUP_RETRY_COUNT in the system parameters list by default, so an ' +
+    'already-present value stays visible in a configuration editor', () => {
+    const visible = getVisibleParameters(parameters, true, false, undefined, true)
+      .map((p) => p.name);
+    expect(visible).toContain(CP_NODEUP_RETRY_COUNT);
+  });
+});
+
+describe('parametersToPayloadParams / parametersToConfigurationParams', () => {
+  const parameters = [
+    {
+      name: CP_NODEUP_RETRY_COUNT,
+      value: '7',
+      system: true,
+      configs: [{configId: 'default', type: 'int', value: '7'}]
+    }
+  ];
+
+  it('parametersToConfigurationParams keeps CP_NODEUP_RETRY_COUNT, so a stored value ' +
+    'survives saving a configuration', () => {
+    const {parameters: result} = parametersToConfigurationParams(parameters);
+    expect(result).toHaveProperty(CP_NODEUP_RETRY_COUNT);
+  });
+
+  it('parametersToPayloadParams drops CP_NODEUP_RETRY_COUNT when asked to, so the launch ' +
+    'form\'s dedicated field is the single source of the launched value', () => {
+    const result = parametersToPayloadParams(parameters, {hideNodeUpRetryCount: true});
+    expect(result).not.toHaveProperty(CP_NODEUP_RETRY_COUNT);
+  });
+
+  it('parametersToPayloadParams keeps CP_NODEUP_RETRY_COUNT by default', () => {
+    const result = parametersToPayloadParams(parameters);
+    expect(result).toHaveProperty(CP_NODEUP_RETRY_COUNT);
   });
 });

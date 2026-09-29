@@ -51,8 +51,7 @@ import {
   CP_CAP_SHARE_FS_DEPLOYMENT_TYPE,
   CP_CAP_SHARE_FS_SIZE,
   CP_CAP_SHARE_FS_THROUGHPUT,
-  CP_CAP_SHARE_FS_IOPS,
-  CP_NODEUP_RETRY_COUNT
+  CP_CAP_SHARE_FS_IOPS
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 import {
@@ -137,20 +136,14 @@ export const CLUSTER_TYPE = {
   autoScaledCluster: 2
 };
 
-export function getNodeUpRetryCountSkippedParameters (preferences) {
-  return preferences && preferences.allowNodeUpRetryCount
-    ? [CP_NODEUP_RETRY_COUNT]
-    : [];
-}
-
 export const NODE_UP_RETRY_COUNT_PATTERN = /^[1-9]\d*$/;
 export const MAX_NODE_UP_RETRY_COUNT = 999;
 
 /**
  * Returns the greatest value the field accepts. `cluster.nodeup.retry.count` has no upper
  * bound of its own, so a deployment may set it higher, and then that value is the bound
- * instead: the field shows the preference as its placeholder, and a placeholder the user
- * is not allowed to type would be a contradiction
+ * instead: the field is pre-filled with the preference as its default, and a default the
+ * user is not allowed to type would be a contradiction
  * @param {*} preferences
  * @returns {number}
  */
@@ -184,11 +177,6 @@ export function getNodeUpRetryCountFieldValue (value) {
     return undefined;
   }
   return `${value}`.trim();
-}
-
-export function nodeUpRetryCountChanged (initialValue, fieldValue) {
-  return (getNodeUpRetryCountFieldValue(initialValue) || '') !==
-    (getNodeUpRetryCountFieldValue(fieldValue) || '');
 }
 
 export function getNodeUpRetryCountParameter (rawValue, preferences) {

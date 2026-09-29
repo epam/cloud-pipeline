@@ -24,13 +24,11 @@ import {
   gridEngineEnabled,
   sparkEnabled,
   slurmEnabled,
-  kubeEnabled,
-  nodeUpRetryCountChanged
+  kubeEnabled
 } from './launch-cluster';
 import {
   CP_CAP_AUTOSCALE_WORKERS,
-  CP_CAP_LIMIT_MOUNTS,
-  CP_NODEUP_RETRY_COUNT
+  CP_CAP_LIMIT_MOUNTS
 } from './parameters';
 import {
   checkRunCapabilitiesModified,
@@ -203,19 +201,6 @@ function limitMountsCheck (form, parameters) {
     return true;
   }
   return formValue !== initial;
-}
-
-function nodeUpRetryCountCheck (form, parameters) {
-  if (!formItemInitialized(form, `${EXEC_ENVIRONMENT}.nodeUpRetryCount`)) {
-    return false;
-  }
-  const initial = parameters.parameters && parameters.parameters[CP_NODEUP_RETRY_COUNT]
-    ? parameters.parameters[CP_NODEUP_RETRY_COUNT].value
-    : undefined;
-  return nodeUpRetryCountChanged(
-    initial,
-    form.getFieldValue(`${EXEC_ENVIRONMENT}.nodeUpRetryCount`)
-  );
 }
 
 function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
@@ -402,8 +387,6 @@ export default function (props, state, options) {
     modified(form, parameters, `${ADVANCED}.endpointName`, 'endpointName') ||
     // limit mounts check
     limitMountsCheck(form, parameters) ||
-    // node up retry count check
-    nodeUpRetryCountCheck(form, parameters) ||
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
