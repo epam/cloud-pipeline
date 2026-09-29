@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReserva
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.assertj.core.groups.Tuple;
@@ -29,6 +30,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.ApplyCancellationCharges;
 import software.amazon.awssdk.services.ec2.model.CancelCapacityReservationRequest;
@@ -41,6 +44,7 @@ import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationReques
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationResponse;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsResponse;
+import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 import software.amazon.awssdk.services.ec2.model.Filter;
 import software.amazon.awssdk.services.ec2.model.InstanceMatchCriteria;
 import software.amazon.awssdk.services.ec2.model.Tag;
@@ -54,6 +58,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
@@ -86,6 +91,9 @@ public class AwsCapacityReservationServiceTest {
     private static final String AWS_ACTIVE = "active";
     private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
     private static final String QUOTE_ID = "crcq-0123456789abcdef0";
+    private static final int HTTP_BAD_REQUEST = 400;
+    private static final int HTTP_INTERNAL_ERROR = 500;
+    private static final int HTTP_SERVICE_UNAVAILABLE = 503;
 
     @Mock
     private CloudRegionManager regionManager;
@@ -126,6 +134,87 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.createRequest.instanceCount()).isEqualTo(INSTANCE_COUNT);
         assertThat(client.createRequest.clientToken()).isEqualTo(TOKEN);
         assertThat(client.createRequest.instanceType()).isEqualTo(reservation.getInstanceType());
+    }
+
+    /**
+     * The reply to a create can be lost after AWS acted on it. Reporting that as an ordinary failure would end the
+     * reservation while AWS bills for what it created, so it has to come back as "try again with the same token".
+     */
+    @Test
+    public void shouldReportACreateWithNoReplyAsUncertain() {
+        client.createFailure = SdkClientException.create("Unable to execute HTTP request: Read timed out");
+
+        assertThatThrownBy(() -> service.createFutureDated(reservation()))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class)
+                .hasCauseInstanceOf(SdkClientException.class);
+    }
+
+    @Test
+    public void shouldReportThrottlingAsUncertain() {
+        client.createFailure = ec2Error(HTTP_BAD_REQUEST, "RequestLimitExceeded");
+
+        assertThatThrownBy(() -> service.createFutureDated(reservation()))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
+    }
+
+    @Test
+    public void shouldReportAProviderSideErrorAsUncertain() {
+        client.createFailure = ec2Error(HTTP_SERVICE_UNAVAILABLE, "Unavailable");
+
+        assertThatThrownBy(() -> service.createFutureDated(reservation()))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
+    }
+
+    /**
+     * A refusal of the request itself means nothing was created, and retrying would only be refused again - so it
+     * must not be mistaken for an outcome still open.
+     */
+    @Test
+    public void shouldLeaveADefinitiveRefusalAsItIs() {
+        client.createFailure = ec2Error(HTTP_BAD_REQUEST, "InvalidParameterValue");
+
+        assertThatThrownBy(() -> service.createFutureDated(reservation()))
+                .isInstanceOf(Ec2Exception.class);
+    }
+
+    /**
+     * EC2 reports running out of capacity as a 5xx, but nothing was created - so it must fail like a refusal
+     * rather than retry the same request for the same missing capacity forever.
+     */
+    @Test
+    public void shouldLeaveInsufficientCapacityAsARefusalDespiteItsServerErrorStatus() {
+        client.createFailure = ec2Error(HTTP_INTERNAL_ERROR, "InsufficientInstanceCapacity");
+
+        assertThatThrownBy(() -> service.createFutureDated(reservation()))
+                .isInstanceOf(Ec2Exception.class);
+    }
+
+    @Test
+    public void shouldReportALookupThatAwsCouldNotAnswerAsUncertain() {
+        client.describeFailure = ec2Error(HTTP_SERVICE_UNAVAILABLE, "Unavailable");
+
+        assertThatThrownBy(() -> service.findByClientToken(reservation(), TOKEN))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
+    }
+
+    @Test
+    public void shouldLeaveALookupRefusalAsItIs() {
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, "InvalidParameterValue");
+
+        assertThatThrownBy(() -> service.findByClientToken(reservation(), TOKEN))
+                .isInstanceOf(Ec2Exception.class);
+    }
+
+    /**
+     * The lookup is how a lost reply is found. If it cannot ask, the question is still open - reading that as
+     * "nothing exists" would end a reservation AWS may well hold.
+     */
+    @Test
+    public void shouldReportALookupThatCouldNotAskAsUncertain() {
+        client.describeFailure = SdkClientException.create("Unable to execute HTTP request: Connect timed out");
+
+        assertThatThrownBy(() -> service.findByClientToken(reservation(), TOKEN))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
     }
 
     /**
@@ -484,6 +573,13 @@ public class AwsCapacityReservationServiceTest {
                 .build();
     }
 
+    private static Ec2Exception ec2Error(final int statusCode, final String errorCode) {
+        return (Ec2Exception) Ec2Exception.builder()
+                .statusCode(statusCode)
+                .awsErrorDetails(AwsErrorDetails.builder().errorCode(errorCode).errorMessage(errorCode).build())
+                .build();
+    }
+
     /**
      * Records what it was asked and answers with whatever the test set up. Every {@code Ec2Client} operation is a
      * default method, so only the four this feature uses - plus the two the interface genuinely requires - need
@@ -499,6 +595,8 @@ public class AwsCapacityReservationServiceTest {
         private List<software.amazon.awssdk.services.ec2.model.CapacityReservation> described =
                 Collections.emptyList();
         private boolean closed;
+        private RuntimeException createFailure;
+        private RuntimeException describeFailure;
 
         @Override
         public String serviceName() {
@@ -514,6 +612,9 @@ public class AwsCapacityReservationServiceTest {
         public CreateCapacityReservationResponse createCapacityReservation(
                 final CreateCapacityReservationRequest request) {
             this.createRequest = request;
+            if (createFailure != null) {
+                throw createFailure;
+            }
             return CreateCapacityReservationResponse.builder().capacityReservation(created).build();
         }
 
@@ -521,6 +622,9 @@ public class AwsCapacityReservationServiceTest {
         public DescribeCapacityReservationsResponse describeCapacityReservations(
                 final DescribeCapacityReservationsRequest request) {
             this.describeRequest = request;
+            if (describeFailure != null) {
+                throw describeFailure;
+            }
             return DescribeCapacityReservationsResponse.builder().capacityReservations(described).build();
         }
 

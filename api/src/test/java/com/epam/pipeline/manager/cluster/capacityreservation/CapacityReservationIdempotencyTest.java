@@ -17,9 +17,11 @@
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
+import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -165,6 +167,22 @@ public class CapacityReservationIdempotencyTest {
         assertThat(reservation.getClientToken()).isEqualTo(SECOND_ATTEMPT_TOKEN);
     }
 
+    /**
+     * A lookup that could not ask has not found "nothing". Buying anyway would be the blind retry the lookup exists
+     * to prevent, so the uncertainty goes back to the caller instead.
+     */
+    @Test
+    public void shouldNotBuyWhenTheLookupCouldNotAsk() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(any(), anyString())).thenThrow(
+                new CapacityReservationSubmissionUncertainException("timed out", new IllegalStateException()));
+
+        assertThatThrownBy(() -> facade.submit(reservation))
+                .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
+        verify(awsService, never()).createFutureDated(any());
+    }
+
     @Test
     public void shouldPersistTheTokenBeforeSubmitting() {
         final CapacityReservation reservation = reservation();
@@ -181,7 +199,40 @@ public class CapacityReservationIdempotencyTest {
     @Test
     public void shouldNotAskTheProviderToCancelSomethingItNeverCreated() {
         final CapacityReservation reservation = reservation();
+        reservation.setStatus(CapacityReservationStatus.REQUIRED_APPROVE);
         reservation.setCloudReservationId(null);
+
+        facade.cancel(reservation);
+
+        verify(awsService, never()).cancel(any());
+        // Never submitted, so there is nothing a lost reply could have bought.
+        verify(awsService, never()).findByClientToken(any(), anyString());
+    }
+
+    /**
+     * An approved reservation whose submission is being retried may already exist at the provider. Cancelling it
+     * only here would leave that one billing, with nothing left that could ever find it.
+     */
+    @Test
+    public void shouldReleaseWhatALostSubmissionBoughtWhenCancelled() {
+        final CapacityReservation reservation = reservation();
+        reservation.setStatus(CapacityReservationStatus.APPROVED);
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(reservation, FIRST_ATTEMPT_TOKEN)).thenReturn(Optional.of(
+                CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
+
+        facade.cancel(reservation);
+
+        verify(awsService).cancel(reservation);
+        assertThat(reservation.getCloudReservationId()).isEqualTo(EXISTING_CLOUD_ID);
+    }
+
+    @Test
+    public void shouldCancelNothingWhenAnApprovedReservationWasNeverBought() {
+        final CapacityReservation reservation = reservation();
+        reservation.setStatus(CapacityReservationStatus.APPROVED);
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(any(), anyString())).thenReturn(Optional.empty());
 
         facade.cancel(reservation);
 

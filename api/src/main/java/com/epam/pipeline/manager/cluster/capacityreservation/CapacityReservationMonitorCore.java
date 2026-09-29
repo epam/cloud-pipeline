@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationT
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -111,8 +112,12 @@ public class CapacityReservationMonitorCore {
     }
 
     /**
-     * Catches broadly on purpose: any failure to submit must land on the reservation as a retryable status rather
-     * than escape and abandon it silently in {@code APPROVED}, where nothing would ever look at it again.
+     * Catches broadly on purpose: a failure to submit must never escape and leave the reservation unexplained.
+     *
+     * <p>Two kinds of failure, handled differently. When the outcome is uncertain the provider may already hold a
+     * reservation for this attempt, so it stays {@code APPROVED} and is submitted again next cycle with the same
+     * token - which adopts what the lost call bought instead of abandoning it to bill unseen. A refusal, or a
+     * failure on our side, lands on {@code PURCHASE_FAILED}.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional
@@ -132,9 +137,11 @@ public class CapacityReservationMonitorCore {
             // may already have agreed, or refused outright. Acting on that answer now rather than waiting for the
             // next cycle means a refusal starts the search for another date immediately.
             applyState(reservation, submitted);
+        } catch (CapacityReservationSubmissionUncertainException e) {
+            log.warn("Submission of capacity reservation {} did not complete and will be retried: {}",
+                    reservation.getId(), e.getMessage());
+            statusService.recordRetry(reservation, e.getMessage());
         } catch (Exception e) {
-            // Our own call failed rather than the provider refusing, so this is retryable by the user - which is
-            // why it is PURCHASE_FAILED and not FAILED.
             log.error("Failed to submit capacity reservation {}", reservation.getId(), e);
             statusService.transition(reservation, CapacityReservationStatus.PURCHASE_FAILED, e.getMessage());
         }

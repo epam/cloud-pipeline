@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -71,6 +72,39 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         final Optional<CapacityReservation> loaded = reservationDao.find(created.getId());
 
         assertFound(loaded, created);
+    }
+
+    @Test
+    public void shouldWriteOnlyTheReasonWhileTheStatusIsTheExpectedOne() {
+        final CapacityReservation created = reservationDao.create(
+                CapacityReservationCreatorUtils.getReservation(createPool().getId()));
+        final LocalDateTime updated = created.getUpdated().plusMinutes(1);
+
+        final boolean written = reservationDao.updateStatusReason(created.getId(), created.getStatus(),
+                CapacityReservationCreatorUtils.STATUS_REASON, updated);
+
+        assertThat(written).isTrue();
+        created.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
+        created.setUpdated(updated);
+        assertFound(reservationDao.find(created.getId()), created);
+    }
+
+    /**
+     * The guard is the point: a caller holding a stale copy must not overwrite a status change made meanwhile.
+     */
+    @Test
+    public void shouldNotWriteTheReasonOnceTheStatusHasMovedOn() {
+        final CapacityReservation created = reservationDao.create(
+                CapacityReservationCreatorUtils.getReservation(createPool().getId()));
+        created.setStatus(CapacityReservationStatus.CANCELLED);
+        reservationDao.update(created);
+
+        final boolean written = reservationDao.updateStatusReason(created.getId(),
+                CapacityReservationStatus.APPROVED, CapacityReservationCreatorUtils.STATUS_REASON,
+                created.getUpdated().plusMinutes(1));
+
+        assertThat(written).isFalse();
+        assertFound(reservationDao.find(created.getId()), created);
     }
 
     @Test

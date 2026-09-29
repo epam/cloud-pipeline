@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
@@ -74,12 +75,27 @@ public class CapacityReservationCloudFacade {
         return serviceFor(reservation).describe(reservation);
     }
 
+    /**
+     * Gives a reservation back to its provider, including one bought by a submission whose reply was lost.
+     */
     public void cancel(final CapacityReservation reservation) {
+        final CapacityReservationCloudService service = serviceFor(reservation);
         if (StringUtils.isBlank(reservation.getCloudReservationId())) {
-            // Nothing was ever created, so there is nothing to give back.
-            return;
+            // Only an approved reservation can have been bought without us learning its id - its submission is
+            // retried until the reply arrives. Anywhere else, nothing was ever created.
+            if (CapacityReservationStatus.APPROVED != reservation.getStatus()) {
+                return;
+            }
+            final Optional<CloudCapacityReservation> lost =
+                    service.findByClientToken(reservation, clientToken(reservation));
+            if (!lost.isPresent()) {
+                return;
+            }
+            log.warn("Capacity reservation {} is being cancelled while its submission was unconfirmed; releasing "
+                    + "{}, which that submission bought", reservation.getId(), lost.get().getCloudReservationId());
+            reservation.setCloudReservationId(lost.get().getCloudReservationId());
         }
-        serviceFor(reservation).cancel(reservation);
+        service.cancel(reservation);
     }
 
     /**

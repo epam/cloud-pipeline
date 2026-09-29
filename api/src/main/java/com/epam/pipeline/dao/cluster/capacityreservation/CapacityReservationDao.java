@@ -53,6 +53,7 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
     private final String loadAllCapacityReservationsQuery;
     private final String loadCapacityReservationsByStatusQuery;
     private final String loadCapacityReservationsByOwnerQuery;
+    private final String updateCapacityReservationStatusReasonQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public CapacityReservation create(final CapacityReservation reservation) {
@@ -71,6 +72,26 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate()
                 .update(updateCapacityReservationQuery, Parameters.getParameters(reservation));
         return reservation;
+    }
+
+    /**
+     * Writes only the reason, and only while the reservation is still in {@code expectedStatus}.
+     *
+     * <p>For a caller that did not move the reservation and holds a copy that may be stale: a full-row
+     * {@link #update} from that copy would write its old status back over whatever happened meanwhile - a
+     * cancellation included.
+     *
+     * @return whether the reservation was still in {@code expectedStatus}, and so was written
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean updateStatusReason(final Long id, final CapacityReservationStatus expectedStatus,
+                                      final String statusReason, final LocalDateTime updated) {
+        final MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue(Parameters.ID.name(), id)
+                .addValue(Parameters.STATUS.name(), expectedStatus.name())
+                .addValue(Parameters.STATUS_REASON.name(), statusReason)
+                .addValue(Parameters.UPDATED.name(), Parameters.timestamp(updated));
+        return getNamedParameterJdbcTemplate().update(updateCapacityReservationStatusReasonQuery, params) > 0;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

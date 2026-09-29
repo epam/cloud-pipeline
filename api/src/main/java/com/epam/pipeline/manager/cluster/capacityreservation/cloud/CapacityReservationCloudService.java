@@ -40,6 +40,9 @@ public interface CapacityReservationCloudService {
      * <p>Spends money, so it must be idempotent with respect to {@code reservation.clientToken}: called twice
      * with the same token it must yield the one reservation, not two. A caller that cannot get a response - a
      * timeout, a restart mid-call - relies on that, and on {@link #findByClientToken} to find out what happened.
+     *
+     * @throws CapacityReservationSubmissionUncertainException when the provider may have acted on the request, or
+     *         will accept it on a retry - anything other than a definitive refusal
      */
     CloudCapacityReservation createFutureDated(CapacityReservation reservation);
 
@@ -58,6 +61,9 @@ public interface CapacityReservationCloudService {
      *
      * <p>This is how a submission that may or may not have landed is reconciled: rather than retrying the
      * purchase and risking a second one, the caller asks whether the first already succeeded.
+     *
+     * @throws CapacityReservationSubmissionUncertainException when the provider could not be asked. The question
+     *         is still open, so it must not be read as "nothing exists".
      */
     Optional<CloudCapacityReservation> findByClientToken(CapacityReservation reservation, String clientToken);
 }

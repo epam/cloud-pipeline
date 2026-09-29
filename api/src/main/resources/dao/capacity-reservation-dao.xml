@@ -339,5 +339,19 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateCapacityReservationStatusReasonQuery-->
+                <!--Guarded by status, so a caller holding a stale copy cannot undo a change made meanwhile.-->
+                <![CDATA[
+                    UPDATE pipeline.capacity_reservation SET
+                        status_reason = :STATUS_REASON,
+                        updated = :UPDATED
+                    WHERE
+                        id = :ID
+                        AND status = :STATUS
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>
