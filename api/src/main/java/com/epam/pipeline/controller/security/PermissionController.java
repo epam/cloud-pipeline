@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -35,6 +36,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.List;
 
 @Controller
 @Tag(name = "permission-controller", description = "Permissions")
@@ -63,8 +66,10 @@ public class PermissionController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
-    public Result<AclSecuredEntry> deletePermissionsForUser(@RequestParam Long id,
-            @RequestParam AclClass aclClass, @RequestParam String user,
+    public Result<AclSecuredEntry> deletePermissionsForUser(
+            @RequestParam Long id,
+            @RequestParam AclClass aclClass,
+            @RequestParam String user,
             @RequestParam(required = false, defaultValue = "true") Boolean isPrincipal) {
         return Result.success(permissionApiService.deletePermissions(id, aclClass, user, isPrincipal));
     }
@@ -78,7 +83,7 @@ public class PermissionController extends AbstractRestController {
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> deleteAllPermissions(@RequestParam Long id,
-            @RequestParam AclClass aclClass) {
+                                                        @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.deleteAllPermissions(id, aclClass));
     }
 
@@ -91,7 +96,7 @@ public class PermissionController extends AbstractRestController {
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> getPipelinePermissions(@RequestParam Long id,
-            @RequestParam AclClass aclClass) {
+                                                          @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.getPermissions(id, aclClass));
     }
 
@@ -104,7 +109,7 @@ public class PermissionController extends AbstractRestController {
             value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> changeOwner(@RequestParam Long id,
-            @RequestParam AclClass aclClass, @RequestParam String userName) {
+                                               @RequestParam AclClass aclClass, @RequestParam String userName) {
         return Result.success(permissionApiService.changeOwner(id, aclClass, userName));
     }
 
@@ -118,5 +123,26 @@ public class PermissionController extends AbstractRestController {
             })
     public Result<EntityPermissionVO> loadEntityPermissions(@RequestParam Long id, @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.loadEntityPermission(id, aclClass));
+    }
+
+    @GetMapping(value = "permissions/user")
+    @ResponseBody
+    @Operation(
+            summary = "Loads permissions granted to a user on all entities of a class.",
+            description = "Loads permissions granted to the user specified by ID on all entities of the class: for each"
+                    + " entity, its permissions merged with the inherited ones, as the 'permissions' method returns "
+                    + "them, keeping only the entries of the user, its roles and its groups. Entities without such "
+                    + "entries are omitted. Requires ADMIN, USER_ADMIN or USER_READER role, or READ permission "
+                    + "on the user. Admins get all entities, other users only the ones they can read. "
+                    + "Only granted permissions are returned: access given by a role regardless of ACL "
+                    + "(e.g. ROLE_ADMIN, ROLE_STORAGE_ADMIN, ROLE_STORAGE_READER), by ownership, or reduced "
+                    + "by a quota or by the mount status of a storage is not reflected. "
+                    + "Supported classes: DATA_STORAGE, PIPELINE.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<EntityPermission>> loadUserEntitiesPermissions(@RequestParam final Long userId,
+                                                                      @RequestParam final AclClass aclClass) {
+        return Result.success(permissionApiService.loadUserEntitiesPermissions(userId, aclClass));
     }
 }

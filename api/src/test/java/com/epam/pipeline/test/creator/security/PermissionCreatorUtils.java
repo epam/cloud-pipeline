@@ -24,10 +24,12 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.entity.security.acl.AclSid;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.Collections;
+import java.util.List;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_INT;
@@ -43,6 +45,8 @@ public final class PermissionCreatorUtils {
             new TypeReference<Result<PermissionVO>>() {};
     public static final TypeReference<Result<PermissionGrantVO>> PERMISSION_GRANT_VO_TYPE =
             new TypeReference<Result<PermissionGrantVO>>() {};
+    public static final TypeReference<Result<List<EntityPermission>>> ENTITY_PERMISSION_LIST_TYPE =
+            new TypeReference<Result<List<EntityPermission>>>() {};
 
 
     private PermissionCreatorUtils() {
@@ -91,5 +95,12 @@ public final class PermissionCreatorUtils {
         entityPermissionVO.setEntityClass(AclClass.DATA_STORAGE);
         entityPermissionVO.setPermissions(Collections.singleton(new AclPermissionEntry(new AclSid(), TEST_INT)));
         return entityPermissionVO;
+    }
+
+    public static EntityPermission getEntityPermission() {
+        final EntityPermission entityPermission = new EntityPermission();
+        entityPermission.setPermissions(Collections.singleton(
+                new AclPermissionEntry(new AclSid(TEST_STRING, true), TEST_INT)));
+        return entityPermission;
     }
 }
