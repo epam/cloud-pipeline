@@ -180,11 +180,18 @@ public class CheckPermissionHelper {
      * such a role grants nothing but READ.
      */
     public boolean isScopedReader(final AbstractSecuredEntity entity) {
-        return entity instanceof AbstractDataStorage && isScopedReader(entity, getSids());
+        return isScopedReader(entity, getSids());
     }
 
     public boolean isScopedReader(final AbstractSecuredEntity entity, final List<Sid> sids) {
-        return entity instanceof AbstractDataStorage && hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+        if (entity == null) {
+            return false;
+        }
+
+        if (entity instanceof AbstractDataStorage) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+        }
+        return false;
     }
 
     public boolean isScopedReader(final AclClass aclClass) {
@@ -192,7 +199,14 @@ public class CheckPermissionHelper {
     }
 
     public boolean isScopedReader(final AclClass aclClass, final List<Sid> sids) {
-        return aclClass == AclClass.DATA_STORAGE && hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+        if (aclClass == null) {
+            return false;
+        }
+
+        if (aclClass == AclClass.DATA_STORAGE) {
+            return hasAnyRole(sids, DefaultRoles.ROLE_STORAGE_READER);
+        }
+        return false;
     }
 
     public boolean hasAnyRole(final DefaultRoles... roles) {

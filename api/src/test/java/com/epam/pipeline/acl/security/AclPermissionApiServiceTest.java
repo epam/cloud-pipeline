@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,7 @@ import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUs
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.reset;
 
 public class AclPermissionApiServiceTest extends AbstractAclTest {
 
@@ -66,6 +68,15 @@ public class AclPermissionApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    /**
+     * The manager is a spy bean of the Spring context shared by all the ACL tests, so the stubbings made
+     * here would otherwise leak into every test class that calls its real methods.
+     */
+    @After
+    public void resetPermissionManager() {
+        reset(spyPermissionManager);
+    }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
