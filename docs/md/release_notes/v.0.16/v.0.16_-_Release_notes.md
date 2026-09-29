@@ -56,6 +56,7 @@
     - [Incorrect behavior while download files from external resources into several folders](#incorrect-behavior-while-download-files-from-external-resources-into-several-folders)
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
+    - [Tool version with upper case letters is launched in lower case](#tool-version-with-upper-case-letters-is-launched-in-lower-case)
 
 ***
 
@@ -731,3 +732,9 @@ If user was tried to download files from external resources and at the **Transfe
 Previously, **pipeline versions page** had broken layout if there "Attributes" and "Issues" panels were simultaneously opened.  
 If there were a lot of node labels at the **Cluster nodes** page, some of them were "broken" and spaced to different lines.  
 Some of the other page layouts also were broken.
+
+### Tool version with upper case letters is launched in lower case
+
+[#4616](https://github.com/epam/cloud-pipeline/issues/4616)
+
+Previously, when a **Tool** version with upper case letters in its tag (e.g. `2023R1`) was launched from the GUI, the launch form converted the tag to lower case (`2023r1`). Docker tags are case-sensitive, so such a run could not pull its image and hung in `ImagePullBackOff`. Also, the launch form did not lock the cloud region set for such a version. Currently, the launch form keeps the tag as it is in the registry.
