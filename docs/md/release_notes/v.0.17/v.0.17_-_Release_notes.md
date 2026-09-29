@@ -33,6 +33,7 @@
 - [Custom node images](#custom-node-images)
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
+- [Exclude NFS storages from file indexing](#exclude-nfs-storages-from-file-indexing)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [Disable Hyper-Threading](#disable-hyper-threading)
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
@@ -53,10 +54,14 @@
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
 - [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
+- [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
+- [Read-only access to all storages](#read-only-access-to-all-storages)
+- [Permissions granted to a user](#permissions-granted-to-a-user)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
     - [AWS deployment: unable to list more than 1000 files in the S3 bucket](#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket)
@@ -1314,6 +1319,15 @@ New features:
 
 For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
 
+## Exclude NFS storages from file indexing
+
+Previously, the files of object storages (AWS S3, Google Cloud Storage, Azure Blob storage) could be excluded from the search indexing by the storage attribute, but NFS storages could not - all NFS storages were indexed. The only option was to disable the NFS files indexing entirely.
+
+In **`v0.17`**, the same attribute works for NFS storages as well: the files of an NFS storage tagged by the attribute `Billing status` with the value `Exclude` are not indexed anymore.  
+The attribute key and value for NFS storages can be changed via the environment variables `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_KEY` and `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_VALUE` of the search service.
+
+For more details see [here](../../manual/19_Search/19._Global_search.md#exclude-storages-from-file-indexing).
+
 ## Explicitly "immutable" pipeline parameters
 
 Previously, if the pipeline parameter had a default value - it could not be changed in the detached configuration that used this pipeline.  
@@ -1776,6 +1790,23 @@ Feature is not available:
 
 More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
 
+## Read-only access to all storages
+
+Previously, read access to all data storages of the Platform could be given only by the permission settings of the storages (or of their parent folders) - or by the **ROLE\_ADMIN**/**ROLE\_STORAGE\_ADMIN** roles, which also give write and owner access.  
+In the current version, the new role **ROLE\_STORAGE\_READER** was introduced. It gives the user **READ** permission to every data storage in the Platform, regardless of the storage permission settings, and nothing else: the user is able to browse storages, download their data and view storage attributes, tags and permission settings, while any write access still has to be granted explicitly.  
+The runs, launched by such a user, mount all the storages of the Platform in a read-only mode (except the storages the user was granted write access to).
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#storage-reader-role).
+
+***
+
+## Permissions granted to a user
+
+Previously, the permissions could be viewed only per object - for all users and groups granted access to it. To check which objects a specific user was granted access to, the permissions of every object had to be loaded and matched against the user's name, groups and roles.  
+In the current version, the new API method `GET /permissions/user?userId=<user ID>&aclClass=<object type>` was introduced. For the specified user, it returns all objects of the type (data storages or pipelines) with the permissions granted to the user, to the user's groups or roles - including the ones inherited from the parent folders. The method is available to admins and to the users allowed to view the specified user (**ROLE\_USER\_ADMIN**, **ROLE\_USER\_READER** or **READ** permission to that user). Admins get all objects, other users - only the objects they have read access to.
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#permissions-granted-to-a-user).
+
 ## Checking of the Docker image version in `pipe run`
 
 Previously, `pipe run` did not check the version (tag) of the Docker image specified via the `-di` (`--docker-image`) option. A run with a mistyped version, e.g. `library/ubuntu:latet`, was scheduled and failed only on the node, when the image could not be pulled.
@@ -1785,9 +1816,25 @@ If the tool versions can't be loaded, `pipe` prints a warning and continues the 
 
 For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
+## Node start retries for a specific run
+
+Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
+
+In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NODEUP_RETRY_COUNT`. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
+The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
+
 ***
 
 ## Notable Bug fixes
+
+### Storage files indexing stops when a storage is deleted during the sync
+
+[#4598](https://github.com/epam/cloud-pipeline/issues/4598)
+
+Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.
+All storages after the deleted one were not re-indexed until the next cycle, so the search showed outdated files for them.
+This affected `NFS` storages and the object storages (`S3`, `GCS`, `Azure`).
+Now, the deleted storage is skipped, and the remaining storages are indexed as usual.
 
 ### Unable to view pipeline sources for previous draft versions
 

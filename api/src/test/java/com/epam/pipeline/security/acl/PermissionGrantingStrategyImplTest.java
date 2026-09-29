@@ -59,6 +59,7 @@ public class PermissionGrantingStrategyImplTest {
     GrantedAuthoritySid roleUserSid;
     GrantedAuthoritySid scopedRunAdminSid;
     GrantedAuthoritySid scopedStorageAdminSid;
+    GrantedAuthoritySid scopedStorageReaderSid;
     GrantedAuthoritySid scopedToolAdminSid;
     GrantedAuthoritySid scopedPipelineAdminSid;
     GrantedAuthoritySid scopedUserAdminSid;
@@ -73,6 +74,7 @@ public class PermissionGrantingStrategyImplTest {
         roleUserSid = new GrantedAuthoritySid("ROLE_USER");
         scopedRunAdminSid = new GrantedAuthoritySid("ROLE_RUN_ADMIN");
         scopedStorageAdminSid = new GrantedAuthoritySid("ROLE_STORAGE_ADMIN");
+        scopedStorageReaderSid = new GrantedAuthoritySid("ROLE_STORAGE_READER");
         scopedToolAdminSid = new GrantedAuthoritySid("ROLE_TOOL_ADMIN");
         scopedPipelineAdminSid = new GrantedAuthoritySid("ROLE_PIPELINE_ADMIN");
         scopedUserAdminSid = new GrantedAuthoritySid("ROLE_USER_ADMIN");
@@ -319,6 +321,77 @@ public class PermissionGrantingStrategyImplTest {
                         nfsStorage, Collections.singletonList(AclPermission.OWNER),
                         Arrays.asList(user2Sid, scopedStorageAdminSid), false
                 )
+        );
+    }
+
+    @Test
+    public void readShouldBeGrantedForDatastorageIfUserHasStorageReader() {
+        for (String storageType : Arrays.asList(S3_STORAGE_ENTITY_TYPE, GS_STORAGE_ENTITY_TYPE,
+                AZ_STORAGE_ENTITY_TYPE, NFS_STORAGE_ENTITY_TYPE)) {
+            AclImpl storage = new AclImpl(new ObjectIdentityImpl(storageType, IDENTIFIER), IDENTIFIER,
+                    new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                    null, true, userSid);
+
+            assertTrue(
+                    permissionGrantingStrategy.isGranted(
+                            storage, Collections.singletonList(AclPermission.READ),
+                            Arrays.asList(user2Sid, scopedStorageReaderSid), false
+                    )
+            );
+        }
+    }
+
+    @Test
+    public void readShouldBeGrantedForDatastorageIfUserHasStorageReaderAndDeny() {
+        AclImpl s3Storage = new AclImpl(new ObjectIdentityImpl(S3_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+        s3Storage.insertAce(0, AclPermission.NO_READ, user2Sid, false);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        s3Storage, Collections.singletonList(AclPermission.READ),
+                        Arrays.asList(user2Sid, scopedStorageReaderSid), false
+                )
+        );
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void writeShouldNotBeGrantedForDatastorageByStorageReader() {
+        AclImpl s3Storage = new AclImpl(new ObjectIdentityImpl(S3_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        permissionGrantingStrategy.isGranted(
+                s3Storage, Collections.singletonList(AclPermission.WRITE),
+                Arrays.asList(user2Sid, scopedStorageReaderSid), false
+        );
+    }
+
+    @Test
+    public void writeShouldBeResolvedByAclForDatastorageIfUserHasStorageReader() {
+        AclImpl s3Storage = new AclImpl(new ObjectIdentityImpl(S3_STORAGE_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+        s3Storage.insertAce(0, AclPermission.WRITE, user2Sid, true);
+
+        assertTrue(
+                permissionGrantingStrategy.isGranted(
+                        s3Storage, Collections.singletonList(AclPermission.WRITE),
+                        Arrays.asList(user2Sid, scopedStorageReaderSid), false
+                )
+        );
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void readShouldNotBeGrantedForNonStorageEntityByStorageReader() {
+        AclImpl folder = new AclImpl(new ObjectIdentityImpl(FOLDER_ENTITY_TYPE, IDENTIFIER), IDENTIFIER,
+                new AllowAllAuthStrategy(), permissionGrantingStrategy, null,
+                null, true, userSid);
+
+        permissionGrantingStrategy.isGranted(
+                folder, Collections.singletonList(AclPermission.READ),
+                Arrays.asList(user2Sid, scopedStorageReaderSid), false
         );
     }
 
