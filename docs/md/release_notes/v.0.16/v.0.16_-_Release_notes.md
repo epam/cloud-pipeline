@@ -31,6 +31,7 @@
 - [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 - [Group permissions](#group-permissions)
+- [Investigate the failure reason of a run](#investigate-the-failure-reason-of-a-run)
 
 ***
 
@@ -595,6 +596,25 @@ Creating, deleting and blocking a group, the **Default group** flag, launch opti
 The group settings pop-up also got the **Default group** checkbox: such a group is assigned to all new users upon the registration.
 
 For more details see [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#group-permissions).
+
+## Investigate the failure reason of a run
+
+Users can now diagnose a failed run on their own with an external run investigation service.  
+Admins configure that service in the new optional `investigation` object of the **`misc.ai.preferences`** system preference, e.g.:
+
+``` json
+{
+    "investigation": {
+        "url": "https://<host>/run-analyzer-gui/",
+        "roles": ["ROLE_ADMIN", "ROLE_RUN_ANALYZER_USER"]
+    }
+}
+```
+
+If `url` is set, the **Run logs** page of a run in the `FAILURE` state shows the **Investigate failure reason** link under the run title. The link opens the `<url>/?run_id=<run ID>` page in a new browser tab.  
+If `roles` is set, only the members of these roles/groups see the link. Otherwise, all users see it.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#investigate-failure-reason).
 
 ***
 
