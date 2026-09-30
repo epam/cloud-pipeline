@@ -160,6 +160,12 @@ import AddParameterButton from './parameters/add-parameter-button';
 import {getParameterKeyClassName} from './parameters/utilities';
 import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
+import NodeUpRetryCountFormItem from './components/node-up-retry-count';
+import {
+  applyNodeUpRetryCountDefault,
+  getDefaultNodeUpRetryCount,
+  isNodeUpRetryCountParameter
+} from './utilities/node-up-retry-count';
 import {
   buildLaunchParametersFromReservationParameters,
   findReservationParameterConfig,
@@ -1022,9 +1028,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       const err = mergeErrors(
         errors,
         userTagsValid ? undefined : {[ADVANCED]: {customTags: false}},
-        nonValidParameter ? {[nonValidParameter.system ? SYSTEM_PARAMETERS : PARAMETERS]: {
-          [getParameterKeyClassName(nonValidParameter)]: false
-        }} : undefined);
+        nonValidParameter ? (
+          this.props.preferences.allowNodeUpRetryCount &&
+          !nonValidParameter.userParameter &&
+          isNodeUpRetryCountParameter(nonValidParameter.name)
+            ? {[EXEC_ENVIRONMENT]: {nodeUpRetryCount: false}}
+            : {[nonValidParameter.system ? SYSTEM_PARAMETERS : PARAMETERS]: {
+              [getParameterKeyClassName(nonValidParameter)]: false
+            }}
+        ) : undefined);
       const parameters = this.getParameters();
       const optionalParamsHasErrors = parameters.some(p => {
         const isOptional = p.config.visible && !p.config.system && !p.config.required;
@@ -1092,6 +1104,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const payload = await this.generateConfigurationPayload(values, {
           skipReservationParameters: true
         });
+        payload.parameters = applyNodeUpRetryCountDefault(
+          payload.parameters,
+          this.props.preferences
+        );
         switch (key) {
           case RUN_SELECTED_KEY:
             if (this.props.runConfiguration) {
@@ -1595,6 +1611,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         required: false,
         value: values[ADVANCED].limitMounts
       };
+    }
+    if (!this.props.launchProfile) {
+      // a launch profile is saved as a configuration is: an empty value stays unset
+      payload.params = applyNodeUpRetryCountDefault(payload.params, this.props.preferences);
     }
     const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
     const launchAutoScaledHybridCluster = launchAutoScaledCluster &&
@@ -2737,6 +2757,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         description={description ? (<Markdown md={description} />) : undefined}
         parametersMetadata={this.state.parametersMetadata}
         showOptionalParameters={this.showOptionalParameters}
+        hideNodeUpRetryCount={this.props.preferences.allowNodeUpRetryCount}
       />,
       <div
         key={`add-${system ? 'system' : 'default'}-parameter`}
@@ -2975,6 +2996,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           />
         )}
       </FormItem>
+    );
+  };
+
+  onNodeUpRetryCountChange = async (value) => {
+    const payload = this.getCurrentParametersPayload();
+    await this.updateParametersPayload({
+      ...payload,
+      parameters: parameterUtilities.setNodeUpRetryCountValue(payload.parameters, value)
+    });
+    this.onValidateParameters();
+    this.formFieldsChanged();
+  };
+
+  renderNodeUpRetryCountFormItem = () => {
+    if (!this.props.preferences.allowNodeUpRetryCount) {
+      return undefined;
+    }
+    const parameter = parameterUtilities.getNodeUpRetryCountParameter(this.getParameters());
+    return (
+      <NodeUpRetryCountFormItem
+        className={getFormItemClassName(styles.formItem, 'nodeUpRetryCount')}
+        formItemLayout={this.formItemLayout}
+        value={parameter ? parameter.value : undefined}
+        error={parameter ? (parameter.error || parameter.nameError) : undefined}
+        placeholder={getDefaultNodeUpRetryCount(this.props.preferences)}
+        disabled={this.props.readOnly && !this.props.canExecute}
+        onChange={this.onNodeUpRetryCountChange}
+      />
     );
   };
 
@@ -5083,6 +5132,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       this.renderFormItemRow(
                         this.renderFallbackInstanceTypesSelection,
                         hints.fallbackInstanceTypesHint
+                      )
+                    }
+                    {
+                      this.renderFormItemRow(
+                        this.renderNodeUpRetryCountFormItem,
+                        hints.nodeUpRetryCountHint
                       )
                     }
                     {this.renderReservationParametersSelector()}

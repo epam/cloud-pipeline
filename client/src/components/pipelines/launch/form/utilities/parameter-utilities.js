@@ -20,8 +20,15 @@ import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDef
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import {
   systemCapabilitiesParameters,
-  reservedParameters
+  reservedParameters,
+  CP_NODEUP_RETRY_COUNT
 } from './parameters';
+import {
+  getNodeUpRetryCountError,
+  isNodeUpRetryCountParameter,
+  nodeUpRetryCountNameIsReserved,
+  nodeUpRetryCountValueIsEmpty
+} from './node-up-retry-count';
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
 import {base64toString, stringToBase64} from '../../../../../utils/base64';
@@ -1348,7 +1355,8 @@ function validateParameter (parameter, parameters, rawEdit = false) {
         isCapabilityParameter(parameter.name) ||
         isReservationRequestParameter(parameter.name) ||
         isGPUScalingParameter(parameter.name) ||
-        isSystemParameter(parameter.name))
+        isSystemParameter(parameter.name) ||
+        (parameter.userParameter && nodeUpRetryCountNameIsReserved(parameter.name, preferences)))
     ) {
       throw new Error(`Name is reserved`);
     }
@@ -1381,14 +1389,25 @@ function validateParameter (parameter, parameters, rawEdit = false) {
           throw new Error(validationError);
         }
       }
+      // with the dedicated "Capacity retries" control off, it is a usual parameter
+      const nodeUpRetryCount = preferences.allowNodeUpRetryCount &&
+        isNodeUpRetryCountParameter(parameter.name);
       if (
         actualConfig.required &&
+        // the launch applies the default when it is not set
+        !nodeUpRetryCount &&
         (value === undefined || value === null || String(value).trim() === '')
       ) {
         throw new Error('Required');
       }
       if (actualConfig.type.toLowerCase() === 'output' && value && value.includes(',')) {
         throw new Error('Only one output path can be specified for output parameter');
+      }
+      if (nodeUpRetryCount) {
+        const nodeUpRetryCountError = getNodeUpRetryCountError(value, preferences);
+        if (nodeUpRetryCountError) {
+          throw new Error(nodeUpRetryCountError);
+        }
       }
     }
   } catch (e) {
@@ -1911,6 +1930,56 @@ export function isGPUScalingParameter (parameterName, options = {}) {
 }
 
 /**
+ * @param {Parameter[]} parameters
+ * @returns {Parameter|undefined}
+ */
+export function getNodeUpRetryCountParameter (parameters = []) {
+  // a parameter the user adds under this name is not the control's value
+  return (parameters || []).find((p) => !p.userParameter && isNodeUpRetryCountParameter(p.name));
+}
+
+/**
+ * Sets the CP_NODEUP_RETRY_COUNT value, adding the parameter if it is missing;
+ * an empty value removes it, so it is not stored at all
+ * @param {Parameter[]} parameters
+ * @param {string} value
+ * @returns {Parameter[]}
+ */
+export function setNodeUpRetryCountValue (parameters = [], value) {
+  const existing = getNodeUpRetryCountParameter(parameters);
+  if (nodeUpRetryCountValueIsEmpty(value)) {
+    return parameters.filter((p) => p !== existing);
+  }
+  if (existing) {
+    return parameters.map((p) => p === existing ? {...p, value} : p);
+  }
+  const cfg = getParameterConfig(CP_NODEUP_RETRY_COUNT, {type: 'int', value});
+  return [
+    ...parameters,
+    {
+      key: generateKey(parameters),
+      name: CP_NODEUP_RETRY_COUNT,
+      type: cfg.type,
+      value: cfg.value,
+      config: cfg,
+      configs: [cfg],
+      system: cfg.system
+    }
+  ];
+}
+
+/**
+ * With the dedicated "Capacity retries" control on, an empty value means "not set"
+ * @param {Parameter} parameter
+ * @returns {boolean}
+ */
+function isEmptyNodeUpRetryCountParameter (parameter) {
+  return preferences.allowNodeUpRetryCount &&
+    isNodeUpRetryCountParameter(parameter.name) &&
+    nodeUpRetryCountValueIsEmpty(parameter.value);
+}
+
+/**
  * @param {ObjectParameterScheme} [scheme]
  */
 export function objectParameterSchemeToPayload (scheme) {
@@ -1970,6 +2039,7 @@ export function parametersToPayloadParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
+      !isEmptyNodeUpRetryCountParameter(parameter) &&
       !isReservedParameter(parameter.name))
     .reduce((acc, cur) => ({
       ...acc,
@@ -2014,6 +2084,7 @@ export function parametersToConfigurationParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
+      !isEmptyNodeUpRetryCountParameter(parameter) &&
       !isReservedParameter(parameter.name));
   for (const parameter of filtered) {
     const current = findParameterConfig(parameter, parameters);
@@ -2165,16 +2236,25 @@ function parameterIsVisible (parameter = {}, showOptional = true) {
  * @param {boolean} rawEdit
  * @param {object} userInfo
  * @param {boolean} showOptional
+ * @param {boolean} hideNodeUpRetryCount - excludes CP_NODEUP_RETRY_COUNT, for callers
+ * that show it in its own control instead
  */
 function getVisibleParameters (
   parameters = [],
   isSystem = false,
   rawEdit = false,
   userInfo,
-  showOptional = true
+  showOptional = true,
+  hideNodeUpRetryCount = false
 ) {
   return parameters
     .filter((parameter) => rawEdit || parameterIsVisible(parameter, showOptional))
+    // a parameter the user adds under this name stays listed, to show its name error
+    .filter((parameter) => !(
+      hideNodeUpRetryCount &&
+      !parameter.userParameter &&
+      isNodeUpRetryCountParameter(parameter.name)
+    ))
     .filter((parameter) => isSystem
       ? parameter.system &&
       !isReservedParameter(parameter.name) &&
