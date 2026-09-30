@@ -75,15 +75,16 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final String NETWORKS = "\"networks\": {\"" + ZONE_A + "\": \"" + SUBNET_A + "\", \"" + ZONE_B
             + "\": \"" + SUBNET_B + "\"}";
     /**
-     * In the order the launch scripts try them: a GPU-only rule, one restricted to a docker image, one restricted to a
-     * role the test user lacks, and then the one that applies.
+     * In the order the launch scripts try them: a Windows rule, a GPU-only rule, one restricted to a docker image,
+     * one restricted to a role - the test user's own - and then the one that applies.
      */
     private static final String AMIS = "\"amis\": ["
+            + "{\"platform\": \"windows\", \"instance_mask\": \"*\", \"ami\": \"" + WINDOWS_AMI + "\"},"
             + "{\"platform\": \"linux\", \"instance_mask\": \"g*\", \"ami\": \"" + GPU_AMI + "\"},"
             + "{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"" + RESTRICTED_AMI + "\","
             + " \"docker_image\": [\"library/special\"]},"
             + "{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"" + RESTRICTED_AMI + "\","
-            + " \"permissions\": [\"ROLE_SPECIAL\"]},"
+            + " \"permissions\": [\"ROLE_ADMIN\"]},"
             + "{\"platform\": \"linux\", \"instance_mask\": \"m5.*\", \"ami\": \"" + AMI + "\", \"init_script\": \""
             + INIT_SCRIPT + "\", \"fs_type\": \"ext4\", \"additional_spec\": {\"IamInstanceProfile\": \"profile\"},"
             + " \"run_parameters\": {\"param\": \"value\"}}]";
@@ -141,6 +142,36 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(configuration.getRunParameters()).isNull();
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).toRunInstance().getNodeImage())
                 .isEqualTo(AMI);
+    }
+
+    /**
+     * A pool is shared by whoever its filter admits, so a rule meant for some roles or groups - even the creator's own
+     * - is not copied into it. An administrator can give a pool such a configuration explicitly.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldNotStartFromARuleRestrictedToRolesOrGroups() {
+        assertThat(configurationOf(poolManager.create(pool())).getAmi()).isNotEqualTo(RESTRICTED_AMI).isEqualTo(AMI);
+    }
+
+    /**
+     * The deprecated field still names the image: an edit of it reaches the configuration rather than being silently
+     * outvoted by the image copied into it at creation.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    @SuppressWarnings("deprecation")
+    public void shouldFollowAnEditOfTheDeprecatedImage() {
+        final NodePool created = poolManager.create(pool());
+        final NodePoolVO edit = pool();
+        edit.setInstanceImage("ami-edited");
+
+        poolManager.update(created.getId(), edit);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getAmiConfiguration().getAmi()).isEqualTo("ami-edited");
+        assertThat(loaded.getAmiConfiguration().getInitScript()).isEqualTo(INIT_SCRIPT);
+        assertThat(loaded.toRunInstance().getNodeImage()).isEqualTo("ami-edited");
     }
 
     @Test

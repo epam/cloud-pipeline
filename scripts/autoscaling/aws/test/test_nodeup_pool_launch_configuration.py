@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """
-A pool's own launch configuration, applied over the region's amis rule that matches its nodes.
+A pool's own launch configuration - the region's amis rule it was created with - applied to its nodes in place of
+the rule a launch would match now.
 
 A capacity reservation reaches a node only this way - its target in additional_spec, its zone and subnet - so each
 part has to arrive in the launch request intact: a missing target or a wrong zone still launches an instance, which
@@ -77,16 +78,34 @@ def test_asks_nothing_for_a_node_outside_any_pool():
     api.assert_not_called()
 
 
-def test_applies_the_loaded_configuration_to_the_matching_rule():
+def test_launches_a_pool_node_from_the_pools_configuration_instead_of_matching_a_rule():
+    """
+    Mixing the pool's configuration with whichever rule this launch would match could give a node one rule's image and
+    another's instance profile - so the rules are not consulted at all, and what the pool does not set is the
+    script's default.
+    """
     with patch.object(aws_nodeup, 'PipelineAPI') as api, patch.object(aws_nodeup, 'pipe_log'), \
-            patch.object(aws_nodeup, 'get_matching_instance_image', return_value=RULE):
-        api.return_value.load_node_pool.return_value = {'amiConfiguration': {'availability_zone': ZONE}}
+            patch.object(aws_nodeup, 'get_matching_instance_image', return_value=RULE) as matching:
+        api.return_value.load_node_pool.return_value = {'amiConfiguration': {
+            'ami': 'ami-pool', 'availability_zone': ZONE,
+            'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}}}
         aws_nodeup.load_pool_launch_configuration(POOL_ID)
         allowed = aws_nodeup.get_allowed_instance_image('region', 'm5.large', 'linux', None, 'token', 'p-1')
     aws_nodeup.load_pool_launch_configuration(None)
 
+    matching.assert_not_called()
+    assert allowed['instance_mask_ami'] == 'ami-pool'
     assert allowed['availability_zone'] == ZONE
-    assert allowed['instance_mask_ami'] == 'ami-rule'
+    assert allowed['additional_spec'] == {'CapacityReservationSpecification': RESERVATION_TARGET}
+    assert allowed['init_script'].endswith('/init.sh')
+
+
+def test_matches_a_rule_for_a_node_whose_pool_has_no_configuration():
+    with patch.object(aws_nodeup, 'get_matching_instance_image', return_value=RULE) as matching:
+        allowed = aws_nodeup.get_allowed_instance_image('region', 'm5.large', 'linux', None, 'token', 'p-1')
+
+    matching.assert_called_once()
+    assert allowed == RULE
 
 
 def _ec2(subnet_zones=None):

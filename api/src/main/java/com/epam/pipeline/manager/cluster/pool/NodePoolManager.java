@@ -31,7 +31,6 @@ import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
@@ -51,11 +50,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -271,6 +267,7 @@ public class NodePoolManager implements SecuredEntityManager {
         // The launch configuration is not the caller's to edit: it is written by its own statement, so this one
         // leaves it as it is.
         poolDao.update(updated);
+        followDeprecatedInstanceImage(existing, vo);
 
         // Replaced only when the caller actually sent one, so an edit that says nothing about the launch config
         // leaves it alone rather than clearing it.
@@ -278,6 +275,21 @@ public class NodePoolManager implements SecuredEntityManager {
             applyLaunchConfig(existing, vo.getLaunchConfig(), reservationIdOf(existing));
         }
         return load(id);
+    }
+
+    /**
+     * The deprecated {@code instanceImage} still names the image of a pool that has a launch configuration: an edit
+     * that changes it changes the configuration's image with it, rather than being silently outvoted by it.
+     */
+    @SuppressWarnings("deprecation")
+    private void followDeprecatedInstanceImage(final NodePool existing, final NodePoolVO vo) {
+        final AMIConfiguration configuration = existing.getAmiConfiguration();
+        if (configuration == null || StringUtils.isBlank(vo.getInstanceImage())
+                || StringUtils.equals(vo.getInstanceImage(), existing.getInstanceImage())) {
+            return;
+        }
+        configuration.setAmi(vo.getInstanceImage());
+        poolDao.updateAmiConfiguration(existing);
     }
 
     /**
@@ -300,23 +312,13 @@ public class NodePoolManager implements SecuredEntityManager {
      * rules does not reach an existing pool. Only for AWS regions, the only ones whose launch applies it.
      */
     @SuppressWarnings("deprecation")
-    private static Set<String> rolesAndGroupsOf(final PipelineUser user) {
-        final Set<String> authorities = new HashSet<>();
-        ListUtils.emptyIfNull(user.getRoles()).forEach(role -> authorities.add(role.getName()));
-        authorities.addAll(ListUtils.emptyIfNull(user.getGroups()));
-        return authorities;
-    }
-
     private AMIConfiguration launchConfigurationFor(final NodePool pool) {
         final AbstractCloudRegion region = regionManager.load(pool.getRegionId());
         if (CloudProvider.AWS != region.getProvider()) {
             return null;
         }
-        final Set<String> authorities = Optional.ofNullable(authManager.getCurrentUser())
-                .map(NodePoolManager::rolesAndGroupsOf)
-                .orElseGet(Collections::emptySet);
         final Optional<AMIConfiguration> configuration =
-                regionNetworks.launchConfigurationFor(region.getRegionCode(), pool.getInstanceType(), authorities);
+                regionNetworks.launchConfigurationFor(region.getRegionCode(), pool.getInstanceType());
         if (StringUtils.isBlank(pool.getInstanceImage())) {
             return configuration.orElse(null);
         }

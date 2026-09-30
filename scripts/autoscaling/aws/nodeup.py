@@ -266,8 +266,8 @@ def load_pool_launch_configuration(pool_id):
     Fetches the launch configuration of the pool this node belongs to, once, for get_allowed_instance_image to overlay.
 
     A pool may carry its own configuration - image, init script, filesystem, embedded scripts, additional spec, zone,
-    subnet - over whichever of the region's amis rules matches its nodes. A capacity reservation is one: while it is
-    live, the reservation's target, zone and subnet are in the pool's configuration.
+    subnet - taken from the region's matching amis rule when the pool was created, and changed since only by an
+    administrator or by a capacity reservation, which writes its target, zone and subnet into it while it is live.
     """
     global __POOL_LAUNCH_CONFIGURATION__
     __POOL_LAUNCH_CONFIGURATION__ = {}
@@ -293,9 +293,8 @@ POOL_LAUNCH_CONFIGURATION_FIELDS = {
 
 def apply_pool_launch_configuration(allowed_instance, pool_configuration):
     """
-    Overlays a pool's launch configuration on the rule that matched: every field the pool sets wins, and
-    additional_spec is merged key by key, the pool's keys winning - so a pool that only adds a reservation target
-    keeps the rule's instance profile, for one.
+    Lays a pool's launch configuration over an allowed instance: every field the pool sets wins, and additional_spec
+    is merged key by key, the pool's keys winning.
     """
     if not pool_configuration:
         return allowed_instance
@@ -331,19 +330,28 @@ def zone_pinned_by_pool(availability_zone):
 
 
 def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
-    return apply_pool_launch_configuration(
-        get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id),
-        __POOL_LAUNCH_CONFIGURATION__)
+    """
+    A pool with a launch configuration of its own launches from that - over this script's defaults, not over a rule
+    matched now: the configuration is the rule the pool was created with, and mixing it with whichever rule this
+    launch would match could give a node one rule's image and another's instance profile. Any other node launches
+    from the region's first matching amis rule.
+    """
+    if __POOL_LAUNCH_CONFIGURATION__:
+        return apply_pool_launch_configuration(get_default_instance_image(default_image), __POOL_LAUNCH_CONFIGURATION__)
+    return get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id)
+
+
+def get_default_instance_image(default_image):
+    return {
+        "instance_mask_ami": default_image, "instance_mask": None,
+        "init_script": os.path.dirname(os.path.abspath(__file__)) + '/init.sh',
+        "embedded_scripts": None, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
+        "availability_zone": None, "subnet": None
+    }
 
 
 def get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
-    default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_embedded_scripts = None
-    default_object = {
-        "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
-        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
-        "availability_zone": None, "subnet": None
-    }
+    default_object = get_default_instance_image(default_image)
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
