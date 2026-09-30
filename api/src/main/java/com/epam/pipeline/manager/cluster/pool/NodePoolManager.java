@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -236,6 +237,7 @@ public class NodePoolManager implements SecuredEntityManager {
     public NodePool update(final Long id, final NodePoolVO vo) {
         final NodePool existing = loadForUpdate(id);
         vo.setId(id);
+        skipUnchangedLaunchConfiguration(existing, vo);
         validator.validate(vo);
         reservationService.onPoolUpdate(existing, vo);
 
@@ -264,6 +266,24 @@ public class NodePoolManager implements SecuredEntityManager {
             applyLaunchConfig(existing, vo.getLaunchConfig(), reservationIdOf(existing));
         }
         return load(id);
+    }
+
+    /**
+     * A launch configuration sent back unchanged - the autoscaler's resize, an editor echoing the pool - is not an
+     * edit of it. Dropped from the request, it is neither written again nor checked against networks that may have
+     * changed since it was saved; a pool whose zone was later dropped from the region's networks would otherwise stop
+     * scaling at all. On a reservation-backed pool, the zone and subnet an edit sends are the reservation's to set, so
+     * they are not checked either - they are replaced by the reservation's own.
+     */
+    private void skipUnchangedLaunchConfiguration(final NodePool existing, final NodePoolVO vo) {
+        if (Objects.equals(vo.getAmiConfiguration(), existing.getAmiConfiguration())) {
+            vo.setAmiConfiguration(null);
+            return;
+        }
+        if (existing.isCapacityReservation() && vo.getAmiConfiguration() != null) {
+            vo.getAmiConfiguration().setAvailabilityZone(null);
+            vo.getAmiConfiguration().setSubnet(null);
+        }
     }
 
     @Override

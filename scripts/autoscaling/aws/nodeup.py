@@ -309,6 +309,27 @@ def apply_pool_launch_configuration(allowed_instance, pool_configuration):
     return result
 
 
+def resolve_launch_settings(allowed_instance, availability_zone, subnet):
+    """
+    The additional spec, zone and subnet a launch uses: an explicit argument wins over the matched rule, with the
+    pool's configuration already over it. The additional spec is taken whether or not a rule matched - a pool's own
+    configuration can carry it without one.
+    """
+    if not allowed_instance:
+        return None, availability_zone, subnet
+    return (allowed_instance.get('additional_spec'),
+            availability_zone or allowed_instance.get('availability_zone'),
+            subnet or allowed_instance.get('subnet'))
+
+
+def zone_pinned_by_pool(availability_zone):
+    """
+    Whether the zone is the one the pool's own configuration pins - the only case in which a launch is held to it
+    without a subnet. A zone that ordinary runs ask for keeps today's meaning.
+    """
+    return bool(availability_zone) and availability_zone == __POOL_LAUNCH_CONFIGURATION__.get('availability_zone')
+
+
 def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
     return apply_pool_launch_configuration(
         get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id),
@@ -590,10 +611,11 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     elif performance_network:
         pipe_log('- Performance network requested.')
         if not subnet or not subnet_id:
-            # A zone asked for keeps the random subnet inside it.
+            # A zone the pool pins keeps the random subnet inside it.
+            subnet_zone = availability_zone if zone_pinned_by_pool(availability_zone) else None
             pipe_log('- Subnet is not specified, trying to get a random one{}...'.format(
-                ' in AZ {}'.format(availability_zone) if availability_zone else ''))
-            subnet_id = get_random_subnet(ec2, availability_zone)
+                ' in AZ {}'.format(subnet_zone) if subnet_zone else ''))
+            subnet_id = get_random_subnet(ec2, subnet_zone)
             pipe_log('- Subnet: {} will be used.'.format(subnet_id))
 
         if subnet_id:
@@ -629,10 +651,10 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             }
         })
 
-    # A zone that no subnet or network interface fixes - the region configures no networks - is pinned by placement,
-    # or the instance lands in the default subnet of whichever zone the cloud picks. A capacity reservation, for one,
-    # is only consumed in its own zone.
-    if availability_zone and not subnet_id and not network_interface:
+    # A zone the pool pins that no subnet or network interface fixes - the region configures no networks - is pinned by
+    # placement, or the instance lands in the default subnet of whichever zone the cloud picks. A capacity reservation,
+    # for one, is only consumed in its own zone.
+    if zone_pinned_by_pool(availability_zone) and not subnet_id and not network_interface:
         placement = additional_args.get('Placement', {})
         placement.update({'AvailabilityZone': availability_zone})
         additional_args.update({'Placement': placement})
@@ -1797,8 +1819,8 @@ def main():
         allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
         if allowed_instance and allowed_instance["instance_mask"]:
             pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
-        # Taken whether or not a rule matched: a pool's own configuration can carry it without one.
-        instance_additional_spec = allowed_instance.get("additional_spec") if allowed_instance else None
+        instance_additional_spec, availability_zone, subnet = resolve_launch_settings(allowed_instance,
+                                                                                      availability_zone, subnet)
         if instance_additional_spec:
             pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
         if not ins_img or ins_img == 'null':
@@ -1810,12 +1832,10 @@ def main():
         else:
             pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
-        if not availability_zone and allowed_instance and "availability_zone" in allowed_instance:
-            availability_zone = allowed_instance["availability_zone"]
-            pipe_log('Particular availability_zone: {availability_zone} is configured in allowed_instance configuration'.format(availability_zone=availability_zone))
-        if not subnet and allowed_instance and allowed_instance.get("subnet"):
-            subnet = allowed_instance["subnet"]
-            pipe_log('Particular subnet: {subnet} is configured in allowed_instance configuration'.format(subnet=subnet))
+        if availability_zone:
+            pipe_log('Particular availability_zone: {availability_zone} will be used'.format(availability_zone=availability_zone))
+        if subnet:
+            pipe_log('Particular subnet: {subnet} will be used'.format(subnet=subnet))
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:

@@ -280,9 +280,6 @@ public class CapacityReservationService {
     }
 
     /**
-     * Carries the reservation label over an ordinary edit, which rebuilds the labels from the request.
-     */
-    /**
      * Carries the reservation's part of the pool's launch configuration over an edit that replaces the configuration:
      * the reservation target in {@code additional_spec}, the zone and the subnet belong to the reservation, whatever
      * the edit sent for them. Everything else in the configuration is the edit's.
@@ -339,6 +336,9 @@ public class CapacityReservationService {
         return configuration;
     }
 
+    /**
+     * Carries the reservation label over an ordinary edit, which rebuilds the labels from the request.
+     */
     public void keepReservationLabel(final NodePool existing, final NodePool updated) {
         final PoolLabel label = MapUtils.emptyIfNull(existing.getKubeLabels())
                 .get(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL);

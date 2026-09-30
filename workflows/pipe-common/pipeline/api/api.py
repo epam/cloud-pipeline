@@ -246,7 +246,6 @@ class PipelineAPI:
     LOAD_CONFIGURATION = '/configuration/%d'
     GET_PREFERENCE = '/preferences/%s'
     LOAD_NODE_POOL = '/cluster/pool/%s'
-    LOAD_NODE_POOL = '/cluster/pool/%s'
     TOOL_VERSION_SETTINGS = '/tool/%d/settings'
     ADD_PIPELINE_REPOSITORY_HOOK = '/pipeline/%s/addHook'
     FOLDER_REGISTER = '/folder/register'
@@ -863,14 +862,6 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to get system preference %s. "
                                "Error message: %s" % (preference_name, str(e)))
-
-    def load_node_pool(self, pool_id):
-        try:
-            result = self.execute_request(str(self.api_url) + self.LOAD_NODE_POOL % pool_id, method='get')
-            return {} if result is None else result
-        except BaseException as e:
-            raise RuntimeError("Failed to load node pool %s. "
-                               "Error message: %s" % (pool_id, str(e)))
 
     def load_node_pool(self, pool_id):
         try:

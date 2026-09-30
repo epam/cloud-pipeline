@@ -104,8 +104,10 @@ def _ec2(subnet_zones=None):
 
 
 def _launch(ec2, additional_spec=None, availability_zone=None, subnet=None, is_dedicated=False,
-            performance_network=False, networks=None):
-    with patch.object(aws_nodeup, 'get_networks_config', return_value=networks or {}), \
+            performance_network=False, networks=None, pool_zone=None):
+    pool_configuration = {'availability_zone': pool_zone} if pool_zone else {}
+    with patch.object(aws_nodeup, '__POOL_LAUNCH_CONFIGURATION__', pool_configuration), \
+            patch.object(aws_nodeup, 'get_networks_config', return_value=networks or {}), \
             patch.object(aws_nodeup, 'get_security_groups', return_value=['sg-1']), \
             patch.object(aws_nodeup, 'get_block_devices', return_value=[]), \
             patch.object(aws_nodeup, 'get_tags', return_value=[]), \
@@ -127,21 +129,31 @@ def test_sends_the_reservation_target_in_the_launch_request():
     assert launch_args['SubnetId'] == SUBNET
 
 
-def test_pins_the_zone_when_no_subnet_fixes_it():
-    launch_args = _launch(_ec2(), availability_zone=ZONE)
+def test_pins_the_zone_the_pool_pins_when_no_subnet_fixes_it():
+    launch_args = _launch(_ec2(), availability_zone=ZONE, pool_zone=ZONE)
 
     assert launch_args['Placement']['AvailabilityZone'] == ZONE
     assert 'SubnetId' not in launch_args
 
 
+def test_leaves_a_zone_an_ordinary_run_asks_for_as_it_was():
+    """
+    Only a pool's own zone is enforced by placement. A zone an ordinary run asks for keeps its old meaning, so launches
+    that worked before - into whichever zone has a default subnet - still do.
+    """
+    launch_args = _launch(_ec2(), availability_zone=ZONE)
+
+    assert 'Placement' not in launch_args
+
+
 def test_keeps_dedicated_tenancy_while_pinning_the_zone():
-    launch_args = _launch(_ec2(), availability_zone=ZONE, is_dedicated=True)
+    launch_args = _launch(_ec2(), availability_zone=ZONE, is_dedicated=True, pool_zone=ZONE)
 
     assert launch_args['Placement'] == {'Tenancy': 'dedicated', 'AvailabilityZone': ZONE}
 
 
 def test_leaves_the_placement_alone_when_a_subnet_fixes_the_zone():
-    launch_args = _launch(_ec2(), availability_zone=ZONE, subnet=SUBNET)
+    launch_args = _launch(_ec2(), availability_zone=ZONE, subnet=SUBNET, pool_zone=ZONE)
 
     assert 'Placement' not in launch_args
 
@@ -149,9 +161,35 @@ def test_leaves_the_placement_alone_when_a_subnet_fixes_the_zone():
 def test_keeps_a_performance_networks_random_subnet_in_the_zone_asked_for():
     ec2 = _ec2(subnet_zones={'subnet-a-elsewhere': 'us-east-1a', SUBNET: ZONE})
 
-    launch_args = _launch(ec2, availability_zone=ZONE, performance_network=True)
+    launch_args = _launch(ec2, availability_zone=ZONE, performance_network=True, pool_zone=ZONE)
 
     assert launch_args['NetworkInterfaces'][0]['SubnetId'] == SUBNET
+
+
+def test_takes_the_pools_zone_and_subnet_when_no_argument_names_them():
+    allowed = dict(RULE, availability_zone=ZONE, subnet=SUBNET)
+
+    assert aws_nodeup.resolve_launch_settings(allowed, None, None) == (RULE['additional_spec'], ZONE, SUBNET)
+
+
+def test_lets_explicit_arguments_win_over_the_pool_and_the_rule():
+    allowed = dict(RULE, availability_zone=ZONE, subnet=SUBNET)
+
+    _, zone, subnet = aws_nodeup.resolve_launch_settings(allowed, 'us-east-1a', 'subnet-explicit')
+
+    assert (zone, subnet) == ('us-east-1a', 'subnet-explicit')
+
+
+def test_takes_the_additional_spec_even_when_no_rule_matched():
+    """
+    Without a matching rule the spec used to be dropped - and a pool's reservation target lives in it.
+    """
+    unmatched = dict(RULE, instance_mask=None,
+                     additional_spec={'CapacityReservationSpecification': RESERVATION_TARGET})
+
+    spec, _, _ = aws_nodeup.resolve_launch_settings(unmatched, None, None)
+
+    assert spec == {'CapacityReservationSpecification': RESERVATION_TARGET}
 
 
 def test_leaves_a_launch_without_any_configuration_as_it_was():

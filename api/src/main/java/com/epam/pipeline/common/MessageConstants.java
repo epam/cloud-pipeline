@@ -825,6 +825,7 @@ public final class MessageConstants {
         "error.node.pool.win.instance.not.allowed";
     public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
+    public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
