@@ -84,6 +84,8 @@ public class GitlabClientTest {
     private static final String MARKED_PROJECT_PATH = PROJECT_PATH + "-deletion_scheduled-" + PROJECT_ID;
     private static final String PERMANENTLY_REMOVE = "permanently_remove";
     private static final String FULL_PATH = "full_path";
+    private static final String GROUP = "TMP_FORK_abc";
+    private static final String GROUP_URL = "/api/v4/groups/" + GROUP;
     private static final String TAG_NAME = "v1";
     private static final String TAG_MESSAGE = "Tag message";
     private static final String SHA = "abc123";
@@ -295,6 +297,16 @@ public class GitlabClientTest {
                 .willReturn(aResponse().withStatus(BAD_REQUEST)));
 
         projectClient().deleteRepository();
+    }
+
+    @Test
+    public void shouldAcceptScheduledGroupDeletion() {
+        wireMockRule.stubFor(delete(urlEqualTo(GROUP_URL)).willReturn(accepted()));
+
+        client().deleteGroup(GROUP);
+
+        wireMockRule.verify(1, deleteRequestedFor(urlEqualTo(GROUP_URL)));
+        wireMockRule.verify(0, getRequestedFor(urlEqualTo(GROUP_URL)));
     }
 
     private static String projectJson(final String path) {

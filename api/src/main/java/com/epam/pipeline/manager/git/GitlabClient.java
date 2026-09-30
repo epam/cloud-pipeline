@@ -490,6 +490,10 @@ public class GitlabClient {
                         .build()));
     }
 
+    /**
+     * Deletes a group. GitLab 18.0 and later only schedules a top-level group for deletion, and renames it.
+     * The group and its projects are removed after the deletion delay, 30 days by default.
+     */
     public GitGroup deleteGroup(final String groupName) throws GitClientException {
         return execute(gitLabApi.deleteGroup(apiVersion, groupName));
     }
