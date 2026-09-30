@@ -49,11 +49,6 @@ def main():
     parser.add_argument("--skip_system_images_load", type=str, default='')
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
-    # Set together by the API for a pool backed by a capacity reservation. The zone matters as much as the id:
-    # a reservation exists in one availability zone only, and an instance launched elsewhere silently pays
-    # on-demand instead of consuming the capacity that was already paid for.
-    parser.add_argument("--capacity_reservation_id", type=str, required=False)
-    parser.add_argument("--availability_zone", type=str, required=False)
 
     args = parser.parse_args()
     ins_key = args.ins_key
@@ -83,11 +78,6 @@ def main():
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get('pool_id')
     is_dedicated = args.dedicated if args.dedicated else False
-    capacity_reservation_id = args.capacity_reservation_id
-    availability_zone = args.availability_zone
-
-    if capacity_reservation_id and not availability_zone:
-        raise RuntimeError('Capacity reservation {} was requested without an availability zone. A reservation exists in exactly one zone, so an instance launched elsewhere would not consume it - it would run as ordinary on-demand while the reserved capacity sits idle and paid for. Refusing to launch.'.format(capacity_reservation_id))
     global_distribution_url = os.getenv('GLOBAL_DISTRIBUTION_URL',
                                         default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
 
@@ -153,8 +143,7 @@ def main():
                                                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                          global_distribution_url,
                                                          pre_pull_images, is_dedicated, docker_data_root, docker_storage_driver,
-                                                         skip_system_images_load,
-                                                         capacity_reservation_id, availability_zone)
+                                                         skip_system_images_load)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

@@ -74,8 +74,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
                      global_distribution_url, pre_pull_images=[], is_dedicated=False, docker_data_root='/ebs/docker', docker_storage_driver='',
-                     skip_system_images_load='',
-                     capacity_reservation_id=None, availability_zone=None):
+                     skip_system_images_load=''):
 
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, pool_id, time_rep)
         if ins_id:
@@ -86,17 +85,12 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                                                       global_distribution_url, swap_size, pre_pull_images, docker_data_root, docker_storage_driver,
                                                       skip_system_images_load)
         if is_spot:
-            if capacity_reservation_id:
-                utils.pipe_log_warn('- Capacity reservation {} is ignored: a spot instance cannot consume reserved '
-                                    'capacity, so this node runs as spot and the reservation is not used'
-                                    .format(capacity_reservation_id))
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
                                                        kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, is_dedicated)
         else:
             ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id,
                                                            run_id, pool_id, user_data_script, num_rep, time_rep,
-                                                           swap_size, is_dedicated,
-                                                           capacity_reservation_id, availability_zone)
+                                                           swap_size, is_dedicated)
         return ins_id, ins_ip
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
@@ -116,50 +110,6 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             rep = self.__increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                            kill_instance_id_on_fail=ins_id)
         utils.pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
-
-    def __apply_capacity_reservation(self, additional_args, capacity_reservation_id, availability_zone,
-                                     allowed_networks):
-        """
-        Targets a capacity reservation, and pins the launch to the zone that reservation lives in.
-
-        Both halves are required for the reservation to be used at all. A reservation created with TARGETED match
-        criteria is consumed only by an instance that names it, so without CapacityReservationTarget the instance
-        launches as ordinary on-demand while the reserved capacity sits idle and paid for. And a reservation
-        exists in exactly one availability zone, so an instance placed in another zone cannot consume it - the
-        launch succeeds and the waste is silent, which is why the zone is pinned rather than left to chance.
-
-        With networks configured, the subnet configured for the reservation's zone is the only acceptable one: when
-        that zone has none, the launch is refused rather than sent to another zone.
-        """
-        if not capacity_reservation_id:
-            return
-
-        additional_args.update({
-            'CapacityReservationSpecification': {
-                'CapacityReservationTarget': {
-                    'CapacityReservationId': capacity_reservation_id
-                }
-            }
-        })
-
-        if not availability_zone:
-            raise RuntimeError('Capacity reservation {} was requested without an availability zone. A reservation exists in exactly one zone, so an instance launched elsewhere would not consume it - it would run as ordinary on-demand while the reserved capacity sits idle and paid for. Refusing to launch.'.format(capacity_reservation_id))
-
-        if allowed_networks:
-            matching_subnet = allowed_networks.get(availability_zone)
-            if not matching_subnet:
-                raise RuntimeError('Capacity reservation {} lives in AZ {}, but no subnet is configured for that zone (configured zones: {}). An instance launched in another zone would not consume the reservation. Refusing to launch.'.format(capacity_reservation_id, availability_zone, ', '.join(sorted(allowed_networks.keys()))))
-            # A subnet fixes the zone by itself, so no placement zone is set alongside it.
-            additional_args.update({'SubnetId': matching_subnet})
-            utils.pipe_log('- Capacity reservation {} targeted in AZ {} using subnet {}'
-                           .format(capacity_reservation_id, availability_zone, matching_subnet))
-            return
-
-        placement = additional_args.get('Placement', {})
-        placement.update({'AvailabilityZone': availability_zone})
-        additional_args.update({'Placement': placement})
-        utils.pipe_log('- Capacity reservation {} targeted in AZ {}'
-                       .format(capacity_reservation_id, availability_zone))
 
     def find_and_tag_instance(self, old_id, new_id):
         response = self.ec2.describe_instances(Filters=[{'Name': 'tag:Name', 'Values': [old_id]},
@@ -271,17 +221,12 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         }
 
     def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
-                                 num_rep, time_rep, swap_size, is_dedicated,
-                                 capacity_reservation_id=None, availability_zone=None):
+                                 num_rep, time_rep, swap_size, is_dedicated):
         utils.pipe_log('Creating on demand instance')
         allowed_networks = utils.get_networks_config(self.cloud_region)
         additional_args = {}
-        if capacity_reservation_id:
-            # The reservation's zone decides the subnet, so none is picked at random here.
-            utils.pipe_log('- Capacity reservation {} requested, the subnet will be chosen for its zone'
-                           .format(capacity_reservation_id))
-            additional_args = {'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
-        elif allowed_networks and len(allowed_networks) > 0:
+        subnet_id = None
+        if allowed_networks and len(allowed_networks) > 0:
             az_num = randint(0, len(allowed_networks) - 1)
             az_name, subnet_id = list(allowed_networks.items())[az_num]
             utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
@@ -296,9 +241,6 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                     'Tenancy': "dedicated"
                 }
             })
-
-        self.__apply_capacity_reservation(additional_args, capacity_reservation_id, availability_zone,
-                                          allowed_networks)
 
         try:
             response = self.ec2.run_instances(
