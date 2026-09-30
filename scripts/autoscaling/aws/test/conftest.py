@@ -19,7 +19,8 @@ The script runs on the API host with the platform's own packages installed - `pi
 jwt - none of which the logic under test uses. They are replaced by stubs here, so the tests need only boto3 and
 pytz. It is loaded by path under its own name because scripts/autoscaling/nodeup.py is also called `nodeup`.
 
-No CI job runs these. From this directory, with boto3, pytz and pytest installed (and mock on Python 2):
+CI runs these in the python-tests job of .github/workflows/java_tests.yml. By hand, from this directory, with boto3,
+pytz and pytest installed (and mock on Python 2):
 
     python -m pytest .
 """

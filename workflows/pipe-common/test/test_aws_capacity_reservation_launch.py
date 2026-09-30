@@ -68,6 +68,38 @@ def _launch_on_demand(capacity_reservation_id=RESERVATION_ID, availability_zone=
     return provider.ec2.run_instances.call_args[1]
 
 
+def _launch_spot(capacity_reservation_id):
+    provider = AWSInstanceProvider.__new__(AWSInstanceProvider)
+    provider.cloud_region = 'region'
+    provider._AWSInstanceProvider__check_spot_request_exists = MagicMock(return_value=(None, None))
+    provider._AWSInstanceProvider__find_spot_instance = MagicMock(return_value=('i-1', '10.0.0.1'))
+    with patch.object(awsprovider, 'utils') as utils:
+        provider.run_instance(is_spot=True, bid_price='0.1', ins_type='m5.large', ins_hdd=50, ins_img='ami-1',
+                              ins_platform='linux', ins_key='key', run_id=1, pool_id=2, kms_encyr_key_id=None,
+                              num_rep=1, time_rep=0, kube_ip=None, kubeadm_token=None, kubeadm_cert_hash=None,
+                              kube_node_token=None, global_distribution_url=None,
+                              capacity_reservation_id=capacity_reservation_id, availability_zone=ZONE)
+    return provider, utils
+
+
+def test_spot_launch_warns_that_the_reservation_is_not_used():
+    """
+    A spot instance cannot consume reserved capacity. The launch goes ahead as spot, but not silently: otherwise the
+    reservation idles and is paid for with nothing saying why.
+    """
+    provider, utils = _launch_spot(RESERVATION_ID)
+
+    provider._AWSInstanceProvider__find_spot_instance.assert_called_once()
+    utils.pipe_log_warn.assert_called_once()
+    assert RESERVATION_ID in utils.pipe_log_warn.call_args[0][0]
+
+
+def test_spot_launch_without_a_reservation_does_not_warn():
+    _, utils = _launch_spot(None)
+
+    utils.pipe_log_warn.assert_not_called()
+
+
 def test_on_demand_launch_targets_the_reservation():
     launch_args = _launch_on_demand()
 
