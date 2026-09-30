@@ -101,6 +101,7 @@ import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
+import getRunInvestigationUrl from '../../../utils/run-investigation-url';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -113,7 +114,14 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
+@inject(
+  'preferences',
+  'dtsList',
+  'multiZoneManager',
+  'dockerRegistries',
+  'preferences',
+  'authenticatedUserInfo'
+)
 @VSActions.check
 @inject(({routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -1538,6 +1546,7 @@ class Logs extends localization.LocalizedReactComponent {
     let Parameters;
     let InstanceDetails;
     let Title;
+    let InvestigateFailureLink;
     let PauseResumeButton;
     let ActionButton;
     let SSHButton;
@@ -1781,6 +1790,26 @@ class Logs extends localization.LocalizedReactComponent {
 
       const failureReason = status === 'FAILURE' && podStatus
         ? <span style={{fontWeight: 'normal', marginLeft: 5}}>({podStatus})</span> : undefined;
+
+      const investigationUrl = getRunInvestigationUrl(
+        this.props.preferences,
+        run,
+        this.props.authenticatedUserInfo
+      );
+      if (investigationUrl) {
+        InvestigateFailureLink = (
+          <Row className={styles.investigateFailureLink}>
+            <a
+              href={investigationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Investigate failure reason
+              <Icon type="export" />
+            </a>
+          </Row>
+        );
+      }
 
       Title = (
         <h1 className={styles.runTitle}>
@@ -2299,6 +2328,7 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
+            {InvestigateFailureLink}
             {renderNetworkLimitAlert()}
             {
               stateReasonMessage && (
