@@ -201,6 +201,14 @@ public class CapacityReservationIdempotencyTest {
     }
 
     @Test
+    public void shouldAskTheProviderHowALaunchTargetsTheReservation() {
+        final CapacityReservation reservation = reservation();
+        when(awsService.launchSpecification(reservation)).thenReturn(Collections.singletonMap("key", "value"));
+
+        assertThat(facade.launchSpecification(reservation)).containsEntry("key", "value");
+    }
+
+    @Test
     public void shouldAskTheProviderWhichZonesCanTakeTheReservation() {
         final CapacityReservation reservation = reservation();
         when(awsService.candidateZones(reservation)).thenReturn(Collections.singletonList("us-east-1c"));

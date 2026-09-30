@@ -21,12 +21,15 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
+import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolLaunchConfigBuilder;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -40,12 +43,14 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Owns the {@link CapacityReservation} side of a node pool: creating one with the pool, moving it
@@ -63,6 +68,7 @@ public class CapacityReservationService {
     private final CloudRegionManager regionManager;
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
+    private final RegionNetworksService regionNetworks;
 
     /**
      * Lazy because {@code NodePoolManager} depends on this service in turn - creating a pool is what creates a
@@ -152,11 +158,16 @@ public class CapacityReservationService {
      */
     @Transactional
     public void activatePool(final CapacityReservation reservation) {
+        final Map<String, Object> launchSpecification = launchSpecificationOf(reservation);
+        final String zone = reservation.getAvailabilityZone();
+        // None where the region configures no networks: the zone is then pinned by placement alone.
+        final String subnet = regionNetworks.allowedNetworks(regionCodeOf(reservation)).get(zone);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setCount(reservation.getInstanceCount());
             pool.setStartDate(reservation.getStartDate());
             pool.setEndDate(reservation.getEndDate());
             pool.setKubeLabels(withReservationLabel(pool.getKubeLabels(), reservation.getId()));
+            pool.setAmiConfiguration(withReservation(pool.getAmiConfiguration(), launchSpecification, zone, subnet));
         });
         log.debug("Activated node pool {} with {} nodes for capacity reservation {}",
                 reservation.getNodePoolId(), reservation.getInstanceCount(), reservation.getId());
@@ -169,7 +180,12 @@ public class CapacityReservationService {
      */
     @Transactional
     public void deactivatePool(final CapacityReservation reservation) {
-        poolManager.applyReservationState(reservation.getNodePoolId(), pool -> pool.setCount(0));
+        final Set<String> reservationKeys = launchSpecificationOf(reservation).keySet();
+        poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
+            pool.setCount(0);
+            // A node launched after this must not target a reservation that no longer exists: the launch would fail.
+            pool.setAmiConfiguration(withoutReservation(pool.getAmiConfiguration(), reservationKeys));
+        });
         log.debug("Deactivated node pool {} after capacity reservation {} ended",
                 reservation.getNodePoolId(), reservation.getId());
     }
@@ -216,6 +232,9 @@ public class CapacityReservationService {
         if (!existing.isCapacityReservation()) {
             return;
         }
+        // A spot request cannot consume reserved capacity, and one that targets a reservation is refused outright.
+        Assert.isTrue(!PriceType.SPOT.equals(vo.getPriceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
         final CapacityReservation reservation = findByNodePoolId(existing.getId()).orElse(null);
         if (reservation == null || !changesSize(existing, vo)) {
             return;
@@ -263,6 +282,63 @@ public class CapacityReservationService {
     /**
      * Carries the reservation label over an ordinary edit, which rebuilds the labels from the request.
      */
+    /**
+     * Carries the reservation's part of the pool's launch configuration over an edit that replaces the configuration:
+     * the reservation target in {@code additional_spec}, the zone and the subnet belong to the reservation, whatever
+     * the edit sent for them. Everything else in the configuration is the edit's.
+     */
+    public void keepReservationLaunchSettings(final NodePool existing, final NodePool updated) {
+        final AMIConfiguration requested = updated.getAmiConfiguration();
+        final CapacityReservation reservation = findByNodePoolId(existing.getId()).orElse(null);
+        if (requested == null || reservation == null) {
+            return;
+        }
+        final Set<String> reservationKeys = launchSpecificationOf(reservation).keySet();
+        final AMIConfiguration current = Optional.ofNullable(existing.getAmiConfiguration())
+                .orElseGet(AMIConfiguration::new);
+        final Map<String, Object> spec = new HashMap<>(MapUtils.emptyIfNull(requested.getAdditionalSpec()));
+        reservationKeys.forEach(spec::remove);
+        MapUtils.emptyIfNull(current.getAdditionalSpec()).entrySet().stream()
+                .filter(entry -> reservationKeys.contains(entry.getKey()))
+                .forEach(entry -> spec.put(entry.getKey(), entry.getValue()));
+        requested.setAdditionalSpec(spec.isEmpty() ? null : spec);
+        requested.setAvailabilityZone(current.getAvailabilityZone());
+        requested.setSubnet(current.getSubnet());
+    }
+
+    private Map<String, Object> launchSpecificationOf(final CapacityReservation reservation) {
+        return MapUtils.emptyIfNull(cloudFacade.launchSpecification(reservation));
+    }
+
+    private String regionCodeOf(final CapacityReservation reservation) {
+        return regionManager.load(reservation.getRegionId()).getRegionCode();
+    }
+
+    private static AMIConfiguration withReservation(final AMIConfiguration configuration,
+                                                    final Map<String, Object> launchSpecification,
+                                                    final String zone, final String subnet) {
+        final AMIConfiguration updated = Optional.ofNullable(configuration).orElseGet(AMIConfiguration::new);
+        final Map<String, Object> spec = new HashMap<>(MapUtils.emptyIfNull(updated.getAdditionalSpec()));
+        spec.putAll(launchSpecification);
+        updated.setAdditionalSpec(spec.isEmpty() ? null : spec);
+        updated.setAvailabilityZone(zone);
+        updated.setSubnet(subnet);
+        return updated;
+    }
+
+    private static AMIConfiguration withoutReservation(final AMIConfiguration configuration,
+                                                       final Set<String> reservationKeys) {
+        if (configuration == null) {
+            return null;
+        }
+        final Map<String, Object> spec = new HashMap<>(MapUtils.emptyIfNull(configuration.getAdditionalSpec()));
+        reservationKeys.forEach(spec::remove);
+        configuration.setAdditionalSpec(spec.isEmpty() ? null : spec);
+        configuration.setAvailabilityZone(null);
+        configuration.setSubnet(null);
+        return configuration;
+    }
+
     public void keepReservationLabel(final NodePool existing, final NodePool updated) {
         final PoolLabel label = MapUtils.emptyIfNull(existing.getKubeLabels())
                 .get(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL);

@@ -250,7 +250,8 @@
                         instance_count = :POOL_INSTANCE_COUNT,
                         kube_labels = :POOL_KUBE_LABELS,
                         start_date = :POOL_START_DATE,
-                        end_date = :POOL_END_DATE
+                        end_date = :POOL_END_DATE,
+                        ami_configuration = :POOL_AMI_CONFIGURATION
                     WHERE
                         id = :POOL_ID
                 ]]>

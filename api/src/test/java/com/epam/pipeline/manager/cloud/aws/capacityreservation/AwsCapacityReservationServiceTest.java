@@ -464,6 +464,25 @@ public class AwsCapacityReservationServiceTest {
     }
 
     /**
+     * A reservation created with TARGETED match criteria is only consumed by an instance that names it, in exactly
+     * this RunInstances shape - which the launch passes through from the pool's additional_spec as it is.
+     */
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldTargetTheReservationInRunInstancesTerms() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+
+        final Map<String, Object> specification = service.launchSpecification(reservation);
+
+        assertThat(specification).containsOnlyKeys("CapacityReservationSpecification");
+        final Map<String, Object> target =
+                (Map<String, Object>) specification.get("CapacityReservationSpecification");
+        assertThat((Map<String, Object>) target.get("CapacityReservationTarget"))
+                .containsEntry("CapacityReservationId", CLOUD_ID);
+    }
+
+    /**
      * AWS's documented minimum for a future-dated start, shared by pool validation and the monitor's submission.
      */
     @Test

@@ -249,6 +249,8 @@ public class NodePoolManager implements SecuredEntityManager {
             updated.setCount(reservationService.countAfterUpdate(existing, vo));
             // Added by activation, and what the pool's pods select on; the request knows nothing of it.
             reservationService.keepReservationLabel(existing, updated);
+            // Where and how the nodes consume the reservation is the reservation's, whatever the edit sent.
+            reservationService.keepReservationLaunchSettings(existing, updated);
         }
         poolDao.update(updated);
         // Like the launch config: replaced only when the caller sent one.

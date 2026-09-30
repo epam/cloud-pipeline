@@ -126,7 +126,8 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
 
     /**
      * The columns a capacity reservation's lifecycle owns: the node count that switches the pool on and off, the
-     * window it is usable in, and the labels its pods select on. {@link #update(NodePool)} leaves the dates out
+     * window it is usable in, the labels its pods select on, and the launch configuration it writes its target, zone
+     * and subnet into. {@link #update(NodePool)} leaves the dates out
      * deliberately, so this is the only statement that writes them after creation.
      */
     @Transactional(propagation = Propagation.MANDATORY)

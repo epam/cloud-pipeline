@@ -168,6 +168,12 @@ public class NodePoolValidator {
                         MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
         validateReservationSize(vo);
+        // The reservation's zone is chosen when it is submitted, from the zones the region can launch into, and its
+        // subnet follows from that - a zone asked for here could only conflict with it.
+        Optional.ofNullable(vo.getAmiConfiguration()).ifPresent(configuration -> Assert.isTrue(
+                StringUtils.isBlank(configuration.getAvailabilityZone())
+                        && StringUtils.isBlank(configuration.getSubnet()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_ZONE_NOT_SETTABLE)));
         validateReservationWindow(request);
         validateReservationInstance(vo, request);
     }
