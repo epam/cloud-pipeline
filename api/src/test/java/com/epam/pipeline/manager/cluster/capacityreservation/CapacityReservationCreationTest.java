@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
@@ -47,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,8 +65,6 @@ import static org.mockito.Mockito.when;
  * this way stops at {@code APPROVED} or {@code REQUIRED_APPROVE}.
  */
 @Transactional
-// Cancelling releases the capacity at the provider first; which provider call that is does not matter here.
-@MockBean(CapacityReservationCloudFacade.class)
 public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     private static final String POOL_NAME = "g5 reserved pool";
@@ -89,6 +89,12 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String ADMIN = "ADMIN";
     private static final int CALLER_CPU_RESERVED = 4;
     private static final int OTHER_INSTANCE_COUNT = 5;
+    private static final String REGION_CODE = "us-east-1";
+    private static final String SUBNET = "subnet-in-zone";
+    private static final String RESERVATION_TARGET = "CapacityReservationSpecification";
+    private static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
+    private static final String OWN_SPEC_KEY = "IamInstanceProfile";
+    private static final String OWN_INIT_SCRIPT = "/opt/api/scripts/init_custom.sh";
     /** What a g5.48xlarge has. */
     private static final int INSTANCE_VCPUS = 192;
     private static final int SMALL_INSTANCE_VCPUS = 8;
@@ -114,6 +120,13 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @Autowired
     private CapacityReservationService reservationService;
 
+    /**
+     * The provider is not what is under test: cancelling asks it to release the capacity, and activation asks it how
+     * a launch targets the reservation.
+     */
+    @MockBean
+    private CapacityReservationCloudFacade cloudFacade;
+
     @MockBean
     private CloudRegionManager regionManager;
 
@@ -128,7 +141,10 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     public void setUp() {
         final AwsRegion region = new AwsRegion();
         region.setId(REGION_ID);
+        region.setRegionCode(REGION_CODE);
         when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
+        when(cloudFacade.launchSpecification(any())).thenAnswer(invocation -> Collections.singletonMap(
+                RESERVATION_TARGET, ((CapacityReservation) invocation.getArguments()[0]).getCloudReservationId()));
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         givenVcpusPerInstance(INSTANCE_VCPUS);
@@ -740,6 +756,116 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
+     * Activation is what makes a node consume the reservation: its target, zone and subnet go into the pool's launch
+     * configuration - over what the pool's own configuration already says, which it keeps.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldWriteTheReservationIntoThePoolsLaunchConfigurationOnActivation() {
+        setNetworks();
+        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        final CapacityReservation reservation = activeReservationOf(created);
+
+        reservationService.activatePool(reservation);
+
+        final AMIConfiguration configuration = launchConfigurationOf(created);
+        assertThat(configuration.getAdditionalSpec()).containsEntry(RESERVATION_TARGET, CLOUD_RESERVATION_ID);
+        assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(configuration.getSubnet()).isEqualTo(SUBNET);
+        assertThat(configuration.getAdditionalSpec()).containsKey(OWN_SPEC_KEY);
+        assertThat(configuration.getInitScript()).isEqualTo(OWN_INIT_SCRIPT);
+    }
+
+    /**
+     * A node launched after the reservation ended must not target it - the launch would be refused - but the pool's
+     * own settings stay.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRemoveTheReservationFromThePoolsLaunchConfigurationWhenItEnds() {
+        setNetworks();
+        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        final CapacityReservation reservation = activeReservationOf(created);
+        reservationService.activatePool(reservation);
+
+        reservationService.cancel(reservation.getId());
+
+        final AMIConfiguration configuration = launchConfigurationOf(created);
+        assertThat(configuration.getAdditionalSpec()).doesNotContainKey(RESERVATION_TARGET);
+        assertThat(configuration.getAvailabilityZone()).isNull();
+        assertThat(configuration.getSubnet()).isNull();
+        assertThat(configuration.getAdditionalSpec()).containsKey(OWN_SPEC_KEY);
+        assertThat(configuration.getInitScript()).isEqualTo(OWN_INIT_SCRIPT);
+    }
+
+    /**
+     * An editor may send the configuration back with anything in those fields - or nothing. They are the
+     * reservation's either way.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldKeepTheReservationsLaunchSettingsThroughAnEdit() {
+        setNetworks();
+        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        reservationService.activatePool(activeReservationOf(created));
+        final NodePoolVO edit = withOwnLaunchSettings(editOf());
+        edit.getAmiConfiguration().setInitScript("/opt/api/scripts/init_edited.sh");
+
+        poolManager.update(created.getId(), edit);
+
+        final AMIConfiguration configuration = launchConfigurationOf(created);
+        assertThat(configuration.getAdditionalSpec()).containsEntry(RESERVATION_TARGET, CLOUD_RESERVATION_ID);
+        assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(configuration.getSubnet()).isEqualTo(SUBNET);
+        assertThat(configuration.getInitScript()).isEqualTo("/opt/api/scripts/init_edited.sh");
+    }
+
+    /**
+     * The reservation's zone is chosen when it is submitted, so one asked for with the pool could only conflict.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseAZoneAskedForWithAReservationPool() {
+        final NodePoolVO vo = withOwnLaunchSettings(reservationPoolVO());
+        vo.getAmiConfiguration().setAvailabilityZone(ZONE);
+
+        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * A spot request cannot consume reserved capacity, and one that targets a reservation is refused by the provider.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseSwitchingAReservationPoolToSpot() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf();
+        edit.setPriceType(com.epam.pipeline.entity.cluster.PriceType.SPOT);
+
+        assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static NodePoolVO withOwnLaunchSettings(final NodePoolVO vo) {
+        final AMIConfiguration configuration = new AMIConfiguration();
+        configuration.setInitScript(OWN_INIT_SCRIPT);
+        configuration.setAdditionalSpec(new HashMap<>(Collections.singletonMap(OWN_SPEC_KEY, "profile")));
+        vo.setAmiConfiguration(configuration);
+        return vo;
+    }
+
+    private AMIConfiguration launchConfigurationOf(final NodePool pool) {
+        return poolDao.find(pool.getId()).orElseThrow(AssertionError::new).getAmiConfiguration();
+    }
+
+    private void setNetworks() {
+        final Preference preference = SystemPreferences.CLUSTER_NETWORKS_CONFIG.toPreference();
+        preference.setValue("{\"regions\": [{\"name\": \"" + REGION_CODE + "\", \"networks\": {\"" + ZONE
+                + "\": \"" + SUBNET + "\"}}]}");
+        preferenceManager.update(Collections.singletonList(preference));
+    }
+
+    /**
      * Puts the reservation where the monitor leaves it once the provider has granted the capacity.
      */
     private CapacityReservation activeReservationOf(final NodePool pool) {
@@ -748,6 +874,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         reservation.setStartDate(reservation.getRequestedStartDate());
         reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
         reservation.setAvailabilityZone(ZONE);
+        reservation.setCloudReservationId(CLOUD_RESERVATION_ID);
         return withStatus(reservation, CapacityReservationStatus.ACTIVE);
     }
 

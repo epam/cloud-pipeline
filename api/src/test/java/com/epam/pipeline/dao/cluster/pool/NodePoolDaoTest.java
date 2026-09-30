@@ -156,6 +156,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         created.setStartDate(START_DATE);
         created.setEndDate(END_DATE);
         created.setKubeLabels(Collections.singletonMap(RESERVATION_LABEL, new PoolLabel("7", false)));
+        created.setAmiConfiguration(amiConfiguration());
 
         poolDao.updateReservationState(created);
 
@@ -164,6 +165,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
         assertThat(loaded.getKubeLabels()).containsKey(RESERVATION_LABEL);
+        assertThat(loaded.getAmiConfiguration()).isEqualTo(amiConfiguration());
         assertThat(loaded.getName()).isEqualTo(originalName);
     }
 

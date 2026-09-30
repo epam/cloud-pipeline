@@ -23,9 +23,12 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationS
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationMonitor.CapacityReservationMonitorCore;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import org.junit.After;
@@ -80,12 +83,21 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
     @MockBean
     private CapacityReservationCloudFacade cloudFacade;
 
+    /**
+     * Activation looks the reservation's region up to find the subnet for its zone; this database has no regions.
+     */
+    @MockBean
+    private CloudRegionManager regionManager;
+
     private TransactionTemplate transaction;
     private Long poolId;
     private Long reservationId;
 
     @Before
     public void setUp() {
+        final AwsRegion region = new AwsRegion();
+        region.setRegionCode("us-east-1");
+        when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
         transaction = new TransactionTemplate(transactionManager);
         transaction.execute(status -> {
             final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();

@@ -118,6 +118,8 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
      */
     public static final int MINIMUM_LEAD_DAYS = 5;
 
+    static final String CAPACITY_RESERVATION_SPECIFICATION = "CapacityReservationSpecification";
+
     private static final int HTTP_SERVER_ERROR = 500;
     /**
      * States in which AWS no longer holds - or bills for - the capacity, or never delivered it.
@@ -141,6 +143,17 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     @Override
     public Duration getMinimumLead() {
         return Duration.ofDays(MINIMUM_LEAD_DAYS);
+    }
+
+    /**
+     * The {@code RunInstances} argument that sends an instance into a targeted reservation - without it, a
+     * reservation created with {@code TARGETED} match criteria is never consumed.
+     */
+    @Override
+    public Map<String, Object> launchSpecification(final CapacityReservation reservation) {
+        return Collections.singletonMap(CAPACITY_RESERVATION_SPECIFICATION,
+                Collections.singletonMap("CapacityReservationTarget",
+                        Collections.singletonMap("CapacityReservationId", reservation.getCloudReservationId())));
     }
 
     @Override

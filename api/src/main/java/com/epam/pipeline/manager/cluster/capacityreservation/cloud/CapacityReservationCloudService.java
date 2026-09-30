@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -48,6 +49,13 @@ public interface CapacityReservationCloudService {
      * reservation anywhere else could not be consumed. Empty when there is none.
      */
     List<String> candidateZones(CapacityReservation reservation);
+
+    /**
+     * What a node's launch request carries to consume this reservation, in the shape of the provider's own launch
+     * arguments. It is merged into a pool's {@code additional_spec} while the reservation is live, and its keys are
+     * removed when it ends, so they must not depend on anything but the reservation.
+     */
+    Map<String, Object> launchSpecification(CapacityReservation reservation);
 
     /**
      * Asks the provider to hold capacity from a future date.
