@@ -54,17 +54,6 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final Map<String, String> runtimeParameters;
     private final Map<String, String> tags;
 
-    /**
-     * The capacity reservation this node must consume, and the zone that reservation lives in.
-     *
-     * <p>Both are needed together and neither is optional in effect: a reservation is only consumed by an
-     * instance that explicitly targets it, and it exists in exactly one availability zone - so a node launched
-     * into another zone silently falls back to on-demand pricing while the reserved capacity sits idle and paid
-     * for. Absent for every node that is not backed by a reservation, which is almost all of them.
-     */
-    private final String capacityReservationId;
-    private final String availabilityZone;
-
     @Override
     protected List<String> buildCommandArguments() {
         final List<String> commands = new ArrayList<>(MIN_LENGTH);
@@ -101,14 +90,6 @@ public class NodeUpCommand extends AbstractClusterCommand {
         if (StringUtils.isNotBlank(encryptionKey)) {
             commands.add("--kms_encyr_key_id");
             commands.add(encryptionKey);
-        }
-        if (StringUtils.isNotBlank(capacityReservationId)) {
-            commands.add("--capacity_reservation_id");
-            commands.add(capacityReservationId);
-        }
-        if (StringUtils.isNotBlank(availabilityZone)) {
-            commands.add("--availability_zone");
-            commands.add(availabilityZone);
         }
         if (isSpot) {
             commands.add("--is_spot");
