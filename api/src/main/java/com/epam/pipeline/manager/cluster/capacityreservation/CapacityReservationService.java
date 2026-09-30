@@ -105,11 +105,11 @@ public class CapacityReservationService {
     }
 
     /**
-     * The reservation a pool's new nodes must consume, if its capacity exists right now.
+     * A pool's reservation, if its capacity exists right now - while it does, the pool is switched on and its count is
+     * the pool's own to manage.
      *
      * <p>{@code FINALIZING} counts: it is only a warning that the end is near, and the capacity is held - and paid
-     * for - until the reservation actually ends. Capacity not granted yet, or already ended, cannot be consumed,
-     * and targeting it would fail the launch rather than fall back.
+     * for - until the reservation actually ends.
      */
     public Optional<CapacityReservation> findConsumableByNodePoolId(final Long nodePoolId) {
         return findByNodePoolId(nodePoolId)
