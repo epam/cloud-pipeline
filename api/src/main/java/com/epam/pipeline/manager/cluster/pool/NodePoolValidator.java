@@ -104,10 +104,10 @@ public class NodePoolValidator {
 
         Assert.isTrue(StringUtils.isNotBlank(vo.getInstanceType()),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_MISSING_INSTANCE_TYPE));
-//        Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(vo.getInstanceType(), vo.getRegionId(),
-//                PriceType.SPOT.equals(vo.getPriceType())),
-//                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED,
-//                        vo.getInstanceType()));
+        Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(vo.getInstanceType(), vo.getRegionId(),
+                PriceType.SPOT.equals(vo.getPriceType())),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED,
+                        vo.getInstanceType()));
 
         Assert.isTrue(vo.getInstanceDisk() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INVALID_DISK_SIZE));

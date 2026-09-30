@@ -53,6 +53,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -425,6 +426,24 @@ public class AwsCapacityReservationServiceTest {
         service.cancel(reservation);
 
         assertThat(client.cancelRequest).isNull();
+    }
+
+    /**
+     * The monitor rolls a whole step back when a later write in it fails, so a cancel AWS already carried out comes
+     * round again. Asking AWS to cancel a cancelled reservation would fail that step on every cycle.
+     */
+    @Test
+    public void shouldTreatAnAlreadyReleasedReservationAsCancelled() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        for (final String released : Arrays.asList("cancelled", "cancelling", "expired", "failed")) {
+            client.described = Collections.singletonList(awsReservation(released, ZONE));
+
+            service.cancel(reservation);
+
+            assertThat(client.cancelRequest).as(released).isNull();
+            assertThat(client.quoteRequest).as(released).isNull();
+        }
     }
 
     /**

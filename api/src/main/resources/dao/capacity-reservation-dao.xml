@@ -353,5 +353,18 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateCapacityReservationInstanceCountQuery-->
+                <![CDATA[
+                    UPDATE pipeline.capacity_reservation SET
+                        instance_count = :INSTANCE_COUNT,
+                        updated = :UPDATED
+                    WHERE
+                        id = :ID
+                        AND status = :STATUS
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>

@@ -54,6 +54,7 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
     private final String loadCapacityReservationsByStatusQuery;
     private final String loadCapacityReservationsByOwnerQuery;
     private final String updateCapacityReservationStatusReasonQuery;
+    private final String updateCapacityReservationInstanceCountQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public CapacityReservation create(final CapacityReservation reservation) {
@@ -92,6 +93,20 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 .addValue(Parameters.STATUS_REASON.name(), statusReason)
                 .addValue(Parameters.UPDATED.name(), Parameters.timestamp(updated));
         return getNamedParameterJdbcTemplate().update(updateCapacityReservationStatusReasonQuery, params) > 0;
+    }
+
+    /**
+     * @return whether the reservation was still in {@code expectedStatus}, and so was written
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean updateInstanceCount(final Long id, final CapacityReservationStatus expectedStatus,
+                                       final int instanceCount, final LocalDateTime updated) {
+        final MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue(Parameters.ID.name(), id)
+                .addValue(Parameters.STATUS.name(), expectedStatus.name())
+                .addValue(Parameters.INSTANCE_COUNT.name(), instanceCount)
+                .addValue(Parameters.UPDATED.name(), Parameters.timestamp(updated));
+        return getNamedParameterJdbcTemplate().update(updateCapacityReservationInstanceCountQuery, params) > 0;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

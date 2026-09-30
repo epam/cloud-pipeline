@@ -52,6 +52,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -104,6 +106,13 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     private static final String NAME_TAG = "Name";
     private static final int SECONDS_PER_HOUR = 3600;
     private static final int HTTP_SERVER_ERROR = 500;
+    /**
+     * States in which AWS no longer holds - or bills for - the capacity, or never delivered it.
+     */
+    private static final Set<CapacityReservationState> ALREADY_RELEASED = Collections.unmodifiableSet(EnumSet.of(
+            CapacityReservationState.CANCELLED, CapacityReservationState.CANCELLING,
+            CapacityReservationState.EXPIRED, CapacityReservationState.FAILED,
+            CapacityReservationState.PAYMENT_FAILED, CapacityReservationState.UNSUPPORTED));
     private static final Set<String> INSUFFICIENT_CAPACITY_ERROR_CODES = new HashSet<>(Arrays.asList(
             "InsufficientCapacity", "InsufficientInstanceCapacity", "InsufficientReservedInstanceCapacity"));
 
@@ -187,6 +196,14 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 // Already gone, or never existed. Either way there is nothing to release and nothing being billed.
                 log.warn("Capacity reservation {} ({}) is unknown to AWS; nothing to cancel",
                         reservation.getId(), reservation.getCloudReservationId());
+                return;
+            }
+            if (ALREADY_RELEASED.contains(current.get().state())) {
+                // A retried step: the monitor rolls a whole step back when a later write in it fails, so a cancel
+                // AWS already carried out comes round again. There is nothing left to release, and asking AWS to
+                // cancel it anyway would fail the step every time.
+                log.debug("Capacity reservation {} ({}) is already {} at AWS; nothing to cancel", reservation.getId(),
+                        reservation.getCloudReservationId(), current.get().stateAsString());
                 return;
             }
             if (requiresCancellationQuote(current.get())) {

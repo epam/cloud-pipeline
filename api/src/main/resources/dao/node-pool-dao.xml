@@ -227,5 +227,70 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateNodePoolReservationStateQuery-->
+                <![CDATA[
+                    UPDATE pipeline.node_pool SET
+                        instance_count = :POOL_INSTANCE_COUNT,
+                        kube_labels = :POOL_KUBE_LABELS,
+                        start_date = :POOL_START_DATE,
+                        end_date = :POOL_END_DATE
+                    WHERE
+                        id = :POOL_ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadNodePoolByIdForUpdateQuery-->
+                <!--The by-id load, holding the pool's row lock until the transaction ends. OF n because the
+                    schedule joins are outer, and their nullable side cannot be locked - nor needs to be.-->
+                <![CDATA[
+                    SELECT
+                        n.id AS POOL_ID,
+                        n.created_date AS POOL_CREATED_DATE,
+                        n.name AS POOL_NAME,
+                        n.region_id as POOL_REGION_ID,
+                        n.instance_type as POOL_INSTANCE_TYPE,
+                        n.node_disk as POOL_INSTANCE_DISK,
+                        n.price_type as POOL_PRICE_TYPE,
+                        n.docker_image as POOL_DOCKER_IMAGE,
+                        n.instance_image as POOL_INSTANCE_IMAGE,
+                        n.instance_count as POOL_INSTANCE_COUNT,
+                        n.filter as POOL_FILTER,
+                        n.autoscaled as POOL_AUTOSCALED,
+                        n.min_size as POOL_MIN_SIZE,
+                        n.max_size as POOL_MAX_SIZE,
+                        n.scale_up_threshold as POOL_UP_THRESHOLD,
+                        n.scale_down_threshold as POOL_DOWN_THRESHOLD,
+                        n.scale_step as POOL_SCALE_STEP,
+                        n.schedule_id as SCHEDULE_ID,
+                        n.kube_labels as POOL_KUBE_LABELS,
+                        n.owner as POOL_OWNER,
+                        n.pool_type as POOL_TYPE,
+                        n.capacity_reservation as POOL_CAPACITY_RESERVATION,
+                        n.start_date as POOL_START_DATE,
+                        n.end_date as POOL_END_DATE,
+                        n.launch_config as POOL_LAUNCH_CONFIG,
+                        s.name as SCHEDULE_NAME,
+                        s.created_date as SCHEDULE_CREATED_DATE,
+                        e.from_day_of_week,
+                        e.from_time,
+                        e.to_day_of_week,
+                        e.to_time
+                    FROM
+                        pipeline.node_pool as n
+                    LEFT JOIN pipeline.node_schedule as s
+                        ON n.schedule_id = s.id
+                    LEFT JOIN pipeline.node_schedule_entry as e
+                        ON s.id = e.schedule_id
+                    WHERE
+                        n.id = ?
+                    order by e.from_day_of_week, e.from_time
+                    FOR UPDATE OF n
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>

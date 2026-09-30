@@ -19,6 +19,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
+import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodeScheduleCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
@@ -43,6 +44,8 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
     private static final LocalDateTime END_DATE = LocalDateTime.of(2026, 10, 3, 12, 0);
     private static final int CPU_RESERVED = 4;
     private static final String RAM_RESERVED = "2GiB";
+    private static final int RESERVED_COUNT = 3;
+    private static final String RESERVATION_LABEL = "cp-capacity-reservation";
 
     @Autowired
     private NodePoolDao poolDao;
@@ -72,6 +75,20 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         final NodePool created = createPoolWithSchedule();
         assertThat(created.getId()).isNotNull();
         findAndAssertPool(created);
+    }
+
+    /**
+     * The locking load joins the same schedule tables, outer, as the plain one - and the pool it returns must be
+     * the same, schedule included, or a write through it would drop what it did not read.
+     */
+    @Test
+    public void shouldLoadAPoolForUpdateExactlyAsItLoadsIt() {
+        final NodePool created = createPoolWithSchedule();
+
+        final Optional<NodePool> locked = poolDao.findForUpdate(created.getId());
+
+        assertThat(locked).isEqualTo(poolDao.find(created.getId()));
+        assertThat(locked.orElseThrow(AssertionError::new).getSchedule()).isNotNull();
     }
 
     @Test
@@ -123,6 +140,30 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.isCapacityReservation()).isTrue();
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
+    }
+
+    /**
+     * The ordinary update leaves the reservation window out on purpose, so this statement is the only way the
+     * window reaches the database - without it a reservation-backed pool would never stop being schedulable.
+     */
+    @Test
+    public void shouldWriteTheColumnsTheReservationLifecycleOwnsAndNothingElse() {
+        final NodePool created = poolDao.create(NodePoolCreatorUtils.getPoolWithoutSchedule());
+        final String originalName = created.getName();
+        created.setName("not written by this statement");
+        created.setCount(RESERVED_COUNT);
+        created.setStartDate(START_DATE);
+        created.setEndDate(END_DATE);
+        created.setKubeLabels(Collections.singletonMap(RESERVATION_LABEL, new PoolLabel("7", false)));
+
+        poolDao.updateReservationState(created);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getCount()).isEqualTo(RESERVED_COUNT);
+        assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
+        assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
+        assertThat(loaded.getKubeLabels()).containsKey(RESERVATION_LABEL);
+        assertThat(loaded.getName()).isEqualTo(originalName);
     }
 
     @Test

@@ -39,12 +39,14 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -120,21 +122,44 @@ public class NodePoolManager implements SecuredEntityManager {
 
     public NodePool load(final Long poolId) {
         return find(poolId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, poolId)));
+                .orElseThrow(() -> notFound(poolId));
     }
 
     /**
-     * Persists the columns the reservation lifecycle owns - the node count and the window it is usable in, plus
+     * Loads a pool to change it, holding its row lock for the rest of the caller's transaction.
+     *
+     * <p>Every write to an existing pool reads it this way, so what it checks and merges with is the pool as it is
+     * now, and no other write can land between that read and its own. Without it, a write working from an older
+     * copy silently undoes one that committed meanwhile - an activation or deactivation included, which happen
+     * once and are never retried. A caller that writes something else the pool's writes also touch - a
+     * reservation - takes this first, so the locks are always taken in the same order.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public NodePool loadForUpdate(final Long poolId) {
+        return poolDao.findForUpdate(poolId)
+                .orElseThrow(() -> notFound(poolId));
+    }
+
+    private IllegalArgumentException notFound(final Long poolId) {
+        return new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, poolId));
+    }
+
+    /**
+     * Changes the columns the reservation lifecycle owns - the node count and the window it is usable in, plus
      * the kube labels its pods select on.
      *
      * <p>Separate from {@link #update(Long, NodePoolVO)} on purpose: that path is driven by a caller's VO and
      * validates it, neither of which applies to the monitor writing back what a provider decided.
+     *
+     * <p>The change is applied to the pool as {@link #loadForUpdate} reads it, so it can neither be overwritten by
+     * an edit working from an older copy nor overwrite one.
      */
     @Transactional
-    public NodePool applyReservationState(final NodePool pool) {
-        poolDao.update(pool);
-        return pool;
+    public NodePool applyReservationState(final Long poolId, final Consumer<NodePool> change) {
+        final NodePool pool = loadForUpdate(poolId);
+        change.accept(pool);
+        return poolDao.updateReservationState(pool);
     }
 
     private Long reservationIdOf(final NodePool pool) {
@@ -145,7 +170,7 @@ public class NodePoolManager implements SecuredEntityManager {
 
     @Transactional
     public NodePool delete(final Long poolId) {
-        final NodePool node = load(poolId);
+        final NodePool node = loadForUpdate(poolId);
         // Refuses the delete while a reservation is still live, and removes a terminal one in this same
         // transaction - the reservation row cannot outlive the pool it points at.
         reservationService.onPoolDeletion(node);
@@ -209,16 +234,22 @@ public class NodePoolManager implements SecuredEntityManager {
      */
     @Transactional
     public NodePool update(final Long id, final NodePoolVO vo) {
-        final NodePool existing = load(id);
+        final NodePool existing = loadForUpdate(id);
         vo.setId(id);
         validator.validate(vo);
-        reservationService.assertPoolEditable(existing, vo);
+        reservationService.onPoolUpdate(existing, vo);
 
         final NodePool updated = poolMapper.toEntity(vo);
         // Neither of these is writable through an ordinary edit: ownership changes through the permission
         // layer, and a pool cannot gain or lose a reservation after it is created.
         updated.setOwner(existing.getOwner());
         updated.setCapacityReservation(existing.isCapacityReservation());
+        if (existing.isCapacityReservation()) {
+            // The reservation decides whether the pool may run at all, so it decides what the count may become.
+            updated.setCount(reservationService.countAfterUpdate(existing, vo));
+            // Added by activation, and what the pool's pods select on; the request knows nothing of it.
+            reservationService.keepReservationLabel(existing, updated);
+        }
         poolDao.update(updated);
 
         // Replaced only when the caller actually sent one, so an edit that says nothing about the launch config
@@ -237,7 +268,7 @@ public class NodePoolManager implements SecuredEntityManager {
     @Transactional
     @Override
     public AbstractSecuredEntity changeOwner(final Long id, final String owner) {
-        final NodePool pool = load(id);
+        final NodePool pool = loadForUpdate(id);
         pool.setOwner(owner);
         return poolDao.updateOwner(pool);
     }
