@@ -74,18 +74,27 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertFound(loaded, created);
     }
 
+    /**
+     * A retry remembers its reason and the dates it asked for - and nothing else: the columns it leaves out are the
+     * ones a stale copy must not write back.
+     */
     @Test
-    public void shouldWriteOnlyTheReasonWhileTheStatusIsTheExpectedOne() {
+    public void shouldWriteOnlyWhatARetryRemembersWhileTheStatusIsTheExpectedOne() {
         final CapacityReservation created = reservationDao.create(
                 CapacityReservationCreatorUtils.getReservation(createPool().getId()));
-        final LocalDateTime updated = created.getUpdated().plusMinutes(1);
+        final CapacityReservation retried = reservationDao.find(created.getId()).orElseThrow(AssertionError::new);
+        retried.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
+        retried.setUpdated(created.getUpdated().plusMinutes(1));
+        retried.setStartDate(created.getRequestedStartDate());
+        retried.setEndDate(created.getRequestedEndDate());
+        retried.setName("not written by a retry");
 
-        final boolean written = reservationDao.updateStatusReason(created.getId(), created.getStatus(),
-                CapacityReservationCreatorUtils.STATUS_REASON, updated);
+        assertThat(reservationDao.updateRetry(retried)).isTrue();
 
-        assertThat(written).isTrue();
-        created.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
-        created.setUpdated(updated);
+        created.setStatusReason(retried.getStatusReason());
+        created.setUpdated(retried.getUpdated());
+        created.setStartDate(retried.getStartDate());
+        created.setEndDate(retried.getEndDate());
         assertFound(reservationDao.find(created.getId()), created);
     }
 
@@ -93,17 +102,18 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
      * The guard is the point: a caller holding a stale copy must not overwrite a status change made meanwhile.
      */
     @Test
-    public void shouldNotWriteTheReasonOnceTheStatusHasMovedOn() {
+    public void shouldNotWriteARetryOnceTheStatusHasMovedOn() {
         final CapacityReservation created = reservationDao.create(
                 CapacityReservationCreatorUtils.getReservation(createPool().getId()));
         created.setStatus(CapacityReservationStatus.CANCELLED);
         reservationDao.update(created);
+        final CapacityReservation staleCopy = reservationDao.find(created.getId()).orElseThrow(AssertionError::new);
+        staleCopy.setStatus(CapacityReservationStatus.APPROVED);
+        staleCopy.setStatusReason(CapacityReservationCreatorUtils.STATUS_REASON);
+        staleCopy.setUpdated(created.getUpdated().plusMinutes(1));
 
-        final boolean written = reservationDao.updateStatusReason(created.getId(),
-                CapacityReservationStatus.APPROVED, CapacityReservationCreatorUtils.STATUS_REASON,
-                created.getUpdated().plusMinutes(1));
+        assertThat(reservationDao.updateRetry(staleCopy)).isFalse();
 
-        assertThat(written).isFalse();
         assertFound(reservationDao.find(created.getId()), created);
     }
 

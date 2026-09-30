@@ -48,6 +48,7 @@ import software.amazon.awssdk.services.ec2.model.ResourceType;
 import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.ec2.model.TagSpecification;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -105,6 +106,11 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
 
     private static final String NAME_TAG = "Name";
     private static final int SECONDS_PER_HOUR = 3600;
+    /**
+     * AWS accepts a future-dated reservation only when it starts at least this many days after the request.
+     */
+    public static final int MINIMUM_LEAD_DAYS = 5;
+
     private static final int HTTP_SERVER_ERROR = 500;
     /**
      * States in which AWS no longer holds - or bills for - the capacity, or never delivered it.
@@ -122,6 +128,11 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
+    }
+
+    @Override
+    public Duration getMinimumLead() {
+        return Duration.ofDays(MINIMUM_LEAD_DAYS);
     }
 
     @Override

@@ -31,7 +31,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -63,13 +62,14 @@ public class CapacityReservationStatusServiceTest {
     }
 
     @Test
-    public void shouldPersistOnlyTheReasonAndOnlyWhileTheStatusIsUnchanged() {
+    public void shouldPersistTheRetryWithoutMovingTheReservation() {
         final CapacityReservation reservation = approved();
-        when(reservationDao.updateStatusReason(eq(RESERVATION_ID), eq(CapacityReservationStatus.APPROVED),
-                eq(REASON), any())).thenReturn(true);
+        when(reservationDao.updateRetry(reservation)).thenReturn(true);
 
         assertThat(statusService.recordRetry(reservation, REASON)).isTrue();
         assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(reservation.getStatusReason()).isEqualTo(REASON);
+        assertThat(reservation.getUpdated()).isNotNull();
     }
 
     /**
@@ -80,7 +80,7 @@ public class CapacityReservationStatusServiceTest {
     @Test
     public void shouldNeverWriteTheWholeRowFromAPossiblyStaleCopy() {
         final CapacityReservation reservation = approved();
-        when(reservationDao.updateStatusReason(any(), any(), any(), any())).thenReturn(false);
+        when(reservationDao.updateRetry(any())).thenReturn(false);
 
         assertThat(statusService.recordRetry(reservation, REASON)).isFalse();
         verify(reservationDao, never()).update(any());
@@ -93,7 +93,7 @@ public class CapacityReservationStatusServiceTest {
     @Test
     public void shouldNotNotifyAboutARetry() {
         final CapacityReservation reservation = approved();
-        when(reservationDao.updateStatusReason(any(), any(), any(), any())).thenReturn(true);
+        when(reservationDao.updateRetry(any())).thenReturn(true);
 
         statusService.recordRetry(reservation, REASON);
 

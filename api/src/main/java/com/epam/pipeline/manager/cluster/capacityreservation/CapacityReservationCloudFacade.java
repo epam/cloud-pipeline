@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -27,10 +28,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
 /**
  * Routes a reservation to its provider, and owns the one rule that must hold whichever provider that is: never
@@ -51,8 +54,17 @@ public class CapacityReservationCloudFacade {
 
     /**
      * Submits a reservation, adopting one that already exists instead of creating a second.
+     *
+     * <p>The dates are chosen only once the lookup has found nothing to adopt. A reservation this attempt already
+     * bought is adopted as it is - even on a date that could no longer be asked for, since the provider has agreed
+     * to it - and must never be abandoned because a new request would not fit.
+     *
+     * @param candidate chooses the dates to ask for; false when no date is left to ask for
+     * @return what the provider holds for this attempt, or empty when there was nothing to adopt and no date left to
+     *         ask for - in which case nothing was created
      */
-    public CloudCapacityReservation submit(final CapacityReservation reservation) {
+    public Optional<CloudCapacityReservation> submit(final CapacityReservation reservation,
+                                                     final BooleanSupplier candidate) {
         final CapacityReservationCloudService service = serviceFor(reservation);
         final String clientToken = clientToken(reservation);
 
@@ -63,12 +75,22 @@ public class CapacityReservationCloudFacade {
                 log.warn("Capacity reservation {} already exists at its provider as {}; adopting it instead of "
                                 + "creating another", reservation.getId(),
                         existing.get().getCloudReservationId());
-                return existing.get();
+                return existing;
             }
+        }
+        if (!candidate.getAsBoolean()) {
+            return Optional.empty();
         }
 
         reservation.setClientToken(clientToken);
-        return service.createFutureDated(reservation);
+        return Optional.of(service.createFutureDated(reservation));
+    }
+
+    /**
+     * The earliest start date the provider accepts for this reservation right now: its minimum lead from now.
+     */
+    public LocalDateTime earliestAcceptedStart(final CapacityReservation reservation) {
+        return DateUtils.nowUTC().plus(serviceFor(reservation).getMinimumLead());
     }
 
     public CloudCapacityReservation describe(final CapacityReservation reservation) {

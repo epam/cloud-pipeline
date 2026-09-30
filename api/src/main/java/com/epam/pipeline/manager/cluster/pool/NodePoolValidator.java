@@ -25,9 +25,9 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
-import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -69,9 +69,11 @@ public class NodePoolValidator {
      * requester to a commitment of at least 14 days once the capacity is delivered.
      *
      * <p>Only AWS offers this today, so the limits live here rather than behind a per-provider abstraction that
-     * would have exactly one implementation. A second provider is the point at which that changes.
+     * would have exactly one implementation. A second provider is the point at which that changes. The minimum lead
+     * is the exception: the monitor checks it again at submission, when approval may have eaten into it, so both take
+     * it from the same AWS service constant.
      */
-    private static final int MIN_RESERVATION_LEAD_DAYS = 5;
+    private static final int MIN_RESERVATION_LEAD_DAYS = AwsCapacityReservationService.MINIMUM_LEAD_DAYS;
     private static final int MAX_RESERVATION_LEAD_DAYS = 120;
     private static final int MIN_RESERVATION_COMMITMENT_HOURS = 14 * 24;
 
@@ -128,18 +130,6 @@ public class NodePoolValidator {
         }
         Optional.ofNullable(vo.getCapacityReservationRequest())
                 .ifPresent(request -> validateCapacityReservation(vo, request));
-        validatePoolType(vo);
-    }
-
-    /**
-     * A sharable pool's pods select the nodes they may land on by the reservation's id, so a sharable pool with
-     * no reservation has nothing to select and is rejected rather than created unschedulable.
-     */
-    private void validatePoolType(final NodePoolVO vo) {
-        final NodePoolType poolType = Optional.ofNullable(vo.getPoolType()).orElse(NodePoolType.STANDARD);
-        Assert.isTrue(NodePoolType.STANDARD == poolType || vo.getCapacityReservationRequest() != null,
-                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_POOL_TYPE_NOT_SUPPORTED,
-                        poolType));
     }
 
     /**

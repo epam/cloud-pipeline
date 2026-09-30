@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
@@ -29,6 +30,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -56,6 +59,7 @@ public class CapacityReservationIdempotencyTest {
     private static final String EXISTING_CLOUD_ID = "cr-already-bought";
     private static final String FIRST_ATTEMPT_TOKEN = "cp-cr-42-0";
     private static final String SECOND_ATTEMPT_TOKEN = "cp-cr-42-1";
+    private static final int PROVIDER_LEAD_DAYS = 5;
 
     @Mock
     private CapacityReservationCloudService awsService;
@@ -102,7 +106,7 @@ public class CapacityReservationIdempotencyTest {
         when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
                 CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
 
-        final CloudCapacityReservation result = facade.submit(reservation);
+        final CloudCapacityReservation result = submitted(reservation);
 
         assertThat(result.getCloudReservationId()).isEqualTo(EXISTING_CLOUD_ID);
         verify(awsService, never()).createFutureDated(any());
@@ -116,7 +120,7 @@ public class CapacityReservationIdempotencyTest {
         when(awsService.createFutureDated(any()))
                 .thenReturn(CloudCapacityReservation.builder().cloudReservationId("cr-new").build());
 
-        final CloudCapacityReservation result = facade.submit(reservation);
+        final CloudCapacityReservation result = submitted(reservation);
 
         assertThat(result.getCloudReservationId()).isEqualTo("cr-new");
         verify(awsService).findByClientToken(reservation, FIRST_ATTEMPT_TOKEN);
@@ -135,7 +139,7 @@ public class CapacityReservationIdempotencyTest {
         when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
                 CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
 
-        final CloudCapacityReservation result = facade.submit(reservation);
+        final CloudCapacityReservation result = submitted(reservation);
 
         assertThat(result.getCloudReservationId()).isEqualTo(EXISTING_CLOUD_ID);
         verify(awsService, never()).createFutureDated(any());
@@ -160,7 +164,7 @@ public class CapacityReservationIdempotencyTest {
         when(awsService.createFutureDated(any()))
                 .thenReturn(CloudCapacityReservation.builder().cloudReservationId("cr-new-date").build());
 
-        final CloudCapacityReservation result = facade.submit(reservation);
+        final CloudCapacityReservation result = submitted(reservation);
 
         assertThat(result.getCloudReservationId()).isEqualTo("cr-new-date");
         verify(awsService).findByClientToken(reservation, SECOND_ATTEMPT_TOKEN);
@@ -178,7 +182,7 @@ public class CapacityReservationIdempotencyTest {
         when(awsService.findByClientToken(any(), anyString())).thenThrow(
                 new CapacityReservationSubmissionUncertainException("timed out", new IllegalStateException()));
 
-        assertThatThrownBy(() -> facade.submit(reservation))
+        assertThatThrownBy(() -> submitted(reservation))
                 .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
         verify(awsService, never()).createFutureDated(any());
     }
@@ -191,9 +195,49 @@ public class CapacityReservationIdempotencyTest {
         when(awsService.createFutureDated(any()))
                 .thenReturn(CloudCapacityReservation.builder().build());
 
-        facade.submit(reservation);
+        submitted(reservation);
 
         assertThat(reservation.getClientToken()).isEqualTo(FIRST_ATTEMPT_TOKEN);
+    }
+
+    @Test
+    public void shouldReportTheEarliestStartTheProviderAcceptsNow() {
+        when(awsService.getMinimumLead()).thenReturn(Duration.ofDays(PROVIDER_LEAD_DAYS));
+        final LocalDateTime before = DateUtils.nowUTC();
+
+        final LocalDateTime earliest = facade.earliestAcceptedStart(reservation());
+
+        assertThat(earliest.isBefore(before.plusDays(PROVIDER_LEAD_DAYS))).isFalse();
+        assertThat(earliest.isAfter(DateUtils.nowUTC().plusDays(PROVIDER_LEAD_DAYS))).isFalse();
+    }
+
+    /**
+     * What a lost reply bought is adopted as it is. Choosing dates first could find none left, and fail a request whose
+     * reservation the provider already holds - leaving it billing with nothing tracking it.
+     */
+    @Test
+    public void shouldAdoptBeforeChoosingAnyDates() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
+                CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
+
+        final Optional<CloudCapacityReservation> result = facade.submit(reservation, () -> {
+            throw new AssertionError("dates must not be chosen when there is something to adopt");
+        });
+
+        assertThat(result.map(CloudCapacityReservation::getCloudReservationId).orElse(null))
+                .isEqualTo(EXISTING_CLOUD_ID);
+    }
+
+    @Test
+    public void shouldCreateNothingWhenNoDateIsLeftToAskFor() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(null);
+        when(awsService.findByClientToken(any(), anyString())).thenReturn(Optional.empty());
+
+        assertThat(facade.submit(reservation, () -> false).isPresent()).isFalse();
+        verify(awsService, never()).createFutureDated(any());
     }
 
     @Test
@@ -244,8 +288,12 @@ public class CapacityReservationIdempotencyTest {
         final CapacityReservation reservation = reservation();
         reservation.setCloudProvider(CloudProvider.AZURE);
 
-        assertThatThrownBy(() -> facade.submit(reservation))
+        assertThatThrownBy(() -> submitted(reservation))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private CloudCapacityReservation submitted(final CapacityReservation reservation) {
+        return facade.submit(reservation, () -> true).orElseThrow(AssertionError::new);
     }
 
     private CapacityReservation reservation() {
