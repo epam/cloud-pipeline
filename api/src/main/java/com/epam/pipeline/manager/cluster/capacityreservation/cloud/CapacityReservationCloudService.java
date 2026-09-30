@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReserva
 import com.epam.pipeline.entity.region.CloudProvider;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -40,6 +41,13 @@ public interface CapacityReservationCloudService {
      * sooner is refused outright.
      */
     Duration getMinimumLead();
+
+    /**
+     * The zones a reservation for this instance type may be asked for in, in the order to try them: the region's
+     * zones that offer the type, restricted to the ones the region's networks configure, when it configures any - a
+     * reservation anywhere else could not be consumed. Empty when there is none.
+     */
+    List<String> candidateZones(CapacityReservation reservation);
 
     /**
      * Asks the provider to hold capacity from a future date.

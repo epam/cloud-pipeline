@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReserva
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
+import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.assertj.core.groups.Tuple;
@@ -44,6 +45,9 @@ import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationReques
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationResponse;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsResponse;
+import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypeOfferingsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypeOfferingsResponse;
+import software.amazon.awssdk.services.ec2.model.InstanceTypeOffering;
 import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 import software.amazon.awssdk.services.ec2.model.Filter;
 import software.amazon.awssdk.services.ec2.model.InstanceMatchCriteria;
@@ -55,8 +59,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -102,6 +109,9 @@ public class AwsCapacityReservationServiceTest {
     @Mock
     private AWSV2EC2ClientProvider clientProvider;
 
+    @Mock
+    private RegionNetworksService regionNetworks;
+
     private final FakeEc2Client client = new FakeEc2Client();
 
     private AwsCapacityReservationService service;
@@ -113,7 +123,7 @@ public class AwsCapacityReservationServiceTest {
         region.setRegionCode(REGION_CODE);
         when(regionManager.load(REGION_ID)).thenReturn(region);
         when(clientProvider.client(any())).thenReturn(client);
-        service = new AwsCapacityReservationService(regionManager, clientProvider);
+        service = new AwsCapacityReservationService(regionManager, clientProvider, regionNetworks);
     }
 
     /**
@@ -429,6 +439,31 @@ public class AwsCapacityReservationServiceTest {
     }
 
     /**
+     * A reservation is only any use where the platform can launch nodes, so the candidates are the zones that offer
+     * the instance type and that the region's networks configure - in a stable order, so a retry asks the same.
+     */
+    @Test
+    public void shouldOfferOnlyConfiguredZonesThatOfferTheInstanceType() {
+        client.offeredZones = Arrays.asList("eu-central-1c", ZONE, "eu-central-1a");
+        when(regionNetworks.allowedNetworks(REGION_CODE)).thenReturn(networks("eu-central-1a", ZONE, "eu-central-1d"));
+
+        assertThat(service.candidateZones(reservation())).containsExactly("eu-central-1a", ZONE);
+        assertThat(client.offeringsRequest.locationTypeAsString()).isEqualTo("availability-zone");
+        assertThat(client.offeringsRequest.filters().get(0).values()).containsExactly(reservation().getInstanceType());
+    }
+
+    /**
+     * With no networks configured, nodes may go to any zone of the region - so may the reservation.
+     */
+    @Test
+    public void shouldOfferEveryZoneThatOffersTheInstanceTypeWhenNoNetworksAreConfigured() {
+        client.offeredZones = Arrays.asList("eu-central-1c", ZONE);
+        when(regionNetworks.allowedNetworks(REGION_CODE)).thenReturn(Collections.emptyMap());
+
+        assertThat(service.candidateZones(reservation())).containsExactly(ZONE, "eu-central-1c");
+    }
+
+    /**
      * AWS's documented minimum for a future-dated start, shared by pool validation and the monitor's submission.
      */
     @Test
@@ -600,6 +635,14 @@ public class AwsCapacityReservationServiceTest {
                 .build();
     }
 
+    private static Map<String, String> networks(final String... zones) {
+        final Map<String, String> networks = new HashMap<>();
+        for (final String zone : zones) {
+            networks.put(zone, "subnet-" + zone);
+        }
+        return networks;
+    }
+
     private static Ec2Exception ec2Error(final int statusCode, final String errorCode) {
         return (Ec2Exception) Ec2Exception.builder()
                 .statusCode(statusCode)
@@ -622,6 +665,8 @@ public class AwsCapacityReservationServiceTest {
         private List<software.amazon.awssdk.services.ec2.model.CapacityReservation> described =
                 Collections.emptyList();
         private boolean closed;
+        private List<String> offeredZones = Collections.emptyList();
+        private DescribeInstanceTypeOfferingsRequest offeringsRequest;
         private RuntimeException createFailure;
         private RuntimeException describeFailure;
 
@@ -643,6 +688,17 @@ public class AwsCapacityReservationServiceTest {
                 throw createFailure;
             }
             return CreateCapacityReservationResponse.builder().capacityReservation(created).build();
+        }
+
+        @Override
+        public DescribeInstanceTypeOfferingsResponse describeInstanceTypeOfferings(
+                final DescribeInstanceTypeOfferingsRequest request) {
+            this.offeringsRequest = request;
+            return DescribeInstanceTypeOfferingsResponse.builder()
+                    .instanceTypeOfferings(offeredZones.stream()
+                            .map(zone -> InstanceTypeOffering.builder().location(zone).build())
+                            .collect(Collectors.toList()))
+                    .build();
         }
 
         @Override

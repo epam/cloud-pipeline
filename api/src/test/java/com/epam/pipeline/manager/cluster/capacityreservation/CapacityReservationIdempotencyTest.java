@@ -201,6 +201,14 @@ public class CapacityReservationIdempotencyTest {
     }
 
     @Test
+    public void shouldAskTheProviderWhichZonesCanTakeTheReservation() {
+        final CapacityReservation reservation = reservation();
+        when(awsService.candidateZones(reservation)).thenReturn(Collections.singletonList("us-east-1c"));
+
+        assertThat(facade.candidateZones(reservation)).containsExactly("us-east-1c");
+    }
+
+    @Test
     public void shouldReportTheEarliestStartTheProviderAcceptsNow() {
         when(awsService.getMinimumLead()).thenReturn(Duration.ofDays(PROVIDER_LEAD_DAYS));
         final LocalDateTime before = DateUtils.nowUTC();
