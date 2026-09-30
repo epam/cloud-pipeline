@@ -114,6 +114,15 @@ import {
 } from '../../pipelines/launch/form/utilities/configure-fs/utilities';
 import ConfigurePlugins from '../../plugins/configure';
 import ReservationParameters from '../../pipelines/launch/form/components/reservation-parameters';
+import NodeUpRetryCountFormItem from '../../pipelines/launch/form/components/node-up-retry-count';
+import {
+  applyNodeUpRetryCountValue,
+  getDefaultNodeUpRetryCount,
+  getNodeUpRetryCountError,
+  getNodeUpRetryCountSkippedParameters,
+  isNodeUpRetryCountParameter,
+  nodeUpRetryCountValuesDiffer
+} from '../../pipelines/launch/form/utilities/node-up-retry-count';
 import {
   buildLaunchParametersFromReservationParameters, findReservationParameterConfig,
   readReservationParameters,
@@ -317,12 +326,24 @@ export default class EditToolForm extends React.Component {
     });
   };
 
+  get nodeUpRetryCountError () {
+    if (!this.props.preferences.allowNodeUpRetryCount) {
+      return undefined;
+    }
+    return getNodeUpRetryCountError(this.state.nodeUpRetryCount, this.props.preferences);
+  }
+
+  onNodeUpRetryCountChange = (nodeUpRetryCount) => {
+    this.setState({nodeUpRetryCount});
+  };
+
   handleSubmit = (e) => {
     e.preventDefault();
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err &&
         (!this.toolFormParameters || this.toolFormParameters.isValid) &&
         (!this.toolFormSystemParameters || this.toolFormSystemParameters.isValid) &&
+        !this.nodeUpRetryCountError &&
         (!this.endpointControl || this.endpointControl.validate())) {
         let parameters = {};
         if (this.toolFormParameters && this.toolFormSystemParameters) {
@@ -389,6 +410,11 @@ export default class EditToolForm extends React.Component {
             this.state.fsConfig,
             params,
             this.getCloudProvider()
+          );
+          params = applyNodeUpRetryCountValue(
+            params,
+            this.state.nodeUpRetryCount,
+            this.props.preferences
           );
           toggleParameter(CP_CAP_SGE, this.state.launchCluster && this.state.gridEngineEnabled);
           toggleParameter(CP_CAP_SPARK, this.state.launchCluster && this.state.sparkEnabled);
@@ -610,6 +636,8 @@ export default class EditToolForm extends React.Component {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
     this.defaultLimitMounts = null;
+    state.nodeUpRetryCount = undefined;
+    state.initialNodeUpRetryCount = undefined;
     this.defaultProperties = [];
     this.defaultSystemProperties = [];
     this.defaultCommand = props.tool && props.tool.defaultCommand
@@ -712,6 +740,14 @@ export default class EditToolForm extends React.Component {
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               }
+              continue;
+            }
+            if (
+              this.props.preferences.allowNodeUpRetryCount &&
+              isNodeUpRetryCountParameter(key)
+            ) {
+              state.nodeUpRetryCount = props.configuration.parameters[key].value;
+              state.initialNodeUpRetryCount = state.nodeUpRetryCount;
               continue;
             }
             if (
@@ -1098,8 +1134,11 @@ export default class EditToolForm extends React.Component {
         this.state.autoScaledCluster &&
         maxNodesCount !== this.state.maxNodesCount
       ) ||
-      limitMountsFieldChanged() ||
-      cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      nodeUpRetryCountValuesDiffer(
+        this.state.initialNodeUpRetryCount,
+        this.state.nodeUpRetryCount
+      ) ||
       kubeLabelsHasChanges(
         this.state.initialKubeLabels,
         this.state.kubeLabels
@@ -1621,6 +1660,17 @@ export default class EditToolForm extends React.Component {
                   )}
                 </Form.Item>
               )}
+              {this.props.preferences.allowNodeUpRetryCount && (
+                <NodeUpRetryCountFormItem
+                  formItemLayout={this.formItemLayout}
+                  style={{marginBottom: 10}}
+                  value={this.state.nodeUpRetryCount}
+                  error={this.nodeUpRetryCountError}
+                  placeholder={getDefaultNodeUpRetryCount(this.props.preferences)}
+                  disabled={this.state.pending || this.props.readOnly}
+                  onChange={this.onNodeUpRetryCountChange}
+                />
+              )}
               <Row>
                 <Col
                   xs={24}
@@ -2041,7 +2091,10 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={getSkippedSystemParametersList(this)}
+            skippedSystemParameters={[
+              ...getSkippedSystemParametersList(this),
+              ...getNodeUpRetryCountSkippedParameters(this.props.preferences)
+            ]}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized}
             testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
@@ -2171,6 +2224,7 @@ export default class EditToolForm extends React.Component {
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
                   (this.toolFormParameters && !this.toolFormParameters.isValid) ||
+                  !!this.nodeUpRetryCountError ||
                   this.state.kubeLabelsHasErrors ||
                   !endpointsAreValid
                 }>

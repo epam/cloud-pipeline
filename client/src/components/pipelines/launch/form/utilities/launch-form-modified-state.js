@@ -202,7 +202,6 @@ function limitMountsCheck (form, parameters) {
   }
   return formValue !== initial;
 }
-
 function cmdTemplateCheck (state, parameters, {cmdTemplateValue, toolDefaultCmd}) {
   let code = cmdTemplateValue;
   if (state.startIdle) {
