@@ -28,6 +28,8 @@ import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -300,10 +302,15 @@ public class NodePoolValidator {
      * networks lets its nodes go to any zone, so there is nothing to check against.
      *
      * <p>The rule-selection fields ({@code platform}, {@code instance_mask}, {@code permissions}, {@code docker_image})
-     * are not checked: on a pool they are ignored.
+     * are not checked: on a pool they are ignored. Only AWS regions are checked: elsewhere the {@code networks} are
+     * keyed by network, not by zone, and only the AWS launch applies a pool's zone and subnet.
      */
     private void validateAmiConfiguration(final NodePoolVO vo, final AMIConfiguration configuration) {
-        final String regionCode = regionManager.load(vo.getRegionId()).getRegionCode();
+        final AbstractCloudRegion region = regionManager.load(vo.getRegionId());
+        if (CloudProvider.AWS != region.getProvider()) {
+            return;
+        }
+        final String regionCode = region.getRegionCode();
         final Map<String, String> networks = regionNetworks.allowedNetworks(regionCode);
         if (networks.isEmpty()) {
             return;
@@ -315,20 +322,18 @@ public class NodePoolValidator {
                             zone, regionCode, networks.keySet()));
         }
         final String subnet = configuration.getSubnet();
-        if (StringUtils.isNotBlank(subnet)) {
-            final String subnetZone = StringUtils.isNotBlank(zone) ? zone : zoneOf(networks, subnet);
-            Assert.isTrue(subnet.equals(networks.get(subnetZone)),
-                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED,
-                            subnet, regionCode, subnetZone, networks.get(subnetZone)));
+        if (StringUtils.isBlank(subnet)) {
+            return;
         }
-    }
-
-    private static String zoneOf(final Map<String, String> networks, final String subnet) {
-        return networks.entrySet().stream()
-                .filter(network -> subnet.equals(network.getValue()))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(null);
+        if (StringUtils.isBlank(zone)) {
+            Assert.isTrue(networks.containsValue(subnet),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS,
+                            subnet, regionCode, networks.values()));
+            return;
+        }
+        Assert.isTrue(subnet.equals(networks.get(zone)),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED,
+                        subnet, regionCode, zone, networks.get(zone)));
     }
 
     private void validatePoolImage(final String image) {

@@ -95,6 +95,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     private static final String OWN_SPEC_KEY = "IamInstanceProfile";
     private static final String OWN_INIT_SCRIPT = "/opt/api/scripts/init_custom.sh";
+    private static final String EDITED_INIT_SCRIPT = "/opt/api/scripts/init_edited.sh";
     /** What a g5.48xlarge has. */
     private static final int INSTANCE_VCPUS = 192;
     private static final int SMALL_INSTANCE_VCPUS = 8;
@@ -809,7 +810,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
         reservationService.activatePool(activeReservationOf(created));
         final NodePoolVO edit = withOwnLaunchSettings(editOf());
-        edit.getAmiConfiguration().setInitScript("/opt/api/scripts/init_edited.sh");
+        edit.getAmiConfiguration().setInitScript(EDITED_INIT_SCRIPT);
 
         poolManager.update(created.getId(), edit);
 
@@ -817,7 +818,33 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(configuration.getAdditionalSpec()).containsEntry(RESERVATION_TARGET, CLOUD_RESERVATION_ID);
         assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
         assertThat(configuration.getSubnet()).isEqualTo(SUBNET);
-        assertThat(configuration.getInitScript()).isEqualTo("/opt/api/scripts/init_edited.sh");
+        assertThat(configuration.getInitScript()).isEqualTo(EDITED_INIT_SCRIPT);
+    }
+
+    /**
+     * The zone and subnet an edit sends back are the reservation's, so they are not checked against the region's
+     * networks - which may have changed since the reservation was placed.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldAcceptAnEditOfAReservationPoolAfterTheRegionsNetworksChanged() {
+        setNetworks();
+        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        reservationService.activatePool(activeReservationOf(created));
+        final NodePoolVO edit = editOf();
+        edit.setAmiConfiguration(launchConfigurationOf(created));
+        edit.getAmiConfiguration().setInitScript(EDITED_INIT_SCRIPT);
+        final Preference preference = SystemPreferences.CLUSTER_NETWORKS_CONFIG.toPreference();
+        preference.setValue("{\"regions\": [{\"name\": \"" + REGION_CODE + "\", \"networks\": {\"us-east-1a\": "
+                + "\"subnet-other\"}}]}");
+        preferenceManager.update(Collections.singletonList(preference));
+
+        poolManager.update(created.getId(), edit);
+
+        final AMIConfiguration configuration = launchConfigurationOf(created);
+        assertThat(configuration.getInitScript()).isEqualTo(EDITED_INIT_SCRIPT);
+        assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(configuration.getSubnet()).isEqualTo(SUBNET);
     }
 
     /**

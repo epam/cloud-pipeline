@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -42,6 +43,7 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.when;
@@ -61,6 +63,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final String ZONE_UNCONFIGURED = "eu-central-1c";
     private static final String SUBNET_A = "subnet-a";
     private static final String SUBNET_B = "subnet-b";
+    private static final String SUBNET_UNKNOWN = "subnet-unknown";
     private static final String OWNER = "pool-owner";
     private static final String ADMIN = "ADMIN";
     private static final String AMI = "ami-0123456789abcdef0";
@@ -162,9 +165,54 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(pool(configuration(ZONE_A, SUBNET_B))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(SUBNET_B);
-        assertThatThrownBy(() -> poolManager.create(pool(configuration(null, "subnet-unknown"))))
+        assertThatThrownBy(() -> poolManager.create(pool(configuration(null, SUBNET_UNKNOWN))))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("subnet-unknown");
+                .hasMessageContaining(SUBNET_UNKNOWN);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldNameTheSubnetWhenItIsNotAmongTheRegionsNetworks() {
+        final Throwable refusal = catchThrowable(() -> poolManager.create(pool(configuration(null, SUBNET_UNKNOWN))));
+
+        assertThat(refusal).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(SUBNET_UNKNOWN);
+        assertThat(refusal.getMessage()).doesNotContain("null");
+    }
+
+    /**
+     * The autoscaler resizes a pool by sending all of it back. A configuration that has not changed must not be
+     * checked again - if the region's networks dropped its zone since, the pool would stop scaling altogether.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldAcceptAnUnchangedConfigurationAfterTheRegionsNetworksChanged() {
+        final NodePool created = poolManager.create(pool(configuration(ZONE_A, SUBNET_A)));
+        setNetworks("{\"regions\": [{\"name\": \"" + REGION_CODE + "\", \"networks\": {\"" + ZONE_B + "\": \""
+                + SUBNET_B + "\"}}]}");
+        final NodePoolVO resize = pool(configuration(ZONE_A, SUBNET_A));
+        resize.setCount(2);
+
+        poolManager.update(created.getId(), resize);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getCount()).isEqualTo(2);
+        assertThat(loaded.getAmiConfiguration()).isEqualTo(configuration(ZONE_A, SUBNET_A));
+    }
+
+    /**
+     * Only AWS regions key their networks by zone, and only the AWS launch applies a pool's zone and subnet.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldNotCheckTheZoneOfAPoolOutsideAws() {
+        final AzureRegion region = new AzureRegion();
+        region.setId(REGION_ID);
+        region.setRegionCode(REGION_CODE);
+        when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
+
+        final NodePool created = poolManager.create(pool(configuration(ZONE_UNCONFIGURED, null)));
+
+        assertThat(created.getId()).isNotNull();
     }
 
     @Test
