@@ -179,6 +179,18 @@ export function getNodeUpRetryCountFieldValue (value) {
   return `${value}`.trim();
 }
 
+/**
+ * Returns the value the launch form's field should be pre-filled with: the
+ * configuration's own stored value if there is one, else the current
+ * `cluster.nodeup.retry.count` preference (which itself falls back to 5)
+ * @param {string|undefined} configuredValue - see {@link getNodeUpRetryCountFieldValue}
+ * @param {*} preferences
+ * @returns {string}
+ */
+export function getNodeUpRetryCountDefaultValue (configuredValue, preferences) {
+  return configuredValue || `${(preferences && preferences.defaultNodeUpRetryCount) || 5}`;
+}
+
 export function getNodeUpRetryCountParameter (rawValue, preferences) {
   if (!preferences || !preferences.allowNodeUpRetryCount) {
     return undefined;

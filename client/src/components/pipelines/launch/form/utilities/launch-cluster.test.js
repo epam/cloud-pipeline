@@ -17,6 +17,7 @@
 import {
   getNodeUpRetryCountParameter,
   getNodeUpRetryCountFieldValue,
+  getNodeUpRetryCountDefaultValue,
   nodeUpRetryCountExceedsMax,
   getMaxNodeUpRetryCount,
   getAllSkippedSystemParametersList,
@@ -101,6 +102,23 @@ describe('getNodeUpRetryCountFieldValue', () => {
   it('is the trimmed string for a stored value', () => {
     expect(getNodeUpRetryCountFieldValue(7)).toBe('7');
     expect(getNodeUpRetryCountFieldValue(' 7 ')).toBe('7');
+  });
+});
+
+describe('getNodeUpRetryCountDefaultValue', () => {
+  it('is the configured value when there is one, regardless of the preference', () => {
+    expect(getNodeUpRetryCountDefaultValue('12', {defaultNodeUpRetryCount: 5}))
+      .toBe('12');
+  });
+
+  it('falls back to the preference value when there is no configured value', () => {
+    expect(getNodeUpRetryCountDefaultValue(undefined, {defaultNodeUpRetryCount: 7}))
+      .toBe('7');
+  });
+
+  it('falls back to 5 when neither a configured value nor preferences are available', () => {
+    expect(getNodeUpRetryCountDefaultValue(undefined, undefined)).toBe('5');
+    expect(getNodeUpRetryCountDefaultValue(undefined, {})).toBe('5');
   });
 });
 

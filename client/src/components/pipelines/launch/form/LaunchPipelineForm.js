@@ -78,6 +78,7 @@ import {
   parseChildNodeInstanceConfiguration,
   getNodeUpRetryCountParameter,
   getNodeUpRetryCountFieldValue,
+  getNodeUpRetryCountDefaultValue,
   getMaxNodeUpRetryCount,
   LAUNCH_CLUSTER_MODES,
   CLUSTER_TYPE
@@ -1596,7 +1597,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       tags,
       params: parameterUtilities.parametersToPayloadParams(
         this.getParameters(parametersPayloadId),
-        {hideNodeUpRetryCount: this.nodeUpRetryCountFieldVisible}
+        // an actual launch never sends a stored CP_NODEUP_RETRY_COUNT value as a plain
+        // parameter - either the dedicated field supplies it below, or (preference off)
+        // it is not sent at all. Saving a launch profile is the one caller of this
+        // function that is not a launch, and preserves an already-stored value instead
+        {hideNodeUpRetryCount: this.nodeUpRetryCountFieldVisible || !this.props.launchProfile}
       ),
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
@@ -1657,8 +1662,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       };
     }
     if (this.nodeUpRetryCountFieldVisible) {
+      // falls back to the same default the field would show, in case its own
+      // row never mounted (e.g. the exec environment panel was never expanded)
+      // and so never registered a value with the form
       const nodeUpRetryCountParameter = getNodeUpRetryCountParameter(
-        values[EXEC_ENVIRONMENT].nodeUpRetryCount,
+        values[EXEC_ENVIRONMENT].nodeUpRetryCount || this.nodeUpRetryCountDefaultValue,
         this.props.preferences
       );
       if (nodeUpRetryCountParameter) {
@@ -2932,6 +2940,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.props.preferences.allowNodeUpRetryCount;
   }
 
+  // Also the fallback used at submit time when the field's own row never
+  // mounted - e.g. the exec environment panel was never expanded, so
+  // `getFieldDecorator` never registered a value for it
+  @computed
+  get nodeUpRetryCountDefaultValue () {
+    const configuredValue = getNodeUpRetryCountFieldValue(
+      this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`)
+    );
+    return getNodeUpRetryCountDefaultValue(configuredValue, this.props.preferences);
+  }
+
   get prettyUrlEnabled () {
     return !this.state.fireCloudMethodName && !this.props.detached;
   }
@@ -3129,16 +3148,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!this.nodeUpRetryCountFieldVisible) {
       return undefined;
     }
-    const configuredValue = getNodeUpRetryCountFieldValue(
-      this.getDefaultValue(`parameters.${CP_NODEUP_RETRY_COUNT}`)
-    );
     return (
       <NodeUpRetryCountFormItem
         className={getFormItemClassName(styles.formItem, 'nodeUpRetryCount')}
         formItemLayout={this.formItemLayout}
         getFieldDecorator={this.getSectionFieldDecorator(EXEC_ENVIRONMENT)}
         disabled={this.props.readOnly && !this.props.canExecute}
-        initialValue={configuredValue || `${this.props.preferences.defaultNodeUpRetryCount}`}
+        initialValue={this.nodeUpRetryCountDefaultValue}
         max={getMaxNodeUpRetryCount(this.props.preferences)}
       />
     );
