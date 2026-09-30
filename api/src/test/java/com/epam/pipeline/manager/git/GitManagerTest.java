@@ -539,6 +539,11 @@ public class GitManagerTest extends AbstractManagerTest {
                         .willReturn(notFound())
         );
         givenThat(
+                get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
+                        .withQueryParam(PATH, WireMock.absent())
+                        .willReturn(okJson("[]"))
+        );
+        givenThat(
                 get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
                         .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                         .willReturn(notFound())

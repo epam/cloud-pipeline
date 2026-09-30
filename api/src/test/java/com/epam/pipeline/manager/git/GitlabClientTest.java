@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -32,6 +33,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
@@ -86,6 +88,10 @@ public class GitlabClientTest {
     private static final String FULL_PATH = "full_path";
     private static final String GROUP = "TMP_FORK_abc";
     private static final String GROUP_URL = "/api/v4/groups/" + GROUP;
+    private static final String TREE_URL = PROJECT_URL + "/repository/tree";
+    private static final String PATH = "path";
+    private static final String FOLDER = "src";
+    private static final String BRANCH = "master";
     private static final String TAG_NAME = "v1";
     private static final String TAG_MESSAGE = "Tag message";
     private static final String SHA = "abc123";
@@ -307,6 +313,48 @@ public class GitlabClientTest {
 
         wireMockRule.verify(1, deleteRequestedFor(urlEqualTo(GROUP_URL)));
         wireMockRule.verify(0, getRequestedFor(urlEqualTo(GROUP_URL)));
+    }
+
+    @Test
+    public void shouldReturnEmptyListForMissingTreePath() {
+        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, equalTo(FOLDER))
+                .willReturn(notFound("{\"message\": \"404 invalid revision or path Not Found\"}")));
+        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, absent())
+                .willReturn(okJson("[{\"name\": \"README.md\", \"path\": \"README.md\", \"type\": \"blob\"}]")));
+
+        Assert.assertTrue(projectClient().getRepositoryContents(FOLDER, BRANCH, true).isEmpty());
+    }
+
+    @Test
+    public void shouldLoadTreePath() {
+        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, equalTo(FOLDER))
+                .willReturn(okJson("[{\"name\": \"main.py\", \"path\": \"src/main.py\", \"type\": \"blob\"}]")));
+
+        final List<GitRepositoryEntry> entries = projectClient().getRepositoryContents(FOLDER, BRANCH, true);
+
+        Assert.assertEquals(1, entries.size());
+        Assert.assertEquals("src/main.py", entries.get(0).getPath());
+        wireMockRule.verify(1, getRequestedFor(urlPathEqualTo(TREE_URL)));
+    }
+
+    @Test(expected = UnexpectedResponseStatusException.class)
+    public void shouldFailToLoadTreePathOfMissingRevision() {
+        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL))
+                .willReturn(notFound("{\"message\": \"404 Tree Not Found\"}")));
+
+        projectClient().getRepositoryContents(FOLDER, BRANCH, true);
+    }
+
+    @Test(expected = UnexpectedResponseStatusException.class)
+    public void shouldFailToLoadRootTreeOfMissingProject() {
+        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL))
+                .willReturn(notFound("{\"message\": \"404 Project Not Found\"}")));
+
+        projectClient().getRepositoryContents(null, BRANCH, false);
+    }
+
+    private static ResponseDefinitionBuilder notFound(final String json) {
+        return okJson(json).withStatus(NOT_FOUND);
     }
 
     private static String projectJson(final String path) {

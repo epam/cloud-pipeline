@@ -232,7 +232,26 @@ public class GitlabClient {
                                                           String revision,
                                                           boolean recursive) throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.getRepositoryTree(projectId, path, revision, recursive));
+        try {
+            return execute(gitLabApi.getRepositoryTree(projectId, path, revision, recursive));
+        } catch (UnexpectedResponseStatusException e) {
+            // Gitlab 17.7 and later answers 404 for a path that does not exist, where older versions return
+            // an empty list. The root tree tells a missing path from a missing project or revision.
+            if (e.getStatus() == HttpStatus.NOT_FOUND && StringUtils.isNotBlank(path)
+                    && rootTreeExists(projectId, revision)) {
+                return Collections.emptyList();
+            }
+            throw e;
+        }
+    }
+
+    private boolean rootTreeExists(final String projectId, final String revision) throws GitClientException {
+        try {
+            execute(gitLabApi.getRepositoryTree(projectId, null, revision, false));
+            return true;
+        } catch (UnexpectedResponseStatusException e) {
+            return false;
+        }
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
