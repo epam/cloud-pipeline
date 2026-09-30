@@ -100,7 +100,7 @@ public class GitlabClientTest {
     private static final String NAMESPACE_PATH = "namespace_path";
     private static final long LONG_DURATION = 1000L;
     private static final long MAX_TOKEN_DAYS = 365L;
-    private static final String CLONE_TOKEN = "clone-token";
+    private static final String CLONE_TOKEN = "glpat-not_a-real-clone-token.01.checksum";
     private static final String TAG_NAME = "v1";
     private static final String TAG_MESSAGE = "Tag message";
     private static final String SHA = "abc123";
