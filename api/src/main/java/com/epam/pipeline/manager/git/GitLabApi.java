@@ -377,12 +377,16 @@ public interface GitLabApi {
      *
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param project The ID or URL-encoded path of the project
-     * @param namespace The ID or path of the namespace that the project will be forked to
+     * @param namespace The ID or path of the namespace that the project will be forked to.
+     *                  NOTE: Deprecated in GitLab 12.10 and later, use namespacePath instead
+     * @param namespacePath The path of the namespace that the project will be forked to.
+     *                      NOTE: Available in GitLab 12.10 and later
      */
     @POST("api/{api_version}/projects/{project}/fork")
     Call<GitProject> forkProject(@Path(API_VERSION) String apiVersion,
                                  @Path(PROJECT) String project,
-                                 @Query("namespace") String namespace);
+                                 @Query("namespace") String namespace,
+                                 @Query("namespace_path") String namespacePath);
 
     /**
      * Get the path to repository storage for specified project. Available for administrators only.

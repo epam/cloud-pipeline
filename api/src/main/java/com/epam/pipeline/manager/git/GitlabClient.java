@@ -114,6 +114,7 @@ public class GitlabClient {
     public static final String TOTAL_HEADER = "X-Total";
     public static final int MAX_PAGE_SIZE = 100;
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+)\\.");
+    private static final int NAMESPACE_PATH_MAJOR_VERSION = 13;
     private static final int RELEASES_API_MAJOR_VERSION = 14;
     private static final int DELAYED_DELETION_MAJOR_VERSION = 18;
 
@@ -517,10 +518,17 @@ public class GitlabClient {
         return execute(gitLabApi.deleteGroup(apiVersion, groupName));
     }
 
+    /**
+     * Forks a project. The namespace is passed as namespace_path on Gitlab 13.0 and later: the namespace parameter
+     * of older versions is deprecated there. Gitlab 12.10 already has namespace_path: 13.0 is on the safe side.
+     */
     public GitProject forkProject(final String projectName, final String namespaceFrom, final String namespaceTo)
             throws GitClientException {
-        return execute(gitLabApi.forkProject(apiVersion,
-                makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
+        final String projectId = makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName));
+        if (getMajorVersion() < NAMESPACE_PATH_MAJOR_VERSION) {
+            return execute(gitLabApi.forkProject(apiVersion, projectId, namespaceTo, null));
+        }
+        return execute(gitLabApi.forkProject(apiVersion, projectId, null, namespaceTo));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {

@@ -115,6 +115,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String REPOSITORY_TAGS = "/repository/tags";
     private static final String REPOSITORY_RELEASES = "/releases";
     private static final String FORK_UUID = "abc";
+    private static final String NAMESPACE_PATH = "namespace_path";
     private static final String REPOSITORY_TREE = "/repository/tree";
     private static final String REF_NAME = "ref_name";
     private static final String PATH = "path";
@@ -667,10 +668,15 @@ public class GitManagerTest extends AbstractManagerTest {
         // GitLab 18.0 and later answers the same way, when it only schedules a top-level group for deletion
         givenThat(WireMock.delete(urlPathEqualTo("/api/v3/groups/" + tmpGroup))
                 .willReturn(okJson("{\"message\": \"202 Accepted\"}").withStatus(HttpURLConnection.HTTP_ACCEPTED)));
+        givenThat(get(urlPathEqualTo("/api/v4/version")).willReturn(okJson("{\"version\": \"19.4.1\"}")));
 
         final GitProject copy = gitManager.copyRepository(REPOSITORY_NAME, newProjectName, FORK_UUID);
 
         assertThat(copy, is(expectedProject));
+        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(api(FORK)))
+                .withQueryParam(NAMESPACE_PATH, equalTo(tmpGroup)));
+        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
+                .withQueryParam(NAMESPACE_PATH, equalTo(ROOT_USER_NAME)));
         wireMockRule.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/api/v3/groups/" + tmpGroup)));
     }
 

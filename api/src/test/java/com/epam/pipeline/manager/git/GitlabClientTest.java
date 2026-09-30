@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
@@ -92,6 +93,10 @@ public class GitlabClientTest {
     private static final String PATH = "path";
     private static final String FOLDER = "src";
     private static final String BRANCH = "master";
+    private static final String FORKED_PROJECT = "pipe";
+    private static final String FORK_URL = "/api/v4/projects/root%2F" + FORKED_PROJECT + "/fork";
+    private static final String NAMESPACE = "namespace";
+    private static final String NAMESPACE_PATH = "namespace_path";
     private static final String TAG_NAME = "v1";
     private static final String TAG_MESSAGE = "Tag message";
     private static final String SHA = "abc123";
@@ -351,6 +356,33 @@ public class GitlabClientTest {
                 .willReturn(notFound("{\"message\": \"404 Project Not Found\"}")));
 
         projectClient().getRepositoryContents(null, BRANCH, false);
+    }
+
+    @Test
+    public void shouldForkProjectToNamespacePath() {
+        stubVersion(LATEST_VERSION);
+        wireMockRule.stubFor(post(urlPathEqualTo(FORK_URL))
+                .willReturn(created(projectJson(GROUP + "/" + FORKED_PROJECT))));
+
+        final GitProject fork = client().forkProject(FORKED_PROJECT, USER, GROUP);
+
+        Assert.assertEquals(GROUP + "/" + FORKED_PROJECT, fork.getPath());
+        wireMockRule.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
+                .withQueryParam(NAMESPACE_PATH, equalTo(GROUP))
+                .withQueryParam(NAMESPACE, absent()));
+    }
+
+    @Test
+    public void shouldForkProjectToNamespaceOnGitlabOlderThan13() {
+        stubVersion(GITLAB_9_VERSION);
+        wireMockRule.stubFor(post(urlPathEqualTo(FORK_URL))
+                .willReturn(created(projectJson(GROUP + "/" + FORKED_PROJECT))));
+
+        client().forkProject(FORKED_PROJECT, USER, GROUP);
+
+        wireMockRule.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
+                .withQueryParam(NAMESPACE, equalTo(GROUP))
+                .withQueryParam(NAMESPACE_PATH, absent()));
     }
 
     private static ResponseDefinitionBuilder notFound(final String json) {
