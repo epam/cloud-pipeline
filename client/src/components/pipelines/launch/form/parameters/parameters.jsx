@@ -157,7 +157,8 @@ class Parameters extends Component {
       pipeline,
       parameterRowClassName,
       description,
-      parametersMetadata
+      parametersMetadata,
+      hideNodeUpRetryCount
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
@@ -167,7 +168,8 @@ class Parameters extends Component {
       system,
       rawEdit,
       this.userInfo,
-      this.optionalIsVisible
+      this.optionalIsVisible,
+      hideNodeUpRetryCount
     );
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
@@ -348,7 +350,8 @@ Parameters.propTypes = {
   detached: PropTypes.bool,
   pipeline: PropTypes.bool,
   parameterRowClassName: PropTypes.string,
-  description: PropTypes.node
+  description: PropTypes.node,
+  hideNodeUpRetryCount: PropTypes.bool
 };
 
 export default Parameters;
