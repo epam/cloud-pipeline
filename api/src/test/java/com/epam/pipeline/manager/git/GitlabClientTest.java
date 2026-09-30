@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -97,6 +98,9 @@ public class GitlabClientTest {
     private static final String FORK_URL = "/api/v4/projects/root%2F" + FORKED_PROJECT + "/fork";
     private static final String NAMESPACE = "namespace";
     private static final String NAMESPACE_PATH = "namespace_path";
+    private static final long LONG_DURATION = 1000L;
+    private static final long MAX_TOKEN_DAYS = 365L;
+    private static final String CLONE_TOKEN = "clone-token";
     private static final String TAG_NAME = "v1";
     private static final String TAG_MESSAGE = "Tag message";
     private static final String SHA = "abc123";
@@ -383,6 +387,36 @@ public class GitlabClientTest {
         wireMockRule.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
                 .withQueryParam(NAMESPACE, equalTo(GROUP))
                 .withQueryParam(NAMESPACE_PATH, absent()));
+    }
+
+    @Test
+    public void shouldCapCloneTokenLifetimeAt365Days() {
+        stubCloneTokenIssue();
+
+        projectClient().buildCloneCredentials(false, true, LONG_DURATION);
+
+        wireMockRule.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
+                .withRequestBody(equalToJson("{\"name\": \"" + PROJECT + "-adminToken\", \"expires_at\": \""
+                        + LocalDate.now(ZoneOffset.UTC).plusDays(MAX_TOKEN_DAYS) + "\", \"scopes\": [\"api\"]}")));
+    }
+
+    @Test
+    public void shouldIssueCloneTokenForRequestedDuration() {
+        stubCloneTokenIssue();
+
+        final GitCredentials credentials = projectClient().buildCloneCredentials(false, true, DURATION);
+
+        Assert.assertEquals(CLONE_TOKEN, credentials.getToken());
+        wireMockRule.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
+                .withRequestBody(equalToJson("{\"expires_at\": \"" + LocalDate.now().plusDays(DURATION) + "\"}",
+                        false, true)));
+    }
+
+    private void stubCloneTokenIssue() {
+        wireMockRule.stubFor(get(urlPathEqualTo("/api/v4/users"))
+                .willReturn(okJson("[{\"id\": 1, \"username\": \"root\", \"email\": \"root@example.com\"}]")));
+        wireMockRule.stubFor(post(urlEqualTo(IMPERSONATION_TOKENS_URL))
+                .willReturn(created("{\"id\": 44, \"token\": \"" + CLONE_TOKEN + "\"}")));
     }
 
     private static ResponseDefinitionBuilder notFound(final String json) {

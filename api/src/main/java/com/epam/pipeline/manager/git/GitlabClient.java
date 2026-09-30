@@ -65,6 +65,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
@@ -117,6 +118,7 @@ public class GitlabClient {
     private static final int NAMESPACE_PATH_MAJOR_VERSION = 13;
     private static final int RELEASES_API_MAJOR_VERSION = 14;
     private static final int DELAYED_DELETION_MAJOR_VERSION = 18;
+    private static final long MAX_TOKEN_LIFETIME_DAYS = 365;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -616,7 +618,10 @@ public class GitlabClient {
         //issue adminToken for one day
         final String tokenName = repositoryName + "-adminToken";
         final LocalDate endDay = LocalDate.now().plusDays(duration);
-        return createImpersonationToken(tokenName, userId, endDay);
+        // Recent Gitlab versions reject a token, that expires in more than 365 days. Gitlab counts the days
+        // from its own date, which is UTC by default.
+        final LocalDate maxEndDay = LocalDate.now(ZoneOffset.UTC).plusDays(MAX_TOKEN_LIFETIME_DAYS);
+        return createImpersonationToken(tokenName, userId, endDay.isAfter(maxEndDay) ? maxEndDay : endDay);
     }
 
     private String createImpersonationToken(String tokenName, Long userId, LocalDate expires)
