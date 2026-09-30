@@ -47,6 +47,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
@@ -114,6 +115,7 @@ public class GitlabClient {
     public static final int MAX_PAGE_SIZE = 100;
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+)\\.");
     private static final int RELEASES_API_MAJOR_VERSION = 14;
+    private static final int DELAYED_DELETION_MAJOR_VERSION = 18;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -289,9 +291,35 @@ public class GitlabClient {
         return execute(gitLabApi.getProject(apiVersion, String.valueOf(id)));
     }
 
+    /**
+     * Deletes the project. Gitlab 18.0 and later only marks a project for deletion and renames it, while the old
+     * path still redirects to it and keeps the name taken. There the marked project is then removed permanently,
+     * under the path it got at the marking.
+     */
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        execute(gitLabApi.deleteProject(apiVersion, projectId));
+        if (getMajorVersion() < DELAYED_DELETION_MAJOR_VERSION) {
+            execute(gitLabApi.deleteProject(apiVersion, projectId));
+            return;
+        }
+        final String id = String.valueOf(execute(gitLabApi.getProject(apiVersion, projectId)).getId());
+        execute(gitLabApi.deleteProject(apiVersion, id));
+        final Optional<GitProject> markedProject = findProject(id);
+        if (!markedProject.isPresent()) {
+            return;
+        }
+        execute(gitLabApi.removeProjectPermanently(apiVersion, id, true, markedProject.get().getPath()));
+    }
+
+    private Optional<GitProject> findProject(final String id) throws GitClientException {
+        try {
+            return Optional.ofNullable(execute(gitLabApi.getProject(apiVersion, id)));
+        } catch (UnexpectedResponseStatusException e) {
+            if (e.getStatus() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
     public GitTagEntry getRepositoryRevision(String tag) throws GitClientException {

@@ -62,6 +62,7 @@ public interface GitLabApi {
     String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     String API_VERSION = "api_version";
     String ISSUE_ID = "issue_id";
+    String PROJECT_URL = "api/{api_version}/projects/{project}";
 
     /**
      * @param userName The name of the GitLab user
@@ -78,7 +79,7 @@ public interface GitLabApi {
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param idOrName The ID or URL-encoded path of the project
      */
-    @GET("api/{api_version}/projects/{project}")
+    @GET(PROJECT_URL)
     Call<GitProject> getProject(@Path(API_VERSION) String apiVersion,
                                 @Path(PROJECT) String idOrName);
 
@@ -113,13 +114,29 @@ public interface GitLabApi {
 
     /**
      * delete a specific project
+     * NOTE: From GitLab 18.0 it only marks a project for deletion, see {@link #removeProjectPermanently}.
      *
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param idOrName The ID or URL-encoded path of the project
      */
-    @DELETE("api/{api_version}/projects/{project}")
-    Call<Boolean> deleteProject(@Path(API_VERSION) String apiVersion,
-                                @Path(PROJECT) String idOrName);
+    @DELETE(PROJECT_URL)
+    Call<Void> deleteProject(@Path(API_VERSION) String apiVersion,
+                             @Path(PROJECT) String idOrName);
+
+    /**
+     * Removes a project, that is marked for deletion, at once.
+     * NOTE: Available in GitLab CE from 18.0.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param id The ID of the project
+     * @param permanentlyRemove Shall be true
+     * @param fullPath The full path of the project, as it is after the project is marked for deletion
+     */
+    @DELETE(PROJECT_URL)
+    Call<Void> removeProjectPermanently(@Path(API_VERSION) String apiVersion,
+                                        @Path(PROJECT) String id,
+                                        @Query("permanently_remove") Boolean permanentlyRemove,
+                                        @Query("full_path") String fullPath);
 
     /**
      * Get a list of repository files and directories in a project.
@@ -330,7 +347,7 @@ public interface GitLabApi {
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param project The ID or URL-encoded path of the project
      */
-    @PUT("api/{api_version}/projects/{project}")
+    @PUT(PROJECT_URL)
     Call<GitProject> updateProject(@Path(API_VERSION) String apiVersion,
                                    @Path(PROJECT) String project,
                                    @Body GitProjectRequest projectInfo);

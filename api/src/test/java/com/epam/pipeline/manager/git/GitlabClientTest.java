@@ -75,6 +75,15 @@ public class GitlabClientTest {
     private static final String VERSION_URL = "/api/v4/version";
     private static final String LATEST_VERSION = "19.4.1";
     private static final String GITLAB_9_VERSION = "9.4.0";
+    private static final String GITLAB_15_VERSION = "15.5.4";
+    private static final int HTTP_ACCEPTED = 202;
+    private static final int BAD_REQUEST = 400;
+    private static final long PROJECT_ID = 7L;
+    private static final String PROJECT_ID_URL = "/api/v4/projects/" + PROJECT_ID;
+    private static final String PROJECT_PATH = "root/" + PROJECT;
+    private static final String MARKED_PROJECT_PATH = PROJECT_PATH + "-deletion_scheduled-" + PROJECT_ID;
+    private static final String PERMANENTLY_REMOVE = "permanently_remove";
+    private static final String FULL_PATH = "full_path";
     private static final String TAG_NAME = "v1";
     private static final String TAG_MESSAGE = "Tag message";
     private static final String SHA = "abc123";
@@ -225,6 +234,75 @@ public class GitlabClientTest {
 
         Assert.assertEquals(TAG_NAME, tag.getName());
         Assert.assertNull(tag.getRelease());
+    }
+
+    @Test
+    public void shouldDeleteProjectOnceOnGitlabOlderThan18() {
+        stubVersion(GITLAB_15_VERSION);
+        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_URL)).willReturn(accepted()));
+
+        projectClient().deleteRepository();
+
+        wireMockRule.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_URL)));
+        wireMockRule.verify(0, getRequestedFor(urlPathEqualTo(PROJECT_URL)));
+    }
+
+    @Test
+    public void shouldRemoveMarkedProjectPermanentlyOnGitlab18AndLater() {
+        stubVersion(LATEST_VERSION);
+        wireMockRule.stubFor(get(urlEqualTo(PROJECT_URL))
+                .willReturn(okJson(projectJson(PROJECT_PATH))));
+        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
+        wireMockRule.stubFor(get(urlEqualTo(PROJECT_ID_URL))
+                .willReturn(okJson(projectJson(MARKED_PROJECT_PATH))));
+        wireMockRule.stubFor(delete(urlPathEqualTo(PROJECT_ID_URL))
+                .withQueryParam(PERMANENTLY_REMOVE, equalTo("true"))
+                .withQueryParam(FULL_PATH, equalTo(MARKED_PROJECT_PATH))
+                .willReturn(accepted()));
+
+        projectClient().deleteRepository();
+
+        wireMockRule.verify(1, deleteRequestedFor(urlEqualTo(PROJECT_ID_URL)));
+        wireMockRule.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_ID_URL))
+                .withQueryParam(PERMANENTLY_REMOVE, equalTo("true"))
+                .withQueryParam(FULL_PATH, equalTo(MARKED_PROJECT_PATH)));
+        wireMockRule.verify(0, deleteRequestedFor(urlPathEqualTo(PROJECT_URL)));
+    }
+
+    @Test
+    public void shouldNotRemoveProjectPermanentlyIfItIsAlreadyDeleted() {
+        stubVersion(LATEST_VERSION);
+        wireMockRule.stubFor(get(urlEqualTo(PROJECT_URL))
+                .willReturn(okJson(projectJson(PROJECT_PATH))));
+        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
+        wireMockRule.stubFor(get(urlEqualTo(PROJECT_ID_URL)).willReturn(aResponse().withStatus(NOT_FOUND)));
+
+        projectClient().deleteRepository();
+
+        wireMockRule.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_ID_URL)));
+    }
+
+    @Test(expected = UnexpectedResponseStatusException.class)
+    public void shouldFailIfMarkedProjectCannotBeRemovedPermanently() {
+        stubVersion(LATEST_VERSION);
+        wireMockRule.stubFor(get(urlEqualTo(PROJECT_URL))
+                .willReturn(okJson(projectJson(PROJECT_PATH))));
+        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
+        wireMockRule.stubFor(get(urlEqualTo(PROJECT_ID_URL))
+                .willReturn(okJson(projectJson(MARKED_PROJECT_PATH))));
+        wireMockRule.stubFor(delete(urlPathEqualTo(PROJECT_ID_URL))
+                .withQueryParam(PERMANENTLY_REMOVE, equalTo("true"))
+                .willReturn(aResponse().withStatus(BAD_REQUEST)));
+
+        projectClient().deleteRepository();
+    }
+
+    private static String projectJson(final String path) {
+        return "{\"id\": " + PROJECT_ID + ", \"path_with_namespace\": \"" + path + "\"}";
+    }
+
+    private static ResponseDefinitionBuilder accepted() {
+        return okJson("{\"message\": \"202 Accepted\"}").withStatus(HTTP_ACCEPTED);
     }
 
     private void stubVersion(final String version) {
