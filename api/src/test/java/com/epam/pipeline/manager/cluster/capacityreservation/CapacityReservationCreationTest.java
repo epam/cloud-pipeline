@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
@@ -88,6 +89,10 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String ADMIN = "ADMIN";
     private static final int CALLER_CPU_RESERVED = 4;
     private static final int OTHER_INSTANCE_COUNT = 5;
+    /** What a g5.48xlarge has. */
+    private static final int INSTANCE_VCPUS = 192;
+    private static final int SMALL_INSTANCE_VCPUS = 8;
+    private static final int MIN_VCPUS = 32;
     private static final int AUTOSCALED_MIN_SIZE = 1;
     private static final double SCALE_UP_THRESHOLD = 90.0;
     private static final double SCALE_DOWN_THRESHOLD = 10.0;
@@ -126,6 +131,63 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
+        givenVcpusPerInstance(INSTANCE_VCPUS);
+    }
+
+    /**
+     * AWS reserves future-dated capacity in blocks of at least 32 vCPUs in total. A smaller request would be
+     * accepted, approved, and then refused by the provider days later.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRefuseAReservationBelowTheProvidersVcpuMinimum() {
+        givenVcpusPerInstance(SMALL_INSTANCE_VCPUS);
+
+        assertThatThrownBy(() -> poolManager.create(reservationPoolVO()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("32");
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldAcceptAReservationOfExactlyTheVcpuMinimum() {
+        givenVcpusPerInstance(MIN_VCPUS / INSTANCE_COUNT);
+
+        assertThat(poolManager.create(reservationPoolVO()).getId()).isNotNull();
+    }
+
+    /**
+     * An autoscaled pool is reserved at its largest, so that is what counts.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldJudgeAnAutoscaledPoolAtItsMaxSize() {
+        givenVcpusPerInstance(SMALL_INSTANCE_VCPUS);
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setAutoscaled(true);
+        vo.setMinSize(1);
+        vo.setMaxSize(MIN_VCPUS / SMALL_INSTANCE_VCPUS);
+        vo.setScaleUpThreshold(SCALE_UP_THRESHOLD);
+        vo.setScaleDownThreshold(SCALE_DOWN_THRESHOLD);
+        vo.setScaleStep(1);
+
+        assertThat(poolManager.create(vo).getId()).isNotNull();
+    }
+
+    /**
+     * With no offer to count the vCPUs by, the provider has the last word.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldLeaveAnInstanceTypeWithoutAnOfferToTheProvider() {
+        when(instanceOfferManager.findOffer(any(), any())).thenReturn(Optional.empty());
+
+        assertThat(poolManager.create(reservationPoolVO()).getId()).isNotNull();
+    }
+
+    private void givenVcpusPerInstance(final int vcpus) {
+        when(instanceOfferManager.findOffer(any(), any()))
+                .thenReturn(Optional.of(InstanceOffer.builder().vCPU(vcpus).build()));
     }
 
     @Test
