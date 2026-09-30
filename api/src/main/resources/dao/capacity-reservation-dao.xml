@@ -348,7 +348,8 @@
                         status_reason = :STATUS_REASON,
                         updated = :UPDATED,
                         start_date = :START_DATE,
-                        end_date = :END_DATE
+                        end_date = :END_DATE,
+                        availability_zone = :AVAILABILITY_ZONE
                     WHERE
                         id = :ID
                         AND status = :STATUS

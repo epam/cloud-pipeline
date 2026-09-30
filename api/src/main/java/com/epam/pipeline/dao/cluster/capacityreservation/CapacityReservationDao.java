@@ -76,7 +76,7 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
     }
 
     /**
-     * Writes what a retried step has to remember - its reason, and the dates it asked for - and only while the
+     * Writes what a retried step has to remember - its reason, and the dates and zone it asked for - and only while the
      * reservation is still in the status the caller's copy shows.
      *
      * <p>For a caller that did not move the reservation and holds a copy that may be stale: a full-row

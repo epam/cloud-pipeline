@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReserva
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
+import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +43,11 @@ import software.amazon.awssdk.services.ec2.model.CapacityReservationState;
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationCancellationQuoteRequest;
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypeOfferingsRequest;
 import software.amazon.awssdk.services.ec2.model.Filter;
 import software.amazon.awssdk.services.ec2.model.InstanceMatchCriteria;
+import software.amazon.awssdk.services.ec2.model.InstanceTypeOffering;
+import software.amazon.awssdk.services.ec2.model.LocationType;
 import software.amazon.awssdk.services.ec2.model.ResourceType;
 import software.amazon.awssdk.services.ec2.model.Tag;
 import software.amazon.awssdk.services.ec2.model.TagSpecification;
@@ -56,9 +60,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * AWS On-Demand Capacity Reservations, future-dated.
@@ -124,6 +131,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
 
     private final CloudRegionManager regionManager;
     private final AWSV2EC2ClientProvider clientProvider;
+    private final RegionNetworksService regionNetworks;
 
     @Override
     public CloudProvider getProvider() {
@@ -133,6 +141,32 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     @Override
     public Duration getMinimumLead() {
         return Duration.ofDays(MINIMUM_LEAD_DAYS);
+    }
+
+    @Override
+    public List<String> candidateZones(final CapacityReservation reservation) {
+        final AwsRegion region = region(reservation);
+        final Map<String, String> networks = regionNetworks.allowedNetworks(region.getRegionCode());
+        final List<String> offered = uncertainOnTransientFailure(reservation, () -> {
+            try (Ec2Client client = clientProvider.client(region)) {
+                return ListUtils.emptyIfNull(client.describeInstanceTypeOfferings(
+                                DescribeInstanceTypeOfferingsRequest.builder()
+                                        .locationType(LocationType.AVAILABILITY_ZONE)
+                                        .filters(Filter.builder()
+                                                .name("instance-type")
+                                                .values(reservation.getInstanceType())
+                                                .build())
+                                        .build())
+                                .instanceTypeOfferings()).stream()
+                        .map(InstanceTypeOffering::location)
+                        .collect(Collectors.toList());
+            }
+        });
+        return offered.stream()
+                .filter(zone -> networks.isEmpty() || networks.containsKey(zone))
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     @Override

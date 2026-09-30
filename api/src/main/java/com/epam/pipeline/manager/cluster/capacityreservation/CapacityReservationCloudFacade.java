@@ -93,6 +93,10 @@ public class CapacityReservationCloudFacade {
         return DateUtils.nowUTC().plus(serviceFor(reservation).getMinimumLead());
     }
 
+    public List<String> candidateZones(final CapacityReservation reservation) {
+        return serviceFor(reservation).candidateZones(reservation);
+    }
+
     public CloudCapacityReservation describe(final CapacityReservation reservation) {
         return serviceFor(reservation).describe(reservation);
     }

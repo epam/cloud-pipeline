@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -179,8 +182,12 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                 return;
             }
             final Optional<CloudCapacityReservation> result;
+            final AtomicReference<String> noCandidate = new AtomicReference<>();
             try {
-                result = cloudFacade.submit(reservation, () -> prepareCandidate(reservation));
+                result = cloudFacade.submit(reservation, () -> {
+                    noCandidate.set(prepareCandidate(reservation).orElse(null));
+                    return noCandidate.get() == null;
+                });
             } catch (CapacityReservationSubmissionUncertainException e) {
                 log.warn("Submission of capacity reservation {} did not complete and will be retried: {}",
                         reservation.getId(), e.getMessage());
@@ -192,10 +199,9 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                 return;
             }
             if (!result.isPresent()) {
-                // Nothing to adopt and no date left to ask for. A verdict on the window, like a provider refusing every
-                // date in it - so FAILED, not PURCHASE_FAILED.
-                statusService.transition(reservation, CapacityReservationStatus.FAILED,
-                        noAcceptedStartDateLeft(reservation));
+                // Nothing to adopt and nothing left to ask for. A verdict on the request, like a provider refusing
+                // every date in it - so FAILED, not PURCHASE_FAILED.
+                statusService.transition(reservation, CapacityReservationStatus.FAILED, noCandidate.get());
                 return;
             }
             final CloudCapacityReservation submitted = result.get();
@@ -203,7 +209,7 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
             // It rolls the whole step back, and the next cycle resubmits the same attempt, whose token adopts what this
             // one bought.
             reservation.setCloudReservationId(submitted.getCloudReservationId());
-            reservation.setAvailabilityZone(submitted.getAvailabilityZone());
+            Optional.ofNullable(submitted.getAvailabilityZone()).ifPresent(reservation::setAvailabilityZone);
             statusService.transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
             // The create call answers synchronously - normally with the provider still assessing the date, but it
             // may already have agreed, or refused outright. Acting on that answer now rather than waiting for the
@@ -230,27 +236,40 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
          * <p>Only called once the lookup has found nothing to adopt - see
          * {@link CapacityReservationCloudFacade#submit}.
          *
-         * @return false when no date the provider accepts leaves room for the duration inside the requested window
+         * <p>The zone is ours to choose, never left to the provider: a reservation is only any use in a zone this
+         * platform can launch nodes into, so the first of the {@link CapacityReservationCloudFacade#candidateZones}
+         * is asked for, and {@link #slideOrFail} moves through the rest before it moves the date.
+         *
+         * @return why there is nothing to ask for - no date the provider accepts leaves room for the duration inside
+         *         the requested window, or no zone can take the reservation; empty when the candidate is ready
          */
-        private boolean prepareCandidate(final CapacityReservation reservation) {
+        private Optional<String> prepareCandidate(final CapacityReservation reservation) {
             if (reservation.getStartDate() == null) {
                 reservation.setStartDate(reservation.getRequestedStartDate());
                 reservation.setEndDate(reservation.getRequestedStartDate()
                         .plusHours(reservation.getDurationHours()));
             }
-            if (!reservation.getStartDate().isBefore(cloudFacade.earliestAcceptedStart(reservation))) {
-                return true;
+            if (reservation.getStartDate().isBefore(cloudFacade.earliestAcceptedStart(reservation))) {
+                final LocalDateTime start = cloudFacade.earliestAcceptedStart(reservation).plus(SUBMISSION_MARGIN);
+                final LocalDateTime end = start.plusHours(reservation.getDurationHours());
+                if (end.isAfter(reservation.getRequestedEndDate())) {
+                    return Optional.of(noAcceptedStartDateLeft(reservation));
+                }
+                log.debug("Capacity reservation {} can no longer start at {} with this provider; asking for {} instead",
+                        reservation.getId(), reservation.getStartDate(), start);
+                reservation.setStartDate(start);
+                reservation.setEndDate(end);
             }
-            final LocalDateTime start = cloudFacade.earliestAcceptedStart(reservation).plus(SUBMISSION_MARGIN);
-            final LocalDateTime end = start.plusHours(reservation.getDurationHours());
-            if (end.isAfter(reservation.getRequestedEndDate())) {
-                return false;
+            if (StringUtils.isBlank(reservation.getAvailabilityZone())) {
+                final List<String> zones = cloudFacade.candidateZones(reservation);
+                if (zones.isEmpty()) {
+                    return Optional.of(String.format("No availability zone can take a reservation for %s: none of "
+                            + "the region's zones that offer it is one its networks configure",
+                            reservation.getInstanceType()));
+                }
+                reservation.setAvailabilityZone(zones.get(0));
             }
-            log.debug("Capacity reservation {} can no longer start at {} with this provider; asking for {} instead",
-                    reservation.getId(), reservation.getStartDate(), start);
-            reservation.setStartDate(start);
-            reservation.setEndDate(end);
-            return true;
+            return Optional.empty();
         }
 
         private String noAcceptedStartDateLeft(final CapacityReservation reservation) {
@@ -385,6 +404,15 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
          * is a genuinely new request to the provider rather than a retry of the last one.
          */
         private void slideOrFail(final CapacityReservation reservation, final String reason) {
+            final Optional<String> nextZone = nextCandidateZone(reservation);
+            if (nextZone.isPresent()) {
+                log.debug("Capacity reservation {} is unavailable in {} at {}; trying {} for the same date",
+                        reservation.getId(), reservation.getAvailabilityZone(), reservation.getStartDate(),
+                        nextZone.get());
+                reservation.setAvailabilityZone(nextZone.get());
+                nextAttempt(reservation, reason);
+                return;
+            }
             final LocalDateTime nextStart = reservation.getStartDate().plusDays(SLIDE_WINDOW_STEP_DAYS);
             final LocalDateTime nextEnd = nextStart.plusHours(reservation.getDurationHours());
 
@@ -398,9 +426,34 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                     reservation.getId(), reservation.getStartDate(), nextStart);
             reservation.setStartDate(nextStart);
             reservation.setEndDate(nextEnd);
+            // Every zone gets its turn again for the new date, from the first.
+            reservation.setAvailabilityZone(null);
+            nextAttempt(reservation, reason);
+        }
+
+        /**
+         * A new request to the provider rather than a retry of the last one: the attempt counter feeds the
+         * idempotency token.
+         */
+        private void nextAttempt(final CapacityReservation reservation, final String reason) {
             reservation.setAttempt(reservation.getAttempt() + 1);
             reservation.setCloudReservationId(null);
             statusService.transition(reservation, CapacityReservationStatus.APPROVED, reason);
+        }
+
+        /**
+         * The zone after the one this attempt asked for, for the same date. None once every zone has been asked -
+         * or when the zone asked for is no longer a candidate, in which case the date moves and they start over.
+         */
+        private Optional<String> nextCandidateZone(final CapacityReservation reservation) {
+            if (StringUtils.isBlank(reservation.getAvailabilityZone())) {
+                return Optional.empty();
+            }
+            final List<String> zones = cloudFacade.candidateZones(reservation);
+            final int current = zones.indexOf(reservation.getAvailabilityZone());
+            return current >= 0 && current + 1 < zones.size()
+                    ? Optional.of(zones.get(current + 1))
+                    : Optional.empty();
         }
 
         void finalizeIfEnding(final CapacityReservation reservation) {

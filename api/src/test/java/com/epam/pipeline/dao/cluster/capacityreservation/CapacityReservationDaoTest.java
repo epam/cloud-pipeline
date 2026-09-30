@@ -87,6 +87,7 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         retried.setUpdated(created.getUpdated().plusMinutes(1));
         retried.setStartDate(created.getRequestedStartDate());
         retried.setEndDate(created.getRequestedEndDate());
+        retried.setAvailabilityZone(CapacityReservationCreatorUtils.AVAILABILITY_ZONE);
         retried.setName("not written by a retry");
 
         assertThat(reservationDao.updateRetry(retried)).isTrue();
@@ -95,6 +96,7 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         created.setUpdated(retried.getUpdated());
         created.setStartDate(retried.getStartDate());
         created.setEndDate(retried.getEndDate());
+        created.setAvailabilityZone(retried.getAvailabilityZone());
         assertFound(reservationDao.find(created.getId()), created);
     }
 

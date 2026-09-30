@@ -40,6 +40,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +68,7 @@ public class CapacityReservationMonitorCoreTest {
     private static final Long RESERVATION_ID = 10L;
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
     private static final String ZONE = "us-east-1c";
+    private static final String OTHER_ZONE = "us-east-1d";
     private static final String PROVIDER_UNREACHABLE = "provider unreachable";
     private static final int FINALIZING_LEAD_HOURS = 1;
     private static final int DURATION_HOURS = 24;
@@ -96,8 +99,10 @@ public class CapacityReservationMonitorCoreTest {
     public void setUp() {
         when(preferenceManager.getPreference(any()))
                 .thenReturn(new CapacityReservationMonitorSettings(FINALIZING_LEAD_HOURS));
-        // Every candidate the fixtures ask for is still one the provider accepts, unless a test says otherwise.
+        // Every candidate the fixtures ask for is still one the provider accepts, in the one zone there is, unless a
+        // test says otherwise.
         when(cloudFacade.earliestAcceptedStart(any())).thenReturn(DateUtils.nowUTC());
+        when(cloudFacade.candidateZones(any())).thenReturn(Collections.singletonList(ZONE));
     }
 
     @Test
@@ -157,6 +162,91 @@ public class CapacityReservationMonitorCoreTest {
         assertThat(reservation.getEndDate()).isEqualTo(expectedStart.plusHours(DURATION_HOURS));
         // Not a slide: the date was never asked for, and the token must still find a lost reply of this attempt.
         assertThat(reservation.getAttempt()).isEqualTo(attemptBefore);
+    }
+
+    /**
+     * The zone is chosen here, from the zones the platform can launch into - never left to the provider, which could
+     * put the capacity somewhere no node of the pool could use it.
+     */
+    @Test
+    public void shouldAskForTheFirstCandidateZone() {
+        final CapacityReservation reservation = approved();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.candidateZones(reservation)).thenReturn(Arrays.asList(ZONE, OTHER_ZONE));
+        final AtomicReference<String> askedFor = new AtomicReference<>();
+        when(cloudFacade.submit(any(), any())).thenAnswer(invocation -> {
+            ((BooleanSupplier) invocation.getArguments()[1]).getAsBoolean();
+            askedFor.set(reservation.getAvailabilityZone());
+            return Optional.of(CloudCapacityReservation.builder()
+                    .cloudReservationId(CLOUD_ID)
+                    .state(CloudCapacityReservationState.PENDING)
+                    .build());
+        });
+
+        monitor.processApproved();
+
+        assertThat(askedFor.get()).isEqualTo(ZONE);
+        assertThat(reservation.getAvailabilityZone()).isEqualTo(ZONE);
+    }
+
+    @Test
+    public void shouldFailWithoutCreatingWhenNoZoneCanTakeTheReservation() {
+        final CapacityReservation reservation = approved();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.candidateZones(reservation)).thenReturn(Collections.emptyList());
+        givenSubmissionReturns(CloudCapacityReservation.builder().cloudReservationId(CLOUD_ID).build());
+
+        monitor.processApproved();
+
+        assertThat(reservation.getCloudReservationId()).isNull();
+        final ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), reason.capture());
+        assertThat(reason.getValue()).contains("No availability zone");
+    }
+
+    /**
+     * A refusal is for one date in one zone. Another zone may well have the capacity on the same date, which is the
+     * date the requester asked for first - so every zone is tried before the date moves.
+     */
+    @Test
+    public void shouldTryTheNextZoneBeforeSlidingTheDate() {
+        final CapacityReservation reservation = assessing();
+        reservation.setAvailabilityZone(ZONE);
+        final LocalDateTime date = reservation.getStartDate();
+        final int attemptBefore = reservation.getAttempt();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.candidateZones(reservation)).thenReturn(Arrays.asList(ZONE, OTHER_ZONE));
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.UNSUPPORTED)
+                .build());
+
+        monitor.processAssessing();
+
+        assertThat(reservation.getAvailabilityZone()).isEqualTo(OTHER_ZONE);
+        assertThat(reservation.getStartDate()).isEqualTo(date);
+        // A different zone is a different request, so it gets its own token.
+        assertThat(reservation.getAttempt()).isEqualTo(attemptBefore + 1);
+        assertThat(reservation.getCloudReservationId()).isNull();
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+    }
+
+    @Test
+    public void shouldSlideTheDateOnceEveryZoneWasTried() {
+        final CapacityReservation reservation = assessing();
+        reservation.setAvailabilityZone(OTHER_ZONE);
+        final LocalDateTime date = reservation.getStartDate();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.candidateZones(reservation)).thenReturn(Arrays.asList(ZONE, OTHER_ZONE));
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.UNSUPPORTED)
+                .build());
+
+        monitor.processAssessing();
+
+        assertThat(reservation.getStartDate())
+                .isEqualTo(date.plusDays(CapacityReservationMonitorCore.SLIDE_WINDOW_STEP_DAYS));
+        // Every zone gets its turn again for the new date.
+        assertThat(reservation.getAvailabilityZone()).isNull();
     }
 
     /**

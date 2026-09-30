@@ -104,8 +104,8 @@ public class CapacityReservationStatusService {
      *
      * <p>For a step that will be retried rather than failed: the status does not change, so nobody is notified,
      * but the reason is persisted so a reservation sitting in {@code APPROVED} says what it is waiting for. So are the
-     * dates the step asked for, so the retry asks the provider for the same ones - a token reused with other dates
-     * would be refused rather than recognised as a repeat.
+     * dates and zone the step asked for, so the retry asks the provider for the same ones - a token reused with other
+     * parameters would be refused rather than recognised as a repeat.
      *
      * <p>Only those are written, and only if the status is still the one the caller saw. The caller's copy was
      * loaded before a provider call that may have taken minutes to time out, and a user may have cancelled the
