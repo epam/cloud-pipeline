@@ -17,9 +17,11 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -32,15 +34,18 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 public class GitlabClientTest {
@@ -62,6 +67,21 @@ public class GitlabClientTest {
     private static final int OK_CREATED = 201;
     private static final int NO_CONTENT = 204;
     private static final int NOT_FOUND = 404;
+    private static final int CONFLICT = 409;
+    private static final String PROJECT = "test-pipe";
+    private static final String PROJECT_URL = "/api/v4/projects/root%2F" + PROJECT;
+    private static final String TAGS_URL = PROJECT_URL + "/repository/tags";
+    private static final String RELEASES_URL = PROJECT_URL + "/releases";
+    private static final String VERSION_URL = "/api/v4/version";
+    private static final String LATEST_VERSION = "19.4.1";
+    private static final String GITLAB_9_VERSION = "9.4.0";
+    private static final String TAG_NAME = "v1";
+    private static final String TAG_MESSAGE = "Tag message";
+    private static final String SHA = "abc123";
+    private static final String REF = "ref";
+    private static final String DESCRIPTION = "Release notes";
+    private static final String RELEASE_DESCRIPTION = "release_description";
+    private static final String RELEASE_JSON = "{\"tag_name\": \"v1\", \"description\": \"Release notes\"}";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -151,9 +171,86 @@ public class GitlabClientTest {
         client().revokeImpersonationToken(ADMIN_ID, TOKEN_ID);
     }
 
+    @Test
+    public void shouldSaveReleaseDescriptionWithReleasesApi() {
+        stubVersion(LATEST_VERSION);
+        stubTagCreation();
+        wireMockRule.stubFor(post(urlEqualTo(RELEASES_URL))
+                .willReturn(created(RELEASE_JSON)));
+
+        final GitTagEntry tag = projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, DESCRIPTION);
+
+        Assert.assertEquals(TAG_NAME, tag.getName());
+        Assert.assertEquals(DESCRIPTION, tag.getRelease().getDescription());
+        wireMockRule.verify(postRequestedFor(urlPathEqualTo(TAGS_URL))
+                .withQueryParam("tag_name", equalTo(TAG_NAME))
+                .withQueryParam(REF, equalTo(SHA))
+                .withQueryParam("message", equalTo(TAG_MESSAGE))
+                .withQueryParam(RELEASE_DESCRIPTION, absent()));
+        wireMockRule.verify(postRequestedFor(urlEqualTo(RELEASES_URL))
+                .withRequestBody(equalToJson(RELEASE_JSON)));
+    }
+
+    @Test
+    public void shouldSendReleaseDescriptionWithTagToGitlabOlderThan14() {
+        stubVersion(GITLAB_9_VERSION);
+        stubTagCreation();
+
+        projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, DESCRIPTION);
+
+        wireMockRule.verify(postRequestedFor(urlPathEqualTo(TAGS_URL))
+                .withQueryParam(RELEASE_DESCRIPTION, equalTo(DESCRIPTION)));
+        wireMockRule.verify(0, postRequestedFor(urlEqualTo(RELEASES_URL)));
+    }
+
+    @Test
+    public void shouldCreateTagWithoutReleaseIfDescriptionIsBlank() {
+        stubTagCreation();
+
+        final GitTagEntry tag = projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, " ");
+
+        Assert.assertNull(tag.getRelease());
+        wireMockRule.verify(0, getRequestedFor(urlEqualTo(VERSION_URL)));
+        wireMockRule.verify(0, postRequestedFor(urlEqualTo(RELEASES_URL)));
+    }
+
+    @Test
+    public void shouldReturnCreatedTagIfReleaseCannotBeCreated() {
+        stubVersion(LATEST_VERSION);
+        stubTagCreation();
+        wireMockRule.stubFor(post(urlEqualTo(RELEASES_URL))
+                .willReturn(aResponse().withStatus(CONFLICT)));
+
+        final GitTagEntry tag = projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, DESCRIPTION);
+
+        Assert.assertEquals(TAG_NAME, tag.getName());
+        Assert.assertNull(tag.getRelease());
+    }
+
+    private void stubVersion(final String version) {
+        wireMockRule.stubFor(get(urlEqualTo(VERSION_URL))
+                .willReturn(okJson("{\"version\": \"" + version + "\", \"revision\": \"abc\"}")));
+    }
+
+    private void stubTagCreation() {
+        wireMockRule.stubFor(post(urlPathEqualTo(TAGS_URL))
+                .willReturn(created("{\"name\": \"v1\", \"message\": \"Tag message\", "
+                        + "\"commit\": {\"id\": \"" + SHA + "\"}}")));
+    }
+
+    private static ResponseDefinitionBuilder created(final String json) {
+        return okJson(json).withStatus(OK_CREATED);
+    }
+
     private GitlabClient client() {
         return GitlabClient.initializeGitlabClientFromHostAndToken(
                 "http://localhost:" + wireMockRule.port(), TOKEN, USER, ADMIN_ID, USER, "v4");
+    }
+
+    private GitlabClient projectClient() {
+        return GitlabClient.initializeGitlabClientFromRepositoryAndToken(USER,
+                "http://localhost:" + wireMockRule.port() + "/root/" + PROJECT + ".git",
+                TOKEN, ADMIN_ID, USER, false, "v4");
     }
 
     private void testBuildCloneUrl(String user, String url) throws GitClientException {

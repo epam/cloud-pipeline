@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectRequest;
 import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
+import com.epam.pipeline.entity.git.GitReleaseEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -71,6 +72,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
@@ -109,6 +112,8 @@ public class GitlabClient {
     public static final String EMAIL_SEPARATOR = "@";
     public static final String TOTAL_HEADER = "X-Total";
     public static final int MAX_PAGE_SIZE = 100;
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+)\\.");
+    private static final int RELEASES_API_MAJOR_VERSION = 14;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -309,10 +314,31 @@ public class GitlabClient {
         return getRepositoryRevisions(namespace, projectName);
     }
 
+    /**
+     * Creates a tag. A non-blank release description is saved as the release of the tag: with the Releases API
+     * on Gitlab 14.0 and later, which ignores the release_description parameter of the tag creation.
+     * A failure to create the release is logged, and the created tag is returned without it.
+     */
     public GitTagEntry createRepositoryRevision(String name, String ref, String message, String releaseDescription)
             throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, releaseDescription));
+        if (StringUtils.isBlank(releaseDescription) || getMajorVersion() < RELEASES_API_MAJOR_VERSION) {
+            return execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, releaseDescription));
+        }
+        final GitTagEntry tag = execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, null));
+        final GitReleaseEntry release = new GitReleaseEntry();
+        release.setTagName(name);
+        release.setDescription(releaseDescription);
+        try {
+            final GitReleaseEntry createdRelease = execute(gitLabApi.createRelease(apiVersion, projectId, release));
+            if (tag != null) {
+                tag.setRelease(createdRelease);
+            }
+        } catch (GitClientException e) {
+            LOGGER.warn("The tag {} of the project {} is created, but its release description is not saved: {}",
+                    name, projectId, e.getMessage());
+        }
+        return tag;
     }
 
     public List<GitCommitEntry> getCommits() throws GitClientException {
@@ -342,6 +368,20 @@ public class GitlabClient {
      */
     public GitlabVersion getVersion() throws GitClientException {
         return execute(gitLabApi.getVersion());
+    }
+
+    /**
+     * Loads the major number of the Gitlab version.
+     * @return the major version, or -1 if the version cannot be parsed
+     */
+    private int getMajorVersion() throws GitClientException {
+        final String version = Optional.ofNullable(getVersion()).map(GitlabVersion::getVersion).orElse(null);
+        final Matcher matcher = VERSION_PATTERN.matcher(StringUtils.defaultString(version));
+        if (!matcher.find()) {
+            LOGGER.warn("Cannot parse the Gitlab version '{}'.", version);
+            return -1;
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     public GitCommitEntry commit(GitPushCommitEntry commitEntry) throws GitClientException {

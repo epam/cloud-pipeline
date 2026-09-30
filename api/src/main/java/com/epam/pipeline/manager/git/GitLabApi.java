@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.git.GitProjectMemberRequest;
 import com.epam.pipeline.entity.git.GitProjectRequest;
 import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
+import com.epam.pipeline.entity.git.GitReleaseEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
@@ -268,7 +269,7 @@ public interface GitLabApi {
      * @param tagName  The name of the tag
      * @param ref
      * @param message
-     * @param  releaseDescription
+     * @param  releaseDescription (optional) - NOTE: Removed in GitLab 14.0, use {@link #createRelease} instead
      */
     @POST("api/{api_version}/projects/{project}/repository/tags")
     Call<GitTagEntry> createRevision(@Path(API_VERSION) String apiVersion,
@@ -277,6 +278,18 @@ public interface GitLabApi {
                                      @Query(REF) String ref,
                                      @Query("message") String message,
                                      @Query("release_description") String releaseDescription);
+
+    /**
+     * Create a release for an existing repository tag.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param release The tag name and the description of the release
+     */
+    @POST("api/{api_version}/projects/{project}/releases")
+    Call<GitReleaseEntry> createRelease(@Path(API_VERSION) String apiVersion,
+                                        @Path(PROJECT) String idOrName,
+                                        @Body GitReleaseEntry release);
 
     @GET("api/v4/version")
     Call<GitlabVersion> getVersion();

@@ -113,6 +113,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String REPOSITORY_COMMITS = "/repository/commits";
     private static final String REPOSITORY_FILES = "/repository/files";
     private static final String REPOSITORY_TAGS = "/repository/tags";
+    private static final String REPOSITORY_RELEASES = "/releases";
     private static final String REPOSITORY_TREE = "/repository/tree";
     private static final String REF_NAME = "ref_name";
     private static final String PATH = "path";
@@ -579,12 +580,24 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withQueryParam(TAG_NAME, equalTo(tagName))
                 .willReturn(created().withHeader(CONTENT_TYPE, "application/json").withBody(with(tag)))
         );
+        givenThat(
+            get(urlPathEqualTo("/api/v4/version"))
+                .willReturn(okJson("{\"version\": \"15.5.4\"}"))
+        );
+        givenThat(
+            post(urlPathEqualTo(api(REPOSITORY_RELEASES)))
+                .willReturn(okJson("{\"tag_name\": \"v1.0.1\", \"description\": \"Release description\"}")
+                        .withStatus(HttpURLConnection.HTTP_CREATED))
+        );
         final Pipeline pipeline = testingPipeline();
         final Revision revision = pipelineRepositoryService.createPipelineRevision(
             pipeline, tagName, sha, "Message", "Release description"
         );
         assertThat(revision.getName(), is(tag.getName()));
         assertThat(revision.getMessage(), is(tag.getMessage()));
+        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(api(REPOSITORY_RELEASES)))
+                .withRequestBody(equalToJson(
+                        "{\"tag_name\": \"v1.0.1\", \"description\": \"Release description\"}")));
     }
 
     @Test
