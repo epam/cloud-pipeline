@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import io.swagger.annotations.Api;
@@ -79,6 +80,15 @@ public class NodePoolController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<NodePool> update(final @PathVariable Long id, final @RequestBody NodePoolVO vo) {
         return Result.success(apiService.update(id, vo));
+    }
+
+    @PutMapping("{id}/ami-configuration")
+    @ApiOperation(value = "Replaces how a node pool's nodes are launched. Administrators only.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<NodePool> updateAmiConfiguration(final @PathVariable Long id,
+                                                   final @RequestBody AMIConfiguration configuration) {
+        return Result.success(apiService.updateAmiConfiguration(id, configuration));
     }
 
     @DeleteMapping("{id}")
