@@ -61,10 +61,10 @@ CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 
 # cp-git config
 
-# possible values 9, 15, 17
+# possible values 9, 15, 17, 19
 CP_GITLAB_VERSION=9
 
-# possible values 12.4 for CP_GITLAB_VERSION=15, and 14.11 for CP_GITLAB_VERSION=17
+# possible values 12.4 for CP_GITLAB_VERSION=15, 14.11 for CP_GITLAB_VERSION=17, and 17 for CP_GITLAB_VERSION=19
 GITLAB_DATABASE_VERSION=9.6
 
 GITLAB_DATABASE_SHARED_BUFFERS=128MB
