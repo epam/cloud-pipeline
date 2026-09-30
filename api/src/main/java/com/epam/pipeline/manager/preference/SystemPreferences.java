@@ -118,6 +118,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidCapacityReservationMonitorSettings;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
@@ -663,7 +664,7 @@ public class SystemPreferences {
                     "cluster.capacity.reservation.monitor.settings",
                     new CapacityReservationMonitorSettings(1),
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
-                    isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {}), true);
+                    isValidCapacityReservationMonitorSettings, true);
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",

@@ -53,7 +53,7 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
     private final String loadAllCapacityReservationsQuery;
     private final String loadCapacityReservationsByStatusQuery;
     private final String loadCapacityReservationsByOwnerQuery;
-    private final String updateCapacityReservationStatusReasonQuery;
+    private final String updateCapacityReservationRetryQuery;
     private final String updateCapacityReservationInstanceCountQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -76,23 +76,19 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
     }
 
     /**
-     * Writes only the reason, and only while the reservation is still in {@code expectedStatus}.
+     * Writes what a retried step has to remember - its reason, and the dates it asked for - and only while the
+     * reservation is still in the status the caller's copy shows.
      *
      * <p>For a caller that did not move the reservation and holds a copy that may be stale: a full-row
      * {@link #update} from that copy would write its old status back over whatever happened meanwhile - a
      * cancellation included.
      *
-     * @return whether the reservation was still in {@code expectedStatus}, and so was written
+     * @return whether the reservation was still in that status, and so was written
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public boolean updateStatusReason(final Long id, final CapacityReservationStatus expectedStatus,
-                                      final String statusReason, final LocalDateTime updated) {
-        final MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue(Parameters.ID.name(), id)
-                .addValue(Parameters.STATUS.name(), expectedStatus.name())
-                .addValue(Parameters.STATUS_REASON.name(), statusReason)
-                .addValue(Parameters.UPDATED.name(), Parameters.timestamp(updated));
-        return getNamedParameterJdbcTemplate().update(updateCapacityReservationStatusReasonQuery, params) > 0;
+    public boolean updateRetry(final CapacityReservation reservation) {
+        return getNamedParameterJdbcTemplate()
+                .update(updateCapacityReservationRetryQuery, Parameters.getParameters(reservation)) > 0;
     }
 
     /**

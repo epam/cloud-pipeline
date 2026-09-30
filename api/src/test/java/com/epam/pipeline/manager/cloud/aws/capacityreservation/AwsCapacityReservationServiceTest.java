@@ -429,6 +429,14 @@ public class AwsCapacityReservationServiceTest {
     }
 
     /**
+     * AWS's documented minimum for a future-dated start, shared by pool validation and the monitor's submission.
+     */
+    @Test
+    public void shouldRequireFiveDaysOfLead() {
+        assertThat(service.getMinimumLead()).isEqualTo(Duration.ofDays(5));
+    }
+
+    /**
      * The monitor rolls a whole step back when a later write in it fails, so a cancel AWS already carried out comes
      * round again. Asking AWS to cancel a cancelled reservation would fail that step on every cycle.
      */

@@ -103,9 +103,11 @@ public class CapacityReservationStatusService {
      * Records why a reservation is still where it was, without moving it.
      *
      * <p>For a step that will be retried rather than failed: the status does not change, so nobody is notified,
-     * but the reason is persisted so a reservation sitting in {@code APPROVED} says what it is waiting for.
+     * but the reason is persisted so a reservation sitting in {@code APPROVED} says what it is waiting for. So are the
+     * dates the step asked for, so the retry asks the provider for the same ones - a token reused with other dates
+     * would be refused rather than recognised as a repeat.
      *
-     * <p>Only the reason is written, and only if the status is still the one the caller saw. The caller's copy was
+     * <p>Only those are written, and only if the status is still the one the caller saw. The caller's copy was
      * loaded before a provider call that may have taken minutes to time out, and a user may have cancelled the
      * reservation meanwhile; writing the whole row back would revive it, and the next cycle would buy it.
      *
@@ -113,8 +115,9 @@ public class CapacityReservationStatusService {
      */
     @Transactional
     public boolean recordRetry(final CapacityReservation reservation, final String statusReason) {
-        final boolean written = reservationDao.updateStatusReason(reservation.getId(), reservation.getStatus(),
-                statusReason, DateUtils.nowUTC());
+        reservation.setStatusReason(statusReason);
+        reservation.setUpdated(DateUtils.nowUTC());
+        final boolean written = reservationDao.updateRetry(reservation);
         if (!written) {
             log.debug("Capacity reservation {} left {} while its retry was being recorded; leaving it as it is",
                     reservation.getId(), reservation.getStatus());

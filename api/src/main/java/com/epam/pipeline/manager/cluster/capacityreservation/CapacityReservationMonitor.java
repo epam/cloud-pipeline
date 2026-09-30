@@ -39,6 +39,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PostConstruct;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -85,6 +86,14 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
          * assessment cycle, so a finer step buys little and a coarser one skips dates that would have been granted.
          */
         protected static final int SLIDE_WINDOW_STEP_DAYS = 1;
+
+        /**
+         * Added to the provider's minimum lead when a start date has to be chosen for it. The lead is measured by the
+         * provider's clock when the request arrives, so a date exactly on it would be refused - and a date chosen with
+         * room to spare is still accepted when a lost submission is retried a cycle later, so the retry can ask for
+         * the same date.
+         */
+        static final Duration SUBMISSION_MARGIN = Duration.ofHours(1);
 
         private static final int SECONDS_PER_HOUR = 3600;
 
@@ -169,10 +178,9 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                         reservation.getReservationType() + " reservations are not supported yet");
                 return;
             }
-            final CloudCapacityReservation submitted;
+            final Optional<CloudCapacityReservation> result;
             try {
-                prepareCandidate(reservation);
-                submitted = cloudFacade.submit(reservation);
+                result = cloudFacade.submit(reservation, () -> prepareCandidate(reservation));
             } catch (CapacityReservationSubmissionUncertainException e) {
                 log.warn("Submission of capacity reservation {} did not complete and will be retried: {}",
                         reservation.getId(), e.getMessage());
@@ -183,6 +191,14 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                 statusService.transition(reservation, CapacityReservationStatus.PURCHASE_FAILED, e.getMessage());
                 return;
             }
+            if (!result.isPresent()) {
+                // Nothing to adopt and no date left to ask for. A verdict on the window, like a provider refusing every
+                // date in it - so FAILED, not PURCHASE_FAILED.
+                statusService.transition(reservation, CapacityReservationStatus.FAILED,
+                        noAcceptedStartDateLeft(reservation));
+                return;
+            }
+            final CloudCapacityReservation submitted = result.get();
             // Outside the catch on purpose: a failure from here on is ours to write down, not the provider's answer.
             // It rolls the whole step back, and the next cycle resubmits the same attempt, whose token adopts what this
             // one bought.
@@ -196,17 +212,52 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
         }
 
         /**
-         * Chooses the dates this attempt asks for.
+         * Chooses the dates this attempt asks for, or finds that none are left.
          *
          * <p>The first attempt asks for the earliest date the requester would accept. Later attempts have already
          * been moved on by {@link #slideOrFail}, so this only fills in a first candidate.
+         *
+         * <p>Either way the candidate has to be one the provider still accepts. Time passes between the request and
+         * its submission - waiting for approval, sliding past refused dates - and a start date that was far enough
+         * ahead when requested may no longer be. Submitting it anyway would only be refused, so it moves to the
+         * earliest date the provider accepts, plus {@link #SUBMISSION_MARGIN}.
+         *
+         * <p>The attempt - and so the token - stays the same: the date was never asked for. And a retry of the attempt
+         * keeps whatever date it already chose, which {@code recordRetry} persists, for as long as the provider still
+         * accepts it; the margin is what makes that last across retries. So a retry asks the provider exactly what the
+         * lost call asked, and the provider recognises the repeat instead of refusing a token reused with other dates.
+         *
+         * <p>Only called once the lookup has found nothing to adopt - see
+         * {@link CapacityReservationCloudFacade#submit}.
+         *
+         * @return false when no date the provider accepts leaves room for the duration inside the requested window
          */
-        private void prepareCandidate(final CapacityReservation reservation) {
+        private boolean prepareCandidate(final CapacityReservation reservation) {
             if (reservation.getStartDate() == null) {
                 reservation.setStartDate(reservation.getRequestedStartDate());
                 reservation.setEndDate(reservation.getRequestedStartDate()
                         .plusHours(reservation.getDurationHours()));
             }
+            if (!reservation.getStartDate().isBefore(cloudFacade.earliestAcceptedStart(reservation))) {
+                return true;
+            }
+            final LocalDateTime start = cloudFacade.earliestAcceptedStart(reservation).plus(SUBMISSION_MARGIN);
+            final LocalDateTime end = start.plusHours(reservation.getDurationHours());
+            if (end.isAfter(reservation.getRequestedEndDate())) {
+                return false;
+            }
+            log.debug("Capacity reservation {} can no longer start at {} with this provider; asking for {} instead",
+                    reservation.getId(), reservation.getStartDate(), start);
+            reservation.setStartDate(start);
+            reservation.setEndDate(end);
+            return true;
+        }
+
+        private String noAcceptedStartDateLeft(final CapacityReservation reservation) {
+            return String.format("No start date between %s and %s leaves room for a reservation of %d hours: the "
+                            + "earliest start the provider accepts now is %s", reservation.getRequestedStartDate(),
+                    reservation.getRequestedEndDate(), reservation.getDurationHours(),
+                    cloudFacade.earliestAcceptedStart(reservation));
         }
 
         void poll(final CapacityReservation reservation) {
@@ -320,6 +371,12 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                     .build();
         }
 
+        private static String noStartDateLeft(final CapacityReservation reservation, final String reason) {
+            return String.format("No available start date between %s and %s for a reservation of %d hours%s",
+                    reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
+                    reservation.getDurationHours(), reason == null ? "" : ". Last provider response: " + reason);
+        }
+
         /**
          * Moves a future-dated request to the next start date inside the window the requester allowed, or gives up
          * when the window cannot fit the duration any more.
@@ -333,10 +390,7 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
 
             if (nextEnd.isAfter(reservation.getRequestedEndDate())) {
                 statusService.transition(reservation, CapacityReservationStatus.FAILED,
-                        String.format("No available start date between %s and %s for a reservation of %d hours%s",
-                                reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
-                                reservation.getDurationHours(),
-                                reason == null ? "" : ". Last provider response: " + reason));
+                        noStartDateLeft(reservation, reason));
                 return;
             }
 

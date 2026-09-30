@@ -341,12 +341,14 @@
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--updateCapacityReservationStatusReasonQuery-->
+                <!--updateCapacityReservationRetryQuery-->
                 <!--Guarded by status, so a caller holding a stale copy cannot undo a change made meanwhile.-->
                 <![CDATA[
                     UPDATE pipeline.capacity_reservation SET
                         status_reason = :STATUS_REASON,
-                        updated = :UPDATED
+                        updated = :UPDATED,
+                        start_date = :START_DATE,
+                        end_date = :END_DATE
                     WHERE
                         id = :ID
                         AND status = :STATUS

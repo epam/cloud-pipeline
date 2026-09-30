@@ -782,8 +782,6 @@ public final class MessageConstants {
             "error.capacity.reservation.illegal.transition";
     public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
             "error.capacity.reservation.spot.not.supported";
-    public static final String ERROR_CAPACITY_RESERVATION_POOL_TYPE_NOT_SUPPORTED =
-            "error.capacity.reservation.pool.type.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
             "error.capacity.reservation.type.required";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =

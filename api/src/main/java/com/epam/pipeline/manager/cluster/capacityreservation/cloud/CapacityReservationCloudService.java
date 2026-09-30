@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.region.CloudProvider;
 
+import java.time.Duration;
 import java.util.Optional;
 
 /**
@@ -33,6 +34,12 @@ import java.util.Optional;
 public interface CapacityReservationCloudService {
 
     CloudProvider getProvider();
+
+    /**
+     * How far ahead of the request the provider requires a future-dated reservation to start. A start date any
+     * sooner is refused outright.
+     */
+    Duration getMinimumLead();
 
     /**
      * Asks the provider to hold capacity from a future date.

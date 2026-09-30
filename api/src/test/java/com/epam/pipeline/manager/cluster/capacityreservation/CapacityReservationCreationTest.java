@@ -269,19 +269,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
-     * A sharable pool's runs select their nodes by the reservation id, so without a reservation there is nothing
-     * to select and the pool would be created unschedulable.
-     */
-    @Test
-    @WithMockUser(username = OWNER)
-    public void shouldRejectSharablePoolWithoutReservation() {
-        final NodePoolVO vo = basePoolVO();
-        vo.setPoolType(NodePoolType.SHARABLE_NODE);
-
-        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
-    }
-
-    /**
      * AWS will not assess a future-dated request for a date less than 5 days out, so accepting one here would
      * approve a request that is certain to be refused - after the approval, and after the wait.
      */
