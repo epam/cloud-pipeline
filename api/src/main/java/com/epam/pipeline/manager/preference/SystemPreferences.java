@@ -1467,7 +1467,7 @@ public class SystemPreferences {
             new TypeReference<List<String>>() {}, MONITORING_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
 
-    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+    private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d+)\\.(\\d+)");
 
     // System Jobs
     public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
