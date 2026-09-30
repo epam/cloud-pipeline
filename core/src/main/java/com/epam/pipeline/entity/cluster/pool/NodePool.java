@@ -60,7 +60,8 @@ public class NodePool extends AbstractSecuredEntity {
     private PriceType priceType;
     private Set<String> dockerImages;
     /**
-     * @deprecated set {@link #amiConfiguration}'s {@code ami} instead. Still honoured when that is not set - see
+     * @deprecated the image is part of {@link #amiConfiguration}. Still honoured: it becomes that configuration's image
+     *             when the pool is created or edited, and names the image of a pool without one - see
      *             {@link #resolveInstanceImage()}.
      */
     @Deprecated
@@ -101,9 +102,10 @@ public class NodePool extends AbstractSecuredEntity {
     private boolean capacityReservation;
 
     /**
-     * How this pool's nodes are launched, over whichever of the region's {@code amis} rules matches them: every field
-     * set here wins, and {@code additional_spec} is merged key by key. Absent for most pools, whose nodes launch
-     * exactly as the region's rules say. A capacity reservation writes its target, zone and subnet into it.
+     * How this pool's nodes are launched: a copy of the region's matching {@code amis} rule, taken when the pool is
+     * created and changed since only by an administrator or by a capacity reservation, which writes its target, zone
+     * and subnet into it while it is live. Absent for a pool outside AWS, and for one no rule matched and no image
+     * was given for - their nodes launch as the region's rules say.
      */
     private AMIConfiguration amiConfiguration;
 

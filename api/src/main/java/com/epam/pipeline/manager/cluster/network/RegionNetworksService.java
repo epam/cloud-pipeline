@@ -25,14 +25,14 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.FileSystems;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * The zones and subnets a region's nodes may be launched into, as the region's {@code networks} in
@@ -68,13 +68,11 @@ public class RegionNetworksService {
      * {@code amis} rules that the launch scripts would match for its nodes, with the fields that only choose between
      * rules left out. Empty when no rule matches.
      *
-     * <p>A rule restricted to a docker image is skipped - a pool's nodes are not launched for any one run - and so is
-     * a rule restricted to roles or groups the pool's creator has none of.
-     *
-     * @param requesterAuthorities the names of the creator's roles and groups
+     * <p>A rule restricted to a docker image is skipped - a pool's nodes are not launched for any one run - and so is a
+     * rule restricted to roles or groups: a pool is shared by whoever its filter admits, and a rule meant for some
+     * would reach all of them. An administrator can still give a pool such a configuration explicitly.
      */
-    public Optional<AMIConfiguration> launchConfigurationFor(final String regionCode, final String instanceType,
-                                                             final Set<String> requesterAuthorities) {
+    public Optional<AMIConfiguration> launchConfigurationFor(final String regionCode, final String instanceType) {
         final CloudRegionsConfiguration configuration =
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG);
         if (configuration == null || regionCode == null) {
@@ -84,16 +82,33 @@ public class RegionNetworksService {
                 .filter(region -> regionCode.equals(region.getName()))
                 .findFirst()
                 .flatMap(region -> ListUtils.emptyIfNull(region.getAmis()).stream()
-                        .filter(rule -> LINUX.equalsIgnoreCase(rule.getPlatform()))
-                        .filter(rule -> rule.getInstanceMask() != null
-                                && FilenameUtils.wildcardMatch(instanceType, rule.getInstanceMask()))
+                        .filter(rule -> LINUX.equals(rule.getPlatform()))
+                        .filter(rule -> matchesMask(instanceType, rule.getInstanceMask()))
                         .filter(rule -> CollectionUtils.isEmpty(rule.getDockerImages()))
-                        .filter(rule -> CollectionUtils.isEmpty(rule.getPermissions())
-                                || !Collections.disjoint(rule.getPermissions(), requesterAuthorities))
+                        .filter(rule -> CollectionUtils.isEmpty(rule.getPermissions()))
                         .findFirst())
                 .map(RegionNetworksService::copyForPool);
     }
 
+    /**
+     * The launch scripts match a rule's mask with {@code fnmatch}: {@code *}, {@code ?}, {@code [seq]} and
+     * {@code [!seq]} - which a glob matches the same way for names without a {@code /}, as instance types are.
+     */
+    static boolean matchesMask(final String instanceType, final String mask) {
+        if (instanceType == null || mask == null) {
+            return false;
+        }
+        try {
+            return FileSystems.getDefault().getPathMatcher("glob:" + mask).matches(Paths.get(instanceType));
+        } catch (IllegalArgumentException e) {
+            // An unparsable mask, or a name that is not a path - neither is a match.
+            return false;
+        }
+    }
+
+    /**
+     * Only the fields the launch scripts take from a rule: a rule has no subnet of its own.
+     */
     private static AMIConfiguration copyForPool(final AMIConfiguration rule) {
         final AMIConfiguration copy = new AMIConfiguration();
         copy.setAmi(rule.getAmi());
@@ -102,7 +117,6 @@ public class RegionNetworksService {
         copy.setEmbeddedScripts(rule.getEmbeddedScripts() == null ? null : new HashMap<>(rule.getEmbeddedScripts()));
         copy.setAdditionalSpec(rule.getAdditionalSpec() == null ? null : new HashMap<>(rule.getAdditionalSpec()));
         copy.setAvailabilityZone(rule.getAvailabilityZone());
-        copy.setSubnet(rule.getSubnet());
         return copy;
     }
 
