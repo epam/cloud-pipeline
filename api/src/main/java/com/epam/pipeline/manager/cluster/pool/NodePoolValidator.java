@@ -135,9 +135,7 @@ public class NodePoolValidator {
         Optional.ofNullable(vo.getDockerImages())
                 .ifPresent(images -> images.forEach(this::validatePoolImage));
 
-        validateInstanceImage(vo);
-        Optional.ofNullable(vo.getAmiConfiguration())
-                .ifPresent(configuration -> validateAmiConfiguration(vo, configuration));
+        validateInstanceImage(vo.getRegionId(), vo.getInstanceImage());
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
@@ -170,12 +168,6 @@ public class NodePoolValidator {
                         MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
         validateReservationSize(vo);
-        // The reservation's zone is chosen when it is submitted, from the zones the region can launch into, and its
-        // subnet follows from that - a zone asked for here could only conflict with it.
-        Optional.ofNullable(vo.getAmiConfiguration()).ifPresent(configuration -> Assert.isTrue(
-                StringUtils.isBlank(configuration.getAvailabilityZone())
-                        && StringUtils.isBlank(configuration.getSubnet()),
-                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_ZONE_NOT_SETTABLE)));
         validateReservationWindow(request);
         validateReservationInstance(vo, request);
     }
@@ -280,15 +272,10 @@ public class NodePoolValidator {
                         duration, MIN_RESERVATION_COMMITMENT_HOURS));
     }
 
-    @SuppressWarnings("deprecation")
-    private void validateInstanceImage(final NodePoolVO vo) {
-        // The image the nodes actually launch from: the configuration's, else the deprecated field.
-        final String effectiveImage = Optional.ofNullable(vo.getAmiConfiguration())
-                .map(AMIConfiguration::getAmi)
-                .filter(StringUtils::isNotBlank)
-                .orElse(vo.getInstanceImage());
-        final boolean isWindowsInstanceImage = Optional.ofNullable(effectiveImage)
-            .map(image -> cloudFacade.getInstanceImageDescription(vo.getRegionId(), image))
+    private void validateInstanceImage(final Long regionId, final String instanceImage) {
+        final boolean isWindowsInstanceImage = Optional.ofNullable(instanceImage)
+            .filter(StringUtils::isNotBlank)
+            .map(image -> cloudFacade.getInstanceImageDescription(regionId, image))
             .map(InstanceImage::getPlatform)
             .filter(WINDOWS::equalsIgnoreCase)
             .isPresent();
@@ -297,16 +284,21 @@ public class NodePoolValidator {
     }
 
     /**
-     * A pool's zone and subnet have to be ones its region's networks configure: the launch scripts only put nodes
-     * there, and a zone they would not use leaves the pool unable to launch at all. A region that configures no
-     * networks lets its nodes go to any zone, so there is nothing to check against.
+     * An administrator's launch configuration for a pool. Its image has to be one a pool may launch, and its zone and
+     * subnet ones its region's networks configure: the launch scripts only put nodes there, and a zone they would not
+     * use leaves the pool unable to launch at all. A region that configures no networks lets its nodes go to any
+     * zone, so there is nothing to check against.
      *
      * <p>The rule-selection fields ({@code platform}, {@code instance_mask}, {@code permissions}, {@code docker_image})
-     * are not checked: on a pool they are ignored. Only AWS regions are checked: elsewhere the {@code networks} are
-     * keyed by network, not by zone, and only the AWS launch applies a pool's zone and subnet.
+     * are not checked: on a pool they are ignored. Zones are only checked for AWS regions: elsewhere the
+     * {@code networks} are keyed by network, not by zone, and only the AWS launch applies a pool's zone and subnet.
      */
-    private void validateAmiConfiguration(final NodePoolVO vo, final AMIConfiguration configuration) {
-        final AbstractCloudRegion region = regionManager.load(vo.getRegionId());
+    public void validateAmiConfiguration(final Long regionId, final AMIConfiguration configuration) {
+        if (configuration == null) {
+            return;
+        }
+        validateInstanceImage(regionId, configuration.getAmi());
+        final AbstractCloudRegion region = regionManager.load(regionId);
         if (CloudProvider.AWS != region.getProvider()) {
             return;
         }

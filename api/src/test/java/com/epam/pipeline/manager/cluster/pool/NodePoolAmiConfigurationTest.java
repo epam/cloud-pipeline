@@ -49,8 +49,8 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 /**
- * A pool's own launch configuration: stored with the pool, kept through edits that do not carry it, and only
- * accepted where the region's networks would actually let its nodes launch.
+ * A pool's launch configuration: taken from the region's matching {@code amis} rule when the pool is created, left
+ * alone by every ordinary edit, and replaced only by an administrator - within what the region's networks allow.
  */
 @Transactional
 public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
@@ -66,10 +66,27 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final String SUBNET_UNKNOWN = "subnet-unknown";
     private static final String OWNER = "pool-owner";
     private static final String ADMIN = "ADMIN";
+    private static final String INSTANCE_TYPE = "m5.large";
     private static final String AMI = "ami-0123456789abcdef0";
+    private static final String GPU_AMI = "ami-gpu";
+    private static final String RESTRICTED_AMI = "ami-restricted";
     private static final String WINDOWS_AMI = "ami-windows";
-    private static final String NETWORKS = "{\"regions\": [{\"name\": \"" + REGION_CODE + "\", \"networks\": {\""
-            + ZONE_A + "\": \"" + SUBNET_A + "\", \"" + ZONE_B + "\": \"" + SUBNET_B + "\"}}]}";
+    private static final String INIT_SCRIPT = "/opt/api/scripts/init_multicloud.sh";
+    private static final String NETWORKS = "\"networks\": {\"" + ZONE_A + "\": \"" + SUBNET_A + "\", \"" + ZONE_B
+            + "\": \"" + SUBNET_B + "\"}";
+    /**
+     * In the order the launch scripts try them: a GPU-only rule, one restricted to a docker image, one restricted to a
+     * role the test user lacks, and then the one that applies.
+     */
+    private static final String AMIS = "\"amis\": ["
+            + "{\"platform\": \"linux\", \"instance_mask\": \"g*\", \"ami\": \"" + GPU_AMI + "\"},"
+            + "{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"" + RESTRICTED_AMI + "\","
+            + " \"docker_image\": [\"library/special\"]},"
+            + "{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"" + RESTRICTED_AMI + "\","
+            + " \"permissions\": [\"ROLE_SPECIAL\"]},"
+            + "{\"platform\": \"linux\", \"instance_mask\": \"m5.*\", \"ami\": \"" + AMI + "\", \"init_script\": \""
+            + INIT_SCRIPT + "\", \"fs_type\": \"ext4\", \"additional_spec\": {\"IamInstanceProfile\": \"profile\"},"
+            + " \"run_parameters\": {\"param\": \"value\"}}]";
 
     @Autowired
     private NodePoolManager poolManager;
@@ -95,52 +112,87 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
 
     @Before
     public void setUp() {
-        final AwsRegion region = new AwsRegion();
-        region.setId(REGION_ID);
-        region.setRegionCode(REGION_CODE);
-        when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
+        givenRegion(new AwsRegion());
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         when(cloudFacade.getInstanceImageDescription(any(), any(String.class)))
                 .thenAnswer(invocation -> WINDOWS_AMI.equals(invocation.getArguments()[1])
                         ? image(WINDOWS_AMI, "windows")
                         : image(AMI, "linux"));
-        setNetworks(NETWORKS);
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldStoreThePoolsConfigurationAndLaunchFromItsImage() {
-        final NodePool created = poolManager.create(pool(configuration(ZONE_A, SUBNET_A)));
-
-        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
-        assertThat(loaded.getAmiConfiguration()).isEqualTo(configuration(ZONE_A, SUBNET_A));
-        assertThat(loaded.toRunInstance().getNodeImage()).isEqualTo(AMI);
+        setRegion("\"name\": \"" + REGION_CODE + "\", " + NETWORKS + ", " + AMIS);
     }
 
     /**
-     * Editors and the autoscaler that know nothing of the configuration must not erase it.
+     * The pool starts from exactly the rule its nodes would have launched with, without the fields that only choose
+     * between rules - on a pool they mean nothing.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldKeepTheConfigurationThroughAnEditThatDoesNotCarryIt() {
-        final NodePool created = poolManager.create(pool(configuration(ZONE_A, SUBNET_A)));
+    public void shouldStartFromTheRegionsMatchingRule() {
+        final NodePool created = poolManager.create(pool());
 
-        poolManager.update(created.getId(), pool(null));
-
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
-                .isEqualTo(configuration(ZONE_A, SUBNET_A));
+        final AMIConfiguration configuration = configurationOf(created);
+        assertThat(configuration.getAmi()).isEqualTo(AMI);
+        assertThat(configuration.getInitScript()).isEqualTo(INIT_SCRIPT);
+        assertThat(configuration.getFsType()).isEqualTo("ext4");
+        assertThat(configuration.getAdditionalSpec()).containsEntry("IamInstanceProfile", "profile");
+        assertThat(configuration.getInstanceMask()).isNull();
+        assertThat(configuration.getPlatform()).isNull();
+        assertThat(configuration.getRunParameters()).isNull();
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).toRunInstance().getNodeImage())
+                .isEqualTo(AMI);
     }
 
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldReplaceTheConfigurationWithOneAnEditSends() {
-        final NodePool created = poolManager.create(pool(configuration(ZONE_A, SUBNET_A)));
+    @SuppressWarnings("deprecation")
+    public void shouldStillUseTheDeprecatedImageWhenOneIsGiven() {
+        final NodePoolVO vo = pool();
+        vo.setInstanceImage("ami-given");
 
-        poolManager.update(created.getId(), pool(configuration(ZONE_B, SUBNET_B)));
+        final AMIConfiguration configuration = configurationOf(poolManager.create(vo));
 
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
-                .isEqualTo(configuration(ZONE_B, SUBNET_B));
+        assertThat(configuration.getAmi()).isEqualTo("ami-given");
+        assertThat(configuration.getInitScript()).isEqualTo(INIT_SCRIPT);
+    }
+
+    /**
+     * Only the AWS launch applies a pool's configuration, so pools elsewhere keep launching from the region's rules.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldGiveNoConfigurationToAPoolOutsideAws() {
+        givenRegion(new AzureRegion());
+
+        assertThat(configurationOf(poolManager.create(pool()))).isNull();
+    }
+
+    /**
+     * Calculated once: an edit - a user's, or the autoscaler's resize - neither recalculates nor clears it.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldLeaveTheConfigurationAloneThroughAnEdit() {
+        final NodePool created = poolManager.create(pool());
+        final AMIConfiguration before = configurationOf(created);
+        setRegion("\"name\": \"" + REGION_CODE + "\", " + NETWORKS
+                + ", \"amis\": [{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"ami-newer\"}]");
+        final NodePoolVO edit = pool();
+        edit.setCount(2);
+
+        poolManager.update(created.getId(), edit);
+
+        assertThat(configurationOf(created)).isEqualTo(before);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldLetAnAdministratorReplaceTheConfiguration() {
+        final NodePool created = poolManager.create(pool());
+
+        poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_B, SUBNET_B));
+
+        assertThat(configurationOf(created)).isEqualTo(configuration(ZONE_B, SUBNET_B));
     }
 
     /**
@@ -150,7 +202,10 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseAZoneTheRegionDoesNotConfigure() {
-        assertThatThrownBy(() -> poolManager.create(pool(configuration(ZONE_UNCONFIGURED, null))))
+        final NodePool created = poolManager.create(pool());
+
+        assertThatThrownBy(() -> poolManager.updateAmiConfiguration(created.getId(),
+                configuration(ZONE_UNCONFIGURED, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(ZONE_UNCONFIGURED);
     }
@@ -162,41 +217,26 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseASubnetThatIsNotTheZonesOwn() {
-        assertThatThrownBy(() -> poolManager.create(pool(configuration(ZONE_A, SUBNET_B))))
+        final NodePool created = poolManager.create(pool());
+
+        assertThatThrownBy(() -> poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_A, SUBNET_B)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(SUBNET_B);
-        assertThatThrownBy(() -> poolManager.create(pool(configuration(null, SUBNET_UNKNOWN))))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(SUBNET_UNKNOWN);
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldNameTheSubnetWhenItIsNotAmongTheRegionsNetworks() {
-        final Throwable refusal = catchThrowable(() -> poolManager.create(pool(configuration(null, SUBNET_UNKNOWN))));
-
+        final Throwable refusal = catchThrowable(() ->
+                poolManager.updateAmiConfiguration(created.getId(), configuration(null, SUBNET_UNKNOWN)));
         assertThat(refusal).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(SUBNET_UNKNOWN);
         assertThat(refusal.getMessage()).doesNotContain("null");
     }
 
-    /**
-     * The autoscaler resizes a pool by sending all of it back. A configuration that has not changed must not be
-     * checked again - if the region's networks dropped its zone since, the pool would stop scaling altogether.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldAcceptAnUnchangedConfigurationAfterTheRegionsNetworksChanged() {
-        final NodePool created = poolManager.create(pool(configuration(ZONE_A, SUBNET_A)));
-        setNetworks("{\"regions\": [{\"name\": \"" + REGION_CODE + "\", \"networks\": {\"" + ZONE_B + "\": \""
-                + SUBNET_B + "\"}}]}");
-        final NodePoolVO resize = pool(configuration(ZONE_A, SUBNET_A));
-        resize.setCount(2);
+    public void shouldAcceptAnyZoneWhereTheRegionConfiguresNoNetworks() {
+        setRegion("\"name\": \"" + REGION_CODE + "\"");
+        final NodePool created = poolManager.create(pool());
 
-        poolManager.update(created.getId(), resize);
+        poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_UNCONFIGURED, "subnet-any"));
 
-        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
-        assertThat(loaded.getCount()).isEqualTo(2);
-        assertThat(loaded.getAmiConfiguration()).isEqualTo(configuration(ZONE_A, SUBNET_A));
+        assertThat(configurationOf(created).getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
     }
 
     /**
@@ -205,49 +245,46 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldNotCheckTheZoneOfAPoolOutsideAws() {
-        final AzureRegion region = new AzureRegion();
-        region.setId(REGION_ID);
-        region.setRegionCode(REGION_CODE);
-        when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
+        givenRegion(new AzureRegion());
+        final NodePool created = poolManager.create(pool());
 
-        final NodePool created = poolManager.create(pool(configuration(ZONE_UNCONFIGURED, null)));
+        poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_UNCONFIGURED, null));
 
-        assertThat(created.getId()).isNotNull();
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldAcceptAnyZoneWhereTheRegionConfiguresNoNetworks() {
-        setNetworks("{\"regions\": [{\"name\": \"" + REGION_CODE + "\"}]}");
-
-        final NodePool created = poolManager.create(pool(configuration(ZONE_UNCONFIGURED, "subnet-any")));
-
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration()
-                .getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
+        assertThat(configurationOf(created).getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
     }
 
     /**
-     * Pools launch Linux nodes only - checked on the image the nodes would actually use, which is now the
-     * configuration's.
+     * Pools launch Linux nodes only - checked on the image the configuration names.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldRefuseAWindowsImageInTheConfiguration() {
+    public void shouldRefuseAWindowsImage() {
+        final NodePool created = poolManager.create(pool());
         final AMIConfiguration configuration = configuration(ZONE_A, SUBNET_A);
         configuration.setAmi(WINDOWS_AMI);
 
-        assertThatThrownBy(() -> poolManager.create(pool(configuration)))
+        assertThatThrownBy(() -> poolManager.updateAmiConfiguration(created.getId(), configuration))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private AMIConfiguration configurationOf(final NodePool pool) {
+        return poolDao.find(pool.getId()).orElseThrow(AssertionError::new).getAmiConfiguration();
+    }
+
+    private void givenRegion(final AbstractCloudRegion region) {
+        region.setId(REGION_ID);
+        region.setRegionCode(REGION_CODE);
+        when(regionManager.load(any())).thenReturn(region);
+    }
+
+    private void setRegion(final String region) {
+        final Preference preference = SystemPreferences.CLUSTER_NETWORKS_CONFIG.toPreference();
+        preference.setValue("{\"regions\": [{" + region + "}]}");
+        preferenceManager.update(Collections.singletonList(preference));
     }
 
     private static InstanceImage image(final String id, final String platform) {
         return InstanceImage.builder().imageId(id).name(id).platform(platform).build();
-    }
-
-    private void setNetworks(final String json) {
-        final Preference preference = SystemPreferences.CLUSTER_NETWORKS_CONFIG.toPreference();
-        preference.setValue(json);
-        preferenceManager.update(Collections.singletonList(preference));
     }
 
     private static AMIConfiguration configuration(final String zone, final String subnet) {
@@ -258,15 +295,14 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         return configuration;
     }
 
-    private static NodePoolVO pool(final AMIConfiguration configuration) {
+    private static NodePoolVO pool() {
         final NodePoolVO vo = new NodePoolVO();
         vo.setName("configured pool");
         vo.setRegionId(REGION_ID);
-        vo.setInstanceType("m5.large");
+        vo.setInstanceType(INSTANCE_TYPE);
         vo.setInstanceDisk(INSTANCE_DISK);
         vo.setPriceType(PriceType.ON_DEMAND);
         vo.setCount(1);
-        vo.setAmiConfiguration(configuration);
         return vo;
     }
 }

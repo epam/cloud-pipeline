@@ -279,30 +279,6 @@ public class CapacityReservationService {
         return withinReservation ? vo.getCount() : existing.getCount();
     }
 
-    /**
-     * Carries the reservation's part of the pool's launch configuration over an edit that replaces the configuration:
-     * the reservation target in {@code additional_spec}, the zone and the subnet belong to the reservation, whatever
-     * the edit sent for them. Everything else in the configuration is the edit's.
-     */
-    public void keepReservationLaunchSettings(final NodePool existing, final NodePool updated) {
-        final AMIConfiguration requested = updated.getAmiConfiguration();
-        final CapacityReservation reservation = findByNodePoolId(existing.getId()).orElse(null);
-        if (requested == null || reservation == null) {
-            return;
-        }
-        final Set<String> reservationKeys = launchSpecificationOf(reservation).keySet();
-        final AMIConfiguration current = Optional.ofNullable(existing.getAmiConfiguration())
-                .orElseGet(AMIConfiguration::new);
-        final Map<String, Object> spec = new HashMap<>(MapUtils.emptyIfNull(requested.getAdditionalSpec()));
-        reservationKeys.forEach(spec::remove);
-        MapUtils.emptyIfNull(current.getAdditionalSpec()).entrySet().stream()
-                .filter(entry -> reservationKeys.contains(entry.getKey()))
-                .forEach(entry -> spec.put(entry.getKey(), entry.getValue()));
-        requested.setAdditionalSpec(spec.isEmpty() ? null : spec);
-        requested.setAvailabilityZone(current.getAvailabilityZone());
-        requested.setSubnet(current.getSubnet());
-    }
-
     private Map<String, Object> launchSpecificationOf(final CapacityReservation reservation) {
         return MapUtils.emptyIfNull(cloudFacade.launchSpecification(reservation));
     }

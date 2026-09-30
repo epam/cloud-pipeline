@@ -39,6 +39,7 @@ public interface NodePoolMapper {
     @Mapping(target = "startDate", ignore = true)
     @Mapping(target = "endDate", ignore = true)
     @Mapping(target = "launchConfig", ignore = true)
+    @Mapping(target = "amiConfiguration", ignore = true)
     NodePool toEntity(NodePoolVO vo);
 
     @Mapping(target = "scheduleId", ignore = true)

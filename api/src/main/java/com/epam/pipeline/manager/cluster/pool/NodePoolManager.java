@@ -22,20 +22,27 @@ import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.notification.NotificationType;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
+import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,9 +51,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -79,6 +88,12 @@ public class NodePoolManager implements SecuredEntityManager {
 
     @Autowired
     private NodePoolLaunchConfigBuilder launchConfigBuilder;
+
+    @Autowired
+    private CloudRegionManager regionManager;
+
+    @Autowired
+    private RegionNetworksService regionNetworks;
 
     public List<NodePool> getActivePools() {
         final LocalDateTime timestamp = DateUtils.nowUTC();
@@ -198,6 +213,8 @@ public class NodePoolManager implements SecuredEntityManager {
         // reintroduce, for every new pool, exactly the state this change's migration backfills away.
         nodePool.setOwner(authManager.getAuthorizedUser());
 
+        nodePool.setAmiConfiguration(launchConfigurationFor(nodePool));
+
         final CapacityReservationRequest request = vo.getCapacityReservationRequest();
         if (request != null) {
             nodePool.setCapacityReservation(true);
@@ -237,7 +254,6 @@ public class NodePoolManager implements SecuredEntityManager {
     public NodePool update(final Long id, final NodePoolVO vo) {
         final NodePool existing = loadForUpdate(id);
         vo.setId(id);
-        skipUnchangedLaunchConfiguration(existing, vo);
         validator.validate(vo);
         reservationService.onPoolUpdate(existing, vo);
 
@@ -251,14 +267,10 @@ public class NodePoolManager implements SecuredEntityManager {
             updated.setCount(reservationService.countAfterUpdate(existing, vo));
             // Added by activation, and what the pool's pods select on; the request knows nothing of it.
             reservationService.keepReservationLabel(existing, updated);
-            // Where and how the nodes consume the reservation is the reservation's, whatever the edit sent.
-            reservationService.keepReservationLaunchSettings(existing, updated);
         }
+        // The launch configuration is not the caller's to edit: it is written by its own statement, so this one
+        // leaves it as it is.
         poolDao.update(updated);
-        // Like the launch config: replaced only when the caller sent one.
-        if (vo.getAmiConfiguration() != null) {
-            poolDao.updateAmiConfiguration(updated);
-        }
 
         // Replaced only when the caller actually sent one, so an edit that says nothing about the launch config
         // leaves it alone rather than clearing it.
@@ -269,21 +281,48 @@ public class NodePoolManager implements SecuredEntityManager {
     }
 
     /**
-     * A launch configuration sent back unchanged - the autoscaler's resize, an editor echoing the pool - is not an
-     * edit of it. Dropped from the request, it is neither written again nor checked against networks that may have
-     * changed since it was saved; a pool whose zone was later dropped from the region's networks would otherwise stop
-     * scaling at all. On a reservation-backed pool, the zone and subnet an edit sends are the reservation's to set, so
-     * they are not checked either - they are replaced by the reservation's own.
+     * Replaces how a pool's nodes are launched. The configuration can reach any file on the API host and the cloud's
+     * launch request as a whole, so this is for administrators only - see {@code NodePoolApiService}. It replaces the
+     * configuration whole, a live capacity reservation's target, zone and subnet included.
      */
-    private void skipUnchangedLaunchConfiguration(final NodePool existing, final NodePoolVO vo) {
-        if (Objects.equals(vo.getAmiConfiguration(), existing.getAmiConfiguration())) {
-            vo.setAmiConfiguration(null);
-            return;
+    @Transactional
+    public NodePool updateAmiConfiguration(final Long id, final AMIConfiguration configuration) {
+        final NodePool pool = loadForUpdate(id);
+        validator.validateAmiConfiguration(pool.getRegionId(), configuration);
+        pool.setAmiConfiguration(configuration);
+        poolDao.updateAmiConfiguration(pool);
+        return load(id);
+    }
+
+    /**
+     * The launch configuration a new pool starts with: the region's {@code amis} rule its nodes match, copied, with
+     * the deprecated {@code instanceImage} as its image when set. Calculated once - a later change of the region's
+     * rules does not reach an existing pool. Only for AWS regions, the only ones whose launch applies it.
+     */
+    @SuppressWarnings("deprecation")
+    private static Set<String> rolesAndGroupsOf(final PipelineUser user) {
+        final Set<String> authorities = new HashSet<>();
+        ListUtils.emptyIfNull(user.getRoles()).forEach(role -> authorities.add(role.getName()));
+        authorities.addAll(ListUtils.emptyIfNull(user.getGroups()));
+        return authorities;
+    }
+
+    private AMIConfiguration launchConfigurationFor(final NodePool pool) {
+        final AbstractCloudRegion region = regionManager.load(pool.getRegionId());
+        if (CloudProvider.AWS != region.getProvider()) {
+            return null;
         }
-        if (existing.isCapacityReservation() && vo.getAmiConfiguration() != null) {
-            vo.getAmiConfiguration().setAvailabilityZone(null);
-            vo.getAmiConfiguration().setSubnet(null);
+        final Set<String> authorities = Optional.ofNullable(authManager.getCurrentUser())
+                .map(NodePoolManager::rolesAndGroupsOf)
+                .orElseGet(Collections::emptySet);
+        final Optional<AMIConfiguration> configuration =
+                regionNetworks.launchConfigurationFor(region.getRegionCode(), pool.getInstanceType(), authorities);
+        if (StringUtils.isBlank(pool.getInstanceImage())) {
+            return configuration.orElse(null);
         }
+        final AMIConfiguration withImage = configuration.orElseGet(AMIConfiguration::new);
+        withImage.setAmi(pool.getInstanceImage());
+        return withImage;
     }
 
     @Override

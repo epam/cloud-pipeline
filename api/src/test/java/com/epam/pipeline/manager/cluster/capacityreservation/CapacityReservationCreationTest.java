@@ -95,7 +95,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     private static final String OWN_SPEC_KEY = "IamInstanceProfile";
     private static final String OWN_INIT_SCRIPT = "/opt/api/scripts/init_custom.sh";
-    private static final String EDITED_INIT_SCRIPT = "/opt/api/scripts/init_edited.sh";
     /** What a g5.48xlarge has. */
     private static final int INSTANCE_VCPUS = 192;
     private static final int SMALL_INSTANCE_VCPUS = 8;
@@ -764,7 +763,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldWriteTheReservationIntoThePoolsLaunchConfigurationOnActivation() {
         setNetworks();
-        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        final NodePool created = createWithOwnLaunchSettings();
         final CapacityReservation reservation = activeReservationOf(created);
 
         reservationService.activatePool(reservation);
@@ -785,7 +784,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRemoveTheReservationFromThePoolsLaunchConfigurationWhenItEnds() {
         setNetworks();
-        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        final NodePool created = createWithOwnLaunchSettings();
         final CapacityReservation reservation = activeReservationOf(created);
         reservationService.activatePool(reservation);
 
@@ -800,63 +799,25 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
-     * An editor may send the configuration back with anything in those fields - or nothing. They are the
-     * reservation's either way.
+     * An edit is not a way to change how the nodes launch: it leaves the configuration - the reservation's part and
+     * the pool's own - exactly as it was.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldKeepTheReservationsLaunchSettingsThroughAnEdit() {
+    public void shouldLeaveTheLaunchConfigurationAloneThroughAnEdit() {
         setNetworks();
-        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
+        final NodePool created = createWithOwnLaunchSettings();
         reservationService.activatePool(activeReservationOf(created));
-        final NodePoolVO edit = withOwnLaunchSettings(editOf());
-        edit.getAmiConfiguration().setInitScript(EDITED_INIT_SCRIPT);
-
-        poolManager.update(created.getId(), edit);
-
-        final AMIConfiguration configuration = launchConfigurationOf(created);
-        assertThat(configuration.getAdditionalSpec()).containsEntry(RESERVATION_TARGET, CLOUD_RESERVATION_ID);
-        assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
-        assertThat(configuration.getSubnet()).isEqualTo(SUBNET);
-        assertThat(configuration.getInitScript()).isEqualTo(EDITED_INIT_SCRIPT);
-    }
-
-    /**
-     * The zone and subnet an edit sends back are the reservation's, so they are not checked against the region's
-     * networks - which may have changed since the reservation was placed.
-     */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldAcceptAnEditOfAReservationPoolAfterTheRegionsNetworksChanged() {
-        setNetworks();
-        final NodePool created = poolManager.create(withOwnLaunchSettings(reservationPoolVO()));
-        reservationService.activatePool(activeReservationOf(created));
+        final AMIConfiguration before = launchConfigurationOf(created);
         final NodePoolVO edit = editOf();
-        edit.setAmiConfiguration(launchConfigurationOf(created));
-        edit.getAmiConfiguration().setInitScript(EDITED_INIT_SCRIPT);
-        final Preference preference = SystemPreferences.CLUSTER_NETWORKS_CONFIG.toPreference();
-        preference.setValue("{\"regions\": [{\"name\": \"" + REGION_CODE + "\", \"networks\": {\"us-east-1a\": "
-                + "\"subnet-other\"}}]}");
-        preferenceManager.update(Collections.singletonList(preference));
+        edit.setName(RENAMED);
 
         poolManager.update(created.getId(), edit);
 
         final AMIConfiguration configuration = launchConfigurationOf(created);
-        assertThat(configuration.getInitScript()).isEqualTo(EDITED_INIT_SCRIPT);
-        assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
-        assertThat(configuration.getSubnet()).isEqualTo(SUBNET);
-    }
-
-    /**
-     * The reservation's zone is chosen when it is submitted, so one asked for with the pool could only conflict.
-     */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldRefuseAZoneAskedForWithAReservationPool() {
-        final NodePoolVO vo = withOwnLaunchSettings(reservationPoolVO());
-        vo.getAmiConfiguration().setAvailabilityZone(ZONE);
-
-        assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(configuration).isEqualTo(before);
+        assertThat(configuration.getAdditionalSpec()).containsEntry(RESERVATION_TARGET, CLOUD_RESERVATION_ID);
+        assertThat(configuration.getInitScript()).isEqualTo(OWN_INIT_SCRIPT);
     }
 
     /**
@@ -873,12 +834,16 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    private static NodePoolVO withOwnLaunchSettings(final NodePoolVO vo) {
+    /**
+     * A reservation pool an administrator gave launch settings of its own - which the reservation must add to, not
+     * replace.
+     */
+    private NodePool createWithOwnLaunchSettings() {
+        final NodePool created = poolManager.create(reservationPoolVO());
         final AMIConfiguration configuration = new AMIConfiguration();
         configuration.setInitScript(OWN_INIT_SCRIPT);
         configuration.setAdditionalSpec(new HashMap<>(Collections.singletonMap(OWN_SPEC_KEY, "profile")));
-        vo.setAmiConfiguration(configuration);
-        return vo;
+        return poolManager.updateAmiConfiguration(created.getId(), configuration);
     }
 
     private AMIConfiguration launchConfigurationOf(final NodePool pool) {

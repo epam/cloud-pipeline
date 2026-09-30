@@ -16,18 +16,23 @@
 
 package com.epam.pipeline.manager.cluster.network;
 
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.NetworkConfiguration;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The zones and subnets a region's nodes may be launched into, as the region's {@code networks} in
@@ -40,6 +45,11 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class RegionNetworksService {
 
+    /**
+     * Node pools launch Linux nodes only.
+     */
+    private static final String LINUX = "linux";
+
     private final PreferenceManager preferenceManager;
 
     /**
@@ -51,6 +61,49 @@ public class RegionNetworksService {
                 .map(NetworkConfiguration::getAllowedNetworks)
                 .map(Collections::unmodifiableMap)
                 .orElseGet(Collections::emptyMap);
+    }
+
+    /**
+     * The launch configuration a new pool of this instance type starts from: a copy of the first of the region's
+     * {@code amis} rules that the launch scripts would match for its nodes, with the fields that only choose between
+     * rules left out. Empty when no rule matches.
+     *
+     * <p>A rule restricted to a docker image is skipped - a pool's nodes are not launched for any one run - and so is
+     * a rule restricted to roles or groups the pool's creator has none of.
+     *
+     * @param requesterAuthorities the names of the creator's roles and groups
+     */
+    public Optional<AMIConfiguration> launchConfigurationFor(final String regionCode, final String instanceType,
+                                                             final Set<String> requesterAuthorities) {
+        final CloudRegionsConfiguration configuration =
+                preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG);
+        if (configuration == null || regionCode == null) {
+            return Optional.empty();
+        }
+        return ListUtils.emptyIfNull(configuration.getRegions()).stream()
+                .filter(region -> regionCode.equals(region.getName()))
+                .findFirst()
+                .flatMap(region -> ListUtils.emptyIfNull(region.getAmis()).stream()
+                        .filter(rule -> LINUX.equalsIgnoreCase(rule.getPlatform()))
+                        .filter(rule -> rule.getInstanceMask() != null
+                                && FilenameUtils.wildcardMatch(instanceType, rule.getInstanceMask()))
+                        .filter(rule -> CollectionUtils.isEmpty(rule.getDockerImages()))
+                        .filter(rule -> CollectionUtils.isEmpty(rule.getPermissions())
+                                || !Collections.disjoint(rule.getPermissions(), requesterAuthorities))
+                        .findFirst())
+                .map(RegionNetworksService::copyForPool);
+    }
+
+    private static AMIConfiguration copyForPool(final AMIConfiguration rule) {
+        final AMIConfiguration copy = new AMIConfiguration();
+        copy.setAmi(rule.getAmi());
+        copy.setInitScript(rule.getInitScript());
+        copy.setFsType(rule.getFsType());
+        copy.setEmbeddedScripts(rule.getEmbeddedScripts() == null ? null : new HashMap<>(rule.getEmbeddedScripts()));
+        copy.setAdditionalSpec(rule.getAdditionalSpec() == null ? null : new HashMap<>(rule.getAdditionalSpec()));
+        copy.setAvailabilityZone(rule.getAvailabilityZone());
+        copy.setSubnet(rule.getSubnet());
+        return copy;
     }
 
     private Optional<NetworkConfiguration> find(final String regionCode) {
