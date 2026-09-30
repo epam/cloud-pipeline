@@ -251,6 +251,10 @@ public class NodePoolManager implements SecuredEntityManager {
             reservationService.keepReservationLabel(existing, updated);
         }
         poolDao.update(updated);
+        // Like the launch config: replaced only when the caller sent one.
+        if (vo.getAmiConfiguration() != null) {
+            poolDao.updateAmiConfiguration(updated);
+        }
 
         // Replaced only when the caller actually sent one, so an edit that says nothing about the launch config
         // leaves it alone rather than clearing it.

@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.dao.cluster.pool;
 
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
@@ -166,6 +167,43 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.getName()).isEqualTo(originalName);
     }
 
+    /**
+     * Every field the launch scripts read survives the round trip, in the names they read it by.
+     */
+    @Test
+    public void shouldRoundTripTheAmiConfiguration() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setAmiConfiguration(amiConfiguration());
+
+        final NodePool created = poolDao.create(pool);
+
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
+                .isEqualTo(amiConfiguration());
+    }
+
+    /**
+     * The configuration has its own statement, so an ordinary update - which never carries it - leaves it alone.
+     */
+    @Test
+    public void shouldWriteTheAmiConfigurationOnlyThroughItsOwnStatement() {
+        final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
+        pool.setAmiConfiguration(amiConfiguration());
+        final NodePool created = poolDao.create(pool);
+
+        created.setAmiConfiguration(null);
+        created.setName(NEW_VALUE);
+        poolDao.update(created);
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
+                .isEqualTo(amiConfiguration());
+
+        final AMIConfiguration replaced = amiConfiguration();
+        replaced.setSubnet("subnet-replaced");
+        created.setAmiConfiguration(replaced);
+        poolDao.updateAmiConfiguration(created);
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
+                .isEqualTo(replaced);
+    }
+
     @Test
     public void shouldRoundTripLaunchConfigAsJson() {
         final NodePoolLaunchConfig config = new NodePoolLaunchConfig();
@@ -260,6 +298,19 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
 
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getOwner())
                 .isEqualTo(NEW_VALUE);
+    }
+
+    private static AMIConfiguration amiConfiguration() {
+        final AMIConfiguration configuration = new AMIConfiguration();
+        configuration.setAmi("ami-0123456789abcdef0");
+        configuration.setInitScript("/opt/api/scripts/init_multicloud.sh");
+        configuration.setFsType("ext4");
+        configuration.setEmbeddedScripts(Collections.singletonMap("fsautoscale", "/opt/api/scripts/fsautoscale.sh"));
+        configuration.setAdditionalSpec(Collections.singletonMap("IamInstanceProfile",
+                Collections.singletonMap("Arn", "arn:aws:iam::123456789012:instance-profile/node")));
+        configuration.setAvailabilityZone("eu-central-1b");
+        configuration.setSubnet("subnet-in-zone");
+        return configuration;
     }
 
     private void findAndAssertPool(final NodePool expected) {

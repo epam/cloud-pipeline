@@ -819,6 +819,8 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
     public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
         "error.node.pool.win.instance.not.allowed";
+    public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
+    public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";

@@ -19,6 +19,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
@@ -29,6 +30,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -48,6 +50,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -92,6 +95,7 @@ public class NodePoolValidator {
     private final ToolManager toolManager;
     private final CloudFacade cloudFacade;
     private final PreferenceManager preferenceManager;
+    private final RegionNetworksService regionNetworks;
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -124,6 +128,8 @@ public class NodePoolValidator {
                 .ifPresent(images -> images.forEach(this::validatePoolImage));
 
         validateInstanceImage(vo);
+        Optional.ofNullable(vo.getAmiConfiguration())
+                .ifPresent(configuration -> validateAmiConfiguration(vo, configuration));
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
@@ -245,14 +251,57 @@ public class NodePoolValidator {
                         duration, MIN_RESERVATION_COMMITMENT_HOURS));
     }
 
+    @SuppressWarnings("deprecation")
     private void validateInstanceImage(final NodePoolVO vo) {
-        final boolean isWindowsInstanceImage = Optional.ofNullable(vo.getInstanceImage())
+        // The image the nodes actually launch from: the configuration's, else the deprecated field.
+        final String effectiveImage = Optional.ofNullable(vo.getAmiConfiguration())
+                .map(AMIConfiguration::getAmi)
+                .filter(StringUtils::isNotBlank)
+                .orElse(vo.getInstanceImage());
+        final boolean isWindowsInstanceImage = Optional.ofNullable(effectiveImage)
             .map(image -> cloudFacade.getInstanceImageDescription(vo.getRegionId(), image))
             .map(InstanceImage::getPlatform)
             .filter(WINDOWS::equalsIgnoreCase)
             .isPresent();
         Assert.isTrue(!isWindowsInstanceImage,
                       messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED));
+    }
+
+    /**
+     * A pool's zone and subnet have to be ones its region's networks configure: the launch scripts only put nodes
+     * there, and a zone they would not use leaves the pool unable to launch at all. A region that configures no
+     * networks lets its nodes go to any zone, so there is nothing to check against.
+     *
+     * <p>The rule-selection fields ({@code platform}, {@code instance_mask}, {@code permissions}, {@code docker_image})
+     * are not checked: on a pool they are ignored.
+     */
+    private void validateAmiConfiguration(final NodePoolVO vo, final AMIConfiguration configuration) {
+        final String regionCode = regionManager.load(vo.getRegionId()).getRegionCode();
+        final Map<String, String> networks = regionNetworks.allowedNetworks(regionCode);
+        if (networks.isEmpty()) {
+            return;
+        }
+        final String zone = configuration.getAvailabilityZone();
+        if (StringUtils.isNotBlank(zone)) {
+            Assert.isTrue(networks.containsKey(zone),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_ZONE_NOT_CONFIGURED,
+                            zone, regionCode, networks.keySet()));
+        }
+        final String subnet = configuration.getSubnet();
+        if (StringUtils.isNotBlank(subnet)) {
+            final String subnetZone = StringUtils.isNotBlank(zone) ? zone : zoneOf(networks, subnet);
+            Assert.isTrue(subnet.equals(networks.get(subnetZone)),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED,
+                            subnet, regionCode, subnetZone, networks.get(subnetZone)));
+        }
+    }
+
+    private static String zoneOf(final Map<String, String> networks, final String subnet) {
+        return networks.entrySet().stream()
+                .filter(network -> subnet.equals(network.getValue()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
     }
 
     private void validatePoolImage(final String image) {

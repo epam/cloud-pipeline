@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.controller.vo.cluster.pool;
 
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
@@ -36,6 +37,10 @@ public class NodePoolVO {
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
+    /**
+     * @deprecated set {@link #amiConfiguration}'s {@code ami} instead; still honoured when that is not set.
+     */
+    @Deprecated
     private String instanceImage;
     private int count;
     private Long scheduleId;
@@ -54,6 +59,10 @@ public class NodePoolVO {
      * Accepted on update as well as on creation.
      */
     private NodePoolLaunchConfig launchConfig;
+    /**
+     * Replaces the pool's configuration when sent; an update without it leaves the configuration as it is.
+     */
+    private AMIConfiguration amiConfiguration;
 
     /**
      * Present when the caller wants capacity reserved for this pool. Absent for an ordinary pool, which is
