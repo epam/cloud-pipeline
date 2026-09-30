@@ -46,7 +46,8 @@
                         capacity_reservation,
                         start_date,
                         end_date,
-                        launch_config
+                        launch_config,
+                        ami_configuration
                         )
                     VALUES (
                         :POOL_CREATED_DATE,
@@ -72,7 +73,8 @@
                         :POOL_CAPACITY_RESERVATION,
                         :POOL_START_DATE,
                         :POOL_END_DATE,
-                        :POOL_LAUNCH_CONFIG)
+                        :POOL_LAUNCH_CONFIG,
+                        :POOL_AMI_CONFIGURATION)
                 ]]>
             </value>
         </constructor-arg>
@@ -141,6 +143,7 @@
                         n.start_date as POOL_START_DATE,
                         n.end_date as POOL_END_DATE,
                         n.launch_config as POOL_LAUNCH_CONFIG,
+                        n.ami_configuration as POOL_AMI_CONFIGURATION,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
                         e.from_day_of_week,
@@ -187,6 +190,7 @@
                         n.start_date as POOL_START_DATE,
                         n.end_date as POOL_END_DATE,
                         n.launch_config as POOL_LAUNCH_CONFIG,
+                        n.ami_configuration as POOL_AMI_CONFIGURATION,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
                         e.from_day_of_week,
@@ -222,6 +226,17 @@
                 <![CDATA[
                     UPDATE pipeline.node_pool SET
                         launch_config = :POOL_LAUNCH_CONFIG
+                    WHERE
+                        id = :POOL_ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateNodePoolAmiConfigurationQuery-->
+                <![CDATA[
+                    UPDATE pipeline.node_pool SET
+                        ami_configuration = :POOL_AMI_CONFIGURATION
                     WHERE
                         id = :POOL_ID
                 ]]>
@@ -273,6 +288,7 @@
                         n.start_date as POOL_START_DATE,
                         n.end_date as POOL_END_DATE,
                         n.launch_config as POOL_LAUNCH_CONFIG,
+                        n.ami_configuration as POOL_AMI_CONFIGURATION,
                         s.name as SCHEDULE_NAME,
                         s.created_date as SCHEDULE_CREATED_DATE,
                         e.from_day_of_week,

@@ -16,6 +16,7 @@
 package com.epam.pipeline.entity.cluster.pool;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -58,6 +59,11 @@ public class NodePool extends AbstractSecuredEntity {
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
+    /**
+     * @deprecated set {@link #amiConfiguration}'s {@code ami} instead. Still honoured when that is not set - see
+     *             {@link #resolveInstanceImage()}.
+     */
+    @Deprecated
     private String instanceImage;
     private int count;
     private NodeSchedule schedule;
@@ -93,6 +99,13 @@ public class NodePool extends AbstractSecuredEntity {
      * Whether this pool is backed by a capacity reservation.
      */
     private boolean capacityReservation;
+
+    /**
+     * How this pool's nodes are launched, over whichever of the region's {@code amis} rules matches them: every field
+     * set here wins, and {@code additional_spec} is merged key by key. Absent for most pools, whose nodes launch
+     * exactly as the region's rules say. A capacity reservation writes its target, zone and subnet into it.
+     */
+    private AMIConfiguration amiConfiguration;
 
     /**
      * How many of this pool's nodes are currently occupied. Populated on read from the cluster when the
@@ -140,6 +153,18 @@ public class NodePool extends AbstractSecuredEntity {
         return runningInstance;
     }
 
+    /**
+     * The image this pool's nodes launch from: {@link #amiConfiguration}'s {@code ami} when set, else the deprecated
+     * {@link #instanceImage}. Null leaves the choice to the region's {@code amis} rules.
+     */
+    @SuppressWarnings("deprecation")
+    public String resolveInstanceImage() {
+        return Optional.ofNullable(amiConfiguration)
+                .map(AMIConfiguration::getAmi)
+                .filter(ami -> !ami.trim().isEmpty())
+                .orElse(instanceImage);
+    }
+
     public RunInstance toRunInstance() {
         final RunInstance runInstance = new RunInstance();
         runInstance.setNodeType(instanceType);
@@ -147,7 +172,7 @@ public class NodePool extends AbstractSecuredEntity {
         runInstance.setNodeDisk(instanceDisk);
         runInstance.setEffectiveNodeDisk(instanceDisk);
         runInstance.setSpot(PriceType.SPOT.equals(priceType));
-        runInstance.setNodeImage(instanceImage);
+        runInstance.setNodeImage(resolveInstanceImage());
         runInstance.setPrePulledDockerImages(dockerImages);
         //Only linux is supported for Node pools
         runInstance.setNodePlatform("linux");

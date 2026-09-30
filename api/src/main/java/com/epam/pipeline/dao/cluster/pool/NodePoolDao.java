@@ -17,6 +17,7 @@ package com.epam.pipeline.dao.cluster.pool;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao.NodeScheduleParameters;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
@@ -66,6 +67,7 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     private final String loadNodePoolByIdQuery;
     private final String updateNodePoolOwnerQuery;
     private final String updateNodePoolLaunchConfigQuery;
+    private final String updateNodePoolAmiConfigurationQuery;
     private final String updateNodePoolReservationStateQuery;
     private final String loadNodePoolByIdForUpdateQuery;
 
@@ -108,6 +110,17 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     public NodePool updateLaunchConfig(final NodePool pool) {
         getNamedParameterJdbcTemplate()
                 .update(updateNodePoolLaunchConfigQuery, NodePoolParameters.getParameters(pool));
+        return pool;
+    }
+
+    /**
+     * Not writable through {@link #update(NodePool)} either, for the launch config's reason: an update that does not
+     * carry it must leave it alone.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public NodePool updateAmiConfiguration(final NodePool pool) {
+        getNamedParameterJdbcTemplate()
+                .update(updateNodePoolAmiConfigurationQuery, NodePoolParameters.getParameters(pool));
         return pool;
     }
 
@@ -175,7 +188,8 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         POOL_CAPACITY_RESERVATION,
         POOL_START_DATE,
         POOL_END_DATE,
-        POOL_LAUNCH_CONFIG;
+        POOL_LAUNCH_CONFIG,
+        POOL_AMI_CONFIGURATION;
 
         public static final String DOCKER_IMAGE_DELIMITER = ",";
 
@@ -222,6 +236,10 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     Optional.ofNullable(pool.getEndDate()).map(Timestamp::valueOf).orElse(null));
             params.addValue(POOL_LAUNCH_CONFIG.name(),
                     Optional.ofNullable(pool.getLaunchConfig())
+                            .map(JsonMapper::convertDataToJsonStringForQuery)
+                            .orElse(null));
+            params.addValue(POOL_AMI_CONFIGURATION.name(),
+                    Optional.ofNullable(pool.getAmiConfiguration())
                             .map(JsonMapper::convertDataToJsonStringForQuery)
                             .orElse(null));
             return params;
@@ -295,12 +313,25 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     .filter(StringUtils::isNotBlank)
                     .map(NodePoolParameters::parseLaunchConfig)
                     .ifPresent(pool::setLaunchConfig);
+            Optional.ofNullable(rs.getString(POOL_AMI_CONFIGURATION.name()))
+                    .filter(StringUtils::isNotBlank)
+                    .map(NodePoolParameters::parseAmiConfiguration)
+                    .ifPresent(pool::setAmiConfiguration);
             return pool;
         }
 
         private static NodePoolLaunchConfig parseLaunchConfig(final String launchConfig) {
             try {
                 return JsonMapper.parseData(launchConfig, new TypeReference<NodePoolLaunchConfig>() {});
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage(), e);
+                return null;
+            }
+        }
+
+        private static AMIConfiguration parseAmiConfiguration(final String amiConfiguration) {
+            try {
+                return JsonMapper.parseData(amiConfiguration, new TypeReference<AMIConfiguration>() {});
             } catch (IllegalArgumentException e) {
                 log.error(e.getMessage(), e);
                 return null;
