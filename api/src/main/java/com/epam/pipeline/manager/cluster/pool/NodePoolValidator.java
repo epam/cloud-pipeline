@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
@@ -79,6 +80,11 @@ public class NodePoolValidator {
     private static final int MIN_RESERVATION_LEAD_DAYS = AwsCapacityReservationService.MINIMUM_LEAD_DAYS;
     private static final int MAX_RESERVATION_LEAD_DAYS = 120;
     private static final int MIN_RESERVATION_COMMITMENT_HOURS = 14 * 24;
+    /**
+     * AWS reserves future-dated capacity only in blocks of at least this many vCPUs in total - {@code m5.xlarge}
+     * needs 8 instances.
+     */
+    private static final int MIN_RESERVATION_VCPUS = 32;
 
     /**
      * The operating systems AWS will reserve capacity for. A closed, documented set on the provider's side - unlike
@@ -161,8 +167,23 @@ public class NodePoolValidator {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
+        validateReservationSize(vo);
         validateReservationWindow(request);
         validateReservationInstance(vo, request);
+    }
+
+    /**
+     * Refused here rather than by the provider after approval: a request below the minimum could never be bought. An
+     * instance type the platform has no offer for is left to the provider - there is nothing to count its vCPUs by.
+     */
+    private void validateReservationSize(final NodePoolVO vo) {
+        final int instances = vo.isAutoscaled() ? vo.getMaxSize() : vo.getCount();
+        instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId())
+                .map(InstanceOffer::getVCPU)
+                .filter(vcpus -> vcpus > 0)
+                .ifPresent(vcpus -> Assert.isTrue((long) vcpus * instances >= MIN_RESERVATION_VCPUS,
+                        messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS,
+                                instances, vo.getInstanceType(), vcpus, MIN_RESERVATION_VCPUS)));
     }
 
     /**

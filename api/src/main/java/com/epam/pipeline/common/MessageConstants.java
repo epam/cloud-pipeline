@@ -800,6 +800,8 @@ public final class MessageConstants {
             "error.capacity.reservation.instance.count.invalid";
     public static final String ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID =
             "error.capacity.reservation.lead.time.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS =
+            "error.capacity.reservation.too.few.vcpus";
     public static final String ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT =
             "error.capacity.reservation.commitment.too.short";
     public static final String ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED =
