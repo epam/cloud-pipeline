@@ -186,6 +186,42 @@ def test_refuses_a_reservation_without_a_zone():
         _launch(_ec2(), networks=NETWORKS, availability_zone=None)
 
 
+def _launch_spot(capacity_reservation_id=RESERVATION_ID):
+    with patch.object(aws_nodeup, 'get_swap_size', return_value=0), \
+            patch.object(aws_nodeup, 'get_user_data_script', return_value='script'), \
+            patch.object(aws_nodeup, 'find_spot_instance', return_value=('i-1', '10.0.0.1')) as find_spot, \
+            patch.object(aws_nodeup, 'pipe_log_warn') as warn:
+        aws_nodeup.run_instance(api_url=None, api_token=None, api_user=None, bid_price='0.1', ec2=_ec2(),
+                                aws_region='region', ins_hdd=50, kms_encyr_key_id=None, ins_img='ami-1',
+                                ins_platform='linux', ins_key='key', ins_type='m5.large', is_spot=True, num_rep=1,
+                                run_id=1, pool_id=2, time_rep=0, kube_ip=None, kubeadm_token=None,
+                                kubeadm_cert_hash=None, kube_node_token=None, kube_cluster_name=None, kube_client=None,
+                                global_distribution_url=None, pre_pull_images=[], instance_additional_spec=None,
+                                availability_zone=ZONE, security_groups=None, subnet=None, network_interface=None,
+                                is_dedicated=False, node_ssh_port=22, performance_network=False, input_tags=None,
+                                docker_data_root=None, docker_storage_driver=None, skip_system_images_load=None,
+                                capacity_reservation_id=capacity_reservation_id)
+    return find_spot, warn
+
+
+def test_warns_that_a_spot_launch_does_not_use_the_reservation():
+    """
+    A spot instance cannot consume reserved capacity, so the reservation is not used - and that must not pass
+    silently, or the reserved capacity idles and is paid for while nobody knows why.
+    """
+    find_spot, warn = _launch_spot()
+
+    find_spot.assert_called_once()
+    warn.assert_called_once()
+    assert RESERVATION_ID in warn.call_args[0][0]
+
+
+def test_does_not_warn_about_a_spot_launch_without_a_reservation():
+    _, warn = _launch_spot(capacity_reservation_id=None)
+
+    warn.assert_not_called()
+
+
 def test_leaves_a_launch_without_a_reservation_as_it_was():
     launch_args = _launch(_ec2(subnet_zones={SUBNET_ELSEWHERE: OTHER_ZONE}), networks=NETWORKS,
                           capacity_reservation_id=None, availability_zone=ZONE, subnet=SUBNET_ELSEWHERE)

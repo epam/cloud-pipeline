@@ -86,6 +86,10 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                                                       global_distribution_url, swap_size, pre_pull_images, docker_data_root, docker_storage_driver,
                                                       skip_system_images_load)
         if is_spot:
+            if capacity_reservation_id:
+                utils.pipe_log_warn('- Capacity reservation {} is ignored: a spot instance cannot consume reserved '
+                                    'capacity, so this node runs as spot and the reservation is not used'
+                                    .format(capacity_reservation_id))
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
                                                        kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, is_dedicated)
         else:
