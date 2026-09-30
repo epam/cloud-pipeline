@@ -17,67 +17,57 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Form, Input} from 'antd';
-import {
-  MAX_NODE_UP_RETRY_COUNT,
-  NODE_UP_RETRY_COUNT_PATTERN,
-  nodeUpRetryCountExceedsMax
-} from '../../utilities/launch-cluster';
 
 const FormItem = Form.Item;
+const ID = 'node-up-retry-count';
 
 function NodeUpRetryCountFormItem (
   {
     className,
+    style,
     formItemLayout,
-    getFieldDecorator,
+    value,
+    error,
+    placeholder,
     disabled,
-    initialValue,
-    // falls back to the constant rather than to no bound at all, so a caller
-    // that forgets the prop still gets a bounded field
-    max = MAX_NODE_UP_RETRY_COUNT
+    onChange
   }
 ) {
+  const onInputChange = (event) => {
+    if (typeof onChange === 'function') {
+      onChange(event.target.value);
+    }
+  };
   return (
     <FormItem
       className={className}
+      style={style}
       {...formItemLayout}
+      id={ID}
       label="Capacity retries"
+      validateStatus={error ? 'error' : undefined}
+      help={error}
     >
-      {getFieldDecorator('nodeUpRetryCount',
-        {
-          rules: [
-            {
-              required: true,
-              message: 'Capacity retries is required'
-            },
-            {
-              pattern: NODE_UP_RETRY_COUNT_PATTERN,
-              message: 'Please enter a valid positive integer number'
-            },
-            {
-              validator: (rule, value, callback) => callback(
-                nodeUpRetryCountExceedsMax(value, max)
-                  ? `Maximum value is ${max}`
-                  : undefined
-              )
-            }
-          ],
-          initialValue
-        }
-      )(
-        <Input disabled={disabled} />
-      )}
+      <Input
+        id={ID}
+        value={value === undefined || value === null ? '' : `${value}`}
+        placeholder={placeholder === undefined ? undefined : `${placeholder}`}
+        disabled={disabled}
+        onChange={onInputChange}
+      />
     </FormItem>
   );
 }
 
 NodeUpRetryCountFormItem.propTypes = {
   className: PropTypes.string,
+  style: PropTypes.object,
   formItemLayout: PropTypes.object,
-  getFieldDecorator: PropTypes.func.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  error: PropTypes.string,
+  placeholder: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   disabled: PropTypes.bool,
-  initialValue: PropTypes.string,
-  max: PropTypes.number
+  onChange: PropTypes.func
 };
 
 export default NodeUpRetryCountFormItem;

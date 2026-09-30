@@ -27,7 +27,6 @@ import Dropdown from 'rc-dropdown';
 import {
   getAllSkippedSystemParametersList
 } from '../../../form/utilities/launch-cluster';
-import {CP_NODEUP_RETRY_COUNT} from '../../../form/utilities/parameters';
 import Parameter from './parameter';
 import SystemParametersBrowser from '../../SystemParametersBrowser';
 import ParametersProvider, {injectParametersStore} from './store';
@@ -143,8 +142,7 @@ class Parameters extends React.Component {
           onSave={onAddSystemParameters}
           notToShow={[
             ...parametersStore.parameters.map(o => o.name),
-            ...getAllSkippedSystemParametersList(preferences),
-            CP_NODEUP_RETRY_COUNT
+            ...getAllSkippedSystemParametersList(preferences)
           ]}
         />
       );
