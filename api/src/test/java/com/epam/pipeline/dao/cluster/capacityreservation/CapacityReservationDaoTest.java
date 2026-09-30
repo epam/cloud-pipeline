@@ -108,6 +108,37 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldResizeOnlyWhileTheStatusIsTheExpectedOne() {
+        final CapacityReservation created = reservationDao.create(
+                CapacityReservationCreatorUtils.getReservation(createPool().getId()));
+        final int resized = created.getInstanceCount() + 1;
+        final LocalDateTime updated = created.getUpdated().plusMinutes(1);
+
+        assertThat(reservationDao.updateInstanceCount(created.getId(), created.getStatus(), resized, updated))
+                .isTrue();
+
+        created.setInstanceCount(resized);
+        created.setUpdated(updated);
+        assertFound(reservationDao.find(created.getId()), created);
+    }
+
+    /**
+     * An editor's resize must not undo an approval or a cancellation that landed while it was in flight.
+     */
+    @Test
+    public void shouldNotResizeOnceTheStatusHasMovedOn() {
+        final CapacityReservation created = reservationDao.create(
+                CapacityReservationCreatorUtils.getReservation(createPool().getId()));
+        created.setStatus(CapacityReservationStatus.APPROVED);
+        reservationDao.update(created);
+
+        assertThat(reservationDao.updateInstanceCount(created.getId(), CapacityReservationStatus.REQUIRED_APPROVE,
+                created.getInstanceCount() + 1, created.getUpdated().plusMinutes(1))).isFalse();
+
+        assertFound(reservationDao.find(created.getId()), created);
+    }
+
+    @Test
     public void shouldUpdateReservation() {
         final CapacityReservation created = reservationDao.create(
                 CapacityReservationCreatorUtils.getReservation(createPool().getId()));

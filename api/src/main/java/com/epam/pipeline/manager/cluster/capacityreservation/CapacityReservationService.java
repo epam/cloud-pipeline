@@ -98,6 +98,32 @@ public class CapacityReservationService {
         return reservationDao.findByNodePoolId(nodePoolId);
     }
 
+    /**
+     * The reservation a pool's new nodes must consume, if its capacity exists right now.
+     *
+     * <p>{@code FINALIZING} counts: it is only a warning that the end is near, and the capacity is held - and paid
+     * for - until the reservation actually ends. Capacity not granted yet, or already ended, cannot be consumed,
+     * and targeting it would fail the launch rather than fall back.
+     */
+    public Optional<CapacityReservation> findConsumableByNodePoolId(final Long nodePoolId) {
+        return findByNodePoolId(nodePoolId)
+                .filter(reservation -> CapacityReservationStatus.ACTIVE == reservation.getStatus()
+                        || CapacityReservationStatus.FINALIZING == reservation.getStatus());
+    }
+
+    /**
+     * Loads a reservation to change it, holding its pool's row lock for the rest of the caller's transaction.
+     *
+     * <p>The pool is locked before the reservation is read, the same order every write here takes them in - an edit
+     * locks the pool and may then resize the reservation - so two writers of one reservation wait for each other
+     * rather than deadlock. What comes back is the reservation as it is once the lock is held.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public CapacityReservation loadForUpdate(final Long id) {
+        poolManager.loadForUpdate(load(id).getNodePoolId());
+        return load(id);
+    }
+
     public CapacityReservation load(final Long id) {
         return reservationDao.find(id)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
@@ -126,27 +152,26 @@ public class CapacityReservationService {
      */
     @Transactional
     public void activatePool(final CapacityReservation reservation) {
-        final NodePool pool = poolManager.load(reservation.getNodePoolId());
-        pool.setCount(reservation.getInstanceCount());
-        pool.setStartDate(reservation.getStartDate());
-        pool.setEndDate(reservation.getEndDate());
-        pool.setKubeLabels(withReservationLabel(pool.getKubeLabels(), reservation.getId()));
-        poolManager.applyReservationState(pool);
+        poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
+            pool.setCount(reservation.getInstanceCount());
+            pool.setStartDate(reservation.getStartDate());
+            pool.setEndDate(reservation.getEndDate());
+            pool.setKubeLabels(withReservationLabel(pool.getKubeLabels(), reservation.getId()));
+        });
         log.debug("Activated node pool {} with {} nodes for capacity reservation {}",
-                pool.getId(), reservation.getInstanceCount(), reservation.getId());
+                reservation.getNodePoolId(), reservation.getInstanceCount(), reservation.getId());
     }
 
     /**
      * Returns the pool to the inert state it was created in, by the same mechanism that kept it there: a count of
-     * zero. Runs already on its nodes are not touched - the capacity ending does not make them stop.
+     * zero. Runs already on its nodes are not touched - the capacity ending, or being cancelled, does not make them
+     * stop.
      */
     @Transactional
     public void deactivatePool(final CapacityReservation reservation) {
-        final NodePool pool = poolManager.load(reservation.getNodePoolId());
-        pool.setCount(0);
-        poolManager.applyReservationState(pool);
-        log.debug("Deactivated node pool {} after capacity reservation {} finished",
-                pool.getId(), reservation.getId());
+        poolManager.applyReservationState(reservation.getNodePoolId(), pool -> pool.setCount(0));
+        log.debug("Deactivated node pool {} after capacity reservation {} ended",
+                reservation.getNodePoolId(), reservation.getId());
     }
 
     private Map<String, PoolLabel> withReservationLabel(final Map<String, PoolLabel> existing,
@@ -170,28 +195,96 @@ public class CapacityReservationService {
      */
     @Transactional
     public CapacityReservation cancel(final Long id) {
-        final CapacityReservation reservation = load(id);
+        final CapacityReservation reservation = loadForUpdate(id);
         cloudFacade.cancel(reservation);
-        return statusService.transition(reservation, CapacityReservationStatus.CANCELLED, null);
+        final CapacityReservation cancelled =
+                statusService.transition(reservation, CapacityReservationStatus.CANCELLED, null);
+        // A cancelled reservation is never looked at again, so the pool must go inert here: left with its count
+        // it would keep launching full-price on-demand nodes with no reservation behind them.
+        deactivatePool(cancelled);
+        return cancelled;
     }
 
-    public void assertPoolEditable(final NodePool existing, final NodePoolVO vo) {
+    /**
+     * Applies an ordinary edit's consequences to the reservation behind a pool.
+     *
+     * <p>The size is the one thing an edit can mean for the reservation. Before approval it is still only a
+     * request, so it follows the pool; after approval it is what was agreed to, and a different size is refused.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void onPoolUpdate(final NodePool existing, final NodePoolVO vo) {
         if (!existing.isCapacityReservation()) {
             return;
         }
         final CapacityReservation reservation = findByNodePoolId(existing.getId()).orElse(null);
-        if (reservation == null) {
-            return;
-        }
-        if (reservation.getStatus() == CapacityReservationStatus.REQUIRED_APPROVE) {
+        if (reservation == null || !changesSize(existing, vo)) {
             return;
         }
         final int requested = instanceCount(vo);
-        if (requested != reservation.getInstanceCount()) {
-            throw new IllegalStateException(messageHelper.getMessage(
-                    MessageConstants.ERROR_CAPACITY_RESERVATION_SIZE_IMMUTABLE,
-                    existing.getId(), reservation.getStatus()));
+        if (requested == reservation.getInstanceCount()) {
+            return;
         }
+        if (reservation.getStatus() != CapacityReservationStatus.REQUIRED_APPROVE) {
+            throw sizeImmutable(existing, reservation.getStatus());
+        }
+        if (!reservationDao.updateInstanceCount(reservation.getId(), CapacityReservationStatus.REQUIRED_APPROVE,
+                requested, DateUtils.nowUTC())) {
+            // Approved or cancelled while this edit was in flight - the size is no longer a request.
+            throw sizeImmutable(existing, load(reservation.getId()).getStatus());
+        }
+        log.debug("Capacity reservation {} resized to {} along with its pool {}", reservation.getId(), requested,
+                existing.getId());
+    }
+
+    /**
+     * The node count an ordinary edit leaves a reservation-backed pool with.
+     *
+     * <p>While there is no capacity to consume, the stored count - 0 - is kept: it is what keeps the pool inert,
+     * and taking it from the request would switch the pool on early. Once the capacity exists the count is the
+     * pool's again, which is how the autoscaler resizes it - but only inside the reservation. An autoscaled count
+     * outside {@code [minSize, maxSize]} keeps the stored one: 0, from an editor opened before activation, would
+     * switch a paid-for pool off for good, since the autoscaler only looks at pools that are on; above
+     * {@code maxSize} would grow it past the capacity held. A fixed pool cannot ask for a count other than the
+     * reservation's at all - {@link #onPoolUpdate} refuses it.
+     */
+    public int countAfterUpdate(final NodePool existing, final NodePoolVO vo) {
+        if (!findConsumableByNodePoolId(existing.getId()).isPresent()) {
+            return existing.getCount();
+        }
+        if (!vo.isAutoscaled()) {
+            return vo.getCount();
+        }
+        final int lowest = Math.max(1, Optional.ofNullable(vo.getMinSize()).orElse(1));
+        final boolean withinReservation = vo.getMaxSize() != null
+                && vo.getCount() >= lowest && vo.getCount() <= vo.getMaxSize();
+        return withinReservation ? vo.getCount() : existing.getCount();
+    }
+
+    /**
+     * Carries the reservation label over an ordinary edit, which rebuilds the labels from the request.
+     */
+    public void keepReservationLabel(final NodePool existing, final NodePool updated) {
+        final PoolLabel label = MapUtils.emptyIfNull(existing.getKubeLabels())
+                .get(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL);
+        if (label == null) {
+            return;
+        }
+        final Map<String, PoolLabel> labels = new HashMap<>(MapUtils.emptyIfNull(updated.getKubeLabels()));
+        labels.put(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL, label);
+        updated.setKubeLabels(labels);
+    }
+
+    private IllegalStateException sizeImmutable(final NodePool pool, final CapacityReservationStatus status) {
+        return new IllegalStateException(messageHelper.getMessage(
+                MessageConstants.ERROR_CAPACITY_RESERVATION_SIZE_IMMUTABLE, pool.getId(), status));
+    }
+
+    /**
+     * Whether an edit asks for a different size at all. A fixed pool's count is kept at 0 until its reservation is
+     * active, so an edit that sends back the count the pool shows is not a request to change it.
+     */
+    private static boolean changesSize(final NodePool existing, final NodePoolVO vo) {
+        return vo.isAutoscaled() || vo.getCount() != existing.getCount();
     }
 
     /**

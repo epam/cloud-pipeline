@@ -62,6 +62,8 @@ import static org.mockito.Mockito.when;
  * this way stops at {@code APPROVED} or {@code REQUIRED_APPROVE}.
  */
 @Transactional
+// Cancelling releases the capacity at the provider first; which provider call that is does not matter here.
+@MockBean(CapacityReservationCloudFacade.class)
 public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     private static final String POOL_NAME = "g5 reserved pool";
@@ -83,7 +85,14 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     /** Well inside AWS's minimum commitment, so a request asking for it must be refused. */
     private static final int ONE_DAY_HOURS = 24;
     private static final String OWNER = "requester";
+    private static final String ADMIN = "ADMIN";
     private static final int CALLER_CPU_RESERVED = 4;
+    private static final int OTHER_INSTANCE_COUNT = 5;
+    private static final int AUTOSCALED_MIN_SIZE = 1;
+    private static final double SCALE_UP_THRESHOLD = 90.0;
+    private static final double SCALE_DOWN_THRESHOLD = 10.0;
+    private static final String RENAMED = "renamed pool";
+    private static final String ZONE = "us-east-1c";
 
     @Autowired
     private NodePoolManager poolManager;
@@ -96,6 +105,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private CapacityReservationService reservationService;
 
     @MockBean
     private CloudRegionManager regionManager;
@@ -166,7 +178,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     @Test
-    @WithMockUser(username = OWNER, roles = "ADMIN")
+    @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldAutoApproveForAdmin() {
         final NodePool created = poolManager.create(reservationPoolVO());
 
@@ -422,6 +434,278 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final NodePool created = poolManager.create(reservationPoolVO());
 
         assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
+    }
+
+    /**
+     * The ordinary pool update leaves the dates out, so activating through it used to drop the window - and the
+     * pool then stayed schedulable after the reservation ended.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldPersistTheReservationWindowWhenThePoolIsActivated() {
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+
+        reservationService.activatePool(reservation);
+
+        final NodePool pool = poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new);
+        assertThat(pool.getCount()).isEqualTo(INSTANCE_COUNT);
+        assertThat(pool.getStartDate()).isEqualTo(reservation.getStartDate());
+        assertThat(pool.getEndDate()).isEqualTo(reservation.getEndDate());
+        assertThat(pool.isActive(reservation.getEndDate().plusMinutes(1))).isFalse();
+    }
+
+    /**
+     * Until its reservation is active the pool is kept inert by a count of 0. An edit that took the count from the
+     * request would switch it on early, launching plain on-demand nodes with no capacity behind them.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldKeepAPoolInertThroughAnEditBeforeItsReservationIsActive() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf();
+        edit.setName(RENAMED);
+
+        poolManager.update(created.getId(), edit);
+
+        final NodePool pool = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(pool.getName()).isEqualTo(RENAMED);
+        assertThat(pool.getCount()).isZero();
+    }
+
+    /**
+     * An editor shows the pool's count - 0 until activation - and sends it back unchanged. That is not a request to
+     * change the size, so it must not be refused as one.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldAcceptAnEditThatSendsBackTheCountThePoolShows() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf();
+        edit.setCount(0);
+        edit.setName(RENAMED);
+
+        poolManager.update(created.getId(), edit);
+
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getName()).isEqualTo(RENAMED);
+        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
+                .getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseResizingAnApprovedReservation() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf();
+        edit.setCount(OTHER_INSTANCE_COUNT);
+
+        assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    /**
+     * Before approval the size is still only a request, so it follows the pool - an approver must see the size
+     * that will actually be bought.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldResizeAReservationStillAwaitingApproval() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf();
+        edit.setCount(OTHER_INSTANCE_COUNT);
+
+        poolManager.update(created.getId(), edit);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
+                .getInstanceCount()).isEqualTo(OTHER_INSTANCE_COUNT);
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
+    }
+
+    /**
+     * An edit rebuilds the labels from the request, which knows nothing of the one activation added.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldKeepTheReservationLabelOfAnActivePoolThroughAnEdit() {
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+        reservationService.activatePool(reservation);
+        final NodePoolVO edit = editOf();
+        edit.setName(RENAMED);
+
+        poolManager.update(reservation.getNodePoolId(), edit);
+
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getKubeLabels())
+                .containsKey(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldKeepAnAutoscaledPoolInertThroughAnEditBeforeItsReservationIsActive() {
+        final NodePool created = poolManager.create(autoscaled(reservationPoolVO()));
+        final NodePoolVO edit = autoscaled(editOf());
+        edit.setCount(INSTANCE_COUNT);
+
+        poolManager.update(created.getId(), edit);
+
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
+    }
+
+    /**
+     * An editor opened before activation still shows 0. Saving it afterwards must not switch the pool off: the
+     * autoscaler only looks at pools that are on, so nothing would ever switch it back while the capacity idles.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldNotLetAnEditSwitchOffAnActiveAutoscaledPool() {
+        final CapacityReservation reservation = activeReservationOf(
+                poolManager.create(autoscaled(reservationPoolVO())));
+        reservationService.activatePool(reservation);
+        final NodePoolVO staleEdit = autoscaled(editOf());
+        staleEdit.setCount(0);
+
+        poolManager.update(reservation.getNodePoolId(), staleEdit);
+
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
+                .isEqualTo(INSTANCE_COUNT);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldNotLetAnEditGrowAnActiveAutoscaledPoolPastItsReservation() {
+        final CapacityReservation reservation = activeReservationOf(
+                poolManager.create(autoscaled(reservationPoolVO())));
+        reservationService.activatePool(reservation);
+        final NodePoolVO edit = autoscaled(editOf());
+        edit.setCount(INSTANCE_COUNT + 1);
+
+        poolManager.update(reservation.getNodePoolId(), edit);
+
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
+                .isEqualTo(INSTANCE_COUNT);
+    }
+
+    /**
+     * Once the reservation has ended its pool is inert for good - a retry is a new pool - so an edit must not
+     * switch it back on with no capacity behind it.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldKeepAPoolInertThroughAnEditAfterItsReservationWasCancelled() {
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+        reservationService.activatePool(reservation);
+        reservationService.cancel(reservation.getId());
+
+        poolManager.update(reservation.getNodePoolId(), editOf());
+
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
+                .isZero();
+    }
+
+    /**
+     * An autoscaled pool's reservation covers it at its largest, so resizing it before approval follows maxSize.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldResizeAnAutoscaledPoolsReservationToItsMaxSize() {
+        final NodePool created = poolManager.create(autoscaled(reservationPoolVO()));
+        final NodePoolVO edit = autoscaled(editOf());
+        edit.setMaxSize(OTHER_INSTANCE_COUNT);
+
+        poolManager.update(created.getId(), edit);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
+                .getInstanceCount()).isEqualTo(OTHER_INSTANCE_COUNT);
+    }
+
+    /**
+     * Once the capacity exists the count is the pool's to manage again: the autoscaler resizes an autoscaled pool
+     * through an ordinary update, inside the size the reservation holds.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldLetTheAutoscalerResizeAnActiveReservationPool() {
+        final NodePoolVO vo = autoscaled(reservationPoolVO());
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(vo));
+        reservationService.activatePool(reservation);
+        final NodePoolVO scaledDown = autoscaled(editOf());
+        scaledDown.setCount(AUTOSCALED_MIN_SIZE);
+
+        poolManager.update(reservation.getNodePoolId(), scaledDown);
+
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
+                .isEqualTo(AUTOSCALED_MIN_SIZE);
+    }
+
+    /**
+     * A cancelled reservation is never looked at again, so anything still switched on stays on - running
+     * full-price on-demand nodes with no reservation behind them.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldDeactivateThePoolWhenAnActiveReservationIsCancelled() {
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+        reservationService.activatePool(reservation);
+
+        reservationService.cancel(reservation.getId());
+
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
+                .isZero();
+        assertThat(reservationDao.find(reservation.getId()).orElseThrow(AssertionError::new).getStatus())
+                .isEqualTo(CapacityReservationStatus.CANCELLED);
+    }
+
+    /**
+     * FINALIZING only warns that the end is near; the capacity is held and paid for until the end itself, so new
+     * nodes must keep consuming it.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldOfferTheReservationToNewNodesWhileItIsActiveOrFinalizing() {
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+        final Long poolId = reservation.getNodePoolId();
+
+        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isTrue();
+        withStatus(reservation, CapacityReservationStatus.FINALIZING);
+        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isTrue();
+        withStatus(reservation, CapacityReservationStatus.SCHEDULED);
+        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isFalse();
+        withStatus(reservation, CapacityReservationStatus.FINISHED);
+        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isFalse();
+    }
+
+    /**
+     * What an editor sends for an existing pool: its settings, but not the reservation request, which only applies
+     * when the pool is created.
+     */
+    private NodePoolVO editOf() {
+        return basePoolVO();
+    }
+
+    private static NodePoolVO autoscaled(final NodePoolVO vo) {
+        vo.setAutoscaled(true);
+        vo.setMinSize(AUTOSCALED_MIN_SIZE);
+        vo.setMaxSize(INSTANCE_COUNT);
+        vo.setScaleUpThreshold(SCALE_UP_THRESHOLD);
+        vo.setScaleDownThreshold(SCALE_DOWN_THRESHOLD);
+        vo.setScaleStep(1);
+        return vo;
+    }
+
+    /**
+     * Puts the reservation where the monitor leaves it once the provider has granted the capacity.
+     */
+    private CapacityReservation activeReservationOf(final NodePool pool) {
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(pool.getId())
+                .orElseThrow(AssertionError::new);
+        reservation.setStartDate(reservation.getRequestedStartDate());
+        reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+        reservation.setAvailabilityZone(ZONE);
+        return withStatus(reservation, CapacityReservationStatus.ACTIVE);
+    }
+
+    private CapacityReservation withStatus(final CapacityReservation reservation,
+                                           final CapacityReservationStatus status) {
+        reservation.setStatus(status);
+        return reservationDao.update(reservation);
     }
 
     /** Matches the request: its instance type is g5.48xlarge. */

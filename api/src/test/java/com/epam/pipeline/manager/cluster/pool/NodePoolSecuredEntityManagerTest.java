@@ -82,7 +82,8 @@ public class NodePoolSecuredEntityManagerTest {
 
     @Test
     public void shouldChangeOwner() {
-        when(poolDao.find(POOL_ID)).thenReturn(Optional.of(pool));
+        // Read under the pool's row lock, like every other write to an existing pool.
+        when(poolDao.findForUpdate(POOL_ID)).thenReturn(Optional.of(pool));
         when(poolDao.updateOwner(any(NodePool.class))).thenAnswer(invocation -> invocation.getArguments()[0]);
 
         final AbstractSecuredEntity updated = nodePoolManager.changeOwner(POOL_ID, NEW_OWNER);
@@ -92,7 +93,7 @@ public class NodePoolSecuredEntityManagerTest {
 
     @Test
     public void shouldFailToChangeOwnerOfMissingPool() {
-        when(poolDao.find(POOL_ID)).thenReturn(Optional.empty());
+        when(poolDao.findForUpdate(POOL_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> nodePoolManager.changeOwner(POOL_ID, NEW_OWNER))
                 .isInstanceOf(IllegalArgumentException.class);

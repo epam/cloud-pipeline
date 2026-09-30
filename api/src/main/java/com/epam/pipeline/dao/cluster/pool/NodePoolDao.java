@@ -66,6 +66,8 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     private final String loadNodePoolByIdQuery;
     private final String updateNodePoolOwnerQuery;
     private final String updateNodePoolLaunchConfigQuery;
+    private final String updateNodePoolReservationStateQuery;
+    private final String loadNodePoolByIdForUpdateQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool create(final NodePool pool) {
@@ -107,6 +109,29 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate()
                 .update(updateNodePoolLaunchConfigQuery, NodePoolParameters.getParameters(pool));
         return pool;
+    }
+
+    /**
+     * The columns a capacity reservation's lifecycle owns: the node count that switches the pool on and off, the
+     * window it is usable in, and the labels its pods select on. {@link #update(NodePool)} leaves the dates out
+     * deliberately, so this is the only statement that writes them after creation.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public NodePool updateReservationState(final NodePool pool) {
+        getNamedParameterJdbcTemplate()
+                .update(updateNodePoolReservationStateQuery, NodePoolParameters.getParameters(pool));
+        return pool;
+    }
+
+    /**
+     * Loads a pool and holds its row lock until the surrounding transaction ends, so a read-modify-write of the
+     * pool cannot interleave with another one.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<NodePool> findForUpdate(final Long poolId) {
+        final List<NodePool> result = getJdbcTemplate()
+                .query(loadNodePoolByIdForUpdateQuery, NodePoolParameters.getExtractor(), poolId);
+        return ListUtils.emptyIfNull(result).stream().findFirst();
     }
 
     public List<NodePool> loadAll() {

@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationT
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationMonitor.CapacityReservationMonitorCore;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
@@ -30,19 +31,23 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,6 +64,7 @@ public class CapacityReservationMonitorCoreTest {
     private static final Long RESERVATION_ID = 10L;
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
     private static final String ZONE = "us-east-1c";
+    private static final String PROVIDER_UNREACHABLE = "provider unreachable";
     private static final int FINALIZING_LEAD_HOURS = 1;
     private static final int DURATION_HOURS = 24;
     private static final int WINDOW_DAYS = 3;
@@ -77,6 +83,9 @@ public class CapacityReservationMonitorCoreTest {
 
     @Mock
     private PreferenceManager preferenceManager;
+
+    @Mock
+    private PlatformTransactionManager transactionManager;
 
     @InjectMocks
     private CapacityReservationMonitorCore monitor;
@@ -336,7 +345,7 @@ public class CapacityReservationMonitorCoreTest {
      * otherwise the platform holds two reservations and has erased the id of the first.
      */
     @Test
-    public void shouldReleaseADelayedReservationBeforeAskingForAnotherDate() {
+    public void shouldReleaseADelayedReservationOnceTheNextDateIsWritten() {
         final CapacityReservation reservation = assessing();
         final int attemptBefore = reservation.getAttempt();
         givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
@@ -346,10 +355,54 @@ public class CapacityReservationMonitorCoreTest {
 
         monitor.processAssessing();
 
-        verify(cloudFacade).cancel(reservation);
         assertThat(reservation.getAttempt()).isEqualTo(attemptBefore + 1);
         assertThat(reservation.getCloudReservationId()).isNull();
-        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+        // The release comes after the write, and is for the delayed reservation, not the next attempt.
+        final InOrder order = inOrder(statusService, cloudFacade);
+        order.verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+        final ArgumentCaptor<CapacityReservation> released = ArgumentCaptor.forClass(CapacityReservation.class);
+        order.verify(cloudFacade).cancel(released.capture());
+        assertThat(released.getValue().getCloudReservationId()).isEqualTo(CLOUD_ID);
+        assertThat(released.getValue().getAttempt()).isEqualTo(attemptBefore);
+    }
+
+    /**
+     * Only our own writes roll back. Releasing first and then failing to write the new date would leave a reservation
+     * the provider has cancelled, which the next poll reads as the request being cancelled - so a write that fails
+     * must mean nothing was released.
+     */
+    @Test
+    public void shouldNotReleaseADelayedReservationWhenTheNextDateCannotBeWritten() {
+        final CapacityReservation reservation = assessing();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.DELAYED)
+                .build());
+        when(statusService.transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any()))
+                .thenThrow(new IllegalStateException("database unavailable"));
+
+        monitor.processAssessing();
+
+        verify(cloudFacade, never()).cancel(any());
+        verify(transactionManager).rollback(any());
+    }
+
+    /**
+     * The pass works from a list read before any step ran. A reservation cancelled since must not be submitted - that
+     * would buy what the user just gave up.
+     */
+    @Test
+    public void shouldSkipAReservationThatMovedOnBeforeItsTurn() {
+        final CapacityReservation listed = approved();
+        givenStatus(CapacityReservationStatus.APPROVED, listed);
+        final CapacityReservation current = approved();
+        current.setStatus(CapacityReservationStatus.CANCELLED);
+        when(reservationService.loadForUpdate(listed.getId())).thenReturn(current);
+
+        monitor.processApproved();
+
+        verify(cloudFacade, never()).submit(any());
+        verify(statusService, never()).transition(any(), any(), any());
     }
 
     /**
@@ -363,13 +416,15 @@ public class CapacityReservationMonitorCoreTest {
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.DELAYED)
                 .build());
-        doThrow(new IllegalStateException("provider unreachable")).when(cloudFacade).cancel(reservation);
+        doThrow(new IllegalStateException(PROVIDER_UNREACHABLE)).when(cloudFacade).cancel(any());
 
         monitor.processAssessing();
 
-        assertThat(reservation.getCloudReservationId()).isEqualTo(CLOUD_ID);
-        verify(statusService, never())
-                .transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+        // The new date was written before the release, so it is the rollback that keeps the delayed reservation -
+        // and its id - for the next cycle to release. What is actually persisted is pinned against the database in
+        // CapacityReservationMonitorTransactionTest.
+        verify(transactionManager).rollback(any());
+        verify(transactionManager, never()).commit(any());
     }
 
     /**
@@ -489,7 +544,7 @@ public class CapacityReservationMonitorCoreTest {
         reservation.setStatus(CapacityReservationStatus.FINALIZING);
         reservation.setEndDate(DateUtils.nowUTC().minusMinutes(1));
         givenStatus(CapacityReservationStatus.FINALIZING, reservation);
-        doThrow(new IllegalStateException("provider unreachable")).when(cloudFacade).cancel(reservation);
+        doThrow(new IllegalStateException(PROVIDER_UNREACHABLE)).when(cloudFacade).cancel(reservation);
 
         monitor.processFinalizing();
 
@@ -527,6 +582,51 @@ public class CapacityReservationMonitorCoreTest {
     }
 
     /**
+     * A step is several writes that only make sense together, and one reservation's failure must not undo another's
+     * progress - so each gets a transaction of its own, and only the failing one is rolled back.
+     */
+    @Test
+    public void shouldRunEachReservationInATransactionOfItsOwn() {
+        final CapacityReservation failing = scheduled();
+        final CapacityReservation healthy = scheduled();
+        healthy.setId(RESERVATION_ID + 1);
+        givenStatus(CapacityReservationStatus.SCHEDULED, failing, healthy);
+        when(cloudFacade.describe(failing)).thenThrow(new IllegalStateException(PROVIDER_UNREACHABLE));
+        when(cloudFacade.describe(healthy)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.FAILED)
+                .build());
+
+        monitor.processScheduled();
+
+        verify(transactionManager, times(2)).getTransaction(any());
+        verify(transactionManager).rollback(any());
+        verify(transactionManager).commit(any());
+    }
+
+    /**
+     * Once the provider has answered, a failure is ours to write down rather than the provider's verdict. Recording
+     * it as PURCHASE_FAILED would end a reservation the provider may well hold; rolling the step back leaves it
+     * APPROVED, and the next cycle's token lookup adopts what this call bought.
+     */
+    @Test
+    public void shouldRollBackRatherThanFailWhenOurOwnWriteFailsAfterSubmission() {
+        final CapacityReservation reservation = approved();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.submit(any())).thenReturn(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .build());
+        when(statusService.transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null))
+                .thenThrow(new IllegalStateException("database unavailable"));
+
+        monitor.processApproved();
+
+        verify(statusService, never())
+                .transition(eq(reservation), eq(CapacityReservationStatus.PURCHASE_FAILED), any());
+        verify(transactionManager).rollback(any());
+    }
+
+    /**
      * One reservation's failure must not strand the others - they are independent requests that merely share a
      * cycle.
      */
@@ -535,9 +635,8 @@ public class CapacityReservationMonitorCoreTest {
         final CapacityReservation failing = scheduled();
         final CapacityReservation healthy = scheduled();
         healthy.setId(RESERVATION_ID + 1);
-        when(reservationService.loadByStatus(CapacityReservationStatus.SCHEDULED))
-                .thenReturn(java.util.Arrays.asList(failing, healthy));
-        when(cloudFacade.describe(failing)).thenThrow(new IllegalStateException("provider unreachable"));
+        givenStatus(CapacityReservationStatus.SCHEDULED, failing, healthy);
+        when(cloudFacade.describe(failing)).thenThrow(new IllegalStateException(PROVIDER_UNREACHABLE));
         when(cloudFacade.describe(healthy)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.FAILED)
                 .build());
@@ -547,8 +646,14 @@ public class CapacityReservationMonitorCoreTest {
         verify(statusService).transition(eq(healthy), eq(CapacityReservationStatus.FAILED), isNull(String.class));
     }
 
-    private void givenStatus(final CapacityReservationStatus status, final CapacityReservation reservation) {
-        when(reservationService.loadByStatus(status)).thenReturn(Collections.singletonList(reservation));
+    /**
+     * The pass lists the reservations in a status, and each step reads its reservation again under the pool's lock.
+     */
+    private void givenStatus(final CapacityReservationStatus status, final CapacityReservation... reservations) {
+        when(reservationService.loadByStatus(status)).thenReturn(Arrays.asList(reservations));
+        for (final CapacityReservation reservation : reservations) {
+            when(reservationService.loadForUpdate(reservation.getId())).thenReturn(reservation);
+        }
     }
 
     private CapacityReservation approved() {

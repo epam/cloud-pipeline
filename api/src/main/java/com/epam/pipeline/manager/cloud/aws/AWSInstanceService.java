@@ -35,7 +35,6 @@ import com.epam.pipeline.entity.cluster.MachineType;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
-import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -160,20 +159,15 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
      * The reservation this pool's nodes must consume, if it has one.
      *
      * <p>The flag on the pool is checked first so the overwhelming majority of pools - which have no reservation
-     * at all - cost nothing here. Only an active reservation is used: capacity that has not been granted yet, or
-     * has already ended, cannot be consumed, and targeting it would fail the launch rather than fall back.
+     * at all - cost nothing here. Which reservations can be consumed is the reservation service's rule.
      */
     private CapacityReservation reservationOf(final NodePool node) {
         if (!node.isCapacityReservation()) {
             return null;
         }
-        final CapacityReservation reservation = reservationService.findByNodePoolId(node.getId())
-                .filter(active -> CapacityReservationStatus.ACTIVE == active.getStatus())
+        final CapacityReservation reservation = reservationService.findConsumableByNodePoolId(node.getId())
                 .orElse(null);
         if (reservation != null && StringUtils.isBlank(reservation.getAvailabilityZone())) {
-            // The launch script refuses this rather than risk landing outside the reservation's zone, where the
-            // node would run as plain on-demand while the reserved capacity idles. Logged here as well so the
-            // reason is visible against the pool, not only in the node's own launch output.
             log.error("Capacity reservation {} is active but has no availability zone recorded, so node launch "
                     + "for pool {} will be refused. The zone is resolved when the reservation is granted; a "
                     + "reservation missing it indicates the provider response was not fully persisted.",
