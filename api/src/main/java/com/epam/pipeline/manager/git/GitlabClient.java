@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabUser;
@@ -521,6 +522,20 @@ public class GitlabClient {
 
     private String createImpersonationToken(String tokenName, Long userId, LocalDate expires)
             throws GitClientException {
+        return issueImpersonationToken(tokenName, userId, expires, Collections.singletonList("api")).getToken();
+    }
+
+    /**
+     * Issues an impersonation token for a user.
+     * @param tokenName a name of the new token
+     * @param userId an ID of the Gitlab user
+     * @param expires a date when the token expires
+     * @param scopes scopes of the new token
+     * @return the issued token, including its value and ID
+     * @throws GitClientException if the request fails
+     */
+    public GitToken issueImpersonationToken(final String tokenName, final Long userId, final LocalDate expires,
+                                            final List<String> scopes) throws GitClientException {
         if (adminId == null) {
             throw new IllegalArgumentException("Token may be issued only for local Gitlab.");
         }
@@ -530,8 +545,27 @@ public class GitlabClient {
                 GitTokenRequest.builder()
                         .name(tokenName)
                         .expires(DATE_TIME_FORMATTER.format(expires))
-                        .scopes(Collections.singletonList("api")).build(),
-                adminToken)).getToken();
+                        .scopes(scopes).build(),
+                adminToken));
+    }
+
+    /**
+     * Loads the token, that this client authenticates with.
+     * @return the token info without its value
+     * @throws GitClientException if the request fails, e.g. on Gitlab older than 15.5
+     */
+    public GitToken getCurrentToken() throws GitClientException {
+        return execute(gitLabApi.getCurrentToken());
+    }
+
+    /**
+     * Revokes an impersonation token of a user.
+     * @param userId an ID of the Gitlab user
+     * @param tokenId an ID of the token
+     * @throws GitClientException if the request fails
+     */
+    public void revokeImpersonationToken(final Long userId, final Long tokenId) throws GitClientException {
+        execute(gitLabApi.revokeImpersonationToken(apiVersion, String.valueOf(userId), String.valueOf(tokenId)));
     }
 
     private List<String> generateGitLabUsernames(final String userName) {

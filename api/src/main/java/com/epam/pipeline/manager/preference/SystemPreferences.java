@@ -367,6 +367,28 @@ public class SystemPreferences {
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
     public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
             "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
+    /**
+     * Enables the scheduled rotation of the git.token, when it is close to its expiry.
+     */
+    public static final BooleanPreference GIT_TOKEN_ROTATION_ENABLED = new BooleanPreference(
+            "git.token.rotation.enabled", true, GIT_GROUP, pass);
+    /**
+     * A cron expression, that defines when to check the git.token expiry.
+     */
+    public static final StringPreference GIT_TOKEN_ROTATION_SCHEDULE = new StringPreference(
+            "git.token.rotation.schedule", "0 0 3 ? * *", GIT_GROUP, PreferenceValidators.isValidCron);
+    /**
+     * The git.token is rotated, when it expires in this number of days or fewer.
+     */
+    public static final IntPreference GIT_TOKEN_ROTATION_THRESHOLD_DAYS = new IntPreference(
+            "git.token.rotation.threshold.days", 30, GIT_GROUP, isGreaterThan(0));
+    /**
+     * The lifetime of a rotated git.token in days. Gitlab rejects a lifetime over 365 days, and the default
+     * leaves a day for a time zone difference between Gitlab and the API.
+     */
+    public static final IntPreference GIT_TOKEN_ROTATION_LIFETIME_DAYS = new IntPreference(
+            "git.token.rotation.lifetime.days", 364, GIT_GROUP,
+            isGreaterThan(0).and(isLessThan(366)));
 
     // DOCKER_SECURITY_GROUP
     /**

@@ -287,6 +287,25 @@ public interface GitLabApi {
                               @Body GitTokenRequest tokenRequest,
                               @Header(PRIVATE_TOKEN) String token);
 
+    /**
+     * Get the token used to authenticate this request.
+     * NOTE: Introduced in GitLab 15.5.
+     */
+    @GET("api/v4/personal_access_tokens/self")
+    Call<GitToken> getCurrentToken();
+
+    /**
+     * Revoke an impersonation token of a user. Available for administrators only.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param userId The ID of the user
+     * @param tokenId The ID of the impersonation token
+     */
+    @DELETE("api/{api_version}/users/{user_id}/impersonation_tokens/{token_id}")
+    Call<Void> revokeImpersonationToken(@Path(API_VERSION) String apiVersion,
+                                        @Path(USER_ID) String userId,
+                                        @Path("token_id") String tokenId);
+
     @POST("api/{api_version}/projects/{project}/hooks")
     Call<GitRepositoryEntry> addProjectHook(@Path(API_VERSION) String apiVersion,
                                             @Path(PROJECT) String project,
