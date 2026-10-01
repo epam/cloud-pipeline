@@ -42,7 +42,7 @@ def main():
             if not nodename:
                 raise RuntimeError("Failed to find Node {}".format(ins_id))
         except Exception as e:
-            print e
+            print(e)
             nodename = None
 
         kube_provider.delete_kube_node(nodename, run_id)

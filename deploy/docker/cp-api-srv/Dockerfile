@@ -70,6 +70,15 @@ RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
 
+# Python 3.12, alongside the Python 2 install above (not a replacement): CP_PYTHON_VERSION selects
+# between them at container start, and packages/scripts not yet migrated still run under Python 2.
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
+
 RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I  requests==2.21.0 \
                     ipaddress==1.0.22 \
@@ -86,6 +95,10 @@ RUN pip install -I  awscli==1.16.314 \
                     boto3==1.10.50 \
                     botocore==1.13.50
 
+# AWS - specific packages, Python 3 (issue #4589)
+RUN pip3 install -I  boto3==1.34.69 \
+                     botocore==1.34.69
+
 # Azure - specific packages
 # We install here portalocker==1.7.1 to solve the problem with not fixed dependency some where in azure dependencies tree
 RUN pip install -I  portalocker==1.7.1 \
@@ -96,12 +109,32 @@ RUN pip install -I  portalocker==1.7.1 \
                     azure-mgmt-containerinstance==1.4.1 \
                     azure-cli-core==2.0.52
 
+# Azure - specific packages, Python 3 (issue #4589). azure-mgmt-* must stay on the same msrestazure-based
+# generation as the Python 2 pins above: current (track2, azure-core-based) releases of azure-mgmt-resource/
+# compute/network dropped get_client_from_auth_file()/get_client_from_cli_profile() support outright
+# (ValueError: "Auth file or JSON dict are deprecated auth approach") and raise azure.core exceptions, not
+# msrestazure's CloudError - both of which scripts/autoscaling/azure/*.py and azureprovider.py depend on.
+# azure-cli-core/azure-mgmt-containerinstance/portalocker are intentionally not ported here: nothing under
+# Python 3 imports them (get_client_from_cli_profile's azure.cli.core import is deferred to call time, and
+# AZURE_AUTH_LOCATION is always set in a real deployment, so that branch never runs).
+RUN pip3 install -I  azure-common==1.1.18 \
+                     azure-mgmt-resource==2.0.0 \
+                     azure-mgmt-compute==4.5.1 \
+                     azure-mgmt-network==2.0.0
+
 # GCP - specific packages
 RUN pip install -I google-api-core==1.32.0 \
                    google-api-python-client==1.12.11 \
                    google-auth==1.35.0 \
                    google-auth-httplib2==0.1.0 \
                    googleapis-common-protos==1.52.0
+
+# GCP - specific packages, Python 3 (issue #4589)
+RUN pip3 install -I  google-api-core==1.32.0 \
+                     google-api-python-client==1.12.11 \
+                     google-auth==1.35.0 \
+                     google-auth-httplib2==0.1.0 \
+                     googleapis-common-protos==1.52.0
 
 ENV CP_API_HOME="/opt/api"
 RUN mkdir -p $CP_API_HOME 
@@ -157,6 +190,7 @@ RUN mkdir -p /tmp/pipe-temp && \
     cd /tmp/pipe-temp/ && \
     unzip -qq pipeline.jar && \
     pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    pip3 install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp
 

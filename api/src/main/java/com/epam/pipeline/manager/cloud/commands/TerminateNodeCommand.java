@@ -33,7 +33,7 @@ public class TerminateNodeCommand extends AbstractClusterCommand {
     @Override
     protected List<String> buildCommandArguments() {
         final List<String> commands = new ArrayList<>();
-        commands.add(AbstractClusterCommand.EXECUTABLE);
+        commands.add(executable);
         commands.add(script);
         commands.add(AbstractClusterCommand.INTERNAL_IP_PARAMETER);
         commands.add(internalIp);
