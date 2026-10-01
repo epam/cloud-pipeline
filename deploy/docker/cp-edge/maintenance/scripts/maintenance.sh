@@ -14,4 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o allexport; source /etc/maintenance/env.sh; set -o allexport; python /etc/maintenance/maintenance.py >> /var/log/maintenance.log 2>&1
+set -o allexport; source /etc/maintenance/env.sh; set -o allexport; "${CP_PYTHON_PATH:-python}" /etc/maintenance/maintenance.py >> /var/log/maintenance.log 2>&1
