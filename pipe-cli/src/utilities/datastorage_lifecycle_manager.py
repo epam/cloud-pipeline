@@ -22,6 +22,7 @@ class DataStorageLifecycleManager:
         self.path = path
         self.is_file = is_file
         self.items = None
+        self.file_item = None
         self.sorted_paths = []
 
     def find_lifecycle_status(self, file_path):
@@ -29,24 +30,32 @@ class DataStorageLifecycleManager:
             self.load_items()
         if not file_path.startswith('/'):
             file_path = '/' + file_path
+        if self.file_item is not None and self.file_item.path == file_path:
+            return self.get_path_restore_state(self.file_item)
         for path in self.sorted_paths:
             if path == file_path or file_path.startswith(path):
-                item = self.items.get(path)
-                if not item:
-                    return None, None
-                if item.status == 'SUCCEEDED':
-                    restored_till = ' till %s' % item.restored_till\
-                        if item.restored_till else ''
-                    return ' (Restored%s)' % restored_till, item.restore_versions
-                else:
-                    return None, item.restore_versions
+                return self.get_path_restore_state(self.items.get(path))
         return None, None
 
     def load_items(self):
-        items = DataStorageLifecycle.load_hierarchy(self.storage_id, self.path, self.is_file)
+        if not self.is_file:
+            file_items = DataStorageLifecycle.load_hierarchy(self.storage_id, self.path, is_file=True)
+            if file_items:
+                self.file_item = file_items[0]
+        items = DataStorageLifecycle.load_hierarchy(self.storage_id, self.path)
         self.items = {}
         if not items:
             return
         for item in items:
             self.items.update({item.path: item})
         self.sorted_paths = sorted([item.path for item in items], key=len, reverse=True)
+
+    @staticmethod
+    def get_path_restore_state(item):
+        if not item:
+            return None, None
+        if item.status == 'SUCCEEDED':
+            restored_till = ' till %s' % item.restored_till if item.restored_till else ''
+            return ' (Restored%s)' % restored_till, item.restore_versions
+        else:
+            return None, item.restore_versions
