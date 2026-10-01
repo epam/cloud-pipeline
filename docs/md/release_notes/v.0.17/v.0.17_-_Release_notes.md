@@ -731,6 +731,18 @@ To stop the "Impersonation" mode, user shall click the **Stop impersonation** bu
 
 For more details see [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#gui-impersonation).
 
+### Group permissions
+
+Admins can now let other users manage a group, in the same way as it's possible to let a user manage another user account.  
+Permissions are set at the new **PERMISSIONS** tab of the group settings pop-up:
+
+- **READ** - the user can see the group, its members and attributes
+- **WRITE** - the user can also change the group members, attributes (except sensitive keys) and default data storage
+
+Creating, deleting and blocking a group, the **Default group** flag, launch options and credentials profiles stay available to users with the **ROLE\_ADMIN** or **ROLE\_USER\_ADMIN** role only. Permissions can not be used to manage predefined system roles.
+
+For more details see [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#group-permissions).
+
 ## "All pipelines" and "All storages" repositories
 
 There are several ways for users to find the appropriate storage/pipeline object in the **Cloud Pipeline Platform** - manually via the **Library**, using the **Search** ability or via the corresponding panels of the main Dashboard.
