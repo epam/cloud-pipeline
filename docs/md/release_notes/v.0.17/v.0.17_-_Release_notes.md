@@ -61,6 +61,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
@@ -1828,6 +1829,14 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 ***
 
 ## Notable Bug fixes
+
+### Restarted runs lose parameters and get an API token of another user
+
+[#4622](https://github.com/epam/cloud-pipeline/issues/4622)
+
+Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
+Also, the `API_TOKEN` inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
+Now, a restarted run keeps all parameters of the parent run, and the `API_TOKEN` of any launched run is always issued for the run owner.
 
 ### Storage files indexing stops when a storage is deleted during the sync
 
