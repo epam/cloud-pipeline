@@ -57,6 +57,7 @@
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
+- [Python 3 support for backend services](#python-3-support-for-backend-services)
 
 ***
 
@@ -1825,6 +1826,12 @@ In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NOD
 The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
 
 If the system preference `ui.launch.allow.nodeup.count` is `true`, this parameter gets its own optional "Capacity retries" field.
+
+***
+
+## Python 3 support for backend services
+
+`pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (`boto3`/`botocore`, `azure-mgmt-*`, `google-api-python-client`, and `pipe-common` itself), so they run under either interpreter.
 
 ***
 
