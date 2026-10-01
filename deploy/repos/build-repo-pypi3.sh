@@ -102,12 +102,17 @@ botocore==1.32.7
 botocore==1.34.69
 boto3==1.29.0
 boto3==1.34.69
-azure-common==1.1.28
-azure-mgmt-compute==31.0.0
-azure-mgmt-network==26.0.0
-azure-mgmt-resource==23.1.0
+azure-common==1.1.18
+azure-mgmt-compute==4.5.1
+azure-mgmt-network==2.0.0
+azure-mgmt-resource==2.0.0
 msrestazure==0.6.4
-httplib2==0.18.1"
+httplib2==0.18.1
+google-api-core==1.32.0
+google-api-python-client==1.12.11
+google-auth==1.35.0
+google-auth-httplib2==0.1.0
+googleapis-common-protos==1.52.0"
 download_list "$pypi_packages" /srv/pypi/web/
 
 python3 $WD/create_simple_index.py /srv/pypi/web/

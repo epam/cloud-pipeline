@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Exercises the api-pod-side cluster-command scripts (issue #4589 Phase 4, extended in Phase 5)
-# under whichever interpreter runs it. There was no test runner in this package before. Requires the same
-# third-party packages requirements.txt lists (boto3, azure, google-api-python-client) plus
-# pykube/pytz/PyJWT/luigi, which workflows/pipe-common's own imports pull in transitively - install
-# them into an isolated virtualenv, never the interpreter running the rest of the toolchain.
+# Exercises the api-pod-side cluster-command scripts (issue #4589 Phase 4, extended in Phases 5-6)
+# under whichever interpreter runs it. There was no test runner in this package before. Requires the
+# same third-party packages requirements.txt lists, pinned to versions confirmed importable under
+# Python 3.12 (deploy/docker/cp-api-srv/Dockerfile's pip3 install steps carry the same pins) - azure's
+# unversioned meta-package in particular resolves to a track2 (azure-core-based) azure-mgmt-network
+# under Python 3 unless pinned, which raises different exceptions than the msrestazure-based
+# ResourceManagementClient/ComputeManagementClient this code expects - plus pykube/pytz/PyJWT/luigi,
+# which workflows/pipe-common's own imports pull in transitively. Install into an isolated virtualenv,
+# never the interpreter running the rest of the toolchain.
 
-import importlib.util
 import os
 import re
 import sys
@@ -28,6 +31,22 @@ try:
     from unittest import mock
 except ImportError:
     import mock
+
+try:
+    import importlib.util
+
+    def _load_module_from_path(name, path):
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+except ImportError:
+    # importlib.util doesn't exist under Python 2 - this test file itself needs to run under
+    # either interpreter, same as the scripts it exercises.
+    import imp
+
+    def _load_module_from_path(name, path):
+        return imp.load_source(name, path)
 
 AUTOSCALING_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.join(AUTOSCALING_DIR, '..', '..')
@@ -69,10 +88,7 @@ BARE_DICT_VIEW_ARGUMENT_PATTERN = re.compile(r'=\s*[\w.]+\.(values|keys)\(\)[,)]
 
 def load_module(name, relative_path):
     path = os.path.join(AUTOSCALING_DIR, relative_path)
-    spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return _load_module_from_path(name, path)
 
 
 class ImportUnderCurrentInterpreterTest(unittest.TestCase):
@@ -180,6 +196,31 @@ class AwsNodeupVersionCompatTest(unittest.TestCase):
             load_module('aws_nodeup_no_distutils', 'aws/nodeup.py')
 
 
+class AwsNodeupReplaceDockerImagesTest(unittest.TestCase):
+    # Regression test (issue #4589): replace_docker_images() called
+    # `jwt.decode(api_token, verify=False)` - PyJWT 2.x (the Python 3 pin) dropped the `verify`
+    # kwarg entirely (TypeError at call time, not an import-time failure a grep sweep would
+    # catch). Fixed to `options={"verify_signature": False}`, which both PyJWT 1.x (Python 2)
+    # and 2.x (Python 3) accept. Signs the test token with HS256 purely because that's the
+    # simplest algorithm to construct without a real RSA keypair - production signs with RS512
+    # (JwtTokenGenerator.java), but that's irrelevant to what's under test here: decoding with
+    # verify_signature off never checks the token's actual algorithm against the `algorithms=`
+    # allow-list, by design (there's no signature to check it against), so any algorithm choice
+    # exercises the same `options=` code path identically.
+    def setUp(self):
+        self.aws_nodeup = load_module('aws_nodeup_replace_docker_images_test', 'aws/nodeup.py')
+
+    def test_replaces_user_and_pre_pull_dockers_placeholders(self):
+        import jwt
+        token = jwt.encode({'sub': 'test-user'}, 'does-not-matter', algorithm='HS256')
+        self.aws_nodeup.api_token = token
+        script = self.aws_nodeup.replace_docker_images(
+            ['registry/image:1', 'registry/image:2'],
+            '@API_USER@ @PRE_PULL_DOCKERS@'
+        )
+        self.assertEqual(script, 'test-user registry/image:1,registry/image:2')
+
+
 class DictViewIndexingRegressionTest(unittest.TestCase):
     # Regression test for the exact bug class fresh-eyes review caught in the first pass of this
     # diff: dict.items()/.values()/.keys() subscripted with [i], or handed somewhere a list is
@@ -198,23 +239,52 @@ class DictViewIndexingRegressionTest(unittest.TestCase):
         self.assertEqual(offending, [])
 
 
-class AzureNodeupTagsTest(unittest.TestCase):
-    # Regression test: resource_tags() used dict.iteritems(), removed in Python 3. Importing
-    # azure/nodeup.py runs live Azure CLI/SDK auth at module level (see the comment on
-    # ImportUnderCurrentInterpreterTest above), so both the module-level auth calls and
-    # AZURE_RESOURCE_GROUP need mocking/setting before the module can be loaded at all - this
-    # is unrelated to the fix under test, just what importing this particular file requires.
-    def _load_azure_nodeup(self):
-        with mock.patch.dict(os.environ, {'AZURE_RESOURCE_GROUP': 'test-rg'}), \
-             mock.patch('azure.common.client_factory.get_client_from_cli_profile', return_value=mock.MagicMock()), \
-             mock.patch('azure.common.client_factory.get_client_from_auth_file', return_value=mock.MagicMock()):
-            return load_module('azure_nodeup_tags_test', 'azure/nodeup.py')
+def load_azure_module(name, relative_path):
+    # azure/*.py scripts authenticate against the Azure SDK at true module level (not inside a
+    # function), so importing any of them for real always attempts live auth unless both the
+    # module-level auth calls and AZURE_RESOURCE_GROUP are mocked/set first - see the comment on
+    # ImportUnderCurrentInterpreterTest. Shared across every azure/*.py test below rather than
+    # duplicated per class.
+    with mock.patch.dict(os.environ, {'AZURE_RESOURCE_GROUP': 'test-rg'}), \
+         mock.patch('azure.common.client_factory.get_client_from_cli_profile', return_value=mock.MagicMock()), \
+         mock.patch('azure.common.client_factory.get_client_from_auth_file', return_value=mock.MagicMock()):
+        return load_module(name, relative_path)
 
+
+class AzureNodeupTagsTest(unittest.TestCase):
+    # Regression test: resource_tags() used dict.iteritems(), removed in Python 3.
     def test_resource_tags_returns_the_configured_tags(self):
-        azure_nodeup = self._load_azure_nodeup()
+        azure_nodeup = load_azure_module('azure_nodeup_tags_test', 'azure/nodeup.py')
         with mock.patch.object(azure_nodeup, 'load_cloud_config', return_value=(None, {'a': '1', 'b': '2'})):
             tags = azure_nodeup.resource_tags()
         self.assertEqual(tags, {'a': '1', 'b': '2'})
+
+
+class AzureNodeupReplaceDockerImagesTest(unittest.TestCase):
+    # Regression test (issue #4589): same `jwt.decode(api_token, verify=False)` defect
+    # AwsNodeupReplaceDockerImagesTest covers, fixed identically here. See that test's comment.
+    def test_replaces_user_and_pre_pull_dockers_placeholders(self):
+        import jwt
+        azure_nodeup = load_azure_module('azure_nodeup_replace_docker_images_test', 'azure/nodeup.py')
+        token = jwt.encode({'sub': 'test-user'}, 'does-not-matter', algorithm='HS256')
+        azure_nodeup.api_token = token
+        script = azure_nodeup.replace_docker_images(
+            ['registry/image:1', 'registry/image:2'],
+            '@API_USER@ @PRE_PULL_DOCKERS@'
+        )
+        self.assertEqual(script, 'test-user registry/image:1,registry/image:2')
+
+
+class AzureClusterScriptsImportTest(unittest.TestCase):
+    # Regression test, same class as ImportUnderCurrentInterpreterTest above but for the
+    # azure/*.py scripts, which that test deliberately excludes (see its comment) - catches a
+    # SyntaxError/ImportError under Python 3 (e.g. nodedown.py's historic bare `print e`) that a
+    # grep sweep would miss. nodeup.py is covered by the two test classes above already
+    # importing it; this fills in the other three.
+    def test_nodedown_node_reassign_and_terminate_node_import_cleanly(self):
+        load_azure_module('azure_nodedown_import_test', 'azure/nodedown.py')
+        load_azure_module('azure_node_reassign_import_test', 'azure/node_reassign.py')
+        load_azure_module('azure_terminate_node_import_test', 'azure/terminate_node.py')
 
 
 if __name__ == '__main__':
