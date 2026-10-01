@@ -9,6 +9,7 @@ import {addParameter, addSystemParameters} from '../utilities/parameter-utilitie
 import {
   reservedParameters
 } from '../utilities/parameters';
+import {getNodeUpRetryCountSkippedParameters} from '../utilities/node-up-retry-count';
 import SystemParametersBrowser from '../../dialogs/SystemParametersBrowser';
 import {
   getSkippedParameters as getGPUScalingSkippedParameters
@@ -42,7 +43,8 @@ class AddParameterButton extends React.Component {
     };
     const skipped = parameters.map((p) => p.name)
       .concat(reservedParameters)
-      .concat(preferences.loaded ? getGPUScalingSkippedParameters(preferences) : []);
+      .concat(preferences.loaded ? getGPUScalingSkippedParameters(preferences) : [])
+      .concat(getNodeUpRetryCountSkippedParameters(preferences));
     return (
       <Button
         id="add-system-parameter-button"

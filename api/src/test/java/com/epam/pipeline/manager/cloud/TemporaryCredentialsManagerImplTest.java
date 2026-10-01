@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
@@ -39,7 +40,10 @@ import java.util.List;
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -133,6 +137,42 @@ public class TemporaryCredentialsManagerImplTest {
         when(dataStorageManager.load(ID_2)).thenReturn(azureDataStorage(ID_2, TEST_PATH_2));
 
         manager.generate(actions);
+    }
+
+    @Test
+    public void shouldNotCheckPathPermissionsOfReadActionForStorageReader() {
+        final DataStorageAction action = dataStorageAction(ID_1, true);
+        action.setItemPath(TEST_PATH_2);
+        action.setItemType(DataStorageItemType.File);
+        final S3bucketDataStorage storage = s3DataStorage(ID_1, TEST_PATH_1);
+        storage.setPathPermissionsEnabled(true);
+        when(dataStorageManager.load(ID_1)).thenReturn(storage);
+        when(authManager.getAuthorizedUser()).thenReturn(TEST_PATH_2);
+        when(storagePermissionManager.isStorageReader()).thenReturn(true);
+
+        manager.generate(Collections.singletonList(action));
+
+        assertThat(capture().getLeft()).containsExactly(action);
+        verify(pathPermissionsService, never()).isReadAllowedToFile(anyLong(), anyString());
+    }
+
+    @Test
+    public void shouldCheckPathPermissionsOfWriteActionForStorageReader() {
+        final DataStorageAction action = dataStorageAction(ID_1, true);
+        action.setWrite(true);
+        action.setItemPath(TEST_PATH_2);
+        action.setItemType(DataStorageItemType.File);
+        final S3bucketDataStorage storage = s3DataStorage(ID_1, TEST_PATH_1);
+        storage.setPathPermissionsEnabled(true);
+        when(dataStorageManager.load(ID_1)).thenReturn(storage);
+        when(authManager.getAuthorizedUser()).thenReturn(TEST_PATH_2);
+        when(storagePermissionManager.isStorageReader()).thenReturn(true);
+        when(pathPermissionsService.isWriteAllowedToFile(ID_1, TEST_PATH_2)).thenReturn(false);
+
+        manager.generate(Collections.singletonList(action));
+
+        assertThat(capture().getLeft()).isEmpty();
+        verify(pathPermissionsService).isWriteAllowedToFile(ID_1, TEST_PATH_2);
     }
 
     private DataStorageAction dataStorageAction(final Long storageId, final boolean read) {

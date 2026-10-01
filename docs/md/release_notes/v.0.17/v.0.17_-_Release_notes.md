@@ -22,6 +22,8 @@
 - [Sensitive storages](#sensitive-storages)
 - [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
+- [`pipe storage mount` waits for the mount point](#pipe-storage-mount-waits-for-the-mount-point)
+- [Parallel mounting of data storages](#parallel-mounting-of-data-storages)
 - [Hot node pools](#hot-node-pools)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
@@ -31,6 +33,7 @@
 - [Custom node images](#custom-node-images)
 - [Launch a tool with "hosted" applications](#launch-a-tool-with-hosted-applications)
 - [Advanced global search with faceted filters](#advanced-global-search-with-faceted-filters)
+- [Exclude NFS storages from file indexing](#exclude-nfs-storages-from-file-indexing)
 - [Explicitly "immutable" pipeline parameters](#explicitly-immutable-pipeline-parameters)
 - [Disable Hyper-Threading](#disable-hyper-threading)
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
@@ -50,11 +53,17 @@
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
+- [Checking of the Docker image version in `pipe run`](#checking-of-the-docker-image-version-in-pipe-run)
+- [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
+- [Read-only access to all storages](#read-only-access-to-all-storages)
+- [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
+    - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
     - [AWS deployment: unable to list more than 1000 files in the S3 bucket](#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket)
@@ -904,6 +913,37 @@ If it's exceeded - the user is being warned with the following wording and asked
 - If the **`storage.mounts.per.gb.ratio`** is not set - no checks are being performed, no warning appears.
 - Before the launch, only the _object storages_ count is being calculated, _file mounts_ do not introduce this limitation.
 
+## `pipe storage mount` waits for the mount point
+
+In the previous versions, `pipe storage mount` waited for a fixed time (the `-w` option, `1000` ms by default; for the jobs - the `CP_PIPE_FUSE_TIMEOUT` parameter, `500` ms by default) and then only checked that the mount process was still running. If the mount process failed later, the storage was reported as mounted, but it was missing.
+
+In the current version, `pipe storage mount` waits until the storage is actually mounted:
+
+- it checks the mount point every **`CP_PIPE_FUSE_MOUNT_DELAY`** ms (`500` by default) until it is mounted by `pipe` FUSE. If the mount point is a symlink, its target is checked
+- the `-w` (`--timeout`) option now sets the maximum time to wait, in ms. By default, it is `10000`
+- the mount fails if the mount process exits, or if the storage is not mounted by `pipe` FUSE when the timeout expires (e.g. something else stays mounted at the mount point). In the last case, the mount process is stopped
+
+For the jobs, the timeout is set by the new launch parameter **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** (_int_, `10000` by default). By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the **`CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES`** parameter.
+
+> **_Note_**: the **`CP_PIPE_FUSE_TIMEOUT`** parameter is not used anymore. If it is set for a job, tool or configuration, it is ignored. Use **`CP_PIPE_FUSE_MOUNT_TIMEOUT`** instead. The new value is the maximum time to wait, not a fixed wait, so it shall not be set as low as the old one.
+
+For more details see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mount-a-storage).
+
+## Parallel mounting of data storages
+
+Previously, a job mounted its data storages one by one. When the user has hundreds of available storages, the `MountDataStorages` task could take a long time before the job started.
+
+In the current version, a new launch parameter **`CP_CAP_MOUNT_THREADS`** (_int_) is introduced. It sets the number of threads that mount the data storages in parallel (e.g. `4`, `8` or `16`).  
+By default, it is `1` - storages are mounted one by one, as before. To go back to the previous behavior, set the parameter to `1` or remove it.
+
+**_Note_**:
+
+- If a storage is mounted inside the mount point of another storage, it is mounted only after the mount command of that storage has finished.
+- Storages mounted with `pipe` FUSE request their details and credentials from the API. A large number of threads makes these requests at the same time and increases the load on the API and on the cloud provider when a job (or a cluster) starts. It also uses more CPU on small nodes. Start with a small value, e.g. `4`.
+- If `pipe` FUSE mounts fail by a timeout under a high load, consider increasing **`CP_PIPE_FUSE_MOUNT_TIMEOUT`**. By default, this parameter is not passed to the worker nodes of a cluster. To pass it, add its name to the **`CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES`** parameter.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#mount-storages-in-parallel).
+
 ## Hot node pools
 
 For some jobs, a waiting for a node launch can be too long. It is convenient to have some scope of the running nodes in the background that will be always or on schedule be available.
@@ -1280,6 +1320,15 @@ New features:
     For more details about the view of the results output see [here](../../manual/19_Search/19._Global_search.md#results-output-view).
 
 For more details about **Advanced search** see [here](../../manual/19_Search/19._Global_search.md).
+
+## Exclude NFS storages from file indexing
+
+Previously, the files of object storages (AWS S3, Google Cloud Storage, Azure Blob storage) could be excluded from the search indexing by the storage attribute, but NFS storages could not - all NFS storages were indexed. The only option was to disable the NFS files indexing entirely.
+
+In **`v0.17`**, the same attribute works for NFS storages as well: the files of an NFS storage tagged by the attribute `Billing status` with the value `Exclude` are not indexed anymore.  
+The attribute key and value for NFS storages can be changed via the environment variables `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_KEY` and `CP_SEARCH_NFS_FILE_STORAGE_EXCLUDE_METADATA_VALUE` of the search service.
+
+For more details see [here](../../manual/19_Search/19._Global_search.md#exclude-storages-from-file-indexing).
 
 ## Explicitly "immutable" pipeline parameters
 
@@ -1743,6 +1792,41 @@ Feature is not available:
 
 More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
 
+## Read-only access to all storages
+
+Previously, read access to all data storages of the Platform could be given only by the permission settings of the storages (or of their parent folders) - or by the **ROLE\_ADMIN**/**ROLE\_STORAGE\_ADMIN** roles, which also give write and owner access.  
+In the current version, the new role **ROLE\_STORAGE\_READER** was introduced. It gives the user **READ** permission to every data storage in the Platform, regardless of the storage permission settings, and nothing else: the user is able to browse storages, download their data and view storage attributes, tags and permission settings, while any write access still has to be granted explicitly.  
+The runs, launched by such a user, mount all the storages of the Platform in a read-only mode (except the storages the user was granted write access to).
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#storage-reader-role).
+
+***
+
+## Permissions granted to a user
+
+Previously, the permissions could be viewed only per object - for all users and groups granted access to it. To check which objects a specific user was granted access to, the permissions of every object had to be loaded and matched against the user's name, groups and roles.  
+In the current version, the new API method `GET /permissions/user?userId=<user ID>&aclClass=<object type>` was introduced. For the specified user, it returns all objects of the type (data storages or pipelines) with the permissions granted to the user, to the user's groups or roles - including the ones inherited from the parent folders. The method is available to admins and to the users allowed to view the specified user (**ROLE\_USER\_ADMIN**, **ROLE\_USER\_READER** or **READ** permission to that user). Admins get all objects, other users - only the objects they have read access to.
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#permissions-granted-to-a-user).
+
+## Checking of the Docker image version in `pipe run`
+
+Previously, `pipe run` did not check the version (tag) of the Docker image specified via the `-di` (`--docker-image`) option. A run with a mistyped version, e.g. `library/ubuntu:latet`, was scheduled and failed only on the node, when the image could not be pulled.
+
+In the current version, `pipe run` checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - `pipe` prints an error with the list of the available versions and exits with the code `1`.  
+If the tool versions can't be loaded, `pipe` prints a warning and continues the launch.
+
+For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
+
+## Node start retries for a specific run
+
+Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
+
+In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NODEUP_RETRY_COUNT`. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
+The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
+
+If the system preference `ui.launch.allow.nodeup.count` is `true`, this parameter gets its own optional "Capacity retries" field.
+
 ***
 
 ## Python 3 support for backend services
@@ -1752,6 +1836,23 @@ More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features
 ***
 
 ## Notable Bug fixes
+
+### Restarted runs lose parameters and get an API token of another user
+
+[#4622](https://github.com/epam/cloud-pipeline/issues/4622)
+
+Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
+Also, the `API_TOKEN` inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
+Now, a restarted run keeps all parameters of the parent run, and the `API_TOKEN` of any launched run is always issued for the run owner.
+
+### Storage files indexing stops when a storage is deleted during the sync
+
+[#4598](https://github.com/epam/cloud-pipeline/issues/4598)
+
+Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.
+All storages after the deleted one were not re-indexed until the next cycle, so the search showed outdated files for them.
+This affected `NFS` storages and the object storages (`S3`, `GCS`, `Azure`).
+Now, the deleted storage is skipped, and the remaining storages are indexed as usual.
 
 ### Unable to view pipeline sources for previous draft versions
 
