@@ -113,6 +113,9 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String REPOSITORY_COMMITS = "/repository/commits";
     private static final String REPOSITORY_FILES = "/repository/files";
     private static final String REPOSITORY_TAGS = "/repository/tags";
+    private static final String REPOSITORY_RELEASES = "/releases";
+    private static final String FORK_UUID = "abc";
+    private static final String NAMESPACE_PATH = "namespace_path";
     private static final String REPOSITORY_TREE = "/repository/tree";
     private static final String REF_NAME = "ref_name";
     private static final String PATH = "path";
@@ -132,6 +135,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String HTTP_PATH_PATTEN = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
     private static final String SSH_PATH_PATTERN = "git@cp-git.default.svc.cluster.local:%s/%s.git";
     private static final String GIT_MASTER_REPOSITORY = "refs/heads/master";
+    private static final String FORK = "/fork";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -536,6 +540,11 @@ public class GitManagerTest extends AbstractManagerTest {
                         .willReturn(notFound())
         );
         givenThat(
+                get(urlPathEqualTo(apiV4(REPOSITORY_TREE)))
+                        .withQueryParam(PATH, WireMock.absent())
+                        .willReturn(okJson("[]"))
+        );
+        givenThat(
                 get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(DOCS))))
                         .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                         .willReturn(notFound())
@@ -579,12 +588,24 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withQueryParam(TAG_NAME, equalTo(tagName))
                 .willReturn(created().withHeader(CONTENT_TYPE, "application/json").withBody(with(tag)))
         );
+        givenThat(
+            get(urlPathEqualTo("/api/v4/version"))
+                .willReturn(okJson("{\"version\": \"15.5.4\"}"))
+        );
+        givenThat(
+            post(urlPathEqualTo(api(REPOSITORY_RELEASES)))
+                .willReturn(okJson("{\"tag_name\": \"v1.0.1\", \"description\": \"Release description\"}")
+                        .withStatus(HttpURLConnection.HTTP_CREATED))
+        );
         final Pipeline pipeline = testingPipeline();
         final Revision revision = pipelineRepositoryService.createPipelineRevision(
             pipeline, tagName, sha, "Message", "Release description"
         );
         assertThat(revision.getName(), is(tag.getName()));
         assertThat(revision.getMessage(), is(tag.getMessage()));
+        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(api(REPOSITORY_RELEASES)))
+                .withRequestBody(equalToJson(
+                        "{\"tag_name\": \"v1.0.1\", \"description\": \"Release description\"}")));
     }
 
     @Test
@@ -620,6 +641,43 @@ public class GitManagerTest extends AbstractManagerTest {
         final GitProject updatedProject = pipelineRepositoryService.updateRepositoryName(
                 new Pipeline(), String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName);
         assertThat(updatedProject, is(expectedProject));
+    }
+
+    @Test
+    public void shouldCopyProjectIfTemporaryGroupIsOnlyScheduledForDeletion() {
+        final String newProjectName = "copyname";
+        final String tmpGroup = "TMP_FORK_" + FORK_UUID;
+        final String tmpProject = encodeUrlPath(tmpGroup + "/" + REPOSITORY_NAME);
+        final String tmpRenamedProject = encodeUrlPath(tmpGroup + "/" + newProjectName);
+        final String copiedProject = getUrlEncodedNamespacePath(newProjectName);
+        final GitProject expectedProject = createProject(newProjectName);
+        givenThat(post(urlPathEqualTo("/api/v3/groups"))
+                .willReturn(okJson("{\"id\": 3, \"name\": \"" + tmpGroup + "\", \"path\": \"" + tmpGroup + "\"}")
+                        .withStatus(HttpURLConnection.HTTP_CREATED)));
+        for (String project : new String[]{PROJECT_PATH, tmpProject, tmpRenamedProject, copiedProject}) {
+            givenThat(get(urlPathEqualTo(PROJECTS_ROOT + project + REPOSITORY_TAGS)).willReturn(okJson("[]")));
+        }
+        givenThat(post(urlPathEqualTo(api(FORK)))
+                .willReturn(okJson(with(createProject(REPOSITORY_NAME))).withStatus(HttpURLConnection.HTTP_CREATED)));
+        givenThat(get(urlPathEqualTo(PROJECTS_ROOT + tmpProject))
+                .willReturn(okJson(with(createProject(REPOSITORY_NAME)))));
+        givenThat(put(urlPathEqualTo(PROJECTS_ROOT + tmpProject)).willReturn(okJson(with(expectedProject))));
+        givenThat(post(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
+                .willReturn(okJson(with(expectedProject)).withStatus(HttpURLConnection.HTTP_CREATED)));
+        givenThat(get(urlPathEqualTo(PROJECTS_ROOT + copiedProject)).willReturn(okJson(with(expectedProject))));
+        // GitLab 18.0 and later answers the same way, when it only schedules a top-level group for deletion
+        givenThat(WireMock.delete(urlPathEqualTo("/api/v3/groups/" + tmpGroup))
+                .willReturn(okJson("{\"message\": \"202 Accepted\"}").withStatus(HttpURLConnection.HTTP_ACCEPTED)));
+        givenThat(get(urlPathEqualTo("/api/v4/version")).willReturn(okJson("{\"version\": \"19.4.1\"}")));
+
+        final GitProject copy = gitManager.copyRepository(REPOSITORY_NAME, newProjectName, FORK_UUID);
+
+        assertThat(copy, is(expectedProject));
+        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(api(FORK)))
+                .withQueryParam(NAMESPACE_PATH, equalTo(tmpGroup)));
+        wireMockRule.verify(WireMock.postRequestedFor(urlPathEqualTo(PROJECTS_ROOT + tmpRenamedProject + FORK))
+                .withQueryParam(NAMESPACE_PATH, equalTo(ROOT_USER_NAME)));
+        wireMockRule.verify(1, WireMock.deleteRequestedFor(urlPathEqualTo("/api/v3/groups/" + tmpGroup)));
     }
 
     @Test(expected = IllegalArgumentException.class)

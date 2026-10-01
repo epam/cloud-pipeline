@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.git.GitProjectMemberRequest;
 import com.epam.pipeline.entity.git.GitProjectRequest;
 import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
+import com.epam.pipeline.entity.git.GitReleaseEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
@@ -61,6 +62,7 @@ public interface GitLabApi {
     String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     String API_VERSION = "api_version";
     String ISSUE_ID = "issue_id";
+    String PROJECT_URL = "api/{api_version}/projects/{project}";
 
     /**
      * @param userName The name of the GitLab user
@@ -77,7 +79,7 @@ public interface GitLabApi {
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param idOrName The ID or URL-encoded path of the project
      */
-    @GET("api/{api_version}/projects/{project}")
+    @GET(PROJECT_URL)
     Call<GitProject> getProject(@Path(API_VERSION) String apiVersion,
                                 @Path(PROJECT) String idOrName);
 
@@ -112,13 +114,29 @@ public interface GitLabApi {
 
     /**
      * delete a specific project
+     * NOTE: From GitLab 18.0 it only marks a project for deletion, see {@link #removeProjectPermanently}.
      *
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param idOrName The ID or URL-encoded path of the project
      */
-    @DELETE("api/{api_version}/projects/{project}")
-    Call<Boolean> deleteProject(@Path(API_VERSION) String apiVersion,
-                                @Path(PROJECT) String idOrName);
+    @DELETE(PROJECT_URL)
+    Call<Void> deleteProject(@Path(API_VERSION) String apiVersion,
+                             @Path(PROJECT) String idOrName);
+
+    /**
+     * Removes a project, that is marked for deletion, at once.
+     * NOTE: Available in GitLab CE from 18.0.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param id The ID of the project
+     * @param permanentlyRemove Shall be true
+     * @param fullPath The full path of the project, as it is after the project is marked for deletion
+     */
+    @DELETE(PROJECT_URL)
+    Call<Void> removeProjectPermanently(@Path(API_VERSION) String apiVersion,
+                                        @Path(PROJECT) String id,
+                                        @Query("permanently_remove") Boolean permanentlyRemove,
+                                        @Query("full_path") String fullPath);
 
     /**
      * Get a list of repository files and directories in a project.
@@ -268,7 +286,7 @@ public interface GitLabApi {
      * @param tagName  The name of the tag
      * @param ref
      * @param message
-     * @param  releaseDescription
+     * @param  releaseDescription (optional) - NOTE: Removed in GitLab 14.0, use {@link #createRelease} instead
      */
     @POST("api/{api_version}/projects/{project}/repository/tags")
     Call<GitTagEntry> createRevision(@Path(API_VERSION) String apiVersion,
@@ -278,6 +296,18 @@ public interface GitLabApi {
                                      @Query("message") String message,
                                      @Query("release_description") String releaseDescription);
 
+    /**
+     * Create a release for an existing repository tag.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param idOrName The ID or URL-encoded path of the project
+     * @param release The tag name and the description of the release
+     */
+    @POST("api/{api_version}/projects/{project}/releases")
+    Call<GitReleaseEntry> createRelease(@Path(API_VERSION) String apiVersion,
+                                        @Path(PROJECT) String idOrName,
+                                        @Body GitReleaseEntry release);
+
     @GET("api/v4/version")
     Call<GitlabVersion> getVersion();
 
@@ -286,6 +316,25 @@ public interface GitLabApi {
                               @Path(USER_ID) String userId,
                               @Body GitTokenRequest tokenRequest,
                               @Header(PRIVATE_TOKEN) String token);
+
+    /**
+     * Get the token used to authenticate this request.
+     * NOTE: Introduced in GitLab 15.5.
+     */
+    @GET("api/v4/personal_access_tokens/self")
+    Call<GitToken> getCurrentToken();
+
+    /**
+     * Revoke an impersonation token of a user. Available for administrators only.
+     *
+     * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
+     * @param userId The ID of the user
+     * @param tokenId The ID of the impersonation token
+     */
+    @DELETE("api/{api_version}/users/{user_id}/impersonation_tokens/{token_id}")
+    Call<Void> revokeImpersonationToken(@Path(API_VERSION) String apiVersion,
+                                        @Path(USER_ID) String userId,
+                                        @Path("token_id") String tokenId);
 
     @POST("api/{api_version}/projects/{project}/hooks")
     Call<GitRepositoryEntry> addProjectHook(@Path(API_VERSION) String apiVersion,
@@ -298,7 +347,7 @@ public interface GitLabApi {
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param project The ID or URL-encoded path of the project
      */
-    @PUT("api/{api_version}/projects/{project}")
+    @PUT(PROJECT_URL)
     Call<GitProject> updateProject(@Path(API_VERSION) String apiVersion,
                                    @Path(PROJECT) String project,
                                    @Body GitProjectRequest projectInfo);
@@ -328,12 +377,16 @@ public interface GitLabApi {
      *
      * @param apiVersion The Gitlab API version (values v3 or v4 supported only)
      * @param project The ID or URL-encoded path of the project
-     * @param namespace The ID or path of the namespace that the project will be forked to
+     * @param namespace The ID or path of the namespace that the project will be forked to.
+     *                  NOTE: Deprecated in GitLab 12.10 and later, use namespacePath instead
+     * @param namespacePath The path of the namespace that the project will be forked to.
+     *                      NOTE: Available in GitLab 12.10 and later
      */
     @POST("api/{api_version}/projects/{project}/fork")
     Call<GitProject> forkProject(@Path(API_VERSION) String apiVersion,
                                  @Path(PROJECT) String project,
-                                 @Query("namespace") String namespace);
+                                 @Query("namespace") String namespace,
+                                 @Query("namespace_path") String namespacePath);
 
     /**
      * Get the path to repository storage for specified project. Available for administrators only.
