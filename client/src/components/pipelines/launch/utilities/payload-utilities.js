@@ -13,13 +13,15 @@ export function getToolLaunchPayload (options) {
   const {
     tool,
     settings = [],
-    toolVersion: tv = 'latest'
+    toolVersion = 'latest'
   } = options;
   if (!tool) {
     throw new Error('Tool configuration not found');
   }
-  const toolVersion = tv.toLowerCase();
-  const versionSettings = settings.find(v => (v.version || '').toLowerCase() === toolVersion);
+  // Docker tags are case-sensitive: only the settings lookup ignores the case
+  const toolVersionLowerCased = toolVersion.toLowerCase();
+  const versionSettings = settings
+    .find(v => (v.version || '').toLowerCase() === toolVersionLowerCased);
   const defaultVersionSettings = settings.find(v => (v.version || '').toLowerCase() === 'latest');
   const versionSettingValue = (settingName) => {
     if (versionSettings &&
