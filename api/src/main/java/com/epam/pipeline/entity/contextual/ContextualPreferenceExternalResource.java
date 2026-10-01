@@ -16,19 +16,15 @@
 
 package com.epam.pipeline.entity.contextual;
 
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 
 /**
  * External resource contextual preference can be associated with.
- *
+ * <p>
  * It can be user, role, tool, etc.
  */
-@Value
-@Wither
-@RequiredArgsConstructor
-public class ContextualPreferenceExternalResource {
-    private final ContextualPreferenceLevel level;
-    private final String resourceId;
+@With
+public record ContextualPreferenceExternalResource(
+        ContextualPreferenceLevel level,
+        String resourceId) {
 }

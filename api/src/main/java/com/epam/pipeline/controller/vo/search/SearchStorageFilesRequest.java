@@ -18,8 +18,10 @@
 package com.epam.pipeline.controller.vo.search;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class SearchStorageFilesRequest {
     private String path;
     private Long storageId;

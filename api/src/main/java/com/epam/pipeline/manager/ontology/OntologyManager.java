@@ -27,7 +27,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -78,11 +78,11 @@ public class OntologyManager {
                     String.format("Ontology '%d' cannot be deleted: children were found.", id));
         }
         if (!recursive || CollectionUtils.isEmpty(children)) {
-            ontologyRepository.delete(id);
+            ontologyRepository.deleteById(id);
             return ontology;
         }
         children.forEach(this::deleteRecursive);
-        ontologyRepository.delete(id);
+        ontologyRepository.deleteById(id);
         return ontology;
     }
 
@@ -143,9 +143,8 @@ public class OntologyManager {
     }
 
     private OntologyEntity findEntity(final Long id) {
-        final OntologyEntity ontology = ontologyRepository.findOne(id);
-        Assert.notNull(ontology, String.format("Ontology with id %s wasn't found.", id));
-        return ontology;
+        return ontologyRepository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException(String.format("Ontology with id %s wasn't found.", id)));
     }
 
     private List<Ontology> toOntologyList(final Iterable<OntologyEntity> ontologyEntities) {
@@ -183,11 +182,11 @@ public class OntologyManager {
     private void deleteRecursive(final OntologyEntity ontology) {
         final List<OntologyEntity> children = findChildren(ontology.getId());
         if (CollectionUtils.isEmpty(children)) {
-            ontologyRepository.delete(ontology.getId());
+            ontologyRepository.deleteById(ontology.getId());
             return;
         }
         children.forEach(this::deleteRecursive);
-        ontologyRepository.delete(ontology.getId());
+        ontologyRepository.deleteById(ontology.getId());
     }
 
     private List<OntologyEntity> findChildren(final Long id) {

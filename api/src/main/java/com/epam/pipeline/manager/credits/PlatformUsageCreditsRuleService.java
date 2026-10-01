@@ -113,7 +113,7 @@ public class PlatformUsageCreditsRuleService {
     }
 
     public PlatformUsageCreditsUpdateRule load(final Long id) {
-        final PlatformUsageCreditsUpdateRuleEntity entity = repository.findOne(id);
+        final PlatformUsageCreditsUpdateRuleEntity entity = repository.findById(id).orElse(null);
         Assert.notNull(entity,
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND, id));
         return mapper.toDto(entity);
@@ -133,7 +133,7 @@ public class PlatformUsageCreditsRuleService {
 
     @Transactional
     public PlatformUsageCreditsUpdateRule update(final Long id, final PlatformUsageCreditsUpdateRule rule) {
-        final PlatformUsageCreditsUpdateRuleEntity existing = repository.findOne(id);
+        final PlatformUsageCreditsUpdateRuleEntity existing = repository.findById(id).orElse(null);
         Assert.notNull(existing,
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND, id));
         normalize(rule);
@@ -148,9 +148,9 @@ public class PlatformUsageCreditsRuleService {
 
     @Transactional
     public void delete(final Long id) {
-        Assert.state(repository.exists(id),
+        Assert.state(repository.existsById(id),
                 messageHelper.getMessage(MessageConstants.ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND, id));
-        repository.delete(id);
+        repository.deleteById(id);
     }
 
     public Map<String, List<FilterFieldVO>> getKeywords() {

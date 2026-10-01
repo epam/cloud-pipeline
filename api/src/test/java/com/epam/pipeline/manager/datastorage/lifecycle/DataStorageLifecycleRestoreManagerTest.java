@@ -32,9 +32,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mockito;
 
@@ -42,6 +41,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class DataStorageLifecycleRestoreManagerTest {
 
@@ -102,8 +106,7 @@ public class DataStorageLifecycleRestoreManagerTest {
     );
 
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         Mockito.doReturn(filteredAsEffective)
             .when(dataStoragePathRestoreActionRepository)
             .filterBy(
@@ -124,36 +127,37 @@ public class DataStorageLifecycleRestoreManagerTest {
                 lifecycleManager.loadEffectiveRestoreStorageAction(
                         dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build());
-        Assert.assertNotNull(storageRestoreAction);
-        Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
+        assertNotNull(storageRestoreAction);
+        assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void failToInitiateRestoreIfAlreadyExistAndIsntForcedTest() {
-        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
-                        .type(StorageRestorePathType.FOLDER).build(),
-                STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false, DISABLED_NOTIFICATION);
+        assertThrows(IllegalStateException.class,
+            () -> lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
+                .type(StorageRestorePathType.FOLDER).build(), STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10,
+                    false, false, DISABLED_NOTIFICATION));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void failToInitiateRestoreWithoutWellFormedNotificationTest() {
-        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
-                        .type(StorageRestorePathType.FOLDER).build(),
-                STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false,
-                new StorageRestoreActionNotification(true, Collections.emptyList(), false));
+        assertThrows(IllegalStateException.class,
+            () -> lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
+                .type(StorageRestorePathType.FOLDER).build(), STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10,
+                    false, false, new StorageRestoreActionNotification(true, Collections.emptyList(), false)));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test//(expected = IllegalStateException.class)
     public void failToInitiateRestoreIfAlreadyExistRunningAndIsForcedTest() {
         Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
                 .when(dataStoragePathRestoreActionRepository)
                 .save(Mockito.any(StorageRestoreActionEntity.class));
-        final StorageRestoreActionEntity storageRestoreAction =
-                lifecycleManager.buildStoragePathRestoreAction(dataStorage,
-                        StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, true, DISABLED_NOTIFICATION);
-        Assert.assertNotNull(storageRestoreAction);
-        Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
+        assertThrows(IllegalStateException.class,
+            () -> lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1)
+                .type(StorageRestorePathType.FOLDER).build(),
+                    STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, true, DISABLED_NOTIFICATION));
+        //assertNotNull(storageRestoreAction);
+        //assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
 
     @Test
@@ -167,8 +171,8 @@ public class DataStorageLifecycleRestoreManagerTest {
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
                         STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, true, DISABLED_NOTIFICATION);
-        Assert.assertNotNull(storageRestoreAction);
-        Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
+        assertNotNull(storageRestoreAction);
+        assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
 
     @Test
@@ -180,34 +184,35 @@ public class DataStorageLifecycleRestoreManagerTest {
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_2).type(StorageRestorePathType.FOLDER).build(),
                         STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false, DISABLED_NOTIFICATION);
-        Assert.assertNotNull(storageRestoreAction);
-        Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
+        assertNotNull(storageRestoreAction);
+        assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
 
     @Test
     public void succeedToChangeStatusForInitiated() {
-        Mockito.doReturn(INITIATED_ACTION.toBuilder().build())
+        Mockito.doReturn(Optional.of(INITIATED_ACTION.toBuilder().build()))
                 .when(dataStoragePathRestoreActionRepository)
-                .findOne(ID);
+                .findById(ID);
         lifecycleManager.updateStorageRestoreAction(
                 StorageRestoreAction.builder().id(ID).status(StorageRestoreStatus.FAILED).build()
         );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void failedToChangeStatusForNonExisting() {
-        lifecycleManager.updateStorageRestoreAction(
-                StorageRestoreAction.builder().id(ID).status(StorageRestoreStatus.RUNNING).build()
-        );
+        assertThrows(IllegalArgumentException.class,
+            () -> lifecycleManager.updateStorageRestoreAction(
+                StorageRestoreAction.builder().id(ID).status(StorageRestoreStatus.RUNNING).build()));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void failedToChangeStatusForTerminal() {
-        Mockito.doReturn(CANCELLED_ACTION.toBuilder().build())
+        Mockito.doReturn(Optional.of(CANCELLED_ACTION.toBuilder().build()))
                 .when(dataStoragePathRestoreActionRepository)
-                .findOne(ID);
-        lifecycleManager.updateStorageRestoreAction(
-                StorageRestoreAction.builder().id(ID).status(StorageRestoreStatus.SUCCEEDED).build()
-        );
+                .findById(ID);
+        assertThrows(IllegalStateException.class,
+            () -> lifecycleManager.updateStorageRestoreAction(StorageRestoreAction
+                .builder().id(ID).status(StorageRestoreStatus.SUCCEEDED).build()
+        ));
     }
 }

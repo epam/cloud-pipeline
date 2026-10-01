@@ -19,7 +19,7 @@ package com.epam.pipeline.repository.user;
 import com.epam.pipeline.entity.user.OnlineUsersEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class OnlineUsersRepositoryTest extends AbstractJpaTest {
 
@@ -52,7 +52,7 @@ public class OnlineUsersRepositoryTest extends AbstractJpaTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertNotNull(repository.findOne(entity.getId()));
+        assertNotNull(repository.findById(entity.getId()).orElseThrow());
     }
 
     @Test

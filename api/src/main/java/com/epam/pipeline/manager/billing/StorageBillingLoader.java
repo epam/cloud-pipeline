@@ -70,10 +70,10 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
     @Override
     public Stream<StorageBilling> billings(final RestHighLevelClient elasticSearchClient,
                                            final BillingExportRequest request) {
-        final LocalDate from = request.getFrom();
-        final LocalDate to = request.getTo();
-        final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
-        final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
+        final LocalDate from = request.from();
+        final LocalDate to = request.to();
+        final Map<String, List<String>> filters = billingHelper.getFilters(request.filters());
+        final BillingDiscount discount = Optional.ofNullable(request.discount()).orElseGet(BillingDiscount::empty);
         return billings(elasticSearchClient, from, to, filters, discount, getPageSize());
     }
 
@@ -137,7 +137,7 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
 
     private DateHistogramAggregationBuilder aggregateBillingsByMonth(final BillingDiscount discount) {
         return billingHelper.aggregateByMonth()
-                .subAggregation(billingHelper.aggregateCostSum(discount.getStorages()))
+                .subAggregation(billingHelper.aggregateCostSum(discount.storages()))
                 .subAggregation(billingHelper.aggregateStorageUsageAvg())
                 .subAggregation(billingHelper.aggregateLastByDateDoc());
     }

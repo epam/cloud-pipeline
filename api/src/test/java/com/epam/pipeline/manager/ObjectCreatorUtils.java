@@ -23,8 +23,6 @@ import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitie
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
-import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
-import com.epam.pipeline.entity.configuration.InputsOutputs;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
@@ -151,21 +149,6 @@ public final class ObjectCreatorUtils {
         entry.setName(name);
         entry.setDefaultConfiguration(defaultEntry);
         entry.setConfiguration(configuration);
-        return entry;
-    }
-
-    public static FirecloudRunConfigurationEntry createFirecloudConfigEntry(String name,
-                                                                            List<InputsOutputs> inputs,
-                                                                            List<InputsOutputs> outputs,
-                                                                            String methodName, String methodSnapshot,
-                                                                            String configName) {
-        FirecloudRunConfigurationEntry entry = new FirecloudRunConfigurationEntry();
-        entry.setName(name);
-        entry.setMethodInputs(inputs);
-        entry.setMethodOutputs(outputs);
-        entry.setMethodName(methodName);
-        entry.setMethodSnapshot(methodSnapshot);
-        entry.setMethodConfigurationName(configName);
         return entry;
     }
 

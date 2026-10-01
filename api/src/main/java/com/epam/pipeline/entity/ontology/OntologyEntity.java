@@ -18,26 +18,25 @@ package com.epam.pipeline.entity.ontology;
 
 import com.epam.pipeline.dto.ontology.OntologyType;
 import com.epam.pipeline.entity.utils.TimestampConverter;
-import com.epam.pipeline.hibernate.JsonDataUserType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.JdbcTypeCode;
 
-import javax.persistence.Convert;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -48,7 +47,6 @@ import java.util.Map;
 @Table(name = "ontology", schema = "pipeline")
 @NoArgsConstructor
 @AllArgsConstructor
-@TypeDef(name = "JsonDataUserType", typeClass = JsonDataUserType.class)
 public class OntologyEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,7 +54,7 @@ public class OntologyEntity {
 
     private String name;
 
-    @Type(type = "JsonDataUserType")
+    @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, String> attributes;
 
     private String externalId;

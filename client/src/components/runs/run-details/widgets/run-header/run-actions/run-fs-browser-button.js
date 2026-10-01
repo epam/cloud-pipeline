@@ -10,7 +10,6 @@ import styles from './run-actions.css';
 import {checkRunActionAvailable, runActions} from '../../../../actions/actions-availability';
 import {Icon} from 'antd';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 @inject('preferences')
@@ -59,13 +58,6 @@ class RunFsBrowserButton extends React.Component {
     const {run} = this.props;
     return run && run.executionPreferences &&
       run.executionPreferences.environment === DTS_ENVIRONMENT;
-  }
-
-  @computed
-  get isFireCloudEnvironment () {
-    const {run} = this.props;
-    return run && run.executionPreferences &&
-      run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
   }
 
   @computed

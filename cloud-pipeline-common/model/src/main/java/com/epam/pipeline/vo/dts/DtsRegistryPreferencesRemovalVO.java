@@ -17,6 +17,8 @@
 package com.epam.pipeline.vo.dts;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 
 import java.util.List;
@@ -25,4 +27,10 @@ import java.util.List;
 public class DtsRegistryPreferencesRemovalVO {
 
     private List<String> preferenceKeysToRemove;
+
+    @JsonCreator
+    public DtsRegistryPreferencesRemovalVO(
+            @JsonProperty("preferenceKeysToRemove") final List<String> preferenceKeysToRemove) {
+        this.preferenceKeysToRemove = preferenceKeysToRemove;
+    }
 }

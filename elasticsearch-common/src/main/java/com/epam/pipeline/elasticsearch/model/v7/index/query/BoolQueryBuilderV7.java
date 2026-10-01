@@ -18,20 +18,23 @@ package com.epam.pipeline.elasticsearch.model.v7.index.query;
 
 import com.epam.pipeline.elasticsearch.model.BoolQueryBuilder;
 import com.epam.pipeline.elasticsearch.model.QueryBuilder;
-import lombok.Getter;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@Getter
+import java.util.ArrayList;
+import java.util.List;
+
 public class BoolQueryBuilderV7 implements BoolQueryBuilder {
 
-    private final org.opensearch.index.query.BoolQueryBuilder inner;
+    private final List<Query> mustClauses = new ArrayList<>();
 
-    public BoolQueryBuilderV7() {
-        this.inner = org.opensearch.index.query.QueryBuilders.boolQuery();
-    }
-
-    public BoolQueryBuilderV7 must(final QueryBuilder queryBuilder) {
-        inner.must((org.opensearch.index.query.QueryBuilder) queryBuilder.getInner());
+    @Override
+    public BoolQueryBuilder must(final QueryBuilder queryBuilder) {
+        mustClauses.add((Query) queryBuilder.getInner());
         return this;
     }
 
+    @Override
+    public Object getInner() {
+        return Query.of(q -> q.bool(b -> b.must(mustClauses)));
+    }
 }

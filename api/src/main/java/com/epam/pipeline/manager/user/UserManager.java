@@ -227,8 +227,8 @@ public class UserManager implements SecuredEntityManager {
         log.info("Generating ssh keys for user {} #{}...", user.getUserName(), user.getId());
         final SshKeyPair sshKeyPair = sshKeyPairManager.generate();
         final Map<String, PipeConfValue> metadata = new HashMap<>(getCurrentMetadata(user.getId()));
-        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.getPrivateKey()));
-        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.getPublicKey()));
+        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.privateKey()));
+        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.publicKey()));
         metadataManager.updateEntityMetadata(metadata, user.getId(), AclClass.PIPELINE_USER);
     }
 
@@ -337,7 +337,7 @@ public class UserManager implements SecuredEntityManager {
     }
 
     public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
-        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+        return StreamSupport.stream(userRepository.findAllById(userIds).spliterator(), false)
                 .collect(Collectors.toList());
     }
 
@@ -475,7 +475,7 @@ public class UserManager implements SecuredEntityManager {
         final GroupStatus groupStatus = loadGroupBlockingStatus(groupName);
         Assert.notNull(groupName,
                 messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, groupName));
-        groupStatusDao.deleteGroupBlockingStatus(groupStatus.getGroupName());
+        groupStatusDao.deleteGroupBlockingStatus(groupStatus.groupName());
         return groupStatus;
     }
 

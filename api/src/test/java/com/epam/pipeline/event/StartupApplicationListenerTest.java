@@ -20,8 +20,8 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 
@@ -41,8 +41,7 @@ public class StartupApplicationListenerTest {
     private final StartupApplicationListener listener = new StartupApplicationListener(dockerRegistryManager,
             cloudRegionManager, pipelineRunDockerOperationManager, kubernetesManager);
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         when(event.getApplicationContext()).thenReturn(mock(ApplicationContext.class));
     }
 

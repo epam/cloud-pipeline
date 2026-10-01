@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.issue.IssueStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -38,6 +37,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.dao.DaoHelper.mapListToSqlArray;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class IssueDao extends NamedParameterJdbcDaoSupport {
 
@@ -103,48 +104,52 @@ public class IssueDao extends NamedParameterJdbcDaoSupport {
     public void deleteIssuesForEntity(EntityVO entity) {
         getJdbcTemplate().update(deleteIssuesForEntityQuery, entity.getEntityId(), entity.getEntityClass().name());
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(issueSequence, "Required query issueSequence is not set");
+        Assert.notNull(createIssueQuery, "Required query createIssueQuery is not set");
+        Assert.notNull(loadIssueByIdQuery, "Required query loadIssueByIdQuery is not set");
+        Assert.notNull(loadAllIssuesForEntityQuery, "Required query loadAllIssuesForEntityQuery is not set");
+        Assert.notNull(updateIssueQuery, "Required query updateIssueQuery is not set");
+        Assert.notNull(deleteIssueQuery, "Required query deleteIssueQuery is not set");
+        Assert.notNull(deleteIssuesForEntityQuery, "Required query deleteIssuesForEntityQuery is not set");
+        Assert.notNull(loadIssuesByAuthorQuery, "Required query loadIssuesByAuthorQuery is not set");
+        Assert.notNull(countIssuesByAuthorQuery, "Required query countIssuesByAuthorQuery is not set");
+    }
 
-    @Required
+
     public void setIssueSequence(String issueSequence) {
         this.issueSequence = issueSequence;
     }
 
-    @Required
     public void setCreateIssueQuery(String createIssueQuery) {
         this.createIssueQuery = createIssueQuery;
     }
 
-    @Required
     public void setLoadIssueByIdQuery(String loadIssueByIdQuery) {
         this.loadIssueByIdQuery = loadIssueByIdQuery;
     }
 
-    @Required
     public void setLoadAllIssuesForEntityQuery(String loadAllIssuesForEntityQuery) {
         this.loadAllIssuesForEntityQuery = loadAllIssuesForEntityQuery;
     }
 
-    @Required
     public void setUpdateIssueQuery(String updateIssueQuery) {
         this.updateIssueQuery = updateIssueQuery;
     }
 
-    @Required
     public void setDeleteIssueQuery(String deleteIssueQuery) {
         this.deleteIssueQuery = deleteIssueQuery;
     }
 
-    @Required
     public void setDeleteIssuesForEntityQuery(String deleteIssuesForEntityQuery) {
         this.deleteIssuesForEntityQuery = deleteIssuesForEntityQuery;
     }
 
-    @Required
     public void setLoadIssuesByAuthorQuery(String loadIssuesByAuthorQuery) {
         this.loadIssuesByAuthorQuery = loadIssuesByAuthorQuery;
     }
 
-    @Required
     public void setCountIssuesByAuthorQuery(String countIssuesByAuthorQuery) {
         this.countIssuesByAuthorQuery = countIssuesByAuthorQuery;
     }

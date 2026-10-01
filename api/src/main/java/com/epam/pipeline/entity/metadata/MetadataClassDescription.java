@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.metadata;
 
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class MetadataClassDescription {
 
     private MetadataClass metadataClass;

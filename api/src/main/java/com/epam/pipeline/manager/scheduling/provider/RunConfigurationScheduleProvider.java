@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.scheduling.ConfigurationScheduleJob;
 import lombok.RequiredArgsConstructor;
+import org.quartz.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -59,7 +60,7 @@ public class RunConfigurationScheduleProvider implements ScheduleProvider {
     }
 
     @Override
-    public Class<?> getScheduleJobClass() {
+    public Class<? extends Job> getScheduleJobClass() {
         return ConfigurationScheduleJob.class;
     }
 

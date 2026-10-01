@@ -99,7 +99,7 @@ public final class DockerCreatorUtils {
     }
 
     public static ToolVersion getToolVersion() {
-        return new ToolVersion();
+        return ToolVersion.builder().build();
     }
 
     public static ToolVersionScanResult getToolVersionScanResult() {

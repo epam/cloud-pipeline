@@ -18,6 +18,7 @@ package com.epam.pipeline.dto.datastorage.permissions;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class StorageFolderListPermissionsContainer {
     /**
      * Contains requested folder permission mask. If null no permissions found for parent folders.

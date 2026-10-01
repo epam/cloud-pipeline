@@ -24,7 +24,7 @@
             <PatternLayout>
                 <pattern>
                     [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
-                </pattern>>
+                </pattern>
             </PatternLayout>
         </Console>
         <RollingFile  name="App-Appender" fileName="${log-path}/monitoring-service.log"
@@ -50,7 +50,7 @@
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
                       filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
             <Filters>
-                <ThresholdFilter level="ERROR" onMatch="ACCEPT" />
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT"/>
             </Filters>
             <DefaultRolloverStrategy>
                 <Delete basePath="${log-path}" maxDepth="1">
@@ -62,7 +62,7 @@
                 </Delete>
             </DefaultRolloverStrategy>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
             </Policies>
             <PatternLayout>
                 <pattern>
@@ -85,7 +85,7 @@
                 </Delete>
             </DefaultRolloverStrategy>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
             </Policies>
             <PatternLayout>
                 <pattern>
@@ -105,7 +105,7 @@
                 </Delete>
             </DefaultRolloverStrategy>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
             </Policies>
             <PatternLayout>
                 <pattern>
@@ -122,8 +122,7 @@
             <AppenderRef ref="Spring-Appender"/>
             <AppenderRef ref="Console-Appender"/>
         </Logger>
-        <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter">
-            <level value="DEBUG" />
+        <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" level="DEBUG">
             <AppenderRef ref="Requests-Appender"/>
         </logger>
         <Root>

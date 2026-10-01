@@ -19,10 +19,12 @@ package com.epam.pipeline.controller.vo.pipeline.issue;
 import com.epam.pipeline.entity.git.GitlabIssueAttachment;
 import com.epam.pipeline.entity.git.GitlabIssueComment;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class GitlabIssueCommentRequest {
 
     private String body;

@@ -26,12 +26,14 @@
                         run_id,
                         status,
                         reason,
-                        date)
+                        date,
+                        run_status_info)
                     VALUES (
                         :RUN_ID,
                         :STATUS,
                         :REASON,
-                        :DATE)
+                        :DATE,
+                        :RUN_STATUS_INFO::jsonb)
                 ]]>
             </value>
         </property>
@@ -42,7 +44,8 @@
                         run_id,
                         status,
                         reason,
-                        date
+                        date,
+                        run_status_info
                     FROM
                         pipeline.run_status_change
                     WHERE
@@ -57,7 +60,8 @@
                         run_id,
                         status,
                         reason,
-                        date
+                        date,
+                        run_status_info
                     FROM
                         pipeline.run_status_change
                     WHERE
@@ -72,7 +76,8 @@
                         run_id,
                         status,
                         reason,
-                        date
+                        date,
+                        run_status_info
                     FROM
                         pipeline.run_status_change
                     WHERE
@@ -82,7 +87,8 @@
                         run_id,
                         status,
                         reason,
-                        date
+                        date,
+                        run_status_info
                     FROM
                         pipeline.archive_run_status_change
                     WHERE
@@ -107,6 +113,20 @@
                         pipeline.run_status_change
                     WHERE
                         run_id IN (:list)
+                ]]>
+            </value>
+        </property>
+        <property name="updatePriceInLastRunStatusChangeQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.run_status_change
+                    SET run_status_info = :RUN_STATUS_INFO::jsonb
+                    WHERE run_id = :RUN_ID
+                        AND date = (
+                            SELECT MAX(date)
+                            FROM pipeline.run_status_change
+                            WHERE run_id = :RUN_ID
+                        );
                 ]]>
             </value>
         </property>

@@ -18,12 +18,14 @@ package com.epam.pipeline.entity.datastorage.omics;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
+@Jacksonized
 @AllArgsConstructor
 public class AWSOmicsFileImportJobListing {
     private final String nextToken;

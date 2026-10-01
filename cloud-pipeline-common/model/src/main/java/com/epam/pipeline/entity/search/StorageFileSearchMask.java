@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.entity.search;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.Set;
@@ -26,4 +28,14 @@ public class StorageFileSearchMask {
     private final String storageName;
     private final Set<String> hiddenFilePathGlobs;
     private final Set<String> indexedContentPathGlobs;
+
+    @JsonCreator
+    public StorageFileSearchMask(@JsonProperty("storageName") String storageName,
+                                 @JsonProperty("hiddenFilePathGlobs") Set<String> hiddenFilePathGlobs,
+                                 @JsonProperty("indexedContentPathGlobs") Set<String> indexedContentPathGlobs) {
+        this.storageName = storageName;
+        this.hiddenFilePathGlobs = hiddenFilePathGlobs;
+        this.indexedContentPathGlobs = indexedContentPathGlobs;
+    }
+
 }

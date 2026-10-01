@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class RawImageDescriptionV2 {
     private Long registry;

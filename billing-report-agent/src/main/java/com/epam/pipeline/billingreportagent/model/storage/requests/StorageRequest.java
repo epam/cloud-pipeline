@@ -19,11 +19,13 @@ package com.epam.pipeline.billingreportagent.model.storage.requests;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@Jacksonized
 public class StorageRequest {
     private PipelineUser user;
     private Long storageId;

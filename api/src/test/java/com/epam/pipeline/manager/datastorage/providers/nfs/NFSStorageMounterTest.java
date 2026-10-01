@@ -27,15 +27,14 @@ import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,11 +44,12 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.concurrent.*;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -70,8 +70,8 @@ public class NFSStorageMounterTest {
     private static final long MOUNT_TIMEOUT_MILLS = 5000L;
     private static final int TIMEOUT_EXIT_CODE = 124;
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    private File tempFolder;
 
     @Mock
     private MessageHelper messageHelper;
@@ -88,16 +88,16 @@ public class NFSStorageMounterTest {
     private ExecutorService executor;
     private File procMountsFile;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
 
         mounter = spy(new NFSStorageMounter(
                 messageHelper, dataStorageDao, regionManager, shareMountManager,
-                tempFolder.getRoot().getAbsolutePath(), MOUNT_TIMEOUT_MILLS));
-        Whitebox.setInternalState(mounter, "cmdExecutor", mockCmdExecutor);
+                tempFolder.getAbsolutePath(), MOUNT_TIMEOUT_MILLS));
+        ReflectionTestUtils.setField(mounter, "cmdExecutor", mockCmdExecutor);
 
-        procMountsFile = tempFolder.newFile("proc_mounts");
+        procMountsFile = new File(tempFolder, "proc_mounts");
         Files.write(procMountsFile.toPath(), new byte[0]);
         doReturn(procMountsFile.getAbsolutePath()).when(mounter).getProcMountsPath();
 
@@ -114,7 +114,7 @@ public class NFSStorageMounterTest {
         executor = Executors.newFixedThreadPool(2);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         executor.shutdownNow();
     }
@@ -138,14 +138,14 @@ public class NFSStorageMounterTest {
 
         final Future<?> future1 = executor.submit(() -> mounter.mount(storage1));
 
-        assertTrue("First mount should enter executeCommand",
-                firstMountEntered.await(TIMEOUT_SEC, TimeUnit.SECONDS));
+        assertTrue(firstMountEntered.await(TIMEOUT_SEC, TimeUnit.SECONDS),
+                "First mount should enter executeCommand");
 
         final Future<?> future2 = executor.submit(() -> mounter.mount(storage2));
 
         Thread.sleep(LOCK_WAIT_MS);
-        assertFalse("Second mount should be blocked while first holds the lock",
-                future2.isDone());
+        assertFalse(future2.isDone(),
+                "Second mount should be blocked while first holds the lock");
 
         firstMountCanProceed.countDown();
 
@@ -171,8 +171,8 @@ public class NFSStorageMounterTest {
         final Future<?> futureA = executor.submit(() -> mounter.mount(storageA));
         final Future<?> futureB = executor.submit(() -> mounter.mount(storageB));
 
-        assertTrue("Both mounts should enter executeCommand concurrently",
-                bothMountsEntered.await(TIMEOUT_SEC, TimeUnit.SECONDS));
+        assertTrue(bothMountsEntered.await(TIMEOUT_SEC, TimeUnit.SECONDS),
+                "Both mounts should enter executeCommand concurrently");
 
         canProceed.countDown();
 
@@ -200,14 +200,14 @@ public class NFSStorageMounterTest {
 
         final Future<?> mountFuture = executor.submit(() -> mounter.mount(storage));
 
-        assertTrue("Mount should enter executeCommand",
-                mountEntered.await(TIMEOUT_SEC, TimeUnit.SECONDS));
+        assertTrue(mountEntered.await(TIMEOUT_SEC, TimeUnit.SECONDS),
+                "Mount should enter executeCommand");
 
         final Future<?> unmountFuture = executor.submit(() -> mounter.unmountNFSIfEmpty(storage));
 
         Thread.sleep(LOCK_WAIT_MS);
-        assertFalse("Unmount should be blocked while mount holds the lock",
-                unmountFuture.isDone());
+        assertFalse(unmountFuture.isDone(),
+                "Unmount should be blocked while mount holds the lock");
 
         mountCanProceed.countDown();
 
@@ -232,13 +232,13 @@ public class NFSStorageMounterTest {
         final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
         final String executedCmd = cmdCaptor.getValue();
-        assertTrue("Should run stat check, not mount command",
-                executedCmd.startsWith("stat -t "));
-        assertTrue("Stat command should target the root mount path",
-                executedCmd.contains(rootMountPath));
+        assertTrue(executedCmd.startsWith("stat -t "),
+                "Should run stat check, not mount command");
+        assertTrue(executedCmd.contains(rootMountPath),
+                "Stat command should target the root mount path");
     }
 
-    @Test(expected = DataStorageException.class)
+    @Test
     public void mountShouldThrowWhenAlreadyMountedButUnresponsive() throws Exception {
         final NFSDataStorage storage = createStorage(1L, MOUNT_ROOT_A + ROOT_DIR_1, SHARE_MOUNT_ID_A);
         final String rootMountPath = rootMountPathFor(MOUNT_ROOT_A);
@@ -248,7 +248,7 @@ public class NFSStorageMounterTest {
                 .thenThrow(new CmdExecutionException("stat -t " + rootMountPath, TIMEOUT_EXIT_CODE,
                         "timed out"));
 
-        mounter.mount(storage);
+        assertThrows(DataStorageException.class, () -> mounter.mount(storage));
     }
 
     @Test
@@ -265,8 +265,8 @@ public class NFSStorageMounterTest {
         final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
         final String executedCmd = cmdCaptor.getValue();
-        assertTrue("Should run mount command when not already mounted",
-                executedCmd.startsWith("sudo mount -t "));
+        assertTrue(executedCmd.startsWith("sudo mount -t "),
+                "Should run mount command when not already mounted");
     }
 
     @Test
@@ -281,8 +281,8 @@ public class NFSStorageMounterTest {
 
         final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
-        assertTrue("Should run mount command when a different path is mounted",
-                cmdCaptor.getValue().startsWith("sudo mount -t "));
+        assertTrue(cmdCaptor.getValue().startsWith("sudo mount -t "),
+                "Should run mount command when a different path is mounted");
     }
 
     @Test
@@ -311,8 +311,8 @@ public class NFSStorageMounterTest {
 
         final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockCmdExecutor).executeCommand(cmdCaptor.capture());
-        assertTrue("Should run umount command",
-                cmdCaptor.getValue().startsWith("sudo umount -l -f "));
+        assertTrue(cmdCaptor.getValue().startsWith("sudo umount -l -f "),
+                "Should run umount command");
     }
 
     @Test
@@ -326,8 +326,8 @@ public class NFSStorageMounterTest {
 
         final ArgumentCaptor<String> cmdCaptor = ArgumentCaptor.forClass(String.class);
         verify(mockCmdExecutor).executeCommand(cmdCaptor.capture(), anyLong());
-        assertTrue("Should fall back and run mount command (dir doesn't exist)",
-                cmdCaptor.getValue().startsWith("sudo mount -t "));
+        assertTrue(cmdCaptor.getValue().startsWith("sudo mount -t "),
+                "Should fall back and run mount command (dir doesn't exist)");
     }
 
     // --- Helpers ---
@@ -348,7 +348,7 @@ public class NFSStorageMounterTest {
     }
 
     private String rootMountPathFor(final String mountRoot) {
-        return Paths.get(tempFolder.getRoot().getAbsolutePath(), mountRoot).toString();
+        return Paths.get(tempFolder.getAbsolutePath(), mountRoot).toString();
     }
 
     private void writeProcMountsEntry(final String mountPoint) throws IOException {

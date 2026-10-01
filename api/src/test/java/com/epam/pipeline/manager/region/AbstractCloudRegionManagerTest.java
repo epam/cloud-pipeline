@@ -29,8 +29,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 
@@ -43,9 +43,10 @@ import java.util.Optional;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.util.CustomMatchers.isEmpty;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
@@ -65,18 +66,18 @@ public abstract class AbstractCloudRegionManagerTest {
             new CloudRegionManager(cloudRegionDao, cloudRegionMapper, fileShareMountManager,
                     messageHelper, preferenceManager, authManager, kubernetesManager, helpers());
 
-    @Before
+    @BeforeEach
     public void initJsonMapper() {
-        new JsonMapper().init();
+        new JsonMapper().afterPropertiesSet();
     }
 
-    @Before
+    @BeforeEach
     public void initDefaultPreferences() {
         doReturn(defaultProvider().name())
                 .when(preferenceManager).getPreference(SystemPreferences.CLOUD_DEFAULT_PROVIDER);
     }
 
-    @Before
+    @BeforeEach
     public void initCommonRegion() {
         doReturn(Optional.of(commonRegion())).when(cloudRegionDao).loadById(ID);
         doReturn(Optional.ofNullable(credentials())).when(cloudRegionDao).loadCredentials(ID);

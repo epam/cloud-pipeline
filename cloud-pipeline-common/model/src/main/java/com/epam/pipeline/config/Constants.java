@@ -30,8 +30,6 @@ public final class Constants {
     public static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
     public static final double HUNDRED_PERCENTS = 100.0;
 
-    public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
-
     private Constants() {
         //no op
     }

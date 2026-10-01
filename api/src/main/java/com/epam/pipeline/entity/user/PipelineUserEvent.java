@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.user;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 
 @Data
 @Builder
+@Jacksonized
 public class PipelineUserEvent {
     private String userName;
     private String message;

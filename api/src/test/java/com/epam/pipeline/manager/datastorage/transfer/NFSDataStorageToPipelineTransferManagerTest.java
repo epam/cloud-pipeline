@@ -7,13 +7,13 @@ import com.epam.pipeline.manager.pipeline.transfer.LocalPathToPipelineTransferMa
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -30,8 +30,7 @@ public class NFSDataStorageToPipelineTransferManagerTest {
     private final NFSDataStorageToPipelineTransferManager manager = new NFSDataStorageToPipelineTransferManager(
             nfsStorageMounter, localPathToPipelineTransferManager);
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(MOUNT_DIR.toFile()).when(nfsStorageMounter).mount(any());
     }
 

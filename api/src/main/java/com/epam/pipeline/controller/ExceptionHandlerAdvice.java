@@ -39,7 +39,7 @@ import org.springframework.web.context.request.WebRequest;
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
 
-@ControllerAdvice
+@ControllerAdvice(basePackages = "com.epam.pipeline.controller")
 public class ExceptionHandlerAdvice {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandlerAdvice.class);
 

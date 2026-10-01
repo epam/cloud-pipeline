@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.datastorage;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class FileShareMount {
 
     private Long id;

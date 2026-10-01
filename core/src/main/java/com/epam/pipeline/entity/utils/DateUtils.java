@@ -43,12 +43,16 @@ public final class DateUtils {
         return now.toDate();
     }
 
-    public static LocalDateTime nowUTC() {
+    public static LocalDateTime nowUTCUnformatted() {
         return LocalDateTime.now(Clock.systemUTC());
     }
 
+    public static LocalDateTime nowUTC() {
+        return LocalDateTime.parse(nowUTCStr(), DATE_TIME_FORMATTER);
+    }
+
     public static String nowUTCStr() {
-        return DATE_TIME_FORMATTER.format(nowUTC());
+        return DATE_TIME_FORMATTER.format(nowUTCUnformatted());
     }
 
     public static LocalDateTime strToUTCDate(final String date) {

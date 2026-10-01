@@ -2,6 +2,7 @@ package com.epam.pipeline.entity.billing;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.temporal.Temporal;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Optional;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class UserGeneralBilling implements PeriodBilling<GeneralBillingMetrics> {
     String name;
     String billingCenter;

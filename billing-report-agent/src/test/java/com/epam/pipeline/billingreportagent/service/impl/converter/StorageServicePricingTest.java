@@ -18,12 +18,13 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.amazonaws.regions.Regions;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StorageServicePricingTest {
 
@@ -53,6 +54,6 @@ public class StorageServicePricingTest {
         testPriceList.put(Regions.US_EAST_1.getName(), pricingUsEast1);
         testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
         final StoragePricingService testStoragePricing = new StoragePricingService(testPriceList);
-        Assert.assertEquals(BigDecimal.TEN, testStoragePricing.getDefaultPriceGb());
+        assertEquals(BigDecimal.TEN, testStoragePricing.getDefaultPriceGb());
     }
 }

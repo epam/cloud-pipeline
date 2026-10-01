@@ -17,18 +17,23 @@
 package com.epam.pipeline.elasticsearch.model.v7.index.query;
 
 import com.epam.pipeline.elasticsearch.model.TermQueryBuilder;
-import lombok.Getter;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@Getter
 public class TermQueryBuilderV7 implements TermQueryBuilder {
 
-    private final org.opensearch.index.query.TermQueryBuilder inner;
+    private final Query inner;
 
     public TermQueryBuilderV7(final String name, final String value) {
-        inner = org.opensearch.index.query.QueryBuilders.termQuery(name, value);
+        inner = Query.of(q -> q.term(t -> t.field(name).value(FieldValue.of(value))));
     }
 
     public TermQueryBuilderV7(final String name, final Long value) {
-        inner = org.opensearch.index.query.QueryBuilders.termQuery(name, value);
+        inner = Query.of(q -> q.term(t -> t.field(name).value(FieldValue.of(value))));
+    }
+
+    @Override
+    public Object getInner() {
+        return inner;
     }
 }

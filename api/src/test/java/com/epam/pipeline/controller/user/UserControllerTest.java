@@ -31,8 +31,9 @@ import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
@@ -48,7 +49,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LI
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_LIST;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -58,6 +59,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 
+@WebMvcTest(controllers = UserController.class)
 public class UserControllerTest extends AbstractControllerTest {
 
     private static final String USER_TOKEN_URL = SERVLET_PATH + "/user/token";
@@ -94,17 +96,17 @@ public class UserControllerTest extends AbstractControllerTest {
     private static final String URL = "url";
     private static final String TYPE = "type";
     private final String redirectCookie =
-            "\"<html><body><script>window.location.href = \\\"TEST\\\"</script></body></html>\"";
+            "<html><body><script>window.location.href = \"TEST\"</script></body></html>";
     private final String redirectForm =
-            "\"<html>\\n"
-            + "<body>\\n"
-            + "<form id=\\\"form\\\" method=\\\"post\\\" action=\\\"TEST\\\">\\n"
-            + " <input type=\\\"hidden\\\" name=\\\"bearer\\\" value=\\\"TEST\\\" />\\n"
-            + "</form>\\n"
-            + "<script>\\n" + "document.getElementById('form').submit()\\n"
-            + "</script>\\n"
-            + "</body>\\n"
-            + "</html>\"";
+            "<html>\n"
+            + "<body>\n"
+            + "<form id=\"form\" method=\"post\" action=\"TEST\">\n"
+            + " <input type=\"hidden\" name=\"bearer\" value=\"TEST\" />\n"
+            + "</form>\n"
+            + "<script>\n" + "document.getElementById('form').submit()\n"
+            + "</script>\n"
+            + "</body>\n"
+            + "</html>";
     private static final String TEXT_HTML_UTF8_CONTENT_TYPE = "text/html;charset=UTF-8";
     private static final String FILE_NAME = "users.csv";
     private static final String ROLE_ANONYMOUS_USER = "ANONYMOUS_USER";
@@ -301,7 +303,7 @@ public class UserControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailLoadUserByNameForUnauthorizedUser() {
-        performUnauthorizedRequest(get(USER_ID_URL));
+        performUnauthorizedRequest(get(String.format(USER_ID_URL, ID)));
     }
 
     @Test

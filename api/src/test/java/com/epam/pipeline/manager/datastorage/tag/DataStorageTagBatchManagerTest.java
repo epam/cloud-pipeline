@@ -28,14 +28,14 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -61,7 +61,7 @@ public class DataStorageTagBatchManagerTest {
     private final DataStorageTagBatchManager manager = new DataStorageTagBatchManager(tagDao, storageDao,
             authManager, storagePermissionManager, storagePathPermissionsService);
 
-    @Before
+    @BeforeEach
     public void setUp() {
         final S3bucketDataStorage storage = DatastorageCreatorUtils.getS3bucketDataStorage(STORAGE_ID, OWNER);
         storage.setRootId(ROOT_ID);

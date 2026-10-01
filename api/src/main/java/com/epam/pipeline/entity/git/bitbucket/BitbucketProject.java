@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.git.bitbucket;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class BitbucketProject {
     private Long id;
     private String name;

@@ -19,6 +19,7 @@ package com.epam.pipeline.dto.report;
 import com.epam.pipeline.entity.cluster.pool.Requests;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,7 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class NodePoolUsageReportRecord {
     private LocalDateTime periodStart;
     private LocalDateTime periodEnd;

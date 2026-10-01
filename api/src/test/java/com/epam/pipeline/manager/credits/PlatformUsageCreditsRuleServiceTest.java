@@ -26,7 +26,7 @@ import com.epam.pipeline.repository.credits.PlatformUsageCreditsRuleRepository;
 import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.utils.condition.field.PipelineRunField;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -42,8 +42,10 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
+import static org.hamcrest.MatcherAssert.assertThat;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -74,7 +76,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     public void shouldLoad() {
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
-        doReturn(entity).when(repository).findOne(ID);
+        doReturn(Optional.of(entity)).when(repository).findById(ID);
         doReturn(rule).when(mapper).toDto(entity);
 
         assertThat(manager.load(ID), is(rule));
@@ -82,7 +84,7 @@ public class PlatformUsageCreditsRuleServiceTest {
 
     @Test
     public void shouldFailLoadIfNotFound() {
-        doReturn(null).when(repository).findOne(ID);
+        doReturn(Optional.empty()).when(repository).findById(ID);
 
         assertThrows(IllegalArgumentException.class, () -> manager.load(ID));
     }
@@ -135,7 +137,7 @@ public class PlatformUsageCreditsRuleServiceTest {
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         final PlatformUsageCreditsUpdateRuleEntity existing = platformUsageCreditsRuleEntity();
         final PlatformUsageCreditsUpdateRuleEntity entity = platformUsageCreditsRuleEntity();
-        doReturn(existing).when(repository).findOne(ID);
+        doReturn(Optional.of(existing)).when(repository).findById(ID);
         doReturn(entity).when(mapper).toEntity(rule);
         doReturn(entity).when(repository).save(any(PlatformUsageCreditsUpdateRuleEntity.class));
         doReturn(rule).when(mapper).toDto(entity);
@@ -154,23 +156,23 @@ public class PlatformUsageCreditsRuleServiceTest {
 
     @Test
     public void shouldFailUpdateIfNotFound() {
-        doReturn(null).when(repository).findOne(ID);
+        doReturn(Optional.empty()).when(repository).findById(ID);
 
         assertThrows(IllegalArgumentException.class, () -> manager.update(ID, platformUsageCreditsRule()));
     }
 
     @Test
     public void shouldDelete() {
-        doReturn(true).when(repository).exists(ID);
+        doReturn(true).when(repository).existsById(ID);
 
         manager.delete(ID);
 
-        verify(repository).delete(ID);
+        verify(repository).deleteById(ID);
     }
 
     @Test
     public void shouldFailDeleteIfNotFound() {
-        doReturn(false).when(repository).exists(ID);
+        doReturn(false).when(repository).existsById(ID);
 
         assertThrows(IllegalStateException.class, () -> manager.delete(ID));
     }
@@ -264,7 +266,7 @@ public class PlatformUsageCreditsRuleServiceTest {
     @Test
     public void shouldFailUpdateIfTimeWindowIsZero() {
         final PlatformUsageCreditsUpdateRuleEntity existing = platformUsageCreditsRuleEntity();
-        doReturn(existing).when(repository).findOne(ID);
+        doReturn(Optional.of(existing)).when(repository).findById(ID);
         final PlatformUsageCreditsUpdateRule rule = platformUsageCreditsRule();
         rule.setTimeWindow(0);
 

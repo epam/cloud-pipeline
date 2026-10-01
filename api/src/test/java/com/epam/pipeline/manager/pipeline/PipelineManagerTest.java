@@ -35,9 +35,8 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -45,16 +44,17 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class PipelineManagerTest {
@@ -102,8 +102,7 @@ public class PipelineManagerTest {
     @InjectMocks
     private PipelineManager pipelineManager = new PipelineManager();
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         gitProject.setRepoUrl(REPOSITORY_HTTPS);
         gitProject.setRepoSsh(REPOSITORY_SSH);
@@ -134,7 +133,7 @@ public class PipelineManagerTest {
         Pipeline pipeline = pipelineManager.create(pipelineVO);
 
         verify(gitManager).createRepository(eq(REPOSITORY_NAME), any());
-        Assert.assertEquals(pipeline.getPipelineType(), PipelineType.VERSIONED_STORAGE);
+        assertEquals(pipeline.getPipelineType(), PipelineType.VERSIONED_STORAGE);
     }
 
     @Test
@@ -144,7 +143,7 @@ public class PipelineManagerTest {
         Pipeline pipeline = pipelineManager.create(pipelineVO);
 
         verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
-        Assert.assertEquals(pipeline.getPipelineType(), PipelineType.PIPELINE);
+        assertEquals(pipeline.getPipelineType(), PipelineType.PIPELINE);
     }
 
     @Test
@@ -271,7 +270,7 @@ public class PipelineManagerTest {
 
         final ArgumentCaptor<DataStorageRule> ruleCaptor = ArgumentCaptor.forClass(DataStorageRule.class);
         verify(dataStorageRuleDao).createDataStorageRule(ruleCaptor.capture());
-        Assert.assertEquals(storageRuleMask, ruleCaptor.getValue().getFileMask());
+        assertEquals(storageRuleMask, ruleCaptor.getValue().getFileMask());
     }
 
     @Test

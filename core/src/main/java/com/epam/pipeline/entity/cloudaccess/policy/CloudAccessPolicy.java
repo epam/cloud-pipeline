@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.cloudaccess.policy;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class CloudAccessPolicy {
     String name;
     List<CloudAccessPolicyStatement> statements;

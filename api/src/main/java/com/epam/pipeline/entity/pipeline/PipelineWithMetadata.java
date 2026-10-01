@@ -19,11 +19,13 @@ package com.epam.pipeline.entity.pipeline;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class PipelineWithMetadata extends Pipeline {
     private Map<String, PipeConfValue> data;
 }

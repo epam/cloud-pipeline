@@ -18,7 +18,6 @@ package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuratio
 import com.epam.pipeline.elasticsearchagent.model.ConfigurationEntryDoc;
 import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
-import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
@@ -27,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
-import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyFirecloudConfigurationEntry;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyMetadata;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPermissions;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPipelineUser;
@@ -38,7 +36,6 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.METADATA;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.PERMISSIONS_CONTAINER;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
-import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_SNAPSHOT;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 
@@ -66,30 +63,6 @@ class ConfigurationMapperTest {
 
         verifyRunConfiguration(runConfiguration, TEST_NAME + " ", contentBuilder);
         verifyRunConfigurationEntry(entry, pipeline, contentBuilder);
-        verifyPipelineUser(USER, contentBuilder);
-        verifyPermissions(PERMISSIONS_CONTAINER, contentBuilder);
-        verifyMetadata(EXPECTED_METADATA, contentBuilder);
-    }
-
-    @Test
-    void shouldMapFireCloudConfiguration() {
-        ConfigurationEntryMapper mapper = new ConfigurationEntryMapper();
-
-        RunConfiguration runConfiguration = buildRunConfiguration();
-
-        FirecloudRunConfigurationEntry entry = new FirecloudRunConfigurationEntry();
-        entry.setName(TEST_NAME);
-        entry.setMethodName(TEST_NAME);
-        entry.setMethodSnapshot(TEST_SNAPSHOT);
-        entry.setMethodConfigurationName(TEST_NAME);
-        entry.setMethodConfigurationSnapshot(TEST_SNAPSHOT);
-
-        ConfigurationEntryDoc configuration = buildDoc(null, runConfiguration, entry);
-
-        Map<String, ?> contentBuilder = mapper.map(buildContainer(configuration));
-
-        verifyFirecloudConfigurationEntry(entry, contentBuilder);
-        verifyRunConfiguration(runConfiguration, TEST_NAME + " ", contentBuilder);
         verifyPipelineUser(USER, contentBuilder);
         verifyPermissions(PERMISSIONS_CONTAINER, contentBuilder);
         verifyMetadata(EXPECTED_METADATA, contentBuilder);

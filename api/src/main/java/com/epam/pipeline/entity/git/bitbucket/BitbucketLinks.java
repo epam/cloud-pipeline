@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.git.bitbucket;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class BitbucketLinks {
     private List<BitbucketCloneEntry> clone;
     private BitbucketCloneEntry html;

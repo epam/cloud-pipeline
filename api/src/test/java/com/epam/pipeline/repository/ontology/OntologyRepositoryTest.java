@@ -19,7 +19,7 @@ package com.epam.pipeline.repository.ontology;
 import com.epam.pipeline.assertions.ontology.OntologyAssertions;
 import com.epam.pipeline.entity.ontology.OntologyEntity;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +54,8 @@ public class OntologyRepositoryTest extends AbstractJpaTest {
         final OntologyEntity savedParentOntology = ontologyRepository.save(parentOntology);
 
         assertThat(savedParentOntology.getId(), notNullValue());
-        final OntologyEntity storedParentOntology = ontologyRepository.findOne(savedParentOntology.getId());
+        final OntologyEntity storedParentOntology = ontologyRepository
+                .findById(savedParentOntology.getId()).orElseThrow();
         OntologyAssertions.assertEquals(parentOntology, storedParentOntology);
 
         final OntologyEntity childOntology = ontologyEntity(parentOntology);
@@ -67,7 +68,7 @@ public class OntologyRepositoryTest extends AbstractJpaTest {
 
         entityManager.clear();
 
-        final OntologyEntity storedOntologyEntity = ontologyRepository.findOne(childOntology.getId());
+        final OntologyEntity storedOntologyEntity = ontologyRepository.findById(childOntology.getId()).orElseThrow();
 
         final Map<String, String> storedAttributes = storedOntologyEntity.getAttributes();
         assertThat(storedAttributes.get(ATTRIBUTE_KEY), is(ATTRIBUTE_VALUE));

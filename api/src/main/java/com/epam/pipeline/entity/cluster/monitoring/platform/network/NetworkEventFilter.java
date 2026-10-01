@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.cluster.monitoring.platform.network;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Objects;
 
 @Value
 @Builder
+@Jacksonized
 public class NetworkEventFilter {
 
     public static final String REPORTER = "reporter";

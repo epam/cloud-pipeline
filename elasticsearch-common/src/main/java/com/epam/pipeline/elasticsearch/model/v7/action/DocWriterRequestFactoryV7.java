@@ -21,6 +21,9 @@ import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.elasticsearch.model.v7.action.delete.DeleteRequestV7;
 import com.epam.pipeline.elasticsearch.model.v7.action.index.IndexRequestV7;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+
+import java.util.Map;
 
 public final class DocWriterRequestFactoryV7 {
 
@@ -28,12 +31,21 @@ public final class DocWriterRequestFactoryV7 {
         // no-op
     }
 
-    public static org.opensearch.action.DocWriteRequest toRequest(final DocWriteRequest request) {
+    @SuppressWarnings("unchecked")
+    public static BulkOperation toRequest(final DocWriteRequest request) {
         if (request instanceof IndexRequest) {
-            return ((IndexRequestV7) ((IndexRequest) request).getInner()).getInner();
+            final IndexRequestV7 inner = (IndexRequestV7) ((IndexRequest) request).getInner();
+            return BulkOperation.of(b -> b.index(op -> {
+                op.index(inner.index()).id(inner.id())
+                        .document((Map<String, Object>) inner.sourceAsMap());
+                return op;
+            }));
         }
         if (request instanceof DeleteRequest) {
-            return ((DeleteRequestV7) ((DeleteRequest) request).getInner()).getInner();
+            final DeleteRequestV7 inner = (DeleteRequestV7) ((DeleteRequest) request).getInner();
+            return BulkOperation.of(b -> b.delete(op ->
+                    op.index(inner.index()).id(inner.id())
+            ));
         }
         throw new UnsupportedOperationException();
     }

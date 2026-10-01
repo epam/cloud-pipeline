@@ -3,6 +3,7 @@ package com.epam.pipeline.entity.cloud;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.jackson.Jacksonized;
 
 /**
  * Represents status of cloud provider operation like start instance and etc.
@@ -10,6 +11,7 @@ import lombok.Setter;
 @Builder
 @Getter
 @Setter
+@Jacksonized
 public class CloudInstanceOperationResult {
 
     private Status status;
