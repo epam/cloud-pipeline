@@ -121,3 +121,4 @@ nav:
     - AWS: 'installation/prerequisites/aws.md'
     - Azure: 'installation/prerequisites/azure.md'
     - GCP: 'installation/prerequisites/gcp.md'
+  - Upgrade GitLab 15.5 to 19.4: 'installation/gitlab/upgrade_gitlab_15_to_19.md'
