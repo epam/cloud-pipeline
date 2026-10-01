@@ -798,11 +798,28 @@ if is_service_requested cp-git; then
     delete_deployment_and_service   "cp-bkp-worker-cp-git"
 
     if is_install_requested; then
+        # GitLab 17 and later: the database gets the amcheck extension (18.4 and later require it),
+        # there is no session API, the default root password is too weak, and a new token needs an expiry date
+        gitlab_17_or_later="false"
+        if [[ "$CP_GITLAB_VERSION" =~ ^[0-9]+$ ]] && [ "$CP_GITLAB_VERSION" -ge 17 ]; then
+            gitlab_17_or_later="true"
+        fi
+
         print_info "-> Creating postgres DB user and schema for GitLab"
         create_user_and_db  "cp-gitlab-db" \
                             "$GITLAB_DATABASE_USERNAME" \
                             "$GITLAB_DATABASE_PASSWORD" \
                             "$GITLAB_DATABASE_DATABASE"
+
+        # GitLab 18.4 and later require amcheck in their database. GitLab creates it only in the PostgreSQL bundled
+        # into its image. It is created for 17 too, so that a later upgrade finds it
+        if [ "$gitlab_17_or_later" == "true" ]; then
+            print_info "-> Creating the amcheck extension in the GitLab database $GITLAB_DATABASE_DATABASE"
+            if [ -z "$(get_deployment_pods cp-gitlab-db)" ] || \
+               ! execute_deployment_command "cp-gitlab-db" default "psql -U postgres -d $GITLAB_DATABASE_DATABASE -c \"CREATE EXTENSION IF NOT EXISTS amcheck;\""; then
+                print_warn "Unable to create the amcheck extension in the GitLab database $GITLAB_DATABASE_DATABASE: no cp-gitlab-db pod was found, or psql failed. GitLab 18.4 and later require it. Create it as the PostgreSQL superuser: CREATE EXTENSION IF NOT EXISTS amcheck;"
+            fi
+        fi
 
         print_info "-> Creating self-signed SSL certificate for GitLab (${CP_GITLAB_EXTERNAL_HOST}, ${CP_GITLAB_INTERNAL_HOST})"
         generate_self_signed_key_pair   $CP_GITLAB_CERT_DIR/ssl-private-key.pem \
@@ -819,11 +836,6 @@ if is_service_requested cp-git; then
 
         print_info "-> Deploying GitLab"
 
-        # GitLab 17 and later: no session API, the default root password is too weak, and a new token needs an expiry date
-        gitlab_17_or_later="false"
-        if [[ "$CP_GITLAB_VERSION" =~ ^[0-9]+$ ]] && [ "$CP_GITLAB_VERSION" -ge 17 ]; then
-            gitlab_17_or_later="true"
-        fi
         # GitLab accepts at most 365 days. One day less leaves a margin for a time zone gap
         gitlab_token_lifetime_days=364
 
