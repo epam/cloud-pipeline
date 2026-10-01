@@ -1,3 +1,17 @@
+# Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import sys
 import os
@@ -7,8 +21,7 @@ import flask
 from flask import Flask, jsonify,  request
 
 from src.hcs_manager import HCSManager
-from src.hcs_clip import create_clip
-
+from src.hcs_clip import create_clip, HCSImagesManager
 
 if getattr(sys, 'frozen', False):
     static_folder = os.path.join(sys._MEIPASS, 'hcs', 'static')
@@ -50,7 +63,7 @@ def create_pipeline():
         pipeline_id = manager.create_pipeline(measurement_uuid)
         return jsonify(success({"pipelineId": pipeline_id}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -64,7 +77,7 @@ def get_pipeline():
         pipeline_id = manager.get_pipeline(pipeline_id)
         return jsonify(success({"pipelineId": pipeline_id}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -79,7 +92,7 @@ def add_files():
         manager.add_files(pipeline_id, files_data)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -94,7 +107,7 @@ def create_module():
         manager.create_module(pipeline_id, module_data)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -114,7 +127,7 @@ def move_module():
         manager.move_module(pipeline_id, module_id, direction)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -132,7 +145,7 @@ def update_module():
         manager.update_module(pipeline_id, module_id, module_data)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -149,7 +162,7 @@ def delete_module():
         manager.delete_module(pipeline_id, module_id)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -163,7 +176,7 @@ def run_pipeline():
         manager.launch_pipeline(pipeline_id)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -180,7 +193,7 @@ def run_module():
         manager.run_module(pipeline_id, module_id)
         return jsonify({"status": "OK"})
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -195,7 +208,7 @@ def get_status():
         response = manager.get_status(pipeline_id, module_id)
         return jsonify(success(response))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -206,7 +219,27 @@ def get_movie():
         clip_full_path, total_time = create_clip(params)
         return jsonify(success({"path": clip_full_path, "time": total_time}))
     except Exception as e:
-        print(traceback.format_exc())
+        print(traceback.format_exc(), flush=True)
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/images', methods=['GET'])
+def get_image():
+    manager = app.config['images']
+    try:
+        return jsonify(success({'uuid': manager.generate_image(flask.request.args)}))
+    except Exception as e:
+        print(traceback.format_exc(), flush=True)
+        return jsonify(error(e.__str__()))
+
+
+@app.route('/hcs/images/statuses', methods=['GET'])
+def get_image_processing_results():
+    manager = app.config['images']
+    try:
+        return jsonify(success(manager.get_results(flask.request.args.get('uuid'))))
+    except Exception as e:
+        print(traceback.format_exc(), flush=True)
         return jsonify(error(e.__str__()))
 
 
@@ -218,8 +251,10 @@ def main():
     args = parser.parse_args()
 
     pipelines = {}
+    image_tasks = {}
 
     app.config['hcs'] = HCSManager(pipelines)
+    app.config['images'] = HCSImagesManager(image_tasks)
 
     app.run(host=args.host, port=args.port)
 
