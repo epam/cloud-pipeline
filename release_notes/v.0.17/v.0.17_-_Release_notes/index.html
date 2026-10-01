@@ -250,6 +250,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a>
@@ -693,6 +695,7 @@
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a></li>
 <li><a href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a></li>
 <li><a href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a></li>
 <li><a href="#pipe-storage-ls-works-incorrectly-with-the-option-page"><code>pipe storage ls</code> works incorrectly with the option <code>--page</code></a></li>
@@ -2144,8 +2147,14 @@ If the tool versions can't be loaded, <code>pipe</code> prints a warning and con
 <p>Previously, the number of tries to start a node for a run could only be set globally, by the system preference <code>cluster.nodeup.retry.count</code>. It applied to all runs.</p>
 <p>In <strong><code>v0.17</code></strong>, it can be overridden for a specific run by the parameter <code>CP_NODEUP_RETRY_COUNT</code>. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.<br />
 The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see <a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">above</a>). If the value is not a positive integer, <code>cluster.nodeup.retry.count</code> is used.</p>
+<p>If the system preference <code>ui.launch.allow.nodeup.count</code> is <code>true</code>, this parameter gets its own optional "Capacity retries" field.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4622">#4622</a></p>
+<p>Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
+Also, the <code>API_TOKEN</code> inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
+Now, a restarted run keeps all parameters of the parent run, and the <code>API_TOKEN</code> of any launched run is always issued for the run owner.</p>
 <h3 id="storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4598">#4598</a></p>
 <p>Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.

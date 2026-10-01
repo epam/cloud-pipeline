@@ -622,6 +622,7 @@ Every <strong>Tool</strong> object in the Cloud Pipeline is a representation o
 <li><strong>Execution defaults</strong> - execution environment settings with which tool will be run by default:  <ul>
 <li><strong>Instance type</strong> - an instance type in terms of Cloud Provider with specifying amounts of CPU, RAM and GPU.</li>
 <li><strong>Price type</strong> - <code>spot</code> or <code>on-demand</code> type of instance.</li>
+<li><strong>Capacity retries</strong> - how many times to try to start a compute node. Shown if the <code>ui.launch.allow.nodeup.count</code> preference is <code>true</code>.</li>
 <li><strong>Disk</strong> - instance disk size in Gb.</li>
 <li><strong>Limit mounts</strong> - available storages for Tool execution.</li>
 <li><strong>Configure cluster</strong> - by clicking on this button cluster can be configured (for more details see <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>).</li>
