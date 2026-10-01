@@ -32,6 +32,7 @@
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 - [Group permissions](#group-permissions)
 - [Investigate the failure reason of a run](#investigate-the-failure-reason-of-a-run)
+- [GitLab 19 support](#gitlab-19-support)
 
 ***
 
@@ -615,6 +616,37 @@ If `url` is set, the **Run logs** page of a run in the `FAILURE` state shows the
 If `roles` is set, only the members of these roles/groups see the link. Otherwise, all users see it.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#investigate-failure-reason).
+
+## GitLab 19 support
+
+The platform now supports GitLab CE **19.4.1** for its embedded Git (`cp-git`), with PostgreSQL 17 for the GitLab database (`cp-gitlab-db`).
+
+A new deployment selects it with the install config values `CP_GITLAB_VERSION=19` and `GITLAB_DATABASE_VERSION=17`. On GitLab 17 and later, the installer:
+
+- generates the GitLab `root` password, if the default one is set
+- creates its GitLab tokens with an expiry date, 364 days ahead
+- creates the `amcheck` extension in the GitLab database
+- turns on the **`git.gitlab.hashed.repo.support`** preference
+
+The GitLab runner is not part of the GitLab 19 image (`git-19`). The images of the earlier GitLab versions keep it.  
+For more details see [GitLab versions](../../installation/gitlab/gitlab_versions.md).
+
+An existing deployment on GitLab 15.5 moves to 19.4 by a manual procedure: GitLab passes through a list of required versions, and its database is upgraded three times, from PostgreSQL 12 to 17. See [Upgrade GitLab 15.5 to 19.4](../../installation/gitlab/upgrade_gitlab_15_to_19.md).
+
+The platform also changes the way it works with GitLab. These changes do not break the earlier GitLab versions, so a deployment gets them before it upgrades GitLab:
+
+- **`git.token` rotation** (GitLab 15.5 and later). On GitLab 19.4, a new access token must have an expiry date, at most 365 days ahead. The platform now checks the expiry of **`git.token`** on a schedule (every day by default). When the token is close to its expiry, the platform issues a new impersonation token, saves it to **`git.token`**, and revokes the old one. A token without an expiry date is never rotated. The rotation is set by the new preferences **`git.token.rotation.enabled`**, **`git.token.rotation.schedule`**, **`git.token.rotation.threshold.days`** and **`git.token.rotation.lifetime.days`**.  
+    **_Note_**: a run gets the **`git.token`** value when it starts. After a rotation, the old value no longer works in the runs that are still active.  
+    For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
+- **Pipeline version descriptions are saved again.** GitLab 14.0 removed the release description from the tag creation, so the `releaseDescription` of a new pipeline version (`POST /pipeline/version/register`) was lost. In the current version, on GitLab 14.0 and later, it is saved as the GitLab release of the version tag, with the GitLab Releases API.
+- **A deleted pipeline's name can be reused at once.** On GitLab 18.0 and later, deleting a project only marks it for deletion (for 30 days by default), and its name stays taken. In the current version, when a pipeline is deleted with its repository, the repository is removed permanently, so a new pipeline can take the same name at once. The temporary `TMP_FORK_*` group that a pipeline copy uses is still only marked for deletion: GitLab removes it, with its projects, after the deletion delay.
+- **Git tokens issued for users last at most 365 days.** GitLab does not accept a token with a longer lifetime. A lifetime over `365` days, from the **`git.default.token.duration.days`** preference or from a request, is cut to `365` days.
+
+Other fixes keep the platform working with the new GitLab versions:
+
+- a missing folder of a repository is treated as an empty one: GitLab 17.7 and later answer `404` for it
+- tokens with dots, as GitLab 19.4 issues them, are accepted in repository URLs
+- saving the Git preferences no longer rejects GitLab 18.0-18.2 and 19.5-19.9
 
 ***
 
