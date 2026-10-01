@@ -1958,6 +1958,7 @@ public class PipelineRunManager {
         restartedRun.setCommitStatus(CommitStatus.NOT_COMMITTED);
         restartedRun.setLastChangeCommitTime(DateUtils.now());
         restartedRun.setPodId(getRootPodIDFromPipeline(restartedRun));
+        restartedRun.setPipelineRunParameters(copyParameters(run.getPipelineRunParameters()));
         restartedRun.setParams(run.getParams());
         restartedRun.parseParameters();
         restartedRun.setTimeout(run.getTimeout());
@@ -2004,6 +2005,17 @@ public class PipelineRunManager {
             runInstance.setNodePlatform(i.getNodePlatform());
             return runInstance;
         }).orElse(new RunInstance());
+    }
+
+    private List<PipelineRunParameter> copyParameters(final List<PipelineRunParameter> parameters) {
+        return ListUtils.emptyIfNull(parameters).stream()
+                .map(parameter -> {
+                    final PipelineRunParameter copy = new PipelineRunParameter(
+                            parameter.getName(), parameter.getValue(), parameter.getType());
+                    copy.setResolvedValue(parameter.getResolvedValue());
+                    return copy;
+                })
+                .collect(Collectors.toList());
     }
 
     private Pair<String, String> parseDockerImage(final String dockerImage) {

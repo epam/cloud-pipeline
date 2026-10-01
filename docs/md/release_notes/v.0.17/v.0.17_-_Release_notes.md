@@ -61,6 +61,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
@@ -1823,9 +1824,19 @@ Previously, the number of tries to start a node for a run could only be set glob
 In **`v0.17`**, it can be overridden for a specific run by the parameter `CP_NODEUP_RETRY_COUNT`. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.  
 The parameter also defines when a run is relaunched in another region in case of insufficient capacity (see [above](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)). If the value is not a positive integer, `cluster.nodeup.retry.count` is used.
 
+If the system preference `ui.launch.allow.nodeup.count` is `true`, this parameter gets its own optional "Capacity retries" field.
+
 ***
 
 ## Notable Bug fixes
+
+### Restarted runs lose parameters and get an API token of another user
+
+[#4622](https://github.com/epam/cloud-pipeline/issues/4622)
+
+Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
+Also, the `API_TOKEN` inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
+Now, a restarted run keeps all parameters of the parent run, and the `API_TOKEN` of any launched run is always issued for the run owner.
 
 ### Storage files indexing stops when a storage is deleted during the sync
 
