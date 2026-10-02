@@ -68,19 +68,29 @@ def _write_stub_bin(bin_dir, name):
     return path
 
 
-def _run_resolution(cp_python_version, available_interpreters):
+def _run_resolution(cp_python_version, available_interpreters, python3_home=None):
     bin_dir = tempfile.mkdtemp()
     try:
         for name in available_interpreters:
             _write_stub_bin(bin_dir, name)
         script = _extract_resolution_block() + '\necho "RESOLVED=$CP_PYTHON_PATH"\n'
         env = {'PATH': bin_dir, 'CP_PYTHON_VERSION': cp_python_version}
+        if python3_home is not None:
+            env['CP_PYTHON3_HOME'] = python3_home
         proc = subprocess.Popen([BASH, '-c', script], env=env,
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate()
         return proc.returncode, out.decode(), err.decode()
     finally:
         shutil.rmtree(bin_dir)
+
+
+def _make_python3_home(bin_dir):
+    home_dir = os.path.join(bin_dir, 'python3-home')
+    home_bin_dir = os.path.join(home_dir, 'bin')
+    os.makedirs(home_bin_dir)
+    _write_stub_bin(home_bin_dir, 'python3.12')
+    return home_dir
 
 
 class CpPythonPathResolutionTest(unittest.TestCase):
@@ -105,16 +115,39 @@ class CpPythonPathResolutionTest(unittest.TestCase):
         self.assertIn('python2', out)
         self.assertNotIn('python3.12', out)
 
-    def test_version_3_resolves_to_python3_12_over_python3(self):
-        rc, out, _ = _run_resolution('3', ['python2', 'python3.12', 'python3'])
-        self.assertEqual(0, rc)
-        self.assertIn('python3.12', out)
+    def test_version_3_resolves_to_cp_python3_home_over_bare_python3(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            python3_home = _make_python3_home(tmp)
+            rc, out, _ = _run_resolution('3', ['python2', 'python3'], python3_home=python3_home)
+            self.assertEqual(0, rc)
+            self.assertIn('RESOLVED=%s' % os.path.join(python3_home, 'bin', 'python3.12'), out)
+        finally:
+            shutil.rmtree(tmp)
 
-    def test_version_3_falls_back_to_python3_when_3_12_missing(self):
-        rc, out, _ = _run_resolution('3', ['python2', 'python3'])
-        self.assertEqual(0, rc)
-        self.assertIn('RESOLVED=', out)
-        self.assertTrue(out.strip().endswith('/python3'))
+    def test_version_3_ignores_distro_python3_12_shadowing_on_path(self):
+        # Reproduces the cp-edge test-stand failure (issue #4531): Rocky 8 can put its own bare
+        # /usr/bin/python3.12 (no pip, none of the image's packages) on PATH ahead of the from-source
+        # build. Resolution must still prefer CP_PYTHON3_HOME, never a PATH-found "python3.12".
+        tmp = tempfile.mkdtemp()
+        try:
+            python3_home = _make_python3_home(tmp)
+            rc, out, _ = _run_resolution('3', ['python2', 'python3.12', 'python3'], python3_home=python3_home)
+            self.assertEqual(0, rc)
+            self.assertIn('RESOLVED=%s' % os.path.join(python3_home, 'bin', 'python3.12'), out)
+        finally:
+            shutil.rmtree(tmp)
+
+    def test_version_3_falls_back_to_python3_when_cp_python3_home_missing(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            missing_home = os.path.join(tmp, 'no-such-python3-home')
+            rc, out, _ = _run_resolution('3', ['python2', 'python3'], python3_home=missing_home)
+            self.assertEqual(0, rc)
+            self.assertIn('RESOLVED=', out)
+            self.assertTrue(out.strip().endswith('/python3'))
+        finally:
+            shutil.rmtree(tmp)
 
     def test_version_2_falls_back_to_bare_python_when_python2_missing(self):
         rc, out, _ = _run_resolution('2', ['python'])
@@ -122,9 +155,14 @@ class CpPythonPathResolutionTest(unittest.TestCase):
         self.assertTrue(out.strip().endswith('/python'))
 
     def test_missing_interpreter_exits_nonzero(self):
-        rc, out, _ = _run_resolution('3', ['python2'])
-        self.assertNotEqual(0, rc)
-        self.assertNotIn('RESOLVED=', out)
+        tmp = tempfile.mkdtemp()
+        try:
+            missing_home = os.path.join(tmp, 'no-such-python3-home')
+            rc, out, _ = _run_resolution('3', ['python2'], python3_home=missing_home)
+            self.assertNotEqual(0, rc)
+            self.assertNotIn('RESOLVED=', out)
+        finally:
+            shutil.rmtree(tmp)
 
 
 class CpEdgeScriptsCompileUnderBothInterpretersTest(unittest.TestCase):

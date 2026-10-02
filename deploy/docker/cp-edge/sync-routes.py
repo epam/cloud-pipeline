@@ -50,7 +50,7 @@ SVC_URL_TMPL = '{{ ' \
                '"regionId": {region_id} ' \
                '}}'
 ROUTE_ID_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
-ROUTE_ID_PATTERN = '^(.*)-(\d+)-(\d+)$'
+ROUTE_ID_PATTERN = r'^(.*)-(\d+)-(\d+)$'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
@@ -389,7 +389,7 @@ def is_system_endpoint_name(endpoint):
 def construct_additional_endpoints_from_run_parameters(run_details):
 
         def extract_endpoint_num_from_run_parameter(run_parameter):
-                match = re.search('{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
+                match = re.search(r'{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
                 if match:
                         return match.group(1)
                 return None

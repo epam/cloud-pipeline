@@ -182,12 +182,17 @@ export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
 # The yum install (Dockerfile:38) always provides "python2" here, unlike cp-api-srv's CentOS 7 image -
 # the "|| command -v python" fallback is only carried over for symmetry with that script, and never fires.
 export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
-export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$(command -v python3.12 || command -v python3)}"
+# Not "command -v python3.12": Rocky 8 can pull in its own bare /usr/bin/python3.12 (no pip, none of
+# this image's packages) as a transitive yum dependency, which would shadow the from-source build the
+# Dockerfile installs into CP_PYTHON3_HOME and leave sync-routes.py/maintenance.py without requests/pykube.
+# CP_PYTHON3_HOME is overridable so tests can point it at a stub tree instead of a real install.
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$([ -x "$CP_PYTHON3_HOME/bin/python3.12" ] && echo "$CP_PYTHON3_HOME/bin/python3.12" || command -v python3)}"
 if [ "$CP_PYTHON_VERSION" == "2" ]; then
     export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
 else
     export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
-    export PATH="/usr/local/python3.12/bin:$PATH"
+    export PATH="$CP_PYTHON3_HOME/bin:$PATH"
 fi
 if [ -z "$CP_PYTHON_PATH" ]; then
     echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."

@@ -69,7 +69,7 @@ RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
     ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
     pip3 install rsa==4.0 \
-                 pykube==0.15.0
+                 pykube-ng==23.6.0
 
 # Openresty + http_connect module
 RUN yum install -y  pcre-devel \
