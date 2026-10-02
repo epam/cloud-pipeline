@@ -174,6 +174,32 @@ done
 nohup node /etc/ssh-proxy/wetty/app.cjs -p 32000 >> /var/log/wetty.log 2>&1 &
 WETTY_PID="$!"
 
+# --- Python interpreter selection ---
+# Mirrors cp-api-srv's init-api CP_PYTHON_VERSION/CP_PYTHON_PATH resolution (issue #4589), so
+# sync-routes.py and maintenance.py pick the same interpreter the same way.
+# CP_PYTHON_VERSION=2 (default) keeps existing behavior; both interpreters are already on the image.
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
+# The yum install (Dockerfile:38) always provides "python2" here, unlike cp-api-srv's CentOS 7 image -
+# the "|| command -v python" fallback is only carried over for symmetry with that script, and never fires.
+export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
+# Not "command -v python3.12": Rocky 8 can pull in its own bare /usr/bin/python3.12 (no pip, none of
+# this image's packages) as a transitive yum dependency, which would shadow the from-source build the
+# Dockerfile installs into CP_PYTHON3_HOME and leave sync-routes.py/maintenance.py without requests/pykube.
+# CP_PYTHON3_HOME is overridable so tests can point it at a stub tree instead of a real install.
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$([ -x "$CP_PYTHON3_HOME/bin/python3.12" ] && echo "$CP_PYTHON3_HOME/bin/python3.12" || command -v python3)}"
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
+else
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+    export PATH="$CP_PYTHON3_HOME/bin:$PATH"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
+    exit 1
+fi
+echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
 env > /etc/maintenance/env.sh
