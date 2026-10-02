@@ -27,13 +27,14 @@ import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationCloudFacade;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -103,7 +104,7 @@ public class NodePoolValidator {
     private final ToolManager toolManager;
     private final CloudFacade cloudFacade;
     private final PreferenceManager preferenceManager;
-    private final RegionNetworksService regionNetworks;
+    private final CapacityReservationCloudFacade reservationCloudFacade;
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -145,15 +146,51 @@ public class NodePoolValidator {
     }
 
     /**
+     * What an edit of a pool backed by a capacity reservation may not change: its count, its price type and how its
+     * nodes launch - nor may it make the pool autoscaled. The reservation sets the count and the launch configuration
+     * itself as it becomes active and ends, so an edit changing them would either switch the pool on with no capacity
+     * behind it or stop its nodes consuming the capacity paid for - as spot nodes would. Sending the current value
+     * back, or none, is not a change.
+     */
+    @SuppressWarnings("deprecation")
+    public void validateReservationPoolUpdate(final NodePool existing, final NodePoolVO vo) {
+        validateUnchanged(existing, "count", existing.getCount(), vo.getCount());
+        validateUnchanged(existing, "price type", existing.getPriceType(), vo.getPriceType());
+        Assert.isTrue(!vo.isAutoscaled(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+        if (StringUtils.isNotBlank(vo.getInstanceImage())) {
+            validateUnchanged(existing, "instance image", existing.getInstanceImage(), vo.getInstanceImage());
+        }
+        if (vo.getAmiConfiguration() != null) {
+            validateUnchanged(existing, "launch configuration", existing.getAmiConfiguration(),
+                    vo.getAmiConfiguration());
+        }
+    }
+
+    private void validateUnchanged(final NodePool pool, final String field, final Object current,
+                                   final Object requested) {
+        Assert.isTrue(Objects.equals(current, requested),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE,
+                        pool.getId(), field));
+    }
+
+    /**
      * Rules that only apply to a pool asking for reserved capacity. Each one rejects a request that would be
      * accepted now and fail later - after money had been spent, or after a multi-day wait.
      */
     private void validateCapacityReservation(final NodePoolVO vo, final CapacityReservationRequest request) {
+        // Checked before anything else: a reservation the platform cannot buy could not be cancelled either, so its
+        // pool could never be deleted.
+        final CloudProvider provider = regionManager.load(vo.getRegionId()).getProvider();
+        Assert.isTrue(reservationCloudFacade.isSupported(provider),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED,
+                        provider));
         // Reservations cover on-demand capacity, so a spot pool would never consume one and the user would
         // be paying for the reservation and the spot nodes both.
         Assert.isTrue(!PriceType.SPOT.equals(vo.getPriceType()),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
-
+        Assert.isTrue(!vo.isAutoscaled(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
 
         final CapacityReservationType type = request.getReservationType();
         Assert.notNull(type,
@@ -161,11 +198,8 @@ public class NodePoolValidator {
         Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
 
-        // An autoscaled pool is reserved at its largest, so it must say how large that is.
-        Assert.isTrue(vo.isAutoscaled() ? Objects.nonNull(vo.getMaxSize()) && vo.getMaxSize() >= 1
-                        : vo.getCount() >= 1,
-                messageHelper.getMessage(
-                        MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
+        Assert.isTrue(vo.getCount() >= 1,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
         validateReservationSize(vo);
         validateReservationWindow(request);
@@ -177,7 +211,7 @@ public class NodePoolValidator {
      * instance type the platform has no offer for is left to the provider - there is nothing to count its vCPUs by.
      */
     private void validateReservationSize(final NodePoolVO vo) {
-        final int instances = vo.isAutoscaled() ? vo.getMaxSize() : vo.getCount();
+        final int instances = vo.getCount();
         instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId())
                 .map(InstanceOffer::getVCPU)
                 .filter(vcpus -> vcpus > 0)
@@ -284,7 +318,7 @@ public class NodePoolValidator {
     }
 
     /**
-     * An administrator's launch configuration for a pool. Its image has to be one a pool may launch, and its zone and
+     * A launch configuration given for a pool. Its image has to be one a pool may launch, and its zone and
      * subnet ones its region's networks configure: the launch scripts only put nodes there, and a zone they would not
      * use leaves the pool unable to launch at all. A region that configures no networks lets its nodes go to any
      * zone, so there is nothing to check against.
@@ -303,7 +337,7 @@ public class NodePoolValidator {
             return;
         }
         final String regionCode = region.getRegionCode();
-        final Map<String, String> networks = regionNetworks.allowedNetworks(regionCode);
+        final Map<String, String> networks = allowedNetworks(regionCode);
         if (networks.isEmpty()) {
             return;
         }
@@ -374,5 +408,14 @@ public class NodePoolValidator {
 
     private boolean validPercentValue(double value) {
         return DoubleUtils.between(0.0, HUNDRED_PERCENT, value);
+    }
+
+    /**
+     * Zone to subnet, as the region's {@code networks} configure them; empty where they configure none.
+     */
+    private Map<String, String> allowedNetworks(final String regionCode) {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
+                .map(configuration -> configuration.allowedNetworks(regionCode))
+                .orElseGet(Collections::emptyMap);
     }
 }

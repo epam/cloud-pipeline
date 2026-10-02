@@ -17,12 +17,13 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.pipeline.run.container.ContainerSecurityContext;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -37,19 +38,14 @@ import java.util.Optional;
  *
  * <p>Two sources, in order of precedence: whatever the caller supplied, and otherwise a config derived from the
  * pool's instance type. Either way the pod selector is the one thing the caller cannot be expected to know, so
- * it falls back to the reservation's id when they did not set one - a pod has to select the reserved nodes to
- * land on them at all, and a wrong or missing value would not fail loudly, it would just quietly schedule
- * somewhere else.
+ * it falls back to the pool's own nodes - labelled with the pool's id - when they did not set one: a pod has to
+ * select the pool's nodes to land on them at all, and a wrong or missing value would not fail loudly, it would
+ * just quietly schedule somewhere else.
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class NodePoolLaunchConfigBuilder {
-
-    /**
-     * The node label reserved nodes carry, and which a sharable pool's pods select on.
-     */
-    public static final String CAPACITY_RESERVATION_LABEL = "capacity-reservation";
 
     /**
      * Headroom withheld from a node before a run may ask for the rest. These mirror the defaults of the
@@ -67,14 +63,11 @@ public class NodePoolLaunchConfigBuilder {
     private final InstanceOfferDao instanceOfferDao;
 
     /**
-     * @param requested the config the caller supplied, or null to derive one
-     * @param reservationId the reservation backing this pool, used as the selector value
+     * @param pool the pool, with its id and the config the caller supplied, or none to derive one
      */
-    public NodePoolLaunchConfig build(final NodePool pool,
-                                      final NodePoolLaunchConfig requested,
-                                      final Long reservationId) {
-        final NodePoolLaunchConfig config = requested != null ? requested : generate(pool);
-        config.setKubeAssignPolicy(withSelector(config.getKubeAssignPolicy(), reservationId));
+    public NodePoolLaunchConfig build(final NodePoolVO pool) {
+        final NodePoolLaunchConfig config = pool.getLaunchConfig() != null ? pool.getLaunchConfig() : generate(pool);
+        config.setKubeAssignPolicy(withSelector(config.getKubeAssignPolicy(), pool.getId()));
         return config;
     }
 
@@ -83,7 +76,7 @@ public class NodePoolLaunchConfigBuilder {
      * instance actually has a GPU, since offering a share of nothing would let a run ask for a device that
      * cannot be granted.
      */
-    private NodePoolLaunchConfig generate(final NodePool pool) {
+    private NodePoolLaunchConfig generate(final NodePoolVO pool) {
         final NodePoolLaunchConfig config = new NodePoolLaunchConfig();
         config.setCpuRequestsEnabled(true);
         config.setRamRequestsEnabled(true);
@@ -98,12 +91,12 @@ public class NodePoolLaunchConfigBuilder {
      * Runs sharing a node need elevated privileges, and must not skip container requests - skipping them is what
      * lets a single run take the whole node, which is precisely what a sharable pool exists to prevent.
      */
-    private RunContainerSpec withSelector(final RunContainerSpec requested, final Long reservationId) {
+    private RunContainerSpec withSelector(final RunContainerSpec requested, final Long poolId) {
         final RunContainerSpec spec = requested != null ? requested : defaultContainerSpec();
         if (!hasSelectorValue(spec)) {
             spec.setSelector(RunContainerSpec.PodAssignSelector.builder()
-                    .label(CAPACITY_RESERVATION_LABEL)
-                    .value(String.valueOf(reservationId))
+                    .label(KubernetesConstants.NODE_POOL_ID_LABEL)
+                    .value(String.valueOf(poolId))
                     .build());
         }
         return spec;
@@ -125,7 +118,7 @@ public class NodePoolLaunchConfigBuilder {
                 .isPresent();
     }
 
-    private boolean hasGpu(final NodePool pool) {
+    private boolean hasGpu(final NodePoolVO pool) {
         final InstanceOfferRequestVO request = new InstanceOfferRequestVO();
         request.setRegionId(pool.getRegionId());
         return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceTypes(request)).stream()

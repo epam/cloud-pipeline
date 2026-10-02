@@ -20,7 +20,6 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
-import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import io.swagger.annotations.Api;
@@ -35,7 +34,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -67,28 +65,16 @@ public class NodePoolController extends AbstractRestController {
         return Result.success(apiService.load(id));
     }
 
+    /**
+     * Creates and updates are authorized differently - the latter on the pool the id names - so each goes to its own
+     * service method, the update with the very id it is authorized for.
+     */
     @PostMapping
-    @ApiOperation(value = "Creates a node pool, optionally requesting a capacity reservation for it",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Creates a node pool, optionally requesting a capacity reservation for it, "
+            + "or updates the one", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePool> create(final @RequestBody NodePoolVO vo) {
-        return Result.success(apiService.create(vo));
-    }
-
-    @PutMapping("{id}")
-    @ApiOperation(value = "Updates an existing node pool", produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePool> update(final @PathVariable Long id, final @RequestBody NodePoolVO vo) {
-        return Result.success(apiService.update(id, vo));
-    }
-
-    @PutMapping("{id}/ami-configuration")
-    @ApiOperation(value = "Replaces how a node pool's nodes are launched. Administrators only.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePool> updateAmiConfiguration(final @PathVariable Long id,
-                                                   final @RequestBody AMIConfiguration configuration) {
-        return Result.success(apiService.updateAmiConfiguration(id, configuration));
+    public Result<NodePool> createOrUpdate(final @RequestBody NodePoolVO vo) {
+        return Result.success(vo.getId() == null ? apiService.create(vo) : apiService.update(vo.getId(), vo));
     }
 
     @DeleteMapping("{id}")

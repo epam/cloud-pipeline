@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.controller.vo.cluster.pool;
 
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
@@ -59,6 +60,11 @@ public class NodePoolVO {
      * Accepted on update as well as on creation.
      */
     private NodePoolLaunchConfig launchConfig;
+    /**
+     * Like {@link #launchConfig}: used when sent, generated from the region's matching {@code amis} rule on creation
+     * when not, and left as it is by an update that does not send it.
+     */
+    private AMIConfiguration amiConfiguration;
 
     /**
      * Present when the caller wants capacity reserved for this pool. Absent for an ordinary pool, which is

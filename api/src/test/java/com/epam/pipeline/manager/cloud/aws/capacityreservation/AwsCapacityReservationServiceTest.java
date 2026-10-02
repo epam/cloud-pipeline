@@ -16,13 +16,17 @@
 
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
+import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.NetworkConfiguration;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
-import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.assertj.core.groups.Tuple;
@@ -100,6 +104,8 @@ public class AwsCapacityReservationServiceTest {
     private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
     private static final String QUOTE_ID = "crcq-0123456789abcdef0";
     private static final int HTTP_BAD_REQUEST = 400;
+    private static final String NOT_FOUND_ERROR_CODE = "InvalidCapacityReservationId.NotFound";
+    private static final String MALFORMED_ERROR_CODE = "InvalidCapacityReservationId.Malformed";
     private static final int HTTP_INTERNAL_ERROR = 500;
     private static final int HTTP_SERVICE_UNAVAILABLE = 503;
 
@@ -110,7 +116,7 @@ public class AwsCapacityReservationServiceTest {
     private AWSV2EC2ClientProvider clientProvider;
 
     @Mock
-    private RegionNetworksService regionNetworks;
+    private PreferenceManager preferenceManager;
 
     private final FakeEc2Client client = new FakeEc2Client();
 
@@ -123,7 +129,7 @@ public class AwsCapacityReservationServiceTest {
         region.setRegionCode(REGION_CODE);
         when(regionManager.load(REGION_ID)).thenReturn(region);
         when(clientProvider.client(any())).thenReturn(client);
-        service = new AwsCapacityReservationService(regionManager, clientProvider, regionNetworks);
+        service = new AwsCapacityReservationService(regionManager, clientProvider, preferenceManager);
     }
 
     /**
@@ -317,13 +323,9 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.describeRequest.capacityReservationIds()).containsExactly(CLOUD_ID);
     }
 
-    /**
-     * An id AWS does not recognise is not something to keep polling: a genuine outage throws instead, and there is
-     * no capacity left either to wait for or to pay for.
-     */
     @Test
     public void shouldFailWhenAwsDoesNotKnowTheReservation() {
-        final CapacityReservation reservation = reservation();
+        final CapacityReservation reservation = pastTheGrace(reservation());
         reservation.setCloudReservationId(CLOUD_ID);
         client.described = Collections.emptyList();
 
@@ -331,6 +333,63 @@ public class AwsCapacityReservationServiceTest {
 
         assertThat(result.getState()).isEqualTo(CloudCapacityReservationState.FAILED);
         assertThat(result.getStateReason()).contains(CLOUD_ID);
+    }
+
+    /**
+     * EC2 is eventually consistent, so a reservation just created may not show yet. Failing it then would abandon one
+     * AWS holds and bills; asking again next cycle costs nothing.
+     */
+    @Test
+    public void shouldAskAgainWhileAReservationMayNotBeVisibleYet() {
+        final CapacityReservation reservation = reservation();
+        reservation.setStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
+        reservation.setUpdated(DateUtils.nowUTC());
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, NOT_FOUND_ERROR_CODE);
+
+        assertThatThrownBy(() -> service.describe(reservation))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(CLOUD_ID);
+    }
+
+    /**
+     * Once a describe has shown the reservation - which is how it got past being assessed - unknown is no longer a
+     * reservation AWS has not shown yet, however recent the last status change.
+     */
+    @Test
+    public void shouldNotWaitForAReservationAwsHasAlreadyShown() {
+        final CapacityReservation reservation = reservation();
+        reservation.setStatus(CapacityReservationStatus.SCHEDULED);
+        reservation.setUpdated(DateUtils.nowUTC());
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, NOT_FOUND_ERROR_CODE);
+
+        assertThat(service.describe(reservation).getState()).isEqualTo(CloudCapacityReservationState.FAILED);
+    }
+
+    /**
+     * EC2 answers an id it has never had, or has purged, with an error rather than an empty list - which must not
+     * leave the reservation polling forever.
+     */
+    @Test
+    public void shouldFailWhenAwsRefusesTheReservationIdAsNotFound() {
+        final CapacityReservation reservation = pastTheGrace(reservation());
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, NOT_FOUND_ERROR_CODE);
+
+        final CloudCapacityReservation result = service.describe(reservation);
+
+        assertThat(result.getState()).isEqualTo(CloudCapacityReservationState.FAILED);
+        assertThat(result.getStateReason()).contains(CLOUD_ID);
+    }
+
+    @Test
+    public void shouldLeaveAnyOtherDescribeRefusalAsItIs() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, "UnauthorizedOperation");
+
+        assertThatThrownBy(() -> service.describe(reservation)).isInstanceOf(Ec2Exception.class);
     }
 
     @Test
@@ -424,18 +483,61 @@ public class AwsCapacityReservationServiceTest {
     }
 
     /**
-     * Nothing to release and nothing being billed, so cancelling must be a no-op rather than an error - this runs
-     * from the monitor, where a throw would retry forever.
+     * Not shown may only mean not visible yet, so the cancel is sent anyway - calling it cancelled while AWS still
+     * holds it would leave it billed.
      */
     @Test
-    public void shouldNotAttemptToCancelSomethingAwsDoesNotHave() {
+    public void shouldStillCancelAReservationTheDescribeDidNotShow() {
         final CapacityReservation reservation = reservation();
         reservation.setCloudReservationId(CLOUD_ID);
         client.described = Collections.emptyList();
 
         service.cancel(reservation);
 
-        assertThat(client.cancelRequest).isNull();
+        assertThat(client.cancelRequest.capacityReservationId()).isEqualTo(CLOUD_ID);
+        assertThat(client.cancelRequest.quoteId()).isNull();
+    }
+
+    /**
+     * Nothing to release and nothing being billed, so cancelling must be a no-op rather than an error - this runs
+     * from the monitor, where a throw would retry forever.
+     */
+    @Test
+    public void shouldTreatAReservationAwsCannotCancelAsUnknownAsNothingToCancel() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, NOT_FOUND_ERROR_CODE);
+        client.cancelFailure = ec2Error(HTTP_BAD_REQUEST, NOT_FOUND_ERROR_CODE);
+
+        service.cancel(reservation);
+
+        assertThat(client.cancelRequest.capacityReservationId()).isEqualTo(CLOUD_ID);
+    }
+
+    @Test
+    public void shouldLeaveAnyOtherRefusalToCancelAnUnseenReservationAsItIs() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.described = Collections.emptyList();
+        client.cancelFailure = ec2Error(HTTP_BAD_REQUEST, "IncorrectState");
+
+        assertThatThrownBy(() -> service.cancel(reservation)).isInstanceOf(Ec2Exception.class);
+    }
+
+    /**
+     * No reservation can exist under an id AWS cannot parse. Refusing to cancel it would keep its pool from ever being
+     * deleted.
+     */
+    @Test
+    public void shouldTreatAnIdAwsCannotParseAsNothingToCancel() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(CLOUD_ID);
+        client.describeFailure = ec2Error(HTTP_BAD_REQUEST, MALFORMED_ERROR_CODE);
+        client.cancelFailure = ec2Error(HTTP_BAD_REQUEST, MALFORMED_ERROR_CODE);
+
+        service.cancel(reservation);
+
+        assertThat(client.cancelRequest.capacityReservationId()).isEqualTo(CLOUD_ID);
     }
 
     /**
@@ -445,7 +547,8 @@ public class AwsCapacityReservationServiceTest {
     @Test
     public void shouldOfferOnlyConfiguredZonesThatOfferTheInstanceType() {
         client.offeredZones = Arrays.asList("eu-central-1c", ZONE, "eu-central-1a");
-        when(regionNetworks.allowedNetworks(REGION_CODE)).thenReturn(networks("eu-central-1a", ZONE, "eu-central-1d"));
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
+                .thenReturn(networksConfig(networks("eu-central-1a", ZONE, "eu-central-1d")));
 
         assertThat(service.candidateZones(reservation())).containsExactly("eu-central-1a", ZONE);
         assertThat(client.offeringsRequest.locationTypeAsString()).isEqualTo("availability-zone");
@@ -458,7 +561,7 @@ public class AwsCapacityReservationServiceTest {
     @Test
     public void shouldOfferEveryZoneThatOffersTheInstanceTypeWhenNoNetworksAreConfigured() {
         client.offeredZones = Arrays.asList("eu-central-1c", ZONE);
-        when(regionNetworks.allowedNetworks(REGION_CODE)).thenReturn(Collections.emptyMap());
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG)).thenReturn(null);
 
         assertThat(service.candidateZones(reservation())).containsExactly(ZONE, "eu-central-1c");
     }
@@ -616,6 +719,13 @@ public class AwsCapacityReservationServiceTest {
         assertThat(service.describe(reservation()).getStateReason()).contains("unsupported");
     }
 
+    private static CapacityReservation pastTheGrace(final CapacityReservation reservation) {
+        reservation.setUpdated(DateUtils.nowUTC()
+                .minus(AwsCapacityReservationService.UNKNOWN_RESERVATION_GRACE_PERIOD)
+                .minusMinutes(1));
+        return reservation;
+    }
+
     private CapacityReservation reservation() {
         final CapacityReservation reservation = CapacityReservationCreatorUtils.getReservation(1L);
         reservation.setId(RESERVATION_ID);
@@ -654,6 +764,15 @@ public class AwsCapacityReservationServiceTest {
                 .build();
     }
 
+    private static CloudRegionsConfiguration networksConfig(final Map<String, String> networks) {
+        final NetworkConfiguration region = new NetworkConfiguration();
+        region.setName(REGION_CODE);
+        region.setAllowedNetworks(networks);
+        final CloudRegionsConfiguration configuration = new CloudRegionsConfiguration();
+        configuration.setRegions(Collections.singletonList(region));
+        return configuration;
+    }
+
     private static Map<String, String> networks(final String... zones) {
         final Map<String, String> networks = new HashMap<>();
         for (final String zone : zones) {
@@ -688,6 +807,7 @@ public class AwsCapacityReservationServiceTest {
         private DescribeInstanceTypeOfferingsRequest offeringsRequest;
         private RuntimeException createFailure;
         private RuntimeException describeFailure;
+        private RuntimeException cancelFailure;
 
         @Override
         public String serviceName() {
@@ -734,6 +854,9 @@ public class AwsCapacityReservationServiceTest {
         public CancelCapacityReservationResponse cancelCapacityReservation(
                 final CancelCapacityReservationRequest request) {
             this.cancelRequest = request;
+            if (cancelFailure != null) {
+                throw cancelFailure;
+            }
             return CancelCapacityReservationResponse.builder().build();
         }
 

@@ -17,18 +17,22 @@
 package com.epam.pipeline.manager.cloud.aws.capacityreservation;
 
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
-import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationSubmissionUncertainException;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -44,6 +48,7 @@ import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationCancel
 import software.amazon.awssdk.services.ec2.model.CreateCapacityReservationRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeCapacityReservationsRequest;
 import software.amazon.awssdk.services.ec2.model.DescribeInstanceTypeOfferingsRequest;
+import software.amazon.awssdk.services.ec2.model.Ec2Exception;
 import software.amazon.awssdk.services.ec2.model.Filter;
 import software.amazon.awssdk.services.ec2.model.InstanceMatchCriteria;
 import software.amazon.awssdk.services.ec2.model.InstanceTypeOffering;
@@ -128,12 +133,25 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
             CapacityReservationState.CANCELLED, CapacityReservationState.CANCELLING,
             CapacityReservationState.EXPIRED, CapacityReservationState.FAILED,
             CapacityReservationState.PAYMENT_FAILED, CapacityReservationState.UNSUPPORTED));
+    /**
+     * What EC2 answers with for an id it does not know, or cannot even parse - an error, not an empty list.
+     */
+    private static final Set<String> UNKNOWN_RESERVATION_ERROR_CODES = new HashSet<>(Arrays.asList(
+            "InvalidCapacityReservationId.NotFound", "InvalidCapacityReservationId.Malformed"));
+    /**
+     * How long after submission an unknown reservation may only be not visible yet. The EC2 API is eventually
+     * consistent, and a describe right after a create may answer that the new id does not exist; AWS gives no duration,
+     * only advice to retry "up to a few minutes" - see
+     * <a href="https://docs.aws.amazon.com/ec2/latest/devguide/eventual-consistency.html">Eventual consistency in the
+     * Amazon EC2 API</a>. Five minutes is our reading of that, not a figure AWS publishes.
+     */
+    static final Duration UNKNOWN_RESERVATION_GRACE_PERIOD = Duration.ofMinutes(5);
     private static final Set<String> INSUFFICIENT_CAPACITY_ERROR_CODES = new HashSet<>(Arrays.asList(
             "InsufficientCapacity", "InsufficientInstanceCapacity", "InsufficientReservedInstanceCapacity"));
 
     private final CloudRegionManager regionManager;
     private final AWSV2EC2ClientProvider clientProvider;
-    private final RegionNetworksService regionNetworks;
+    private final PreferenceManager preferenceManager;
 
     @Override
     public CloudProvider getProvider() {
@@ -159,7 +177,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     @Override
     public List<String> candidateZones(final CapacityReservation reservation) {
         final AwsRegion region = region(reservation);
-        final Map<String, String> networks = regionNetworks.allowedNetworks(region.getRegionCode());
+        final Map<String, String> networks = allowedNetworks(region.getRegionCode());
         final List<String> offered = uncertainOnTransientFailure(reservation, () -> {
             try (Ec2Client client = clientProvider.client(region)) {
                 return ListUtils.emptyIfNull(client.describeInstanceTypeOfferings(
@@ -218,22 +236,31 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     public CloudCapacityReservation describe(final CapacityReservation reservation) {
         final AwsRegion region = region(reservation);
         try (Ec2Client client = clientProvider.client(region)) {
-            return ListUtils.emptyIfNull(client.describeCapacityReservations(
-                            DescribeCapacityReservationsRequest.builder()
-                                    .capacityReservationIds(reservation.getCloudReservationId())
-                                    .build())
-                            .capacityReservations()).stream()
-                    .findFirst()
-                    .map(AwsCapacityReservationService::toCloudReservation)
-                    // AWS answering with no reservation for an id we hold is not a transient failure - a genuine
-                    // outage throws instead. Failing it is the honest outcome: there is nothing to wait for, and
-                    // nothing was left running that could still cost money.
-                    .orElseGet(() -> CloudCapacityReservation.builder()
-                            .cloudReservationId(reservation.getCloudReservationId())
-                            .state(CloudCapacityReservationState.FAILED)
-                            .stateReason(String.format("AWS does not know capacity reservation %s in region %s",
-                                    reservation.getCloudReservationId(), region.getRegionCode()))
-                            .build());
+            final Optional<software.amazon.awssdk.services.ec2.model.CapacityReservation> current =
+                    findById(client, reservation.getCloudReservationId());
+            if (current.isPresent()) {
+                return toCloudReservation(current.get());
+            }
+            // Thrown rather than answered while it may only not be visible yet: the step is rolled back, and the next
+            // cycle asks again.
+            final boolean shouldBeVisible =
+                    CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER != reservation.getStatus()
+                    || Optional.ofNullable(reservation.getUpdated())
+                        .map(updated -> updated.isBefore(DateUtils.nowUTC().minus(UNKNOWN_RESERVATION_GRACE_PERIOD)))
+                        .orElse(true);
+            Assert.state(
+                    shouldBeVisible,
+                    String.format("AWS does not show capacity reservation %s in region %s yet; will ask again",
+                    reservation.getCloudReservationId(), region.getRegionCode())
+            );
+            // Past that, unknown is not a transient failure - a genuine outage throws instead. Failing it is the honest
+            // outcome: there is nothing to wait for, and nothing was left running that could still cost money.
+            return CloudCapacityReservation.builder()
+                    .cloudReservationId(reservation.getCloudReservationId())
+                    .state(CloudCapacityReservationState.FAILED)
+                    .stateReason(String.format("AWS does not know capacity reservation %s in region %s",
+                            reservation.getCloudReservationId(), region.getRegionCode()))
+                    .build();
         }
     }
 
@@ -250,29 +277,40 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         try (Ec2Client client = clientProvider.client(region)) {
             final Optional<software.amazon.awssdk.services.ec2.model.CapacityReservation> current =
                     findById(client, reservation.getCloudReservationId());
-            if (!current.isPresent()) {
-                // Already gone, or never existed. Either way there is nothing to release and nothing being billed.
-                log.warn("Capacity reservation {} ({}) is unknown to AWS; nothing to cancel",
-                        reservation.getId(), reservation.getCloudReservationId());
-                return;
+            if (current.isPresent()) {
+                if (ALREADY_RELEASED.contains(current.get().state())) {
+                    // A retried step: the monitor rolls a whole step back when a later write in it fails, so a cancel
+                    // AWS already carried out comes round again. There is nothing left to release, and asking AWS to
+                    // cancel it anyway would fail the step every time.
+                    log.debug("Capacity reservation {} ({}) is already {} at AWS; nothing to cancel",
+                            reservation.getId(), reservation.getCloudReservationId(), current.get().stateAsString());
+                    return;
+                }
+                if (requiresCancellationQuote(current.get())) {
+                    cancelWithCommitmentWindDown(client, reservation);
+                    return;
+                }
             }
-            if (ALREADY_RELEASED.contains(current.get().state())) {
-                // A retried step: the monitor rolls a whole step back when a later write in it fails, so a cancel
-                // AWS already carried out comes round again. There is nothing left to release, and asking AWS to
-                // cancel it anyway would fail the step every time.
-                log.debug("Capacity reservation {} ({}) is already {} at AWS; nothing to cancel", reservation.getId(),
-                        reservation.getCloudReservationId(), current.get().stateAsString());
-                return;
-            }
-            if (requiresCancellationQuote(current.get())) {
-                cancelWithCommitmentWindDown(client, reservation);
-                return;
-            }
-            log.debug("Cancelling capacity reservation {} ({}) at AWS, state {}", reservation.getId(),
-                    reservation.getCloudReservationId(), current.get().stateAsString());
+            // Not shown is not proof of gone - a reservation created moments ago may not be visible yet - so it is
+            // cancelled all the same, and only the cancel's own answer settles that there is nothing to release.
+            cancelPlainly(client, reservation);
+        }
+    }
+
+    private void cancelPlainly(final Ec2Client client, final CapacityReservation reservation) {
+        log.debug("Cancelling capacity reservation {} ({}) at AWS", reservation.getId(),
+                reservation.getCloudReservationId());
+        try {
             client.cancelCapacityReservation(CancelCapacityReservationRequest.builder()
                     .capacityReservationId(reservation.getCloudReservationId())
                     .build());
+        } catch (Ec2Exception e) {
+            if (!isUnknownReservation(e)) {
+                throw e;
+            }
+            // Already gone, never existed, or an id AWS cannot even parse. Either way nothing is held or billed.
+            log.warn("Capacity reservation {} ({}) is unknown to AWS; nothing to cancel",
+                    reservation.getId(), reservation.getCloudReservationId());
         }
     }
 
@@ -320,14 +358,25 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         return String.format("cp-cr-cancel-%d-%d", reservation.getId(), reservation.getAttempt());
     }
 
+    /**
+     * Empty when AWS does not know the id - whether it answers with no reservation or, as EC2 does for an id it has
+     * never had, has purged or cannot parse, with one of {@link #UNKNOWN_RESERVATION_ERROR_CODES}.
+     */
     private Optional<software.amazon.awssdk.services.ec2.model.CapacityReservation> findById(
             final Ec2Client client, final String cloudReservationId) {
-        return ListUtils.emptyIfNull(client.describeCapacityReservations(
-                        DescribeCapacityReservationsRequest.builder()
-                                .capacityReservationIds(cloudReservationId)
-                                .build())
-                        .capacityReservations()).stream()
-                .findFirst();
+        try {
+            return ListUtils.emptyIfNull(client.describeCapacityReservations(
+                            DescribeCapacityReservationsRequest.builder()
+                                    .capacityReservationIds(cloudReservationId)
+                                    .build())
+                            .capacityReservations()).stream()
+                    .findFirst();
+        } catch (Ec2Exception e) {
+            if (isUnknownReservation(e)) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -382,6 +431,13 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                         .map(AwsErrorDetails::errorCode)
                         .filter(INSUFFICIENT_CAPACITY_ERROR_CODES::contains)
                         .isPresent();
+    }
+
+    private static boolean isUnknownReservation(final AwsServiceException e) {
+        return Optional.ofNullable(e.awsErrorDetails())
+                .map(AwsErrorDetails::errorCode)
+                .filter(UNKNOWN_RESERVATION_ERROR_CODES::contains)
+                .isPresent();
     }
 
     private static CapacityReservationSubmissionUncertainException uncertain(final CapacityReservation reservation,
@@ -496,5 +552,14 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
 
     private AwsRegion region(final CapacityReservation reservation) {
         return (AwsRegion) regionManager.load(reservation.getRegionId());
+    }
+
+    /**
+     * Zone to subnet, as the region's {@code networks} configure them; empty where they configure none.
+     */
+    private Map<String, String> allowedNetworks(final String regionCode) {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
+                .map(configuration -> configuration.allowedNetworks(regionCode))
+                .orElseGet(Collections::emptyMap);
     }
 }

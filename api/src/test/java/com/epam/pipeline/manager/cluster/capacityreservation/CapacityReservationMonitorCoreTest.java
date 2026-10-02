@@ -42,7 +42,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -67,6 +66,7 @@ public class CapacityReservationMonitorCoreTest {
     private static final Long POOL_ID = 1L;
     private static final Long RESERVATION_ID = 10L;
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
+    private static final String TIMED_OUT = "timed out";
     private static final String ZONE = "us-east-1c";
     private static final String OTHER_ZONE = "us-east-1d";
     private static final String PROVIDER_UNREACHABLE = "provider unreachable";
@@ -103,6 +103,8 @@ public class CapacityReservationMonitorCoreTest {
         // test says otherwise.
         when(cloudFacade.earliestAcceptedStart(any())).thenReturn(DateUtils.nowUTC());
         when(cloudFacade.candidateZones(any())).thenReturn(Collections.singletonList(ZONE));
+        // Nothing a lost reply bought, unless a test says otherwise.
+        when(cloudFacade.findSubmitted(any())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -174,13 +176,12 @@ public class CapacityReservationMonitorCoreTest {
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         when(cloudFacade.candidateZones(reservation)).thenReturn(Arrays.asList(ZONE, OTHER_ZONE));
         final AtomicReference<String> askedFor = new AtomicReference<>();
-        when(cloudFacade.submit(any(), any())).thenAnswer(invocation -> {
-            ((BooleanSupplier) invocation.getArguments()[1]).getAsBoolean();
+        when(cloudFacade.create(any())).thenAnswer(invocation -> {
             askedFor.set(reservation.getAvailabilityZone());
-            return Optional.of(CloudCapacityReservation.builder()
+            return CloudCapacityReservation.builder()
                     .cloudReservationId(CLOUD_ID)
                     .state(CloudCapacityReservationState.PENDING)
-                    .build());
+                    .build();
         });
 
         monitor.processApproved();
@@ -194,7 +195,6 @@ public class CapacityReservationMonitorCoreTest {
         final CapacityReservation reservation = approved();
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         when(cloudFacade.candidateZones(reservation)).thenReturn(Collections.emptyList());
-        givenSubmissionReturns(CloudCapacityReservation.builder().cloudReservationId(CLOUD_ID).build());
 
         monitor.processApproved();
 
@@ -202,6 +202,7 @@ public class CapacityReservationMonitorCoreTest {
         final ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
         verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), reason.capture());
         assertThat(reason.getValue()).contains("No availability zone");
+        verify(cloudFacade, never()).create(any());
     }
 
     /**
@@ -281,7 +282,6 @@ public class CapacityReservationMonitorCoreTest {
         final CapacityReservation reservation = approved();
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         when(cloudFacade.earliestAcceptedStart(reservation)).thenReturn(reservation.getRequestedEndDate());
-        givenSubmissionReturns(CloudCapacityReservation.builder().cloudReservationId(CLOUD_ID).build());
 
         monitor.processApproved();
 
@@ -289,6 +289,7 @@ public class CapacityReservationMonitorCoreTest {
         final ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
         verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), reason.capture());
         assertThat(reason.getValue()).contains("earliest start the provider accepts");
+        verify(cloudFacade, never()).create(any());
     }
 
     /**
@@ -301,7 +302,7 @@ public class CapacityReservationMonitorCoreTest {
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         when(cloudFacade.earliestAcceptedStart(reservation)).thenReturn(reservation.getRequestedEndDate());
         // The facade's lookup finds it, so no dates are chosen at all.
-        when(cloudFacade.submit(eq(reservation), any())).thenReturn(Optional.of(CloudCapacityReservation.builder()
+        when(cloudFacade.findSubmitted(reservation)).thenReturn(Optional.of(CloudCapacityReservation.builder()
                 .cloudReservationId(CLOUD_ID)
                 .state(CloudCapacityReservationState.PENDING)
                 .build()));
@@ -309,6 +310,8 @@ public class CapacityReservationMonitorCoreTest {
         monitor.processApproved();
 
         assertThat(reservation.getCloudReservationId()).isEqualTo(CLOUD_ID);
+        verify(cloudFacade, never()).candidateZones(any());
+        verify(cloudFacade, never()).create(any());
         verify(statusService)
                 .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
         verify(statusService, never()).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), any());
@@ -322,7 +325,7 @@ public class CapacityReservationMonitorCoreTest {
     public void shouldMarkPurchaseFailedWhenSubmissionThrows() {
         final CapacityReservation reservation = approved();
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
-        when(cloudFacade.submit(any(), any())).thenThrow(new IllegalStateException("boom"));
+        when(cloudFacade.create(any())).thenThrow(new IllegalStateException("boom"));
 
         monitor.processApproved();
 
@@ -339,23 +342,42 @@ public class CapacityReservationMonitorCoreTest {
         final CapacityReservation reservation = approved();
         final int attemptBefore = reservation.getAttempt();
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
-        when(cloudFacade.submit(any(), any())).thenThrow(
-                new CapacityReservationSubmissionUncertainException("timed out", new IllegalStateException()));
+        when(cloudFacade.create(any())).thenThrow(
+                new CapacityReservationSubmissionUncertainException(TIMED_OUT, new IllegalStateException()));
 
         monitor.processApproved();
 
-        verify(statusService).recordRetry(reservation, "timed out");
+        verify(statusService).recordRetry(reservation, TIMED_OUT);
         verify(statusService, never()).transition(any(), any(), any());
         // The same attempt, so the retry carries the same token.
         assertThat(reservation.getAttempt()).isEqualTo(attemptBefore);
     }
 
     /**
-     * The create call answers synchronously, and it can refuse the date there and then. That answer must be acted
-     * on in the same cycle rather than leaving the reservation sitting in SCHEDULED until the next poll.
+     * A lookup that could not reach the provider has not found "nothing". Choosing dates and buying anyway would be
+     * the blind retry the lookup exists to prevent.
      */
     @Test
-    public void shouldActOnARefusalReturnedBySubmissionItself() {
+    public void shouldNeitherChooseDatesNorBuyWhenTheLookupOutcomeIsUncertain() {
+        final CapacityReservation reservation = approved();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.findSubmitted(any())).thenThrow(
+                new CapacityReservationSubmissionUncertainException(TIMED_OUT, new IllegalStateException()));
+
+        monitor.processApproved();
+
+        verify(statusService).recordRetry(reservation, TIMED_OUT);
+        verify(statusService, never()).transition(any(), any(), any());
+        verify(cloudFacade, never()).candidateZones(any());
+        verify(cloudFacade, never()).create(any());
+    }
+
+    /**
+     * The provider's decision is left to the next poll, whatever the create call reported: it is normally still
+     * assessing at that point.
+     */
+    @Test
+    public void shouldLeaveTheProvidersDecisionToTheNextPoll() {
         final CapacityReservation reservation = approved();
         final int attemptBefore = reservation.getAttempt();
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
@@ -368,30 +390,9 @@ public class CapacityReservationMonitorCoreTest {
 
         verify(statusService)
                 .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
-        // ...and straight back to APPROVED with the next candidate, without waiting for a poll.
-        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
-        assertThat(reservation.getAttempt()).isEqualTo(attemptBefore + 1);
-    }
-
-    /**
-     * The normal case: the provider takes the request and is still assessing it, so nothing further happens this
-     * cycle.
-     */
-    @Test
-    public void shouldStayScheduledWhenSubmissionIsStillBeingAssessed() {
-        final CapacityReservation reservation = approved();
-        givenStatus(CapacityReservationStatus.APPROVED, reservation);
-        givenSubmissionReturns(CloudCapacityReservation.builder()
-                .cloudReservationId(CLOUD_ID)
-                .state(CloudCapacityReservationState.PENDING)
-                .build());
-
-        monitor.processApproved();
-
-        verify(statusService)
-                .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
         verify(statusService, never())
                 .transition(eq(reservation), eq(CapacityReservationStatus.APPROVED), any());
+        assertThat(reservation.getAttempt()).isEqualTo(attemptBefore);
     }
 
     /**
@@ -409,6 +410,9 @@ public class CapacityReservationMonitorCoreTest {
         monitor.processAssessing();
 
         verify(statusService).transition(reservation, CapacityReservationStatus.SCHEDULED, null);
+        // The pool is prepared now, and stays switched off until the capacity is live.
+        verify(reservationService).schedulePool(reservation);
+        verify(reservationService, never()).activatePool(any());
     }
 
     /**
@@ -426,6 +430,7 @@ public class CapacityReservationMonitorCoreTest {
         monitor.processScheduled();
 
         verify(statusService, never()).transition(any(), any(), any());
+        verify(reservationService, never()).schedulePool(any());
     }
 
     @Test
@@ -446,6 +451,28 @@ public class CapacityReservationMonitorCoreTest {
         assertThat(reservation.getStartDate()).isEqualTo(start);
         verify(statusService).transition(reservation, CapacityReservationStatus.ACTIVE, null);
         verify(reservationService).activatePool(reservation);
+        // Prepared when it was scheduled.
+        verify(reservationService, never()).schedulePool(any());
+    }
+
+    /**
+     * A provider may skip straight to live. The pool was then never prepared, and without the reservation's target
+     * its nodes would run as plain on-demand ones while the capacity idles.
+     */
+    @Test
+    public void shouldPrepareThePoolWhenTheReservationGoesLiveWithoutBeingScheduled() {
+        final CapacityReservation reservation = assessing();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.ACTIVE)
+                .availabilityZone(ZONE)
+                .build());
+
+        monitor.processAssessing();
+
+        final InOrder order = inOrder(reservationService);
+        order.verify(reservationService).schedulePool(reservation);
+        order.verify(reservationService).activatePool(reservation);
     }
 
     /**
@@ -548,6 +575,8 @@ public class CapacityReservationMonitorCoreTest {
         order.verify(cloudFacade).cancel(released.capture());
         assertThat(released.getValue().getCloudReservationId()).isEqualTo(CLOUD_ID);
         assertThat(released.getValue().getAttempt()).isEqualTo(attemptBefore);
+        // Its target is taken out of the pool, which the next attempt may never write into again.
+        verify(reservationService).deactivatePool(released.getValue());
     }
 
     /**
@@ -585,7 +614,8 @@ public class CapacityReservationMonitorCoreTest {
 
         monitor.processApproved();
 
-        verify(cloudFacade, never()).submit(any(), any());
+        verify(cloudFacade, never()).findSubmitted(any());
+        verify(cloudFacade, never()).create(any());
         verify(statusService, never()).transition(any(), any(), any());
     }
 
@@ -664,6 +694,8 @@ public class CapacityReservationMonitorCoreTest {
         monitor.processScheduled();
 
         verify(statusService).transition(reservation, CapacityReservationStatus.FAILED, "insufficient capacity");
+        // It was scheduled, so its target is in the pool - and must not outlive it.
+        verify(reservationService).deactivatePool(reservation);
     }
 
     @Test
@@ -761,7 +793,8 @@ public class CapacityReservationMonitorCoreTest {
 
         monitor.processApproved();
 
-        verify(cloudFacade, never()).submit(any(), any());
+        verify(cloudFacade, never()).findSubmitted(any());
+        verify(cloudFacade, never()).create(any());
         verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.PURCHASE_FAILED), any());
     }
 
@@ -831,13 +864,10 @@ public class CapacityReservationMonitorCoreTest {
     }
 
     /**
-     * What the facade does when it finds nothing to adopt: lets the monitor choose the dates and, if it chose any,
-     * creates the reservation.
+     * What the provider creates once the lookup found nothing to adopt and the monitor chose the dates.
      */
     private void givenSubmissionReturns(final CloudCapacityReservation created) {
-        when(cloudFacade.submit(any(), any())).thenAnswer(invocation ->
-                ((BooleanSupplier) invocation.getArguments()[1]).getAsBoolean()
-                        ? Optional.of(created) : Optional.empty());
+        when(cloudFacade.create(any())).thenReturn(created);
     }
 
     /**

@@ -18,7 +18,6 @@ package com.epam.pipeline.acl.cluster.pool;
 
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
-import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
@@ -73,17 +72,6 @@ public class NodePoolApiService {
     @PreAuthorize(AclExpressions.NODE_POOL_ID_WRITE)
     public NodePool update(final Long id, final NodePoolVO vo) {
         return nodeManager.update(id, vo);
-    }
-
-    /**
-     * Administrators only: a pool's launch configuration names files the launch reads on the API host and hands to the
-     * node, and goes to the cloud's launch request as it is - an instance profile, security groups, network
-     * interfaces. Whoever else may manage a pool could otherwise read API-host files onto a node or widen its
-     * privileges.
-     */
-    @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public NodePool updateAmiConfiguration(final Long id, final AMIConfiguration configuration) {
-        return nodeManager.updateAmiConfiguration(id, configuration);
     }
 
     /**

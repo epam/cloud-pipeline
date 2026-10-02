@@ -774,8 +774,12 @@ public final class MessageConstants {
 
     // Capacity reservation
     public static final String ERROR_CAPACITY_RESERVATION_NOT_FOUND = "error.capacity.reservation.not.found";
-    public static final String ERROR_CAPACITY_RESERVATION_SIZE_IMMUTABLE =
-            "error.capacity.reservation.size.immutable";
+    public static final String ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE =
+            "error.capacity.reservation.pool.immutable";
+    public static final String ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED =
+            "error.capacity.reservation.provider.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED =
+            "error.capacity.reservation.autoscaling.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_NOT_TERMINAL =
             "error.capacity.reservation.not.terminal";
     public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =

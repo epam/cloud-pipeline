@@ -35,7 +35,7 @@ import java.time.LocalDateTime;
  * instant types happens in the provider-specific service, not in callers.
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class CapacityReservation {
@@ -133,4 +133,12 @@ public class CapacityReservation {
      * the provider has decided, and null for a provider that has no such concept.
      */
     private Long grantedCommitmentSeconds;
+
+    /**
+     * This reservation as it is now. Every field is immutable, so the copy stays as it is whatever later happens to
+     * this one.
+     */
+    public CapacityReservation copy() {
+        return toBuilder().build();
+    }
 }

@@ -227,35 +227,6 @@ public class CapacityReservationIdempotencyTest {
         assertThat(earliest.isAfter(DateUtils.nowUTC().plusDays(PROVIDER_LEAD_DAYS))).isFalse();
     }
 
-    /**
-     * What a lost reply bought is adopted as it is. Choosing dates first could find none left, and fail a request whose
-     * reservation the provider already holds - leaving it billing with nothing tracking it.
-     */
-    @Test
-    public void shouldAdoptBeforeChoosingAnyDates() {
-        final CapacityReservation reservation = reservation();
-        reservation.setCloudReservationId(null);
-        when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
-                CloudCapacityReservation.builder().cloudReservationId(EXISTING_CLOUD_ID).build()));
-
-        final Optional<CloudCapacityReservation> result = facade.submit(reservation, () -> {
-            throw new AssertionError("dates must not be chosen when there is something to adopt");
-        });
-
-        assertThat(result.map(CloudCapacityReservation::getCloudReservationId).orElse(null))
-                .isEqualTo(EXISTING_CLOUD_ID);
-    }
-
-    @Test
-    public void shouldCreateNothingWhenNoDateIsLeftToAskFor() {
-        final CapacityReservation reservation = reservation();
-        reservation.setCloudReservationId(null);
-        when(awsService.findByClientToken(any(), anyString())).thenReturn(Optional.empty());
-
-        assertThat(facade.submit(reservation, () -> false).isPresent()).isFalse();
-        verify(awsService, never()).createFutureDated(any());
-    }
-
     @Test
     public void shouldNotAskTheProviderToCancelSomethingItNeverCreated() {
         final CapacityReservation reservation = reservation();
@@ -308,8 +279,23 @@ public class CapacityReservationIdempotencyTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    /**
+     * A reservation that already has its provider id has nothing a lost reply could have bought.
+     */
+    @Test
+    public void shouldNotLookForALostSubmissionWhenTheProviderIdIsKnown() {
+        final CapacityReservation reservation = reservation();
+        reservation.setCloudReservationId(EXISTING_CLOUD_ID);
+
+        assertThat(facade.findSubmitted(reservation).isPresent()).isFalse();
+        verify(awsService, never()).findByClientToken(any(), anyString());
+    }
+
+    /**
+     * What the monitor does with the facade: adopts what the lookup finds, and creates only when it finds nothing.
+     */
     private CloudCapacityReservation submitted(final CapacityReservation reservation) {
-        return facade.submit(reservation, () -> true).orElseThrow(AssertionError::new);
+        return facade.findSubmitted(reservation).orElseGet(() -> facade.create(reservation));
     }
 
     private CapacityReservation reservation() {

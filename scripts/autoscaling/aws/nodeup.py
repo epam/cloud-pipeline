@@ -266,8 +266,8 @@ def load_pool_launch_configuration(pool_id):
     Fetches the launch configuration of the pool this node belongs to, once, for get_allowed_instance_image to overlay.
 
     A pool may carry its own configuration - image, init script, filesystem, embedded scripts, additional spec, zone,
-    subnet - taken from the region's matching amis rule when the pool was created, and changed since only by an
-    administrator or by a capacity reservation, which writes its target, zone and subnet into it while it is live.
+    subnet - sent with the pool's create or update request, or taken from the region's matching amis rule when the
+    pool was created without one. A capacity reservation writes its target, zone and subnet into it while it is live.
     """
     global __POOL_LAUNCH_CONFIGURATION__
     __POOL_LAUNCH_CONFIGURATION__ = {}

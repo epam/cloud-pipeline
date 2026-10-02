@@ -31,14 +31,17 @@ import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
-import com.epam.pipeline.manager.cluster.pool.NodePoolLaunchConfigBuilder;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -104,6 +107,10 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final double SCALE_DOWN_THRESHOLD = 10.0;
     private static final String RENAMED = "renamed pool";
     private static final String ZONE = "us-east-1c";
+    private static final long FOREIGN_POOL_ID = 999_999L;
+    private static final long FOREIGN_REGION_ID = 999_999L;
+    private static final String FOREIGN_OWNER = "intruder";
+    private static final String FOREIGN_INSTANCE_TYPE = "p5.48xlarge";
 
     @Autowired
     private NodePoolManager poolManager;
@@ -113,6 +120,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Autowired
     private NodePoolDao poolDao;
+
+    @Autowired
+    private NodePoolMapper poolMapper;
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -145,9 +155,27 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
         when(cloudFacade.launchSpecification(any())).thenAnswer(invocation -> Collections.singletonMap(
                 RESERVATION_TARGET, ((CapacityReservation) invocation.getArguments()[0]).getCloudReservationId()));
+        when(cloudFacade.isSupported(CloudProvider.AWS)).thenReturn(true);
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         givenVcpusPerInstance(INSTANCE_VCPUS);
+    }
+
+    /**
+     * Only a provider the platform can buy capacity from: a reservation it cannot buy it could not cancel either,
+     * and its pool could then never be deleted.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRefuseAReservationInARegionOfAnUnsupportedProvider() {
+        final GCPRegion region = new GCPRegion();
+        region.setId(REGION_ID);
+        when(regionManager.load(any())).thenReturn((AbstractCloudRegion) region);
+
+        assertThatThrownBy(() -> poolManager.create(reservationPoolVO()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("not supported in GCP");
+        assertThat(poolDao.loadAll().stream().noneMatch(pool -> POOL_NAME.equals(pool.getName()))).isTrue();
     }
 
     /**
@@ -173,21 +201,14 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
-     * An autoscaled pool is reserved at its largest, so that is what counts.
+     * A reservation-backed pool runs at the size reserved for it, so there is nothing for autoscaling to decide.
      */
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldJudgeAnAutoscaledPoolAtItsMaxSize() {
-        givenVcpusPerInstance(SMALL_INSTANCE_VCPUS);
-        final NodePoolVO vo = reservationPoolVO();
-        vo.setAutoscaled(true);
-        vo.setMinSize(1);
-        vo.setMaxSize(MIN_VCPUS / SMALL_INSTANCE_VCPUS);
-        vo.setScaleUpThreshold(SCALE_UP_THRESHOLD);
-        vo.setScaleDownThreshold(SCALE_DOWN_THRESHOLD);
-        vo.setScaleStep(1);
-
-        assertThat(poolManager.create(vo).getId()).isNotNull();
+    public void shouldRefuseAnAutoscaledReservationPool() {
+        assertThatThrownBy(() -> poolManager.create(autoscaled(reservationPoolVO())))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot be autoscaled");
     }
 
     /**
@@ -218,12 +239,41 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final Optional<CapacityReservation> reservation = reservationDao.findByNodePoolId(created.getId());
         assertThat(reservation.isPresent()).isTrue();
         assertThat(reservation.get().getNodePoolId()).isEqualTo(created.getId());
+        assertThat(reservation.get().getName()).isEqualTo(POOL_NAME);
+        assertThat(reservation.get().getRegionId()).isEqualTo(REGION_ID);
         assertThat(reservation.get().getInstanceType()).isEqualTo(INSTANCE_TYPE);
         assertThat(reservation.get().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
         assertThat(reservation.get().getDurationHours()).isEqualTo(DURATION_HOURS);
         assertThat(reservation.get().getOwner()).isEqualTo(OWNER);
         assertThat(reservation.get().getInstancePlatform())
                 .isEqualTo(CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
+    }
+
+    /**
+     * What a reservation takes from its pool comes from the persisted pool, whatever the request carries.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldTakeThePoolsSideOfTheReservationFromThePoolNotTheRequest() {
+        final NodePoolVO vo = reservationPoolVO();
+        final CapacityReservationRequest request = vo.getCapacityReservationRequest();
+        request.setNodePoolId(FOREIGN_POOL_ID);
+        request.setName(RENAMED);
+        request.setRegionId(FOREIGN_REGION_ID);
+        request.setOwner(FOREIGN_OWNER);
+        request.setInstanceType(FOREIGN_INSTANCE_TYPE);
+        request.setInstanceCount(INSTANCE_COUNT + 1);
+
+        final NodePool created = poolManager.create(vo);
+
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        assertThat(reservation.getNodePoolId()).isEqualTo(created.getId());
+        assertThat(reservation.getName()).isEqualTo(POOL_NAME);
+        assertThat(reservation.getRegionId()).isEqualTo(REGION_ID);
+        assertThat(reservation.getOwner()).isEqualTo(OWNER);
+        assertThat(reservation.getInstanceType()).isEqualTo(INSTANCE_TYPE);
+        assertThat(reservation.getInstanceCount()).isEqualTo(INSTANCE_COUNT);
     }
 
     /**
@@ -281,7 +331,8 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     /**
      * A sharable pool gets a launch config derived from its instance type, and the pod selector is keyed on the
-     * reservation's id - which is why the config cannot be part of the pool's own insert.
+     * pool's id, which every node of the pool is labelled with - allocated before the pool is written, so the config
+     * is part of the pool's own insert.
      */
     @Test
     @WithMockUser(username = OWNER)
@@ -291,9 +342,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
         final NodePool created = poolManager.create(vo);
 
-        final Long reservationId = reservationDao.findByNodePoolId(created.getId())
-                .orElseThrow(AssertionError::new)
-                .getId();
         final NodePoolLaunchConfig config = poolDao.find(created.getId())
                 .orElseThrow(AssertionError::new)
                 .getLaunchConfig();
@@ -304,14 +352,14 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(config.getKubeAssignPolicy().isSkipContainerRequests()).isFalse();
         assertThat(config.getKubeAssignPolicy().getSecurityContext().getPrivileged()).isTrue();
         assertThat(config.getKubeAssignPolicy().getSelector().getLabel())
-                .isEqualTo(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL);
+                .isEqualTo(KubernetesConstants.NODE_POOL_ID_LABEL);
         assertThat(config.getKubeAssignPolicy().getSelector().getValue())
-                .isEqualTo(String.valueOf(reservationId));
+                .isEqualTo(String.valueOf(created.getId()));
     }
 
     /**
-     * A caller-supplied config is taken as given, but a selector they left unset still gets the reservation id -
-     * they have no way to know it when they submit the request.
+     * A caller-supplied config is taken as given, but a selector they left unset still gets the pool's id - they have
+     * no way to know it when they submit the request.
      */
     @Test
     @WithMockUser(username = OWNER)
@@ -325,9 +373,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
         final NodePool created = poolManager.create(vo);
 
-        final Long reservationId = reservationDao.findByNodePoolId(created.getId())
-                .orElseThrow(AssertionError::new)
-                .getId();
         final NodePoolLaunchConfig stored = poolDao.find(created.getId())
                 .orElseThrow(AssertionError::new)
                 .getLaunchConfig();
@@ -335,7 +380,59 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(stored.getCpuRequestsReserved()).isEqualTo(CALLER_CPU_RESERVED);
         assertThat(stored.isRamRequestsEnabled()).isFalse();
         assertThat(stored.getKubeAssignPolicy().getSelector().getValue())
-                .isEqualTo(String.valueOf(reservationId));
+                .isEqualTo(String.valueOf(created.getId()));
+    }
+
+    /**
+     * The selector names the pool rather than a reservation, so a sharable pool without one selects its nodes too.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldGenerateLaunchConfigForASharablePoolWithoutAReservation() {
+        final NodePoolVO vo = basePoolVO();
+        vo.setPoolType(NodePoolType.SHARABLE_NODE);
+
+        final NodePool created = poolManager.create(vo);
+
+        final NodePoolLaunchConfig config = poolDao.find(created.getId())
+                .orElseThrow(AssertionError::new)
+                .getLaunchConfig();
+        assertThat(config).isNotNull();
+        assertThat(config.isCpuRequestsEnabled()).isTrue();
+        assertThat(config.getKubeAssignPolicy().getSelector().getValue()).isEqualTo(String.valueOf(created.getId()));
+    }
+
+    /**
+     * Like the launch configuration: an edit that sends a launch config replaces it, and one that sends none leaves
+     * it as it is.
+     */
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldReplaceTheLaunchConfigOnlyWhenAnEditSendsOne() {
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setPoolType(NodePoolType.SHARABLE_NODE);
+        final NodePool created = poolManager.create(vo);
+        final NodePoolLaunchConfig generated = poolDao.find(created.getId())
+                .orElseThrow(AssertionError::new)
+                .getLaunchConfig();
+
+        final NodePoolVO unchanged = editOf(created.getId());
+        unchanged.setLaunchConfig(null);
+        poolManager.update(created.getId(), unchanged);
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getLaunchConfig())
+                .isEqualTo(generated);
+
+        final NodePoolLaunchConfig requested = new NodePoolLaunchConfig();
+        requested.setCpuRequestsReserved(CALLER_CPU_RESERVED);
+        final NodePoolVO edit = editOf(created.getId());
+        edit.setLaunchConfig(requested);
+        poolManager.update(created.getId(), edit);
+        final NodePoolLaunchConfig replaced = poolDao.find(created.getId())
+                .orElseThrow(AssertionError::new)
+                .getLaunchConfig();
+        assertThat(replaced.getCpuRequestsReserved()).isEqualTo(CALLER_CPU_RESERVED);
+        assertThat(replaced.getKubeAssignPolicy().getSelector().getValue())
+                .isEqualTo(generated.getKubeAssignPolicy().getSelector().getValue());
     }
 
     @Test
@@ -502,21 +599,46 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
-     * The ordinary pool update leaves the dates out, so activating through it used to drop the window - and the
-     * pool then stayed schedulable after the reservation ended.
+     * The window is the pool's from the moment the provider agrees to the reservation. The ordinary pool update leaves
+     * the dates out, so writing them through it used to drop the window - and the pool then stayed schedulable after
+     * the reservation ended.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldPersistTheReservationWindowWhenThePoolIsActivated() {
+    public void shouldPersistTheReservationWindowWhenThePoolIsScheduled() {
         final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+
+        reservationService.schedulePool(reservation);
+
+        final NodePool pool = poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new);
+        assertThat(pool.getCount()).isZero();
+        assertThat(pool.getStartDate()).isEqualTo(reservation.getStartDate());
+        assertThat(pool.getEndDate()).isEqualTo(reservation.getEndDate());
+        reservationService.activatePool(reservation);
+        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new)
+                .isActive(reservation.getEndDate().plusMinutes(1))).isFalse();
+    }
+
+    /**
+     * Everything but the count is in place since the reservation was scheduled, so going live only switches the pool
+     * on.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldOnlySwitchThePoolOnWhenItsReservationIsActivated() {
+        setNetworks();
+        final NodePool created = createWithOwnLaunchSettings();
+        final CapacityReservation reservation = activeReservationOf(created);
+        reservationService.schedulePool(reservation);
+        final NodePool scheduled = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
 
         reservationService.activatePool(reservation);
 
-        final NodePool pool = poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new);
-        assertThat(pool.getCount()).isEqualTo(INSTANCE_COUNT);
-        assertThat(pool.getStartDate()).isEqualTo(reservation.getStartDate());
-        assertThat(pool.getEndDate()).isEqualTo(reservation.getEndDate());
-        assertThat(pool.isActive(reservation.getEndDate().plusMinutes(1))).isFalse();
+        final NodePool activated = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(activated.getCount()).isEqualTo(INSTANCE_COUNT);
+        assertThat(activated.getAmiConfiguration()).isEqualTo(scheduled.getAmiConfiguration());
+        assertThat(activated.getStartDate()).isEqualTo(scheduled.getStartDate());
+        assertThat(activated.getEndDate()).isEqualTo(scheduled.getEndDate());
     }
 
     /**
@@ -527,7 +649,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldKeepAPoolInertThroughAnEditBeforeItsReservationIsActive() {
         final NodePool created = poolManager.create(reservationPoolVO());
-        final NodePoolVO edit = editOf();
+        final NodePoolVO edit = editOf(created.getId());
         edit.setName(RENAMED);
 
         poolManager.update(created.getId(), edit);
@@ -537,115 +659,50 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(pool.getCount()).isZero();
     }
 
-    /**
-     * An editor shows the pool's count - 0 until activation - and sends it back unchanged. That is not a request to
-     * change the size, so it must not be refused as one.
-     */
     @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldAcceptAnEditThatSendsBackTheCountThePoolShows() {
+    @WithMockUser(username = OWNER)
+    public void shouldRefuseResizingAReservationPoolStillAwaitingApproval() {
         final NodePool created = poolManager.create(reservationPoolVO());
-        final NodePoolVO edit = editOf();
-        edit.setCount(0);
-        edit.setName(RENAMED);
-
-        poolManager.update(created.getId(), edit);
-
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getName()).isEqualTo(RENAMED);
-        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
-                .getInstanceCount()).isEqualTo(INSTANCE_COUNT);
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldRefuseResizingAnApprovedReservation() {
-        final NodePool created = poolManager.create(reservationPoolVO());
-        final NodePoolVO edit = editOf();
+        final NodePoolVO edit = editOf(created.getId());
         edit.setCount(OTHER_INSTANCE_COUNT);
 
         assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot change the count");
+        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
+                .getInstanceCount()).isEqualTo(INSTANCE_COUNT);
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
     }
 
     /**
-     * Before approval the size is still only a request, so it follows the pool - an approver must see the size
-     * that will actually be bought.
+     * Once active, the count is the reserved one: fewer would leave paid-for capacity idle, more would launch nodes
+     * with no capacity behind them.
      */
     @Test
-    @WithMockUser(username = OWNER)
-    public void shouldResizeAReservationStillAwaitingApproval() {
-        final NodePool created = poolManager.create(reservationPoolVO());
-        final NodePoolVO edit = editOf();
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseResizingAnActiveReservationPool() {
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+        scheduleAndActivate(reservation);
+        final NodePoolVO edit = editOf(reservation.getNodePoolId());
         edit.setCount(OTHER_INSTANCE_COUNT);
 
-        poolManager.update(created.getId(), edit);
-
-        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
-                .getInstanceCount()).isEqualTo(OTHER_INSTANCE_COUNT);
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
-    }
-
-    /**
-     * An edit rebuilds the labels from the request, which knows nothing of the one activation added.
-     */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldKeepTheReservationLabelOfAnActivePoolThroughAnEdit() {
-        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
-        reservationService.activatePool(reservation);
-        final NodePoolVO edit = editOf();
-        edit.setName(RENAMED);
-
-        poolManager.update(reservation.getNodePoolId(), edit);
-
-        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getKubeLabels())
-                .containsKey(NodePoolLaunchConfigBuilder.CAPACITY_RESERVATION_LABEL);
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldKeepAnAutoscaledPoolInertThroughAnEditBeforeItsReservationIsActive() {
-        final NodePool created = poolManager.create(autoscaled(reservationPoolVO()));
-        final NodePoolVO edit = autoscaled(editOf());
-        edit.setCount(INSTANCE_COUNT);
-
-        poolManager.update(created.getId(), edit);
-
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
-    }
-
-    /**
-     * An editor opened before activation still shows 0. Saving it afterwards must not switch the pool off: the
-     * autoscaler only looks at pools that are on, so nothing would ever switch it back while the capacity idles.
-     */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldNotLetAnEditSwitchOffAnActiveAutoscaledPool() {
-        final CapacityReservation reservation = activeReservationOf(
-                poolManager.create(autoscaled(reservationPoolVO())));
-        reservationService.activatePool(reservation);
-        final NodePoolVO staleEdit = autoscaled(editOf());
-        staleEdit.setCount(0);
-
-        poolManager.update(reservation.getNodePoolId(), staleEdit);
-
+        assertThatThrownBy(() -> poolManager.update(reservation.getNodePoolId(), edit))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot change the count");
         assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
                 .isEqualTo(INSTANCE_COUNT);
     }
 
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldNotLetAnEditGrowAnActiveAutoscaledPoolPastItsReservation() {
-        final CapacityReservation reservation = activeReservationOf(
-                poolManager.create(autoscaled(reservationPoolVO())));
-        reservationService.activatePool(reservation);
-        final NodePoolVO edit = autoscaled(editOf());
-        edit.setCount(INSTANCE_COUNT + 1);
+    public void shouldRefuseAutoscalingAReservationPool() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = autoscaled(editOf(created.getId()));
 
-        poolManager.update(reservation.getNodePoolId(), edit);
-
-        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
-                .isEqualTo(INSTANCE_COUNT);
+        assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot be autoscaled");
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).isAutoscaled()).isFalse();
     }
 
     /**
@@ -656,48 +713,13 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldKeepAPoolInertThroughAnEditAfterItsReservationWasCancelled() {
         final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
-        reservationService.activatePool(reservation);
+        scheduleAndActivate(reservation);
         reservationService.cancel(reservation.getId());
 
-        poolManager.update(reservation.getNodePoolId(), editOf());
+        poolManager.update(reservation.getNodePoolId(), editOf(reservation.getNodePoolId()));
 
         assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
                 .isZero();
-    }
-
-    /**
-     * An autoscaled pool's reservation covers it at its largest, so resizing it before approval follows maxSize.
-     */
-    @Test
-    @WithMockUser(username = OWNER)
-    public void shouldResizeAnAutoscaledPoolsReservationToItsMaxSize() {
-        final NodePool created = poolManager.create(autoscaled(reservationPoolVO()));
-        final NodePoolVO edit = autoscaled(editOf());
-        edit.setMaxSize(OTHER_INSTANCE_COUNT);
-
-        poolManager.update(created.getId(), edit);
-
-        assertThat(reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new)
-                .getInstanceCount()).isEqualTo(OTHER_INSTANCE_COUNT);
-    }
-
-    /**
-     * Once the capacity exists the count is the pool's to manage again: the autoscaler resizes an autoscaled pool
-     * through an ordinary update, inside the size the reservation holds.
-     */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldLetTheAutoscalerResizeAnActiveReservationPool() {
-        final NodePoolVO vo = autoscaled(reservationPoolVO());
-        final CapacityReservation reservation = activeReservationOf(poolManager.create(vo));
-        reservationService.activatePool(reservation);
-        final NodePoolVO scaledDown = autoscaled(editOf());
-        scaledDown.setCount(AUTOSCALED_MIN_SIZE);
-
-        poolManager.update(reservation.getNodePoolId(), scaledDown);
-
-        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
-                .isEqualTo(AUTOSCALED_MIN_SIZE);
     }
 
     /**
@@ -708,7 +730,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldDeactivateThePoolWhenAnActiveReservationIsCancelled() {
         final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
-        reservationService.activatePool(reservation);
+        scheduleAndActivate(reservation);
 
         reservationService.cancel(reservation.getId());
 
@@ -719,30 +741,11 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
-     * FINALIZING only warns that the end is near; the capacity is held and paid for until the end itself, so new
-     * nodes must keep consuming it.
+     * What an editor sends for an existing pool: the pool as it is stored, without the reservation request, which only
+     * applies when the pool is created.
      */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldOfferTheReservationToNewNodesWhileItIsActiveOrFinalizing() {
-        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
-        final Long poolId = reservation.getNodePoolId();
-
-        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isTrue();
-        withStatus(reservation, CapacityReservationStatus.FINALIZING);
-        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isTrue();
-        withStatus(reservation, CapacityReservationStatus.SCHEDULED);
-        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isFalse();
-        withStatus(reservation, CapacityReservationStatus.FINISHED);
-        assertThat(reservationService.findConsumableByNodePoolId(poolId).isPresent()).isFalse();
-    }
-
-    /**
-     * What an editor sends for an existing pool: its settings, but not the reservation request, which only applies
-     * when the pool is created.
-     */
-    private NodePoolVO editOf() {
-        return basePoolVO();
+    private NodePoolVO editOf(final Long poolId) {
+        return poolMapper.toVO(poolDao.find(poolId).orElseThrow(AssertionError::new));
     }
 
     private static NodePoolVO autoscaled(final NodePoolVO vo) {
@@ -756,18 +759,20 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
-     * Activation is what makes a node consume the reservation: its target, zone and subnet go into the pool's launch
-     * configuration - over what the pool's own configuration already says, which it keeps.
+     * Scheduling is what makes a node consume the reservation once it is live: its target, zone and subnet go into the
+     * pool's launch configuration - over what the pool's own configuration already says, which it keeps. The pool
+     * stays switched off until then.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldWriteTheReservationIntoThePoolsLaunchConfigurationOnActivation() {
+    public void shouldWriteTheReservationIntoThePoolsLaunchConfigurationWhenScheduled() {
         setNetworks();
         final NodePool created = createWithOwnLaunchSettings();
         final CapacityReservation reservation = activeReservationOf(created);
 
-        reservationService.activatePool(reservation);
+        reservationService.schedulePool(reservation);
 
+        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
         final AMIConfiguration configuration = launchConfigurationOf(created);
         assertThat(configuration.getAdditionalSpec()).containsEntry(RESERVATION_TARGET, CLOUD_RESERVATION_ID);
         assertThat(configuration.getAvailabilityZone()).isEqualTo(ZONE);
@@ -786,7 +791,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         setNetworks();
         final NodePool created = createWithOwnLaunchSettings();
         final CapacityReservation reservation = activeReservationOf(created);
-        reservationService.activatePool(reservation);
+        scheduleAndActivate(reservation);
 
         reservationService.cancel(reservation.getId());
 
@@ -807,9 +812,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     public void shouldLeaveTheLaunchConfigurationAloneThroughAnEdit() {
         setNetworks();
         final NodePool created = createWithOwnLaunchSettings();
-        reservationService.activatePool(activeReservationOf(created));
+        scheduleAndActivate(activeReservationOf(created));
         final AMIConfiguration before = launchConfigurationOf(created);
-        final NodePoolVO edit = editOf();
+        final NodePoolVO edit = editOf(created.getId());
         edit.setName(RENAMED);
 
         poolManager.update(created.getId(), edit);
@@ -821,29 +826,68 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     /**
+     * The launch configuration is what makes the pool's nodes consume the reservation, so an edit may not replace it.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseReplacingTheLaunchConfigurationOfAReservationPool() {
+        setNetworks();
+        final NodePool created = createWithOwnLaunchSettings();
+        scheduleAndActivate(activeReservationOf(created));
+        final AMIConfiguration before = launchConfigurationOf(created);
+        final NodePoolVO edit = editOf(created.getId());
+        final AMIConfiguration replacement = new AMIConfiguration();
+        replacement.setInitScript("/opt/api/scripts/init_edited.sh");
+        replacement.setAvailabilityZone("us-east-1a");
+        edit.setAmiConfiguration(replacement);
+
+        assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot change the launch configuration");
+        assertThat(launchConfigurationOf(created)).isEqualTo(before);
+    }
+
+    /**
+     * The deprecated image field is a way to replace the launch configuration's image, so it is refused the same way.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    @SuppressWarnings("deprecation")
+    public void shouldRefuseChangingTheImageOfAReservationPool() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf(created.getId());
+        edit.setInstanceImage("ami-0123456789abcdef0");
+
+        assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot change the instance image");
+    }
+
+    /**
      * A spot request cannot consume reserved capacity, and one that targets a reservation is refused by the provider.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseSwitchingAReservationPoolToSpot() {
         final NodePool created = poolManager.create(reservationPoolVO());
-        final NodePoolVO edit = editOf();
+        final NodePoolVO edit = editOf(created.getId());
         edit.setPriceType(com.epam.pipeline.entity.cluster.PriceType.SPOT);
 
         assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Cannot change the price type");
     }
 
     /**
-     * A reservation pool an administrator gave launch settings of its own - which the reservation must add to, not
-     * replace.
+     * A reservation pool created with launch settings of its own - which the reservation must add to, not replace.
      */
     private NodePool createWithOwnLaunchSettings() {
-        final NodePool created = poolManager.create(reservationPoolVO());
         final AMIConfiguration configuration = new AMIConfiguration();
         configuration.setInitScript(OWN_INIT_SCRIPT);
         configuration.setAdditionalSpec(new HashMap<>(Collections.singletonMap(OWN_SPEC_KEY, "profile")));
-        return poolManager.updateAmiConfiguration(created.getId(), configuration);
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setAmiConfiguration(configuration);
+        return poolManager.create(vo);
     }
 
     private AMIConfiguration launchConfigurationOf(final NodePool pool) {
@@ -860,6 +904,14 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     /**
      * Puts the reservation where the monitor leaves it once the provider has granted the capacity.
      */
+    /**
+     * What the monitor does to the pool as its reservation is scheduled and then goes live.
+     */
+    private void scheduleAndActivate(final CapacityReservation reservation) {
+        reservationService.schedulePool(reservation);
+        reservationService.activatePool(reservation);
+    }
+
     private CapacityReservation activeReservationOf(final NodePool pool) {
         final CapacityReservation reservation = reservationDao.findByNodePoolId(pool.getId())
                 .orElseThrow(AssertionError::new);

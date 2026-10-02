@@ -16,6 +16,7 @@
 package com.epam.pipeline.dao.cluster.pool;
 
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao.NodeScheduleParameters;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
@@ -34,11 +35,11 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,21 +67,38 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     private final String loadAllNodePoolsQuery;
     private final String loadNodePoolByIdQuery;
     private final String updateNodePoolOwnerQuery;
-    private final String updateNodePoolLaunchConfigQuery;
-    private final String updateNodePoolAmiConfigurationQuery;
     private final String updateNodePoolReservationStateQuery;
     private final String loadNodePoolByIdForUpdateQuery;
 
+    @Autowired
+    private DaoHelper daoHelper;
+
+    private String poolSequence;
+
+    /**
+     * An id for a pool not created yet - for a caller that needs it before the row exists, as a sharable pool's
+     * launch config does to select the pool's nodes.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Long createId() {
+        return daoHelper.createId(poolSequence);
+    }
+
+    /**
+     * @param pool created with its {@code id} when it has one from {@link #createId()}, and a new one otherwise
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool create(final NodePool pool) {
-        final KeyHolder keyHolder = new GeneratedKeyHolder();
-        getNamedParameterJdbcTemplate()
-                .update(insertNodePoolQuery,
-                        NodePoolParameters.getParameters(pool),
-                        keyHolder,
-                        new String[]{"id"});
-        pool.setId(keyHolder.getKey().longValue());
+        if (pool.getId() == null) {
+            pool.setId(createId());
+        }
+        getNamedParameterJdbcTemplate().update(insertNodePoolQuery, NodePoolParameters.getParameters(pool));
         return pool;
+    }
+
+    @Required
+    public void setPoolSequence(final String poolSequence) {
+        this.poolSequence = poolSequence;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -102,33 +120,10 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     }
 
     /**
-     * The launch config is not writable through {@link #update(NodePool)} either - the generic update is driven
-     * by a VO that may not carry it, and naming it there would null a pool's config on every unrelated edit.
-     * It is also written once after creation, when the reservation id that its selector needs finally exists.
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public NodePool updateLaunchConfig(final NodePool pool) {
-        getNamedParameterJdbcTemplate()
-                .update(updateNodePoolLaunchConfigQuery, NodePoolParameters.getParameters(pool));
-        return pool;
-    }
-
-    /**
-     * Not writable through {@link #update(NodePool)} either, for the launch config's reason: an update that does not
-     * carry it must leave it alone.
-     */
-    @Transactional(propagation = Propagation.MANDATORY)
-    public NodePool updateAmiConfiguration(final NodePool pool) {
-        getNamedParameterJdbcTemplate()
-                .update(updateNodePoolAmiConfigurationQuery, NodePoolParameters.getParameters(pool));
-        return pool;
-    }
-
-    /**
      * The columns a capacity reservation's lifecycle owns: the node count that switches the pool on and off, the
-     * window it is usable in, the labels its pods select on, and the launch configuration it writes its target, zone
-     * and subnet into. {@link #update(NodePool)} leaves the dates out
-     * deliberately, so this is the only statement that writes them after creation.
+     * window it is usable in, and the launch configuration it writes its target, zone and subnet into.
+     * {@link #update(NodePool)} leaves the dates out deliberately, so this is the only statement that writes them
+     * after creation.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool updateReservationState(final NodePool pool) {

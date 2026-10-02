@@ -18,11 +18,13 @@
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="com.epam.pipeline.dao.cluster.pool.NodePoolDao" id="persistentNodeDao" autowire="byName">
+        <property name="poolSequence" value="pipeline.s_node_pool"/>
         <constructor-arg>
             <value>
                 <!--insertNodePoolQuery-->
                 <![CDATA[
                     INSERT INTO pipeline.node_pool (
+                        id,
                         created_date,
                         name,
                         region_id,
@@ -50,6 +52,7 @@
                         ami_configuration
                         )
                     VALUES (
+                        :POOL_ID,
                         :POOL_CREATED_DATE,
                         :POOL_NAME,
                         :POOL_REGION_ID,
@@ -81,11 +84,12 @@
         <constructor-arg>
             <value>
                 <!--updateNodePoolQuery-->
-                <!--Deliberately writes none of owner, pool_type, capacity_reservation, start_date,
-                    end_date or launch_config. Its only caller maps a fresh entity from NodePoolVO, which
-                    carries none of them, so naming them here would null a pool's reservation window on
-                    every ordinary edit - and isActive() gates on those dates. They are written by the
-                    reservation lifecycle through its own statements instead.-->
+                <!--Deliberately writes none of owner, pool_type, capacity_reservation, start_date or
+                    end_date. Its only caller maps a fresh entity from NodePoolVO, which carries none of
+                    them, so naming them here would null a pool's reservation window on every ordinary
+                    edit - and isActive() gates on those dates. They are written by the reservation
+                    lifecycle through its own statements instead. The launch config and configuration are
+                    written: the caller resolves them, the pool's current ones included, before it maps.-->
                 <![CDATA[
                     UPDATE pipeline.node_pool SET
                         name = :POOL_NAME,
@@ -98,7 +102,9 @@
                         scale_up_threshold = :POOL_UP_THRESHOLD,
                         scale_down_threshold = :POOL_DOWN_THRESHOLD,
                         scale_step = :POOL_SCALE_STEP,
-                        kube_labels = :POOL_KUBE_LABELS
+                        kube_labels = :POOL_KUBE_LABELS,
+                        launch_config = :POOL_LAUNCH_CONFIG,
+                        ami_configuration = :POOL_AMI_CONFIGURATION
                     WHERE
                         id = :POOL_ID
                 ]]>
@@ -222,33 +228,10 @@
         </constructor-arg>
         <constructor-arg>
             <value>
-                <!--updateNodePoolLaunchConfigQuery-->
-                <![CDATA[
-                    UPDATE pipeline.node_pool SET
-                        launch_config = :POOL_LAUNCH_CONFIG
-                    WHERE
-                        id = :POOL_ID
-                ]]>
-            </value>
-        </constructor-arg>
-        <constructor-arg>
-            <value>
-                <!--updateNodePoolAmiConfigurationQuery-->
-                <![CDATA[
-                    UPDATE pipeline.node_pool SET
-                        ami_configuration = :POOL_AMI_CONFIGURATION
-                    WHERE
-                        id = :POOL_ID
-                ]]>
-            </value>
-        </constructor-arg>
-        <constructor-arg>
-            <value>
                 <!--updateNodePoolReservationStateQuery-->
                 <![CDATA[
                     UPDATE pipeline.node_pool SET
                         instance_count = :POOL_INSTANCE_COUNT,
-                        kube_labels = :POOL_KUBE_LABELS,
                         start_date = :POOL_START_DATE,
                         end_date = :POOL_END_DATE,
                         ami_configuration = :POOL_AMI_CONFIGURATION
