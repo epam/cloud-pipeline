@@ -32,8 +32,26 @@ fi
 SYNC_GIT_HOME="/opt/api/scripts/git-role-management"
 SYNC_GIT_PERIOD=${SYNC_GIT_PERIOD:-300}
 
+# --- Python interpreter selection ---
+# This is a separate entrypoint from /init-api (see issue #4589), so it resolves CP_PYTHON_PATH
+# itself rather than sourcing init-api's copy.
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
+export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
+export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$(command -v python3.12 || command -v python3)}"
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
+else
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+    export PATH="/usr/local/python3.12/bin:$PATH"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
+    exit 1
+fi
+echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
 # Configure
-python $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
+$CP_PYTHON_PATH $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
 
 # Start sync loop
 SYNC_LOG_FILE_NAME="${SYNC_LOG_FILE_NAME:-/opt/git-sync/logs/syncgit.log}"
@@ -55,11 +73,11 @@ while "true"; do
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Option SYNC_GIT_RESYNC_USER_SSH_KEYS=${SYNC_GIT_RESYNC_USER_SSH_KEYS}" | tee -a $SYNC_LOG_FILE_NAME
-    python $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
+    $CP_PYTHON_PATH $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
 
     if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
-        python $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
+        $CP_PYTHON_PATH $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
     fi
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Iteration done" | tee -a $SYNC_LOG_FILE_NAME

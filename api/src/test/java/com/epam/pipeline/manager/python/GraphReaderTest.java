@@ -17,10 +17,29 @@
 package com.epam.pipeline.manager.python;
 
 import com.epam.pipeline.controller.vo.TaskGraphVO;
+import com.epam.pipeline.manager.CmdExecutor;
 import org.junit.Assert;
 import org.junit.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 public class GraphReaderTest {
+
+    @Test
+    public void readGraphBuildsCommandStartingWithPythonExecutable() {
+        final StringBuilder capturedCommand = new StringBuilder();
+        final GraphReader reader = new GraphReader();
+        ReflectionTestUtils.setField(reader, "cmdExecutor", new CmdExecutor() {
+            @Override
+            public String executeCommand(final String command) {
+                capturedCommand.append(command);
+                return "";
+            }
+        });
+
+        reader.readGraph("graph.py", "path/to/script", "config.json");
+
+        Assert.assertTrue(capturedCommand.toString().startsWith("python graph.py path/to/script config.json"));
+    }
 
     @Test
     public void testParsing() {
