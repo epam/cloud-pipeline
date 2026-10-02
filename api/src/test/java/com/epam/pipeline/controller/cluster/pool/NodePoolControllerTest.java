@@ -18,11 +18,13 @@ package com.epam.pipeline.controller.cluster.pool;
 
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -30,45 +32,69 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @WebMvcTest(controllers = NodePoolController.class)
 public class NodePoolControllerTest extends AbstractControllerTest {
 
     private static final long ID = 1L;
-    private static final String AMI_CONFIGURATION_URL = SERVLET_PATH + "/cluster/pool/%d/ami-configuration";
+    private static final String POOL_URL = SERVLET_PATH + "/cluster/pool";
+    private static final String ZONE = "us-east-1c";
     private static final TypeReference<Result<NodePool>> POOL_TYPE = new TypeReference<Result<NodePool>>() {};
 
     @Autowired
     private NodePoolApiService mockPoolApiService;
 
     @Test
-    public void shouldFailUpdateAmiConfigurationForUnauthorizedUser() throws Exception {
-        performUnauthorizedRequest(put(String.format(AMI_CONFIGURATION_URL, ID)));
+    @WithMockUser
+    public void shouldCreateAPoolTheRequestNamesNoIdFor() throws Exception {
+        final NodePool pool = new NodePool();
+        pool.setId(ID);
+        Mockito.doReturn(pool).when(mockPoolApiService).create(any(NodePoolVO.class));
+
+        final MvcResult mvcResult = performRequest(post(POOL_URL)
+                .content(getObjectMapper().writeValueAsString(new NodePoolVO())));
+
+        Mockito.verify(mockPoolApiService).create(any(NodePoolVO.class));
+        Mockito.verify(mockPoolApiService, Mockito.never()).update(anyLong(), any(NodePoolVO.class));
+        assertResponse(mvcResult, pool, POOL_TYPE);
     }
 
     /**
-     * The pool comes back with its configuration in the shape the launch script reads: {@code amiConfiguration}, with
+     * The update is authorized on the id it is given, so it has to be given the pool's own - the one it then writes.
+     * The launch configuration travels both ways in the shape the launch script reads: {@code amiConfiguration}, with
      * the launch scripts' own snake_case names inside.
      */
     @Test
     @WithMockUser
-    public void shouldUpdateAmiConfiguration() throws Exception {
+    public void shouldUpdateThePoolTheRequestNamesTheIdOf() throws Exception {
         final AMIConfiguration configuration = new AMIConfiguration();
         configuration.setAmi("ami-0123456789abcdef0");
-        configuration.setAvailabilityZone("us-east-1c");
+        configuration.setAvailabilityZone(ZONE);
+        final NodePoolVO vo = new NodePoolVO();
+        vo.setId(ID);
+        vo.setAmiConfiguration(configuration);
         final NodePool pool = new NodePool();
         pool.setId(ID);
         pool.setAmiConfiguration(configuration);
-        Mockito.doReturn(pool).when(mockPoolApiService).updateAmiConfiguration(ID, configuration);
+        Mockito.doReturn(pool).when(mockPoolApiService).update(Mockito.eq(ID), any(NodePoolVO.class));
 
-        final MvcResult mvcResult = performRequest(put(String.format(AMI_CONFIGURATION_URL, ID))
-                .content(getObjectMapper().writeValueAsString(configuration)));
+        final MvcResult mvcResult = performRequest(post(POOL_URL).content(getObjectMapper().writeValueAsString(vo)));
 
-        Mockito.verify(mockPoolApiService).updateAmiConfiguration(ID, configuration);
+        final ArgumentCaptor<NodePoolVO> request = ArgumentCaptor.forClass(NodePoolVO.class);
+        Mockito.verify(mockPoolApiService).update(Mockito.eq(ID), request.capture());
+        Mockito.verify(mockPoolApiService, Mockito.never()).create(any(NodePoolVO.class));
+        assertThat(request.getValue().getAmiConfiguration()).isEqualTo(configuration);
         assertResponse(mvcResult, pool, POOL_TYPE);
         assertThat(mvcResult.getResponse().getContentAsString())
                 .contains("\"amiConfiguration\"")
-                .contains("\"availability_zone\":\"us-east-1c\"");
+                .contains("\"availability_zone\":\"" + ZONE + "\"");
+    }
+
+    @Test
+    public void shouldFailCreateOrUpdateForUnauthorizedUser() throws Exception {
+        performUnauthorizedRequest(post(POOL_URL));
     }
 }

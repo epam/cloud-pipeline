@@ -17,14 +17,24 @@
 package com.epam.pipeline.controller.vo.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 /**
  * A request to reserve capacity for the pool being created, attached to {@link NodePoolVO}.
+ *
+ * <p>The client sets only the reservation's own terms. What the reservation takes from its pool is filled in
+ * from the pool once it is persisted, and is not part of the request body.
  */
 @Data
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class CapacityReservationRequest {
 
     private CapacityReservationType reservationType;
@@ -49,4 +59,18 @@ public class CapacityReservationRequest {
      * inherit the original's approval instead of queueing for a human again.
      */
     private Long originId;
+
+    // Taken from the pool - see the class description.
+    @JsonIgnore
+    private Long nodePoolId;
+    @JsonIgnore
+    private String name;
+    @JsonIgnore
+    private Long regionId;
+    @JsonIgnore
+    private String owner;
+    @JsonIgnore
+    private String instanceType;
+    @JsonIgnore
+    private Integer instanceCount;
 }

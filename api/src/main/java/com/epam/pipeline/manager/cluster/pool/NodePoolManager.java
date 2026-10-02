@@ -23,7 +23,6 @@ import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
-import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
@@ -33,11 +32,13 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
-import com.epam.pipeline.manager.cluster.network.RegionNetworksService;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -55,6 +56,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+@AclSync
 @Service
 public class NodePoolManager implements SecuredEntityManager {
 
@@ -89,7 +91,7 @@ public class NodePoolManager implements SecuredEntityManager {
     private CloudRegionManager regionManager;
 
     @Autowired
-    private RegionNetworksService regionNetworks;
+    private PreferenceManager preferenceManager;
 
     public List<NodePool> getActivePools() {
         final LocalDateTime timestamp = DateUtils.nowUTC();
@@ -139,12 +141,6 @@ public class NodePoolManager implements SecuredEntityManager {
 
     /**
      * Loads a pool to change it, holding its row lock for the rest of the caller's transaction.
-     *
-     * <p>Every write to an existing pool reads it this way, so what it checks and merges with is the pool as it is
-     * now, and no other write can land between that read and its own. Without it, a write working from an older
-     * copy silently undoes one that committed meanwhile - an activation or deactivation included, which happen
-     * once and are never retried. A caller that writes something else the pool's writes also touch - a
-     * reservation - takes this first, so the locks are always taken in the same order.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool loadForUpdate(final Long poolId) {
@@ -158,26 +154,14 @@ public class NodePoolManager implements SecuredEntityManager {
     }
 
     /**
-     * Changes the columns the reservation lifecycle owns - the node count and the window it is usable in, plus
-     * the kube labels its pods select on.
-     *
-     * <p>Separate from {@link #update(Long, NodePoolVO)} on purpose: that path is driven by a caller's VO and
-     * validates it, neither of which applies to the monitor writing back what a provider decided.
-     *
-     * <p>The change is applied to the pool as {@link #loadForUpdate} reads it, so it can neither be overwritten by
-     * an edit working from an older copy nor overwrite one.
+     * Changes the columns the reservation lifecycle owns - the node count, the window it is usable in, and the
+     * launch configuration's parts that consume the capacity.
      */
     @Transactional
     public NodePool applyReservationState(final Long poolId, final Consumer<NodePool> change) {
         final NodePool pool = loadForUpdate(poolId);
         change.accept(pool);
         return poolDao.updateReservationState(pool);
-    }
-
-    private Long reservationIdOf(final NodePool pool) {
-        return reservationService.findByNodePoolId(pool.getId())
-                .map(CapacityReservation::getId)
-                .orElse(null);
     }
 
     @Transactional
@@ -193,138 +177,142 @@ public class NodePoolManager implements SecuredEntityManager {
 
     /**
      * Creates a pool, and - when the request carries one - the capacity reservation backing it.
-     *
-     * <p>Both rows are written in one transaction, so a pool is never left claiming to be reservation-backed
-     * with no reservation to show. The pool is persisted with {@code count = 0}: it exists and is visible
-     * immediately, but is inert until its reservation becomes active, which is what makes the reservation's
-     * multi-day approval and procurement invisible to the caller. Nothing here contacts a cloud provider.
      */
     @Transactional
     public NodePool create(final NodePoolVO vo) {
         validator.validate(vo);
+        // Known before the pool is written: a sharable pool's launch config selects the pool's nodes by it.
+        vo.setId(poolDao.createId());
+        vo.setAmiConfiguration(resolveAmiConfiguration(vo, null));
+        vo.setLaunchConfig(resolveLaunchConfig(vo, vo.getPoolType(), null));
+
         final NodePool nodePool = poolMapper.toEntity(vo);
         nodePool.setCreated(DateUtils.nowUTC());
-        // Every pool gets an owner, reservation-backed or not: a pool is a secured entity now, and parts of
-        // the permission layer dereference the owner without a null check. Leaving it null here would
-        // reintroduce, for every new pool, exactly the state this change's migration backfills away.
         nodePool.setOwner(authManager.getAuthorizedUser());
-
-        nodePool.setAmiConfiguration(launchConfigurationFor(nodePool));
-
         final CapacityReservationRequest request = vo.getCapacityReservationRequest();
         if (request != null) {
             nodePool.setCapacityReservation(true);
             nodePool.setCount(0);
         }
-
         final NodePool created = poolDao.create(nodePool);
         if (request != null) {
-            final CapacityReservation reservation = reservationService.create(created, vo, request);
-            applyLaunchConfig(created, vo.getLaunchConfig(), reservation.getId());
+            reservationService.create(buildReservationRequest(request, created, vo));
         }
         return load(created.getId());
     }
 
     /**
-     * Writes a sharable pool's launch config, once the reservation exists.
-     *
-     * <p>It has to be a second statement rather than part of the insert: the config's pod selector is keyed on
-     * the reservation's id, and the reservation cannot be created until the pool it points at has one. Both
-     * writes are in the caller's transaction, so a pool is never visible as sharable without its config.
+     * The client's reservation terms, with the pool's side of the reservation filled in from the persisted pool.
+     * The count comes from the VO, not the pool: the pool's own is 0 until the reservation is active.
      */
-    private void applyLaunchConfig(final NodePool pool,
-                                   final NodePoolLaunchConfig requested,
-                                   final Long reservationId) {
-        if (NodePoolType.SHARABLE_NODE != pool.getPoolType()) {
-            return;
-        }
-        pool.setLaunchConfig(launchConfigBuilder.build(pool, requested, reservationId));
-        poolDao.updateLaunchConfig(pool);
+    private CapacityReservationRequest buildReservationRequest(final CapacityReservationRequest request,
+                                                               final NodePool pool,
+                                                               final NodePoolVO vo) {
+        return request.toBuilder()
+                .nodePoolId(pool.getId())
+                .name(pool.getName())
+                .regionId(pool.getRegionId())
+                .owner(pool.getOwner())
+                .instanceType(pool.getInstanceType())
+                .instanceCount(vo.getCount())
+                .build();
     }
 
     /**
-     * @param id the pool being updated, taken from the path rather than the payload so that authorization
-     *           cannot be bypassed by pointing the body at a different pool
+     * @param id the pool being updated - the one the caller is authorized for, and so the one written, whatever
+     *           else the payload says
      */
     @Transactional
     public NodePool update(final Long id, final NodePoolVO vo) {
         final NodePool existing = loadForUpdate(id);
         vo.setId(id);
         validator.validate(vo);
-        reservationService.onPoolUpdate(existing, vo);
+        if (existing.isCapacityReservation()) {
+            validator.validateReservationPoolUpdate(existing, vo);
+        }
+        vo.setAmiConfiguration(resolveAmiConfiguration(vo, existing));
+        vo.setLaunchConfig(resolveLaunchConfig(vo, existing.getPoolType(), existing.getLaunchConfig()));
 
         final NodePool updated = poolMapper.toEntity(vo);
         // Neither of these is writable through an ordinary edit: ownership changes through the permission
         // layer, and a pool cannot gain or lose a reservation after it is created.
         updated.setOwner(existing.getOwner());
         updated.setCapacityReservation(existing.isCapacityReservation());
-        if (existing.isCapacityReservation()) {
-            // The reservation decides whether the pool may run at all, so it decides what the count may become.
-            updated.setCount(reservationService.countAfterUpdate(existing, vo));
-            // Added by activation, and what the pool's pods select on; the request knows nothing of it.
-            reservationService.keepReservationLabel(existing, updated);
-        }
-        // The launch configuration is not the caller's to edit: it is written by its own statement, so this one
-        // leaves it as it is.
         poolDao.update(updated);
-        followDeprecatedInstanceImage(existing, vo);
-
-        // Replaced only when the caller actually sent one, so an edit that says nothing about the launch config
-        // leaves it alone rather than clearing it.
-        if (vo.getLaunchConfig() != null) {
-            applyLaunchConfig(existing, vo.getLaunchConfig(), reservationIdOf(existing));
-        }
         return load(id);
     }
 
     /**
-     * The deprecated {@code instanceImage} still names the image of a pool that has a launch configuration: an edit
-     * that changes it changes the configuration's image with it, rather than being silently outvoted by it.
+     * The launch configuration a pool gets: the one the request sends; otherwise the pool's current one, or for a new
+     * pool one generated from the region's {@code amis} rule its nodes match. The deprecated {@code instanceImage} is
+     * its image when it names none, and an edit of that field changes the image.
+     *
+     * @param existing the pool being updated, or null for a new one
      */
     @SuppressWarnings("deprecation")
-    private void followDeprecatedInstanceImage(final NodePool existing, final NodePoolVO vo) {
-        final AMIConfiguration configuration = existing.getAmiConfiguration();
-        if (configuration == null || StringUtils.isBlank(vo.getInstanceImage())
-                || StringUtils.equals(vo.getInstanceImage(), existing.getInstanceImage())) {
-            return;
+    private AMIConfiguration resolveAmiConfiguration(final NodePoolVO vo, final NodePool existing) {
+        final AMIConfiguration requested = vo.getAmiConfiguration();
+        if (requested == null) {
+            return existing == null ? generateAmiConfiguration(vo) : withImageEdit(existing, vo.getInstanceImage());
         }
-        configuration.setAmi(vo.getInstanceImage());
-        poolDao.updateAmiConfiguration(existing);
+        if (StringUtils.isBlank(requested.getAmi()) && StringUtils.isNotBlank(vo.getInstanceImage())) {
+            requested.setAmi(vo.getInstanceImage());
+        }
+        if (existing != null && requested.equals(existing.getAmiConfiguration())) {
+            return requested;
+        }
+        validator.validateAmiConfiguration(vo.getRegionId(), requested);
+        return requested;
     }
 
     /**
-     * Replaces how a pool's nodes are launched. The configuration can reach any file on the API host and the cloud's
-     * launch request as a whole, so this is for administrators only - see {@code NodePoolApiService}. It replaces the
-     * configuration whole, a live capacity reservation's target, zone and subnet included.
-     */
-    @Transactional
-    public NodePool updateAmiConfiguration(final Long id, final AMIConfiguration configuration) {
-        final NodePool pool = loadForUpdate(id);
-        validator.validateAmiConfiguration(pool.getRegionId(), configuration);
-        pool.setAmiConfiguration(configuration);
-        poolDao.updateAmiConfiguration(pool);
-        return load(id);
-    }
-
-    /**
-     * The launch configuration a new pool starts with: the region's {@code amis} rule its nodes match, copied, with
-     * the deprecated {@code instanceImage} as its image when set. Calculated once - a later change of the region's
-     * rules does not reach an existing pool. Only for AWS regions, the only ones whose launch applies it.
+     * Only for AWS regions, the only ones whose launch applies it. Calculated once - a later change of the region's
+     * rules does not reach an existing pool.
      */
     @SuppressWarnings("deprecation")
-    private AMIConfiguration launchConfigurationFor(final NodePool pool) {
-        final AbstractCloudRegion region = regionManager.load(pool.getRegionId());
+    private AMIConfiguration generateAmiConfiguration(final NodePoolVO vo) {
+        final AbstractCloudRegion region = regionManager.load(vo.getRegionId());
         if (CloudProvider.AWS != region.getProvider()) {
             return null;
         }
         final Optional<AMIConfiguration> configuration =
-                regionNetworks.launchConfigurationFor(region.getRegionCode(), pool.getInstanceType());
-        if (StringUtils.isBlank(pool.getInstanceImage())) {
+                Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
+                        .flatMap(regionsConfiguration -> regionsConfiguration.amiConfigurationFor(
+                                region.getRegionCode(), vo.getInstanceType()));
+        if (StringUtils.isBlank(vo.getInstanceImage())) {
             return configuration.orElse(null);
         }
         final AMIConfiguration withImage = configuration.orElseGet(AMIConfiguration::new);
-        withImage.setAmi(pool.getInstanceImage());
+        withImage.setAmi(vo.getInstanceImage());
         return withImage;
+    }
+
+    @SuppressWarnings("deprecation")
+    private static AMIConfiguration withImageEdit(final NodePool existing, final String instanceImage) {
+        final AMIConfiguration configuration = existing.getAmiConfiguration();
+        if (configuration != null && StringUtils.isNotBlank(instanceImage)
+                && !StringUtils.equals(instanceImage, existing.getInstanceImage())) {
+            configuration.setAmi(instanceImage);
+        }
+        return configuration;
+    }
+
+    /**
+     * How runs divide a node of a sharable pool: the config the request sends; otherwise the pool's current one, or
+     * one derived from its instance type. Other pools have none.
+     *
+     * @param current the pool's current config, or null for a new pool
+     */
+    private NodePoolLaunchConfig resolveLaunchConfig(final NodePoolVO vo,
+                                                     final NodePoolType poolType,
+                                                     final NodePoolLaunchConfig current) {
+        if (NodePoolType.SHARABLE_NODE != poolType) {
+            return current;
+        }
+        if (vo.getLaunchConfig() == null && current != null) {
+            return current;
+        }
+        return launchConfigBuilder.build(vo);
     }
 
     @Override

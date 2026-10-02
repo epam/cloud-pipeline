@@ -33,11 +33,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
 
 /**
- * Routes a reservation to its provider, and owns the one rule that must hold whichever provider that is: never
- * buy the same reservation twice.
+ * Routes a reservation to its provider, and holds what the rule never to buy the same reservation twice rests on,
+ * whichever provider that is: a client token per attempt, and the lookup by it. The caller - the monitor's submit
+ * step - looks before it creates.
  */
 @Service
 @Slf4j
@@ -53,37 +53,29 @@ public class CapacityReservationCloudFacade {
     }
 
     /**
-     * Submits a reservation, adopting one that already exists instead of creating a second.
+     * What the provider already holds for this attempt: a reservation bought by a submission whose reply was lost.
+     * Looked for by the attempt's client token, so a retry adopts it instead of buying a second one.
      *
-     * <p>The dates are chosen only once the lookup has found nothing to adopt. A reservation this attempt already
-     * bought is adopted as it is - even on a date that could no longer be asked for, since the provider has agreed
-     * to it - and must never be abandoned because a new request would not fit.
-     *
-     * @param candidate chooses the dates to ask for; false when no date is left to ask for
-     * @return what the provider holds for this attempt, or empty when there was nothing to adopt and no date left to
-     *         ask for - in which case nothing was created
+     * @return empty when there is nothing to adopt, and a reservation may be created
      */
-    public Optional<CloudCapacityReservation> submit(final CapacityReservation reservation,
-                                                     final BooleanSupplier candidate) {
-        final CapacityReservationCloudService service = serviceFor(reservation);
-        final String clientToken = clientToken(reservation);
-
-        if (StringUtils.isBlank(reservation.getCloudReservationId())) {
-            final Optional<CloudCapacityReservation> existing =
-                    service.findByClientToken(reservation, clientToken);
-            if (existing.isPresent()) {
-                log.warn("Capacity reservation {} already exists at its provider as {}; adopting it instead of "
-                                + "creating another", reservation.getId(),
-                        existing.get().getCloudReservationId());
-                return existing;
-            }
-        }
-        if (!candidate.getAsBoolean()) {
+    public Optional<CloudCapacityReservation> findSubmitted(final CapacityReservation reservation) {
+        if (StringUtils.isNotBlank(reservation.getCloudReservationId())) {
             return Optional.empty();
         }
+        final Optional<CloudCapacityReservation> existing =
+                serviceFor(reservation).findByClientToken(reservation, clientToken(reservation));
+        existing.ifPresent(found -> log.warn("Capacity reservation {} already exists at its provider as {}; adopting "
+                + "it instead of creating another", reservation.getId(), found.getCloudReservationId()));
+        return existing;
+    }
 
-        reservation.setClientToken(clientToken);
-        return Optional.of(service.createFutureDated(reservation));
+    /**
+     * Creates the reservation for this attempt, under the attempt's client token - so a repeat of this call is
+     * recognised by the provider rather than bought twice. Only once {@link #findSubmitted} has found nothing.
+     */
+    public CloudCapacityReservation create(final CapacityReservation reservation) {
+        reservation.setClientToken(clientToken(reservation));
+        return serviceFor(reservation).createFutureDated(reservation);
     }
 
     /**
@@ -134,6 +126,13 @@ public class CapacityReservationCloudFacade {
      */
     static String clientToken(final CapacityReservation reservation) {
         return String.format("cp-cr-%d-%d", reservation.getId(), reservation.getAttempt());
+    }
+
+    /**
+     * Whether a reservation can be made in a region of this provider at all.
+     */
+    public boolean isSupported(final CloudProvider provider) {
+        return services.containsKey(provider);
     }
 
     private CapacityReservationCloudService serviceFor(final CapacityReservation reservation) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -104,6 +104,16 @@ public class PoolAutoscalerTest {
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() - pool.getScaleStep());
         verify(poolManager).update(eq(pool.getId()), eq(vo));
+    }
+
+    @Test
+    public void shouldNotScaleAPoolBackedByACapacityReservation() {
+        initKubeResources(RUN_ID_1, RUN_ID_2, RUN_ID_3, RUN_ID_4);
+        initPool().setCapacityReservation(true);
+
+        poolAutoscaler.adjustPoolSizes();
+
+        verify(poolManager, times(0)).update(any(), any());
     }
 
     private List<Node> buildNodes(final Long poolId, final List<String> nodeIds) {

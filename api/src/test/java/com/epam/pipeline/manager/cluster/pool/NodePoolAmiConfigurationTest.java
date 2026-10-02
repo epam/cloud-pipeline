@@ -49,8 +49,9 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 /**
- * A pool's launch configuration: taken from the region's matching {@code amis} rule when the pool is created, left
- * alone by every ordinary edit, and replaced only by an administrator - within what the region's networks allow.
+ * A pool's launch configuration, handled like its launch config: the one a create or update request sends, or - when a
+ * create sends none - one taken from the region's matching {@code amis} rule; an update that sends none leaves it as it
+ * is. Always within what the region's networks allow.
  */
 @Transactional
 public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
@@ -58,6 +59,8 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final long REGION_ID = 1L;
     private static final int INSTANCE_DISK = 50;
     private static final String REGION_CODE = "eu-central-1";
+    private static final String REGION_NAME = "\"name\": \"" + REGION_CODE + "\"";
+    private static final String GIVEN_AMI = "ami-given";
     private static final String ZONE_A = "eu-central-1a";
     private static final String ZONE_B = "eu-central-1b";
     private static final String ZONE_UNCONFIGURED = "eu-central-1c";
@@ -120,7 +123,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
                 .thenAnswer(invocation -> WINDOWS_AMI.equals(invocation.getArguments()[1])
                         ? image(WINDOWS_AMI, "windows")
                         : image(AMI, "linux"));
-        setRegion("\"name\": \"" + REGION_CODE + "\", " + NETWORKS + ", " + AMIS);
+        setRegion(REGION_NAME + ", " + NETWORKS + ", " + AMIS);
     }
 
     /**
@@ -146,7 +149,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
 
     /**
      * A pool is shared by whoever its filter admits, so a rule meant for some roles or groups - even the creator's own
-     * - is not copied into it. An administrator can give a pool such a configuration explicitly.
+     * - is not copied into it. A create or update request can give a pool such a configuration explicitly.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
@@ -179,11 +182,11 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @SuppressWarnings("deprecation")
     public void shouldStillUseTheDeprecatedImageWhenOneIsGiven() {
         final NodePoolVO vo = pool();
-        vo.setInstanceImage("ami-given");
+        vo.setInstanceImage(GIVEN_AMI);
 
         final AMIConfiguration configuration = configurationOf(poolManager.create(vo));
 
-        assertThat(configuration.getAmi()).isEqualTo("ami-given");
+        assertThat(configuration.getAmi()).isEqualTo(GIVEN_AMI);
         assertThat(configuration.getInitScript()).isEqualTo(INIT_SCRIPT);
     }
 
@@ -206,7 +209,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     public void shouldLeaveTheConfigurationAloneThroughAnEdit() {
         final NodePool created = poolManager.create(pool());
         final AMIConfiguration before = configurationOf(created);
-        setRegion("\"name\": \"" + REGION_CODE + "\", " + NETWORKS
+        setRegion(REGION_NAME + ", " + NETWORKS
                 + ", \"amis\": [{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"ami-newer\"}]");
         final NodePoolVO edit = pool();
         edit.setCount(2);
@@ -214,16 +217,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         poolManager.update(created.getId(), edit);
 
         assertThat(configurationOf(created)).isEqualTo(before);
-    }
-
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldLetAnAdministratorReplaceTheConfiguration() {
-        final NodePool created = poolManager.create(pool());
-
-        poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_B, SUBNET_B));
-
-        assertThat(configurationOf(created)).isEqualTo(configuration(ZONE_B, SUBNET_B));
     }
 
     /**
@@ -235,8 +228,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     public void shouldRefuseAZoneTheRegionDoesNotConfigure() {
         final NodePool created = poolManager.create(pool());
 
-        assertThatThrownBy(() -> poolManager.updateAmiConfiguration(created.getId(),
-                configuration(ZONE_UNCONFIGURED, null)))
+        assertThatThrownBy(() -> updateWith(created, configuration(ZONE_UNCONFIGURED, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(ZONE_UNCONFIGURED);
     }
@@ -250,11 +242,11 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     public void shouldRefuseASubnetThatIsNotTheZonesOwn() {
         final NodePool created = poolManager.create(pool());
 
-        assertThatThrownBy(() -> poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_A, SUBNET_B)))
+        assertThatThrownBy(() -> updateWith(created, configuration(ZONE_A, SUBNET_B)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(SUBNET_B);
         final Throwable refusal = catchThrowable(() ->
-                poolManager.updateAmiConfiguration(created.getId(), configuration(null, SUBNET_UNKNOWN)));
+                updateWith(created, configuration(null, SUBNET_UNKNOWN)));
         assertThat(refusal).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(SUBNET_UNKNOWN);
         assertThat(refusal.getMessage()).doesNotContain("null");
     }
@@ -262,10 +254,10 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldAcceptAnyZoneWhereTheRegionConfiguresNoNetworks() {
-        setRegion("\"name\": \"" + REGION_CODE + "\"");
+        setRegion(REGION_NAME);
         final NodePool created = poolManager.create(pool());
 
-        poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_UNCONFIGURED, "subnet-any"));
+        updateWith(created, configuration(ZONE_UNCONFIGURED, "subnet-any"));
 
         assertThat(configurationOf(created).getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
     }
@@ -279,7 +271,7 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         givenRegion(new AzureRegion());
         final NodePool created = poolManager.create(pool());
 
-        poolManager.updateAmiConfiguration(created.getId(), configuration(ZONE_UNCONFIGURED, null));
+        updateWith(created, configuration(ZONE_UNCONFIGURED, null));
 
         assertThat(configurationOf(created).getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
     }
@@ -294,8 +286,88 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         final AMIConfiguration configuration = configuration(ZONE_A, SUBNET_A);
         configuration.setAmi(WINDOWS_AMI);
 
-        assertThatThrownBy(() -> poolManager.updateAmiConfiguration(created.getId(), configuration))
+        assertThatThrownBy(() -> updateWith(created, configuration))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * Like the launch config: a configuration the request sends is the pool's, and nothing is generated for it.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldUseAConfigurationTheCreateRequestSends() {
+        final NodePoolVO vo = pool();
+        vo.setAmiConfiguration(configuration(ZONE_B, SUBNET_B));
+
+        assertThat(configurationOf(poolManager.create(vo))).isEqualTo(configuration(ZONE_B, SUBNET_B));
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldReplaceTheConfigurationWithOneTheUpdateRequestSends() {
+        final NodePool created = poolManager.create(pool());
+        final NodePoolVO edit = pool();
+        edit.setAmiConfiguration(configuration(ZONE_A, SUBNET_A));
+
+        poolManager.update(created.getId(), edit);
+
+        assertThat(configurationOf(created)).isEqualTo(configuration(ZONE_A, SUBNET_A));
+    }
+
+    /**
+     * A configuration a create request sends is checked like an update's: a zone the region does not configure could
+     * never be launched into.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseARequestedConfigurationWithAZoneTheRegionDoesNotConfigure() {
+        final NodePoolVO vo = pool();
+        vo.setAmiConfiguration(configuration(ZONE_UNCONFIGURED, null));
+
+        assertThatThrownBy(() -> poolManager.create(vo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(ZONE_UNCONFIGURED);
+    }
+
+    /**
+     * The autoscaler resizes a pool by sending all of it back. A configuration sent back unchanged is not checked
+     * again - if the region's networks dropped its zone since, the pool would otherwise stop scaling at all.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldAcceptAnUnchangedConfigurationAfterTheRegionsNetworksChanged() {
+        final NodePoolVO vo = pool();
+        vo.setAmiConfiguration(configuration(ZONE_A, SUBNET_A));
+        final NodePool created = poolManager.create(vo);
+        setRegion(REGION_NAME + ", \"networks\": {\"" + ZONE_B + "\": \"" + SUBNET_B + "\"}");
+        final NodePoolVO resize = pool();
+        resize.setAmiConfiguration(configuration(ZONE_A, SUBNET_A));
+        resize.setCount(2);
+
+        poolManager.update(created.getId(), resize);
+
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getCount()).isEqualTo(2);
+        assertThat(loaded.getAmiConfiguration()).isEqualTo(configuration(ZONE_A, SUBNET_A));
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    @SuppressWarnings("deprecation")
+    public void shouldUseTheDeprecatedImageForARequestedConfigurationWithoutOne() {
+        final NodePoolVO vo = pool();
+        final AMIConfiguration configuration = configuration(ZONE_A, SUBNET_A);
+        configuration.setAmi(null);
+        vo.setAmiConfiguration(configuration);
+        vo.setInstanceImage(GIVEN_AMI);
+
+        assertThat(configurationOf(poolManager.create(vo)).getAmi()).isEqualTo(GIVEN_AMI);
+    }
+
+    private NodePool updateWith(final NodePool pool, final AMIConfiguration configuration) {
+        final NodePoolVO edit = pool();
+        edit.setAmiConfiguration(configuration);
+        return poolManager.update(pool.getId(), edit);
     }
 
     private AMIConfiguration configurationOf(final NodePool pool) {

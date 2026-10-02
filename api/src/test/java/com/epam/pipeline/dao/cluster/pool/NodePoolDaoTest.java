@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.pool.NodeScheduleCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import org.apache.commons.collections4.MapUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -164,7 +165,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.getCount()).isEqualTo(RESERVED_COUNT);
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
-        assertThat(loaded.getKubeLabels()).containsKey(RESERVATION_LABEL);
+        assertThat(MapUtils.emptyIfNull(loaded.getKubeLabels())).doesNotContainKey(RESERVATION_LABEL);
         assertThat(loaded.getAmiConfiguration()).isEqualTo(amiConfiguration());
         assertThat(loaded.getName()).isEqualTo(originalName);
     }
@@ -184,26 +185,22 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
     }
 
     /**
-     * The configuration has its own statement, so an ordinary update - which never carries it - leaves it alone.
+     * An update writes the configuration it carries - the manager resolves it, the pool's current one included,
+     * before it updates.
      */
     @Test
-    public void shouldWriteTheAmiConfigurationOnlyThroughItsOwnStatement() {
+    public void shouldWriteTheAmiConfigurationThroughAnUpdate() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
         pool.setAmiConfiguration(amiConfiguration());
         final NodePool created = poolDao.create(pool);
 
-        created.setAmiConfiguration(null);
+        final AMIConfiguration edited = amiConfiguration();
+        edited.setSubnet("subnet-edited");
+        created.setAmiConfiguration(edited);
         created.setName(NEW_VALUE);
         poolDao.update(created);
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
-                .isEqualTo(amiConfiguration());
-
-        final AMIConfiguration replaced = amiConfiguration();
-        replaced.setSubnet("subnet-replaced");
-        created.setAmiConfiguration(replaced);
-        poolDao.updateAmiConfiguration(created);
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getAmiConfiguration())
-                .isEqualTo(replaced);
+                .isEqualTo(edited);
     }
 
     @Test

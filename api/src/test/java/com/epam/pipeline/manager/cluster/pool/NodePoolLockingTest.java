@@ -18,16 +18,15 @@ package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +35,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -64,8 +62,8 @@ public class NodePoolLockingTest extends AbstractManagerTest {
     private static final long STILL_BLOCKED_MILLIS = 1000;
     private static final int RESERVED_COUNT = 3;
     private static final String RENAMED = "renamed while locked";
-    private static final String EDIT_LABEL = "set-by-the-edit";
-    private static final String RESERVATION_LABEL = "set-by-activation";
+    private static final String EDITED_AMI = "ami-set-by-the-edit";
+    private static final String RESERVATION_ZONE = "zone-set-by-activation";
 
     @Autowired
     private NodePoolManager poolManager;
@@ -118,9 +116,9 @@ public class NodePoolLockingTest extends AbstractManagerTest {
     }
 
     /**
-     * Activation merges into the pool's labels. Reading them before a concurrent edit commits, and writing the
-     * merge back after it, would drop whatever the edit changed - so activation has to read the pool only once the
-     * edit is done.
+     * Activation merges into the pool's launch configuration. Reading it before a concurrent edit commits, and
+     * writing the merge back after it, would drop whatever the edit changed - so activation has to read the pool
+     * only once the edit is done.
      */
     @Test
     public void shouldApplyReservationStateToThePoolAsAConcurrentWriterLeftIt() throws Exception {
@@ -131,7 +129,7 @@ public class NodePoolLockingTest extends AbstractManagerTest {
             editHoldsThePool.countDown();
             awaitQuietly(finishTheEdit);
             staleCopy.setName(RENAMED);
-            staleCopy.setKubeLabels(withLabel(staleCopy.getKubeLabels(), EDIT_LABEL));
+            staleCopy.setAmiConfiguration(withAmi(staleCopy.getAmiConfiguration()));
             return poolDao.update(staleCopy);
         }));
         assertThat(editHoldsThePool.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
@@ -139,7 +137,7 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         final Future<?> activation = executor.submit(() -> transaction.execute(status ->
                 poolManager.applyReservationState(poolId, pool -> {
                     pool.setCount(RESERVED_COUNT);
-                    pool.setKubeLabels(withLabel(pool.getKubeLabels(), RESERVATION_LABEL));
+                    pool.setAmiConfiguration(withZone(pool.getAmiConfiguration()));
                 })));
 
         assertStillBlocked(activation);
@@ -150,7 +148,8 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         final NodePool pool = poolDao.find(poolId).orElseThrow(AssertionError::new);
         assertThat(pool.getCount()).isEqualTo(RESERVED_COUNT);
         assertThat(pool.getName()).isEqualTo(RENAMED);
-        assertThat(pool.getKubeLabels()).containsKeys(EDIT_LABEL, RESERVATION_LABEL);
+        assertThat(pool.getAmiConfiguration().getAmi()).isEqualTo(EDITED_AMI);
+        assertThat(pool.getAmiConfiguration().getAvailabilityZone()).isEqualTo(RESERVATION_ZONE);
     }
 
     /**
@@ -179,10 +178,16 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         assertThat(edit.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).getCount()).isZero();
     }
 
-    private static Map<String, PoolLabel> withLabel(final Map<String, PoolLabel> labels, final String key) {
-        final Map<String, PoolLabel> merged = new HashMap<>(MapUtils.emptyIfNull(labels));
-        merged.put(key, new PoolLabel(key, false));
-        return merged;
+    private static AMIConfiguration withAmi(final AMIConfiguration current) {
+        final AMIConfiguration configuration = Optional.ofNullable(current).orElseGet(AMIConfiguration::new);
+        configuration.setAmi(EDITED_AMI);
+        return configuration;
+    }
+
+    private static AMIConfiguration withZone(final AMIConfiguration current) {
+        final AMIConfiguration configuration = Optional.ofNullable(current).orElseGet(AMIConfiguration::new);
+        configuration.setAvailabilityZone(RESERVATION_ZONE);
+        return configuration;
     }
 
     private NodePoolVO editWithCount(final int count) {
