@@ -36,6 +36,9 @@ DEFAULT_VALUE = 1000.0
 DEFAULT_PERIOD = 'MONTH'
 DEFAULT_NOTIFY_THRESHOLDS = '100,600'
 PERIODS = ('MONTH', 'QUARTER', 'YEAR')
+USER_RECIPIENT = 'USER'
+ROLE_RECIPIENT = 'ROLE'
+ROLE_PREFIX = 'ROLE_'
 
 
 class ApiError(Exception):
@@ -63,6 +66,9 @@ class CloudPipelineApi(object):
     def create_quota(self, quota):
         return self._request('POST', 'quotas', quota)
 
+    def delete_quota(self, quota_id):
+        return self._request('DELETE', 'quotas/{}'.format(quota_id))
+
     def _request(self, method, endpoint, body=None):
         data = json.dumps(body).encode('utf-8') if body is not None else None
         request = urllib.request.Request(self.api_url + endpoint, data=data, method=method, headers={
@@ -71,7 +77,12 @@ class CloudPipelineApi(object):
             'Accept': 'application/json'
         })
         with urllib.request.urlopen(request, context=self.ssl_context, timeout=self.timeout) as response:
-            result = json.loads(response.read().decode('utf-8'))
+            raw = response.read().decode('utf-8')
+        # Some endpoints, the quota delete among them, answer a success with an empty body. An error is still
+        # a status ERROR result, as the API's exception handler builds it for every endpoint.
+        if not raw.strip():
+            return None
+        result = json.loads(raw)
         if result.get('status') != 'OK':
             raise ApiError('{} {} failed: {}'.format(method, endpoint, result.get('message')))
         return result.get('payload')
@@ -79,7 +90,8 @@ class CloudPipelineApi(object):
 
 class SyncConfig(object):
 
-    def __init__(self, api_url, token, value, period, notify_thresholds, dry_run, verify_ssl=True):
+    def __init__(self, api_url, token, value, period, notify_thresholds, dry_run, verify_ssl=True,
+                 extra_recipients=()):
         self.api_url = api_url
         self.token = token
         self.value = value
@@ -87,24 +99,11 @@ class SyncConfig(object):
         self.notify_thresholds = notify_thresholds
         self.dry_run = dry_run
         self.verify_ssl = verify_ssl
+        self.extra_recipients = list(extra_recipients)
 
     @classmethod
     def from_env(cls, env):
-        api_url = env.get('API')
-        # An explicit API address may be anywhere, so its certificate is checked by default. The one built
-        # from the cluster config is the API service inside the cluster, which serves a self-signed certificate.
-        verify_ssl = bool(api_url)
-        if not api_url:
-            host = env.get('CP_API_SRV_INTERNAL_HOST')
-            port = env.get('CP_API_SRV_INTERNAL_PORT')
-            if not host or not port:
-                raise ConfigError('Neither API nor CP_API_SRV_INTERNAL_HOST and CP_API_SRV_INTERNAL_PORT are set')
-            api_url = 'https://{}:{}/pipeline/restapi/'.format(host, port)
-        if env.get('CP_QUOTA_SYNC_VERIFY_SSL'):
-            verify_ssl = _parse_bool(env['CP_QUOTA_SYNC_VERIFY_SSL'])
-        token = env.get('API_TOKEN') or env.get('CP_API_JWT_ADMIN')
-        if not token:
-            raise ConfigError('Neither API_TOKEN nor CP_API_JWT_ADMIN is set')
+        api_url, token, verify_ssl = api_settings_from_env(env)
         period = env.get('CP_QUOTA_SYNC_PERIOD', DEFAULT_PERIOD).upper()
         if period not in PERIODS:
             raise ConfigError('CP_QUOTA_SYNC_PERIOD shall be one of {}, got {}'.format(', '.join(PERIODS), period))
@@ -121,11 +120,62 @@ class SyncConfig(object):
                    period=period,
                    notify_thresholds=notify_thresholds,
                    dry_run=_parse_bool(env.get('CP_QUOTA_SYNC_DRY_RUN', 'false')),
-                   verify_ssl=verify_ssl)
+                   verify_ssl=verify_ssl,
+                   extra_recipients=_parse_recipients(env.get('CP_QUOTA_SYNC_EXTRA_RECIPIENTS', '')))
+
+
+def api_settings_from_env(env):
+    """Returns the API address, the token and whether to check the API's certificate."""
+    api_url = env.get('API')
+    # An explicit API address may be anywhere, so its certificate is checked by default. The one built
+    # from the cluster config is the API service inside the cluster, which serves a self-signed certificate.
+    verify_ssl = bool(api_url)
+    if not api_url:
+        host = env.get('CP_API_SRV_INTERNAL_HOST')
+        port = env.get('CP_API_SRV_INTERNAL_PORT')
+        if not host or not port:
+            raise ConfigError('Neither API nor CP_API_SRV_INTERNAL_HOST and CP_API_SRV_INTERNAL_PORT are set')
+        api_url = 'https://{}:{}/pipeline/restapi/'.format(host, port)
+    if env.get('CP_QUOTA_SYNC_VERIFY_SSL'):
+        verify_ssl = _parse_bool(env['CP_QUOTA_SYNC_VERIFY_SSL'])
+    token = env.get('API_TOKEN') or env.get('CP_API_JWT_ADMIN')
+    if not token:
+        raise ConfigError('Neither API_TOKEN nor CP_API_JWT_ADMIN is set')
+    return api_url, token, verify_ssl
 
 
 def _parse_bool(raw):
     return raw.strip().lower() == 'true'
+
+
+def _parse_recipients(raw):
+    """
+    Parses a comma-separated list of USER:<name> and ROLE:<name> entries into quota recipients.
+
+    ROLE covers both a role (ROLE_ADMIN) and a user group, as the API resolves either name into its members.
+    An entry without a prefix is a role if it starts with ROLE_, and a user otherwise.
+    A role or group name is upper-cased: the platform stores both in upper case, and the API matches them exactly.
+    """
+    recipients = []
+    for entry in raw.split(','):
+        entry = entry.strip()
+        if not entry:
+            continue
+        kind, separator, name = entry.partition(':')
+        if separator:
+            kind = kind.strip().upper()
+            if kind not in (USER_RECIPIENT, ROLE_RECIPIENT):
+                raise ConfigError('CP_QUOTA_SYNC_EXTRA_RECIPIENTS entry {} shall start with {}: or {}:'
+                                  .format(entry, USER_RECIPIENT, ROLE_RECIPIENT))
+            principal = kind == USER_RECIPIENT
+            name = name.strip()
+        else:
+            principal = not entry.upper().startswith(ROLE_PREFIX)
+            name = entry
+        if not name:
+            raise ConfigError('CP_QUOTA_SYNC_EXTRA_RECIPIENTS entry {} has no name'.format(entry))
+        recipients.append({'name': name if principal else name.upper(), 'principal': principal})
+    return recipients
 
 
 def _parse_positive(raw, name):
@@ -147,29 +197,63 @@ def find_users_without_quota(users, quotas):
             if user.get('userName') and user['userName'].lower() not in covered]
 
 
-def build_quota(user_name, value, period, notify_thresholds):
+def resolve_extra_recipients(users, extra_recipients):
+    """
+    Replaces each extra user recipient's name with the user's own name, matched ignoring case.
+
+    An unknown user is rejected rather than skipped: the job never updates a quota it has created, so a misspelt
+    recipient would stay on every quota created with it. Roles and groups are passed as they are, as a group
+    is only an attribute of its users and has no list of its own to check against.
+    """
+    user_names = dict((user['userName'].lower(), user['userName']) for user in users if user.get('userName'))
+    resolved = []
+    for recipient in extra_recipients:
+        if not recipient['principal']:
+            resolved.append(recipient)
+            continue
+        user_name = user_names.get(recipient['name'].lower())
+        if not user_name:
+            raise ConfigError('CP_QUOTA_SYNC_EXTRA_RECIPIENTS names an unknown user {}'.format(recipient['name']))
+        resolved.append({'name': user_name, 'principal': True})
+    return resolved
+
+
+def build_quota(user_name, value, period, notify_thresholds, extra_recipients=()):
+    # Quota notifications go to the recipients only, so the user has to be one of them
+    recipients = []
+    seen = set()
+    for recipient in [{'name': user_name, 'principal': True}] + list(extra_recipients):
+        # The GUI tells recipients apart by kind and name, so a repeated one could not be edited there
+        key = (recipient['principal'], recipient['name'].lower())
+        if key not in seen:
+            seen.add(key)
+            recipients.append(recipient)
     return {
         'quotaGroup': QUOTA_GROUP,
         'type': QUOTA_TYPE,
         'subject': user_name,
         'period': period,
         'value': value,
-        # Quota notifications go to the recipients only, so the user has to be one of them
-        'recipients': [{'name': user_name, 'principal': True}],
+        'recipients': recipients,
         'actions': [{'threshold': threshold, 'actions': [NOTIFY_ACTION]} for threshold in notify_thresholds]
     }
 
 
 def sync(api, config):
-    """Creates the missing quotas and returns the number of users a quota could not be created for."""
+    """
+    Creates the missing quotas and returns the number of users a quota could not be created for.
+
+    Raises ConfigError, before any quota is created, if an extra recipient is an unknown user.
+    """
     users = api.load_users()
     quotas = api.load_quotas()
+    extra_recipients = resolve_extra_recipients(users, config.extra_recipients)
     missing = find_users_without_quota(users, quotas)
     logging.info('%d user(s) found, %d of them without a personal compute quota', len(users), len(missing))
     created = 0
     failures = 0
     for user_name in missing:
-        quota = build_quota(user_name, config.value, config.period, config.notify_thresholds)
+        quota = build_quota(user_name, config.value, config.period, config.notify_thresholds, extra_recipients)
         if config.dry_run:
             logging.info('[dry run] Would create quota for %s: %s', user_name, json.dumps(quota))
             continue
@@ -189,10 +273,10 @@ def main():
                         format='%(asctime)s [%(levelname)s] %(message)s')
     try:
         config = SyncConfig.from_env(os.environ)
+        failures = sync(CloudPipelineApi(config.api_url, config.token, verify_ssl=config.verify_ssl), config)
     except ConfigError as e:
         logging.error(str(e))
         return 2
-    failures = sync(CloudPipelineApi(config.api_url, config.token, verify_ssl=config.verify_ssl), config)
     if failures:
         logging.error('Quota was not created for %d user(s)', failures)
         return 1

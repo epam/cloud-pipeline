@@ -39,6 +39,8 @@ spec:
                 value: "MONTH"
               - name: CP_QUOTA_SYNC_NOTIFY_THRESHOLDS
                 value: "100,600"
+              - name: CP_QUOTA_SYNC_EXTRA_RECIPIENTS
+                value: ""
               - name: CP_QUOTA_SYNC_DRY_RUN
                 value: "false"
               - name: CP_QUOTA_SYNC_LOG_LEVEL

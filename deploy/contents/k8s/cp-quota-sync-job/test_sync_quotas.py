@@ -35,9 +35,18 @@ def user(name):
     return {'id': 1, 'userName': name}
 
 
-def config(dry_run=False):
+def recipient(name):
+    return {'name': name, 'principal': True}
+
+
+def role(name):
+    return {'name': name, 'principal': False}
+
+
+def config(dry_run=False, extra_recipients=()):
     return sync_quotas.SyncConfig(api_url='https://api/', token=TOKEN, value=1000.0, period='MONTH',
-                                  notify_thresholds=[100.0, 600.0], dry_run=dry_run)
+                                  notify_thresholds=[100.0, 600.0], dry_run=dry_run,
+                                  extra_recipients=extra_recipients)
 
 
 class FakeApi(object):
@@ -97,6 +106,37 @@ class TestBuildQuota(unittest.TestCase):
                         {'threshold': 600.0, 'actions': ['NOTIFY']}]
         }, sync_quotas.build_quota('alice', 1000.0, 'MONTH', [100.0, 600.0]))
 
+    def test_extra_recipients_follow_the_user(self):
+        built = sync_quotas.build_quota('alice', 1000.0, 'MONTH', [100.0],
+                                        [role('ROLE_ADMIN'), recipient('bob')])
+        self.assertEqual([recipient('alice'), role('ROLE_ADMIN'), recipient('bob')], built['recipients'])
+
+    def test_user_is_not_repeated_as_extra_recipient(self):
+        built = sync_quotas.build_quota('alice', 1000.0, 'MONTH', [100.0],
+                                        [recipient('ALICE'), role('ALICE')])
+        self.assertEqual([recipient('alice'), role('ALICE')], built['recipients'])
+
+    def test_repeated_extra_recipients_are_kept_once(self):
+        built = sync_quotas.build_quota('alice', 1000.0, 'MONTH', [100.0],
+                                        [recipient('bob'), recipient('BOB'), role('ROLE_ADMIN'), role('ROLE_ADMIN')])
+        self.assertEqual([recipient('alice'), recipient('bob'), role('ROLE_ADMIN')], built['recipients'])
+
+
+class TestResolveExtraRecipients(unittest.TestCase):
+
+    def test_user_name_is_taken_from_the_platform(self):
+        resolved = sync_quotas.resolve_extra_recipients([user('John.Doe@example.com')],
+                                                        [recipient('JOHN.DOE@EXAMPLE.COM')])
+        self.assertEqual([recipient('John.Doe@example.com')], resolved)
+
+    def test_roles_are_passed_as_they_are(self):
+        resolved = sync_quotas.resolve_extra_recipients([], [role('ROLE_ADMIN'), role('CORA-DEV')])
+        self.assertEqual([role('ROLE_ADMIN'), role('CORA-DEV')], resolved)
+
+    def test_unknown_user_is_rejected(self):
+        with self.assertRaises(sync_quotas.ConfigError):
+            sync_quotas.resolve_extra_recipients([user('alice')], [recipient('bob')])
+
 
 class TestSync(unittest.TestCase):
 
@@ -110,6 +150,26 @@ class TestSync(unittest.TestCase):
         api = FakeApi([user('alice')], [])
         failures = sync_quotas.sync(api, config(dry_run=True))
         self.assertEqual(0, failures)
+        self.assertEqual([], api.created)
+
+    def test_extra_recipients_are_added_to_new_quotas(self):
+        api = FakeApi([user('alice'), user('Admin')], [quota('admin')])
+        sync_quotas.sync(api, config(extra_recipients=[recipient('ADMIN'), role('ROLE_ADMIN')]))
+        self.assertEqual([[recipient('alice'), recipient('Admin'), role('ROLE_ADMIN')]],
+                         [created['recipients'] for created in api.created])
+
+    def test_extra_recipients_from_env_reach_the_posted_quota(self):
+        parsed = sync_quotas.SyncConfig.from_env({'API': 'https://api/', 'API_TOKEN': TOKEN,
+                                                  'CP_QUOTA_SYNC_EXTRA_RECIPIENTS': 'role_admin,admin,USER:ADMIN'})
+        api = FakeApi([user('alice'), user('Admin')], [quota('admin')])
+        self.assertEqual(0, sync_quotas.sync(api, parsed))
+        self.assertEqual([[recipient('alice'), role('ROLE_ADMIN'), recipient('Admin')]],
+                         [created['recipients'] for created in api.created])
+
+    def test_unknown_extra_user_creates_nothing(self):
+        api = FakeApi([user('alice')], [])
+        with self.assertRaises(sync_quotas.ConfigError):
+            sync_quotas.sync(api, config(extra_recipients=[recipient('bob')]))
         self.assertEqual([], api.created)
 
     def test_failure_is_counted_and_other_users_are_processed(self):
@@ -145,6 +205,27 @@ class TestCloudPipelineApi(unittest.TestCase):
         self.assertEqual('POST', request.get_method())
         self.assertEqual(quota('alice'), json.loads(request.data.decode('utf-8')))
 
+    def empty_response(self):
+        return mock.MagicMock(__enter__=mock.Mock(return_value=io.BytesIO(b'')))
+
+    @mock.patch('urllib.request.urlopen')
+    def test_deletes_quota(self, urlopen):
+        # The API answers a successful quota delete with an empty body
+        urlopen.return_value = self.empty_response()
+        api = sync_quotas.CloudPipelineApi('https://api/pipeline/restapi/', TOKEN)
+        self.assertIsNone(api.delete_quota(42))
+        request = urlopen.call_args[0][0]
+        self.assertEqual('https://api/pipeline/restapi/quotas/42', request.full_url)
+        self.assertEqual('DELETE', request.get_method())
+        self.assertIsNone(request.data)
+
+    @mock.patch('urllib.request.urlopen')
+    def test_failed_delete_raises(self, urlopen):
+        urlopen.return_value = self.response({'status': 'ERROR', 'message': 'Quota with id 42 was not found'})
+        api = sync_quotas.CloudPipelineApi('https://api/pipeline/restapi/', TOKEN)
+        with self.assertRaises(sync_quotas.ApiError):
+            api.delete_quota(42)
+
     @mock.patch('urllib.request.urlopen')
     def test_error_status_raises(self, urlopen):
         urlopen.return_value = self.response({'status': 'ERROR', 'message': 'Quota already exists'})
@@ -175,6 +256,26 @@ class TestSyncConfig(unittest.TestCase):
         self.assertEqual([100.0, 600.0], parsed.notify_thresholds)
         self.assertFalse(parsed.dry_run)
         self.assertFalse(parsed.verify_ssl)
+        self.assertEqual([], parsed.extra_recipients)
+
+    def test_extra_recipients(self):
+        parsed = sync_quotas.SyncConfig.from_env({
+            'API': 'https://api/', 'API_TOKEN': TOKEN,
+            'CP_QUOTA_SYNC_EXTRA_RECIPIENTS': ' ROLE_ADMIN, john.doe@example.com,,user: Jane ,role:CORA-DEV,'
+                                              'USER:ROLE_LIKE_NAME,ROLE:A:B'
+        })
+        self.assertEqual([role('ROLE_ADMIN'),
+                          recipient('john.doe@example.com'),
+                          recipient('Jane'),
+                          role('CORA-DEV'),
+                          recipient('ROLE_LIKE_NAME'),
+                          role('A:B')], parsed.extra_recipients)
+
+    def test_role_and_group_names_are_upper_cased(self):
+        # The platform stores role and group names in upper case, and the API matches them exactly
+        parsed = sync_quotas.SyncConfig.from_env({'API': 'https://api/', 'API_TOKEN': TOKEN,
+                                                  'CP_QUOTA_SYNC_EXTRA_RECIPIENTS': 'role_admin,ROLE:cora-dev,john'})
+        self.assertEqual([role('ROLE_ADMIN'), role('CORA-DEV'), recipient('john')], parsed.extra_recipients)
 
     def test_explicit_api_certificate_is_checked(self):
         parsed = sync_quotas.SyncConfig.from_env({'API': 'https://api/', 'API_TOKEN': TOKEN})
@@ -218,9 +319,30 @@ class TestSyncConfig(unittest.TestCase):
                             ('CP_QUOTA_SYNC_PERIOD', 'WEEK'),
                             ('CP_QUOTA_SYNC_NOTIFY_THRESHOLDS', '100,-1'),
                             ('CP_QUOTA_SYNC_NOTIFY_THRESHOLDS', ''),
-                            ('CP_QUOTA_SYNC_NOTIFY_THRESHOLDS', ' , ')]:
+                            ('CP_QUOTA_SYNC_NOTIFY_THRESHOLDS', ' , '),
+                            ('CP_QUOTA_SYNC_EXTRA_RECIPIENTS', 'GROUP:CORA-DEV'),
+                            ('CP_QUOTA_SYNC_EXTRA_RECIPIENTS', 'USER:'),
+                            ('CP_QUOTA_SYNC_EXTRA_RECIPIENTS', 'ROLE: ')]:
             with self.assertRaises(sync_quotas.ConfigError, msg=name + '=' + value):
                 sync_quotas.SyncConfig.from_env({'API': 'https://api/', 'API_TOKEN': TOKEN, name: value})
+
+
+class TestApiSettingsFromEnv(unittest.TestCase):
+
+    def test_explicit_api(self):
+        self.assertEqual(('https://api/', TOKEN, True),
+                         sync_quotas.api_settings_from_env({'API': 'https://api/', 'API_TOKEN': TOKEN}))
+
+    def test_cluster_api(self):
+        self.assertEqual(('https://cp-api-srv:31080/pipeline/restapi/', TOKEN, False),
+                         sync_quotas.api_settings_from_env({'CP_API_SRV_INTERNAL_HOST': 'cp-api-srv',
+                                                            'CP_API_SRV_INTERNAL_PORT': '31080',
+                                                            'CP_API_JWT_ADMIN': TOKEN}))
+
+    def test_missing_settings_are_rejected(self):
+        for env in [{'API_TOKEN': TOKEN}, {'API': 'https://api/'}]:
+            with self.assertRaises(sync_quotas.ConfigError, msg=str(env)):
+                sync_quotas.api_settings_from_env(env)
 
 
 class TestMain(unittest.TestCase):
@@ -231,6 +353,12 @@ class TestMain(unittest.TestCase):
             self.assertEqual(2, sync_quotas.main())
         # logging.error() calls basicConfig() again, with no arguments, while no handler is configured
         self.assertEqual('DEBUG', basic_config.call_args_list[0][1]['level'])
+
+    @mock.patch('sync_quotas.sync', side_effect=sync_quotas.ConfigError('unknown user'))
+    @mock.patch('logging.basicConfig')
+    def test_unknown_extra_user_is_a_config_error(self, _, sync):
+        with mock.patch.dict(os.environ, {'API': 'https://api/', 'API_TOKEN': TOKEN}, clear=True):
+            self.assertEqual(2, sync_quotas.main())
 
     @mock.patch('sync_quotas.sync', return_value=0)
     @mock.patch('logging.basicConfig')
