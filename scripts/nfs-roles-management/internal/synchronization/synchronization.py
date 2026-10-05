@@ -61,7 +61,7 @@ class Synchronization(object):
                 try:
                     if test_storage.path.lower().startswith('nfs://'):
                         if share_mounts[test_storage.share_mount_id].mount_type == "SMB":
-                            search = re.search('([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
+                            search = re.search(r'([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
                             (server_name, storage_path) = search.group(1), search.group(2)
                         else:
                             (server_name, storage_path) = test_storage.path[len('nfs://'):].split(':')
@@ -72,7 +72,7 @@ class Synchronization(object):
                 if server_name is None or storage_path is None:
                     logging.warning('Wrong storage path: {}'.format(test_storage.path))
                     return None
-                storage_path = re.sub('\/[\/]+', '/', storage_path)
+                storage_path = re.sub(r'\/[\/]+', '/', storage_path)
                 if storage_path.startswith('/'):
                     storage_path = storage_path[1:]
                 storage_link_destination = os.path.join(self.__config__.nfs_root, server_name, storage_path)
@@ -206,7 +206,12 @@ class Synchronization(object):
 
     def resolve_mounts(self, root_dir):
         mounts = {}
-        for line in subprocess.check_output('mount').split('\n'):
+        # check_output() returns bytes under Python 3 - str.split() on a str argument then raises
+        # TypeError. Python 2's check_output() already returns str, left untouched here.
+        mount_output = subprocess.check_output('mount')
+        if not isinstance(mount_output, str):
+            mount_output = mount_output.decode()
+        for line in mount_output.split('\n'):
             if not line or not line.strip():
                 continue
             line_items = line.split(' ')
