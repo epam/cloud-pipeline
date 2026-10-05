@@ -15,7 +15,7 @@
 # Covers the CP_PYTHON_VERSION/CP_PYTHON_PATH resolution added to cp-edge's "init" (issue #4531),
 # mirroring cp-api-srv's init-api, and checks that sync-routes.py/maintenance.py are still importable
 # source under both Python 2 and Python 3. There was no test runner in this package before - run with
-# `python -m unittest test_python_resolution` (or under pytest).
+# `python -m unittest test_python_resolution` (or under pytest) from inside deploy/docker/cp-edge/tests.
 
 import glob
 import os
@@ -36,7 +36,8 @@ def _which(name):
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-INIT_SCRIPT = os.path.join(THIS_DIR, 'init')
+CP_EDGE_DIR = os.path.dirname(THIS_DIR)
+INIT_SCRIPT = os.path.join(CP_EDGE_DIR, 'init')
 BASH = _which('bash') or '/bin/bash'
 
 START_MARKER = '# --- Python interpreter selection ---'
@@ -168,8 +169,8 @@ class CpPythonPathResolutionTest(unittest.TestCase):
 class CpEdgeScriptsCompileUnderBothInterpretersTest(unittest.TestCase):
 
     SCRIPTS = [
-        os.path.join(THIS_DIR, 'sync-routes.py'),
-        os.path.join(THIS_DIR, 'maintenance', 'scripts', 'maintenance.py'),
+        os.path.join(CP_EDGE_DIR, 'sync-routes.py'),
+        os.path.join(CP_EDGE_DIR, 'maintenance', 'scripts', 'maintenance.py'),
     ]
 
     def test_compiles_under_current_interpreter(self):
