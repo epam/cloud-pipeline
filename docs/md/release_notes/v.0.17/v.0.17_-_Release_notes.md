@@ -1818,6 +1818,10 @@ If the tool versions can't be loaded, `pipe` prints a warning and continues the 
 
 For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
+## Python 3 support for the EDGE service
+
+The `cp-edge` service (the sync-routes and maintenance jobs) now has Python 3.12 installed alongside Python 2, and can run either one. The active interpreter is selected by the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility; set it to `3` to run under Python 3.12).
+
 ## Node start retries for a specific run
 
 Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
