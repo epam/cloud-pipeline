@@ -15,9 +15,13 @@
 # limitations under the License.
 
 watcher_script_path="$SYNC_HOME/watch_mount_shares.py"
-ps -C python --no-headers -o args | grep "$watcher_script_path"
+# "ps -C python | grep ..." (the previous form) assumed the watcher always runs under a process
+# literally named "python" - no longer true once CP_PYTHON_PATH can resolve to python3.12. pgrep -f
+# matches the full command line regardless of interpreter name, and (unlike "ps | grep") never
+# matches its own invocation.
+pgrep -f "$watcher_script_path" >/dev/null
 if [ $? -ne 0 ]; then
     echo "No active observer process found, starting a new one..."
-    nohup python -u "$watcher_script_path" 1>/dev/null 2>$SYNC_LOG_DIR/.nohup.nfswatcher.log &
+    nohup "${CP_PYTHON_PATH:-python}" -u "$watcher_script_path" 1>/dev/null 2>$SYNC_LOG_DIR/.nohup.nfswatcher.log &
 fi
 rm -rf /var/run/nfs-watcher.lock
