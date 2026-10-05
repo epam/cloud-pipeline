@@ -50,6 +50,7 @@ public class GitRepositoryUrlTest {
         private static final String PROJECT = "awesome-game";
         private static final String USERNAME = "username";
         private static final String PASSWORD = "pAssw0rd";
+        private static final String DOTTED_TOKEN = "glpat-not_a-real-token.01.checksum";
         private final String caseName;
         final String url;
         final String protocol;
@@ -110,6 +111,11 @@ public class GitRepositoryUrlTest {
                     "https://username:pAssw0rd@git.company-name-42.com:42/graphic/awesome-game.git",
                     PROTOCOL, of(USERNAME), of(PASSWORD), "git.company-name-42.com:42", of(NAMESPACE), of(PROJECT)
                 },
+                {
+                    "url with username and a GitLab token with dots",
+                    "https://username:" + DOTTED_TOKEN + "@git.company-name-42.com/graphic/awesome-game.git",
+                    PROTOCOL, of(USERNAME), of(DOTTED_TOKEN), HOST, of(NAMESPACE), of(PROJECT)
+                },
             });
         }
 
@@ -122,6 +128,28 @@ public class GitRepositoryUrlTest {
             assertEquals(project, gitRepositoryUrl.getProject());
             assertEquals(userName, gitRepositoryUrl.getUsername());
             assertEquals(password, gitRepositoryUrl.getPassword());
+        }
+    }
+
+    public static class Credentials {
+
+        private static final String DOTTED_TOKEN = "glpat-not_a-real-token.01.checksum";
+        private static final String URL = "https://git.company-name-42.com/graphic/awesome-game.git";
+
+        @Test
+        public void shouldAcceptGitLabTokenWithDotsAsPassword() {
+            final GitRepositoryUrl url = GitRepositoryUrl.from(URL)
+                    .withUsername("root")
+                    .withPassword(DOTTED_TOKEN);
+            assertEquals("https://root:" + DOTTED_TOKEN + "@git.company-name-42.com/graphic/awesome-game.git",
+                    url.asString());
+        }
+
+        @Test(expected = IllegalArgumentException.class)
+        public void shouldRejectPasswordWithAtSign() {
+            GitRepositoryUrl.from(URL)
+                    .withUsername("root")
+                    .withPassword("pass@word");
         }
     }
 

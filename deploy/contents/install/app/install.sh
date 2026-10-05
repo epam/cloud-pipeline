@@ -743,6 +743,25 @@ fi
 if is_service_requested cp-gitlab-db; then
     print_ok "[Starting GitLab postgres DB deployment]"
 
+    if [ "$CP_GITLAB_VERSION" == "9" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "9.6" ]; then
+            print_warn "CP_GITLAB_VERSION is 9 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 9.6! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "15" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "12.4" ]; then
+            print_warn "CP_GITLAB_VERSION is 15 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 12.4! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "17" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "14.11" ]; then
+            print_warn "CP_GITLAB_VERSION is 17 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 14.11! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "19" ]; then
+        # GitLab 19 supports PostgreSQL 17 only, so any 17.x image tag will do
+        if [ "${GITLAB_DATABASE_VERSION%%.*}" != "17" ]; then
+            print_warn "CP_GITLAB_VERSION is 19 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 17! Installation will continue, but may fail."
+        fi
+    fi
+
     print_info "-> Deleting existing instance of GitLab postgres DB"
     delete_deployment_and_service   "cp-gitlab-db" \
                                     "/opt/gitlab-postgresql"
@@ -779,11 +798,28 @@ if is_service_requested cp-git; then
     delete_deployment_and_service   "cp-bkp-worker-cp-git"
 
     if is_install_requested; then
+        # GitLab 17 and later: the database gets the amcheck extension (18.4 and later require it),
+        # there is no session API, the default root password is too weak, and a new token needs an expiry date
+        gitlab_17_or_later="false"
+        if [[ "$CP_GITLAB_VERSION" =~ ^[0-9]+$ ]] && [ "$CP_GITLAB_VERSION" -ge 17 ]; then
+            gitlab_17_or_later="true"
+        fi
+
         print_info "-> Creating postgres DB user and schema for GitLab"
         create_user_and_db  "cp-gitlab-db" \
                             "$GITLAB_DATABASE_USERNAME" \
                             "$GITLAB_DATABASE_PASSWORD" \
                             "$GITLAB_DATABASE_DATABASE"
+
+        # GitLab 18.4 and later require amcheck in their database. GitLab creates it only in the PostgreSQL bundled
+        # into its image. It is created for 17 too, so that a later upgrade finds it
+        if [ "$gitlab_17_or_later" == "true" ]; then
+            print_info "-> Creating the amcheck extension in the GitLab database $GITLAB_DATABASE_DATABASE"
+            if [ -z "$(get_deployment_pods cp-gitlab-db)" ] || \
+               ! execute_deployment_command "cp-gitlab-db" default "psql -U postgres -d $GITLAB_DATABASE_DATABASE -c \"CREATE EXTENSION IF NOT EXISTS amcheck;\""; then
+                print_warn "Unable to create the amcheck extension in the GitLab database $GITLAB_DATABASE_DATABASE: no cp-gitlab-db pod was found, or psql failed. GitLab 18.4 and later require it. Create it as the PostgreSQL superuser: CREATE EXTENSION IF NOT EXISTS amcheck;"
+            fi
+        fi
 
         print_info "-> Creating self-signed SSL certificate for GitLab (${CP_GITLAB_EXTERNAL_HOST}, ${CP_GITLAB_INTERNAL_HOST})"
         generate_self_signed_key_pair   $CP_GITLAB_CERT_DIR/ssl-private-key.pem \
@@ -799,6 +835,23 @@ if is_service_requested cp-git; then
                                         $CP_GITLAB_INTERNAL_HOST
 
         print_info "-> Deploying GitLab"
+
+        # GitLab accepts at most 365 days. One day less leaves a margin for a time zone gap
+        gitlab_token_lifetime_days=364
+
+        if [ "$gitlab_17_or_later" == "true" ]; then
+            export CP_GITLAB_SESSION_API_DISABLE="true"
+            if [ "$GITLAB_ROOT_PASSWORD" == "Passw0rd" ]; then
+                print_ok "CP_GITLAB_VERSION is $CP_GITLAB_VERSION and GITLAB_ROOT_PASSWORD was not provided, will generate random password."
+                GITLAB_ROOT_PASSWORD=$(openssl rand -hex 8)
+                export GITLAB_ROOT_PASSWORD
+                update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                               "GITLAB_ROOT_PASSWORD" \
+                                               "$GITLAB_ROOT_PASSWORD"
+                init_kube_config_map
+            fi
+        fi
+
         set_kube_service_external_ip CP_GITLAB_SVC_EXTERNAL_IP_LIST \
                                      CP_GITLAB_NODE_IP \
                                      CP_GITLAB_KUBE_NODE_NAME \
@@ -834,9 +887,14 @@ if is_service_requested cp-git; then
             done
         else
             print_info "-> Setting GitLab root's private_token"
+            gitlab_token_expiration=""
+            if [ "$gitlab_17_or_later" == "true" ]; then
+              gitlab_token_expiration=", expires_at: ${gitlab_token_lifetime_days}.days.from_now"
+            fi
+
             GITLAB_ROOT_TOKEN=$(openssl rand -hex 20)
-            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-":read_user,:read_repository,:api,:read_api,:write_repository,:sudo"}
-            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
+            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-"'read_user','read_repository','api','read_api','write_repository','sudo'"}
+            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'$gitlab_token_expiration); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
             gitlab_set_token_response=$(execute_deployment_command cp-git cp-git "gitlab-rails runner \"$gitlab_set_token_cmd\"")
             if [ $? -ne 0 ]; then
                 print_err "Error occurred during adding GitLab root's private_token"
@@ -855,14 +913,41 @@ if is_service_requested cp-git; then
             init_kube_config_map
 
             print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before getting impersonation token (while root token is retrieved - gitlab may still fail with 502)"
-            print_info "-> Getting GitLab root's impersonation token"
             sleep $CP_GITLAB_INIT_TIMEOUT
-            GITLAB_IMP_TOKEN=$(curl -k \
-                                    --request POST \
-                                    --silent \
-                                    --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
-                                    --data "name=CloudPipeline" \
-                                    --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+
+            if [ "$CP_GITLAB_VERSION" != "9" ]; then
+                # Enable web hooks to enable repository indexing for elastic search agent
+                print_info "-> Enabling allow_local_requests_from_web_hooks_and_services in GitLab settings..."
+                curl -k \
+                     --request PUT --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                     "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/application/settings?allow_local_requests_from_web_hooks_and_services=true" &> /dev/null
+
+                # Disable signup to restrict anyone with network access to the gitlab to register in the gitlab
+                print_info "-> Disable signup_enabled in GitLab settings..."
+                curl -k \
+                     --request PUT --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                     "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/application/settings?signup_enabled=false" &> /dev/null
+            fi
+
+            print_info "-> Getting GitLab root's impersonation token"
+            if [ "$gitlab_17_or_later" == "true" ]; then
+                GITLAB_IMP_TOKEN=$(curl -k \
+                                      --request POST \
+                                      --silent \
+                                      --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                                      --data "name=CloudPipeline" \
+                                      --data "expires_at=$(date -u +%Y-%m-%d -d "+${gitlab_token_lifetime_days} days")" \
+                                      --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+
+            else
+                GITLAB_IMP_TOKEN=$(curl -k \
+                                      --request POST \
+                                      --silent \
+                                      --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                                      --data "name=CloudPipeline" \
+                                      --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+            fi
+
             if [ "$GITLAB_IMP_TOKEN" ] && [ "$GITLAB_IMP_TOKEN" != "null" ]; then
                 print_ok "GitLab impersonation token retrieved: $GITLAB_IMP_TOKEN"
                 export GITLAB_IMP_TOKEN
