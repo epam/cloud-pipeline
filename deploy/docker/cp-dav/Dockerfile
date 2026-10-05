@@ -89,7 +89,7 @@ RUN cd /tmp && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
     yum install -y lustre-client/*.rpm && \
-    package-cleanup --cleandupes -y && \
+    (package-cleanup --cleandupes -y || true) && \
     rm -rf lustre-client*
 
 RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
