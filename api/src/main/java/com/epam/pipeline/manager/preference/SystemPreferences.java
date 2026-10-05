@@ -28,6 +28,8 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
@@ -116,6 +118,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidCapacityReservationMonitorSettings;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
@@ -632,6 +635,35 @@ public class SystemPreferences {
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
+
+    /**
+     * How often the capacity reservation monitor advances reservations through their lifecycle.
+     */
+    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_MONITOR_CRON = new StringPreference(
+            "cluster.capacity.reservation.monitor.cron", "0 * * * * ?", CLUSTER_GROUP, isNotBlank);
+
+    /**
+     * The approval rules for capacity reservation requests. Empty by default, which means every request
+     * waits for an administrator - the safe default, since these requests spend money.
+     */
+    public static final ObjectPreference<List<CapacityReservationPolicy>> CLUSTER_CAPACITY_RESERVATION_POLICIES =
+            new ObjectPreference<>("cluster.capacity.reservation.policies", Collections.emptyList(),
+                                   new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
+                                   isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
+
+    /**
+     * The instance families a future-dated capacity reservation may be requested for, comma separated and matched
+     * against the letters that begin an instance type ({@code p5.48xlarge} is family {@code p}).
+     */
+    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new StringPreference(
+            "cluster.capacity.reservation.instance.families", "c,m,r,i,t,g", CLUSTER_GROUP, pass);
+
+    public static final ObjectPreference<CapacityReservationMonitorSettings>
+            CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(
+                    "cluster.capacity.reservation.monitor.settings",
+                    new CapacityReservationMonitorSettings(1),
+                    new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
+                    isValidCapacityReservationMonitorSettings, true);
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",

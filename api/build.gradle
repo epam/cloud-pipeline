@@ -198,6 +198,11 @@ dependencies {
     implementation 'com.amazonaws:aws-java-sdk-route53:1.11.880'
     implementation 'com.amazonaws:aws-java-sdk-omics:1.12.717'
     implementation 'com.amazonaws:aws-java-sdk-pricing:1.12.780'
+    // SDK v2, alongside v1 and used only by the capacity reservation service. v1 lacks
+    // StartDate/CommitmentDuration on CreateCapacityReservation, needed for future-dated reservations,
+    // and the ASSESSING/UNSUPPORTED/DELAYED reservation states - and still lacks them on its latest
+    // release, so bumping v1 is not an alternative.
+    implementation 'software.amazon.awssdk:ec2:2.55.6'
 
     // Azure
     implementation group: "com.azure", name: "azure-core", version: "1.54.0"

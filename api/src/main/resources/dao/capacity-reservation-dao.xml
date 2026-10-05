@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao"
+          id="capacityReservationDao" autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--insertCapacityReservationQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.capacity_reservation (
+                        node_pool_id,
+                        origin_id,
+                        name,
+                        region_id,
+                        cloud_reservation_id,
+                        availability_zone,
+                        client_token,
+                        cloud_provider,
+                        reservation_type,
+                        status,
+                        status_reason,
+                        owner,
+                        created,
+                        updated,
+                        instance_type,
+                        instance_count,
+                        requested_start_date,
+                        requested_end_date,
+                        start_date,
+                        end_date,
+                        duration_hours,
+                        instance_platform,
+                        attempt,
+                        granted_commitment_seconds
+                        )
+                    VALUES (
+                        :NODE_POOL_ID,
+                        :ORIGIN_ID,
+                        :NAME,
+                        :REGION_ID,
+                        :CLOUD_RESERVATION_ID,
+                        :AVAILABILITY_ZONE,
+                        :CLIENT_TOKEN,
+                        :CLOUD_PROVIDER,
+                        :RESERVATION_TYPE,
+                        :STATUS,
+                        :STATUS_REASON,
+                        :OWNER,
+                        :CREATED,
+                        :UPDATED,
+                        :INSTANCE_TYPE,
+                        :INSTANCE_COUNT,
+                        :REQUESTED_START_DATE,
+                        :REQUESTED_END_DATE,
+                        :START_DATE,
+                        :END_DATE,
+                        :DURATION_HOURS,
+                        :INSTANCE_PLATFORM,
+                        :ATTEMPT,
+                        :GRANTED_COMMITMENT_SECONDS)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateCapacityReservationQuery-->
+                <!--node_pool_id and origin_id are deliberately absent: a reservation never moves to
+                    another pool, and its retry linkage is fixed when it is created.-->
+                <![CDATA[
+                    UPDATE pipeline.capacity_reservation SET
+                        name = :NAME,
+                        cloud_reservation_id = :CLOUD_RESERVATION_ID,
+                        availability_zone = :AVAILABILITY_ZONE,
+                        client_token = :CLIENT_TOKEN,
+                        status = :STATUS,
+                        status_reason = :STATUS_REASON,
+                        updated = :UPDATED,
+                        instance_type = :INSTANCE_TYPE,
+                        instance_count = :INSTANCE_COUNT,
+                        start_date = :START_DATE,
+                        end_date = :END_DATE,
+                        duration_hours = :DURATION_HOURS,
+                        instance_platform = :INSTANCE_PLATFORM,
+                        attempt = :ATTEMPT,
+                        granted_commitment_seconds = :GRANTED_COMMITMENT_SECONDS
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteCapacityReservationQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.capacity_reservation
+                    WHERE id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityReservationQuery-->
+                <![CDATA[
+                    SELECT
+                        r.id AS ID,
+                        r.node_pool_id AS NODE_POOL_ID,
+                        r.origin_id AS ORIGIN_ID,
+                        r.name AS NAME,
+                        r.region_id AS REGION_ID,
+                        r.cloud_reservation_id AS CLOUD_RESERVATION_ID,
+                        r.availability_zone AS AVAILABILITY_ZONE,
+                        r.client_token AS CLIENT_TOKEN,
+                        r.cloud_provider AS CLOUD_PROVIDER,
+                        r.reservation_type AS RESERVATION_TYPE,
+                        r.status AS STATUS,
+                        r.status_reason AS STATUS_REASON,
+                        r.owner AS OWNER,
+                        r.created AS CREATED,
+                        r.updated AS UPDATED,
+                        r.instance_type AS INSTANCE_TYPE,
+                        r.instance_count AS INSTANCE_COUNT,
+                        r.requested_start_date AS REQUESTED_START_DATE,
+                        r.requested_end_date AS REQUESTED_END_DATE,
+                        r.start_date AS START_DATE,
+                        r.end_date AS END_DATE,
+                        r.duration_hours AS DURATION_HOURS,
+                        r.instance_platform AS INSTANCE_PLATFORM,
+                        r.attempt AS ATTEMPT,
+                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                    FROM
+                        pipeline.capacity_reservation AS r
+                    WHERE
+                        r.id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityReservationByNodePoolQuery-->
+                <![CDATA[
+                    SELECT
+                        r.id AS ID,
+                        r.node_pool_id AS NODE_POOL_ID,
+                        r.origin_id AS ORIGIN_ID,
+                        r.name AS NAME,
+                        r.region_id AS REGION_ID,
+                        r.cloud_reservation_id AS CLOUD_RESERVATION_ID,
+                        r.availability_zone AS AVAILABILITY_ZONE,
+                        r.client_token AS CLIENT_TOKEN,
+                        r.cloud_provider AS CLOUD_PROVIDER,
+                        r.reservation_type AS RESERVATION_TYPE,
+                        r.status AS STATUS,
+                        r.status_reason AS STATUS_REASON,
+                        r.owner AS OWNER,
+                        r.created AS CREATED,
+                        r.updated AS UPDATED,
+                        r.instance_type AS INSTANCE_TYPE,
+                        r.instance_count AS INSTANCE_COUNT,
+                        r.requested_start_date AS REQUESTED_START_DATE,
+                        r.requested_end_date AS REQUESTED_END_DATE,
+                        r.start_date AS START_DATE,
+                        r.end_date AS END_DATE,
+                        r.duration_hours AS DURATION_HOURS,
+                        r.instance_platform AS INSTANCE_PLATFORM,
+                        r.attempt AS ATTEMPT,
+                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                    FROM
+                        pipeline.capacity_reservation AS r
+                    WHERE
+                        r.node_pool_id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityReservationsByNodePoolsQuery-->
+                <![CDATA[
+                    SELECT
+                        r.id AS ID,
+                        r.node_pool_id AS NODE_POOL_ID,
+                        r.origin_id AS ORIGIN_ID,
+                        r.name AS NAME,
+                        r.region_id AS REGION_ID,
+                        r.cloud_reservation_id AS CLOUD_RESERVATION_ID,
+                        r.availability_zone AS AVAILABILITY_ZONE,
+                        r.client_token AS CLIENT_TOKEN,
+                        r.cloud_provider AS CLOUD_PROVIDER,
+                        r.reservation_type AS RESERVATION_TYPE,
+                        r.status AS STATUS,
+                        r.status_reason AS STATUS_REASON,
+                        r.owner AS OWNER,
+                        r.created AS CREATED,
+                        r.updated AS UPDATED,
+                        r.instance_type AS INSTANCE_TYPE,
+                        r.instance_count AS INSTANCE_COUNT,
+                        r.requested_start_date AS REQUESTED_START_DATE,
+                        r.requested_end_date AS REQUESTED_END_DATE,
+                        r.start_date AS START_DATE,
+                        r.end_date AS END_DATE,
+                        r.duration_hours AS DURATION_HOURS,
+                        r.instance_platform AS INSTANCE_PLATFORM,
+                        r.attempt AS ATTEMPT,
+                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                    FROM
+                        pipeline.capacity_reservation AS r
+                    WHERE
+                        r.node_pool_id IN (:NODE_POOL_IDS)
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadAllCapacityReservationsQuery-->
+                <![CDATA[
+                    SELECT
+                        r.id AS ID,
+                        r.node_pool_id AS NODE_POOL_ID,
+                        r.origin_id AS ORIGIN_ID,
+                        r.name AS NAME,
+                        r.region_id AS REGION_ID,
+                        r.cloud_reservation_id AS CLOUD_RESERVATION_ID,
+                        r.availability_zone AS AVAILABILITY_ZONE,
+                        r.client_token AS CLIENT_TOKEN,
+                        r.cloud_provider AS CLOUD_PROVIDER,
+                        r.reservation_type AS RESERVATION_TYPE,
+                        r.status AS STATUS,
+                        r.status_reason AS STATUS_REASON,
+                        r.owner AS OWNER,
+                        r.created AS CREATED,
+                        r.updated AS UPDATED,
+                        r.instance_type AS INSTANCE_TYPE,
+                        r.instance_count AS INSTANCE_COUNT,
+                        r.requested_start_date AS REQUESTED_START_DATE,
+                        r.requested_end_date AS REQUESTED_END_DATE,
+                        r.start_date AS START_DATE,
+                        r.end_date AS END_DATE,
+                        r.duration_hours AS DURATION_HOURS,
+                        r.instance_platform AS INSTANCE_PLATFORM,
+                        r.attempt AS ATTEMPT,
+                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                    FROM
+                        pipeline.capacity_reservation AS r
+                    ORDER BY
+                        r.id
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityReservationsByStatusQuery-->
+                <![CDATA[
+                    SELECT
+                        r.id AS ID,
+                        r.node_pool_id AS NODE_POOL_ID,
+                        r.origin_id AS ORIGIN_ID,
+                        r.name AS NAME,
+                        r.region_id AS REGION_ID,
+                        r.cloud_reservation_id AS CLOUD_RESERVATION_ID,
+                        r.availability_zone AS AVAILABILITY_ZONE,
+                        r.client_token AS CLIENT_TOKEN,
+                        r.cloud_provider AS CLOUD_PROVIDER,
+                        r.reservation_type AS RESERVATION_TYPE,
+                        r.status AS STATUS,
+                        r.status_reason AS STATUS_REASON,
+                        r.owner AS OWNER,
+                        r.created AS CREATED,
+                        r.updated AS UPDATED,
+                        r.instance_type AS INSTANCE_TYPE,
+                        r.instance_count AS INSTANCE_COUNT,
+                        r.requested_start_date AS REQUESTED_START_DATE,
+                        r.requested_end_date AS REQUESTED_END_DATE,
+                        r.start_date AS START_DATE,
+                        r.end_date AS END_DATE,
+                        r.duration_hours AS DURATION_HOURS,
+                        r.instance_platform AS INSTANCE_PLATFORM,
+                        r.attempt AS ATTEMPT,
+                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                    FROM
+                        pipeline.capacity_reservation AS r
+                    WHERE
+                        r.status = ?
+                    ORDER BY
+                        r.id
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadCapacityReservationsByOwnerQuery-->
+                <![CDATA[
+                    SELECT
+                        r.id AS ID,
+                        r.node_pool_id AS NODE_POOL_ID,
+                        r.origin_id AS ORIGIN_ID,
+                        r.name AS NAME,
+                        r.region_id AS REGION_ID,
+                        r.cloud_reservation_id AS CLOUD_RESERVATION_ID,
+                        r.availability_zone AS AVAILABILITY_ZONE,
+                        r.client_token AS CLIENT_TOKEN,
+                        r.cloud_provider AS CLOUD_PROVIDER,
+                        r.reservation_type AS RESERVATION_TYPE,
+                        r.status AS STATUS,
+                        r.status_reason AS STATUS_REASON,
+                        r.owner AS OWNER,
+                        r.created AS CREATED,
+                        r.updated AS UPDATED,
+                        r.instance_type AS INSTANCE_TYPE,
+                        r.instance_count AS INSTANCE_COUNT,
+                        r.requested_start_date AS REQUESTED_START_DATE,
+                        r.requested_end_date AS REQUESTED_END_DATE,
+                        r.start_date AS START_DATE,
+                        r.end_date AS END_DATE,
+                        r.duration_hours AS DURATION_HOURS,
+                        r.instance_platform AS INSTANCE_PLATFORM,
+                        r.attempt AS ATTEMPT,
+                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                    FROM
+                        pipeline.capacity_reservation AS r
+                    WHERE
+                        r.owner = ?
+                    ORDER BY
+                        r.id
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--updateCapacityReservationRetryQuery-->
+                <!--Guarded by status, so a caller holding a stale copy cannot undo a change made meanwhile.-->
+                <![CDATA[
+                    UPDATE pipeline.capacity_reservation SET
+                        status_reason = :STATUS_REASON,
+                        updated = :UPDATED,
+                        start_date = :START_DATE,
+                        end_date = :END_DATE,
+                        availability_zone = :AVAILABILITY_ZONE
+                    WHERE
+                        id = :ID
+                        AND status = :STATUS
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>

@@ -15,8 +15,11 @@
 
 package com.epam.pipeline.controller.vo.cluster.pool;
 
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -36,6 +39,11 @@ public class NodePoolVO {
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
+    /**
+     * @deprecated a pool's image comes from the launch configuration it is given when created - see
+     *             {@code NodePool#getAmiConfiguration()}. Still honoured: it is that configuration's image when set.
+     */
+    @Deprecated
     private String instanceImage;
     private int count;
     private Long scheduleId;
@@ -47,4 +55,22 @@ public class NodePoolVO {
     private Double scaleDownThreshold;
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
+    private NodePoolType poolType;
+
+    /**
+     * How runs divide one node of a sharable pool. Optional: left unset, it is derived from the instance type.
+     * Accepted on update as well as on creation.
+     */
+    private NodePoolLaunchConfig launchConfig;
+    /**
+     * Like {@link #launchConfig}: used when sent, generated from the region's matching {@code amis} rule on creation
+     * when not, and left as it is by an update that does not send it.
+     */
+    private AMIConfiguration amiConfiguration;
+
+    /**
+     * Present when the caller wants capacity reserved for this pool. Absent for an ordinary pool, which is
+     * how every pool behaved before this existed.
+     */
+    private CapacityReservationRequest capacityReservationRequest;
 }

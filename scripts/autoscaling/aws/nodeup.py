@@ -59,6 +59,7 @@ LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
 DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 POOL_ID_KEY = 'pool_id'
+CAPACITY_RESERVATION_SPECIFICATION = 'CapacityReservationSpecification'
 KUBE_CONFIG_PATH = '~/.kube/config'
 # learn more about spot instance request statuses:
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instances-request-status-lifecycle.html
@@ -149,6 +150,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
 
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
+__POOL_LAUNCH_CONFIGURATION__ = {}
 
 def get_preference(preference_name):
     pipe_api = PipelineAPI(api_url, None)
@@ -262,14 +264,97 @@ def get_security_groups(aws_region, security_groups):
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
+def load_pool_launch_configuration(pool_id):
+    """
+    Fetches the launch configuration of the pool this node belongs to, once, for get_allowed_instance_image to overlay.
+
+    A pool may carry its own configuration - image, init script, filesystem, embedded scripts, additional spec, zone,
+    subnet - sent with the pool's create or update request, or taken from the region's matching amis rule when the
+    pool was created without one. A capacity reservation writes its target, zone and subnet into it while it is live.
+    """
+    global __POOL_LAUNCH_CONFIGURATION__
+    __POOL_LAUNCH_CONFIGURATION__ = {}
+    if not pool_id:
+        return __POOL_LAUNCH_CONFIGURATION__
+    pool = PipelineAPI(api_url, None).load_node_pool(pool_id)
+    __POOL_LAUNCH_CONFIGURATION__ = (pool or {}).get('amiConfiguration') or {}
+    if __POOL_LAUNCH_CONFIGURATION__:
+        pipe_log('Pool {} has its own launch configuration, it will be applied over the matching rule'.format(pool_id))
+    return __POOL_LAUNCH_CONFIGURATION__
+
+
+# The pool configuration's field for each field of an allowed instance
+POOL_LAUNCH_CONFIGURATION_FIELDS = {
+    'instance_mask_ami': 'ami',
+    'init_script': 'init_script',
+    'fs_type': 'fs_type',
+    'embedded_scripts': 'embedded_scripts',
+    'availability_zone': 'availability_zone',
+    'subnet': 'subnet',
+}
+
+
+def apply_pool_launch_configuration(allowed_instance, pool_configuration):
+    """
+    Lays a pool's launch configuration over an allowed instance: every field the pool sets wins, and additional_spec
+    is merged key by key, the pool's keys winning.
+    """
+    if not pool_configuration:
+        return allowed_instance
+    result = dict(allowed_instance)
+    for field, pool_field in POOL_LAUNCH_CONFIGURATION_FIELDS.items():
+        if pool_configuration.get(pool_field):
+            result[field] = pool_configuration[pool_field]
+    additional_spec = dict(result.get('additional_spec') or {})
+    additional_spec.update(pool_configuration.get('additional_spec') or {})
+    result['additional_spec'] = additional_spec or None
+    return result
+
+
+def resolve_launch_settings(allowed_instance, availability_zone, subnet):
+    """
+    The additional spec, zone and subnet a launch uses: an explicit argument wins over the matched rule, with the
+    pool's configuration already over it. The additional spec is taken whether or not a rule matched - a pool's own
+    configuration can carry it without one.
+    """
+    if not allowed_instance:
+        return None, availability_zone, subnet
+    return (allowed_instance.get('additional_spec'),
+            availability_zone or allowed_instance.get('availability_zone'),
+            subnet or allowed_instance.get('subnet'))
+
+
+def zone_pinned_by_pool(availability_zone):
+    """
+    Whether the zone is the one the pool's own configuration pins - the only case in which a launch is held to it
+    without a subnet. A zone that ordinary runs ask for keeps today's meaning.
+    """
+    return bool(availability_zone) and availability_zone == __POOL_LAUNCH_CONFIGURATION__.get('availability_zone')
+
+
 def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
-    default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_embedded_scripts = None
-    default_object = {
-        "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
-        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
-        "availability_zone": None
+    """
+    A pool with a launch configuration of its own launches from that - over this script's defaults, not over a rule
+    matched now: the configuration is the rule the pool was created with, and mixing it with whichever rule this
+    launch would match could give a node one rule's image and another's instance profile. Any other node launches
+    from the region's first matching amis rule.
+    """
+    if __POOL_LAUNCH_CONFIGURATION__:
+        return apply_pool_launch_configuration(get_default_instance_image(default_image), __POOL_LAUNCH_CONFIGURATION__)
+    return get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id)
+
+
+def get_default_instance_image(default_image):
+    return {
+        "instance_mask_ami": default_image, "instance_mask": None,
+        "init_script": os.path.dirname(os.path.abspath(__file__)) + '/init.sh',
+        "embedded_scripts": None, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
+        "availability_zone": None, "subnet": None
     }
+
+
+def get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
+    default_object = get_default_instance_image(default_image)
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -315,7 +400,7 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
         if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
             return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
                      "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec,
-                     "availability_zone": availability_zone}
+                     "availability_zone": availability_zone, "subnet": None}
 
     return default_object
 
@@ -450,9 +535,12 @@ def get_specified_subnet(subnet, availability_zone):
     return subnet
 
 
-def get_random_subnet(ec2):
-    subnets = ec2.describe_subnets()
-    if "Subnets" in subnets:
+def get_random_subnet(ec2, availability_zone=None):
+    if availability_zone:
+        subnets = ec2.describe_subnets(Filters=[{'Name': 'availability-zone', 'Values': [availability_zone]}])
+    else:
+        subnets = ec2.describe_subnets()
+    if "Subnets" in subnets and subnets['Subnets']:
         return random.choice(subnets['Subnets'])['SubnetId']
     return None
 
@@ -468,12 +556,28 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
                                             run_id, docker_data_root, docker_storage_driver, skip_system_images_load)
     if is_spot:
+        instance_additional_spec = without_capacity_reservation_target(instance_additional_spec)
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
                                                 num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
     return ins_id, ins_ip
+
+
+def without_capacity_reservation_target(instance_additional_spec):
+    """
+    A spot request cannot consume reserved capacity, and one that targets a reservation is refused - so the target
+    is dropped, loudly, and the node runs as spot without it.
+    """
+    if not instance_additional_spec or CAPACITY_RESERVATION_SPECIFICATION not in instance_additional_spec:
+        return instance_additional_spec
+    pipe_log_warn('- Capacity reservation {} is ignored: a spot instance cannot consume reserved capacity, so this '
+                  'node runs as spot and the reservation is not used'
+                  .format(instance_additional_spec[CAPACITY_RESERVATION_SPECIFICATION]))
+    spec = dict(instance_additional_spec)
+    del spec[CAPACITY_RESERVATION_SPECIFICATION]
+    return spec
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
@@ -517,8 +621,11 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     elif performance_network:
         pipe_log('- Performance network requested.')
         if not subnet or not subnet_id:
-            pipe_log('- Subnet is not specified, trying to get a random one...')
-            subnet_id = get_random_subnet(ec2)
+            # A zone the pool pins keeps the random subnet inside it.
+            subnet_zone = availability_zone if zone_pinned_by_pool(availability_zone) else None
+            pipe_log('- Subnet is not specified, trying to get a random one{}...'.format(
+                ' in AZ {}'.format(subnet_zone) if subnet_zone else ''))
+            subnet_id = get_random_subnet(ec2, subnet_zone)
             pipe_log('- Subnet: {} will be used.'.format(subnet_id))
 
         if subnet_id:
@@ -553,6 +660,16 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                 'Tenancy': "dedicated"
             }
         })
+
+    # A zone the pool pins that no subnet or network interface fixes - the region configures no networks - is pinned by
+    # placement, or the instance lands in the default subnet of whichever zone the cloud picks. A capacity reservation,
+    # for one, is only consumed in its own zone.
+    if zone_pinned_by_pool(availability_zone) and not subnet_id and not network_interface:
+        placement = additional_args.get('Placement', {})
+        placement.update({'AvailabilityZone': availability_zone})
+        additional_args.update({'Placement': placement})
+        pipe_log('- AZ {} will be used'.format(availability_zone))
+
     if 'MetadataOptions' not in additional_args:
         additional_args.update({'MetadataOptions': {
             'HttpTokens': 'optional',
@@ -1708,13 +1825,14 @@ def main():
         api_token = os.environ["API_TOKEN"]
         api_user = os.environ["API_USER"]
 
-        instance_additional_spec = None
+        load_pool_launch_configuration(pool_id)
         allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
         if allowed_instance and allowed_instance["instance_mask"]:
             pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
-            instance_additional_spec = allowed_instance["additional_spec"]
-            if instance_additional_spec:
-                pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
+        instance_additional_spec, availability_zone, subnet = resolve_launch_settings(allowed_instance,
+                                                                                      availability_zone, subnet)
+        if instance_additional_spec:
+            pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
         if not ins_img or ins_img == 'null':
             if allowed_instance and allowed_instance["instance_mask_ami"]:
                 ins_img = allowed_instance["instance_mask_ami"]
@@ -1724,9 +1842,10 @@ def main():
         else:
             pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
 
-        if not availability_zone and allowed_instance and "availability_zone" in allowed_instance:
-            availability_zone = allowed_instance["availability_zone"]
-            pipe_log('Particular availability_zone: {availability_zone} is configured in allowed_instance configuration'.format(availability_zone=availability_zone))
+        if availability_zone:
+            pipe_log('Particular availability_zone: {availability_zone} will be used'.format(availability_zone=availability_zone))
+        if subnet:
+            pipe_log('Particular subnet: {subnet} will be used'.format(subnet=subnet))
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:

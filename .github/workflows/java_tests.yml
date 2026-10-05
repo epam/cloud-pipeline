@@ -15,6 +15,8 @@ on:
       - 'vm-monitor/**'
       - 'billing-report-agent/**'
       - 'monitoring-service/**'
+      - 'workflows/pipe-common/**'
+      - 'scripts/autoscaling/**'
 
 jobs:
   CalculateCodeChanges:
@@ -28,6 +30,7 @@ jobs:
       docker-scan:   ${{ steps.detect.outputs.docker-scan }}
       elasticsearch: ${{ steps.detect.outputs.elasticsearch }}
       monitoring:    ${{ steps.detect.outputs.monitoring }}
+      python:        ${{ steps.detect.outputs.python }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -48,6 +51,7 @@ jobs:
           echo "docker-scan=$(detect   '^docker-comp-scan/')"                                       >> $GITHUB_OUTPUT
           echo "elasticsearch=$(detect '^(elasticsearch-agent|elasticsearch-common|cloud-pipeline-common)/')" >> $GITHUB_OUTPUT
           echo "monitoring=$(detect    '^(vm-monitor|billing-report-agent|monitoring-service)/')"   >> $GITHUB_OUTPUT
+          echo "python=$(detect        '^(workflows/pipe-common|scripts/autoscaling)/')"            >> $GITHUB_OUTPUT
 
   api-tests:
     needs: CalculateCodeChanges
@@ -266,4 +270,36 @@ jobs:
             billing-report-agent/build/reports/tests/test/
             monitoring-service/build/test-results/test/
             monitoring-service/build/reports/tests/test/
+          retention-days: 7
+
+  python-tests:
+    needs: CalculateCodeChanges
+    name: pipe-common and autoscaling scripts test suite
+    if: needs.CalculateCodeChanges.outputs.python == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # pipe-common from its own setup.py, so the tests run against the versions it pins. boto3 is not among them,
+      # and the tests need it, as they do pytest and mock.
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./workflows/pipe-common
+          python -m pip install boto3 pytest mock
+      - name: Run pipe-common tests
+        working-directory: workflows/pipe-common
+        run: python -m pytest test --junitxml="$GITHUB_WORKSPACE/python-test-results/pipe-common.xml"
+      - name: Run autoscaling script tests
+        # Reported whatever the pipe-common tests did.
+        if: success() || failure()
+        working-directory: scripts/autoscaling/aws/test
+        run: python -m pytest . --junitxml="$GITHUB_WORKSPACE/python-test-results/autoscaling.xml"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-python
+          path: python-test-results/
           retention-days: 7

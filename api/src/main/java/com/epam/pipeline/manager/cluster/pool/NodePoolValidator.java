@@ -17,14 +17,27 @@ package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationCloudFacade;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
@@ -34,8 +47,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.Comparator;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -49,12 +71,40 @@ public class NodePoolValidator {
     private static final double HUNDRED_PERCENT = 100.0;
     private static final String WINDOWS = "windows";
 
+    /**
+     * AWS accepts a future-dated reservation request between 5 and 120 days ahead of the start date, and holds the
+     * requester to a commitment of at least 14 days once the capacity is delivered.
+     *
+     * <p>Only AWS offers this today, so the limits live here rather than behind a per-provider abstraction that
+     * would have exactly one implementation. A second provider is the point at which that changes. The minimum lead
+     * is the exception: the monitor checks it again at submission, when approval may have eaten into it, so both take
+     * it from the same AWS service constant.
+     */
+    private static final int MIN_RESERVATION_LEAD_DAYS = AwsCapacityReservationService.MINIMUM_LEAD_DAYS;
+    private static final int MAX_RESERVATION_LEAD_DAYS = 120;
+    private static final int MIN_RESERVATION_COMMITMENT_HOURS = 14 * 24;
+    /**
+     * AWS reserves future-dated capacity only in blocks of at least this many vCPUs in total - {@code m5.xlarge}
+     * needs 8 instances.
+     */
+    private static final int MIN_RESERVATION_VCPUS = 32;
+
+    /**
+     * The operating systems AWS will reserve capacity for. A closed, documented set on the provider's side - unlike
+     * the instance families, which move often enough to belong in a preference - so it is spelled out here and an
+     * unlisted value is refused rather than sent on to be rejected.
+     */
+    private static final Set<String> SUPPORTED_INSTANCE_PLATFORMS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("Linux/UNIX", "Red Hat Enterprise Linux", "SUSE Linux")));
+
     private final MessageHelper messageHelper;
     private final CloudRegionManager regionManager;
     private final InstanceOfferManager instanceOfferManager;
     private final NodeScheduleManager scheduleManager;
     private final ToolManager toolManager;
     private final CloudFacade cloudFacade;
+    private final PreferenceManager preferenceManager;
+    private final CapacityReservationCloudFacade reservationCloudFacade;
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -86,21 +136,230 @@ public class NodePoolValidator {
         Optional.ofNullable(vo.getDockerImages())
                 .ifPresent(images -> images.forEach(this::validatePoolImage));
 
-        validateInstanceImage(vo);
+        validateInstanceImage(vo.getRegionId(), vo.getInstanceImage());
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
         }
+        Optional.ofNullable(vo.getCapacityReservationRequest())
+                .ifPresent(request -> validateCapacityReservation(vo, request));
     }
 
-    private void validateInstanceImage(final NodePoolVO vo) {
-        final boolean isWindowsInstanceImage = Optional.ofNullable(vo.getInstanceImage())
-            .map(image -> cloudFacade.getInstanceImageDescription(vo.getRegionId(), image))
+    /**
+     * What an edit of a pool backed by a capacity reservation may not change: its count, its price type and how its
+     * nodes launch - nor may it make the pool autoscaled. The reservation sets the count and the launch configuration
+     * itself as it becomes active and ends, so an edit changing them would either switch the pool on with no capacity
+     * behind it or stop its nodes consuming the capacity paid for - as spot nodes would. Sending the current value
+     * back, or none, is not a change.
+     */
+    @SuppressWarnings("deprecation")
+    public void validateReservationPoolUpdate(final NodePool existing, final NodePoolVO vo) {
+        validateUnchanged(existing, "count", existing.getCount(), vo.getCount());
+        validateUnchanged(existing, "price type", existing.getPriceType(), vo.getPriceType());
+        Assert.isTrue(!vo.isAutoscaled(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+        if (StringUtils.isNotBlank(vo.getInstanceImage())) {
+            validateUnchanged(existing, "instance image", existing.getInstanceImage(), vo.getInstanceImage());
+        }
+        if (vo.getAmiConfiguration() != null) {
+            validateUnchanged(existing, "launch configuration", existing.getAmiConfiguration(),
+                    vo.getAmiConfiguration());
+        }
+    }
+
+    private void validateUnchanged(final NodePool pool, final String field, final Object current,
+                                   final Object requested) {
+        Assert.isTrue(Objects.equals(current, requested),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE,
+                        pool.getId(), field));
+    }
+
+    /**
+     * Rules that only apply to a pool asking for reserved capacity. Each one rejects a request that would be
+     * accepted now and fail later - after money had been spent, or after a multi-day wait.
+     */
+    private void validateCapacityReservation(final NodePoolVO vo, final CapacityReservationRequest request) {
+        // Checked before anything else: a reservation the platform cannot buy could not be cancelled either, so its
+        // pool could never be deleted.
+        final CloudProvider provider = regionManager.load(vo.getRegionId()).getProvider();
+        Assert.isTrue(reservationCloudFacade.isSupported(provider),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED,
+                        provider));
+        // Reservations cover on-demand capacity, so a spot pool would never consume one and the user would
+        // be paying for the reservation and the spot nodes both.
+        Assert.isTrue(!PriceType.SPOT.equals(vo.getPriceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
+        Assert.isTrue(!vo.isAutoscaled(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+
+        final CapacityReservationType type = request.getReservationType();
+        Assert.notNull(type,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED));
+        Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
+
+        Assert.isTrue(vo.getCount() >= 1,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
+
+        validateReservationSize(vo);
+        validateReservationWindow(request);
+        validateReservationInstance(vo, request);
+    }
+
+    /**
+     * Refused here rather than by the provider after approval: a request below the minimum could never be bought. An
+     * instance type the platform has no offer for is left to the provider - there is nothing to count its vCPUs by.
+     */
+    private void validateReservationSize(final NodePoolVO vo) {
+        final int instances = vo.getCount();
+        instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId())
+                .map(InstanceOffer::getVCPU)
+                .filter(vcpus -> vcpus > 0)
+                .ifPresent(vcpus -> Assert.isTrue((long) vcpus * instances >= MIN_RESERVATION_VCPUS,
+                        messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS,
+                                instances, vo.getInstanceType(), vcpus, MIN_RESERVATION_VCPUS)));
+    }
+
+    /**
+     * What the provider is willing to reserve, as opposed to what it is willing to run.
+     *
+     * <p>A future-dated reservation accepts a narrower set of instance types and a fixed list of platforms than
+     * ordinary on-demand capacity does, so a pool that would launch perfectly well may still be impossible to
+     * reserve. Catching that here turns a multi-day wait ending in a provider refusal into an immediate answer.
+     */
+    private void validateReservationInstance(final NodePoolVO vo, final CapacityReservationRequest request) {
+        final String platform = StringUtils.defaultIfBlank(request.getInstancePlatform(),
+                CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
+        Assert.isTrue(SUPPORTED_INSTANCE_PLATFORMS.contains(platform),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED,
+                        platform));
+
+        final String family = instanceFamily(vo.getInstanceType());
+        final Set<String> supportedFamilies = supportedInstanceFamilies();
+        Assert.isTrue(supportedFamilies.isEmpty() || supportedFamilies.contains(family),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED,
+                        vo.getInstanceType(), String.join(", ", supportedFamilies)));
+    }
+
+    /**
+     * The letters an instance type begins with - {@code p5.48xlarge} is {@code p}, {@code trn1.32xlarge} is
+     * {@code trn}.
+     */
+    private static String instanceFamily(final String instanceType) {
+        if (StringUtils.isBlank(instanceType)) {
+            return StringUtils.EMPTY;
+        }
+        final int firstDigit = StringUtils.indexOfAny(instanceType, "0123456789".split(StringUtils.EMPTY));
+        return (firstDigit < 0 ? instanceType : instanceType.substring(0, firstDigit)).toLowerCase(Locale.ROOT);
+    }
+
+    private Set<String> supportedInstanceFamilies() {
+        return Arrays.stream(StringUtils.split(StringUtils.defaultString(preferenceManager.getPreference(
+                                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)), ','))
+                .map(family -> family.trim().toLowerCase(Locale.ROOT))
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * The window is a search space, not a single date: the provider decides which start dates are actually
+     * available. A window too narrow to hold the requested duration can never be satisfied, so it is rejected
+     * here rather than after the provider has been asked.
+     */
+    private void validateReservationWindow(final CapacityReservationRequest request) {
+        final LocalDateTime start = request.getRequestedStartDate();
+        final LocalDateTime end = request.getRequestedEndDate();
+        Assert.isTrue(Objects.nonNull(start) && Objects.nonNull(end),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DATES_REQUIRED,
+                        request.getReservationType()));
+        Assert.isTrue(start.isAfter(DateUtils.nowUTC()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST,
+                        start));
+        Assert.isTrue(end.isAfter(start),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_INVALID,
+                        end, start));
+
+        final Integer duration = request.getDurationHours();
+        Assert.isTrue(Objects.nonNull(duration) && duration > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DURATION_INVALID));
+        Assert.isTrue(!start.plusHours(duration).isAfter(end),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW,
+                        start, end, duration));
+
+        validateProviderLimits(start, duration);
+    }
+
+    /**
+     * The limits the cloud provider imposes on a future-dated reservation, checked here so a request that cannot
+     * possibly be accepted is refused at once instead of being approved, submitted and rejected days later.
+     */
+    private void validateProviderLimits(final LocalDateTime start, final int duration) {
+        final long leadDays = Duration.between(DateUtils.nowUTC(), start).toDays();
+        Assert.isTrue(leadDays >= MIN_RESERVATION_LEAD_DAYS && leadDays <= MAX_RESERVATION_LEAD_DAYS,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID,
+                        start, MIN_RESERVATION_LEAD_DAYS, MAX_RESERVATION_LEAD_DAYS));
+
+        // The duration is the commitment: the provider holds the requester to it once the capacity is delivered,
+        // and will not accept a commitment shorter than this.
+        Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_HOURS,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT,
+                        duration, MIN_RESERVATION_COMMITMENT_HOURS));
+    }
+
+    private void validateInstanceImage(final Long regionId, final String instanceImage) {
+        final boolean isWindowsInstanceImage = Optional.ofNullable(instanceImage)
+            .filter(StringUtils::isNotBlank)
+            .map(image -> cloudFacade.getInstanceImageDescription(regionId, image))
             .map(InstanceImage::getPlatform)
             .filter(WINDOWS::equalsIgnoreCase)
             .isPresent();
         Assert.isTrue(!isWindowsInstanceImage,
                       messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED));
+    }
+
+    /**
+     * A launch configuration given for a pool. Its image has to be one a pool may launch, and its zone and
+     * subnet ones its region's networks configure: the launch scripts only put nodes there, and a zone they would not
+     * use leaves the pool unable to launch at all. A region that configures no networks lets its nodes go to any
+     * zone, so there is nothing to check against.
+     *
+     * <p>The rule-selection fields ({@code platform}, {@code instance_mask}, {@code permissions}, {@code docker_image})
+     * are not checked: on a pool they are ignored. Zones are only checked for AWS regions: elsewhere the
+     * {@code networks} are keyed by network, not by zone, and only the AWS launch applies a pool's zone and subnet.
+     */
+    public void validateAmiConfiguration(final Long regionId, final AMIConfiguration configuration) {
+        if (configuration == null) {
+            return;
+        }
+        validateInstanceImage(regionId, configuration.getAmi());
+        final AbstractCloudRegion region = regionManager.load(regionId);
+        if (CloudProvider.AWS != region.getProvider()) {
+            return;
+        }
+        final String regionCode = region.getRegionCode();
+        final Map<String, String> networks = allowedNetworks(regionCode);
+        if (networks.isEmpty()) {
+            return;
+        }
+        final String zone = configuration.getAvailabilityZone();
+        if (StringUtils.isNotBlank(zone)) {
+            Assert.isTrue(networks.containsKey(zone),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_ZONE_NOT_CONFIGURED,
+                            zone, regionCode, networks.keySet()));
+        }
+        final String subnet = configuration.getSubnet();
+        if (StringUtils.isBlank(subnet)) {
+            return;
+        }
+        if (StringUtils.isBlank(zone)) {
+            Assert.isTrue(networks.containsValue(subnet),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS,
+                            subnet, regionCode, networks.values()));
+            return;
+        }
+        Assert.isTrue(subnet.equals(networks.get(zone)),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED,
+                        subnet, regionCode, zone, networks.get(zone)));
     }
 
     private void validatePoolImage(final String image) {
@@ -149,5 +408,14 @@ public class NodePoolValidator {
 
     private boolean validPercentValue(double value) {
         return DoubleUtils.between(0.0, HUNDRED_PERCENT, value);
+    }
+
+    /**
+     * Zone to subnet, as the region's {@code networks} configure them; empty where they configure none.
+     */
+    private Map<String, String> allowedNetworks(final String regionCode) {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
+                .map(configuration -> configuration.allowedNetworks(regionCode))
+                .orElseGet(Collections::emptyMap);
     }
 }

@@ -51,9 +51,22 @@ public class NodePool {
     private Double scaleDownThreshold;
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
+    private String owner;
+    // Defaults to STANDARD rather than null so a freshly built pool equals one loaded from the
+    // database, whose column is NOT NULL DEFAULT 'STANDARD'.
+    private NodePoolType poolType = NodePoolType.STANDARD;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private boolean capacityReservation;
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
+            return false;
+        }
+        if (startDate != null && timestamp.isBefore(startDate)) {
+            return false;
+        }
+        if (endDate != null && timestamp.isAfter(endDate)) {
             return false;
         }
         return Optional.ofNullable(schedule)

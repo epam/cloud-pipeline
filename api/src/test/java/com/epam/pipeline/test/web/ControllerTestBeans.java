@@ -44,6 +44,7 @@ import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.acl.cluster.InfrastructureApiService;
+import com.epam.pipeline.acl.cluster.capacityreservation.CapacityReservationApiService;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.acl.cluster.pool.NodeScheduleApiService;
 import com.epam.pipeline.acl.configuration.RunConfigurationApiService;
@@ -244,6 +245,9 @@ public class ControllerTestBeans {
 
     @MockBean
     protected NodePoolApiService nodePoolApiService;
+
+    @MockBean
+    protected CapacityReservationApiService capacityReservationApiService;
 
     @MockBean
     protected NodeScheduleApiService nodeScheduleApiService;

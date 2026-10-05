@@ -24,6 +24,7 @@ import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
@@ -357,6 +358,23 @@ public final class PreferenceValidators {
                         .noneMatch(value -> value < 1),
                 String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
     }
+
+    /**
+     * The capacity reservation monitor cannot tell when to warn that a reservation is ending without a lead time,
+     * so the settings - and the lead time in them - are required rather than left to be defaulted somewhere.
+     */
+    public static final BiPredicate<String, Map<String, Preference>> isValidCapacityReservationMonitorSettings =
+        isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {})
+            .and((pref, dependencies) -> {
+                Assert.state(StringUtils.isNotBlank(pref), "Capacity reservation monitor settings are required.");
+                final CapacityReservationMonitorSettings settings =
+                    JsonMapper.parseData(pref, new TypeReference<CapacityReservationMonitorSettings>() {});
+                Assert.state(settings != null && settings.getFinalizingLeadHours() != null,
+                        "Capacity reservation monitor settings require 'finalizingLeadHours'.");
+                Assert.state(settings.getFinalizingLeadHours() >= 0,
+                        "Capacity reservation monitor setting 'finalizingLeadHours' cannot be negative.");
+                return true;
+            });
 
     public static final BiPredicate<String, Map<String, Preference>> isValidIdleMonitoringConfig =
         isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {})

@@ -16,9 +16,13 @@
 package com.epam.pipeline.dao.cluster.pool;
 
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao.NodeScheduleParameters;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
+import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.entity.cluster.pool.PoolLabel;
 import com.epam.pipeline.entity.cluster.pool.ScheduleEntry;
@@ -31,16 +35,16 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.support.GeneratedKeyHolder;
-import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -61,17 +65,38 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
     private final String deleteNodePoolQuery;
     private final String loadAllNodePoolsQuery;
     private final String loadNodePoolByIdQuery;
+    private final String updateNodePoolOwnerQuery;
+    private final String updateNodePoolReservationStateQuery;
+    private final String loadNodePoolByIdForUpdateQuery;
 
+    @Autowired
+    private DaoHelper daoHelper;
+
+    private String poolSequence;
+
+    /**
+     * An id for a pool not created yet - for a caller that needs it before the row exists, as a sharable pool's
+     * launch config does to select the pool's nodes.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Long createId() {
+        return daoHelper.createId(poolSequence);
+    }
+
+    /**
+     * @param pool created with its {@code id} when it has one from {@link #createId()}, and a new one otherwise
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool create(final NodePool pool) {
-        final KeyHolder keyHolder = new GeneratedKeyHolder();
-        getNamedParameterJdbcTemplate()
-                .update(insertNodePoolQuery,
-                        NodePoolParameters.getParameters(pool),
-                        keyHolder,
-                        new String[]{"id"});
-        pool.setId(keyHolder.getKey().longValue());
+        if (pool.getId() == null) {
+            pool.setId(createId());
+        }
+        getNamedParameterJdbcTemplate().update(insertNodePoolQuery, NodePoolParameters.getParameters(pool));
         return pool;
+    }
+
+    public void setPoolSequence(final String poolSequence) {
+        this.poolSequence = poolSequence;
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -79,6 +104,41 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate()
                 .update(updateNodePoolQuery, NodePoolParameters.getParameters(pool));
         return pool;
+    }
+
+    /**
+     * Ownership is not writable through {@link #update(NodePool)} - a pool cannot change hands as a side
+     * effect of an ordinary edit - so changing it has its own statement.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public NodePool updateOwner(final NodePool pool) {
+        getNamedParameterJdbcTemplate()
+                .update(updateNodePoolOwnerQuery, NodePoolParameters.getParameters(pool));
+        return pool;
+    }
+
+    /**
+     * The columns a capacity reservation's lifecycle owns: the node count that switches the pool on and off, the
+     * window it is usable in, and the launch configuration it writes its target, zone and subnet into.
+     * {@link #update(NodePool)} leaves the dates out deliberately, so this is the only statement that writes them
+     * after creation.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public NodePool updateReservationState(final NodePool pool) {
+        getNamedParameterJdbcTemplate()
+                .update(updateNodePoolReservationStateQuery, NodePoolParameters.getParameters(pool));
+        return pool;
+    }
+
+    /**
+     * Loads a pool and holds its row lock until the surrounding transaction ends, so a read-modify-write of the
+     * pool cannot interleave with another one.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<NodePool> findForUpdate(final Long poolId) {
+        final List<NodePool> result = getJdbcTemplate()
+                .query(loadNodePoolByIdForUpdateQuery, NodePoolParameters.getExtractor(), poolId);
+        return ListUtils.emptyIfNull(result).stream().findFirst();
     }
 
     public List<NodePool> loadAll() {
@@ -116,7 +176,14 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         POOL_UP_THRESHOLD,
         POOL_DOWN_THRESHOLD,
         POOL_SCALE_STEP,
-        POOL_KUBE_LABELS;
+        POOL_KUBE_LABELS,
+        POOL_OWNER,
+        POOL_TYPE,
+        POOL_CAPACITY_RESERVATION,
+        POOL_START_DATE,
+        POOL_END_DATE,
+        POOL_LAUNCH_CONFIG,
+        POOL_AMI_CONFIGURATION;
 
         public static final String DOCKER_IMAGE_DELIMITER = ",";
 
@@ -149,6 +216,24 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                             .orElse(null));
             params.addValue(POOL_KUBE_LABELS.name(),
                     Optional.ofNullable(pool.getKubeLabels())
+                            .map(JsonMapper::convertDataToJsonStringForQuery)
+                            .orElse(null));
+            params.addValue(POOL_OWNER.name(), pool.getOwner());
+            params.addValue(POOL_TYPE.name(),
+                    Optional.ofNullable(pool.getPoolType())
+                            .orElse(NodePoolType.STANDARD)
+                            .name());
+            params.addValue(POOL_CAPACITY_RESERVATION.name(), pool.isCapacityReservation());
+            params.addValue(POOL_START_DATE.name(),
+                    Optional.ofNullable(pool.getStartDate()).map(Timestamp::valueOf).orElse(null));
+            params.addValue(POOL_END_DATE.name(),
+                    Optional.ofNullable(pool.getEndDate()).map(Timestamp::valueOf).orElse(null));
+            params.addValue(POOL_LAUNCH_CONFIG.name(),
+                    Optional.ofNullable(pool.getLaunchConfig())
+                            .map(JsonMapper::convertDataToJsonStringForQuery)
+                            .orElse(null));
+            params.addValue(POOL_AMI_CONFIGURATION.name(),
+                    Optional.ofNullable(pool.getAmiConfiguration())
                             .map(JsonMapper::convertDataToJsonStringForQuery)
                             .orElse(null));
             return params;
@@ -206,7 +291,45 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     .filter(StringUtils::isNotBlank)
                     .map(NodePoolParameters::parseKubeLabels)
                     .ifPresent(pool::setKubeLabels);
+            pool.setOwner(rs.getString(POOL_OWNER.name()));
+            pool.setPoolType(Optional.ofNullable(rs.getString(POOL_TYPE.name()))
+                    .filter(StringUtils::isNotBlank)
+                    .map(NodePoolType::valueOf)
+                    .orElse(NodePoolType.STANDARD));
+            pool.setCapacityReservation(rs.getBoolean(POOL_CAPACITY_RESERVATION.name()));
+            Optional.ofNullable(rs.getTimestamp(POOL_START_DATE.name()))
+                    .map(Timestamp::toLocalDateTime)
+                    .ifPresent(pool::setStartDate);
+            Optional.ofNullable(rs.getTimestamp(POOL_END_DATE.name()))
+                    .map(Timestamp::toLocalDateTime)
+                    .ifPresent(pool::setEndDate);
+            Optional.ofNullable(rs.getString(POOL_LAUNCH_CONFIG.name()))
+                    .filter(StringUtils::isNotBlank)
+                    .map(NodePoolParameters::parseLaunchConfig)
+                    .ifPresent(pool::setLaunchConfig);
+            Optional.ofNullable(rs.getString(POOL_AMI_CONFIGURATION.name()))
+                    .filter(StringUtils::isNotBlank)
+                    .map(NodePoolParameters::parseAmiConfiguration)
+                    .ifPresent(pool::setAmiConfiguration);
             return pool;
+        }
+
+        private static NodePoolLaunchConfig parseLaunchConfig(final String launchConfig) {
+            try {
+                return JsonMapper.parseData(launchConfig, new TypeReference<NodePoolLaunchConfig>() {});
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage(), e);
+                return null;
+            }
+        }
+
+        private static AMIConfiguration parseAmiConfiguration(final String amiConfiguration) {
+            try {
+                return JsonMapper.parseData(amiConfiguration, new TypeReference<AMIConfiguration>() {});
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage(), e);
+                return null;
+            }
         }
 
         private static void applyIntValue(final ResultSet rs,
