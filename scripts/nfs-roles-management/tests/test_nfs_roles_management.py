@@ -18,7 +18,6 @@
 # package is copied as-is into the cp-dav image (deploy/docker/build-dockers.sh) and run under
 # whichever interpreter CP_PYTHON_PATH resolves to.
 
-import glob
 import os
 import py_compile
 import sys
@@ -40,8 +39,10 @@ from internal.synchronization.synchronization import Synchronization  # noqa: E4
 class ModulesCompileUnderCurrentInterpreterTest(unittest.TestCase):
 
     def test_every_module_compiles(self):
-        pattern = os.path.join(PACKAGE_DIR, '**', '*.py')
-        modules = glob.glob(pattern, recursive=True)
+        # glob.glob(..., recursive=True) is Python 3.5+ only - os.walk() works under both.
+        modules = []
+        for root, _dirs, files in os.walk(PACKAGE_DIR):
+            modules.extend(os.path.join(root, f) for f in files if f.endswith('.py'))
         self.assertTrue(modules, 'no .py files found under %s - did the layout change?' % PACKAGE_DIR)
         for module_path in modules:
             with tempfile.NamedTemporaryFile(suffix='.pyc') as cfile:
