@@ -58,6 +58,7 @@
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
     - [Tool version with upper case letters is launched in lower case](#tool-version-with-upper-case-letters-is-launched-in-lower-case)
+    - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
 
 ***
 
@@ -758,3 +759,10 @@ Some of the other page layouts also were broken.
 [#4616](https://github.com/epam/cloud-pipeline/issues/4616)
 
 Previously, when a **Tool** version with upper case letters in its tag (e.g. `2023R1`) was launched from the GUI, the launch form converted the tag to lower case (`2023r1`). Docker tags are case-sensitive, so such a run could not pull its image and hung in `ImagePullBackOff`. Also, the launch form did not lock the cloud region set for such a version. Currently, the launch form keeps the tag as it is in the registry.
+
+### Launch: a run name alias replaces the run's custom and required tags
+
+[#4626](https://github.com/epam/cloud-pipeline/issues/4626)
+
+Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
+Now, the alias is added to the run's tags alongside the tags set in the launch form.
