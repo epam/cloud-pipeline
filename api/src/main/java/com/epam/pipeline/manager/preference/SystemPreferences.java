@@ -1100,6 +1100,8 @@ public class SystemPreferences {
             "ui.mlflow.settings",
             Collections.emptyMap(), new TypeReference<Object>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
+    public static final BooleanPreference UI_ALLOW_NODEUP_RETRY_COUNT = new BooleanPreference(
+            "ui.launch.allow.nodeup.count", false, UI_GROUP, pass, true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
