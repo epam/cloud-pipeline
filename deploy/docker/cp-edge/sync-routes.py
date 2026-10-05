@@ -28,6 +28,13 @@ CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 CP_EDGE_ENDPOINT_TAG_NAME = 'CP_EDGE_ENDPOINT_TAG_NAME'
 
 try:
+        # Python 2 has no "datetime.timezone" - datetime.utcfromtimestamp() stays the only way to get UTC there.
+        from datetime import timezone
+        UTC = timezone.utc
+except ImportError:
+        UTC = None
+
+try:
         from pykube.config import KubeConfig
         from pykube.http import HTTPClient
         from pykube.http import HTTPError
@@ -195,7 +202,8 @@ class RunLogger:
 
         def _log(self, message, status):
                 do_log("Log run log: " + message)
-                now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+                now = datetime.fromtimestamp(time.time(), UTC).strftime(DATE_FORMAT) if UTC \
+                        else datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
                 date = now[0:len(now) - 3]
                 log_entry = json.dumps({"runId": self.run_id,
                                         "date": date,
