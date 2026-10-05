@@ -246,6 +246,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#checking-of-the-docker-image-version-in-pipe-run">Checking of the Docker image version in pipe run</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#python-3-support-for-the-edge-service">Python 3 support for the EDGE service</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#node-start-retries-for-a-specific-run">Node start retries for a specific run</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#python-3-support-for-backend-services">Python 3 support for backend services</a>
@@ -2146,6 +2148,8 @@ In the current version, the new API method <code>GET /permissions/user?userId=&l
 <p>In the current version, <code>pipe run</code> checks that the tool has the specified version before the launch. If it doesn't, the run is not scheduled - <code>pipe</code> prints an error with the list of the available versions and exits with the code <code>1</code>.<br />
 If the tool versions can't be loaded, <code>pipe</code> prints a warning and continues the launch.</p>
 <p>For more details see <a href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/#run-a-tool">here</a>.</p>
+<h2 id="python-3-support-for-the-edge-service">Python 3 support for the EDGE service</h2>
+<p>The <code>cp-edge</code> service (the sync-routes and maintenance jobs) now has Python 3.12 installed alongside Python 2, and can run either one. The active interpreter is selected by the <code>CP_PYTHON_VERSION</code> environment variable (<code>2</code> by default, for backward compatibility; set it to <code>3</code> to run under Python 3.12).</p>
 <h2 id="node-start-retries-for-a-specific-run">Node start retries for a specific run</h2>
 <p>Previously, the number of tries to start a node for a run could only be set globally, by the system preference <code>cluster.nodeup.retry.count</code>. It applied to all runs.</p>
 <p>In <strong><code>v0.17</code></strong>, it can be overridden for a specific run by the parameter <code>CP_NODEUP_RETRY_COUNT</code>. For example, a job that requests a scarce instance type can keep trying longer, and other runs still use the global value.<br />
