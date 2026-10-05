@@ -62,6 +62,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
@@ -1841,9 +1842,8 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 
 [#4626](https://github.com/epam/cloud-pipeline/issues/4626)
 
-Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped, including the ones the form had just insisted on.
-When several runs were launched at once, only the first of them got the alias tag at all, and the launch of the rest could be rejected by the API.
-Now, the alias is added to the run's tags alongside the tags set in the launch form, and every run of a multi-run launch is handled the same way.
+Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
+Now, the alias is added to the run's tags alongside the tags set in the launch form.
 
 ### Restarted runs lose parameters and get an API token of another user
 
