@@ -76,9 +76,11 @@ import {
   getAllowedStoragesForCloudRegion
 } from '../../../utils/limit-mounts/check-cloud-region-rules';
 import {
+  applyRunNameAliasTagToPayloads,
   filterVisibleTagsSync,
   getUserTagsValidationResult,
-  getVisibleUserTags
+  getVisibleUserTags,
+  mergeRunNameAliasTag
 } from '../run-tags/utilities';
 import {
   ensureValidReservationParametersForLaunchPayloads,
@@ -409,12 +411,7 @@ function runFn (
         : launchVersion;
       const hide = message
         .loading(`Launching ${payload.runNameAlias || launchName} (${messageVersion})...`, -1);
-      if (payload.runNameAlias) {
-        payload.tags = {
-          alias: payload.runNameAlias
-        };
-        delete payload.runNameAlias;
-      }
+      applyRunNameAliasTagToPayloads(payloadsArray);
       for (const p of payloadsArray) {
         await PipelineRunner.send({...p, force: true});
       }
@@ -574,11 +571,10 @@ function runFn (
                   delete singlePayload.params[CP_CAP_LIMIT_MOUNTS];
                 }
               }
-              if (component.state.runNameAlias) {
-                singlePayload.tags = {
-                  alias: component.state.runNameAlias
-                };
-              }
+              singlePayload.tags = mergeRunNameAliasTag(
+                singlePayload.tags,
+                component.state.runNameAlias
+              );
             }
             let launchedRun;
             if (!singlePayload.instanceType) {
