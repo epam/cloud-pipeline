@@ -131,42 +131,6 @@ export function filterVisibleTagsSync (tags, visible = []) {
     }), {});
 }
 
-/**
- * Adds the run name alias to the run tags, keeping every tag already set.
- * An empty alias leaves the tags as they are, returned as-is.
- * @param {object} [tags]
- * @param {string} [alias]
- * @returns {object}
- */
-export function mergeRunNameAliasTag (tags, alias) {
-  if (!alias) {
-    return tags || {};
-  }
-  return {
-    ...(tags || {}),
-    alias
-  };
-}
-
-/**
- * Moves each payload's `runNameAlias` into its tags - `{...tags, alias}` - and removes the
- * `runNameAlias` field itself, which `POST /run` does not accept. Mutates the payloads in place,
- * the way the launch flow hands them to the API, and covers every payload of a multi-payload
- * launch, not just the first one.
- * @param {object[]} payloads
- * @returns {object[]} the same payloads
- */
-export function applyRunNameAliasTagToPayloads (payloads = []) {
-  for (let i = 0; i < payloads.length; i += 1) {
-    const payload = payloads[i];
-    if (payload && payload.runNameAlias) {
-      payload.tags = mergeRunNameAliasTag(payload.tags, payload.runNameAlias);
-      delete payload.runNameAlias;
-    }
-  }
-  return payloads;
-}
-
 function checkTagConfigMatches (config, opts) {
   if (typeof config === 'boolean') {
     return config;
