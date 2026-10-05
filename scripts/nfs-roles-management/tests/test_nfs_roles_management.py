@@ -14,8 +14,9 @@
 
 # Covers the Python 2/3 compatibility of this package (issue #4531, the cp-dav side): no runner
 # existed here before this. Run with `python -m unittest test_nfs_roles_management` (or pytest)
-# under both Python 2.7 and Python 3.12 - this package is copied as-is into the cp-dav image
-# (deploy/docker/build-dockers.sh) and run under whichever interpreter CP_PYTHON_PATH resolves to.
+# from inside scripts/nfs-roles-management/tests, under both Python 2.7 and Python 3.12 - this
+# package is copied as-is into the cp-dav image (deploy/docker/build-dockers.sh) and run under
+# whichever interpreter CP_PYTHON_PATH resolves to.
 
 import glob
 import os
@@ -30,7 +31,8 @@ except ImportError:
     import mock
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, THIS_DIR)
+PACKAGE_DIR = os.path.dirname(THIS_DIR)
+sys.path.insert(0, PACKAGE_DIR)
 
 from internal.synchronization.synchronization import Synchronization  # noqa: E402
 
@@ -38,9 +40,9 @@ from internal.synchronization.synchronization import Synchronization  # noqa: E4
 class ModulesCompileUnderCurrentInterpreterTest(unittest.TestCase):
 
     def test_every_module_compiles(self):
-        pattern = os.path.join(THIS_DIR, '**', '*.py')
+        pattern = os.path.join(PACKAGE_DIR, '**', '*.py')
         modules = glob.glob(pattern, recursive=True)
-        self.assertTrue(modules, 'no .py files found under %s - did the layout change?' % THIS_DIR)
+        self.assertTrue(modules, 'no .py files found under %s - did the layout change?' % PACKAGE_DIR)
         for module_path in modules:
             with tempfile.NamedTemporaryFile(suffix='.pyc') as cfile:
                 py_compile.compile(module_path, cfile=cfile.name, doraise=True)

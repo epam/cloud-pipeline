@@ -17,8 +17,8 @@
 # needed after Rocky 8's own /usr/bin/python3.12 shadowed the from-source build), and checks that
 # dav-extra-command.py is still importable source under both Python 2 and Python 3. There was no
 # test runner in this package before - run with `python -m unittest test_python_resolution` (or
-# under pytest). scripts/nfs-roles-management has its own test_nfs_roles_management.py, which
-# already covers syncnfs.py - not duplicated here.
+# under pytest) from inside deploy/docker/cp-dav/tests. scripts/nfs-roles-management has its own
+# test_nfs_roles_management.py, which already covers syncnfs.py - not duplicated here.
 
 import os
 import py_compile
@@ -39,7 +39,8 @@ def _which(name):
 
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-INIT_SCRIPT = os.path.join(THIS_DIR, 'init')
+CP_DAV_DIR = os.path.dirname(THIS_DIR)
+INIT_SCRIPT = os.path.join(CP_DAV_DIR, 'init')
 BASH = _which('bash') or '/bin/bash'
 
 START_MARKER = '# --- Python interpreter selection ---'
@@ -172,7 +173,7 @@ class CpPythonPathResolutionTest(unittest.TestCase):
 class CpDavScriptsCompileUnderBothInterpretersTest(unittest.TestCase):
 
     SCRIPTS = [
-        os.path.join(THIS_DIR, 'extra', 'dav-extra-command.py'),
+        os.path.join(CP_DAV_DIR, 'extra', 'dav-extra-command.py'),
     ]
 
     def test_compiles_under_current_interpreter(self):
