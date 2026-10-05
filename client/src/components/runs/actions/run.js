@@ -80,6 +80,7 @@ import {
   getUserTagsValidationResult,
   getVisibleUserTags
 } from '../run-tags/utilities';
+import {applyRunNameAliasTag} from '../run-tags/alias';
 import {
   ensureValidReservationParametersForLaunchPayloads,
   findReservationParameterConfig
@@ -409,13 +410,8 @@ function runFn (
         : launchVersion;
       const hide = message
         .loading(`Launching ${payload.runNameAlias || launchName} (${messageVersion})...`, -1);
-      if (payload.runNameAlias) {
-        payload.tags = {
-          alias: payload.runNameAlias
-        };
-        delete payload.runNameAlias;
-      }
       for (const p of payloadsArray) {
+        applyRunNameAliasTag(p, p.runNameAlias);
         await PipelineRunner.send({...p, force: true});
       }
       hide();
@@ -525,6 +521,7 @@ function runFn (
               ? `${idx + 1} / ${payloadsArray.length}`
               : undefined;
             console.log(`launch payload ${launchPostfix || ''}:`, singlePayload);
+            let runNameAlias = singlePayload.runNameAlias;
             if (component) {
               if (component.state.runCapabilities) {
                 singlePayload.params = updateCapabilities(
@@ -574,17 +571,13 @@ function runFn (
                   delete singlePayload.params[CP_CAP_LIMIT_MOUNTS];
                 }
               }
-              if (component.state.runNameAlias) {
-                singlePayload.tags = {
-                  alias: component.state.runNameAlias
-                };
-              }
+              runNameAlias = component.state.runNameAlias;
             }
             let launchedRun;
             if (!singlePayload.instanceType) {
               throw new Error('You should select instance type');
             } else {
-              const version = singlePayload.runNameAlias
+              const version = runNameAlias
                 ? `${launchName}:${launchVersion}`
                 : launchVersion;
               let details = [
@@ -596,12 +589,10 @@ function runFn (
               }
               const hide = message
                 .loading(
-                  `Launching ${singlePayload.runNameAlias || launchName}${details}...`,
+                  `Launching ${runNameAlias || launchName}${details}...`,
                   0
                 );
-              if (singlePayload.runNameAlias) {
-                delete singlePayload.runNameAlias;
-              }
+              applyRunNameAliasTag(singlePayload, runNameAlias);
               await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
               try {
                 await PipelineRunner.send({...singlePayload, force: true});
