@@ -12,16 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux:8.7
 
 # Setup httpd
-RUN yum update -y && \
-    yum install -y  gettext \
+RUN yum install -y  gettext \
                     wget \
                     expat-devel \
                     make \
@@ -31,7 +25,15 @@ RUN yum update -y && \
                     libcurl-devel \
                     libxml2-devel \
                     openssl-devel \
-                    bzip2
+                    bzip2 \
+                    bzip2-devel \
+                    xz \
+                    xz-devel \
+                    ncurses-devel \
+                    procps \
+                    patch && \
+    yum group install -y "Development Tools" && \
+    yum clean all
 
 ARG APACHE_BUILD_DIR=/opt/httpd-build
 ARG APACHE_VERSION=2.4.41
@@ -44,7 +46,8 @@ ENV CFLAGS="-DBIG_SECURITY_HOLE -O2"
 COPY httpd/conf /tmp/
 COPY httpd/modules.shared ${APACHE_BUILD_DIR}/
 COPY httpd/modules.static ${APACHE_BUILD_DIR}/
-RUN rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
+RUN yum install -y epel-release && \
+    rpm -Uvh https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
 RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
@@ -76,11 +79,12 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
 RUN yum install -y cronie \
                    nfs-utils \
                    cifs-utils \
-                   python blobfuse fuse
-ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+                   python2 blobfuse fuse && \
+    ln -sf /usr/bin/python2 /usr/bin/python
+ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
 RUN cd /tmp && \
-    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
@@ -92,6 +96,16 @@ RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get
     pip install -I requests==2.21.0 futures && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
+
+# Python 3.12, alongside the Python 2 install above (not a replacement): CP_PYTHON_VERSION selects
+# between them at container start, and the SMB server keeps its own separate micromamba env either way.
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    pip3 install -I requests==2.34.2
 
 ENV SYNC_HOME=/opt/sync
 ENV SYNC_LOG_DIR=/var/log/dav/sync
@@ -105,6 +119,11 @@ COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management
 # Extras
 ENV EXTRA_HOME=/opt/dav-extra
 RUN pip install PyJWT==1.6.1 cryptography==2.6.1 flask==1.1.4 xxhash==2.0.2
+# Python 3 pins differ from the Python 2 ones above where the old pin doesn't import under 3.12:
+# PyJWT==1.6.1 uses collections.Iterable, removed in 3.10+; Flask==1.1.4's Jinja2/MarkupSafe pair
+# resolves to incompatible newer releases under pip's 3.12 resolver. cryptography and xxhash import
+# fine unchanged. Verified by installing and importing all five together in a real 3.12 venv.
+RUN pip3 install PyJWT==2.8.0 cryptography==2.6.1 flask==2.3.3 xxhash==2.0.2
 COPY extra ${EXTRA_HOME}
 
 # SMB server — Python 3.12 via micromamba
