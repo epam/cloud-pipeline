@@ -1837,6 +1837,14 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 
 ## Notable Bug fixes
 
+### Launch: a run name alias replaces the run's custom and required tags
+
+[#4626](https://github.com/epam/cloud-pipeline/issues/4626)
+
+Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped, including the ones the form had just insisted on.
+When several runs were launched at once, only the first of them got the alias tag at all, and the launch of the rest could be rejected by the API.
+Now, the alias is added to the run's tags alongside the tags set in the launch form, and every run of a multi-run launch is handled the same way.
+
 ### Restarted runs lose parameters and get an API token of another user
 
 [#4622](https://github.com/epam/cloud-pipeline/issues/4622)
