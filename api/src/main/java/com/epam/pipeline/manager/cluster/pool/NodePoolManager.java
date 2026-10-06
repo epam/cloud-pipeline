@@ -27,15 +27,10 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.notification.NotificationType;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
@@ -86,12 +81,6 @@ public class NodePoolManager implements SecuredEntityManager {
 
     @Autowired
     private NodePoolLaunchConfigBuilder launchConfigBuilder;
-
-    @Autowired
-    private CloudRegionManager regionManager;
-
-    @Autowired
-    private PreferenceManager preferenceManager;
 
     public List<NodePool> getActivePools() {
         final LocalDateTime timestamp = DateUtils.nowUTC();
@@ -243,8 +232,8 @@ public class NodePoolManager implements SecuredEntityManager {
     }
 
     /**
-     * The launch configuration a pool gets: the one the request sends; otherwise the pool's current one, or for a new
-     * pool one generated from the region's {@code amis} rule its nodes match. The deprecated {@code instanceImage} is
+     * The launch configuration a pool gets: the one the request sends, otherwise the pool's current one - none for a
+     * new pool, whose nodes then launch as the region's {@code amis} rules say. The deprecated {@code instanceImage} is
      * its image when it names none, and an edit of that field changes the image.
      *
      * @param existing the pool being updated, or null for a new one
@@ -253,7 +242,7 @@ public class NodePoolManager implements SecuredEntityManager {
     private AMIConfiguration resolveAmiConfiguration(final NodePoolVO vo, final NodePool existing) {
         final AMIConfiguration requested = vo.getAmiConfiguration();
         if (requested == null) {
-            return existing == null ? generateAmiConfiguration(vo) : withImageEdit(existing, vo.getInstanceImage());
+            return existing == null ? null : withImageEdit(existing, vo.getInstanceImage());
         }
         if (StringUtils.isBlank(requested.getAmi()) && StringUtils.isNotBlank(vo.getInstanceImage())) {
             requested.setAmi(vo.getInstanceImage());
@@ -263,28 +252,6 @@ public class NodePoolManager implements SecuredEntityManager {
         }
         validator.validateAmiConfiguration(vo.getRegionId(), requested);
         return requested;
-    }
-
-    /**
-     * Only for AWS regions, the only ones whose launch applies it. Calculated once - a later change of the region's
-     * rules does not reach an existing pool.
-     */
-    @SuppressWarnings("deprecation")
-    private AMIConfiguration generateAmiConfiguration(final NodePoolVO vo) {
-        final AbstractCloudRegion region = regionManager.load(vo.getRegionId());
-        if (CloudProvider.AWS != region.getProvider()) {
-            return null;
-        }
-        final Optional<AMIConfiguration> configuration =
-                Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
-                        .flatMap(regionsConfiguration -> regionsConfiguration.amiConfigurationFor(
-                                region.getRegionCode(), vo.getInstanceType()));
-        if (StringUtils.isBlank(vo.getInstanceImage())) {
-            return configuration.orElse(null);
-        }
-        final AMIConfiguration withImage = configuration.orElseGet(AMIConfiguration::new);
-        withImage.setAmi(vo.getInstanceImage());
-        return withImage;
     }
 
     @SuppressWarnings("deprecation")
