@@ -28,7 +28,7 @@ public class NodePoolFilterVO {
     private PriceType priceType;
     private NodePoolType poolType;
 
-    private Boolean capacityReservation;
+    private Boolean isCapacityReservation;
 
     private Boolean active;
 }

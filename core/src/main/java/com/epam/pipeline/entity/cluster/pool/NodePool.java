@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -32,6 +33,8 @@ import java.util.Set;
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = "usage")
 public class NodePool extends AbstractSecuredEntity {
+
+    private static final String IS_CAPACITY_RESERVATION = "isCapacityReservation";
 
     private final AclClass aclClass = AclClass.NODE_POOL;
     private final AbstractSecuredEntity parent = null;
@@ -62,11 +65,23 @@ public class NodePool extends AbstractSecuredEntity {
 
     private NodePoolLaunchConfig launchConfig;
 
-    private boolean capacityReservation;
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    @SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+    private boolean isCapacityReservation;
 
     private AMIConfiguration amiConfiguration;
 
     private Long usage;
+
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    public boolean isCapacityReservation() {
+        return isCapacityReservation;
+    }
+
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    public void setCapacityReservation(final boolean isCapacityReservation) {
+        this.isCapacityReservation = isCapacityReservation;
+    }
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
