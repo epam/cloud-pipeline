@@ -59,6 +59,7 @@ LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
 DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 POOL_ID_KEY = 'pool_id'
+CAPACITY_RESERVATION_SPECIFICATION = 'CapacityReservationSpecification'
 KUBE_CONFIG_PATH = '~/.kube/config'
 # learn more about spot instance request statuses:
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instances-request-status-lifecycle.html
@@ -149,6 +150,7 @@ def pipe_log(message, status=TaskStatus.RUNNING):
 
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
+__POOL_LAUNCH_CONFIGURATION__ = {}
 
 def get_preference(preference_name):
     pipe_api = PipelineAPI(api_url, None)
@@ -262,14 +264,70 @@ def get_security_groups(aws_region, security_groups):
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
-def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
-    default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_embedded_scripts = None
-    default_object = {
-        "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
-        "embedded_scripts": default_embedded_scripts, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
-        "availability_zone": None
+def load_pool_launch_configuration(pool_id):
+    global __POOL_LAUNCH_CONFIGURATION__
+    __POOL_LAUNCH_CONFIGURATION__ = {}
+    if not pool_id:
+        return __POOL_LAUNCH_CONFIGURATION__
+    pool = PipelineAPI(api_url, None).load_node_pool(pool_id)
+    __POOL_LAUNCH_CONFIGURATION__ = (pool or {}).get('amiConfiguration') or {}
+    if __POOL_LAUNCH_CONFIGURATION__:
+        pipe_log('Pool {} has its own launch configuration, it will be applied over the matching rule'.format(pool_id))
+    return __POOL_LAUNCH_CONFIGURATION__
+
+
+def overlay_dict(base, overlay):
+    """
+    Lays one launch configuration over another: every non-empty field of the overlay wins, and a dict field is merged
+    key by key.
+    """
+    result = dict(base or {})
+    for key, value in (overlay or {}).items():
+        if not value:
+            continue
+        if isinstance(value, dict):
+            merged = dict(result.get(key) or {}) if isinstance(result.get(key), dict) else {}
+            merged.update(value)
+            result[key] = merged
+        else:
+            result[key] = value
+    return result
+
+
+def resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, run_id, pool_id,
+                                 ins_img, availability_zone, subnet):
+    """
+    Resolves the node's launch configuration in three layers, each laid over the one before: the region's matching
+    amis rule (or the defaults), the pool's launch configuration, and the explicit image, zone and subnet arguments.
+    """
+    ami_configuration = get_matching_instance_image(aws_region, ins_type, ins_platform, api_token, run_id)
+    if ami_configuration['instance_mask']:
+        pipe_log('Found matching rule {} for requested instance type {}'.format(ami_configuration['instance_mask'], ins_type))
+    if pool_id:
+        pool_ami_configuration = load_pool_launch_configuration(pool_id)
+        ami_configuration = overlay_dict(ami_configuration, pool_ami_configuration)
+    explicit_ami_configuration = {
+        'ami': None if ins_img == 'null' else ins_img,
+        'availability_zone': availability_zone,
+        'subnet': subnet}
+    return overlay_dict(ami_configuration, explicit_ami_configuration)
+
+
+def zone_pinned_by_pool(availability_zone):
+    return bool(availability_zone) and availability_zone == __POOL_LAUNCH_CONFIGURATION__.get('availability_zone')
+
+
+def get_default_instance_image_configuration():
+    return {
+        "ami": None, "instance_mask": None,
+        "init_script": os.path.dirname(os.path.abspath(__file__)) + '/init.sh',
+        "embedded_scripts": None, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
+        "availability_zone": None, "subnet": None
     }
+
+
+def get_matching_instance_image(cloud_region, instance_type, instance_platform, api_token, run_id):
+    default_object = get_default_instance_image_configuration()
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -306,16 +364,16 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
 
         image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
-        instance_mask_ami = image_config["ami"]
+        ami = image_config["ami"]
         init_script = image_config.get("init_script", default_object["init_script"])
         availability_zone = image_config.get("availability_zone", default_object["availability_zone"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
         additional_spec = image_config.get("additional_spec", None)
         if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
-            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            return { "ami": ami, "instance_mask": instance_mask, "init_script": init_script,
                      "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec,
-                     "availability_zone": availability_zone}
+                     "availability_zone": availability_zone, "subnet": None}
 
     return default_object
 
@@ -450,9 +508,12 @@ def get_specified_subnet(subnet, availability_zone):
     return subnet
 
 
-def get_random_subnet(ec2):
-    subnets = ec2.describe_subnets()
-    if "Subnets" in subnets:
+def get_random_subnet(ec2, availability_zone=None):
+    if availability_zone:
+        subnets = ec2.describe_subnets(Filters=[{'Name': 'availability-zone', 'Values': [availability_zone]}])
+    else:
+        subnets = ec2.describe_subnets()
+    if "Subnets" in subnets and subnets['Subnets']:
         return random.choice(subnets['Subnets'])['SubnetId']
     return None
 
@@ -461,19 +522,31 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
                  availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network,
-                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load):
+                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load, launch_configuration):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
+    user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, launch_configuration, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
                                             run_id, docker_data_root, docker_storage_driver, skip_system_images_load)
     if is_spot:
+        instance_additional_spec = without_capacity_reservation_target(instance_additional_spec)
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
                                                 num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network, input_tags)
     return ins_id, ins_ip
+
+
+def without_capacity_reservation_target(instance_additional_spec):
+    if not instance_additional_spec or CAPACITY_RESERVATION_SPECIFICATION not in instance_additional_spec:
+        return instance_additional_spec
+    pipe_log_warn('- Capacity reservation {} is ignored: a spot instance cannot consume reserved capacity, so this '
+                  'node runs as spot and the reservation is not used'
+                  .format(instance_additional_spec[CAPACITY_RESERVATION_SPECIFICATION]))
+    spec = dict(instance_additional_spec)
+    del spec[CAPACITY_RESERVATION_SPECIFICATION]
+    return spec
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
@@ -517,8 +590,10 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     elif performance_network:
         pipe_log('- Performance network requested.')
         if not subnet or not subnet_id:
-            pipe_log('- Subnet is not specified, trying to get a random one...')
-            subnet_id = get_random_subnet(ec2)
+            subnet_zone = availability_zone if zone_pinned_by_pool(availability_zone) else None
+            pipe_log('- Subnet is not specified, trying to get a random one{}...'.format(
+                ' in AZ {}'.format(subnet_zone) if subnet_zone else ''))
+            subnet_id = get_random_subnet(ec2, subnet_zone)
             pipe_log('- Subnet: {} will be used.'.format(subnet_id))
 
         if subnet_id:
@@ -553,6 +628,13 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                 'Tenancy': "dedicated"
             }
         })
+
+    if zone_pinned_by_pool(availability_zone) and not subnet_id and not network_interface:
+        placement = additional_args.get('Placement', {})
+        placement.update({'AvailabilityZone': availability_zone})
+        additional_args.update({'Placement': placement})
+        pipe_log('- AZ {} will be used'.format(availability_zone))
+
     if 'MetadataOptions' not in additional_args:
         additional_args.update({'MetadataOptions': {
             'HttpTokens': 'optional',
@@ -822,13 +904,12 @@ def replace_docker_images(pre_pull_images, user_data_script):
         raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
 
 
-def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
+def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, launch_configuration, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                          global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id, docker_data_root, docker_storage_driver,
                          skip_system_images_load):
-    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
-    if allowed_instance and allowed_instance["init_script"]:
-        init_script = open(allowed_instance["init_script"], 'r')
+    if launch_configuration["init_script"]:
+        init_script = open(launch_configuration["init_script"], 'r')
         user_data_script = init_script.read()
         repo_urls_string, certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(aws_region)
@@ -836,7 +917,7 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
         user_data_script = replace_proxies(aws_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
         user_data_script = replace_docker_images(pre_pull_images, user_data_script)
-        fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
+        fs_type = launch_configuration.get('fs_type', DEFAULT_FS_TYPE)
         if fs_type not in SUPPORTED_FS_TYPES:
             pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
                           (fs_type, DEFAULT_FS_TYPE))
@@ -861,8 +942,8 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                                            .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
                                            .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
-        if allowed_instance["embedded_scripts"]:
-            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+        if launch_configuration["embedded_scripts"]:
+            for embedded_name, embedded_path in launch_configuration["embedded_scripts"].items():
                 embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
         if ins_platform == 'windows':
             return pack_powershell_script_contents(user_data_script, embedded_scripts)
@@ -1708,25 +1789,19 @@ def main():
         api_token = os.environ["API_TOKEN"]
         api_user = os.environ["API_USER"]
 
-        instance_additional_spec = None
-        allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
-        if allowed_instance and allowed_instance["instance_mask"]:
-            pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
-            instance_additional_spec = allowed_instance["additional_spec"]
-            if instance_additional_spec:
-                pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
-        if not ins_img or ins_img == 'null':
-            if allowed_instance and allowed_instance["instance_mask_ami"]:
-                ins_img = allowed_instance["instance_mask_ami"]
-                pipe_log('Instance image was not provided explicitly, {instance_image} will be used (retrieved for {instance_mask}/{instance_type} rule)'.format(instance_image=allowed_instance["instance_mask_ami"],
-                                                                                                                                                                 instance_mask=allowed_instance["instance_mask"],
-                                                                                                                                                                 instance_type=ins_type))
-        else:
-            pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
-
-        if not availability_zone and allowed_instance and "availability_zone" in allowed_instance:
-            availability_zone = allowed_instance["availability_zone"]
-            pipe_log('Particular availability_zone: {availability_zone} is configured in allowed_instance configuration'.format(availability_zone=availability_zone))
+        launch_configuration = resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, run_id,
+                                                            pool_id, ins_img, availability_zone, subnet)
+        ins_img = launch_configuration['ami'] or ins_img
+        instance_additional_spec = launch_configuration['additional_spec']
+        availability_zone = launch_configuration['availability_zone']
+        subnet = launch_configuration['subnet']
+        pipe_log('Instance image {} will be used'.format(ins_img))
+        if instance_additional_spec:
+            pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
+        if availability_zone:
+            pipe_log('Particular availability_zone: {availability_zone} will be used'.format(availability_zone=availability_zone))
+        if subnet:
+            pipe_log('Particular subnet: {subnet} will be used'.format(subnet=subnet))
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
@@ -1738,7 +1813,8 @@ def main():
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
                                           availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags,
-                                          docker_data_root, docker_storage_driver, skip_system_images_load)
+                                          docker_data_root, docker_storage_driver, skip_system_images_load,
+                                          launch_configuration)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 

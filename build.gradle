@@ -127,6 +127,9 @@ task installDist() {
         copy {
             from "$rootDir/scripts/autoscaling"
             into scriptsFolder
+            exclude "**/test/**"
+            exclude "**/__pycache__/**"
+            exclude "**/*.pyc"
         }
 
         copy {

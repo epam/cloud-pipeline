@@ -1,0 +1,61 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.entity.cluster.capacityreservation;
+
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
+
+public enum CapacityReservationStatus {
+
+    REQUIRED_APPROVE(false),
+
+    APPROVED(false),
+
+    PURCHASE_FAILED(true),
+
+    ASSESSING_BY_CLOUD_PROVIDER(false),
+
+    SCHEDULED(false),
+
+    ACTIVE(false),
+
+    FINALIZING(false),
+
+    FINISHED(true),
+
+    FAILED(true),
+
+    CANCELLED(true);
+
+    private static final Set<CapacityReservationStatus> TERMINAL = Collections.unmodifiableSet(
+            EnumSet.of(PURCHASE_FAILED, FINISHED, FAILED, CANCELLED));
+
+    private final boolean terminal;
+
+    CapacityReservationStatus(final boolean terminal) {
+        this.terminal = terminal;
+    }
+
+    public boolean isTerminal() {
+        return terminal;
+    }
+
+    public static Set<CapacityReservationStatus> terminalStatuses() {
+        return TERMINAL;
+    }
+}

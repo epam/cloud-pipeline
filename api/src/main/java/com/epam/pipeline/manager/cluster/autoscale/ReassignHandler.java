@@ -136,7 +136,7 @@ public class ReassignHandler {
                         return false;
                     }
                     final boolean passedPoolFilter = Optional.ofNullable(previousInstance.getPool())
-                            .map(pool -> matchesPoolFilter(pool, pipelineRun))
+                            .map(pool -> isReusable(pool) && matchesPoolFilter(pool, pipelineRun))
                             .orElse(true);
                     if (!passedPoolFilter) {
                         return false;
@@ -144,6 +144,15 @@ public class ReassignHandler {
                     return reassignInstance(runId, longId, scheduledRuns, reassignedNodes,
                             previousId, previousInstance, pipelineRun);
                 });
+    }
+
+    /**
+     * Only a capacity reservation pool's own window decides whether its free node may take a new run: past it the
+     * reservation is ending or gone, and the job would outlive the reserved capacity. An ordinary pool's free node is
+     * reused regardless of its schedule - it is already running and paid for until it is scaled down.
+     */
+    private boolean isReusable(final NodePool pool) {
+        return !pool.isCapacityReservation() || pool.isActive(DateUtils.nowUTC());
     }
 
     private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {

@@ -17,9 +17,11 @@ package com.epam.pipeline.entity.cluster;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 import java.util.Map;
@@ -27,23 +29,28 @@ import java.util.Map;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode
+@ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AMIConfiguration {
-
     private String platform;
-
     @JsonProperty("instance_mask")
     private String instanceMask;
     private String ami;
-
     @JsonProperty("run_parameters")
     private Map<String, Object> runParameters;
-
     @JsonProperty("additional_spec")
     private Map<String, Object> additionalSpec;
-
     private List<String> permissions;
-
     @JsonProperty("docker_image")
     private List<String> dockerImages;
+    @JsonProperty("init_script")
+    private String initScript;
+    @JsonProperty("fs_type")
+    private String fsType;
+    @JsonProperty("embedded_scripts")
+    private Map<String, String> embeddedScripts;
+    @JsonProperty("availability_zone")
+    private String availabilityZone;
+    private String subnet;
 }

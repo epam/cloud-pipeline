@@ -198,6 +198,7 @@ dependencies {
     implementation 'com.amazonaws:aws-java-sdk-route53:1.11.880'
     implementation 'com.amazonaws:aws-java-sdk-omics:1.12.717'
     implementation 'com.amazonaws:aws-java-sdk-pricing:1.12.780'
+    implementation 'software.amazon.awssdk:ec2:2.55.6'
 
     // Azure
     implementation group: "com.azure", name: "azure-core", version: "1.54.0"

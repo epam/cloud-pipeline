@@ -228,6 +228,23 @@ public final class AclExpressions {
     public static final String ADMIN_OR_BILLING_MANAGER = ADMIN_ONLY + OR
             + "hasRole('ROLE_BILLING_MANAGER')";
 
+    public static final String NODE_POOL_MANAGER_ONLY = "hasRole('NODE_POOL_MANAGER')";
+    public static final String NODE_POOL_CREATE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + NODE_POOL_MANAGER_ONLY;
+    public static final String NODE_POOL_ID_WRITE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'WRITE')";
+    public static final String NODE_POOL_ID_OWNER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'OWNER')";
+    public static final String NODE_POOL_READ_FILTER = ADMIN_OR_CLUSTER_READER + OR
+            + "hasPermission(filterObject, 'READ')";
+    public static final String NODE_POOL_RETURN_OBJECT_READ = ADMIN_OR_CLUSTER_READER + OR
+            + "hasPermission(returnObject, 'READ')";
+
+    public static final String CAPACITY_RESERVATION_ID_READ = ADMIN_ONLY + OR
+            + "@capacityReservationPermissionManager.reservationPermission(#id, 'READ')";
+    public static final String CAPACITY_RESERVATION_ID_OWNER = ADMIN_ONLY + OR
+            + "@capacityReservationPermissionManager.reservationOwner(#id)";
+
     private AclExpressions() {
         // no op
     }

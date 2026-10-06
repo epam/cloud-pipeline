@@ -18,9 +18,9 @@ package com.epam.pipeline.controller.cluster.pool;
 import com.epam.pipeline.acl.cluster.pool.NodePoolApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.cluster.pool.NodePoolFilterVO;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 
 
@@ -55,7 +55,7 @@ public class NodePoolController extends AbstractRestController {
     @GetMapping
     @Operation(summary = "Returns all registered node pools")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<List<? extends NodePoolInfo>> loadAll(
+    public Result<List<NodePool>> loadAll(
             final @RequestParam(defaultValue = "false") boolean loadStatus) {
         return Result.success(apiService.loadAll(loadStatus));
     }
@@ -68,10 +68,11 @@ public class NodePoolController extends AbstractRestController {
     }
 
     @PostMapping
-    @Operation(summary = "Creates or updates a node pool")
+    @Operation(summary = "Creates a node pool, optionally requesting a capacity reservation for it, "
+            + "or updates the one")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NodePool> createOrUpdate(final @RequestBody NodePoolVO vo) {
-        return Result.success(apiService.createOrUpdate(vo));
+        return Result.success(vo.getId() == null ? apiService.create(vo) : apiService.update(vo.getId(), vo));
     }
 
     @DeleteMapping("{id}")
@@ -79,6 +80,13 @@ public class NodePoolController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<NodePool> delete(final @PathVariable Long id) {
         return Result.success(apiService.delete(id));
+    }
+
+    @PostMapping("/filter")
+    @Operation(summary = "Returns node pools matching the given filter")
+    @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
+    public Result<List<NodePool>> filter(final @RequestBody NodePoolFilterVO filter) {
+        return Result.success(apiService.filter(filter));
     }
 
     @PostMapping("/usage")

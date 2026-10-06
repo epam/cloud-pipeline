@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.vo.cluster.pool.PoolLabel;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -31,6 +32,8 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 public class NodePool {
+
+    private static final String IS_CAPACITY_RESERVATION = "isCapacityReservation";
 
     private Long id;
     private String name;
@@ -51,9 +54,32 @@ public class NodePool {
     private Double scaleDownThreshold;
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
+    private String owner;
+    private NodePoolType poolType = NodePoolType.STANDARD;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    @SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+    private boolean isCapacityReservation;
+
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    public boolean isCapacityReservation() {
+        return isCapacityReservation;
+    }
+
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    public void setCapacityReservation(final boolean isCapacityReservation) {
+        this.isCapacityReservation = isCapacityReservation;
+    }
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
+            return false;
+        }
+        if (startDate != null && timestamp.isBefore(startDate)) {
+            return false;
+        }
+        if (endDate != null && timestamp.isAfter(endDate)) {
             return false;
         }
         return Optional.ofNullable(schedule)

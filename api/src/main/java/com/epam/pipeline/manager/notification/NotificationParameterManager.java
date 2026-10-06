@@ -4,6 +4,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaAction;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
@@ -118,6 +119,26 @@ public class NotificationParameterManager {
         parameters.put("memoryRate", metrics.getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
         parameters.put("diskThreshold", diskThreshold);
         parameters.put("diskRate", metrics.getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
+        return parameters;
+    }
+
+    public Map<String, Object> build(final NotificationType type, final CapacityReservation reservation) {
+        final Map<String, Object> parameters = build(type);
+        parameters.put("reservationId", reservation.getId());
+        parameters.put("reservationName", reservation.getName());
+        parameters.put("nodePoolId", reservation.getNodePoolId());
+        parameters.put("status", reservation.getStatus());
+        parameters.put("statusReason", reservation.getStatusReason());
+        parameters.put("reservationType", reservation.getReservationType());
+        parameters.put("cloudProvider", reservation.getCloudProvider());
+        parameters.put("regionId", reservation.getRegionId());
+        parameters.put("instanceType", reservation.getInstanceType());
+        parameters.put("instanceCount", reservation.getInstanceCount());
+        parameters.put("durationHours", reservation.getDurationHours());
+        parameters.put("startDate", reservation.getStartDate());
+        parameters.put("endDate", reservation.getEndDate());
+        parameters.put("availabilityZone", reservation.getAvailabilityZone());
+        parameters.put("owner", reservation.getOwner());
         return parameters;
     }
 
