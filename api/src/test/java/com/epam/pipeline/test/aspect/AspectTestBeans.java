@@ -143,6 +143,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 
@@ -154,6 +155,9 @@ public class AspectTestBeans {
 
     @MockBean(name = "flywayInitializer")
     protected FlywayMigrationInitializer mockFlywayMigrationInitializer;
+
+    @MockBean
+    protected PlatformTransactionManager platformTransactionManager;
 
     @MockBean
     protected ImpersonationManager impersonationManager;
