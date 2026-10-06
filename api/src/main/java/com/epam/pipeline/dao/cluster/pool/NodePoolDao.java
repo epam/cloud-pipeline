@@ -74,18 +74,11 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
 
     private String poolSequence;
 
-    /**
-     * An id for a pool not created yet - for a caller that needs it before the row exists, as a sharable pool's
-     * launch config does to select the pool's nodes.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public Long createId() {
         return daoHelper.createId(poolSequence);
     }
 
-    /**
-     * @param pool created with its {@code id} when it has one from {@link #createId()}, and a new one otherwise
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool create(final NodePool pool) {
         if (pool.getId() == null) {
@@ -106,10 +99,6 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         return pool;
     }
 
-    /**
-     * Ownership is not writable through {@link #update(NodePool)} - a pool cannot change hands as a side
-     * effect of an ordinary edit - so changing it has its own statement.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool updateOwner(final NodePool pool) {
         getNamedParameterJdbcTemplate()
@@ -117,12 +106,6 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         return pool;
     }
 
-    /**
-     * The columns a capacity reservation's lifecycle owns: the node count that switches the pool on and off, the
-     * window it is usable in, and the launch configuration it writes its target, zone and subnet into.
-     * {@link #update(NodePool)} leaves the dates out deliberately, so this is the only statement that writes them
-     * after creation.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool updateReservationState(final NodePool pool) {
         getNamedParameterJdbcTemplate()
@@ -130,10 +113,6 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         return pool;
     }
 
-    /**
-     * Loads a pool and holds its row lock until the surrounding transaction ends, so a read-modify-write of the
-     * pool cannot interleave with another one.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public Optional<NodePool> findForUpdate(final Long poolId) {
         final List<NodePool> result = getJdbcTemplate()

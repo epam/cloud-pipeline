@@ -48,14 +48,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-/**
- * A monitor step is several writes that only make sense together - here, a reservation becoming ACTIVE and its pool
- * being switched on. Committed one by one, a failure between them left the reservation ACTIVE with its pool still
- * off, and nothing ever retried the activation.
- *
- * <p>Deliberately not transactional, unlike the other manager tests: what is under test is what the monitor's own
- * transactions commit, so they have to commit for real. The rows are created and removed around every test.
- */
 public class CapacityReservationMonitorTransactionTest extends AbstractManagerTest {
 
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
@@ -77,15 +69,9 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
     @SpyBean
     private CapacityReservationService reservationService;
 
-    /**
-     * The provider is not what is under test; it only has to report that the capacity is now live.
-     */
     @MockBean
     private CapacityReservationCloudFacade cloudFacade;
 
-    /**
-     * Activation looks the reservation's region up to find the subnet for its zone; this database has no regions.
-     */
     @MockBean
     private CloudRegionManager regionManager;
 
@@ -143,11 +129,6 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
         assertThat(countOfPool()).isEqualTo(CapacityReservationCreatorUtils.getReservation(poolId).getInstanceCount());
     }
 
-    /**
-     * The failure the step boundary exists for: the pool cannot be switched on, so the reservation must not be
-     * recorded as ACTIVE either - left SCHEDULED, the next cycle sees the capacity live and tries the whole step
-     * again.
-     */
     @Test
     public void shouldRollTheStatusBackWhenThePoolCannotBeSwitchedOn() {
         doThrow(new IllegalStateException("pool write failed")).when(reservationService).activatePool(any());
@@ -158,10 +139,6 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
         assertThat(countOfPool()).isZero();
     }
 
-    /**
-     * The step that ends a reservation writes FINISHED and switches its pool off. Committed apart, a failure between
-     * them left the pool running on-demand nodes behind a reservation marked finished - which nothing looks at again.
-     */
     @Test
     public void shouldKeepAReservationFinalizingWhenItsPoolCannotBeSwitchedOff() {
         givenReservation(CapacityReservationStatus.FINALIZING, reservation -> {
@@ -175,10 +152,6 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
         assertThat(statusOfReservation()).isEqualTo(CapacityReservationStatus.FINALIZING);
     }
 
-    /**
-     * A delayed reservation is released only after the next date is written, so a release that fails leaves the
-     * reservation exactly as it was - still pointing at the delayed one, for the next cycle to release.
-     */
     @Test
     public void shouldKeepADelayedReservationAsItWasWhenReleasingItFails() {
         givenReservation(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation -> { });

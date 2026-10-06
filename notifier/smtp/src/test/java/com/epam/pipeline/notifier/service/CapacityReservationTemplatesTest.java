@@ -37,14 +37,6 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * The capacity reservation email templates shipped in the deployment, rendered the way they reach a user: the
- * install script substitutes its environment into the body with {@code envsubst}, and this service then renders the
- * result with the parameters the API sends.
- *
- * <p>Both steps can fail silently - a variable envsubst empties, a reference Velocity leaves as literal text - and
- * either would only show up in a real inbox. So every template is rendered here, with a reason and without one.
- */
 public class CapacityReservationTemplatesTest {
 
     private static final Path TEMPLATES = Paths.get("..", "..", "deploy", "contents", "install", "email-templates");
@@ -96,10 +88,6 @@ public class CapacityReservationTemplatesTest {
         return templateService.buildMessageText(message);
     }
 
-    /**
-     * What the install script's {@code envsubst} does: every variable is replaced, and one it does not define
-     * becomes empty - which is why the templates spell a Velocity reference as {@code ${CP_DOLLAR}}.
-     */
     private static String envsubst(final String text) {
         final Map<String, String> environment = new HashMap<>();
         environment.put("CP_DOLLAR", "$");
@@ -116,11 +104,6 @@ public class CapacityReservationTemplatesTest {
         return result.toString();
     }
 
-    /**
-     * As the API builds them - see {@code NotificationParameterManager#build(NotificationType,
-     * CapacityReservation)} - once they have been through the notification queue's JSON: dates in the API mapper's
-     * format, and a null value dropped rather than kept.
-     */
     private static Map<String, Object> parameters(final String statusReason) {
         final Map<String, Object> parameters = new HashMap<>();
         parameters.put("reservationId", 7);

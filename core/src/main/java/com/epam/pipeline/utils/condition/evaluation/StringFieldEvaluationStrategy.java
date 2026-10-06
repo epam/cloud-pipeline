@@ -18,20 +18,10 @@ package com.epam.pipeline.utils.condition.evaluation;
 
 
 import com.epam.pipeline.utils.condition.ConditionOperator;
-import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
 import java.util.regex.Pattern;
 
-/**
- * Evaluates {@link FieldType#STRING} leaf nodes using case-insensitive wildcard matching.
- *
- * <p>{@code *} in the rule value expands to any sequence of characters, consistent with the
- * wildcard convention used in the run Advanced Filter (e.g. {@code node.type = m5.*}).
- * Supports {@code =} and {@code !=}.
- *
- * @param <T> the subject type being evaluated
- */
 public class StringFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     public StringFieldEvaluationStrategy(final SubjectEntityField<T> field) {
@@ -44,9 +34,7 @@ public class StringFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStra
     }
 
     /**
-     * Case-insensitive wildcard match. {@code Pattern.quote()} is used per segment so that
-     * special regex characters inside literal parts are escaped, then segments are joined with
-     * {@code .*} to cover the {@code *} wildcards.
+     * Case-insensitive wildcard match: {@code *} in the rule value matches any characters.
      */
     private static boolean matchesWildcard(final String actual, final String pattern) {
         final String[] parts = pattern.split("\\*", -1);

@@ -41,17 +41,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Approving and cancelling one reservation at the same time. Each must read the reservation only once the other has
- * committed, or the later write puts back the status the earlier one replaced.
- *
- * <p>Deliberately not transactional, unlike the other manager tests: the point is two transactions contending for
- * the same rows, so each has to commit for real. The rows are created and removed around every test.
- */
 public class CapacityReservationLockingTest extends AbstractManagerTest {
 
     private static final long TIMEOUT_SECONDS = 30;
-    /** Long enough for an unblocked write to have finished; the blocked one must still be waiting. */
     private static final long STILL_BLOCKED_MILLIS = 1000;
 
     @Autowired
@@ -98,10 +90,6 @@ public class CapacityReservationLockingTest extends AbstractManagerTest {
         });
     }
 
-    /**
-     * A cancel holds the pool while it writes CANCELLED. An approval that read the reservation meanwhile would see it
-     * still awaiting approval and write APPROVED over the cancel - and the monitor would then buy the capacity.
-     */
     @Test
     public void shouldNotApproveAReservationCancelledWhileTheApprovalWaited() throws Exception {
         final CountDownLatch cancelHoldsThePool = new CountDownLatch(1);

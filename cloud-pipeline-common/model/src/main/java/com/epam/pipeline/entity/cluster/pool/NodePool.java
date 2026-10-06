@@ -52,8 +52,6 @@ public class NodePool {
     private Integer scaleStep;
     private Map<String, PoolLabel> kubeLabels;
     private String owner;
-    // Defaults to STANDARD rather than null so a freshly built pool equals one loaded from the
-    // database, whose column is NOT NULL DEFAULT 'STANDARD'.
     private NodePoolType poolType = NodePoolType.STANDARD;
     private LocalDateTime startDate;
     private LocalDateTime endDate;

@@ -75,14 +75,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
     }
 
     /**
-     * Writes what a retried step has to remember - its reason, and the dates and zone it asked for - and only while the
-     * reservation is still in the status the caller's copy shows.
-     *
-     * <p>For a caller that did not move the reservation and holds a copy that may be stale: a full-row
-     * {@link #update} from that copy would write its old status back over whatever happened meanwhile - a
-     * cancellation included.
-     *
-     * @return whether the reservation was still in that status, and so was written
+     * Writes the retry fields - reason, requested dates and zone - only while the reservation is still in the status
+     * the caller's copy shows. Returns whether it was written.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean updateRetry(final CapacityReservation reservation) {
@@ -109,10 +103,6 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 .findFirst();
     }
 
-    /**
-     * Loads the reservations of several pools in one query. Enriching a list of pools must use this rather
-     * than calling {@link #findByNodePoolId(Long)} per row.
-     */
     public List<CapacityReservation> loadByNodePoolIds(final Collection<Long> nodePoolIds) {
         if (CollectionUtils.isEmpty(nodePoolIds)) {
             return Collections.emptyList();
@@ -190,10 +180,6 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
             params.addValue(START_DATE.name(), timestamp(reservation.getStartDate()));
             params.addValue(END_DATE.name(), timestamp(reservation.getEndDate()));
             params.addValue(DURATION_HOURS.name(), reservation.getDurationHours());
-            // Defended here rather than trusting the entity's initializer: with this Lombok version a
-            // @Builder.Default initializer is stripped from the field, so a reservation built by the no-args
-            // constructor - which is what Jackson and the row mapper below use - carries null, and the
-            // column is NOT NULL.
             params.addValue(INSTANCE_PLATFORM.name(),
                     Optional.ofNullable(reservation.getInstancePlatform())
                             .orElse(CapacityReservation.DEFAULT_INSTANCE_PLATFORM));

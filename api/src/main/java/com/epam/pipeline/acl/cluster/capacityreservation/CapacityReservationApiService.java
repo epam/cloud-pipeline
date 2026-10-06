@@ -26,9 +26,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Authorization for capacity reservations.
- */
 @Service
 @RequiredArgsConstructor
 public class CapacityReservationApiService {
@@ -36,9 +33,6 @@ public class CapacityReservationApiService {
     private final CapacityReservationService reservationService;
     private final AuthManager authManager;
 
-    /**
-     * Administrators see every reservation; everyone else sees the ones they requested.
-     */
     public List<CapacityReservation> loadAll() {
         return authManager.isAdmin()
                 ? reservationService.loadAll()
@@ -50,10 +44,6 @@ public class CapacityReservationApiService {
         return reservationService.load(id);
     }
 
-    /**
-     * Approval is the money gate, so it stays with administrators. Notably it is <em>not</em> granted by the
-     * role that lets a user open the request: nobody approves their own.
-     */
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CapacityReservation approve(final Long id) {
         return reservationService.approve(id);

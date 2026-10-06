@@ -23,10 +23,6 @@ import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * A pool node's launch is told only which pool it belongs to: the launch script reads the pool's own launch
- * configuration - a capacity reservation's target, zone and subnet included - from the pool itself.
- */
 public class NodeUpCommandTest {
 
     private static final String POOL_ID = "42";

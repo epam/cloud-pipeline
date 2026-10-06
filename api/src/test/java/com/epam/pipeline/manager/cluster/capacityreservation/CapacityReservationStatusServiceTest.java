@@ -39,9 +39,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * Recording a retry is not a transition: the reservation stays where it is, and says why - unless it has moved on.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class CapacityReservationStatusServiceTest {
@@ -59,7 +56,6 @@ public class CapacityReservationStatusServiceTest {
 
     @BeforeEach
     public void setUp() {
-        // Neither is reached by recording a retry.
         statusService = new CapacityReservationStatusService(reservationDao, notificationManager,
                 mock(PipelineRunCRUDService.class), mock(MessageHelper.class));
     }
@@ -75,11 +71,6 @@ public class CapacityReservationStatusServiceTest {
         assertThat(reservation.getUpdated()).isNotNull();
     }
 
-    /**
-     * The monitor's copy was loaded before a provider call that can take minutes to time out. A full-row write
-     * from it would put {@code APPROVED} back over a cancellation made meanwhile, and the next cycle would buy
-     * what the user cancelled.
-     */
     @Test
     public void shouldNeverWriteTheWholeRowFromAPossiblyStaleCopy() {
         final CapacityReservation reservation = approved();
@@ -89,10 +80,6 @@ public class CapacityReservationStatusServiceTest {
         verify(reservationDao, never()).update(any());
     }
 
-    /**
-     * Nothing changed that anyone has to act on, and the monitor retries every cycle - notifying here would send
-     * the same mail again on each one.
-     */
     @Test
     public void shouldNotNotifyAboutARetry() {
         final CapacityReservation reservation = approved();

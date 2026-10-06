@@ -229,11 +229,6 @@ public final class AclExpressions {
             + "hasRole('ROLE_BILLING_MANAGER')";
 
     public static final String NODE_POOL_MANAGER_ONLY = "hasRole('NODE_POOL_MANAGER')";
-    /**
-     * A node pool has no parent to hold a create permission, so the role itself is the gate - the same
-     * shape {@link #DTS_REGISTRY_PERMISSIONS} uses. Note this authorizes *opening* a capacity reservation
-     * request; whether that request is granted is decided separately by the approval policy.
-     */
     public static final String NODE_POOL_CREATE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
             + NODE_POOL_MANAGER_ONLY;
     public static final String NODE_POOL_ID_WRITE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
@@ -245,9 +240,6 @@ public final class AclExpressions {
     public static final String NODE_POOL_RETURN_OBJECT_READ = ADMIN_OR_CLUSTER_READER + OR
             + "hasPermission(returnObject, 'READ')";
 
-    /**
-     * A capacity reservation is not a secured entity: authorization resolves to the pool it backs.
-     */
     public static final String CAPACITY_RESERVATION_ID_READ = ADMIN_ONLY + OR
             + "@capacityReservationPermissionManager.reservationPermission(#id, 'READ')";
     public static final String CAPACITY_RESERVATION_ID_OWNER = ADMIN_ONLY + OR

@@ -43,24 +43,15 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
-/**
- * A pool is a secured entity: its ACL identity - what its permissions hang off - comes and goes with the pool, or a
- * deleted pool leaves its permission entries behind. Run in the context that keeps the ACL aspect, which the default
- * test context leaves out.
- */
 @Transactional
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 public class NodePoolAclSyncTest extends AbstractManagerTest {
 
     private static final long REGION_ID = 1L;
-    /** In upper case, as user names are stored as ACL principals. */
     private static final String OWNER = "POOL-OWNER";
     private static final String POOL_NAME = "acl pool";
     private static final String INSTANCE_TYPE = "m5.large";
     private static final int INSTANCE_DISK = 50;
-    /**
-     * Read from the tables, so what is checked is what was written rather than what the ACL cache holds.
-     */
     private static final String IDENTITY_OWNER_QUERY = "SELECT s.sid FROM pipeline.acl_object_identity oi"
             + " JOIN pipeline.acl_class c ON oi.object_id_class = c.id"
             + " LEFT JOIN pipeline.acl_sid s ON oi.owner_sid = s.id"
@@ -106,10 +97,6 @@ public class NodePoolAclSyncTest extends AbstractManagerTest {
         assertThat(identityOwners(created)).isEmpty();
     }
 
-    /**
-     * The autoscaler resizes a pool through an ordinary update, on a scheduler thread with nobody signed in. With the
-     * identity already there, the ACL sync after it only reads it.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldUpdateAPoolWithNobodySignedIn() {

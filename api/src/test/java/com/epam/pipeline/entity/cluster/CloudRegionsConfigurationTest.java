@@ -33,9 +33,6 @@ public class CloudRegionsConfigurationTest {
     private static final String ZONE = "eu-central-1b";
     private static final String SUBNET = "subnet-b";
 
-    /**
-     * The launch scripts take the first entry named after the region that configures networks at all.
-     */
     @Test
     public void shouldTakeTheNetworksOfTheFirstEntryOfTheRegionThatConfiguresThem() {
         final CloudRegionsConfiguration configuration = configuration(

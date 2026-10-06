@@ -636,25 +636,14 @@ public class SystemPreferences {
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
 
-    /**
-     * How often the capacity reservation monitor advances reservations through their lifecycle.
-     */
     public static final StringPreference CLUSTER_CAPACITY_RESERVATION_MONITOR_CRON = new StringPreference(
             "cluster.capacity.reservation.monitor.cron", "0 * * * * ?", CLUSTER_GROUP, isNotBlank);
 
-    /**
-     * The approval rules for capacity reservation requests. Empty by default, which means every request
-     * waits for an administrator - the safe default, since these requests spend money.
-     */
     public static final ObjectPreference<List<CapacityReservationPolicy>> CLUSTER_CAPACITY_RESERVATION_POLICIES =
             new ObjectPreference<>("cluster.capacity.reservation.policies", Collections.emptyList(),
                                    new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
                                    isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
 
-    /**
-     * The instance families a future-dated capacity reservation may be requested for, comma separated and matched
-     * against the letters that begin an instance type ({@code p5.48xlarge} is family {@code p}).
-     */
     public static final StringPreference CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new StringPreference(
             "cluster.capacity.reservation.instance.families", "c,m,r,i,t,g", CLUSTER_GROUP, pass);
 

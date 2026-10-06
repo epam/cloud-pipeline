@@ -22,10 +22,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-/**
- * The image a pool's nodes launch from. The pool's configuration names it now; the older instanceImage field is
- * deprecated but still honoured, so existing pools keep launching as they did.
- */
 @SuppressWarnings("deprecation")
 public class NodePoolInstanceImageTest {
 

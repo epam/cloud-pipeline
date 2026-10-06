@@ -17,7 +17,6 @@
 package com.epam.pipeline.utils.condition.evaluation;
 
 import com.epam.pipeline.utils.condition.ConditionExpression;
-import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -28,26 +27,9 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
-/**
- * Evaluates {@link FieldType#TAGS} leaf nodes, optionally applying a duration gate.
- *
- * <p><b>Boolean check</b> ({@link #doEvaluate}): {@code =} matches when the tag key is
- * present in the subject's tag map; {@code !=} matches when absent. Comparison is
- * case-insensitive. Supports {@code =} and {@code !=}.
- *
- * <p><b>Duration gate</b> (when {@link ConditionExpression#getDuration()} is non-null):
- * After the boolean check passes, the companion tag {@code <tagName>_date}
- * (e.g. {@code IDLE_date}) is read via the injected {@code tagsExtractor}. Its value is
- * parsed as {@code yyyy-MM-dd HH:mm:ss.SSS} UTC. The leaf only matches if the elapsed time
- * {@code now − tagDate ≥ duration} hours. A missing or unparseable date tag returns
- * {@code false}.
- *
- * @param <T> the subject type being evaluated
- */
 @Slf4j
 public class TagFieldEvaluationStrategy<T> extends KeyValueFieldEvaluationStrategy<T> {
 
-    /** Suffix appended to a tag name to form the companion timestamp key (e.g. {@code IDLE_date}). */
     public static final String DATE_SUFFIX = "_date";
 
     private static final DateTimeFormatter DATE_FORMATTER =
@@ -57,7 +39,6 @@ public class TagFieldEvaluationStrategy<T> extends KeyValueFieldEvaluationStrate
         super(field);
     }
 
-    /** Adds the duration gate on top of the base boolean check. */
     @Override
     public boolean evaluate(final ConditionExpression condition, final T subject, final LocalDateTime now) {
         final boolean boolResult = super.evaluate(condition, subject, now);

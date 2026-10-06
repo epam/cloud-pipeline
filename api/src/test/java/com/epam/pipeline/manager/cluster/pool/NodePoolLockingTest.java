@@ -47,18 +47,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
-/**
- * A pool's reservation state is written once - on activation, on deactivation - and nothing retries it. So neither
- * that write nor an ordinary edit may work from a copy of the pool read before the other committed: the later
- * write would silently undo the earlier one.
- *
- * <p>Deliberately not transactional, unlike the other manager tests: the point is two transactions contending for
- * the same row, so each has to commit for real. The pool is created and removed around every test.
- */
 public class NodePoolLockingTest extends AbstractManagerTest {
 
     private static final long TIMEOUT_SECONDS = 30;
-    /** Long enough for an unblocked write to have finished; the blocked one must still be waiting. */
     private static final long STILL_BLOCKED_MILLIS = 1000;
     private static final int RESERVED_COUNT = 3;
     private static final String RENAMED = "renamed while locked";
@@ -77,10 +68,6 @@ public class NodePoolLockingTest extends AbstractManagerTest {
     @MockBean
     private CloudRegionManager regionManager;
 
-    /**
-     * Validating an edit asks whether the instance and price types are offered, which is about the cloud rather
-     * than about locking.
-     */
     @MockBean
     private InstanceOfferManager instanceOfferManager;
 
@@ -115,11 +102,6 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         });
     }
 
-    /**
-     * Activation merges into the pool's launch configuration. Reading it before a concurrent edit commits, and
-     * writing the merge back after it, would drop whatever the edit changed - so activation has to read the pool
-     * only once the edit is done.
-     */
     @Test
     public void shouldApplyReservationStateToThePoolAsAConcurrentWriterLeftIt() throws Exception {
         final CountDownLatch editHoldsThePool = new CountDownLatch(1);
@@ -152,10 +134,6 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         assertThat(pool.getAmiConfiguration().getAvailabilityZone()).isEqualTo(RESERVATION_ZONE);
     }
 
-    /**
-     * The reverse: activation is in progress, and an edit must read the pool only once activation has committed,
-     * so what it merges with and writes back is the activated pool.
-     */
     @Test
     public void shouldReadThePoolForAnEditOnlyOnceAConcurrentWriterHasCommitted() throws Exception {
         final CountDownLatch activationHoldsThePool = new CountDownLatch(1);
@@ -173,8 +151,6 @@ public class NodePoolLockingTest extends AbstractManagerTest {
         assertStillBlocked(edit);
         finishTheActivation.countDown();
         activation.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        // An ordinary pool takes its count from the edit, so what matters is that the edit ran after activation
-        // committed - it is what the edit overwrote, rather than what overwrote the edit.
         assertThat(edit.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).getCount()).isZero();
     }
 

@@ -14,19 +14,6 @@
  * limitations under the License.
  */
 
-/*
- * Duplicated from cloud-pipeline-common:model, byte-for-byte apart from this note.
- *
- * The whole condition framework already exists in both modules - ConditionExpression, ConditionType,
- * ConditionOperator, FieldType, SubjectEntityField, PipelineRunField - because `core` and
- * `cloud-pipeline-common:model` declare the same packages and no module depends on both. `api` depends on
- * `core`, so it could not reach the evaluator while it lived only in `model`, and pulling `model` onto
- * `api`'s classpath would collide on every one of those shared class names.
- *
- * Keep the two copies identical. Any change to evaluation semantics must be applied to both, or the same
- * policy will decide differently depending on which service evaluates it.
- */
-
 package com.epam.pipeline.utils.condition.evaluation;
 
 import com.epam.pipeline.utils.condition.ConditionExpression;
@@ -40,17 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Evaluates a {@link ConditionExpression} tree against a subject of type {@code T} by recursively
- * walking AND/OR nodes and delegating each LOGICAL leaf to the registered
- * {@link EntityConditionEvaluationStrategy}.
- *
- * <p>Strategies are registered at construction time via a field-name → strategy map.
- * Unknown fields and unsupported operators are caught and logged; the offending node
- * evaluates to {@code false}.
- *
- * @param <T> the subject type to evaluate conditions against
- */
 @Slf4j
 public class ConditionExpressionEvaluator<T> {
 
@@ -61,10 +37,6 @@ public class ConditionExpressionEvaluator<T> {
         this.conditionEvaluationStrategies = Collections.unmodifiableMap(new HashMap<>(conditionEvaluationStrategies));
     }
 
-    /**
-     * Evaluates the expression tree against {@code subject}. Returns {@code false} when
-     * {@code expression} is {@code null}.
-     */
     public boolean evaluate(final ConditionExpression expression, final T subject, final LocalDateTime now) {
         if (Objects.isNull(expression)) {
             return false;

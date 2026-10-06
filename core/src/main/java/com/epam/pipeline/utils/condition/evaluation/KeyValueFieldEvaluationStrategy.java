@@ -25,24 +25,6 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * Evaluates {@link FieldType#KEY_VALUE} leaf nodes against a string-to-string map provided by
- * the field's {@link SubjectEntityField#extractMap} method.
- *
- * <p>The expression value is interpreted as:
- * <ul>
- *   <li>{@code <name>} — matches when the map contains key {@code name}
- *       (case-insensitive), regardless of its value.</li>
- *   <li>{@code <name>=<valuePattern>} — matches when the map contains key {@code name} and
- *       its value satisfies the case-insensitive wildcard pattern {@code valuePattern}
- *       ({@code *} expands to any sequence of characters).</li>
- * </ul>
- *
- * <p>{@code =} matches when the condition is satisfied; {@code !=} when not.
- * Supports {@code =} and {@code !=}.
- *
- * @param <T> the subject type being evaluated
- */
 public class KeyValueFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     public KeyValueFieldEvaluationStrategy(final SubjectEntityField<T> field) {

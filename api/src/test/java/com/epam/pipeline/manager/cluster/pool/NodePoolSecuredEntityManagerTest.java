@@ -40,20 +40,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-/**
- * The {@code SecuredEntityManager} contract on {@link NodePoolManager}.
- *
- * <p>This is not cosmetic: {@code EntityManager} resolves a manager per {@code AclClass} and throws for any
- * class without one, so without this contract {@code NODE_POOL} would exist in the enum while every attempt
- * to grant a permission on a pool failed.
- *
- * <p>Implementing it here means {@code EntityManager} collects this bean at startup, which closes a cycle
- * unless {@code NodePoolManager}'s dependencies stay off its constructor — hence the field injection there.
- * A mocked test cannot see that. What actually guards it is any test loading the full context, since
- * {@code TestApplication} component-scans {@code com.epam.pipeline.manager}: reverting to constructor
- * injection fails {@code NotificationManagerTest} and its siblings with a
- * {@code BeanCurrentlyInCreationException}, not anything in this class.
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class NodePoolSecuredEntityManagerTest {
@@ -85,7 +71,6 @@ public class NodePoolSecuredEntityManagerTest {
 
     @Test
     public void shouldChangeOwner() {
-        // Read under the pool's row lock, like every other write to an existing pool.
         when(poolDao.findForUpdate(POOL_ID)).thenReturn(Optional.of(pool));
         when(poolDao.updateOwner(any(NodePool.class))).thenAnswer(invocation -> invocation.getArguments()[0]);
 
@@ -124,10 +109,6 @@ public class NodePoolSecuredEntityManagerTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * A pool is neither hierarchical nor browsable through the entity tree, so these three have nothing to
-     * answer and say so loudly rather than returning something misleading.
-     */
     @Test
     public void shouldNotSupportHierarchyOperations() {
         assertThatThrownBy(() -> nodePoolManager.loadTotalCount())
@@ -138,10 +119,6 @@ public class NodePoolSecuredEntityManagerTest {
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
-    /**
-     * A pool is a root-level secured entity: it reports its own ACL class and has no parent to inherit
-     * permissions from. Both are what make the plain {@code hasPermission} expressions correct.
-     */
     @Test
     public void shouldExposeNodePoolAsRootLevelSecuredEntity() {
         assertThat(pool.getAclClass()).isEqualTo(AclClass.NODE_POOL);

@@ -79,10 +79,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         findAndAssertPool(created);
     }
 
-    /**
-     * The locking load joins the same schedule tables, outer, as the plain one - and the pool it returns must be
-     * the same, schedule included, or a write through it would drop what it did not read.
-     */
     @Test
     public void shouldLoadAPoolForUpdateExactlyAsItLoadsIt() {
         final NodePool created = createPoolWithSchedule();
@@ -120,11 +116,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(pools).containsExactlyInAnyOrder(first, second);
     }
 
-    /**
-     * The columns added for capacity reservation. Equality alone cannot carry this: {@code owner} is not part
-     * of {@code NodePool}'s equality contract (it lives on {@code AbstractSecuredEntity}, which compares only
-     * ACL class and id), so each is asserted by value.
-     */
     @Test
     public void shouldRoundTripReservationColumns() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
@@ -144,10 +135,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
     }
 
-    /**
-     * The ordinary update leaves the reservation window out on purpose, so this statement is the only way the
-     * window reaches the database - without it a reservation-backed pool would never stop being schedulable.
-     */
     @Test
     public void shouldWriteTheColumnsTheReservationLifecycleOwnsAndNothingElse() {
         final NodePool created = poolDao.create(NodePoolCreatorUtils.getPoolWithoutSchedule());
@@ -170,9 +157,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.getName()).isEqualTo(originalName);
     }
 
-    /**
-     * Every field the launch scripts read survives the round trip, in the names they read it by.
-     */
     @Test
     public void shouldRoundTripTheAmiConfiguration() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
@@ -184,10 +168,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
                 .isEqualTo(amiConfiguration());
     }
 
-    /**
-     * An update writes the configuration it carries - the manager resolves it, the pool's current one included,
-     * before it updates.
-     */
     @Test
     public void shouldWriteTheAmiConfigurationThroughAnUpdate() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
@@ -237,11 +217,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.isCapacityReservation()).isFalse();
     }
 
-    /**
-     * {@code capacity_reservation} is write-once and {@code owner} is only writable through
-     * {@link NodePoolDao#updateOwner}, so an ordinary update must leave both untouched - a pool cannot gain
-     * or lose a reservation, or change hands, as a side effect of an edit.
-     */
     @Test
     public void shouldNotChangeReservationFlagOrOwnerOnUpdate() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
@@ -260,10 +235,6 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         assertThat(loaded.getOwner()).isEqualTo(OWNER);
     }
 
-    /**
-     * The reservation lifecycle owns these, and the only caller of {@code update} builds its entity from a VO
-     * that carries none of them - so an ordinary edit must not null a pool's reservation window.
-     */
     @Test
     public void shouldNotClearLifecycleColumnsOnUpdate() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();

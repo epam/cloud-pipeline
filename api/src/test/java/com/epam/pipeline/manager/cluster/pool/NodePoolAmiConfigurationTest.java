@@ -49,11 +49,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
-/**
- * A pool's launch configuration: the one a create or update request sends, laid over the region's matching
- * {@code amis} rule at launch - nothing is taken from the rule into the pool; an update that sends none leaves it as it
- * is. Always within what the region's networks allow.
- */
 @Transactional
 public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
 
@@ -75,9 +70,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final String WINDOWS_AMI = "ami-windows";
     private static final String NETWORKS = "\"networks\": {\"" + ZONE_A + "\": \"" + SUBNET_A + "\", \"" + ZONE_B
             + "\": \"" + SUBNET_B + "\"}";
-    /**
-     * A rule the pools' instance type matches - which a new pool must not take anything from.
-     */
     private static final String AMIS = "\"amis\": [{\"platform\": \"linux\", \"instance_mask\": \"m5.*\", \"ami\": \""
             + AMI + "\", \"init_script\": \"/opt/api/scripts/init_multicloud.sh\"}]";
 
@@ -96,10 +88,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     @MockBean
     private InstanceOfferManager instanceOfferManager;
 
-    /**
-     * Checking an image's platform is a question for the cloud, answered here without one - the test application
-     * already replaces the facade with a mock.
-     */
     @Autowired
     private CloudFacade cloudFacade;
 
@@ -115,10 +103,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         setRegion(REGION_NAME + ", " + NETWORKS + ", " + AMIS);
     }
 
-    /**
-     * A matching rule is not copied into a new pool: its nodes launch as the region's rules say, and a pool with no
-     * image of its own matches a run that asks for none - which would get the rule's image just the same.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldGiveANewPoolNoConfigurationOfItsOwn() {
@@ -143,10 +127,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(loaded.toRunInstance().getNodeImage()).isEqualTo(GIVEN_AMI);
     }
 
-    /**
-     * The deprecated field still names the image: an edit of it reaches a configuration the pool has, rather than
-     * being silently outvoted by the image in it.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     @SuppressWarnings("deprecation")
@@ -165,10 +145,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(loaded.toRunInstance().getNodeImage()).isEqualTo("ami-edited");
     }
 
-    /**
-     * An edit that sends no configuration - a user's, or the autoscaler's resize - neither replaces nor clears the
-     * pool's.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldLeaveTheConfigurationAloneThroughAnEdit() {
@@ -183,10 +159,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(configurationOf(created)).isEqualTo(configuration(ZONE_A, SUBNET_A));
     }
 
-    /**
-     * The launch scripts only put nodes in zones the region's networks configure, so a pool pinned elsewhere could
-     * never launch at all.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseAZoneTheRegionDoesNotConfigure() {
@@ -197,10 +169,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
                 .hasMessageContaining(ZONE_UNCONFIGURED);
     }
 
-    /**
-     * A subnet fixes the zone, so one that belongs to another zone - or to none the region configures - contradicts
-     * the pool's own zone.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseASubnetThatIsNotTheZonesOwn() {
@@ -226,9 +194,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(configurationOf(created).getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
     }
 
-    /**
-     * Only AWS regions key their networks by zone, and only the AWS launch applies a pool's zone and subnet.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldNotCheckTheZoneOfAPoolOutsideAws() {
@@ -240,9 +205,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(configurationOf(created).getAvailabilityZone()).isEqualTo(ZONE_UNCONFIGURED);
     }
 
-    /**
-     * Pools launch Linux nodes only - checked on the image the configuration names.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseAWindowsImage() {
@@ -254,9 +216,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * Like the launch config: a configuration the request sends is the pool's, and nothing is generated for it.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldUseAConfigurationTheCreateRequestSends() {
@@ -278,10 +237,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         assertThat(configurationOf(created)).isEqualTo(configuration(ZONE_A, SUBNET_A));
     }
 
-    /**
-     * A configuration a create request sends is checked like an update's: a zone the region does not configure could
-     * never be launched into.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseARequestedConfigurationWithAZoneTheRegionDoesNotConfigure() {
@@ -293,10 +248,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
                 .hasMessageContaining(ZONE_UNCONFIGURED);
     }
 
-    /**
-     * The autoscaler resizes a pool by sending all of it back. A configuration sent back unchanged is not checked
-     * again - if the region's networks dropped its zone since, the pool would otherwise stop scaling at all.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldAcceptAnUnchangedConfigurationAfterTheRegionsNetworksChanged() {
@@ -362,7 +313,6 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         return configuration;
     }
 
-    /** What a run that names no node image asks for, on the pool's instance type, disk, price type and region. */
     private static RunInstance runAskingForNoImage() {
         final RunInstance instance = new RunInstance();
         instance.setNodeType(INSTANCE_TYPE);

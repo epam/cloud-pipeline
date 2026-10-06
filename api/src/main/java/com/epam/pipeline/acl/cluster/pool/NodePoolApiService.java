@@ -32,9 +32,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Authorization for node pools.
- */
 @Service
 @RequiredArgsConstructor
 public class NodePoolApiService {
@@ -47,9 +44,6 @@ public class NodePoolApiService {
         return nodeManager.loadAll(loadStatus);
     }
 
-    /**
-     * Filtered the same way {@code loadAll} is: a narrower query must not be a way to see more.
-     */
     @PostFilter(AclExpressions.NODE_POOL_READ_FILTER)
     public List<NodePool> filter(final NodePoolFilterVO filter) {
         return nodeManager.filter(filter);
@@ -60,10 +54,6 @@ public class NodePoolApiService {
         return nodeManager.load(poolId);
     }
 
-    /**
-     * Creating a pool with a capacity reservation request spends money, but the role is only permission to
-     * <em>ask</em>: whether the request is granted is decided separately by the approval policy.
-     */
     @PreAuthorize(AclExpressions.NODE_POOL_CREATE)
     public NodePool create(final NodePoolVO vo) {
         return nodeManager.create(vo);
@@ -74,10 +64,6 @@ public class NodePoolApiService {
         return nodeManager.update(id, vo);
     }
 
-    /**
-     * Requires {@code OWNER} rather than {@code WRITE}: deleting a reservation-backed pool is financially
-     * consequential, not merely an edit.
-     */
     @PreAuthorize(AclExpressions.NODE_POOL_ID_OWNER)
     public NodePool delete(final Long id) {
         return nodeManager.delete(id);

@@ -71,29 +71,11 @@ public class NodePoolValidator {
     private static final double HUNDRED_PERCENT = 100.0;
     private static final String WINDOWS = "windows";
 
-    /**
-     * AWS accepts a future-dated reservation request between 5 and 120 days ahead of the start date, and holds the
-     * requester to a commitment of at least 14 days once the capacity is delivered.
-     *
-     * <p>Only AWS offers this today, so the limits live here rather than behind a per-provider abstraction that
-     * would have exactly one implementation. A second provider is the point at which that changes. The minimum lead
-     * is the exception: the monitor checks it again at submission, when approval may have eaten into it, so both take
-     * it from the same AWS service constant.
-     */
     private static final int MIN_RESERVATION_LEAD_DAYS = AwsCapacityReservationService.MINIMUM_LEAD_DAYS;
     private static final int MAX_RESERVATION_LEAD_DAYS = 120;
     private static final int MIN_RESERVATION_COMMITMENT_HOURS = 14 * 24;
-    /**
-     * AWS reserves future-dated capacity only in blocks of at least this many vCPUs in total - {@code m5.xlarge}
-     * needs 8 instances.
-     */
     private static final int MIN_RESERVATION_VCPUS = 32;
 
-    /**
-     * The operating systems AWS will reserve capacity for. A closed, documented set on the provider's side - unlike
-     * the instance families, which move often enough to belong in a preference - so it is spelled out here and an
-     * unlisted value is refused rather than sent on to be rejected.
-     */
     private static final Set<String> SUPPORTED_INSTANCE_PLATFORMS = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList("Linux/UNIX", "Red Hat Enterprise Linux", "SUSE Linux")));
 
@@ -145,13 +127,6 @@ public class NodePoolValidator {
                 .ifPresent(request -> validateCapacityReservation(vo, request));
     }
 
-    /**
-     * What an edit of a pool backed by a capacity reservation may not change: its count, its price type and how its
-     * nodes launch - nor may it make the pool autoscaled. The reservation sets the count and the launch configuration
-     * itself as it becomes active and ends, so an edit changing them would either switch the pool on with no capacity
-     * behind it or stop its nodes consuming the capacity paid for - as spot nodes would. Sending the current value
-     * back, or none, is not a change.
-     */
     @SuppressWarnings("deprecation")
     public void validateReservationPoolUpdate(final NodePool existing, final NodePoolVO vo) {
         validateUnchanged(existing, "count", existing.getCount(), vo.getCount());
@@ -174,19 +149,11 @@ public class NodePoolValidator {
                         pool.getId(), field));
     }
 
-    /**
-     * Rules that only apply to a pool asking for reserved capacity. Each one rejects a request that would be
-     * accepted now and fail later - after money had been spent, or after a multi-day wait.
-     */
     private void validateCapacityReservation(final NodePoolVO vo, final CapacityReservationRequest request) {
-        // Checked before anything else: a reservation the platform cannot buy could not be cancelled either, so its
-        // pool could never be deleted.
         final CloudProvider provider = regionManager.load(vo.getRegionId()).getProvider();
         Assert.isTrue(reservationCloudFacade.isSupported(provider),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED,
                         provider));
-        // Reservations cover on-demand capacity, so a spot pool would never consume one and the user would
-        // be paying for the reservation and the spot nodes both.
         Assert.isTrue(!PriceType.SPOT.equals(vo.getPriceType()),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
         Assert.isTrue(!vo.isAutoscaled(),
@@ -206,10 +173,6 @@ public class NodePoolValidator {
         validateReservationInstance(vo, request);
     }
 
-    /**
-     * Refused here rather than by the provider after approval: a request below the minimum could never be bought. An
-     * instance type the platform has no offer for is left to the provider - there is nothing to count its vCPUs by.
-     */
     private void validateReservationSize(final NodePoolVO vo) {
         final int instances = vo.getCount();
         instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId())
@@ -220,13 +183,6 @@ public class NodePoolValidator {
                                 instances, vo.getInstanceType(), vcpus, MIN_RESERVATION_VCPUS)));
     }
 
-    /**
-     * What the provider is willing to reserve, as opposed to what it is willing to run.
-     *
-     * <p>A future-dated reservation accepts a narrower set of instance types and a fixed list of platforms than
-     * ordinary on-demand capacity does, so a pool that would launch perfectly well may still be impossible to
-     * reserve. Catching that here turns a multi-day wait ending in a provider refusal into an immediate answer.
-     */
     private void validateReservationInstance(final NodePoolVO vo, final CapacityReservationRequest request) {
         final String platform = StringUtils.defaultIfBlank(request.getInstancePlatform(),
                 CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
@@ -241,10 +197,6 @@ public class NodePoolValidator {
                         vo.getInstanceType(), String.join(", ", supportedFamilies)));
     }
 
-    /**
-     * The letters an instance type begins with - {@code p5.48xlarge} is {@code p}, {@code trn1.32xlarge} is
-     * {@code trn}.
-     */
     private static String instanceFamily(final String instanceType) {
         if (StringUtils.isBlank(instanceType)) {
             return StringUtils.EMPTY;
@@ -261,11 +213,6 @@ public class NodePoolValidator {
                 .collect(Collectors.toSet());
     }
 
-    /**
-     * The window is a search space, not a single date: the provider decides which start dates are actually
-     * available. A window too narrow to hold the requested duration can never be satisfied, so it is rejected
-     * here rather than after the provider has been asked.
-     */
     private void validateReservationWindow(final CapacityReservationRequest request) {
         final LocalDateTime start = request.getRequestedStartDate();
         final LocalDateTime end = request.getRequestedEndDate();
@@ -289,18 +236,12 @@ public class NodePoolValidator {
         validateProviderLimits(start, duration);
     }
 
-    /**
-     * The limits the cloud provider imposes on a future-dated reservation, checked here so a request that cannot
-     * possibly be accepted is refused at once instead of being approved, submitted and rejected days later.
-     */
     private void validateProviderLimits(final LocalDateTime start, final int duration) {
         final long leadDays = Duration.between(DateUtils.nowUTC(), start).toDays();
         Assert.isTrue(leadDays >= MIN_RESERVATION_LEAD_DAYS && leadDays <= MAX_RESERVATION_LEAD_DAYS,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID,
                         start, MIN_RESERVATION_LEAD_DAYS, MAX_RESERVATION_LEAD_DAYS));
 
-        // The duration is the commitment: the provider holds the requester to it once the capacity is delivered,
-        // and will not accept a commitment shorter than this.
         Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_HOURS,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT,
                         duration, MIN_RESERVATION_COMMITMENT_HOURS));
@@ -318,14 +259,8 @@ public class NodePoolValidator {
     }
 
     /**
-     * A launch configuration given for a pool. Its image has to be one a pool may launch, and its zone and
-     * subnet ones its region's networks configure: the launch scripts only put nodes there, and a zone they would not
-     * use leaves the pool unable to launch at all. A region that configures no networks lets its nodes go to any
-     * zone, so there is nothing to check against.
-     *
-     * <p>The rule-selection fields ({@code platform}, {@code instance_mask}, {@code permissions}, {@code docker_image})
-     * are not checked: on a pool they are ignored. Zones are only checked for AWS regions: elsewhere the
-     * {@code networks} are keyed by network, not by zone, and only the AWS launch applies a pool's zone and subnet.
+     * A launch configuration given for a pool. Its image has to be one a pool may launch, and on AWS its zone and
+     * subnet ones its region's networks configure.
      */
     public void validateAmiConfiguration(final Long regionId, final AMIConfiguration configuration) {
         if (configuration == null) {
@@ -410,9 +345,6 @@ public class NodePoolValidator {
         return DoubleUtils.between(0.0, HUNDRED_PERCENT, value);
     }
 
-    /**
-     * Zone to subnet, as the region's {@code networks} configure them; empty where they configure none.
-     */
     private Map<String, String> allowedNetworks(final String regionCode) {
         return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
                 .map(configuration -> configuration.allowedNetworks(regionCode))

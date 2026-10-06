@@ -50,9 +50,6 @@ public class CapacityReservationTest {
         assertEquals(reservation, copy);
     }
 
-    /**
-     * The copy is what a provider releases after the reservation itself has moved on - so it must keep what it was.
-     */
     @Test
     public void shouldKeepTheCopyAsItWasWhenTheReservationMovesOn() {
         final CapacityReservation reservation = CapacityReservation.builder()
@@ -68,9 +65,6 @@ public class CapacityReservationTest {
         assertEquals(0, copy.getAttempt());
     }
 
-    /**
-     * A client can send no platform, leaving the defaulted field null. The copy must not fill it in.
-     */
     @Test
     public void shouldCopyANullPlatformAsNull() {
         final CapacityReservation reservation = new CapacityReservation();

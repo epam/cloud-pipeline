@@ -359,10 +359,6 @@ public final class PreferenceValidators {
                 String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
     }
 
-    /**
-     * The capacity reservation monitor cannot tell when to warn that a reservation is ending without a lead time,
-     * so the settings - and the lead time in them - are required rather than left to be defaulted somewhere.
-     */
     public static final BiPredicate<String, Map<String, Preference>> isValidCapacityReservationMonitorSettings =
         isNullOrValidJson(new TypeReference<CapacityReservationMonitorSettings>() {})
             .and((pref, dependencies) -> {

@@ -34,11 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Routes a reservation to its provider, and holds what the rule never to buy the same reservation twice rests on,
- * whichever provider that is: a client token per attempt, and the lookup by it. The caller - the monitor's submit
- * step - looks before it creates.
- */
 @Service
 @Slf4j
 public class CapacityReservationCloudFacade {
@@ -53,10 +48,7 @@ public class CapacityReservationCloudFacade {
     }
 
     /**
-     * What the provider already holds for this attempt: a reservation bought by a submission whose reply was lost.
-     * Looked for by the attempt's client token, so a retry adopts it instead of buying a second one.
-     *
-     * @return empty when there is nothing to adopt, and a reservation may be created
+     * Finds the reservation the provider already holds under this attempt's client token, if any.
      */
     public Optional<CloudCapacityReservation> findSubmitted(final CapacityReservation reservation) {
         if (StringUtils.isNotBlank(reservation.getCloudReservationId())) {
@@ -69,18 +61,11 @@ public class CapacityReservationCloudFacade {
         return existing;
     }
 
-    /**
-     * Creates the reservation for this attempt, under the attempt's client token - so a repeat of this call is
-     * recognised by the provider rather than bought twice. Only once {@link #findSubmitted} has found nothing.
-     */
     public CloudCapacityReservation create(final CapacityReservation reservation) {
         reservation.setClientToken(clientToken(reservation));
         return serviceFor(reservation).createFutureDated(reservation);
     }
 
-    /**
-     * The earliest start date the provider accepts for this reservation right now: its minimum lead from now.
-     */
     public LocalDateTime earliestAcceptedStart(final CapacityReservation reservation) {
         return DateUtils.nowUTC().plus(serviceFor(reservation).getMinimumLead());
     }
@@ -103,8 +88,6 @@ public class CapacityReservationCloudFacade {
     public void cancel(final CapacityReservation reservation) {
         final CapacityReservationCloudService service = serviceFor(reservation);
         if (StringUtils.isBlank(reservation.getCloudReservationId())) {
-            // Only an approved reservation can have been bought without us learning its id - its submission is
-            // retried until the reply arrives. Anywhere else, nothing was ever created.
             if (CapacityReservationStatus.APPROVED != reservation.getStatus()) {
                 return;
             }
@@ -120,17 +103,10 @@ public class CapacityReservationCloudFacade {
         service.cancel(reservation);
     }
 
-    /**
-     * Deterministic, so the same attempt always produces the same token and the provider can recognise a repeat.
-     * The attempt is part of it because a slid start date is a genuinely different request, not a retry.
-     */
     static String clientToken(final CapacityReservation reservation) {
         return String.format("cp-cr-%d-%d", reservation.getId(), reservation.getAttempt());
     }
 
-    /**
-     * Whether a reservation can be made in a region of this provider at all.
-     */
     public boolean isSupported(final CloudProvider provider) {
         return services.containsKey(provider);
     }

@@ -39,10 +39,6 @@ public class NodePoolVO {
     private int instanceDisk;
     private PriceType priceType;
     private Set<String> dockerImages;
-    /**
-     * @deprecated a pool's image comes from the launch configuration it is given when created - see
-     *             {@code NodePool#getAmiConfiguration()}. Still honoured: it is that configuration's image when set.
-     */
     @Deprecated
     private String instanceImage;
     private int count;
@@ -57,20 +53,8 @@ public class NodePoolVO {
     private Map<String, PoolLabel> kubeLabels;
     private NodePoolType poolType;
 
-    /**
-     * How runs divide one node of a sharable pool. Optional: left unset, it is derived from the instance type.
-     * Accepted on update as well as on creation.
-     */
     private NodePoolLaunchConfig launchConfig;
-    /**
-     * What the pool's nodes launch with over the region's matching {@code amis} rule, field by field. Used when sent,
-     * absent on creation when not, and left as it is by an update that does not send it.
-     */
     private AMIConfiguration amiConfiguration;
 
-    /**
-     * Present when the caller wants capacity reserved for this pool. Absent for an ordinary pool, which is
-     * how every pool behaved before this existed.
-     */
     private CapacityReservationRequest capacityReservationRequest;
 }

@@ -122,11 +122,6 @@ public class NotificationParameterManager {
         return parameters;
     }
 
-    /**
-     * Builds the template parameters for a capacity reservation notification. The linked pool id is included
-     * so a template can point the reader at the pool - the object they actually manage - rather than at the
-     * reservation, which has no screen of its own.
-     */
     public Map<String, Object> build(final NotificationType type, final CapacityReservation reservation) {
         final Map<String, Object> parameters = build(type);
         parameters.put("reservationId", reservation.getId());

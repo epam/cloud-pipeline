@@ -12,19 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Loads scripts/autoscaling/aws/nodeup.py as a module named `aws_nodeup`.
-
-The script runs on the API host with the platform's own packages installed - `pipeline` from pipe-common, pykube,
-jwt - none of which the logic under test uses. They are replaced by stubs here, so the tests need only boto3 and
-pytz. It is loaded by path under its own name because scripts/autoscaling/nodeup.py is also called `nodeup`.
-
-CI runs these in the python-tests job of .github/workflows/java_tests.yml. By hand, from this directory, with boto3,
-pytz and pytest installed (and mock on Python 2):
-
-    python -m pytest .
-"""
-
 import os
 import sys
 
@@ -38,7 +25,7 @@ for _module in ['pykube', 'jwt', 'pipeline']:
         sys.modules[_module] = MagicMock()
 
 try:
-    import distutils.version  # noqa: F401 - removed from the standard library in Python 3.12
+    import distutils.version  # noqa: F401
 except ImportError:
     sys.modules['distutils'] = MagicMock()
     sys.modules['distutils.version'] = MagicMock()

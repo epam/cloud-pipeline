@@ -62,7 +62,6 @@ public class PoolAutoscaler {
     private void adjustPoolSize(final NodePool pool,
                                 final List<Node> availableNodes,
                                 final Set<String> activePodIds) {
-        // A reservation-backed pool runs at the reserved size, and an update resizing it would be refused.
         if (!pool.isAutoscaled() || pool.isCapacityReservation()) {
             return;
         }

@@ -765,7 +765,6 @@ public final class MessageConstants {
     //Persistent Nodes
     public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
 
-    // Capacity reservation
     public static final String ERROR_CAPACITY_RESERVATION_NOT_FOUND = "error.capacity.reservation.not.found";
     public static final String ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE =
             "error.capacity.reservation.pool.immutable";

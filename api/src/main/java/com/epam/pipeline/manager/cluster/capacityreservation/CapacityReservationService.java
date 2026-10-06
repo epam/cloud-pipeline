@@ -47,10 +47,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Owns the {@link CapacityReservation} side of a node pool: creating one with the pool, moving it
- * through its statuses, and the rules about what may still be done to a pool that has one.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -64,20 +60,10 @@ public class CapacityReservationService {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
 
-    /**
-     * Lazy because {@code NodePoolManager} depends on this service in turn - creating a pool is what creates a
-     * reservation. A constructor edge either way round would be a cycle Spring could not resolve.
-     */
     @Autowired
     @Lazy
     private NodePoolManager poolManager;
 
-    /**
-     * Creates the reservation backing a newly persisted pool.
-     *
-     * @param request the reservation's terms, with the pool's side of it - its id, name, region, owner, instance
-     *                type and the count to reserve - already filled in
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public CapacityReservation create(final CapacityReservationRequest request) {
         final CapacityReservation reservation = build(request);
@@ -99,13 +85,6 @@ public class CapacityReservationService {
         return reservationDao.findByNodePoolId(nodePoolId);
     }
 
-    /**
-     * Loads a reservation to change it, holding its pool's row lock for the rest of the caller's transaction.
-     *
-     * <p>The pool is locked before the reservation is read, the same order every writer of the two takes them in, so
-     * two writers of one reservation wait for each other rather than deadlock. What comes back is the reservation as
-     * it is once the lock is held.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public CapacityReservation loadForUpdate(final Long id) {
         poolManager.loadForUpdate(load(id).getNodePoolId());
@@ -131,15 +110,13 @@ public class CapacityReservationService {
     }
 
     /**
-     * Prepares the pool behind a now-scheduled reservation: the window it is usable in, and the reservation's target,
-     * zone and subnet in its launch configuration, so its nodes consume the capacity from the moment there is any. The
-     * pool stays inert - its count is 0 until {@link #activatePool}.
+     * Prepares the pool behind a scheduled reservation: the window it is usable in, and the reservation's target,
+     * zone and subnet in its launch configuration. The pool's count stays 0.
      */
     @Transactional
     public void schedulePool(final CapacityReservation reservation) {
         final Map<String, Object> launchSpecification = launchSpecificationOf(reservation);
         final String zone = reservation.getAvailabilityZone();
-        // None where the region configures no networks: the zone is then pinned by placement alone.
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setStartDate(reservation.getStartDate());
@@ -150,10 +127,6 @@ public class CapacityReservationService {
                 reservation.getNodePoolId(), reservation.getId(), reservation.getStartDate(), reservation.getEndDate());
     }
 
-    /**
-     * Makes the pool behind a now-active reservation usable, by giving it the reserved count. Everything else it needs
-     * was written when the reservation was scheduled - see {@link #schedulePool}.
-     */
     @Transactional
     public void activatePool(final CapacityReservation reservation) {
         poolManager.applyReservationState(reservation.getNodePoolId(),
@@ -162,46 +135,28 @@ public class CapacityReservationService {
                 reservation.getNodePoolId(), reservation.getInstanceCount(), reservation.getId());
     }
 
-    /**
-     * Returns the pool to the inert state it was created in, by the same mechanism that kept it there: a count of
-     * zero. Runs already on its nodes are not touched - the capacity ending, or being cancelled, does not make them
-     * stop.
-     */
     @Transactional
     public void deactivatePool(final CapacityReservation reservation) {
         final Set<String> reservationKeys = launchSpecificationOf(reservation).keySet();
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setCount(0);
-            // A node launched after this must not target a reservation that no longer exists: the launch would fail.
             pool.setAmiConfiguration(withoutReservation(pool.getAmiConfiguration(), reservationKeys));
         });
         log.debug("Deactivated node pool {} after capacity reservation {} ended",
                 reservation.getNodePoolId(), reservation.getId());
     }
 
-    /**
-     * Read under the pool's lock, like a cancel: approving a copy read before a concurrent cancel committed would write
-     * APPROVED over CANCELLED, and the monitor would then buy the capacity the user cancelled.
-     */
     @Transactional
     public CapacityReservation approve(final Long id) {
         return statusService.transition(loadForUpdate(id), CapacityReservationStatus.APPROVED, null);
     }
 
-    /**
-     * Gives up a reservation, releasing the provider's hold on it first.
-     *
-     * <p>The provider call comes before the status write so that a failure to release leaves the reservation
-     * visibly uncancelled rather than marked cancelled while still billing.
-     */
     @Transactional
     public CapacityReservation cancel(final Long id) {
         final CapacityReservation reservation = loadForUpdate(id);
         cloudFacade.cancel(reservation);
         final CapacityReservation cancelled =
                 statusService.transition(reservation, CapacityReservationStatus.CANCELLED, null);
-        // A cancelled reservation is never looked at again, so the pool must go inert here: left with its count
-        // it would keep launching full-price on-demand nodes with no reservation behind them.
         deactivatePool(cancelled);
         return cancelled;
     }
@@ -239,9 +194,6 @@ public class CapacityReservationService {
         return configuration;
     }
 
-    /**
-     * Rejects deleting a pool whose reservation is still live.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void onPoolDeletion(final NodePool pool) {
         if (!pool.isCapacityReservation()) {
@@ -281,9 +233,6 @@ public class CapacityReservationService {
                 .build();
     }
 
-    /**
-     * Zone to subnet, as the region's {@code networks} configure them; empty where they configure none.
-     */
     private Map<String, String> allowedNetworks(final String regionCode) {
         return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
                 .map(configuration -> configuration.allowedNetworks(regionCode))

@@ -61,33 +61,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
-/**
- * The path this whole slice exists to make testable: a pool created with a reservation request lands both
- * rows in the database, correctly linked, with the reservation's status decided by the approval policy.
- *
- * <p>Nothing here reaches a cloud provider - there is no provider integration yet - so a reservation created
- * this way stops at {@code APPROVED} or {@code REQUIRED_APPROVE}.
- */
 @Transactional
 public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     private static final String POOL_NAME = "g5 reserved pool";
-    /**
-     * A G-family type, because AWS reserves future-dated capacity for the C, M, R, I, T and G families only - a
-     * P-family request would be refused before it reached the provider.
-     */
     private static final String INSTANCE_TYPE = "g5.48xlarge";
     private static final long REGION_ID = 1L;
     private static final int INSTANCE_DISK = 100;
     private static final int INSTANCE_COUNT = 2;
-    /**
-     * Within AWS's limits for a future-dated request: at least 5 days of lead time, and a commitment of at least
-     * 14 days that still fits inside the window.
-     */
     private static final int DURATION_HOURS = 14 * 24;
     private static final int LEAD_DAYS = 7;
     private static final int WINDOW_DAYS = 30;
-    /** Well inside AWS's minimum commitment, so a request asking for it must be refused. */
     private static final int ONE_DAY_HOURS = 24;
     private static final String OWNER = "requester";
     private static final String ADMIN = "ADMIN";
@@ -99,7 +83,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     private static final String OWN_SPEC_KEY = "IamInstanceProfile";
     private static final String OWN_INIT_SCRIPT = "/opt/api/scripts/init_custom.sh";
-    /** What a g5.48xlarge has. */
     private static final int INSTANCE_VCPUS = 192;
     private static final int SMALL_INSTANCE_VCPUS = 8;
     private static final int MIN_VCPUS = 32;
@@ -131,20 +114,12 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @Autowired
     private CapacityReservationService reservationService;
 
-    /**
-     * The provider is not what is under test: cancelling asks it to release the capacity, and activation asks it how
-     * a launch targets the reservation.
-     */
     @MockBean
     private CapacityReservationCloudFacade cloudFacade;
 
     @MockBean
     private CloudRegionManager regionManager;
 
-    /**
-     * Pool validation asks whether the price type and instance type are offered in the region. That is a
-     * question about the cloud, not about this flow, so it is stubbed rather than exercised here.
-     */
     @MockBean
     private InstanceOfferManager instanceOfferManager;
 
@@ -162,10 +137,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         givenVcpusPerInstance(INSTANCE_VCPUS);
     }
 
-    /**
-     * Only a provider the platform can buy capacity from: a reservation it cannot buy it could not cancel either,
-     * and its pool could then never be deleted.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRefuseAReservationInARegionOfAnUnsupportedProvider() {
@@ -179,10 +150,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(poolDao.loadAll().stream().noneMatch(pool -> POOL_NAME.equals(pool.getName()))).isTrue();
     }
 
-    /**
-     * AWS reserves future-dated capacity in blocks of at least 32 vCPUs in total. A smaller request would be
-     * accepted, approved, and then refused by the provider days later.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRefuseAReservationBelowTheProvidersVcpuMinimum() {
@@ -201,9 +168,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(poolManager.create(reservationPoolVO()).getId()).isNotNull();
     }
 
-    /**
-     * A reservation-backed pool runs at the size reserved for it, so there is nothing for autoscaling to decide.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRefuseAnAutoscaledReservationPool() {
@@ -212,9 +176,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .hasMessageContaining("cannot be autoscaled");
     }
 
-    /**
-     * With no offer to count the vCPUs by, the provider has the last word.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldLeaveAnInstanceTypeWithoutAnOfferToTheProvider() {
@@ -250,9 +211,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isEqualTo(CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
     }
 
-    /**
-     * What a reservation takes from its pool comes from the persisted pool, whatever the request carries.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldTakeThePoolsSideOfTheReservationFromThePoolNotTheRequest() {
@@ -277,10 +235,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(reservation.getInstanceCount()).isEqualTo(INSTANCE_COUNT);
     }
 
-    /**
-     * A reservation-backed pool is persisted inert. Its requested size lives on the reservation, so the size
-     * is not lost - but the pool cannot schedule anything until the reservation is actually granted.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldPersistReservationBackedPoolWithZeroCount() {
@@ -293,10 +247,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .getInstanceCount()).isEqualTo(INSTANCE_COUNT);
     }
 
-    /**
-     * With no policy configured the safe default applies: the request waits for a human rather than
-     * auto-approving something that spends money.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRequireApprovalWhenNoPolicyMatches() {
@@ -315,9 +265,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
     }
 
-    /**
-     * An ordinary pool must be entirely unaffected: no reservation row, and its count honoured as given.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldNotCreateReservationForOrdinaryPool() {
@@ -330,11 +277,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isFalse();
     }
 
-    /**
-     * A sharable pool gets a launch config derived from its instance type, and the pod selector is keyed on the
-     * pool's id, which every node of the pool is labelled with - allocated before the pool is written, so the config
-     * is part of the pool's own insert.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldGenerateLaunchConfigForSharablePool() {
@@ -358,10 +300,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isEqualTo(String.valueOf(created.getId()));
     }
 
-    /**
-     * A caller-supplied config is taken as given, but a selector they left unset still gets the pool's id - they have
-     * no way to know it when they submit the request.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldKeepCallerLaunchConfigAndStillFillTheSelector() {
@@ -384,9 +322,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isEqualTo(String.valueOf(created.getId()));
     }
 
-    /**
-     * The selector names the pool rather than a reservation, so a sharable pool without one selects its nodes too.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldGenerateLaunchConfigForASharablePoolWithoutAReservation() {
@@ -403,10 +338,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(config.getKubeAssignPolicy().getSelector().getValue()).isEqualTo(String.valueOf(created.getId()));
     }
 
-    /**
-     * Like the launch configuration: an edit that sends a launch config replaces it, and one that sends none leaves
-     * it as it is.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldReplaceTheLaunchConfigOnlyWhenAnEditSendsOne() {
@@ -444,10 +375,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getLaunchConfig()).isNull();
     }
 
-    /**
-     * AWS will not assess a future-dated request for a date less than 5 days out, so accepting one here would
-     * approve a request that is certain to be refused - after the approval, and after the wait.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRejectAStartDateTooSoonForTheProvider() {
@@ -459,9 +386,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * The other end of the same window: AWS looks no further ahead than 120 days.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRejectAStartDateTooFarAheadForTheProvider() {
@@ -473,11 +397,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * The duration is the commitment, and AWS holds the requester to at least 14 days of it. Rejecting a shorter
-     * one is deliberately not the same as quietly rounding it up: that would bill two weeks for a request nobody
-     * made.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRejectADurationShorterThanTheProvidersMinimumCommitment() {
@@ -487,11 +406,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * AWS reserves future-dated capacity for the C, M, R, I, T and G families only - which notably excludes the P
-     * families, the obvious choice for GPU work. Refusing here is the difference between an immediate, explicable
-     * error and a provider rejection days later.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRejectAnInstanceFamilyTheProviderWillNotReserve() {
@@ -501,10 +415,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * The family is the letters before the first digit, not the first letter: {@code trn1} is Trainium and is not
-     * the {@code t} family, so matching on the initial alone would let it through to be refused by AWS.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldNotMistakeALongerFamilyPrefixForASupportedOne() {
@@ -514,10 +424,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * The supported families are the provider's list and it changes, so an administrator can widen it without
-     * waiting for a release.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldAllowAFamilyAnAdministratorHasEnabled() {
@@ -530,9 +436,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
     }
 
-    /**
-     * An operating system AWS does not reserve capacity for cannot be satisfied at any date.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRejectAnInstancePlatformTheProviderDoesNotKnow() {
@@ -542,10 +445,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * A matching AUTO_APPROVE policy is how an administrator pre-authorizes a <em>shape</em> of request - this
-     * instance family, under this duration - rather than approving each one by hand.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldAutoApproveWhenPolicyMatches() {
@@ -556,12 +455,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
     }
 
-    /**
-     * Deny wins. A request can legitimately match an auto-approve rule and a deny rule at once - broad
-     * "this family is fine" alongside narrow "but not above this size" - and in that case it must still reach a
-     * human. Evaluating auto-approve first would silently spend money on exactly the requests an administrator
-     * wrote a rule to stop.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRequireApprovalWhenDenyMatchesAlongsideAutoApprove() {
@@ -572,10 +465,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
     }
 
-    /**
-     * Order of the rules in the preference must not matter - the deny is decisive whether it is written first or
-     * last, otherwise the outcome would depend on how an administrator happened to arrange the list.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldRequireApprovalWhenDenyIsListedBeforeAutoApprove() {
@@ -586,9 +475,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
     }
 
-    /**
-     * And a deny that does not describe this request leaves the auto-approve standing.
-     */
     @Test
     @WithMockUser(username = OWNER)
     public void shouldAutoApproveWhenDenyDoesNotMatch() {
@@ -599,11 +485,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
     }
 
-    /**
-     * The window is the pool's from the moment the provider agrees to the reservation. The ordinary pool update leaves
-     * the dates out, so writing them through it used to drop the window - and the pool then stayed schedulable after
-     * the reservation ended.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldPersistTheReservationWindowWhenThePoolIsScheduled() {
@@ -620,10 +501,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isActive(reservation.getEndDate().plusMinutes(1))).isFalse();
     }
 
-    /**
-     * Everything but the count is in place since the reservation was scheduled, so going live only switches the pool
-     * on.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldOnlySwitchThePoolOnWhenItsReservationIsActivated() {
@@ -642,10 +519,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(activated.getEndDate()).isEqualTo(scheduled.getEndDate());
     }
 
-    /**
-     * Until its reservation is active the pool is kept inert by a count of 0. An edit that took the count from the
-     * request would switch it on early, launching plain on-demand nodes with no capacity behind them.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldKeepAPoolInertThroughAnEditBeforeItsReservationIsActive() {
@@ -675,10 +548,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).getCount()).isZero();
     }
 
-    /**
-     * Once active, the count is the reserved one: fewer would leave paid-for capacity idle, more would launch nodes
-     * with no capacity behind them.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseResizingAnActiveReservationPool() {
@@ -706,10 +575,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).isAutoscaled()).isFalse();
     }
 
-    /**
-     * Once the reservation has ended its pool is inert for good - a retry is a new pool - so an edit must not
-     * switch it back on with no capacity behind it.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldKeepAPoolInertThroughAnEditAfterItsReservationWasCancelled() {
@@ -723,10 +588,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isZero();
     }
 
-    /**
-     * A cancelled reservation is never looked at again, so anything still switched on stays on - running
-     * full-price on-demand nodes with no reservation behind them.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldDeactivateThePoolWhenAnActiveReservationIsCancelled() {
@@ -741,10 +602,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .isEqualTo(CapacityReservationStatus.CANCELLED);
     }
 
-    /**
-     * What an editor sends for an existing pool: the pool as it is stored, without the reservation request, which only
-     * applies when the pool is created.
-     */
     private NodePoolVO editOf(final Long poolId) {
         return poolMapper.toVO(poolDao.find(poolId).orElseThrow(AssertionError::new));
     }
@@ -759,10 +616,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         return vo;
     }
 
-    /**
-     * The reservation fixes only where a node launches and what it consumes, not its image: a run that asks for no
-     * image - and gets the region rule's, as the pool's nodes do - can still be placed on the pool's nodes.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldLetARunAskingForNoImageUseAScheduledReservationPool() {
@@ -782,11 +635,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(pool.toRunInstance().requirementsMatch(run, 0)).isTrue();
     }
 
-    /**
-     * Scheduling is what makes a node consume the reservation once it is live: its target, zone and subnet go into the
-     * pool's launch configuration - over what the pool's own configuration already says, which it keeps. The pool
-     * stays switched off until then.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldWriteTheReservationIntoThePoolsLaunchConfigurationWhenScheduled() {
@@ -805,10 +653,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(configuration.getInitScript()).isEqualTo(OWN_INIT_SCRIPT);
     }
 
-    /**
-     * A node launched after the reservation ended must not target it - the launch would be refused - but the pool's
-     * own settings stay.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRemoveTheReservationFromThePoolsLaunchConfigurationWhenItEnds() {
@@ -827,10 +671,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(configuration.getInitScript()).isEqualTo(OWN_INIT_SCRIPT);
     }
 
-    /**
-     * An edit is not a way to change how the nodes launch: it leaves the configuration - the reservation's part and
-     * the pool's own - exactly as it was.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldLeaveTheLaunchConfigurationAloneThroughAnEdit() {
@@ -849,9 +689,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(configuration.getInitScript()).isEqualTo(OWN_INIT_SCRIPT);
     }
 
-    /**
-     * The launch configuration is what makes the pool's nodes consume the reservation, so an edit may not replace it.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseReplacingTheLaunchConfigurationOfAReservationPool() {
@@ -871,9 +708,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(launchConfigurationOf(created)).isEqualTo(before);
     }
 
-    /**
-     * The deprecated image field is a way to replace the launch configuration's image, so it is refused the same way.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     @SuppressWarnings("deprecation")
@@ -887,9 +721,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .hasMessageContaining("Cannot change the instance image");
     }
 
-    /**
-     * A spot request cannot consume reserved capacity, and one that targets a reservation is refused by the provider.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldRefuseSwitchingAReservationPoolToSpot() {
@@ -902,9 +733,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .hasMessageContaining("Cannot change the price type");
     }
 
-    /**
-     * A reservation pool created with launch settings of its own - which the reservation must add to, not replace.
-     */
     private NodePool createWithOwnLaunchSettings() {
         final AMIConfiguration configuration = new AMIConfiguration();
         configuration.setInitScript(OWN_INIT_SCRIPT);
@@ -925,12 +753,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(preference));
     }
 
-    /**
-     * Puts the reservation where the monitor leaves it once the provider has granted the capacity.
-     */
-    /**
-     * What the monitor does to the pool as its reservation is scheduled and then goes live.
-     */
     private void scheduleAndActivate(final CapacityReservation reservation) {
         reservationService.schedulePool(reservation);
         reservationService.activatePool(reservation);
@@ -952,12 +774,10 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         return reservationDao.update(reservation);
     }
 
-    /** Matches the request: its instance type is g5.48xlarge. */
     private static String autoApproveOnInstanceType() {
         return policy("AUTO_APPROVE", logical("instance.type", "=", "g5.*"));
     }
 
-    /** Also matches it: the requested duration is 24 hours. */
     private static String denyOnDuration() {
         return policy("DENY", logical("duration.hours", ">", "12"));
     }

@@ -72,79 +72,28 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-/**
- * AWS On-Demand Capacity Reservations, future-dated.
- *
- * <h3>The request AWS requires</h3>
- *
- * <p>A future-dated reservation is not an ordinary one with a date attached - AWS imposes its own rules, and each
- * of the following is set because the API refuses or misbehaves without it:
- *
- * <ul>
- *   <li>{@code instanceMatchCriteria = TARGETED} - mandatory for future-dated requests, and the right thing
- *       regardless: with {@code OPEN}, unrelated instances in the account silently consume capacity a user was
- *       promised.</li>
- *   <li>{@code deliveryPreference = INCREMENTAL} - the only value AWS supports here.</li>
- *   <li>{@code commitmentDuration} in <em>seconds</em>, the minimum time we promise to keep the reservation active
- *       once delivered.</li>
- *   <li>No {@code endDate}. AWS forbids an end date inside the commitment duration, and ours would land exactly on
- *       its boundary. So the reservation is created open-ended and this platform ends it explicitly - see
- *       {@link #cancel}.</li>
- * </ul>
- *
- * <h3>Why the client token is also written as a tag</h3>
- *
- * <p>{@code clientToken} makes the create call idempotent, but AWS never gives it back: {@code
- * DescribeCapacityReservations} returns no token field. So reconciling "did my last attempt actually create
- * something?" cannot be done on the token alone. The token is therefore also stored as a tag, which describe
- * <em>can</em> filter on, and {@link #findByClientToken} searches that tag. Without this the idempotency guard
- * would be unable to see an existing reservation and would buy a second one.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class AwsCapacityReservationService implements CapacityReservationCloudService {
 
-    /**
-     * Tag carrying the idempotency token, because describe cannot filter on the token itself.
-     */
     static final String CLIENT_TOKEN_TAG = "CP-capacity-reservation-client-token";
 
-    /**
-     * Tag carrying this platform's own reservation id, so a reservation found in the console is traceable back to
-     * the pool that asked for it.
-     */
     static final String RESERVATION_ID_TAG = "CP-capacity-reservation-id";
 
     private static final String NAME_TAG = "Name";
     private static final int SECONDS_PER_HOUR = 3600;
-    /**
-     * AWS accepts a future-dated reservation only when it starts at least this many days after the request.
-     */
     public static final int MINIMUM_LEAD_DAYS = 5;
 
     static final String CAPACITY_RESERVATION_SPECIFICATION = "CapacityReservationSpecification";
 
     private static final int HTTP_SERVER_ERROR = 500;
-    /**
-     * States in which AWS no longer holds - or bills for - the capacity, or never delivered it.
-     */
     private static final Set<CapacityReservationState> ALREADY_RELEASED = Collections.unmodifiableSet(EnumSet.of(
             CapacityReservationState.CANCELLED, CapacityReservationState.CANCELLING,
             CapacityReservationState.EXPIRED, CapacityReservationState.FAILED,
             CapacityReservationState.PAYMENT_FAILED, CapacityReservationState.UNSUPPORTED));
-    /**
-     * What EC2 answers with for an id it does not know, or cannot even parse - an error, not an empty list.
-     */
     private static final Set<String> UNKNOWN_RESERVATION_ERROR_CODES = new HashSet<>(Arrays.asList(
             "InvalidCapacityReservationId.NotFound", "InvalidCapacityReservationId.Malformed"));
-    /**
-     * How long after submission an unknown reservation may only be not visible yet. The EC2 API is eventually
-     * consistent, and a describe right after a create may answer that the new id does not exist; AWS gives no duration,
-     * only advice to retry "up to a few minutes" - see
-     * <a href="https://docs.aws.amazon.com/ec2/latest/devguide/eventual-consistency.html">Eventual consistency in the
-     * Amazon EC2 API</a>. Five minutes is our reading of that, not a figure AWS publishes.
-     */
     static final Duration UNKNOWN_RESERVATION_GRACE_PERIOD = Duration.ofMinutes(5);
     private static final Set<String> INSUFFICIENT_CAPACITY_ERROR_CODES = new HashSet<>(Arrays.asList(
             "InsufficientCapacity", "InsufficientInstanceCapacity", "InsufficientReservedInstanceCapacity"));
@@ -163,10 +112,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         return Duration.ofDays(MINIMUM_LEAD_DAYS);
     }
 
-    /**
-     * The {@code RunInstances} argument that sends an instance into a targeted reservation - without it, a
-     * reservation created with {@code TARGETED} match criteria is never consumed.
-     */
     @Override
     public Map<String, Object> launchSpecification(final CapacityReservation reservation) {
         return Collections.singletonMap(CAPACITY_RESERVATION_SPECIFICATION,
@@ -214,9 +159,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .clientToken(reservation.getClientToken())
                 .tagSpecifications(tags(reservation));
 
-        // Only pin a zone when one is already known - on a first attempt AWS picks the zone with capacity, which
-        // is more likely to succeed than any zone we could guess. Whatever it picks comes back and is what the
-        // node launch is then pinned to.
         Optional.ofNullable(reservation.getAvailabilityZone())
                 .filter(zone -> !zone.isEmpty())
                 .ifPresent(request::availabilityZone);
@@ -241,8 +183,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
             if (current.isPresent()) {
                 return toCloudReservation(current.get());
             }
-            // Thrown rather than answered while it may only not be visible yet: the step is rolled back, and the next
-            // cycle asks again.
             final boolean shouldBeVisible =
                     CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER != reservation.getStatus()
                     || Optional.ofNullable(reservation.getUpdated())
@@ -253,8 +193,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                     String.format("AWS does not show capacity reservation %s in region %s yet; will ask again",
                     reservation.getCloudReservationId(), region.getRegionCode())
             );
-            // Past that, unknown is not a transient failure - a genuine outage throws instead. Failing it is the honest
-            // outcome: there is nothing to wait for, and nothing was left running that could still cost money.
             return CloudCapacityReservation.builder()
                     .cloudReservationId(reservation.getCloudReservationId())
                     .state(CloudCapacityReservationState.FAILED)
@@ -266,10 +204,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
 
     /**
      * Ends the reservation at AWS.
-     *
-     * <p>This is not only a user-initiated cancel: because the reservation is created without an end date (see the
-     * class comment), it is also how a reservation that has run its course stops costing money.
-     *
      */
     @Override
     public void cancel(final CapacityReservation reservation) {
@@ -279,9 +213,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                     findById(client, reservation.getCloudReservationId());
             if (current.isPresent()) {
                 if (ALREADY_RELEASED.contains(current.get().state())) {
-                    // A retried step: the monitor rolls a whole step back when a later write in it fails, so a cancel
-                    // AWS already carried out comes round again. There is nothing left to release, and asking AWS to
-                    // cancel it anyway would fail the step every time.
                     log.debug("Capacity reservation {} ({}) is already {} at AWS; nothing to cancel",
                             reservation.getId(), reservation.getCloudReservationId(), current.get().stateAsString());
                     return;
@@ -291,8 +222,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                     return;
                 }
             }
-            // Not shown is not proof of gone - a reservation created moments ago may not be visible yet - so it is
-            // cancelled all the same, and only the cancel's own answer settles that there is nothing to release.
             cancelPlainly(client, reservation);
         }
     }
@@ -308,15 +237,11 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
             if (!isUnknownReservation(e)) {
                 throw e;
             }
-            // Already gone, never existed, or an id AWS cannot even parse. Either way nothing is held or billed.
             log.warn("Capacity reservation {} ({}) is unknown to AWS; nothing to cancel",
                     reservation.getId(), reservation.getCloudReservationId());
         }
     }
 
-    /**
-     * Whether AWS will refuse a plain cancel and demand a quote.
-     */
     private boolean requiresCancellationQuote(
             final software.amazon.awssdk.services.ec2.model.CapacityReservation awsReservation) {
         if (CapacityReservationState.SCHEDULED == awsReservation.state()) {
@@ -331,14 +256,10 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .isPresent();
     }
 
-    /**
-     * Releases the capacity and accepts the wind-down charge, which is the only way out of a live commitment.
-     */
     private void cancelWithCommitmentWindDown(final Ec2Client client, final CapacityReservation reservation) {
         final CapacityReservationCancellationQuote quote = client.createCapacityReservationCancellationQuote(
                         CreateCapacityReservationCancellationQuoteRequest.builder()
                                 .capacityReservationId(reservation.getCloudReservationId())
-                                // Same reasoning as the create call: a retried quote must not become a second one.
                                 .clientToken(cancellationToken(reservation))
                                 .build())
                 .capacityReservationCancellationQuote();
@@ -358,10 +279,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         return String.format("cp-cr-cancel-%d-%d", reservation.getId(), reservation.getAttempt());
     }
 
-    /**
-     * Empty when AWS does not know the id - whether it answers with no reservation or, as EC2 does for an id it has
-     * never had, has purged or cannot parse, with one of {@link #UNKNOWN_RESERVATION_ERROR_CODES}.
-     */
     private Optional<software.amazon.awssdk.services.ec2.model.CapacityReservation> findById(
             final Ec2Client client, final String cloudReservationId) {
         try {
@@ -401,14 +318,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
 
     /**
      * Separates a failure that leaves the outcome open from a definitive refusal.
-     *
-     * <p>A client-side failure - a timeout, a dropped connection - may have happened after AWS acted, and throttling
-     * or a 5xx is AWS saying "not now" rather than "no". Both are safe to retry with the same token and must be,
-     * or a reservation AWS did create is abandoned. Any other service error is a 4xx refusal of the request itself,
-     * which means nothing was created and a retry would be refused again - so it is left as it is.
-     *
-     * <p>EC2 reports running out of capacity as a 5xx, but it is a refusal like any 4xx: nothing was created, and
-     * retrying the same request would only ask for the same missing capacity again.
      */
     private static <T> T uncertainOnTransientFailure(final CapacityReservation reservation,
                                                      final Supplier<T> call) {
@@ -447,32 +356,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 reservation.getId(), cause.getMessage()), cause);
     }
 
-    /**
-     * Maps AWS's own reservation state onto the platform's vocabulary.
-     *
-     * <p>Package-visible so it can be tested without AWS.
-     *
-     * <p>{@link CloudCapacityReservationState#UNSUPPORTED} is the state that makes the monitor abandon this
-     * reservation and buy another for a later date, so the boundary around it is the one that costs money to get
-     * wrong - and it is wrong in one direction only. Mapping a state there that AWS still intends to deliver
-     * creates a second reservation alongside the first and clears the id that could have cancelled it. Mapping a
-     * genuinely dead state to {@code PENDING} instead only leaves a reservation visibly stuck, which a human can
-     * sort out. So only a state AWS documents as undeliverable may slide:
-     *
-     * <ul>
-     *   <li>{@code unsupported} - slides straight away. AWS is explicit: "Unsupported Capacity Reservations are not
-     *       delivered". Nothing exists to pay for or cancel, so asking for another date is a clean new request.</li>
-     *   <li>{@code delayed} - "Amazon EC2 encountered a delay in provisioning ... unable to deliver the requested
-     *       capacity by the requested start date and time". Late, not refused - the reservation is still owed to
-     *       us, so it gets its own state and the monitor releases it before asking for another date. AWS waives
-     *       the commitment for a delay, so that release is free.</li>
-     *   <li>{@code unavailable} - AWS lists this value among the valid states without documenting what it means.
-     *       Polled rather than acted on: guessing "still coming" about a dead reservation only leaves it visibly
-     *       stuck, whereas guessing "dead" about a live one risks paying for two.</li>
-     *   <li>{@code cancelling} - capacity is already released, so it is treated as cancelled even though charges
-     *       continue through the wind-down period.</li>
-     * </ul>
-     */
     static CloudCapacityReservationState toState(final String awsState) {
         if (awsState == null) {
             return CloudCapacityReservationState.PENDING;
@@ -506,10 +389,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         }
     }
 
-    /**
-     * AWS carries no state-reason field on a reservation, so anything the monitor reports to a user has to be
-     * built from the state itself.
-     */
     private static CloudCapacityReservation toCloudReservation(
             final software.amazon.awssdk.services.ec2.model.CapacityReservation reservation) {
         final String awsState = reservation.stateAsString();
@@ -525,7 +404,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                         || state == CloudCapacityReservationState.PENDING
                         ? null
                         : String.format("AWS reported the reservation as '%s'", awsState))
-                // What AWS committed us to, which it may have shortened from what was asked for.
                 .grantedCommitmentSeconds(Optional.ofNullable(reservation.commitmentInfo())
                         .map(CapacityReservationCommitmentInfo::commitmentDuration)
                         .orElse(null))
@@ -554,9 +432,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
         return (AwsRegion) regionManager.load(reservation.getRegionId());
     }
 
-    /**
-     * Zone to subnet, as the region's {@code networks} configure them; empty where they configure none.
-     */
     private Map<String, String> allowedNetworks(final String regionCode) {
         return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
                 .map(configuration -> configuration.allowedNetworks(regionCode))

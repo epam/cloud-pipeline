@@ -265,14 +265,6 @@ def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
 def load_pool_launch_configuration(pool_id):
-    """
-    Fetches the launch configuration of the pool this node belongs to, once, for resolve_launch_configuration to lay
-    over the matching rule.
-
-    A pool may carry its own configuration - image, init script, filesystem, embedded scripts, additional spec, zone,
-    subnet - sent with the pool's create or update request. A capacity reservation writes its target, zone and subnet
-    into it once it is scheduled. A pool without one launches as the region's matching amis rule says.
-    """
     global __POOL_LAUNCH_CONFIGURATION__
     __POOL_LAUNCH_CONFIGURATION__ = {}
     if not pool_id:
@@ -286,9 +278,8 @@ def load_pool_launch_configuration(pool_id):
 
 def overlay_dict(base, overlay):
     """
-    Lays one launch configuration over another: every non-empty field of the overlay wins. A dict field -
-    additional_spec, embedded_scripts - is merged key by key, but each key's value is the overlay's as a whole: a pool's
-    CapacityReservationSpecification replaces the rule's rather than being mixed with it, which EC2 would refuse.
+    Lays one launch configuration over another: every non-empty field of the overlay wins, and a dict field is merged
+    key by key.
     """
     result = dict(base or {})
     for key, value in (overlay or {}).items():
@@ -306,13 +297,8 @@ def overlay_dict(base, overlay):
 def resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, run_id, pool_id,
                                  ins_img, availability_zone, subnet):
     """
-    How the node launches, in three layers, each laid over the one before:
-
-    1. the region's first matching amis rule in cluster.networks.config - or this script's defaults when none matches;
-    2. the launch configuration of the node's pool, when it is in one;
-    3. what this launch was given explicitly: the image, zone and subnet arguments.
-
-    All three use the same field names, those of an amis rule.
+    Resolves the node's launch configuration in three layers, each laid over the one before: the region's matching
+    amis rule (or the defaults), the pool's launch configuration, and the explicit image, zone and subnet arguments.
     """
     ami_configuration = get_matching_instance_image(aws_region, ins_type, ins_platform, api_token, run_id)
     if ami_configuration['instance_mask']:
@@ -328,10 +314,6 @@ def resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, 
 
 
 def zone_pinned_by_pool(availability_zone):
-    """
-    Whether the zone is the one the pool's own configuration pins - the only case in which a launch is held to it
-    without a subnet. A zone that ordinary runs ask for keeps today's meaning.
-    """
     return bool(availability_zone) and availability_zone == __POOL_LAUNCH_CONFIGURATION__.get('availability_zone')
 
 
@@ -557,10 +539,6 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
 
 
 def without_capacity_reservation_target(instance_additional_spec):
-    """
-    A spot request cannot consume reserved capacity, and one that targets a reservation is refused - so the target
-    is dropped, loudly, and the node runs as spot without it.
-    """
     if not instance_additional_spec or CAPACITY_RESERVATION_SPECIFICATION not in instance_additional_spec:
         return instance_additional_spec
     pipe_log_warn('- Capacity reservation {} is ignored: a spot instance cannot consume reserved capacity, so this '
@@ -612,7 +590,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     elif performance_network:
         pipe_log('- Performance network requested.')
         if not subnet or not subnet_id:
-            # A zone the pool pins keeps the random subnet inside it.
             subnet_zone = availability_zone if zone_pinned_by_pool(availability_zone) else None
             pipe_log('- Subnet is not specified, trying to get a random one{}...'.format(
                 ' in AZ {}'.format(subnet_zone) if subnet_zone else ''))
@@ -652,9 +629,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             }
         })
 
-    # A zone the pool pins that no subnet or network interface fixes - the region configures no networks - is pinned by
-    # placement, or the instance lands in the default subnet of whichever zone the cloud picks. A capacity reservation,
-    # for one, is only consumed in its own zone.
     if zone_pinned_by_pool(availability_zone) and not subnet_id and not network_interface:
         placement = additional_args.get('Placement', {})
         placement.update({'AvailabilityZone': availability_zone})
