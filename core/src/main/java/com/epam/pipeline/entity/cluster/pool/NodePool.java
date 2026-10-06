@@ -102,10 +102,10 @@ public class NodePool extends AbstractSecuredEntity {
     private boolean capacityReservation;
 
     /**
-     * How this pool's nodes are launched: the one the pool's create or update request sent, or a copy of the
-     * region's matching {@code amis} rule taken when the pool was created without one. A capacity reservation writes
-     * its target, zone and subnet into it while it is live. Absent for a pool outside AWS, and for one no rule matched
-     * and no image was given for - their nodes launch as the region's rules say.
+     * What this pool's nodes launch with over the region's matching {@code amis} rule: the one the pool's create or
+     * update request sent, field by field on top of the rule. A capacity reservation writes its target, zone and subnet
+     * into it once it is scheduled. Absent for a pool none was sent for - its nodes launch exactly as the region's
+     * rules say.
      */
     private AMIConfiguration amiConfiguration;
 

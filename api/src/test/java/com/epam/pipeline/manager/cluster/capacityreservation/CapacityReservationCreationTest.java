@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -756,6 +757,29 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         vo.setScaleDownThreshold(SCALE_DOWN_THRESHOLD);
         vo.setScaleStep(1);
         return vo;
+    }
+
+    /**
+     * The reservation fixes only where a node launches and what it consumes, not its image: a run that asks for no
+     * image - and gets the region rule's, as the pool's nodes do - can still be placed on the pool's nodes.
+     */
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldLetARunAskingForNoImageUseAScheduledReservationPool() {
+        setNetworks();
+        final CapacityReservation reservation = activeReservationOf(poolManager.create(reservationPoolVO()));
+
+        scheduleAndActivate(reservation);
+
+        final NodePool pool = poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new);
+        assertThat(pool.getAmiConfiguration().getAmi()).isNull();
+        final RunInstance run = new RunInstance();
+        run.setNodeType(INSTANCE_TYPE);
+        run.setNodeDisk(INSTANCE_DISK);
+        run.setEffectiveNodeDisk(INSTANCE_DISK);
+        run.setSpot(false);
+        run.setCloudRegionId(REGION_ID);
+        assertThat(pool.toRunInstance().requirementsMatch(run, 0)).isTrue();
     }
 
     /**

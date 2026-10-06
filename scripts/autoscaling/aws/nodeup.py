@@ -266,11 +266,12 @@ def get_well_known_hosts(aws_region):
 
 def load_pool_launch_configuration(pool_id):
     """
-    Fetches the launch configuration of the pool this node belongs to, once, for get_allowed_instance_image to overlay.
+    Fetches the launch configuration of the pool this node belongs to, once, for resolve_launch_configuration to lay
+    over the matching rule.
 
     A pool may carry its own configuration - image, init script, filesystem, embedded scripts, additional spec, zone,
-    subnet - sent with the pool's create or update request, or taken from the region's matching amis rule when the
-    pool was created without one. A capacity reservation writes its target, zone and subnet into it while it is live.
+    subnet - sent with the pool's create or update request. A capacity reservation writes its target, zone and subnet
+    into it once it is scheduled. A pool without one launches as the region's matching amis rule says.
     """
     global __POOL_LAUNCH_CONFIGURATION__
     __POOL_LAUNCH_CONFIGURATION__ = {}
@@ -283,45 +284,47 @@ def load_pool_launch_configuration(pool_id):
     return __POOL_LAUNCH_CONFIGURATION__
 
 
-# The pool configuration's field for each field of an allowed instance
-POOL_LAUNCH_CONFIGURATION_FIELDS = {
-    'instance_mask_ami': 'ami',
-    'init_script': 'init_script',
-    'fs_type': 'fs_type',
-    'embedded_scripts': 'embedded_scripts',
-    'availability_zone': 'availability_zone',
-    'subnet': 'subnet',
-}
-
-
-def apply_pool_launch_configuration(allowed_instance, pool_configuration):
+def overlay_dict(base, overlay):
     """
-    Lays a pool's launch configuration over an allowed instance: every field the pool sets wins, and additional_spec
-    is merged key by key, the pool's keys winning.
+    Lays one launch configuration over another: every non-empty field of the overlay wins. A dict field -
+    additional_spec, embedded_scripts - is merged key by key, but each key's value is the overlay's as a whole: a pool's
+    CapacityReservationSpecification replaces the rule's rather than being mixed with it, which EC2 would refuse.
     """
-    if not pool_configuration:
-        return allowed_instance
-    result = dict(allowed_instance)
-    for field, pool_field in POOL_LAUNCH_CONFIGURATION_FIELDS.items():
-        if pool_configuration.get(pool_field):
-            result[field] = pool_configuration[pool_field]
-    additional_spec = dict(result.get('additional_spec') or {})
-    additional_spec.update(pool_configuration.get('additional_spec') or {})
-    result['additional_spec'] = additional_spec or None
+    result = dict(base or {})
+    for key, value in (overlay or {}).items():
+        if not value:
+            continue
+        if isinstance(value, dict):
+            merged = dict(result.get(key) or {}) if isinstance(result.get(key), dict) else {}
+            merged.update(value)
+            result[key] = merged
+        else:
+            result[key] = value
     return result
 
 
-def resolve_launch_settings(allowed_instance, availability_zone, subnet):
+def resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, run_id, pool_id,
+                                 ins_img, availability_zone, subnet):
     """
-    The additional spec, zone and subnet a launch uses: an explicit argument wins over the matched rule, with the
-    pool's configuration already over it. The additional spec is taken whether or not a rule matched - a pool's own
-    configuration can carry it without one.
+    How the node launches, in three layers, each laid over the one before:
+
+    1. the region's first matching amis rule in cluster.networks.config - or this script's defaults when none matches;
+    2. the launch configuration of the node's pool, when it is in one;
+    3. what this launch was given explicitly: the image, zone and subnet arguments.
+
+    All three use the same field names, those of an amis rule.
     """
-    if not allowed_instance:
-        return None, availability_zone, subnet
-    return (allowed_instance.get('additional_spec'),
-            availability_zone or allowed_instance.get('availability_zone'),
-            subnet or allowed_instance.get('subnet'))
+    ami_configuration = get_matching_instance_image(aws_region, ins_type, ins_platform, api_token, run_id)
+    if ami_configuration['instance_mask']:
+        pipe_log('Found matching rule {} for requested instance type {}'.format(ami_configuration['instance_mask'], ins_type))
+    if pool_id:
+        pool_ami_configuration = load_pool_launch_configuration(pool_id)
+        ami_configuration = overlay_dict(ami_configuration, pool_ami_configuration)
+    explicit_ami_configuration = {
+        'ami': None if ins_img == 'null' else ins_img,
+        'availability_zone': availability_zone,
+        'subnet': subnet}
+    return overlay_dict(ami_configuration, explicit_ami_configuration)
 
 
 def zone_pinned_by_pool(availability_zone):
@@ -332,29 +335,17 @@ def zone_pinned_by_pool(availability_zone):
     return bool(availability_zone) and availability_zone == __POOL_LAUNCH_CONFIGURATION__.get('availability_zone')
 
 
-def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
-    """
-    A pool with a launch configuration of its own launches from that - over this script's defaults, not over a rule
-    matched now: the configuration is the rule the pool was created with, and mixing it with whichever rule this
-    launch would match could give a node one rule's image and another's instance profile. Any other node launches
-    from the region's first matching amis rule.
-    """
-    if __POOL_LAUNCH_CONFIGURATION__:
-        return apply_pool_launch_configuration(get_default_instance_image(default_image), __POOL_LAUNCH_CONFIGURATION__)
-    return get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id)
-
-
-def get_default_instance_image(default_image):
+def get_default_instance_image_configuration():
     return {
-        "instance_mask_ami": default_image, "instance_mask": None,
+        "ami": None, "instance_mask": None,
         "init_script": os.path.dirname(os.path.abspath(__file__)) + '/init.sh',
         "embedded_scripts": None, "fs_type": DEFAULT_FS_TYPE, "additional_spec": None,
         "availability_zone": None, "subnet": None
     }
 
 
-def get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
-    default_object = get_default_instance_image(default_image)
+def get_matching_instance_image(cloud_region, instance_type, instance_platform, api_token, run_id):
+    default_object = get_default_instance_image_configuration()
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -391,14 +382,14 @@ def get_matching_instance_image(cloud_region, instance_type, instance_platform, 
 
         image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
-        instance_mask_ami = image_config["ami"]
+        ami = image_config["ami"]
         init_script = image_config.get("init_script", default_object["init_script"])
         availability_zone = image_config.get("availability_zone", default_object["availability_zone"])
         embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         fs_type = image_config.get("fs_type", DEFAULT_FS_TYPE)
         additional_spec = image_config.get("additional_spec", None)
         if image_platform == instance_platform and fnmatch.fnmatch(instance_type, instance_mask):
-            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            return { "ami": ami, "instance_mask": instance_mask, "init_script": init_script,
                      "embedded_scripts": embedded_scripts, "fs_type": fs_type, "additional_spec": additional_spec,
                      "availability_zone": availability_zone, "subnet": None}
 
@@ -549,9 +540,9 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
                  availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network,
-                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load):
+                 input_tags, docker_data_root, docker_storage_driver, skip_system_images_load, launch_configuration):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
+    user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, launch_configuration, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
                                             run_id, docker_data_root, docker_storage_driver, skip_system_images_load)
@@ -939,13 +930,12 @@ def replace_docker_images(pre_pull_images, user_data_script):
         raise RuntimeError("Pre-pulled docker initialization failed: unable to parse JWT token for docker auth.")
 
 
-def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
+def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, launch_configuration, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                          global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id, docker_data_root, docker_storage_driver,
                          skip_system_images_load):
-    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
-    if allowed_instance and allowed_instance["init_script"]:
-        init_script = open(allowed_instance["init_script"], 'r')
+    if launch_configuration["init_script"]:
+        init_script = open(launch_configuration["init_script"], 'r')
         user_data_script = init_script.read()
         repo_urls_string, certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(aws_region)
@@ -953,7 +943,7 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
         user_data_script = replace_proxies(aws_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
         user_data_script = replace_docker_images(pre_pull_images, user_data_script)
-        fs_type = allowed_instance.get('fs_type', DEFAULT_FS_TYPE)
+        fs_type = launch_configuration.get('fs_type', DEFAULT_FS_TYPE)
         if fs_type not in SUPPORTED_FS_TYPES:
             pipe_log_warn('Unsupported filesystem type is specified: %s. Falling back to default value %s.' %
                           (fs_type, DEFAULT_FS_TYPE))
@@ -978,8 +968,8 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                                            .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
                                            .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
-        if allowed_instance["embedded_scripts"]:
-            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+        if launch_configuration["embedded_scripts"]:
+            for embedded_name, embedded_path in launch_configuration["embedded_scripts"].items():
                 embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
         if ins_platform == 'windows':
             return pack_powershell_script_contents(user_data_script, embedded_scripts)
@@ -1825,23 +1815,15 @@ def main():
         api_token = os.environ["API_TOKEN"]
         api_user = os.environ["API_USER"]
 
-        load_pool_launch_configuration(pool_id)
-        allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
-        if allowed_instance and allowed_instance["instance_mask"]:
-            pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
-        instance_additional_spec, availability_zone, subnet = resolve_launch_settings(allowed_instance,
-                                                                                      availability_zone, subnet)
+        launch_configuration = resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, run_id,
+                                                            pool_id, ins_img, availability_zone, subnet)
+        ins_img = launch_configuration['ami'] or ins_img
+        instance_additional_spec = launch_configuration['additional_spec']
+        availability_zone = launch_configuration['availability_zone']
+        subnet = launch_configuration['subnet']
+        pipe_log('Instance image {} will be used'.format(ins_img))
         if instance_additional_spec:
             pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
-        if not ins_img or ins_img == 'null':
-            if allowed_instance and allowed_instance["instance_mask_ami"]:
-                ins_img = allowed_instance["instance_mask_ami"]
-                pipe_log('Instance image was not provided explicitly, {instance_image} will be used (retrieved for {instance_mask}/{instance_type} rule)'.format(instance_image=allowed_instance["instance_mask_ami"],
-                                                                                                                                                                 instance_mask=allowed_instance["instance_mask"],
-                                                                                                                                                                 instance_type=ins_type))
-        else:
-            pipe_log('Specified in configuration image {ami} will be used'.format(ami=ins_img))
-
         if availability_zone:
             pipe_log('Particular availability_zone: {availability_zone} will be used'.format(availability_zone=availability_zone))
         if subnet:
@@ -1857,7 +1839,8 @@ def main():
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
                                           availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network, input_tags,
-                                          docker_data_root, docker_storage_driver, skip_system_images_load)
+                                          docker_data_root, docker_storage_driver, skip_system_images_load,
+                                          launch_configuration)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 

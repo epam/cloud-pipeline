@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -49,8 +50,8 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 /**
- * A pool's launch configuration, handled like its launch config: the one a create or update request sends, or - when a
- * create sends none - one taken from the region's matching {@code amis} rule; an update that sends none leaves it as it
+ * A pool's launch configuration: the one a create or update request sends, laid over the region's matching
+ * {@code amis} rule at launch - nothing is taken from the rule into the pool; an update that sends none leaves it as it
  * is. Always within what the region's networks allow.
  */
 @Transactional
@@ -71,26 +72,14 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     private static final String ADMIN = "ADMIN";
     private static final String INSTANCE_TYPE = "m5.large";
     private static final String AMI = "ami-0123456789abcdef0";
-    private static final String GPU_AMI = "ami-gpu";
-    private static final String RESTRICTED_AMI = "ami-restricted";
     private static final String WINDOWS_AMI = "ami-windows";
-    private static final String INIT_SCRIPT = "/opt/api/scripts/init_multicloud.sh";
     private static final String NETWORKS = "\"networks\": {\"" + ZONE_A + "\": \"" + SUBNET_A + "\", \"" + ZONE_B
             + "\": \"" + SUBNET_B + "\"}";
     /**
-     * In the order the launch scripts try them: a Windows rule, a GPU-only rule, one restricted to a docker image,
-     * one restricted to a role - the test user's own - and then the one that applies.
+     * A rule the pools' instance type matches - which a new pool must not take anything from.
      */
-    private static final String AMIS = "\"amis\": ["
-            + "{\"platform\": \"windows\", \"instance_mask\": \"*\", \"ami\": \"" + WINDOWS_AMI + "\"},"
-            + "{\"platform\": \"linux\", \"instance_mask\": \"g*\", \"ami\": \"" + GPU_AMI + "\"},"
-            + "{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"" + RESTRICTED_AMI + "\","
-            + " \"docker_image\": [\"library/special\"]},"
-            + "{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"" + RESTRICTED_AMI + "\","
-            + " \"permissions\": [\"ROLE_ADMIN\"]},"
-            + "{\"platform\": \"linux\", \"instance_mask\": \"m5.*\", \"ami\": \"" + AMI + "\", \"init_script\": \""
-            + INIT_SCRIPT + "\", \"fs_type\": \"ext4\", \"additional_spec\": {\"IamInstanceProfile\": \"profile\"},"
-            + " \"run_parameters\": {\"param\": \"value\"}}]";
+    private static final String AMIS = "\"amis\": [{\"platform\": \"linux\", \"instance_mask\": \"m5.*\", \"ami\": \""
+            + AMI + "\", \"init_script\": \"/opt/api/scripts/init_multicloud.sh\"}]";
 
     @Autowired
     private NodePoolManager poolManager;
@@ -127,45 +116,44 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
     }
 
     /**
-     * The pool starts from exactly the rule its nodes would have launched with, without the fields that only choose
-     * between rules - on a pool they mean nothing.
+     * A matching rule is not copied into a new pool: its nodes launch as the region's rules say, and a pool with no
+     * image of its own matches a run that asks for none - which would get the rule's image just the same.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldStartFromTheRegionsMatchingRule() {
+    public void shouldGiveANewPoolNoConfigurationOfItsOwn() {
         final NodePool created = poolManager.create(pool());
 
-        final AMIConfiguration configuration = configurationOf(created);
-        assertThat(configuration.getAmi()).isEqualTo(AMI);
-        assertThat(configuration.getInitScript()).isEqualTo(INIT_SCRIPT);
-        assertThat(configuration.getFsType()).isEqualTo("ext4");
-        assertThat(configuration.getAdditionalSpec()).containsEntry("IamInstanceProfile", "profile");
-        assertThat(configuration.getInstanceMask()).isNull();
-        assertThat(configuration.getPlatform()).isNull();
-        assertThat(configuration.getRunParameters()).isNull();
-        assertThat(poolDao.find(created.getId()).orElseThrow(AssertionError::new).toRunInstance().getNodeImage())
-                .isEqualTo(AMI);
+        final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
+        assertThat(loaded.getAmiConfiguration()).isNull();
+        assertThat(loaded.toRunInstance().getNodeImage()).isNull();
+        assertThat(loaded.toRunInstance().requirementsMatch(runAskingForNoImage(), 0)).isTrue();
     }
 
-    /**
-     * A pool is shared by whoever its filter admits, so a rule meant for some roles or groups - even the creator's own
-     * - is not copied into it. A create or update request can give a pool such a configuration explicitly.
-     */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldNotStartFromARuleRestrictedToRolesOrGroups() {
-        assertThat(configurationOf(poolManager.create(pool())).getAmi()).isNotEqualTo(RESTRICTED_AMI).isEqualTo(AMI);
+    @SuppressWarnings("deprecation")
+    public void shouldKeepTheDeprecatedImageAsThePoolsImage() {
+        final NodePoolVO vo = pool();
+        vo.setInstanceImage(GIVEN_AMI);
+
+        final NodePool loaded = poolDao.find(poolManager.create(vo).getId()).orElseThrow(AssertionError::new);
+
+        assertThat(loaded.getAmiConfiguration()).isNull();
+        assertThat(loaded.toRunInstance().getNodeImage()).isEqualTo(GIVEN_AMI);
     }
 
     /**
-     * The deprecated field still names the image: an edit of it reaches the configuration rather than being silently
-     * outvoted by the image copied into it at creation.
+     * The deprecated field still names the image: an edit of it reaches a configuration the pool has, rather than
+     * being silently outvoted by the image in it.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     @SuppressWarnings("deprecation")
     public void shouldFollowAnEditOfTheDeprecatedImage() {
-        final NodePool created = poolManager.create(pool());
+        final NodePoolVO vo = pool();
+        vo.setAmiConfiguration(configuration(ZONE_A, SUBNET_A));
+        final NodePool created = poolManager.create(vo);
         final NodePoolVO edit = pool();
         edit.setInstanceImage("ami-edited");
 
@@ -173,50 +161,26 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
 
         final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
         assertThat(loaded.getAmiConfiguration().getAmi()).isEqualTo("ami-edited");
-        assertThat(loaded.getAmiConfiguration().getInitScript()).isEqualTo(INIT_SCRIPT);
+        assertThat(loaded.getAmiConfiguration().getAvailabilityZone()).isEqualTo(ZONE_A);
         assertThat(loaded.toRunInstance().getNodeImage()).isEqualTo("ami-edited");
     }
 
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    @SuppressWarnings("deprecation")
-    public void shouldStillUseTheDeprecatedImageWhenOneIsGiven() {
-        final NodePoolVO vo = pool();
-        vo.setInstanceImage(GIVEN_AMI);
-
-        final AMIConfiguration configuration = configurationOf(poolManager.create(vo));
-
-        assertThat(configuration.getAmi()).isEqualTo(GIVEN_AMI);
-        assertThat(configuration.getInitScript()).isEqualTo(INIT_SCRIPT);
-    }
-
     /**
-     * Only the AWS launch applies a pool's configuration, so pools elsewhere keep launching from the region's rules.
-     */
-    @Test
-    @WithMockUser(username = OWNER, roles = ADMIN)
-    public void shouldGiveNoConfigurationToAPoolOutsideAws() {
-        givenRegion(new AzureRegion());
-
-        assertThat(configurationOf(poolManager.create(pool()))).isNull();
-    }
-
-    /**
-     * Calculated once: an edit - a user's, or the autoscaler's resize - neither recalculates nor clears it.
+     * An edit that sends no configuration - a user's, or the autoscaler's resize - neither replaces nor clears the
+     * pool's.
      */
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldLeaveTheConfigurationAloneThroughAnEdit() {
-        final NodePool created = poolManager.create(pool());
-        final AMIConfiguration before = configurationOf(created);
-        setRegion(REGION_NAME + ", " + NETWORKS
-                + ", \"amis\": [{\"platform\": \"linux\", \"instance_mask\": \"*\", \"ami\": \"ami-newer\"}]");
+        final NodePoolVO vo = pool();
+        vo.setAmiConfiguration(configuration(ZONE_A, SUBNET_A));
+        final NodePool created = poolManager.create(vo);
         final NodePoolVO edit = pool();
         edit.setCount(2);
 
         poolManager.update(created.getId(), edit);
 
-        assertThat(configurationOf(created)).isEqualTo(before);
+        assertThat(configurationOf(created)).isEqualTo(configuration(ZONE_A, SUBNET_A));
     }
 
     /**
@@ -396,6 +360,17 @@ public class NodePoolAmiConfigurationTest extends AbstractManagerTest {
         configuration.setAvailabilityZone(zone);
         configuration.setSubnet(subnet);
         return configuration;
+    }
+
+    /** What a run that names no node image asks for, on the pool's instance type, disk, price type and region. */
+    private static RunInstance runAskingForNoImage() {
+        final RunInstance instance = new RunInstance();
+        instance.setNodeType(INSTANCE_TYPE);
+        instance.setNodeDisk(INSTANCE_DISK);
+        instance.setEffectiveNodeDisk(INSTANCE_DISK);
+        instance.setSpot(false);
+        instance.setCloudRegionId(REGION_ID);
+        return instance;
     }
 
     private static NodePoolVO pool() {

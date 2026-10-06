@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """
-A pool's own launch configuration - the region's amis rule it was created with - applied to its nodes in place of
-the rule a launch would match now.
+A pool's own launch configuration - what was set for the pool on purpose - laid over the region's amis rule its
+nodes match.
 
 A capacity reservation reaches a node only this way - its target in additional_spec, its zone and subnet - so each
 part has to arrive in the launch request intact: a missing target or a wrong zone still launches an instance, which
@@ -33,16 +33,31 @@ SUBNET = 'subnet-in-zone'
 POOL_ID = '42'
 RESERVATION_TARGET = {'CapacityReservationTarget': {'CapacityReservationId': 'cr-0123456789abcdef0'}}
 INSTANCE_PROFILE = {'Arn': 'arn:aws:iam::123456789012:instance-profile/node'}
-RULE = {'instance_mask_ami': 'ami-rule', 'instance_mask': '*', 'init_script': '/opt/api/scripts/init.sh',
+RULE = {'ami': 'ami-rule', 'instance_mask': '*', 'init_script': '/opt/api/scripts/init.sh',
         'embedded_scripts': None, 'fs_type': 'btrfs', 'additional_spec': {'IamInstanceProfile': INSTANCE_PROFILE},
         'availability_zone': None, 'subnet': None}
 
 
+def _resolve(pool_configuration=None, ins_img='null', availability_zone=None, subnet=None, rule=RULE):
+    """
+    resolve_launch_configuration for a pool node - or a node outside any pool, when there is no pool configuration -
+    with the region's matching rule and the pool's configuration stubbed.
+    """
+    with patch.object(aws_nodeup, 'PipelineAPI') as api, patch.object(aws_nodeup, 'pipe_log'), \
+            patch.object(aws_nodeup, 'get_matching_instance_image', return_value=dict(rule)):
+        api.return_value.load_node_pool.return_value = {'amiConfiguration': pool_configuration}
+        configuration = aws_nodeup.resolve_launch_configuration(
+            'region', 'm5.large', 'linux', 'token', 'p-1', POOL_ID if pool_configuration is not None else None,
+            ins_img, availability_zone, subnet)
+    aws_nodeup.load_pool_launch_configuration(None)
+    return configuration
+
+
 def test_overlays_every_field_the_pool_sets_and_keeps_the_rest_of_the_rule():
-    overlaid = aws_nodeup.apply_pool_launch_configuration(RULE, {
+    overlaid = aws_nodeup.overlay_dict(RULE, {
         'ami': 'ami-pool', 'init_script': '/opt/api/scripts/init_pool.sh', 'availability_zone': ZONE, 'subnet': SUBNET})
 
-    assert overlaid['instance_mask_ami'] == 'ami-pool'
+    assert overlaid['ami'] == 'ami-pool'
     assert overlaid['init_script'] == '/opt/api/scripts/init_pool.sh'
     assert overlaid['availability_zone'] == ZONE
     assert overlaid['subnet'] == SUBNET
@@ -51,15 +66,41 @@ def test_overlays_every_field_the_pool_sets_and_keeps_the_rest_of_the_rule():
 
 
 def test_merges_additional_spec_so_a_reservation_target_keeps_the_rules_instance_profile():
-    overlaid = aws_nodeup.apply_pool_launch_configuration(RULE, {
+    overlaid = aws_nodeup.overlay_dict(RULE, {
         'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}})
 
     assert overlaid['additional_spec'] == {'IamInstanceProfile': INSTANCE_PROFILE,
                                            'CapacityReservationSpecification': RESERVATION_TARGET}
 
 
+def test_replaces_a_spec_key_the_rule_and_the_pool_both_set_rather_than_mixing_them():
+    """
+    A rule may set its own CapacityReservationSpecification - a preference - and a reservation pool sets a target in
+    the same key. EC2 takes one or the other, so the pool's replaces the rule's whole.
+    """
+    rule = dict(RULE, additional_spec={'IamInstanceProfile': INSTANCE_PROFILE,
+                                       'CapacityReservationSpecification': {'CapacityReservationPreference': 'none'}})
+
+    overlaid = aws_nodeup.overlay_dict(rule, {'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}})
+
+    assert overlaid['additional_spec'] == {'IamInstanceProfile': INSTANCE_PROFILE,
+                                           'CapacityReservationSpecification': RESERVATION_TARGET}
+
+
+def test_does_not_share_the_pools_spec_with_the_result():
+    """
+    The launch adds to the spec it is given; the pool's own configuration must not change with it.
+    """
+    pool_spec = {'CapacityReservationSpecification': RESERVATION_TARGET}
+
+    overlaid = aws_nodeup.overlay_dict(dict(RULE, additional_spec=None), {'additional_spec': pool_spec})
+    overlaid['additional_spec']['SubnetId'] = SUBNET
+
+    assert pool_spec == {'CapacityReservationSpecification': RESERVATION_TARGET}
+
+
 def test_leaves_the_rule_as_it_is_without_a_pool_configuration():
-    assert aws_nodeup.apply_pool_launch_configuration(RULE, {}) == RULE
+    assert aws_nodeup.overlay_dict(RULE, {}) == RULE
 
 
 def test_loads_the_pools_configuration_by_its_id():
@@ -78,34 +119,87 @@ def test_asks_nothing_for_a_node_outside_any_pool():
     api.assert_not_called()
 
 
-def test_launches_a_pool_node_from_the_pools_configuration_instead_of_matching_a_rule():
+def test_lays_a_pool_nodes_configuration_over_the_rule_it_matches():
     """
-    Mixing the pool's configuration with whichever rule this launch would match could give a node one rule's image and
-    another's instance profile - so the rules are not consulted at all, and what the pool does not set is the
-    script's default.
+    The pool carries only what was set for it; everything else - here the init script, filesystem and instance
+    profile - is the matched rule's.
+    """
+    configuration = _resolve({'ami': 'ami-pool', 'availability_zone': ZONE,
+                              'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}})
+
+    assert configuration['ami'] == 'ami-pool'
+    assert configuration['availability_zone'] == ZONE
+    assert configuration['additional_spec'] == {'IamInstanceProfile': INSTANCE_PROFILE,
+                                                'CapacityReservationSpecification': RESERVATION_TARGET}
+    assert configuration['init_script'] == RULE['init_script']
+    assert configuration['fs_type'] == RULE['fs_type']
+
+
+def test_keeps_the_rules_image_for_a_reservation_pool_that_sets_none():
+    """
+    A reservation writes only its target, zone and subnet. The node's image is the rule's, as it is for any run that
+    asks for no image - which is what lets such runs reuse the pool's nodes.
+    """
+    configuration = _resolve({'availability_zone': ZONE, 'subnet': SUBNET,
+                              'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}})
+
+    assert configuration['ami'] == RULE['ami']
+    assert configuration['init_script'] == RULE['init_script']
+    assert configuration['subnet'] == SUBNET
+
+
+def test_keeps_the_pools_zone_for_placement_once_resolved():
+    """
+    Whether a zone pins the placement depends on its being the pool's - which the launch asks after resolving.
     """
     with patch.object(aws_nodeup, 'PipelineAPI') as api, patch.object(aws_nodeup, 'pipe_log'), \
-            patch.object(aws_nodeup, 'get_matching_instance_image', return_value=RULE) as matching:
-        api.return_value.load_node_pool.return_value = {'amiConfiguration': {
-            'ami': 'ami-pool', 'availability_zone': ZONE,
-            'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}}}
-        aws_nodeup.load_pool_launch_configuration(POOL_ID)
-        allowed = aws_nodeup.get_allowed_instance_image('region', 'm5.large', 'linux', None, 'token', 'p-1')
+            patch.object(aws_nodeup, 'get_matching_instance_image', return_value=dict(RULE)):
+        api.return_value.load_node_pool.return_value = {'amiConfiguration': {'availability_zone': ZONE}}
+        aws_nodeup.resolve_launch_configuration('region', 'm5.large', 'linux', 'token', 'p-1', POOL_ID,
+                                                'null', None, None)
+        pinned = aws_nodeup.zone_pinned_by_pool(ZONE)
     aws_nodeup.load_pool_launch_configuration(None)
 
-    matching.assert_not_called()
-    assert allowed['instance_mask_ami'] == 'ami-pool'
-    assert allowed['availability_zone'] == ZONE
-    assert allowed['additional_spec'] == {'CapacityReservationSpecification': RESERVATION_TARGET}
-    assert allowed['init_script'].endswith('/init.sh')
+    assert pinned
 
 
-def test_matches_a_rule_for_a_node_whose_pool_has_no_configuration():
-    with patch.object(aws_nodeup, 'get_matching_instance_image', return_value=RULE) as matching:
-        allowed = aws_nodeup.get_allowed_instance_image('region', 'm5.large', 'linux', None, 'token', 'p-1')
+def test_launches_a_node_outside_any_pool_as_the_rule_says():
+    assert _resolve() == RULE
 
-    matching.assert_called_once()
-    assert allowed == RULE
+
+def test_lets_explicit_arguments_win_over_the_pool_and_the_rule():
+    configuration = _resolve({'ami': 'ami-pool', 'availability_zone': ZONE, 'subnet': SUBNET},
+                             ins_img='ami-explicit', availability_zone='us-east-1a', subnet='subnet-explicit')
+
+    assert configuration['ami'] == 'ami-explicit'
+    assert configuration['availability_zone'] == 'us-east-1a'
+    assert configuration['subnet'] == 'subnet-explicit'
+
+
+def test_treats_a_null_image_argument_as_none_given():
+    """
+    The API passes "null" for a node no image was asked for - which must not hide the pool's or the rule's image.
+    """
+    assert _resolve({'ami': 'ami-pool'}, ins_img='null')['ami'] == 'ami-pool'
+    assert _resolve(ins_img='null')['ami'] == RULE['ami']
+
+
+def test_takes_the_pools_zone_and_subnet_when_no_argument_names_them():
+    configuration = _resolve({'availability_zone': ZONE, 'subnet': SUBNET})
+
+    assert (configuration['availability_zone'], configuration['subnet']) == (ZONE, SUBNET)
+
+
+def test_takes_the_pools_additional_spec_even_when_no_rule_matched():
+    """
+    A pool's reservation target lives in its additional spec, and must reach the launch whether or not a rule matched.
+    """
+    unmatched = dict(RULE, instance_mask=None, additional_spec=None)
+
+    configuration = _resolve({'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}},
+                             rule=unmatched)
+
+    assert configuration['additional_spec'] == {'CapacityReservationSpecification': RESERVATION_TARGET}
 
 
 def _ec2(subnet_zones=None):
@@ -183,32 +277,6 @@ def test_keeps_a_performance_networks_random_subnet_in_the_zone_asked_for():
     launch_args = _launch(ec2, availability_zone=ZONE, performance_network=True, pool_zone=ZONE)
 
     assert launch_args['NetworkInterfaces'][0]['SubnetId'] == SUBNET
-
-
-def test_takes_the_pools_zone_and_subnet_when_no_argument_names_them():
-    allowed = dict(RULE, availability_zone=ZONE, subnet=SUBNET)
-
-    assert aws_nodeup.resolve_launch_settings(allowed, None, None) == (RULE['additional_spec'], ZONE, SUBNET)
-
-
-def test_lets_explicit_arguments_win_over_the_pool_and_the_rule():
-    allowed = dict(RULE, availability_zone=ZONE, subnet=SUBNET)
-
-    _, zone, subnet = aws_nodeup.resolve_launch_settings(allowed, 'us-east-1a', 'subnet-explicit')
-
-    assert (zone, subnet) == ('us-east-1a', 'subnet-explicit')
-
-
-def test_takes_the_additional_spec_even_when_no_rule_matched():
-    """
-    Without a matching rule the spec used to be dropped - and a pool's reservation target lives in it.
-    """
-    unmatched = dict(RULE, instance_mask=None,
-                     additional_spec={'CapacityReservationSpecification': RESERVATION_TARGET})
-
-    spec, _, _ = aws_nodeup.resolve_launch_settings(unmatched, None, None)
-
-    assert spec == {'CapacityReservationSpecification': RESERVATION_TARGET}
 
 
 def test_leaves_a_launch_without_any_configuration_as_it_was():

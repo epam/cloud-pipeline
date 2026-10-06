@@ -63,8 +63,8 @@ public class NodePoolVO {
      */
     private NodePoolLaunchConfig launchConfig;
     /**
-     * Like {@link #launchConfig}: used when sent, generated from the region's matching {@code amis} rule on creation
-     * when not, and left as it is by an update that does not send it.
+     * What the pool's nodes launch with over the region's matching {@code amis} rule, field by field. Used when sent,
+     * absent on creation when not, and left as it is by an update that does not send it.
      */
     private AMIConfiguration amiConfiguration;
 
