@@ -32,16 +32,6 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 
-/**
- * Builds the SDK v2 EC2 client that the capacity reservation calls need.
- *
- * <h3>Why this exists separately from {@code EC2Helper}</h3>
- *
- * <p>The rest of this module talks to EC2 through SDK v1, which cannot express a future-dated reservation at all -
- * its {@code CreateCapacityReservationRequest} has no {@code StartDate} or {@code CommitmentDuration}. So this one
- * feature needs v2, and v2's client takes a {@code software.amazon.awssdk} credentials provider that has no
- * relationship to the {@code com.amazonaws} one every other call site uses.
- */
 @Service
 public class AWSV2EC2ClientProvider {
 
@@ -52,9 +42,6 @@ public class AWSV2EC2ClientProvider {
                 .build();
     }
 
-    /**
-     * Resolves credentials the same three ways the v1 path does, but natively in v2 wherever v2 can.
-     */
     private AwsCredentialsProvider credentialsProvider(final AwsRegion region) {
         if (StringUtils.isNotBlank(region.getIamRole())) {
             return StaticCredentialsProvider.create(assumedRoleCredentials(region));
@@ -65,9 +52,6 @@ public class AWSV2EC2ClientProvider {
         return DefaultCredentialsProvider.create();
     }
 
-    /**
-     * Resolves the role's credentials eagerly and holds them for this client only.
-     */
     private AwsCredentials assumedRoleCredentials(final AwsRegion region) {
         final AWSCredentials credentials = AWSUtils.getCredentialsProvider(region).getCredentials();
         if (credentials instanceof AWSSessionCredentials) {

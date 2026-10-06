@@ -103,15 +103,6 @@ public interface NotificationService {
     default void notifyFullNodePools(List<NodePool> nodePools) {
     }
 
-    /**
-     * Notifies about a capacity reservation.
-     *
-     * @param reservation the reservation whose state is being reported
-     * @param type which of the capacity reservation notifications to send
-     * @param extraRecipients users to notify in addition to the reservation owner and administrators -
-     *                        used by the finalizing notification to reach whoever has work running on the
-     *                        reservation's pool. May be empty.
-     */
     default void notifyCapacityReservation(CapacityReservation reservation, NotificationType type,
                                            List<String> extraRecipients) {
     }

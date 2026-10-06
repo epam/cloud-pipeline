@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Choosing a configured network on GCP and Azure.
-
-pipe-common runs in every job container, Python 3 ones included, and every provider used to index dict.items() -
-which works on Python 2 only, so any launch with a networks config failed on Python 3 before it reached the cloud.
-"""
-
 try:
     from unittest.mock import MagicMock, patch
 except ImportError:

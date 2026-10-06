@@ -62,11 +62,6 @@ public class NodePoolControllerTest extends AbstractControllerTest {
         assertResponse(mvcResult, pool, POOL_TYPE);
     }
 
-    /**
-     * The update is authorized on the id it is given, so it has to be given the pool's own - the one it then writes.
-     * The launch configuration travels both ways in the shape the launch script reads: {@code amiConfiguration}, with
-     * the launch scripts' own snake_case names inside.
-     */
     @Test
     @WithMockUser
     public void shouldUpdateThePoolTheRequestNamesTheIdOf() throws Exception {

@@ -16,23 +16,9 @@
 
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
-/**
- * A kind of capacity reservation product. Cloud-neutral names; the current implementation targets AWS.
- */
 public enum CapacityReservationType {
 
-    /**
-     * Capacity reserved for a future start date, with a minimum commitment duration. The cloud provider
-     * assesses asynchronously - days, for AWS - whether a requested start date is actually viable, so
-     * {@code requestedStartDate}, {@code requestedEndDate} and {@code durationHours} describe a window
-     * to search rather than a single fixed slot.
-     */
     FUTURE_DATED,
 
-    /**
-     * A GPU-optimized, fixed-duration, paid-upfront reservation product. The user selects one concrete
-     * offering before requesting the pool, so the dates come from that offering and are never adjusted
-     * afterwards. Data-model-complete but not implemented yet.
-     */
     CAPACITY_BLOCK
 }

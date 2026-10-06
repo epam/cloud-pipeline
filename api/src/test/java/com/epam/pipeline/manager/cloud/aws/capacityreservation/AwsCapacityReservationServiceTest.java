@@ -74,17 +74,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
-/**
- * The AWS request this platform actually sends, and what it makes of the answer.
- *
- * <p>Both halves are ours rather than AWS's, and both are expensive to get wrong: a missing
- * {@code instanceMatchCriteria} silently lets unrelated instances eat capacity a user was promised, and a misread
- * state either strands a reservation or gives up on one a human approved and paid for.
- *
- * <p>The EC2 client is a hand-written fake rather than a mock. Mockito 1.10.19 cannot mock {@code Ec2Client} - a
- * Java 8 interface whose every operation is a default method - and the fake turns out to be the better tool anyway:
- * it records the request objects for inspection and can assert the client was closed.
- */
 @RunWith(MockitoJUnitRunner.class)
 public class AwsCapacityReservationServiceTest {
 
@@ -98,7 +87,6 @@ public class AwsCapacityReservationServiceTest {
     private static final long EXPECTED_COMMITMENT_SECONDS = 86400L;
     private static final int INSTANCE_COUNT = 8;
     private static final int LEAD_DAYS = 7;
-    /** AWS's own wire value for a future-dated request it has agreed to. */
     private static final String AWS_SCHEDULED = "scheduled";
     private static final String AWS_ACTIVE = "active";
     private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
@@ -132,10 +120,6 @@ public class AwsCapacityReservationServiceTest {
         service = new AwsCapacityReservationService(regionManager, clientProvider, preferenceManager);
     }
 
-    /**
-     * Every one of these is demanded by AWS for a future-dated request, or by us to keep the capacity private.
-     * Asserting them together is the point - the request is only valid as a set.
-     */
     @Test
     public void shouldBuildAFutureDatedRequestAwsWillAccept() {
         final CapacityReservation reservation = reservation();
@@ -153,10 +137,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.createRequest.instanceType()).isEqualTo(reservation.getInstanceType());
     }
 
-    /**
-     * The reply to a create can be lost after AWS acted on it. Reporting that as an ordinary failure would end the
-     * reservation while AWS bills for what it created, so it has to come back as "try again with the same token".
-     */
     @Test
     public void shouldReportACreateWithNoReplyAsUncertain() {
         client.createFailure = SdkClientException.create("Unable to execute HTTP request: Read timed out");
@@ -182,10 +162,6 @@ public class AwsCapacityReservationServiceTest {
                 .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
     }
 
-    /**
-     * A refusal of the request itself means nothing was created, and retrying would only be refused again - so it
-     * must not be mistaken for an outcome still open.
-     */
     @Test
     public void shouldLeaveADefinitiveRefusalAsItIs() {
         client.createFailure = ec2Error(HTTP_BAD_REQUEST, "InvalidParameterValue");
@@ -194,10 +170,6 @@ public class AwsCapacityReservationServiceTest {
                 .isInstanceOf(Ec2Exception.class);
     }
 
-    /**
-     * EC2 reports running out of capacity as a 5xx, but nothing was created - so it must fail like a refusal
-     * rather than retry the same request for the same missing capacity forever.
-     */
     @Test
     public void shouldLeaveInsufficientCapacityAsARefusalDespiteItsServerErrorStatus() {
         client.createFailure = ec2Error(HTTP_INTERNAL_ERROR, "InsufficientInstanceCapacity");
@@ -222,10 +194,6 @@ public class AwsCapacityReservationServiceTest {
                 .isInstanceOf(Ec2Exception.class);
     }
 
-    /**
-     * The lookup is how a lost reply is found. If it cannot ask, the question is still open - reading that as
-     * "nothing exists" would end a reservation AWS may well hold.
-     */
     @Test
     public void shouldReportALookupThatCouldNotAskAsUncertain() {
         client.describeFailure = SdkClientException.create("Unable to execute HTTP request: Connect timed out");
@@ -234,10 +202,6 @@ public class AwsCapacityReservationServiceTest {
                 .isInstanceOf(CapacityReservationSubmissionUncertainException.class);
     }
 
-    /**
-     * AWS rejects an end date that falls inside the commitment duration, and ours would sit exactly on its
-     * boundary. The reservation is therefore open-ended at AWS and this platform ends it explicitly.
-     */
     @Test
     public void shouldNotSendAnEndDate() {
         client.created = awsReservation(AWS_SCHEDULED, null);
@@ -247,10 +211,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.createRequest.endDate()).isNull();
     }
 
-    /**
-     * Describe cannot filter on a client token, so the token travels as a tag. Losing this tag blinds the
-     * idempotency guard, and a blind guard buys a second reservation.
-     */
     @Test
     public void shouldTagTheReservationWithItsClientTokenAndId() {
         client.created = awsReservation(AWS_SCHEDULED, null);
@@ -264,10 +224,6 @@ public class AwsCapacityReservationServiceTest {
                                 String.valueOf(RESERVATION_ID)));
     }
 
-    /**
-     * On a first attempt AWS picks a zone with capacity, which beats any guess of ours; once a zone is known it
-     * must be honoured, because a reservation lives in exactly one and a node launched elsewhere pays full price.
-     */
     @Test
     public void shouldLeaveTheZoneToAwsWhenNoneIsKnownYet() {
         client.created = awsReservation(AWS_SCHEDULED, null);
@@ -299,9 +255,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(result.getState()).isEqualTo(CloudCapacityReservationState.SCHEDULED);
     }
 
-    /**
-     * A client is built per call, so one that is not closed leaks a connection pool on every monitor cycle.
-     */
     @Test
     public void shouldCloseTheClient() {
         client.created = awsReservation(AWS_SCHEDULED, ZONE);
@@ -335,10 +288,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(result.getStateReason()).contains(CLOUD_ID);
     }
 
-    /**
-     * EC2 is eventually consistent, so a reservation just created may not show yet. Failing it then would abandon one
-     * AWS holds and bills; asking again next cycle costs nothing.
-     */
     @Test
     public void shouldAskAgainWhileAReservationMayNotBeVisibleYet() {
         final CapacityReservation reservation = reservation();
@@ -352,10 +301,6 @@ public class AwsCapacityReservationServiceTest {
                 .hasMessageContaining(CLOUD_ID);
     }
 
-    /**
-     * Once a describe has shown the reservation - which is how it got past being assessed - unknown is no longer a
-     * reservation AWS has not shown yet, however recent the last status change.
-     */
     @Test
     public void shouldNotWaitForAReservationAwsHasAlreadyShown() {
         final CapacityReservation reservation = reservation();
@@ -367,10 +312,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(service.describe(reservation).getState()).isEqualTo(CloudCapacityReservationState.FAILED);
     }
 
-    /**
-     * EC2 answers an id it has never had, or has purged, with an error rather than an empty list - which must not
-     * leave the reservation polling forever.
-     */
     @Test
     public void shouldFailWhenAwsRefusesTheReservationIdAsNotFound() {
         final CapacityReservation reservation = pastTheGrace(reservation());
@@ -404,10 +345,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(filter.values()).containsExactly(TOKEN);
     }
 
-    /**
-     * Empty means "nothing was created" and the facade buys on that answer, so it must only ever be empty when AWS
-     * genuinely holds nothing.
-     */
     @Test
     public void shouldReturnEmptyWhenNoReservationCarriesTheToken() {
         client.described = Collections.emptyList();
@@ -415,10 +352,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(service.findByClientToken(reservation(), TOKEN).isPresent()).isFalse();
     }
 
-    /**
-     * A reservation past its commitment costs nothing to release, so it must not be sent down the quote path - that
-     * would attach a wind-down charge to something that was free to cancel.
-     */
     @Test
     public void shouldCancelPlainlyWhenNothingIsCommitted() {
         final CapacityReservation reservation = reservation();
@@ -432,10 +365,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.quoteRequest).isNull();
     }
 
-    /**
-     * AWS rejects a plain cancel of a scheduled reservation: the commitment is in place from the moment it agrees,
-     * and the only way out is a quote plus the wind-down charge.
-     */
     @Test
     public void shouldCancelAScheduledReservationThroughAQuote() {
         final CapacityReservation reservation = reservation();
@@ -450,9 +379,6 @@ public class AwsCapacityReservationServiceTest {
                 .isEqualTo(ApplyCancellationCharges.COMMITMENT_WIND_DOWN);
     }
 
-    /**
-     * An active reservation still inside its commitment duration is charged the same way a scheduled one is.
-     */
     @Test
     public void shouldCancelACommittedActiveReservationThroughAQuote() {
         final CapacityReservation reservation = reservation();
@@ -466,9 +392,6 @@ public class AwsCapacityReservationServiceTest {
                 .isEqualTo(ApplyCancellationCharges.COMMITMENT_WIND_DOWN);
     }
 
-    /**
-     * Once the commitment has elapsed the capacity is free to give back, so the charge must not be applied.
-     */
     @Test
     public void shouldNotPayToCancelOnceTheCommitmentHasElapsed() {
         final CapacityReservation reservation = reservation();
@@ -482,10 +405,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.quoteRequest).isNull();
     }
 
-    /**
-     * Not shown may only mean not visible yet, so the cancel is sent anyway - calling it cancelled while AWS still
-     * holds it would leave it billed.
-     */
     @Test
     public void shouldStillCancelAReservationTheDescribeDidNotShow() {
         final CapacityReservation reservation = reservation();
@@ -498,10 +417,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.cancelRequest.quoteId()).isNull();
     }
 
-    /**
-     * Nothing to release and nothing being billed, so cancelling must be a no-op rather than an error - this runs
-     * from the monitor, where a throw would retry forever.
-     */
     @Test
     public void shouldTreatAReservationAwsCannotCancelAsUnknownAsNothingToCancel() {
         final CapacityReservation reservation = reservation();
@@ -524,10 +439,6 @@ public class AwsCapacityReservationServiceTest {
         assertThatThrownBy(() -> service.cancel(reservation)).isInstanceOf(Ec2Exception.class);
     }
 
-    /**
-     * No reservation can exist under an id AWS cannot parse. Refusing to cancel it would keep its pool from ever being
-     * deleted.
-     */
     @Test
     public void shouldTreatAnIdAwsCannotParseAsNothingToCancel() {
         final CapacityReservation reservation = reservation();
@@ -540,10 +451,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.cancelRequest.capacityReservationId()).isEqualTo(CLOUD_ID);
     }
 
-    /**
-     * A reservation is only any use where the platform can launch nodes, so the candidates are the zones that offer
-     * the instance type and that the region's networks configure - in a stable order, so a retry asks the same.
-     */
     @Test
     public void shouldOfferOnlyConfiguredZonesThatOfferTheInstanceType() {
         client.offeredZones = Arrays.asList("eu-central-1c", ZONE, "eu-central-1a");
@@ -555,9 +462,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(client.offeringsRequest.filters().get(0).values()).containsExactly(reservation().getInstanceType());
     }
 
-    /**
-     * With no networks configured, nodes may go to any zone of the region - so may the reservation.
-     */
     @Test
     public void shouldOfferEveryZoneThatOffersTheInstanceTypeWhenNoNetworksAreConfigured() {
         client.offeredZones = Arrays.asList("eu-central-1c", ZONE);
@@ -566,10 +470,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(service.candidateZones(reservation())).containsExactly(ZONE, "eu-central-1c");
     }
 
-    /**
-     * A reservation created with TARGETED match criteria is only consumed by an instance that names it, in exactly
-     * this RunInstances shape - which the launch passes through from the pool's additional_spec as it is.
-     */
     @Test
     @SuppressWarnings("unchecked")
     public void shouldTargetTheReservationInRunInstancesTerms() {
@@ -585,18 +485,11 @@ public class AwsCapacityReservationServiceTest {
                 .containsEntry("CapacityReservationId", CLOUD_ID);
     }
 
-    /**
-     * AWS's documented minimum for a future-dated start, shared by pool validation and the monitor's submission.
-     */
     @Test
     public void shouldRequireFiveDaysOfLead() {
         assertThat(service.getMinimumLead()).isEqualTo(Duration.ofDays(5));
     }
 
-    /**
-     * The monitor rolls a whole step back when a later write in it fails, so a cancel AWS already carried out comes
-     * round again. Asking AWS to cancel a cancelled reservation would fail that step on every cycle.
-     */
     @Test
     public void shouldTreatAnAlreadyReleasedReservationAsCancelled() {
         final CapacityReservation reservation = reservation();
@@ -611,36 +504,18 @@ public class AwsCapacityReservationServiceTest {
         }
     }
 
-    /**
-     * Only a state AWS documents as undeliverable may slide the request to another date, because sliding buys a
-     * second reservation. AWS says of this one, and of no other: "Unsupported Capacity Reservations are not
-     * delivered".
-     */
     @Test
     public void shouldOnlySlideOnAStateAwsWillNotDeliver() {
         assertThat(AwsCapacityReservationService.toState("unsupported"))
                 .isEqualTo(CloudCapacityReservationState.UNSUPPORTED);
     }
 
-    /**
-     * {@code delayed} sounds like a refusal and is not one - AWS is late, but the reservation is still ours and
-     * still committed. Sliding on it would leave a second reservation running alongside one AWS still intends to
-     * deliver, with the first one's id already cleared so nothing could cancel it.
-     *
-     * <p>{@code unavailable} is a documented state value with no documented meaning, so it gets the same
-     * treatment: a wrong guess towards polling is recoverable, a wrong guess towards sliding is a duplicate
-     * purchase.
-     */
     @Test
     public void shouldPollRatherThanSlideOnStatesThatMayStillBeDelivered() {
         assertThat(AwsCapacityReservationService.toState("unavailable"))
                 .isEqualTo(CloudCapacityReservationState.PENDING);
     }
 
-    /**
-     * Lateness is its own answer: neither waiting nor abandoning, but releasing the reservation - which AWS makes
-     * free for a delay - and asking for a date it can meet. Folding it into either neighbour loses that.
-     */
     @Test
     public void shouldKeepLatenessDistinctFromPendingAndRefusal() {
         assertThat(AwsCapacityReservationService.toState("delayed"))
@@ -669,10 +544,6 @@ public class AwsCapacityReservationServiceTest {
                 .isEqualTo(CloudCapacityReservationState.EXPIRED);
     }
 
-    /**
-     * A state we have never heard of must not be read as a failure - AWS adds states, and abandoning a paid
-     * reservation over an unfamiliar string is worse than polling it one more time.
-     */
     @Test
     public void shouldTreatAnUnknownStateAsPending() {
         assertThat(AwsCapacityReservationService.toState("something-new"))
@@ -681,10 +552,6 @@ public class AwsCapacityReservationServiceTest {
                 .isEqualTo(CloudCapacityReservationState.PENDING);
     }
 
-    /**
-     * AWS may schedule a reservation with a shorter commitment than was requested, which binds the requester to
-     * less time than they asked for - so the granted figure has to be read back rather than assumed.
-     */
     @Test
     public void shouldReadBackTheCommitmentAwsGranted() {
         client.described = Collections.singletonList(awsReservation(AWS_SCHEDULED, ZONE).toBuilder()
@@ -697,9 +564,6 @@ public class AwsCapacityReservationServiceTest {
                 .isEqualTo(GRANTED_COMMITMENT_SECONDS);
     }
 
-    /**
-     * Absent before AWS has assessed the request, and absent for providers with no such concept.
-     */
     @Test
     public void shouldLeaveTheGrantedCommitmentUnsetWhenAwsHasNotSaid() {
         client.described = Collections.singletonList(awsReservation(AWS_SCHEDULED, ZONE));
@@ -707,9 +571,6 @@ public class AwsCapacityReservationServiceTest {
         assertThat(service.describe(reservation()).getGrantedCommitmentSeconds()).isNull();
     }
 
-    /**
-     * States that mean "nothing is wrong" carry no reason, so a user is not shown noise where there is no problem.
-     */
     @Test
     public void shouldOnlyExplainStatesThatNeedExplaining() {
         client.described = Collections.singletonList(awsReservation(AWS_ACTIVE, ZONE));
@@ -739,9 +600,6 @@ public class AwsCapacityReservationServiceTest {
         return reservation;
     }
 
-    /**
-     * An active reservation whose commitment ends at the given moment - before or after now, as the test needs.
-     */
     private software.amazon.awssdk.services.ec2.model.CapacityReservation committedActiveReservation(
             final Instant commitmentEnd) {
         return awsReservation(AWS_ACTIVE, ZONE).toBuilder()
@@ -788,11 +646,6 @@ public class AwsCapacityReservationServiceTest {
                 .build();
     }
 
-    /**
-     * Records what it was asked and answers with whatever the test set up. Every {@code Ec2Client} operation is a
-     * default method, so only the four this feature uses - plus the two the interface genuinely requires - need
-     * implementing.
-     */
     private static final class FakeEc2Client implements Ec2Client {
 
         private CreateCapacityReservationRequest createRequest;

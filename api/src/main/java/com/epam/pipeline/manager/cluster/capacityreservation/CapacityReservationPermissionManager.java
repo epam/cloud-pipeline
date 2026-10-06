@@ -26,9 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
-/**
- * Resolves a permission check on a capacity reservation into a check on the pool it backs.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -37,10 +34,6 @@ public class CapacityReservationPermissionManager {
     private final CapacityReservationService reservationService;
     private final CheckPermissionHelper permissionHelper;
 
-    /**
-     * Lazy because {@code NodePoolManager} is itself collected as a secured entity manager during startup;
-     * taking it eagerly here would put this bean into that cycle.
-     */
     @Autowired
     @Lazy
     private NodePoolManager poolManager;

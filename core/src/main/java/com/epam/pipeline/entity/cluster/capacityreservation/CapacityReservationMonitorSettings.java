@@ -20,18 +20,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Tunables for the capacity reservation monitor, held in a system preference so they can be changed
- * without a release.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CapacityReservationMonitorSettings {
 
-    /**
-     * How long before its end date a reservation is flagged as finalizing, so the people with work on the
-     * pool are warned while they can still act.
-     */
     private Integer finalizingLeadHours;
 }

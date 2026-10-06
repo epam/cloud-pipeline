@@ -18,16 +18,8 @@ package com.epam.pipeline.utils.condition.evaluation;
 
 
 import com.epam.pipeline.utils.condition.ConditionOperator;
-import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
-/**
- * Evaluates {@link FieldType#NUMERIC} leaf nodes using standard double-precision arithmetic.
- * Supports all six comparison operators: {@code =}, {@code !=}, {@code >}, {@code >=},
- * {@code <}, {@code <=}.
- *
- * @param <T> the subject type being evaluated
- */
 public class NumericFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     public NumericFieldEvaluationStrategy(final SubjectEntityField<T> field) {

@@ -84,12 +84,6 @@
         <constructor-arg>
             <value>
                 <!--updateNodePoolQuery-->
-                <!--Deliberately writes none of owner, pool_type, capacity_reservation, start_date or
-                    end_date. Its only caller maps a fresh entity from NodePoolVO, which carries none of
-                    them, so naming them here would null a pool's reservation window on every ordinary
-                    edit - and isActive() gates on those dates. They are written by the reservation
-                    lifecycle through its own statements instead. The launch config and configuration are
-                    written: the caller resolves them, the pool's current ones included, before it maps.-->
                 <![CDATA[
                     UPDATE pipeline.node_pool SET
                         name = :POOL_NAME,
@@ -243,8 +237,6 @@
         <constructor-arg>
             <value>
                 <!--loadNodePoolByIdForUpdateQuery-->
-                <!--The by-id load, holding the pool's row lock until the transaction ends. OF n because the
-                    schedule joins are outer, and their nullable side cannot be locked - nor needs to be.-->
                 <![CDATA[
                     SELECT
                         n.id AS POOL_ID,

@@ -12,15 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-A pool's own launch configuration - what was set for the pool on purpose - laid over the region's amis rule its
-nodes match.
-
-A capacity reservation reaches a node only this way - its target in additional_spec, its zone and subnet - so each
-part has to arrive in the launch request intact: a missing target or a wrong zone still launches an instance, which
-just runs as ordinary on-demand while the reserved capacity sits idle and paid for.
-"""
-
 try:
     from unittest.mock import MagicMock, patch
 except ImportError:
@@ -39,10 +30,6 @@ RULE = {'ami': 'ami-rule', 'instance_mask': '*', 'init_script': '/opt/api/script
 
 
 def _resolve(pool_configuration=None, ins_img='null', availability_zone=None, subnet=None, rule=RULE):
-    """
-    resolve_launch_configuration for a pool node - or a node outside any pool, when there is no pool configuration -
-    with the region's matching rule and the pool's configuration stubbed.
-    """
     with patch.object(aws_nodeup, 'PipelineAPI') as api, patch.object(aws_nodeup, 'pipe_log'), \
             patch.object(aws_nodeup, 'get_matching_instance_image', return_value=dict(rule)):
         api.return_value.load_node_pool.return_value = {'amiConfiguration': pool_configuration}
@@ -74,10 +61,6 @@ def test_merges_additional_spec_so_a_reservation_target_keeps_the_rules_instance
 
 
 def test_replaces_a_spec_key_the_rule_and_the_pool_both_set_rather_than_mixing_them():
-    """
-    A rule may set its own CapacityReservationSpecification - a preference - and a reservation pool sets a target in
-    the same key. EC2 takes one or the other, so the pool's replaces the rule's whole.
-    """
     rule = dict(RULE, additional_spec={'IamInstanceProfile': INSTANCE_PROFILE,
                                        'CapacityReservationSpecification': {'CapacityReservationPreference': 'none'}})
 
@@ -88,9 +71,6 @@ def test_replaces_a_spec_key_the_rule_and_the_pool_both_set_rather_than_mixing_t
 
 
 def test_does_not_share_the_pools_spec_with_the_result():
-    """
-    The launch adds to the spec it is given; the pool's own configuration must not change with it.
-    """
     pool_spec = {'CapacityReservationSpecification': RESERVATION_TARGET}
 
     overlaid = aws_nodeup.overlay_dict(dict(RULE, additional_spec=None), {'additional_spec': pool_spec})
@@ -120,10 +100,6 @@ def test_asks_nothing_for_a_node_outside_any_pool():
 
 
 def test_lays_a_pool_nodes_configuration_over_the_rule_it_matches():
-    """
-    The pool carries only what was set for it; everything else - here the init script, filesystem and instance
-    profile - is the matched rule's.
-    """
     configuration = _resolve({'ami': 'ami-pool', 'availability_zone': ZONE,
                               'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}})
 
@@ -136,10 +112,6 @@ def test_lays_a_pool_nodes_configuration_over_the_rule_it_matches():
 
 
 def test_keeps_the_rules_image_for_a_reservation_pool_that_sets_none():
-    """
-    A reservation writes only its target, zone and subnet. The node's image is the rule's, as it is for any run that
-    asks for no image - which is what lets such runs reuse the pool's nodes.
-    """
     configuration = _resolve({'availability_zone': ZONE, 'subnet': SUBNET,
                               'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}})
 
@@ -149,9 +121,6 @@ def test_keeps_the_rules_image_for_a_reservation_pool_that_sets_none():
 
 
 def test_keeps_the_pools_zone_for_placement_once_resolved():
-    """
-    Whether a zone pins the placement depends on its being the pool's - which the launch asks after resolving.
-    """
     with patch.object(aws_nodeup, 'PipelineAPI') as api, patch.object(aws_nodeup, 'pipe_log'), \
             patch.object(aws_nodeup, 'get_matching_instance_image', return_value=dict(RULE)):
         api.return_value.load_node_pool.return_value = {'amiConfiguration': {'availability_zone': ZONE}}
@@ -177,9 +146,6 @@ def test_lets_explicit_arguments_win_over_the_pool_and_the_rule():
 
 
 def test_treats_a_null_image_argument_as_none_given():
-    """
-    The API passes "null" for a node no image was asked for - which must not hide the pool's or the rule's image.
-    """
     assert _resolve({'ami': 'ami-pool'}, ins_img='null')['ami'] == 'ami-pool'
     assert _resolve(ins_img='null')['ami'] == RULE['ami']
 
@@ -191,9 +157,6 @@ def test_takes_the_pools_zone_and_subnet_when_no_argument_names_them():
 
 
 def test_takes_the_pools_additional_spec_even_when_no_rule_matched():
-    """
-    A pool's reservation target lives in its additional spec, and must reach the launch whether or not a rule matched.
-    """
     unmatched = dict(RULE, instance_mask=None, additional_spec=None)
 
     configuration = _resolve({'additional_spec': {'CapacityReservationSpecification': RESERVATION_TARGET}},
@@ -250,10 +213,6 @@ def test_pins_the_zone_the_pool_pins_when_no_subnet_fixes_it():
 
 
 def test_leaves_a_zone_an_ordinary_run_asks_for_as_it_was():
-    """
-    Only a pool's own zone is enforced by placement. A zone an ordinary run asks for keeps its old meaning, so launches
-    that worked before - into whichever zone has a default subnet - still do.
-    """
     launch_args = _launch(_ec2(), availability_zone=ZONE)
 
     assert 'Placement' not in launch_args
@@ -287,10 +246,6 @@ def test_leaves_a_launch_without_any_configuration_as_it_was():
 
 
 def test_drops_a_reservation_target_from_a_spot_request_with_a_warning():
-    """
-    A spot request cannot consume reserved capacity and one that targets a reservation is refused, so the node runs
-    as spot without it - but not silently, or the reserved capacity idles with nothing saying why.
-    """
     spec = {'CapacityReservationSpecification': RESERVATION_TARGET, 'IamInstanceProfile': INSTANCE_PROFILE}
     with patch.object(aws_nodeup, 'pipe_log_warn') as warn:
         remaining = aws_nodeup.without_capacity_reservation_target(spec)

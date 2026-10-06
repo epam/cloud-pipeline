@@ -21,19 +21,6 @@ import lombok.Data;
 
 import java.util.Map;
 
-/**
- * How runs may divide one node of a {@link NodePoolType#SHARABLE_NODE} pool between them.
- *
- * <p>Replaces the per-instance-type entries of the {@code launch.reservation.parameters} system
- * preference. The class and its {@code launch_config} column exist so that enabling sharable nodes later
- * needs no further migration; nothing populates it yet.
- *
- * <p>The {@code *Reserved} values are headroom <em>withheld</em> from the node, not an allowance: the
- * maximum a run may ask for is the instance's capacity minus the reserved amount. They are boxed, and
- * the defaults when absent are deliberately asymmetric - the preference this replaces defaults CPU and
- * RAM to 1 and GPU to 0, so a primitive {@code int} defaulting to 0 would quietly stop withholding the
- * vCPU and GiB the platform's own agents need.
- */
 @Data
 public class NodePoolLaunchConfig {
 
@@ -46,15 +33,8 @@ public class NodePoolLaunchConfig {
     private Integer cpuRequestsReserved;
     private Integer gpuRequestsReserved;
 
-    /**
-     * Withheld RAM as a Kubernetes quantity, e.g. {@code 1GiB}.
-     */
     private String ramRequestsReserved;
     private String ramRequestsUnit;
 
-    /**
-     * Extra run parameters applied when any of the request dimensions above is enabled. Corresponds to the
-     * {@code parameters} key of the preference being replaced.
-     */
     private Map<String, String> additionalParameters;
 }

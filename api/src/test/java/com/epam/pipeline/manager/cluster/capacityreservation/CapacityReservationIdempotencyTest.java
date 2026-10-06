@@ -44,14 +44,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Never buy the same reservation twice.
- *
- * <p>The dangerous case is not a failed submission but an uncertain one: the provider accepted the request and we
- * never saw the reply - a timeout, a pod restart mid-call. Retrying blindly then buys a second reservation that
- * nothing in the platform knows about and nothing will ever cancel. So the token is deterministic, and a
- * reservation with no provider id is looked up by the token of its current attempt before anything is bought.
- */
 @RunWith(MockitoJUnitRunner.class)
 public class CapacityReservationIdempotencyTest {
 
@@ -72,9 +64,6 @@ public class CapacityReservationIdempotencyTest {
         facade = new CapacityReservationCloudFacade(Collections.singletonList(awsService));
     }
 
-    /**
-     * The token must not vary between two calls for the same attempt, or the provider cannot recognise the repeat.
-     */
     @Test
     public void shouldDeriveADeterministicTokenFromIdAndAttempt() {
         final CapacityReservation reservation = reservation();
@@ -84,10 +73,6 @@ public class CapacityReservationIdempotencyTest {
                 .isEqualTo(FIRST_ATTEMPT_TOKEN);
     }
 
-    /**
-     * A new date is a new request, not a retry of the old one - so it must not reuse the token, or the provider
-     * would return the previous reservation for the previous date.
-     */
     @Test
     public void shouldChangeTheTokenWhenTheAttemptChanges() {
         final CapacityReservation reservation = reservation();
@@ -100,7 +85,6 @@ public class CapacityReservationIdempotencyTest {
     @Test
     public void shouldAdoptAnExistingReservationInsteadOfBuyingAnother() {
         final CapacityReservation reservation = reservation();
-        // Submitted before, but the reply never arrived: a token was persisted and no provider id came back.
         reservation.setClientToken(FIRST_ATTEMPT_TOKEN);
         reservation.setCloudReservationId(null);
         when(awsService.findByClientToken(any(), eq(FIRST_ATTEMPT_TOKEN))).thenReturn(Optional.of(
@@ -126,11 +110,6 @@ public class CapacityReservationIdempotencyTest {
         verify(awsService).findByClientToken(reservation, FIRST_ATTEMPT_TOKEN);
     }
 
-    /**
-     * A reply can be lost before the token was ever persisted - the token is only saved with the next status
-     * change, so a restart mid-call leaves none. It is derived from the id and attempt, so the lookup still finds
-     * what that call bought.
-     */
     @Test
     public void shouldAdoptALostReplyEvenWhenNoTokenWasPersisted() {
         final CapacityReservation reservation = reservation();
@@ -145,16 +124,9 @@ public class CapacityReservationIdempotencyTest {
         verify(awsService, never()).createFutureDated(any());
     }
 
-    /**
-     * After a slide the stored token still names the previous attempt, and the provider still holds the
-     * reservation it refused for the previous date. Looking up by the stored token would adopt that refusal
-     * again, so the new date would never be asked for - the request would slide on its own old answer until the
-     * window ran out.
-     */
     @Test
     public void shouldRequestTheNewDateAfterASlideInsteadOfAdoptingTheRefusedReservation() {
         final CapacityReservation reservation = reservation();
-        // As left by a slide: the attempt moved on, the old provider id was cleared, the stored token was not.
         reservation.setAttempt(1);
         reservation.setClientToken(FIRST_ATTEMPT_TOKEN);
         reservation.setCloudReservationId(null);
@@ -171,10 +143,6 @@ public class CapacityReservationIdempotencyTest {
         assertThat(reservation.getClientToken()).isEqualTo(SECOND_ATTEMPT_TOKEN);
     }
 
-    /**
-     * A lookup that could not ask has not found "nothing". Buying anyway would be the blind retry the lookup exists
-     * to prevent, so the uncertainty goes back to the caller instead.
-     */
     @Test
     public void shouldNotBuyWhenTheLookupCouldNotAsk() {
         final CapacityReservation reservation = reservation();
@@ -236,14 +204,9 @@ public class CapacityReservationIdempotencyTest {
         facade.cancel(reservation);
 
         verify(awsService, never()).cancel(any());
-        // Never submitted, so there is nothing a lost reply could have bought.
         verify(awsService, never()).findByClientToken(any(), anyString());
     }
 
-    /**
-     * An approved reservation whose submission is being retried may already exist at the provider. Cancelling it
-     * only here would leave that one billing, with nothing left that could ever find it.
-     */
     @Test
     public void shouldReleaseWhatALostSubmissionBoughtWhenCancelled() {
         final CapacityReservation reservation = reservation();
@@ -279,9 +242,6 @@ public class CapacityReservationIdempotencyTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
-    /**
-     * A reservation that already has its provider id has nothing a lost reply could have bought.
-     */
     @Test
     public void shouldNotLookForALostSubmissionWhenTheProviderIdIsKnown() {
         final CapacityReservation reservation = reservation();
@@ -291,9 +251,6 @@ public class CapacityReservationIdempotencyTest {
         verify(awsService, never()).findByClientToken(any(), anyString());
     }
 
-    /**
-     * What the monitor does with the facade: adopts what the lookup finds, and creates only when it finds nothing.
-     */
     private CloudCapacityReservation submitted(final CapacityReservation reservation) {
         return facade.findSubmitted(reservation).orElseGet(() -> facade.create(reservation));
     }

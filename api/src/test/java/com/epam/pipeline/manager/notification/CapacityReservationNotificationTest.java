@@ -47,12 +47,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Recipient resolution for the capacity reservation notifications.
- *
- * <p>The rule under test: the owner is the addressee, administrators are copied, and anyone passed as an
- * extra recipient is copied too - except the owner, who must not end up both addressed and copied.
- */
 @RunWith(MockitoJUnitRunner.class)
 public class CapacityReservationNotificationTest {
 
@@ -131,10 +125,6 @@ public class CapacityReservationNotificationTest {
                 .containsExactlyInAnyOrder(ADMIN_ID, RUN_OWNER_ID, OTHER_RUN_OWNER_ID);
     }
 
-    /**
-     * The owner is already the addressee. Copying them as well would send the same person the message twice,
-     * which is exactly what happens if the pool owner also has a run on their own pool.
-     */
     @Test
     public void shouldNotCopyOwnerWhoIsAlsoAnExtraRecipient() {
         when(userManager.loadUsersByNames(anyList()))

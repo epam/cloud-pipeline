@@ -50,9 +50,6 @@ public class CapacityReservationTest {
         assertEquals(reservation, copy);
     }
 
-    /**
-     * The copy is what a provider releases after the reservation itself has moved on - so it must keep what it was.
-     */
     @Test
     public void shouldKeepTheCopyAsItWasWhenTheReservationMovesOn() {
         final CapacityReservation reservation = CapacityReservation.builder()
@@ -68,10 +65,6 @@ public class CapacityReservationTest {
         assertEquals(0, copy.getAttempt());
     }
 
-    /**
-     * Jackson builds one through the no-args constructor, which leaves the defaulted platform null in this Lombok
-     * version. The copy must not fill it in.
-     */
     @Test
     public void shouldCopyANullPlatformAsNull() {
         final CapacityReservation reservation = new CapacityReservation();

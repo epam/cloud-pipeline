@@ -692,14 +692,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .collect(Collectors.toList()), type);
     }
 
-    /**
-     * Sends one of the capacity reservation notifications.
-     *
-     * <p>The baseline audience is the reservation's owner plus administrators: the owner asked for the
-     * capacity and administrators carry its cost. {@code extraRecipients} exists for the finalizing
-     * notification, which must also reach whoever has a job running on the pool - those people are affected
-     * by the reservation ending and the owner cannot relay it for them.
-     */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyCapacityReservation(final CapacityReservation reservation,
@@ -733,10 +725,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .orElse(null);
     }
 
-    /**
-     * Resolves recipient names to ids, dropping the owner - who is already the primary recipient - so nobody
-     * is both addressed and copied on the same message.
-     */
     private List<Long> resolveUserIds(final List<String> userNames, final String owner) {
         final List<String> names = ListUtils.emptyIfNull(userNames).stream()
                 .filter(StringUtils::isNotBlank)

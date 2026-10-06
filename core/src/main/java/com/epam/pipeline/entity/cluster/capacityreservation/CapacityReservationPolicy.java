@@ -21,14 +21,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * One rule in the capacity reservation approval policy: which requests it targets, and what happens to
- * them.
- *
- * <p>Held as a list in a system preference rather than a table of its own, so administrators can change
- * the rules without a release. There is deliberately no provider field - scope a rule to one provider by
- * testing {@code cloud.provider} inside {@link #statement}.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,13 +28,7 @@ public class CapacityReservationPolicy {
 
     private CapacityReservationPolicyAction action;
 
-    /**
-     * Which requests this rule applies to. A rule whose statement does not match is simply skipped.
-     */
     private ConditionExpression statement;
 
-    /**
-     * Requests excluded from this rule even when {@link #statement} matches. Optional.
-     */
     private ConditionExpression exclude;
 }
