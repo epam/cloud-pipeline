@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -150,6 +151,13 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @MockBean
     private MetadataManager metadataManager;
+
+    /**
+     * Mocked so that EntityManager's list of secured entity managers does not pull the pool manager's own
+     * dependencies into this context.
+     */
+    @MockBean
+    private NodePoolManager nodePoolManager;
 
     @Before
     public void setUpPreferenceManager() {

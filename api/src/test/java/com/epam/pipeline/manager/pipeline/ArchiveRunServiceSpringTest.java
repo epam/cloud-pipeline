@@ -47,6 +47,7 @@ import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.cluster.autoscale.AutoscaleManager;
 import com.epam.pipeline.manager.cluster.costs.ClusterCostsMonitoringService;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationMonitor;
 import com.epam.pipeline.manager.cluster.pool.NodePoolMonitoringService;
 import com.epam.pipeline.manager.docker.scan.AggregatingToolScanManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
@@ -129,6 +130,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private ResourceMonitoringManager resourceMonitoringManager;
     @MockBean
     private NodePoolMonitoringService nodePoolMonitoringService;
+    @MockBean
+    private CapacityReservationMonitor capacityReservationMonitor;
     @MockBean
     private ToolScanScheduler toolScanScheduler;
     @MockBean
