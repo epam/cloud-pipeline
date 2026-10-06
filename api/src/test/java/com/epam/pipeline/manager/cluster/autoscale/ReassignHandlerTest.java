@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -27,18 +29,25 @@ import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 public class ReassignHandlerTest {
 
     private static final String WINDOWS = "windows";
+    private static final String POOL_NODE_ID = "p-12345";
 
     private final AutoscalerService autoscalerService = mock(AutoscalerService.class);
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
@@ -88,6 +97,46 @@ public class ReassignHandlerTest {
         final boolean result = reassignHandler.tryReassignNode(null, null, null,
                 String.valueOf(ID), ID, null, nodes);
         assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldNotReassignAReservationPoolNodeOutsideThePoolsWindow() {
+        final NodePool pool = inactivePool();
+        pool.setCapacityReservation(true);
+
+        assertThat(tryReassignOnto(pool)).isFalse();
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldStillReassignAnOrdinaryPoolNodeWhenThePoolIsInactive() {
+        final NodePool pool = inactivePool();
+        doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
+
+        assertThat(tryReassignOnto(pool)).isTrue();
+    }
+
+    private boolean tryReassignOnto(final NodePool pool) {
+        final PipelineRun pipelineRun = getPipelineRun(ID);
+        pipelineRun.setPipelineRunParameters(Collections.emptyList());
+        doReturn(Optional.of(pipelineRun)).when(pipelineRunManager).findRun(ID);
+        final RunningInstance poolInstance = pool.toRunningInstance();
+        poolInstance.getInstance().setNodeId(POOL_NODE_ID);
+        doReturn(poolInstance).when(autoscalerService).getPreviousRunInstance(Mockito.anyString(), Mockito.any());
+        doReturn(true).when(autoscalerService).requirementsMatch(any(), any());
+        final InstanceRequest request = new InstanceRequest();
+        request.setInstance(new RunInstance());
+        return reassignHandler.tryReassignNode(null, new HashSet<>(), new HashSet<>(),
+                String.valueOf(ID), ID, request, Collections.singletonList(POOL_NODE_ID));
+    }
+
+    /** A pool that is not active now - its count is 0. */
+    private static NodePool inactivePool() {
+        final NodePool pool = new NodePool();
+        pool.setId(ID);
+        pool.setInstanceType("m5.large");
+        pool.setCount(0);
+        return pool;
     }
 
     private RunningInstance getRunningWindowsInstance() {

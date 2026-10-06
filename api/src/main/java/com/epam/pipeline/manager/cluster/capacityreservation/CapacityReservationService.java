@@ -40,6 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -118,9 +119,15 @@ public class CapacityReservationService {
         final Map<String, Object> launchSpecification = launchSpecificationOf(reservation);
         final String zone = reservation.getAvailabilityZone();
         final String subnet = allowedNetworks(regionCodeOf(reservation)).get(zone);
+        // The pool stops taking new runs once the reservation is finalizing, so a job is not started on capacity that
+        // ends shortly after; runs already on its nodes keep running until the reservation itself ends.
+        final LocalDateTime poolEndDate = Optional.ofNullable(reservation.getEndDate())
+                .map(end -> end.minusHours(preferenceManager.getPreference(
+                        SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS).getFinalizingLeadHours()))
+                .orElse(null);
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setStartDate(reservation.getStartDate());
-            pool.setEndDate(reservation.getEndDate());
+            pool.setEndDate(poolEndDate);
             pool.setAmiConfiguration(withReservation(pool.getAmiConfiguration(), launchSpecification, zone, subnet));
         });
         log.debug("Prepared node pool {} for capacity reservation {} from {} to {}",

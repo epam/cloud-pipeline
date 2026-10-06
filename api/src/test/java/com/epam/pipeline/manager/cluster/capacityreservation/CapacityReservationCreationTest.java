@@ -493,12 +493,16 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         reservationService.schedulePool(reservation);
 
         final NodePool pool = poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new);
+        final LocalDateTime cutOff = reservation.getEndDate().minusHours(preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS).getFinalizingLeadHours());
         assertThat(pool.getCount()).isZero();
         assertThat(pool.getStartDate()).isEqualTo(reservation.getStartDate());
-        assertThat(pool.getEndDate()).isEqualTo(reservation.getEndDate());
+        assertThat(pool.getEndDate()).isEqualTo(cutOff);
+        assertThat(cutOff.isBefore(reservation.getEndDate())).isTrue();
         reservationService.activatePool(reservation);
-        assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new)
-                .isActive(reservation.getEndDate().plusMinutes(1))).isFalse();
+        final NodePool activated = poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new);
+        assertThat(activated.isActive(cutOff.minusMinutes(1))).isTrue();
+        assertThat(activated.isActive(cutOff.plusMinutes(1))).isFalse();
     }
 
     @Test
