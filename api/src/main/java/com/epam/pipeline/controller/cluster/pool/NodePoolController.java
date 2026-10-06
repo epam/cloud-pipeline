@@ -65,10 +65,6 @@ public class NodePoolController extends AbstractRestController {
         return Result.success(apiService.load(id));
     }
 
-    /**
-     * Creates and updates are authorized differently - the latter on the pool the id names - so each goes to its own
-     * service method, the update with the very id it is authorized for.
-     */
     @PostMapping
     @ApiOperation(value = "Creates a node pool, optionally requesting a capacity reservation for it, "
             + "or updates the one", produces = MediaType.APPLICATION_JSON_VALUE)

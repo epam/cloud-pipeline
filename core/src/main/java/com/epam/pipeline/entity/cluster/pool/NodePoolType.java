@@ -16,21 +16,9 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
-/**
- * How a pool's nodes are shared between runs. Independent of whether the pool is backed by a capacity
- * reservation - the two are orthogonal.
- */
 public enum NodePoolType {
 
-    /**
-     * One node hosts one run. How every node pool behaves today.
-     */
     STANDARD,
 
-    /**
-     * One node hosts several concurrent runs, each limited to a portion of its CPU/GPU/RAM. Not supported
-     * yet: the enum value and the {@code launch_config} column exist so that enabling it later needs no
-     * further migration, and it is rejected at validation time.
-     */
     SHARABLE_NODE
 }

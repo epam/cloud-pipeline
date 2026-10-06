@@ -16,20 +16,9 @@
 
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
-/**
- * What a matching capacity reservation approval policy does to a request.
- */
 public enum CapacityReservationPolicyAction {
 
-    /**
-     * Approve the request without human involvement. This is how an administrator pre-authorizes a
-     * <em>shape</em> of request rather than approving each one.
-     */
     AUTO_APPROVE,
 
-    /**
-     * Require an administrator to approve the request explicitly. Evaluated before
-     * {@link #AUTO_APPROVE}, so a deny rule always wins over an auto-approve rule it overlaps with.
-     */
     DENY
 }

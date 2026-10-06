@@ -32,54 +32,37 @@ import static com.epam.pipeline.utils.condition.FieldType.ENUM;
 import static com.epam.pipeline.utils.condition.FieldType.NUMERIC;
 import static com.epam.pipeline.utils.condition.FieldType.STRING;
 
-/**
- * The fields of a {@link CapacityReservation} that a capacity reservation approval policy may test.
- *
- * <p>Same shape as {@link PipelineRunField}: the display names are what a policy author writes in a
- * condition expression's {@code field}.
- */
 @Getter
 public enum CapacityReservationField implements SubjectEntityField<CapacityReservation> {
 
-    /** Instance type being reserved, e.g. {@code p5.48xlarge}. Supports wildcards. */
     INSTANCE_TYPE(STRING,
         CapacityReservation::getInstanceType,
         "instance.type"),
 
-    /** How many instances are being reserved. */
     INSTANCE_COUNT(NUMERIC,
         reservation -> str(reservation.getInstanceCount()),
         "instance.count"),
 
-    /** Requested reservation duration in hours - the usual proxy for how much a request costs. */
     DURATION_HOURS(NUMERIC,
         reservation -> str(reservation.getDurationHours()),
         "duration.hours"),
 
-    /** Which reservation product is being requested. */
     RESERVATION_TYPE(ENUM,
         reservation -> str(reservation.getReservationType()),
         "reservation.type"),
 
-    /** Cloud provider the reservation targets. Scopes a policy to one provider. */
     CLOUD_PROVIDER(ENUM,
         reservation -> str(reservation.getCloudProvider()),
         "cloud.provider"),
 
-    /** Identifier of the region the reservation targets. */
     REGION_ID(NUMERIC,
         reservation -> str(reservation.getRegionId()),
         "region.id"),
 
-    /** Name of the user who opened the request. */
     OWNER(STRING,
         CapacityReservation::getOwner,
         "owner"),
 
-    /**
-     * Roles and groups of the requester, resolved at evaluation time from the owner name. This is how a
-     * policy auto-approves for a particular group without hardcoding a role check.
-     */
     OWNER_AUTHORITIES(FieldType.USER_AUTHORITIES,
         CapacityReservation::getOwner,
         "owner.authorities");
@@ -113,10 +96,6 @@ public enum CapacityReservationField implements SubjectEntityField<CapacityReser
         return extractor != null ? extractor.apply(reservation) : null;
     }
 
-    /**
-     * No capacity reservation field is duration-based: a reservation's own duration is a plain number here,
-     * not an elapsed time being compared against a threshold.
-     */
     @Override
     public boolean isSupportsDuration() {
         return false;

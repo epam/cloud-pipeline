@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Lets the suite import pipeline.autoscaling where the cloud SDKs are not installed.
-
-The package imports every provider at once, and with them the Azure and Google SDKs - which a job container only
-has for its own cloud, and a test environment usually has for none. No test here calls those SDKs, so where one
-cannot be imported it is replaced by a stub; where it can, the real one is used.
-"""
-
 import importlib
 import sys
 
@@ -28,8 +20,6 @@ try:
 except ImportError:
     from mock import MagicMock
 
-# What the providers import from each SDK. A module can import yet lack them - an empty namespace package left by a
-# partial install - so each SDK is checked by these names, and stubbed whole when any is missing.
 _CLOUD_SDKS = {
     'azure': ([('azure.common.client_factory', 'get_client_from_auth_file'),
                ('azure.mgmt.resource', 'ResourceManagementClient'),

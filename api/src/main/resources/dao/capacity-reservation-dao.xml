@@ -80,8 +80,6 @@
         <constructor-arg>
             <value>
                 <!--updateCapacityReservationQuery-->
-                <!--node_pool_id and origin_id are deliberately absent: a reservation never moves to
-                    another pool, and its retry linkage is fixed when it is created.-->
                 <![CDATA[
                     UPDATE pipeline.capacity_reservation SET
                         name = :NAME,
@@ -342,7 +340,6 @@
         <constructor-arg>
             <value>
                 <!--updateCapacityReservationRetryQuery-->
-                <!--Guarded by status, so a caller holding a stale copy cannot undo a change made meanwhile.-->
                 <![CDATA[
                     UPDATE pipeline.capacity_reservation SET
                         status_reason = :STATUS_REASON,

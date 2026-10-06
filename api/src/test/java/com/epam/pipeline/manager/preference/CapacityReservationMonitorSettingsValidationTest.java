@@ -25,12 +25,6 @@ import java.util.Collections;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Without a finalizing lead time the monitor cannot tell when to warn that a reservation is ending, and used to throw
- * on every cycle instead - so the preference refuses to be saved without one.
- *
- * <p>A Spring test only because the validator parses through {@link JsonMapper}, whose mapper the context sets up.
- */
 public class CapacityReservationMonitorSettingsValidationTest extends AbstractSpringTest {
 
     @Test

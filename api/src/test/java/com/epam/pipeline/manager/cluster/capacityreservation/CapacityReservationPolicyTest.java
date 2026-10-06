@@ -33,17 +33,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The capacity reservation approval policy is stored as JSON in a system preference, so the contract that
- * matters is that an administrator's hand-written value deserializes into the shape the engine expects.
- */
 public class CapacityReservationPolicyTest {
 
-    /**
-     * An explicit mapper, not {@code JsonMapper}'s two-argument helper: that one resolves a static instance
-     * injected by Spring, which is null outside an application context and NPEs. The shape of the JSON is
-     * what is under test here, not the wiring.
-     */
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final int INSTANCE_COUNT = 4;
@@ -98,9 +89,6 @@ public class CapacityReservationPolicyTest {
         assertThat(settings.getFinalizingLeadHours()).isEqualTo(6);
     }
 
-    /**
-     * Every field name used in the JSON above has to resolve, otherwise a policy silently never matches.
-     */
     @Test
     public void shouldResolveEveryFieldNameUsedInPolicies() {
         assertThat(CapacityReservationField.findByDisplayName("cloud.provider").isPresent()).isTrue();
@@ -114,10 +102,6 @@ public class CapacityReservationPolicyTest {
         assertThat(CapacityReservationField.findByDisplayName("no.such.field").isPresent()).isFalse();
     }
 
-    /**
-     * The engine finds a subject's fields through {@code forSubjectType}. Without the registration there,
-     * every policy expression would fail to resolve its field regardless of the enum being correct.
-     */
     @Test
     public void shouldRegisterFieldsForCapacityReservationSubjectType() {
         final List<SubjectEntityField<CapacityReservation>> fields =
@@ -141,10 +125,6 @@ public class CapacityReservationPolicyTest {
                 .isEqualTo(String.valueOf(DURATION_HOURS));
     }
 
-    /**
-     * A reservation with nothing set must yield nulls rather than throwing: the approval engine evaluates a
-     * request built from a partially filled VO, so a missing optional field is normal input.
-     */
     @Test
     public void shouldExtractNullsFromEmptyReservation() {
         final CapacityReservation empty = new CapacityReservation();

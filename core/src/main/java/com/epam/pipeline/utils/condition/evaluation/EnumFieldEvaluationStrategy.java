@@ -18,16 +18,8 @@ package com.epam.pipeline.utils.condition.evaluation;
 
 
 import com.epam.pipeline.utils.condition.ConditionOperator;
-import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
-/**
- * Evaluates {@link FieldType#ENUM} leaf nodes using case-insensitive name equality
- * (e.g. {@code run.status = RUNNING} matches regardless of capitalisation).
- * Supports {@code =} and {@code !=}.
- *
- * @param <T> the subject type being evaluated
- */
 public class EnumFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     public EnumFieldEvaluationStrategy(final SubjectEntityField<T> field) {

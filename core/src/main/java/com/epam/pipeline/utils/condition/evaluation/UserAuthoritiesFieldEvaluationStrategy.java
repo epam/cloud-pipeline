@@ -25,16 +25,6 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.function.Function;
 
-/**
- * Evaluates {@link FieldType#USER_AUTHORITIES} leaf nodes by checking whether the subject's owner
- * is present in the set of authorities (groups and roles combined) returned by the injected
- * {@code authoritiesResolver}.
- *
- * <p>{@code =} matches when the owner is a member; {@code !=} when not. Comparison is
- * case-insensitive. Supports {@code =} and {@code !=}.
- *
- * @param <T> the subject type being evaluated
- */
 public class UserAuthoritiesFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     private final Function<String, Collection<String>> authoritiesResolver;

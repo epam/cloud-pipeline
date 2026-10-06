@@ -26,12 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * The value of {@code cluster.networks.config}.
- *
- * <p>A region's entry is the one whose {@code name} is the region's code - the rule the launch scripts apply, so
- * what is looked up here is what a launch will find.
- */
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -40,10 +34,6 @@ public class CloudRegionsConfiguration {
     private List<NetworkConfiguration> regions;
     private Map<String, String> tags;
 
-    /**
-     * The zones and subnets a region's nodes may be launched into: zone to subnet. Empty when the region configures no
-     * networks, in which case a node may go to any of the region's zones, into its default subnet there.
-     */
     public Map<String, String> allowedNetworks(final String regionCode) {
         if (regionCode == null) {
             return Collections.emptyMap();

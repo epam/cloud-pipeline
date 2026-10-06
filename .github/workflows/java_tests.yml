@@ -282,8 +282,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # pipe-common from its own setup.py, so the tests run against the versions it pins. boto3 is not among them,
-      # and the tests need it, as they do pytest and mock.
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -293,7 +291,6 @@ jobs:
         working-directory: workflows/pipe-common
         run: python -m pytest test --junitxml="$GITHUB_WORKSPACE/python-test-results/pipe-common.xml"
       - name: Run autoscaling script tests
-        # Reported whatever the pipe-common tests did.
         if: success() || failure()
         working-directory: scripts/autoscaling/aws/test
         run: python -m pytest . --junitxml="$GITHUB_WORKSPACE/python-test-results/autoscaling.xml"

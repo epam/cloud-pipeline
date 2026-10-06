@@ -98,10 +98,6 @@ public class NodePoolManager implements SecuredEntityManager {
                 : allPools;
     }
 
-    /**
-     * The pools matching a filter. Unset fields are ignored, so an empty filter returns everything the caller may
-     * see - the authorization layer, not this method, decides what that is.
-     */
     public List<NodePool> filter(final NodePoolFilterVO filter) {
         final LocalDateTime timestamp = DateUtils.nowUTC();
         return ListUtils.emptyIfNull(poolDao.loadAll()).stream()
@@ -128,9 +124,6 @@ public class NodePoolManager implements SecuredEntityManager {
                 .orElseThrow(() -> notFound(poolId));
     }
 
-    /**
-     * Loads a pool to change it, holding its row lock for the rest of the caller's transaction.
-     */
     @Transactional(propagation = Propagation.MANDATORY)
     public NodePool loadForUpdate(final Long poolId) {
         return poolDao.findForUpdate(poolId)
@@ -142,10 +135,6 @@ public class NodePoolManager implements SecuredEntityManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, poolId));
     }
 
-    /**
-     * Changes the columns the reservation lifecycle owns - the node count, the window it is usable in, and the
-     * launch configuration's parts that consume the capacity.
-     */
     @Transactional
     public NodePool applyReservationState(final Long poolId, final Consumer<NodePool> change) {
         final NodePool pool = loadForUpdate(poolId);
@@ -156,8 +145,6 @@ public class NodePoolManager implements SecuredEntityManager {
     @Transactional
     public NodePool delete(final Long poolId) {
         final NodePool node = loadForUpdate(poolId);
-        // Refuses the delete while a reservation is still live, and removes a terminal one in this same
-        // transaction - the reservation row cannot outlive the pool it points at.
         reservationService.onPoolDeletion(node);
         poolDao.delete(poolId);
         notificationManager.removeNotificationTimestamps(poolId, NotificationType.FULL_NODE_POOL);
@@ -170,7 +157,6 @@ public class NodePoolManager implements SecuredEntityManager {
     @Transactional
     public NodePool create(final NodePoolVO vo) {
         validator.validate(vo);
-        // Known before the pool is written: a sharable pool's launch config selects the pool's nodes by it.
         vo.setId(poolDao.createId());
         vo.setAmiConfiguration(resolveAmiConfiguration(vo, null));
         vo.setLaunchConfig(resolveLaunchConfig(vo, vo.getPoolType(), null));
@@ -190,10 +176,6 @@ public class NodePoolManager implements SecuredEntityManager {
         return load(created.getId());
     }
 
-    /**
-     * The client's reservation terms, with the pool's side of the reservation filled in from the persisted pool.
-     * The count comes from the VO, not the pool: the pool's own is 0 until the reservation is active.
-     */
     private CapacityReservationRequest buildReservationRequest(final CapacityReservationRequest request,
                                                                final NodePool pool,
                                                                final NodePoolVO vo) {
@@ -207,10 +189,6 @@ public class NodePoolManager implements SecuredEntityManager {
                 .build();
     }
 
-    /**
-     * @param id the pool being updated - the one the caller is authorized for, and so the one written, whatever
-     *           else the payload says
-     */
     @Transactional
     public NodePool update(final Long id, final NodePoolVO vo) {
         final NodePool existing = loadForUpdate(id);
@@ -223,8 +201,6 @@ public class NodePoolManager implements SecuredEntityManager {
         vo.setLaunchConfig(resolveLaunchConfig(vo, existing.getPoolType(), existing.getLaunchConfig()));
 
         final NodePool updated = poolMapper.toEntity(vo);
-        // Neither of these is writable through an ordinary edit: ownership changes through the permission
-        // layer, and a pool cannot gain or lose a reservation after it is created.
         updated.setOwner(existing.getOwner());
         updated.setCapacityReservation(existing.isCapacityReservation());
         poolDao.update(updated);
@@ -235,8 +211,6 @@ public class NodePoolManager implements SecuredEntityManager {
      * The launch configuration a pool gets: the one the request sends, otherwise the pool's current one - none for a
      * new pool, whose nodes then launch as the region's {@code amis} rules say. The deprecated {@code instanceImage} is
      * its image when it names none, and an edit of that field changes the image.
-     *
-     * @param existing the pool being updated, or null for a new one
      */
     @SuppressWarnings("deprecation")
     private AMIConfiguration resolveAmiConfiguration(final NodePoolVO vo, final NodePool existing) {
@@ -267,8 +241,6 @@ public class NodePoolManager implements SecuredEntityManager {
     /**
      * How runs divide a node of a sharable pool: the config the request sends; otherwise the pool's current one, or
      * one derived from its instance type. Other pools have none.
-     *
-     * @param current the pool's current config, or null for a new pool
      */
     private NodePoolLaunchConfig resolveLaunchConfig(final NodePoolVO vo,
                                                      final NodePoolType poolType,
@@ -302,11 +274,6 @@ public class NodePoolManager implements SecuredEntityManager {
                         messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, identifier)));
     }
 
-    /**
-     * A node pool is neither hierarchical nor browsable through the entity tree, so the three methods below
-     * have nothing meaningful to answer - matching how {@code CloudRegionManager} treats them for the
-     * platform's other root-level secured entity.
-     */
     @Override
     public Integer loadTotalCount() {
         throw new UnsupportedOperationException();

@@ -56,10 +56,6 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertFound(reservationDao.find(created.getId()), created);
     }
 
-    /**
-     * The round trip that matters: a reservation with every nullable column populated, so a column missing
-     * from the insert or the row mapper shows up as a mismatch rather than passing on nulls.
-     */
     @Test
     public void shouldRoundTripEveryColumn() {
         final CapacityReservation origin = reservationDao.create(
@@ -73,10 +69,6 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertFound(loaded, created);
     }
 
-    /**
-     * A retry remembers its reason and the dates it asked for - and nothing else: the columns it leaves out are the
-     * ones a stale copy must not write back.
-     */
     @Test
     public void shouldWriteOnlyWhatARetryRemembersWhileTheStatusIsTheExpectedOne() {
         final CapacityReservation created = reservationDao.create(
@@ -99,9 +91,6 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertFound(reservationDao.find(created.getId()), created);
     }
 
-    /**
-     * The guard is the point: a caller holding a stale copy must not overwrite a status change made meanwhile.
-     */
     @Test
     public void shouldNotWriteARetryOnceTheStatusHasMovedOn() {
         final CapacityReservation created = reservationDao.create(
@@ -123,8 +112,6 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         final CapacityReservation created = reservationDao.create(
                 CapacityReservationCreatorUtils.getReservation(createPool().getId()));
 
-        // Mutate every column updateCapacityReservationQuery writes, so dropping any one of them from the
-        // statement fails this test rather than passing on the columns that happened to be checked.
         created.setName("renamed");
         created.setCloudReservationId(CapacityReservationCreatorUtils.CLOUD_RESERVATION_ID);
         created.setAvailabilityZone(CapacityReservationCreatorUtils.AVAILABILITY_ZONE);
@@ -160,10 +147,6 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertThat(reservationDao.findByNodePoolId(pool.getId()).isPresent()).isFalse();
     }
 
-    /**
-     * A pool has at most one reservation. The unique index is what keeps {@code findByNodePoolId}
-     * deterministic, so a second insert for the same pool must fail rather than quietly win.
-     */
     @Test
     public void shouldRejectSecondReservationForSamePool() {
         final NodePool pool = createPool();
@@ -239,10 +222,6 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         assertThat(reservationDao.find(created.getId()).isPresent()).isFalse();
     }
 
-    /**
-     * A retry points at the reservation it replaces. Deleting that original must null the link rather than
-     * fail or cascade, so the retry survives its predecessor's pool being deleted.
-     */
     @Test
     public void shouldNullOriginIdWhenOriginalIsDeleted() {
         final CapacityReservation original = reservationDao.create(

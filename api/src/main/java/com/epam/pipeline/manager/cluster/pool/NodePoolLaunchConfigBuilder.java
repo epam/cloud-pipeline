@@ -32,50 +32,23 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-/**
- * Produces the {@link NodePoolLaunchConfig} of a sharable pool - how several concurrent runs may divide one of
- * its nodes between them.
- *
- * <p>Two sources, in order of precedence: whatever the caller supplied, and otherwise a config derived from the
- * pool's instance type. Either way the pod selector is the one thing the caller cannot be expected to know, so
- * it falls back to the pool's own nodes - labelled with the pool's id - when they did not set one: a pod has to
- * select the pool's nodes to land on them at all, and a wrong or missing value would not fail loudly, it would
- * just quietly schedule somewhere else.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class NodePoolLaunchConfigBuilder {
 
-    /**
-     * Headroom withheld from a node before a run may ask for the rest. These mirror the defaults of the
-     * {@code launch.reservation.parameters} preference this replaces - a vCPU and a GiB are always held back for
-     * the platform's own agents, whereas the whole GPU count is offerable.
-     */
     private static final int DEFAULT_CPU_RESERVED = 1;
     private static final int DEFAULT_GPU_RESERVED = 0;
     private static final String DEFAULT_RAM_RESERVED = "1GiB";
 
-    /**
-     * Injected as the DAO rather than {@code InstanceOfferManager}: all that is wanted is the instance type's
-     * GPU count, and the manager sits inside the manager layer's dependency cycle.
-     */
     private final InstanceOfferDao instanceOfferDao;
 
-    /**
-     * @param pool the pool, with its id and the config the caller supplied, or none to derive one
-     */
     public NodePoolLaunchConfig build(final NodePoolVO pool) {
         final NodePoolLaunchConfig config = pool.getLaunchConfig() != null ? pool.getLaunchConfig() : generate(pool);
         config.setKubeAssignPolicy(withSelector(config.getKubeAssignPolicy(), pool.getId()));
         return config;
     }
 
-    /**
-     * CPU and RAM requests are always enabled - every node has both. GPU requests are enabled only when the
-     * instance actually has a GPU, since offering a share of nothing would let a run ask for a device that
-     * cannot be granted.
-     */
     private NodePoolLaunchConfig generate(final NodePoolVO pool) {
         final NodePoolLaunchConfig config = new NodePoolLaunchConfig();
         config.setCpuRequestsEnabled(true);
@@ -87,10 +60,6 @@ public class NodePoolLaunchConfigBuilder {
         return config;
     }
 
-    /**
-     * Runs sharing a node need elevated privileges, and must not skip container requests - skipping them is what
-     * lets a single run take the whole node, which is precisely what a sharable pool exists to prevent.
-     */
     private RunContainerSpec withSelector(final RunContainerSpec requested, final Long poolId) {
         final RunContainerSpec spec = requested != null ? requested : defaultContainerSpec();
         if (!hasSelectorValue(spec)) {

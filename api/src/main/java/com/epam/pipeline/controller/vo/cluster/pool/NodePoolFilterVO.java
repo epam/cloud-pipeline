@@ -20,14 +20,6 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import lombok.Data;
 
-/**
- * How a caller narrows the pool list. Every field is optional and an unset field means "any", so an empty filter
- * is the same request as an unfiltered list.
- *
- * <p>This is how a client finds the pools it could actually use for a given instance type - the question the
- * {@code launch.reservation.parameters} preference answers today, and which this replaces once sharable pools are
- * the way that is configured.
- */
 @Data
 public class NodePoolFilterVO {
 
@@ -36,15 +28,7 @@ public class NodePoolFilterVO {
     private PriceType priceType;
     private NodePoolType poolType;
 
-    /**
-     * Restricts to reservation-backed pools, or to plain ones. A plain column predicate rather than a join,
-     * because whether a pool is reservation-backed is recorded on the pool itself.
-     */
     private Boolean capacityReservation;
 
-    /**
-     * Restricts to pools that can currently take work. Evaluated in the manager rather than in SQL, because
-     * whether a pool is active depends on its schedule and its date window, not on a single column.
-     */
     private Boolean active;
 }

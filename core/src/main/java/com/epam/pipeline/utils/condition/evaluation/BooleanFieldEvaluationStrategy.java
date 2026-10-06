@@ -18,16 +18,8 @@ package com.epam.pipeline.utils.condition.evaluation;
 
 
 import com.epam.pipeline.utils.condition.ConditionOperator;
-import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
 
-/**
- * Evaluates {@link FieldType#BOOLEAN} leaf nodes (e.g. {@code run.spot}).
- * Rule values are expected to be {@code "true"} or {@code "false"} (case-insensitive).
- * Supports {@code =} and {@code !=}.
- *
- * @param <T> the subject type being evaluated
- */
 public class BooleanFieldEvaluationStrategy<T> extends AbstractLeafEvaluationStrategy<T> {
 
     public BooleanFieldEvaluationStrategy(final SubjectEntityField<T> field) {
