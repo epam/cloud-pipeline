@@ -158,7 +158,7 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
         POOL_KUBE_LABELS,
         POOL_OWNER,
         POOL_TYPE,
-        POOL_CAPACITY_RESERVATION,
+        POOL_IS_CAPACITY_RESERVATION,
         POOL_START_DATE,
         POOL_END_DATE,
         POOL_LAUNCH_CONFIG,
@@ -202,7 +202,7 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     Optional.ofNullable(pool.getPoolType())
                             .orElse(NodePoolType.STANDARD)
                             .name());
-            params.addValue(POOL_CAPACITY_RESERVATION.name(), pool.isCapacityReservation());
+            params.addValue(POOL_IS_CAPACITY_RESERVATION.name(), pool.isCapacityReservation());
             params.addValue(POOL_START_DATE.name(),
                     Optional.ofNullable(pool.getStartDate()).map(Timestamp::valueOf).orElse(null));
             params.addValue(POOL_END_DATE.name(),
@@ -275,7 +275,7 @@ public class NodePoolDao extends NamedParameterJdbcDaoSupport {
                     .filter(StringUtils::isNotBlank)
                     .map(NodePoolType::valueOf)
                     .orElse(NodePoolType.STANDARD));
-            pool.setCapacityReservation(rs.getBoolean(POOL_CAPACITY_RESERVATION.name()));
+            pool.setCapacityReservation(rs.getBoolean(POOL_IS_CAPACITY_RESERVATION.name()));
             Optional.ofNullable(rs.getTimestamp(POOL_START_DATE.name()))
                     .map(Timestamp::toLocalDateTime)
                     .ifPresent(pool::setStartDate);

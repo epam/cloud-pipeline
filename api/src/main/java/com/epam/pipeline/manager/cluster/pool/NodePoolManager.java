@@ -105,7 +105,7 @@ public class NodePoolManager implements SecuredEntityManager {
                 .filter(pool -> matches(filter.getRegionId(), pool.getRegionId()))
                 .filter(pool -> matches(filter.getPriceType(), pool.getPriceType()))
                 .filter(pool -> matches(filter.getPoolType(), pool.getPoolType()))
-                .filter(pool -> matches(filter.getCapacityReservation(), pool.isCapacityReservation()))
+                .filter(pool -> matches(filter.getIsCapacityReservation(), pool.isCapacityReservation()))
                 .filter(pool -> filter.getActive() == null
                         || filter.getActive() == pool.isActive(timestamp))
                 .collect(Collectors.toList());

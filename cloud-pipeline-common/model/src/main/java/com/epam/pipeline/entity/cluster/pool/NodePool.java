@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.vo.cluster.pool.PoolLabel;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -31,6 +32,8 @@ import java.util.Set;
 @Data
 @NoArgsConstructor
 public class NodePool {
+
+    private static final String IS_CAPACITY_RESERVATION = "isCapacityReservation";
 
     private Long id;
     private String name;
@@ -55,7 +58,19 @@ public class NodePool {
     private NodePoolType poolType = NodePoolType.STANDARD;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
-    private boolean capacityReservation;
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    @SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
+    private boolean isCapacityReservation;
+
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    public boolean isCapacityReservation() {
+        return isCapacityReservation;
+    }
+
+    @JsonProperty(IS_CAPACITY_RESERVATION)
+    public void setCapacityReservation(final boolean isCapacityReservation) {
+        this.isCapacityReservation = isCapacityReservation;
+    }
 
     public boolean isActive(final LocalDateTime timestamp) {
         if (count == 0) {
