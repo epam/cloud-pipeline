@@ -266,8 +266,8 @@ def load_pool_launch_configuration(pool_id):
     Fetches the launch configuration of the pool this node belongs to, once, for get_allowed_instance_image to overlay.
 
     A pool may carry its own configuration - image, init script, filesystem, embedded scripts, additional spec, zone,
-    subnet - sent with the pool's create or update request, or taken from the region's matching amis rule when the
-    pool was created without one. A capacity reservation writes its target, zone and subnet into it while it is live.
+    subnet - sent with the pool's create or update request. A capacity reservation writes its target, zone and subnet
+    into it once it is scheduled. A pool without one launches as the region's matching amis rule says.
     """
     global __POOL_LAUNCH_CONFIGURATION__
     __POOL_LAUNCH_CONFIGURATION__ = {}
@@ -331,14 +331,13 @@ def zone_pinned_by_pool(availability_zone):
 
 def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
     """
-    A pool with a launch configuration of its own launches from that - over this script's defaults, not over a rule
-    matched now: the configuration is the rule the pool was created with, and mixing it with whichever rule this
-    launch would match could give a node one rule's image and another's instance profile. Any other node launches
-    from the region's first matching amis rule.
+    The region's first matching amis rule, with the launch configuration of the node's pool, if it has one, laid over
+    it: the pool only carries what was set for it on purpose - an image or init script an administrator chose, a
+    capacity reservation's target, zone and subnet - and takes everything else from the rule.
     """
-    if __POOL_LAUNCH_CONFIGURATION__:
-        return apply_pool_launch_configuration(get_default_instance_image(default_image), __POOL_LAUNCH_CONFIGURATION__)
-    return get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id)
+    return apply_pool_launch_configuration(
+        get_matching_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id),
+        __POOL_LAUNCH_CONFIGURATION__)
 
 
 def get_default_instance_image(default_image):

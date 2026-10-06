@@ -19,17 +19,12 @@ package com.epam.pipeline.entity.cluster;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 
-import java.nio.file.FileSystems;
-import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * The value of {@code cluster.networks.config}.
@@ -41,11 +36,6 @@ import java.util.Optional;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CloudRegionsConfiguration {
-
-    /**
-     * Node pools launch Linux nodes only.
-     */
-    private static final String LINUX = "linux";
 
     private List<NetworkConfiguration> regions;
     private Map<String, String> tags;
@@ -65,60 +55,5 @@ public class CloudRegionsConfiguration {
                 .map(NetworkConfiguration::getAllowedNetworks)
                 .map(Collections::unmodifiableMap)
                 .orElseGet(Collections::emptyMap);
-    }
-
-    /**
-     * The launch configuration a new pool of this instance type starts from: a copy of the first of the region's
-     * {@code amis} rules that the launch scripts would match for its nodes, with the fields that only choose between
-     * rules left out. Empty when no rule matches.
-     *
-     * <p>A rule restricted to a docker image is skipped - a pool's nodes are not launched for any one run - and so is a
-     * rule restricted to roles or groups: a pool is shared by whoever its filter admits, and a rule meant for some
-     * would reach all of them. An administrator can still give a pool such a configuration explicitly.
-     */
-    public Optional<AMIConfiguration> amiConfigurationFor(final String regionCode, final String instanceType) {
-        if (regionCode == null) {
-            return Optional.empty();
-        }
-        return ListUtils.emptyIfNull(regions).stream()
-                .filter(region -> regionCode.equals(region.getName()))
-                .findFirst()
-                .flatMap(region -> ListUtils.emptyIfNull(region.getAmis()).stream()
-                        .filter(rule -> LINUX.equals(rule.getPlatform()))
-                        .filter(rule -> matchesMask(instanceType, rule.getInstanceMask()))
-                        .filter(rule -> CollectionUtils.isEmpty(rule.getDockerImages()))
-                        .filter(rule -> CollectionUtils.isEmpty(rule.getPermissions()))
-                        .findFirst())
-                .map(CloudRegionsConfiguration::copy);
-    }
-
-    /**
-     * The launch scripts match a rule's mask with {@code fnmatch}: {@code *}, {@code ?}, {@code [seq]} and
-     * {@code [!seq]} - which a glob matches the same way for names without a {@code /}, as instance types are.
-     */
-    static boolean matchesMask(final String instanceType, final String mask) {
-        if (instanceType == null || mask == null) {
-            return false;
-        }
-        try {
-            return FileSystems.getDefault().getPathMatcher("glob:" + mask).matches(Paths.get(instanceType));
-        } catch (IllegalArgumentException e) {
-            // An unparsable mask, or a name that is not a path - neither is a match.
-            return false;
-        }
-    }
-
-    /**
-     * Only the fields the launch scripts take from a rule: a rule has no subnet of its own.
-     */
-    private static AMIConfiguration copy(final AMIConfiguration rule) {
-        final AMIConfiguration copy = new AMIConfiguration();
-        copy.setAmi(rule.getAmi());
-        copy.setInitScript(rule.getInitScript());
-        copy.setFsType(rule.getFsType());
-        copy.setEmbeddedScripts(rule.getEmbeddedScripts() == null ? null : new HashMap<>(rule.getEmbeddedScripts()));
-        copy.setAdditionalSpec(rule.getAdditionalSpec() == null ? null : new HashMap<>(rule.getAdditionalSpec()));
-        copy.setAvailabilityZone(rule.getAvailabilityZone());
-        return copy;
     }
 }
