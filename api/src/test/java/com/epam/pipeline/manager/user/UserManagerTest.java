@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
@@ -151,6 +152,13 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @MockBean
     private MetadataManager metadataManager;
+
+    /**
+     * Mocked so that EntityManager's list of secured entity managers does not pull the pool manager's own
+     * dependencies into this context.
+     */
+    @MockBean
+    private NodePoolManager nodePoolManager;
 
     @BeforeEach
     public void setUpPreferenceManager() {

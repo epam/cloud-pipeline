@@ -145,6 +145,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 public class AspectTestBeans {
@@ -154,6 +155,15 @@ public class AspectTestBeans {
 
     @MockBean(name = "flywayInitializer")
     public FlywayMigrationInitializer mockFlywayMigrationInitializer;
+
+    /**
+     * This context has no data source, so nothing declares a transaction manager. The scanned
+     * {@code com.epam.pipeline.manager} components that build a {@code TransactionTemplate} of
+     * their own still need one in order to be constructed. It is a mock, so work such a component
+     * does here is not actually transactional - do not assert transactional behaviour against it.
+     */
+    @MockBean
+    public PlatformTransactionManager mockTransactionManager;
 
     @MockBean
     public ImpersonationManager impersonationManager;
