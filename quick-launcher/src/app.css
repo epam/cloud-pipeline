@@ -1,0 +1,541 @@
+.application {
+  color: white;
+  font-size: 14pt;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.static-header {
+  position: fixed;
+  top: -34px;
+  left: 0;
+  right: 0;
+  height: 34px;
+  background-color: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  line-height: 34px;
+  font-size: 10pt;
+  padding: 0 10px;
+  transition: top .25s ease-in-out;
+  z-index: 100;
+}
+
+.static-header.displayed {
+  top: 0;
+}
+
+.static-header .link {
+  color: #ccc;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.static-header .link:hover {
+  color: #fff;
+}
+
+.static-footer {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+}
+
+.logo {
+  height: 80px;
+}
+
+.edit-application {
+  width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.edit-application .edit-application-container {
+  background: linear-gradient(rgba(0, 0, 0, 0.05) calc(100vh - 200px), rgba(0, 0, 0, 0.5) 100vh);
+  padding: 20px;
+  overflow: auto;
+  line-height: 26px;
+}
+
+.edit-application-container .input {
+  line-height: 26px;
+  font-size: 16px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid transparent;
+  outline: none;
+  border-radius: 5px;
+  color: white;
+}
+
+.edit-application-container textarea.input {
+  resize: none;
+}
+
+.edit-application-container .form-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.edit-application-container .form-item label {
+  margin: 0 10px;
+  min-width: 150px;
+  text-align: right;
+}
+
+.edit-application-add-attribute,
+.form-item.attribute {
+  margin-left: 170px;
+}
+
+.edit-application-container .input.select {
+  padding: 0 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.edit-application-container .input.select .options {
+  position: absolute;
+  top: calc(100% + 5px);
+  z-index: 11;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 0 0 5px 5px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  line-height: 26px;
+  min-height: 30px;
+  left: 0;
+  display: none;
+}
+
+.edit-application-container .input.select .options .options-loading {
+  color: #aaa;
+  font-size: small;
+  font-style: italic;
+}
+
+.edit-application-container .input.select .options .option {
+  padding: 2px 4px;
+  line-height: 26px;
+  font-size: smaller;
+}
+
+.edit-application-container .input.select .options .option.selected {
+  font-weight: bold;
+}
+
+.edit-application-container .input.select .options .option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.edit-application-container .input.select .overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background-color: transparent;
+}
+
+.edit-application-container .input.select.visible .overlay {
+  display: block;
+}
+
+.edit-application-container .input.select.visible .options {
+  display: block;
+}
+
+.edit-application-container .input:not(.select):read-only,
+.edit-application-container .input:disabled,
+.edit-application-container .input.disabled {
+  pointer-events: none;
+}
+
+.edit-application-container .input:hover {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 2px 2px rgba(255, 255, 255, 0.1);
+}
+
+.edit-application-container .input:focus {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 2px 2px rgba(255, 255, 255, 0.25);
+}
+
+.edit-application-container .form-item .input {
+  flex: 1;
+  font-family: inherit;
+}
+
+.edit-application-container .form-item .input::placeholder {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: smaller;
+}
+
+.edit-application-container .form-item .input:read-only:not(.select),
+.edit-application-container .form-item .input.disabled {
+  color: #ccc;
+  background-color: rgba(0, 0, 0, 0.1);
+  cursor: not-allowed;
+}
+
+.edit-application-container .form-item.textarea {
+  align-items: flex-start;
+}
+
+.edit-application-container .edit-icon {
+  float: right;
+  width: 200px;
+  height: 200px;
+  background: rgba(0, 0, 0, 0.1) no-repeat center;
+  background-size: cover;
+  margin-left: 10px;
+  padding: 5px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.edit-application-container .edit-icon .frame {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 1px dashed #aaa;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.edit-application-container .edit-icon:hover .frame {
+  border-color: white;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.edit-application-container .edit-icon .file-input {
+  display: none;
+}
+
+.edit-application-container .edit-icon.icon-error .frame {
+  border-color: rgba(255, 0, 0, 0.75);
+  background-color: rgba(255, 0, 0, 0.35);
+}
+
+.edit-application-container .edit-icon.icon-error:hover .frame {
+  border-color: red;
+  background-color: rgba(255, 0, 0, 0.5);
+}
+
+.edit-application-button {
+  display: inline-block;
+  padding: 2px 5px;
+  color: #ddd;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 5px;
+  font-size: smaller;
+}
+
+.edit-application-button:not(.disabled) {
+  cursor: pointer;
+}
+
+.edit-application-button:not(.disabled):hover {
+  color: #ddd;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(0, 0, 0, 0.8);
+}
+
+.edit-application-button.disabled {
+  display: inline-block;
+  padding: 2px 5px;
+  color: #ccc;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  font-size: smaller;
+  cursor: not-allowed;
+}
+
+.edit-application-actions-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 10px 170px 10px 170px;
+  padding: 10px;
+  background-color: rgba(255, 0, 0, 0.5);
+  color: #400000;
+  border-radius: 5px;
+}
+
+.edit-application-validation-info {
+  margin: 10px 170px 10px 170px;
+  padding: 10px;
+  font-size: small;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.edit-application-validation-info .main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-application-validation-info .error {
+  line-height: 1rem;
+  max-height: 2rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-family: monospace;
+}
+
+.edit-application-validation-info .error p {
+  margin: 0;
+}
+
+.edit-application-validation-info.validation-error {
+  border: 1px solid #7d1414;
+  background-color: rgba(105, 0, 0, 0.5);
+}
+
+.edit-application-validation-info.has-validation-error-description {
+  cursor: pointer;
+}
+
+.edit-application-validation-info.validation-error:hover {
+  background-color: rgba(105, 0, 0, 0.6);
+}
+
+.edit-application-actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 0 170px;
+}
+
+.edit-application-button.publish-button {
+  font-size: large;
+  padding: 5px 10px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-color: white;
+  color: #333;
+  display: inline-flex;
+}
+
+.edit-application-button.publish-button:not(:last-child) {
+  margin-right: 5px;
+}
+
+.edit-application-button.publish-button:not(.disabled):hover {
+  background-color: rgba(255, 255, 255, 1);
+  border-color: white;
+  color: #222;
+}
+
+.validate-button-actions {
+  background-color: #fafafa;
+  border-color: white;
+  color: #444;
+}
+
+.validate-button-actions .validate-button-action {
+  padding: 5px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.validate-button-actions .validate-button-action:hover {
+  color: black;
+}
+
+.validate-button-actions .validate-button-action:not(:last-child) {
+  border-bottom: 1px solid #ccc;
+}
+
+.edit-application-button.remove-button {
+  font-size: large;
+  padding: 5px 10px;
+  background-color: rgba(173, 65, 65, 0.8);
+  border-color: rgba(173, 65, 65, 1);
+  color: #333;
+}
+
+.edit-application-button.remove-button:not(.disabled):hover {
+  background-color: rgba(173, 65, 65, 1);
+  border-color: rgba(173, 65, 65, 1);
+  color: #222;
+}
+
+.edit-application-button.publish-button.disabled,
+.edit-application-button.remove-button.disabled {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: #777;
+  color: #777;
+}
+
+.edit-application-container .form-item .input.error {
+  background-color: rgba(173, 65, 65, 0.2);
+  border-color: red;
+  box-shadow: 0 0 2px 2px rgba(173, 65, 65, 0.5);
+}
+
+.edit-application-container .form-item.error {
+  margin-left: 170px;
+  font-size: small;
+  color: #6d0000;
+  line-height: 12px;
+  height: 12px;
+}
+
+.form-item.attribute .attribute-name,
+.form-item.attribute .attribute-value {
+  width: 25vw;
+}
+
+.form-item.attribute .attribute-value {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.filter-applications {
+  flex: 1;
+  display: flex;
+  padding: 0 10px;
+}
+
+.filter-applications input.input {
+  line-height: 24px;
+  height: 24px;
+  font-size: 16px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  outline: none;
+  flex: 1;
+  padding: 0 5px;
+  border-radius: 5px;
+}
+
+.filter-applications input.input::placeholder {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: smaller;
+}
+
+.filter-applications.dark input.input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.deprecated-checkbox {
+  line-height: 1;
+  color: #ccc;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0 5px;
+}
+
+.help {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+}
+
+.operation-modal {
+  min-height: unset!important;
+}
+
+.validation-details-modal {
+  max-height: 80vh!important;
+  min-height: unset!important;
+  width: 80vw;
+  overflow: auto;
+  font-family: monospace;
+}
+
+.validation-details-modal p {
+  margin: 0;
+}
+
+.validation-details-modal p::before {
+  content: '> ';
+}
+
+.operation-info {
+  line-height: 26px;
+  display: flex;
+  align-items: center;
+}
+
+.operation-details {
+  line-height: 16px;
+  height :16px;
+  font-size: small;
+  display: flex;
+  align-items: center;
+  color: #aaa;
+}
+
+.operation-progress {
+  display: flex;
+  line-height: 2px;
+  height: 2px;
+  margin: 5px 0;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.operation-progress .operation-progress-bar {
+  background-color: rgba(255, 255, 255, 0.8);
+  height: 100%;
+  transition: width 250ms;
+  width: 0;
+}
+
+.launch-folder-application-modal {
+  min-height: unset!important;
+}
+
+.input.select.tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.input.select.tags .entry {
+  font-size: small;
+  margin: 2px;
+  padding: 2px 5px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.application-type-card {
+  margin-right: 10px;
+  border-radius: 5px;
+  padding: 6px;
+  min-width: 50px;
+  line-height: 1;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid transparent;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: smaller;
+}
+
+.application-type-card.selected {
+  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(0, 0, 0, 0.4);
+}

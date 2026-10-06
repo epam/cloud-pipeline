@@ -1,0 +1,13 @@
+.user-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.user-card .user-card-attribute {
+  margin: 2px 2px 2px 0;
+}
+
+.user-card .user-card-attribute:not(:last-child)::after {
+  content: ',';
+}

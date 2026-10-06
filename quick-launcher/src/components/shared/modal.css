@@ -1,0 +1,80 @@
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 101;
+  opacity: 0;
+  transition: opacity 100ms linear;
+}
+
+.modal .overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+.window {
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.95);
+  border: 1px solid #000;
+  border-radius: 5px;
+  box-shadow: 0 0 4px 4px rgba(0, 0, 0, 0.25);
+  padding: 10px;
+  color: #ccc;
+  z-index: 1;
+  min-width: 33vw;
+  min-height: 33vh;
+  position: relative;
+}
+
+.modal.visible {
+  opacity: 1;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.window .title {
+  padding: 5px 0;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #444;
+  margin: -5px 0 10px;
+}
+
+.modal-close-button-container {
+  overflow: visible;
+  width: 1px;
+  height: 1px;
+  position: relative;
+}
+
+.modal-close-button {
+  color: #333;
+  cursor: pointer;
+  position: absolute;
+  left: 10px;
+  top: -25px;
+  font-size: x-large;
+}
+
+.modal-close-button:hover {
+  color: black;
+}
+
+.modal-close-button > svg {
+  fill: rgba(255, 255, 255, 0.75);
+}
+
+.modal-close-button:hover > svg {
+  fill: rgba(255, 255, 255, 1);
+}
