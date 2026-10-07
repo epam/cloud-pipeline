@@ -17,15 +17,12 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.StringSelection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -74,13 +71,8 @@ public class ToolGroup implements AccessObject<ToolGroup> {
     }
 
     public ToolGroup searchToolByName(final String toolName) {
-        StringSelection stringSelection = new StringSelection(toolName);
-        Toolkit.getDefaultToolkit().getSystemClipboard()
-               .setContents(stringSelection, null);
         SelenideElement element = get(SEARCH);
-        element.click();
-        element.clear();
-        element.sendKeys(Keys.chord(Keys.CONTROL, "v"));
+        setValue(element, toolName);
         return this;
     }
 

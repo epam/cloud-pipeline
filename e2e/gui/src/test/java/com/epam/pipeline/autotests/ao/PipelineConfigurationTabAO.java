@@ -27,6 +27,7 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_CONFIGURATION;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION;
@@ -79,7 +80,7 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
     public PipelineConfigurationTabAO editConfiguration(final String profileName, final Consumer<Profile> action) {
         click(profileWithName(profileName));
         final Profile profile = new Profile();
-        profile.expandTab(INSTANCE);
+        profile.expandTab(ADVANCED_PANEL);
         profile.expandTab(PARAMETERS);
         profile.context().shouldBe(visible);
         action.accept(profile);

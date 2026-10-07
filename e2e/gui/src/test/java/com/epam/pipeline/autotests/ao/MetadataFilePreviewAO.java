@@ -73,10 +73,9 @@ public class MetadataFilePreviewAO extends PopupAO<MetadataFilePreviewAO, Metada
     }
 
     public StorageContentAO editFileWithText(String text) {
-        get(EDIT).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT * 2L));
-        click(EDIT);
+        get(EDIT).shouldBe(enabled, ofMillis(DEFAULT_TIMEOUT * 2L)).click();
         sleep(3, SECONDS);
-        Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), text);
+        Utils.setCodeMirrorText($(byClassName("CodeMirror")), text);
         ensure(SAVE, enabled).click(SAVE);
         $(button("OK")).shouldBe(visible).click();
         return new StorageContentAO();

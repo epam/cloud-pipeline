@@ -18,9 +18,11 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
+import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
@@ -530,9 +532,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public PreferencesAO updateCodeText(final String preference, final String value, final boolean eyeIsChecked) {
             searchPreference(preference);
-            final SelenideElement editor = $(byClassName("CodeMirror-line"));
-            selectAllAndClearTextField(editor);
-            pasteText(editor, value);
+            $(className("code-editor__editor")).should(appear).click();
+            final SelenideElement codeMirror = $(className("CodeMirror"));
+            Utils.setCodeMirrorText(codeMirror, value);
             setEyeOption(eyeIsChecked);
             return this;
         }

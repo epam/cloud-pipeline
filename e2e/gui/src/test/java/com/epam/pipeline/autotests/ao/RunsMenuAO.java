@@ -24,7 +24,6 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.codeborne.selenide.impl.Alias;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
@@ -46,6 +45,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.codeborne.selenide.WebDriverRunner.driver;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.C.ENDPOINT_INITIALIZATION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.C.SSH_APPEARING_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -397,10 +397,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO resume(final String runId, final String pipelineName) {
         $("#run-" + runId + "-resume-button").shouldBe(visible).click();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleContains(format("Do you want to resume %s", pipelineName))
+        new ResumePopupAO<>(this)
+                .ensureResumeTitleIs(format("Do you want to resume%s?", pipelineName))
                 .sleep(1, SECONDS)
-                .click(button("RESUME"));
+                .ok();
         return this;
     }
 
@@ -473,8 +473,9 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public boolean isActiveRun(final String id) {
-        return $(tagName("tbody")).shouldBe(visible)
-                .findAll(tagName("tr")).findBy(text(id)).is(exist);
+        return (!$(byClassName("ant-table-placeholder")).exists()) ?
+                $(tagName("tbody")).shouldBe(visible)
+                        .findAll(tagName("tr")).findBy(text(id)).is(exist) : false;
     }
 
     public String getRunIdByTag(final String runTag) {

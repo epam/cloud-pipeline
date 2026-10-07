@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.Utils;
-import org.openqa.selenium.Keys;
 
 import java.io.File;
 import java.util.Arrays;
@@ -41,7 +40,6 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.$x;
-import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE_FOLDER;
@@ -88,24 +86,13 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO clearAndFillPipelineFile(String fileName, String newText) {
-        $(byText(fileName)).click();
-
-        //Click Edit
-
-        get(EDIT).shouldBe(exist).click();
+        FileEditingPopupAO editor = clickOnFile(fileName)
+                .clickEdit();
         get(SAVE).shouldBe(exist);
-
-        sleep(500, MILLISECONDS);
-        get(EDITOR).shouldBe();
-        Utils.selectAllAndClearTextField(get(EDITOR));
-        Utils.clickAndSendKeysWithSlashes(get(EDITOR), newText);
-
-        get(SAVE).click();
-        $("#message").setValue("test commit message");
-        $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").shouldBe(not(exist));
-        sleep(1000, MILLISECONDS);
-
+        $(className("code-editor__editor")).should(appear).click();
+        final SelenideElement codeMirror = $(className("CodeMirror"));
+        Utils.setCodeMirrorText(codeMirror, newText);
+        editor.saveAndCommitWithMessage("test commit message");
         return this;
     }
 
@@ -240,15 +227,10 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         public FileEditingPopupAO assertFileIsNotEmpty() {
-            $(byClassName("CodeMirror-code")).shouldBe(visible);
+            get(EDITOR).shouldBe(visible);
             sleep(1, SECONDS);
             List<String> linesList = $$(byClassName("CodeMirror-line")).texts();
             assertFalse(linesList.isEmpty());
-            return this;
-        }
-
-        private FileEditingPopupAO fillWith(String newText) {
-            Utils.pasteText($(byClassName("CodeMirror-line")), newText);
             return this;
         }
 
@@ -261,34 +243,21 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return new CommitPopupAO<>(parentAO);
         }
 
-        private FileEditingPopupAO clear() {
-            final SelenideElement editor = $(byClassName("CodeMirror-code"));
-            final int codeLength = editor.innerText().length();
-            final SelenideElement mirrorLine = editor.find(byClassName("CodeMirror-line")).shouldBe(visible);
-            mirrorLine.click();
-            for (int i = 0; i < codeLength; i++) {
-                actions().sendKeys(Keys.BACK_SPACE, Keys.DELETE).perform();
-            }
-            return this;
-        }
-
         private FileEditingPopupAO clickEdit() {
             return click(EDIT);
         }
 
         public FileEditingPopupAO editFile(final UnaryOperator<String> action) {
             clickEdit();
-            final SelenideElement editor = $(className("code-editor__editor")).should(appear);
-            sleep(1, SECONDS);
-            editor.click();
-            final List<String> lines = $(className("CodeMirror")).findAll(className("CodeMirror-line")).texts();
+            $(className("code-editor__editor")).should(appear).click();
+            final SelenideElement codeMirror = $(className("CodeMirror"));
+            final List<String> lines = codeMirror.findAll(className("CodeMirror-line")).texts();
             final String code = String.join("", lines);
             final String edited = action.apply(code);
             if (code.equals(edited)) {
                 return this;
             }
-            clear()
-                    .fillWith(edited);
+            Utils.setCodeMirrorText(codeMirror, edited);
             return this;
         }
 

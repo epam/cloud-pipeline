@@ -118,6 +118,7 @@ public class Utils {
 
     public static void clickAndSendKeysWithSlashes(WebElement element, String text) {
         actions().moveToElement(element).click().perform();
+//        element.sendKeys(Keys.chord(Keys.CONTROL), text.replace("\u200b", ""));
         sendKeysWithSlashes(text.replace("\u200b", ""));
     }
 
@@ -136,11 +137,11 @@ public class Utils {
         actions().sendKeys(Keys.DELETE).perform();
     }
 
-        public static void sendKeysWithSlashes(final String text) {
-            final StringSelection stringSelection = new StringSelection(text);
-            Toolkit.getDefaultToolkit().getSystemClipboard()
-                    .setContents(stringSelection, null);
-            sendKeysWithControl(PASTE_KEY);
+    public static void sendKeysWithSlashes(final String text) {
+        final StringSelection stringSelection = new StringSelection(text);
+        Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(stringSelection, null);
+        sendKeysWithControl(PASTE_KEY);
     }
 
     public static void pasteText(final SelenideElement field, final String text) {
@@ -149,6 +150,15 @@ public class Utils {
                 .setContents(stringSelection, null);
         field.click();
         sendKeysWithControl(PASTE_KEY);
+    }
+
+    /**
+     * Sets a CodeMirror 5 editor's content via its JS API, bypassing both the OS clipboard and
+     * character-by-character typing, since CodeMirror's bracket auto-closing can corrupt the latter.
+     */
+    public static void setCodeMirrorText(final SelenideElement codeMirrorContainer, final String text) {
+        Selenide.executeJavaScript("arguments[0].CodeMirror.setValue(arguments[1]);",
+                codeMirrorContainer, text);
     }
 
     public static void sendKeysWithControl(CharSequence ch) {
