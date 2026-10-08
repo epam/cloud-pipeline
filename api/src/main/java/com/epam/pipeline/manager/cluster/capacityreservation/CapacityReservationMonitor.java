@@ -219,6 +219,16 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
 
             reservation.setCloudReservationId(submitted.getCloudReservationId());
             Optional.ofNullable(submitted.getAvailabilityZone()).ifPresent(reservation::setAvailabilityZone);
+            // The start the provider reports is the one it will deliver, and the only one a reservation adopted by
+            // its client token - rather than created in this cycle - has. The end follows from the commitment, since
+            // a future-dated reservation is submitted with a duration and no end date, and so is reported without
+            // one: taking the start on its own would leave a window shorter than the commitment behind
+            Optional.ofNullable(submitted.getStartDate()).ifPresent(start -> {
+                reservation.setStartDate(start);
+                Optional.ofNullable(reservation.getDurationHours())
+                        .ifPresent(hours -> reservation.setEndDate(start.plusHours(hours)));
+            });
+            Optional.ofNullable(submitted.getEndDate()).ifPresent(reservation::setEndDate);
             processSubmitted(reservation, submitted);
         }
 
