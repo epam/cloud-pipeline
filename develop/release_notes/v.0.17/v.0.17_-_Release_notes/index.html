@@ -254,6 +254,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a>
@@ -700,6 +702,7 @@
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a></li>
 <li><a href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a></li>
 <li><a href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a></li>
 <li><a href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a></li>
@@ -2160,6 +2163,10 @@ The parameter also defines when a run is relaunched in another region in case of
 <p><code>pipe-common</code> and the job container launch script now support running under either Python 2 or Python 3.12, selected via the <code>CP_PYTHON_VERSION</code> environment variable (<code>2</code> by default, for backward compatibility). The same support was added to the API service pod (<code>cp-api-srv</code>) and its git synchronization sidecar (<code>cp-git-sync</code>): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (<code>boto3</code>/<code>botocore</code>, <code>azure-mgmt-*</code>, <code>google-api-python-client</code>, and <code>pipe-common</code> itself), so they run under either interpreter.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4626">#4626</a></p>
+<p>Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
+Now, the alias is added to the run's tags alongside the tags set in the launch form.</p>
 <h3 id="restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4622">#4622</a></p>
 <p>Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
