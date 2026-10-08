@@ -14,6 +14,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# --- Python interpreter selection ---
+# Mirrors cp-api-srv's init-api CP_PYTHON_VERSION/CP_PYTHON_PATH resolution (issue #4589), so
+# dav-extra-command.py and syncnfs.py pick the same interpreter the same way. Resolved up front,
+# before the NFS observer block below, which installs pipe-common for this same interpreter. The
+# SMB server keeps its own separate micromamba Python 3.12 env regardless of this selection.
+# CP_PYTHON_VERSION=2 (default) keeps existing behavior; both interpreters are already on the image.
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
+# The yum install (Dockerfile:82) always provides "python2" here - the "|| command -v python"
+# fallback is only carried over for symmetry with cp-edge/cp-api-srv's resolution, and never fires.
+export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
+# Not "command -v python3.12": Rocky 8 can pull in its own bare /usr/bin/python3.12 (no pip, none of
+# this image's packages) as a transitive yum dependency, which would shadow the from-source build the
+# Dockerfile installs into CP_PYTHON3_HOME and leave dav-extra-command.py/syncnfs.py without their
+# pip3-installed packages. CP_PYTHON3_HOME is overridable so tests can point it at a stub tree.
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$([ -x "$CP_PYTHON3_HOME/bin/python3.12" ] && echo "$CP_PYTHON3_HOME/bin/python3.12" || command -v python3)}"
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
+else
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+    export PATH="$CP_PYTHON3_HOME/bin:$PATH"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
+    exit 1
+fi
+echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
+# Mirrors sync.sh's own default (and launch.sh's py2/py3 split) for the platform's PyPI mirror, so a
+# restricted-egress deployment that points CP_REPO_PYPI_BASE_URL_DEFAULT at a private mirror is
+# honored by the pip installs in the NFS observer block below too, not just by job containers.
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
+    CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
+    CP_PIP_PACKAGE_INDEX_ARGS="--index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+else
+    CP_REPO_PYPI3_BASE_URL_DEFAULT="${CP_REPO_PYPI3_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple}"
+    CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com}"
+    CP_PIP_PACKAGE_INDEX_ARGS="--index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+fi
+
 # Setup defaults for the env vars and validate
 export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
 export CP_DAV_URL_PATH="${CP_DAV_URL_PATH:-webdav}"
@@ -73,8 +114,19 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
   if [ $? -eq 0 ]; then
         echo "'pipe-common' package was downloaded successfully."
         inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
+        # watch_mount_shares.py imports the "pipeline" package itself, plus "watchdog" and "psutil" -
+        # none of which are anywhere on this image otherwise. pip can install straight from the
+        # downloaded tarball (a plain sdist - setup.py sits at its root, no wrapping directory) with
+        # the already-resolved $CP_PYTHON_PATH, mirroring launch.sh's job-container install, so the
+        # tarball only needs deleting once that install is done.
         tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
         mv watch_mount_shares.py $SYNC_HOME/ && \
+        if [ "$CP_PYTHON_VERSION" == "2" ]; then
+            "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==44.1.1
+        else
+            "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==68.0.0
+        fi && \
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
         rm -rf pipe-common.tar.gz && \
         sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
         sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
@@ -83,33 +135,6 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
     echo "Unable to retrieve 'pipe-common' package"
   fi
 fi
-
-# --- Python interpreter selection ---
-# Mirrors cp-api-srv's init-api CP_PYTHON_VERSION/CP_PYTHON_PATH resolution (issue #4589), so
-# dav-extra-command.py and syncnfs.py pick the same interpreter the same way. The SMB server keeps
-# its own separate micromamba Python 3.12 env regardless of this selection.
-# CP_PYTHON_VERSION=2 (default) keeps existing behavior; both interpreters are already on the image.
-export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
-# The yum install (Dockerfile:82) always provides "python2" here - the "|| command -v python"
-# fallback is only carried over for symmetry with cp-edge/cp-api-srv's resolution, and never fires.
-export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
-# Not "command -v python3.12": Rocky 8 can pull in its own bare /usr/bin/python3.12 (no pip, none of
-# this image's packages) as a transitive yum dependency, which would shadow the from-source build the
-# Dockerfile installs into CP_PYTHON3_HOME and leave dav-extra-command.py/syncnfs.py without their
-# pip3-installed packages. CP_PYTHON3_HOME is overridable so tests can point it at a stub tree.
-CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
-export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$([ -x "$CP_PYTHON3_HOME/bin/python3.12" ] && echo "$CP_PYTHON3_HOME/bin/python3.12" || command -v python3)}"
-if [ "$CP_PYTHON_VERSION" == "2" ]; then
-    export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
-else
-    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
-    export PATH="$CP_PYTHON3_HOME/bin:$PATH"
-fi
-if [ -z "$CP_PYTHON_PATH" ]; then
-    echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
-    exit 1
-fi
-echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
 
 # Persist environment for a cron job
 env > $SYNC_HOME/env.sh

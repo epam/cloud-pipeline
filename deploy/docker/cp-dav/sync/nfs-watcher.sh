@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Cron gives this job almost no environment of its own - $SYNC_HOME, $SYNC_LOG_DIR and
+# $CP_PYTHON_PATH below are only available once env.sh (dumped by "init" at container start) is
+# sourced, same as sync-nfs.sh already does.
+set -o allexport
+source /opt/sync/env.sh
+set +o allexport
+
 watcher_script_path="$SYNC_HOME/watch_mount_shares.py"
 # "ps -C python | grep ..." (the previous form) assumed the watcher always runs under a process
 # literally named "python" - no longer true once CP_PYTHON_PATH can resolve to python3.12. pgrep -f
