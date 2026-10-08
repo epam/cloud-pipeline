@@ -30,14 +30,14 @@ public final class CapacityReservationCreatorUtils {
     public static final long REGION_ID = 1L;
     public static final String INSTANCE_TYPE = "g5.48xlarge";
     public static final int INSTANCE_COUNT = 2;
-    public static final int DURATION_HOURS = 14 * 24;
+    public static final long COMMITMENT_DURATION = 14 * 24 * 3600L;
     public static final String INSTANCE_PLATFORM = "Linux/UNIX";
     public static final String OWNER = "user";
     public static final String AVAILABILITY_ZONE = "us-east-1c";
     public static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     public static final String CLIENT_TOKEN = "cp-cr-1-0";
     public static final String STATUS_REASON = "Capacity unavailable for the requested date";
-    public static final long GRANTED_COMMITMENT_SECONDS = 864000L;
+    public static final long GRANTED_COMMITMENT_DURATION = 864000L;
     private static final int REQUEST_LEAD_DAYS = 7;
     private static final int REQUEST_WINDOW_DAYS = 60;
 
@@ -60,7 +60,7 @@ public final class CapacityReservationCreatorUtils {
                 .instanceCount(INSTANCE_COUNT)
                 .requestedStartDate(now.plusDays(REQUEST_LEAD_DAYS))
                 .requestedEndDate(now.plusDays(REQUEST_WINDOW_DAYS))
-                .durationHours(DURATION_HOURS)
+                .commitmentDuration(COMMITMENT_DURATION)
                 .instancePlatform(INSTANCE_PLATFORM)
                 .build();
     }
@@ -78,9 +78,9 @@ public final class CapacityReservationCreatorUtils {
         reservation.setClientToken(CLIENT_TOKEN);
         reservation.setStatusReason(STATUS_REASON);
         reservation.setStartDate(reservation.getRequestedStartDate());
-        reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+        reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
         reservation.setAttempt(1);
-        reservation.setGrantedCommitmentSeconds(GRANTED_COMMITMENT_SECONDS);
+        reservation.setGrantedCommitmentDuration(GRANTED_COMMITMENT_DURATION);
         return reservation;
     }
 }

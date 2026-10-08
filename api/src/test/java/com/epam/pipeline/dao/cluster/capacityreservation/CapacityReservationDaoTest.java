@@ -123,7 +123,7 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         created.setInstanceCount(created.getInstanceCount() + 1);
         created.setStartDate(created.getRequestedStartDate());
         created.setEndDate(created.getRequestedEndDate());
-        created.setDurationHours(created.getDurationHours() + 1);
+        created.setCommitmentDuration(created.getCommitmentDuration() + 1);
         created.setInstancePlatform("Windows");
         created.setAttempt(created.getAttempt() + 1);
         reservationDao.update(created);

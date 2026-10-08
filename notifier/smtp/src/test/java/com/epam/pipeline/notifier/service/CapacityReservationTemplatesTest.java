@@ -48,7 +48,8 @@ public class CapacityReservationTemplatesTest {
             Pattern.compile("\\$\\{([A-Za-z_][A-Za-z0-9_]*)}|\\$([A-Za-z_][A-Za-z0-9_]*)");
     private static final String RESERVATION_NAME = "g5 reserved pool";
     private static final String REASON = "No available start date in the requested window";
-    private static final int DURATION_HOURS = 14 * 24;
+    private static final long COMMITMENT_DURATION = 14 * 24 * 3600L;
+    private static final long SIX_HOURS = 6 * 3600L;
 
     private final TemplateService templateService = new TemplateService();
 
@@ -64,6 +65,28 @@ public class CapacityReservationTemplatesTest {
             assertFalse(text.getSubject().contains("$"), type + " left a reference unrendered");
             assertFalse(text.getBody().contains("$"), type + " left a reference unrendered");
             assertFalse(text.getBody().contains("#if"), type + " left a directive unrendered");
+        }
+    }
+
+    @Test
+    public void shouldRenderTheCommitmentAsDaysAndHours() throws IOException {
+        final Map<String, Object> parameters = parameters(null);
+        parameters.put("commitmentDuration", COMMITMENT_DURATION + SIX_HOURS);
+
+        for (final String type : TYPES) {
+            assertTrue(render(type, parameters).getBody().contains("14d 6h"));
+        }
+    }
+
+    @Test
+    public void shouldLeaveTheCommitmentEmptyWhenTheReservationHasNone() throws IOException {
+        final Map<String, Object> parameters = parameters(null);
+        parameters.remove("commitmentDuration");
+
+        for (final String type : TYPES) {
+            final String body = render(type, parameters).getBody();
+            assertFalse(body.contains("null"));
+            assertFalse(body.contains("$"));
         }
     }
 
@@ -118,7 +141,7 @@ public class CapacityReservationTemplatesTest {
         parameters.put("regionId", 1);
         parameters.put("instanceType", "g5.48xlarge");
         parameters.put("instanceCount", 2);
-        parameters.put("durationHours", DURATION_HOURS);
+        parameters.put("commitmentDuration", COMMITMENT_DURATION);
         parameters.put("startDate", "2026-10-07 12:00:00.000");
         parameters.put("endDate", "2026-10-21 12:00:00.000");
         parameters.put("availabilityZone", "us-east-1c");

@@ -86,13 +86,13 @@ public class AwsCapacityReservationServiceTest {
     private static final String ZONE = "eu-central-1b";
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
     private static final String TOKEN = "cp-cr-10-0";
-    private static final int DURATION_HOURS = 24;
+    private static final long COMMITMENT_DURATION = 24 * 3600L;
     private static final long EXPECTED_COMMITMENT_SECONDS = 86400L;
     private static final int INSTANCE_COUNT = 8;
     private static final int LEAD_DAYS = 7;
     private static final String AWS_SCHEDULED = "scheduled";
     private static final String AWS_ACTIVE = "active";
-    private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
+    private static final long GRANTED_COMMITMENT_DURATION = 864000L;
     private static final String QUOTE_ID = "crcq-0123456789abcdef0";
     private static final int HTTP_BAD_REQUEST = 400;
     private static final String NOT_FOUND_ERROR_CODE = "InvalidCapacityReservationId.NotFound";
@@ -567,19 +567,19 @@ public class AwsCapacityReservationServiceTest {
     public void shouldReadBackTheCommitmentAwsGranted() {
         client.described = Collections.singletonList(awsReservation(AWS_SCHEDULED, ZONE).toBuilder()
                 .commitmentInfo(CapacityReservationCommitmentInfo.builder()
-                        .commitmentDuration(GRANTED_COMMITMENT_SECONDS)
+                        .commitmentDuration(GRANTED_COMMITMENT_DURATION)
                         .build())
                 .build());
 
-        assertThat(service.describe(reservation()).getGrantedCommitmentSeconds())
-                .isEqualTo(GRANTED_COMMITMENT_SECONDS);
+        assertThat(service.describe(reservation()).getGrantedCommitmentDuration())
+                .isEqualTo(GRANTED_COMMITMENT_DURATION);
     }
 
     @Test
     public void shouldLeaveTheGrantedCommitmentUnsetWhenAwsHasNotSaid() {
         client.described = Collections.singletonList(awsReservation(AWS_SCHEDULED, ZONE));
 
-        assertThat(service.describe(reservation()).getGrantedCommitmentSeconds()).isNull();
+        assertThat(service.describe(reservation()).getGrantedCommitmentDuration()).isNull();
     }
 
     @Test
@@ -603,10 +603,10 @@ public class AwsCapacityReservationServiceTest {
         reservation.setId(RESERVATION_ID);
         reservation.setRegionId(REGION_ID);
         reservation.setInstanceCount(INSTANCE_COUNT);
-        reservation.setDurationHours(DURATION_HOURS);
+        reservation.setCommitmentDuration(COMMITMENT_DURATION);
         reservation.setClientToken(TOKEN);
         reservation.setStartDate(DateUtils.nowUTC().plusDays(LEAD_DAYS).withNano(0));
-        reservation.setEndDate(reservation.getStartDate().plusHours(DURATION_HOURS));
+        reservation.setEndDate(reservation.getStartDate().plusSeconds(COMMITMENT_DURATION));
         reservation.setAvailabilityZone(null);
         return reservation;
     }
@@ -628,7 +628,7 @@ public class AwsCapacityReservationServiceTest {
                 .availabilityZone(zone)
                 .state(state)
                 .startDate(start.toInstant(ZoneOffset.UTC))
-                .endDate(start.plusHours(DURATION_HOURS).toInstant(ZoneOffset.UTC))
+                .endDate(start.plusSeconds(COMMITMENT_DURATION).toInstant(ZoneOffset.UTC))
                 .tags(Tag.builder().key(AwsCapacityReservationService.CLIENT_TOKEN_TAG).value(TOKEN).build())
                 .build();
     }
