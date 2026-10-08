@@ -82,6 +82,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String RESERVATION_TARGET = "CapacityReservationSpecification";
     private static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     private static final String OWN_SPEC_KEY = "IamInstanceProfile";
+    private static final String PROVIDER_ANSWER = "the provider had no capacity at that date";
     private static final String OWN_INIT_SCRIPT = "/opt/api/scripts/init_custom.sh";
     private static final int INSTANCE_VCPUS = 192;
     private static final int SMALL_INSTANCE_VCPUS = 8;
@@ -677,6 +678,41 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRejectApprovingARequestThatIsNotWaitingForApproval() {
+        setPolicies("[" + autoApproveOnInstanceType() + "]");
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        reservation.setStatusReason(PROVIDER_ANSWER);
+        reservationDao.update(reservation);
+
+        assertThatThrownBy(() -> reservationService.approve(reservation.getId()))
+                .isInstanceOf(IllegalStateException.class);
+
+        final CapacityReservation current = reservationService.load(reservation.getId());
+        assertThat(current.getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(current.getStatusReason()).isEqualTo(PROVIDER_ANSWER);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldTakeThePoolsWindowBackWhenTheReservationIsCancelled() {
+        setNetworks();
+        final NodePool created = createWithOwnLaunchSettings();
+        final CapacityReservation reservation = activeReservationOf(created);
+        scheduleAndActivate(reservation);
+        assertThat(poolOf(created).getStartDate()).isNotNull();
+
+        reservationService.cancel(reservation.getId());
+
+        final NodePool pool = poolOf(created);
+        assertThat(pool.getStartDate()).isNull();
+        assertThat(pool.getEndDate()).isNull();
+        assertThat(pool.getCount()).isZero();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
     public void shouldLeaveTheLaunchConfigurationAloneThroughAnEdit() {
         setNetworks();
         final NodePool created = createWithOwnLaunchSettings();
@@ -747,7 +783,11 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     private AMIConfiguration launchConfigurationOf(final NodePool pool) {
-        return poolDao.find(pool.getId()).orElseThrow(AssertionError::new).getAmiConfiguration();
+        return poolOf(pool).getAmiConfiguration();
+    }
+
+    private NodePool poolOf(final NodePool pool) {
+        return poolDao.find(pool.getId()).orElseThrow(AssertionError::new);
     }
 
     private void setNetworks() {

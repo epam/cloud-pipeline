@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
@@ -30,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -100,6 +102,27 @@ public class CapacityReservationStatusServiceTest {
         assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
         assertThat(reservation.getStatusReason()).isEqualTo(REASON);
         verify(reservationDao).update(reservation);
+    }
+
+    @Test
+    public void shouldNotNotifyWhenARefusedRequestOnlyMovesToAnotherCandidate() {
+        final CapacityReservation reservation = approved();
+        givenTheRowIsWritten();
+
+        statusService.transition(reservation, CapacityReservationStatus.APPROVED, REASON);
+
+        verifyZeroInteractions(notificationManager);
+    }
+
+    @Test
+    public void shouldNotifyWhenTheStatusActuallyChanges() {
+        final CapacityReservation reservation = approved();
+        givenTheRowIsWritten();
+
+        statusService.transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+
+        verify(notificationManager).notifyCapacityReservation(reservation,
+                NotificationType.CAPACITY_RESERVATION_STATUS_CHANGED, Collections.emptyList());
     }
 
     @Test
