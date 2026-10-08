@@ -17,12 +17,12 @@ Test verifies that a per-user price-types mask restricts the Price type dropdown
 | 5 | Click **OK** |  |
 | 6 | Log out |  |
 | 7 | Login as the user from step 3 |  |
-| 8 | Open the **Library** page, navigate to the folder created at step 9 of the EPMCMBIBPC-2637 case |  |
-| 9 | Open the pipeline created at step 17 of the EPMCMBIBPC-2637 case, click the pipeline version |  |
+| 8 | Open the **Library** page, navigate to the folder created at step 9 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
+| 9 | Open the pipeline created at step 17 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case, click the pipeline version |  |
 | 10 | Click the **CONFIGURATION** tab, click the **Advanced** collapsed header |  |
 | 11 | Click the **Price type** combobox | Only the value selected at step 4 appears in the drop-down list |
 | 12 | Repeat step 8 |  |
-| 13 | Open the configuration created at step 24 of the EPMCMBIBPC-2637 case, expand the **Advanced** section |  |
+| 13 | Open the configuration created at step 24 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case, expand the **Advanced** section |  |
 | 14 | Click the **Price type** combobox | Only the value selected at step 4 appears in the drop-down list |
 | 15 | Open the **Tools** page |  |
 | 16 | Select a registry and group, click on the tool from the prerequisites |  |

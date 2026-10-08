@@ -7,7 +7,7 @@ Test verifies searching for an issue by its title and, separately, by its descri
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Open the **Library** page, navigate to the folder created at step 2 of the EPMCMBIBPC-2653 case |  |
+| 1 | Open the **Library** page, navigate to the folder created at step 2 of the [EPMCMBIBPC-2653](EPMCMBIBPC-2653.md) case |  |
 | 2 | Hover over the icon in front of the gear icon, click **Issues** in the list that appears |  |
 | 3 | On the **Issues** panel that appears, click **New issue** |  |
 | 4 | Enter valid values for the issue title and description |  |

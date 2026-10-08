@@ -7,7 +7,7 @@ Test verifies creating a detached configuration inside a project folder and its 
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Open the **Library** page, navigate to the project folder created at step 4 of the EPMCMBIBPC-1411 case |  |
+| 1 | Open the **Library** page, navigate to the project folder created at step 4 of the [EPMCMBIBPC-1411](EPMCMBIBPC-1411.md) case |  |
 | 2 | Hover over **+ Create v** |  |
 | 3 | In the list that appears, click **Configuration** |  |
 | 4 | Enter a valid configuration name |  |

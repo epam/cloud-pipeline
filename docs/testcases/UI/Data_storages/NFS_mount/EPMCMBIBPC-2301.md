@@ -1,6 +1,6 @@
 # [MANUAL] Validation of mounting NFS in docker container
 
-*Note: Can be combined with the `EPMCMBIBPC-309` case.*
+*Note: Can be combined with the [`EPMCMBIBPC-309`](../../Pipeline_library/Pipeline_run/EPMCMBIBPC-309.md) case.*
 
 Test verifies that an NFS storage with a custom mount point is mounted into the tool's container and logged as such.
 

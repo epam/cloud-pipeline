@@ -7,7 +7,7 @@ Test verifies searching for a storage by path, and for a file within it, from a 
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Open the **Library** page, navigate to the folder created at step 2 of the EPMCMBIBPC-2653 case |  |
+| 1 | Open the **Library** page, navigate to the folder created at step 2 of the [EPMCMBIBPC-2653](EPMCMBIBPC-2653.md) case |  |
 | 2 | Hover over **+ Create v**, click **Storages** |  |
 | 3 | Specify a valid storage path (be sure to use both upper- and lowercase), click **Create** |  |
 | 4 | Open the created storage |  |

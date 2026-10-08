@@ -25,12 +25,12 @@ Test verifies that a per-user price-types mask takes precedence over a per-tool 
 | 11 | Click **APPLY** |  |
 | 12 | Log out |  |
 | 13 | Login as the user from the prerequisites |  |
-| 14 | Open the **Library** page, navigate to the folder created at step 9 of the EPMCMBIBPC-2637 case |  |
-| 15 | Open the pipeline created at step 17 of the EPMCMBIBPC-2637 case, click the pipeline version |  |
+| 14 | Open the **Library** page, navigate to the folder created at step 9 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
+| 15 | Open the pipeline created at step 17 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case, click the pipeline version |  |
 | 16 | Click the **CONFIGURATION** tab, expand the **Advanced** collapsed header |  |
 | 17 | Click the **Price type** combobox | The values specified at step 4 appear in the drop-down list |
 | 18 | Repeat step 14 |  |
-| 19 | Open the configuration created at step 24 of the EPMCMBIBPC-2637 case, expand the **Advanced** section |  |
+| 19 | Open the configuration created at step 24 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case, expand the **Advanced** section |  |
 | 20 | Click the **Price type** combobox | The values specified at step 4 appear in the drop-down list |
 | 21 | Repeat steps 6-7 |  |
 | 22 | Hover over the **v** button near **Run**, click **Custom settings** in the list that appears |  |

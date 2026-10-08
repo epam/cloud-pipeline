@@ -26,12 +26,12 @@ Test verifies that a per-user instance-types mask takes precedence over the grou
 | 14 | Click **OK** |  |
 | 15 | Log out |  |
 | 16 | Login as the user from the prerequisites |  |
-| 17 | Open the **Library** page, navigate to the folder created at step 4 of the EPMCMBIBPC-2637 case |  |
-| 18 | Open the pipeline created at step 12 of the EPMCMBIBPC-2637 case, click the pipeline version |  |
+| 17 | Open the **Library** page, navigate to the folder created at step 4 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
+| 18 | Open the pipeline created at step 12 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case, click the pipeline version |  |
 | 19 | Click the **CONFIGURATION** tab, click the **Exec environment** collapsed header |  |
 | 20 | Click the **Node type** combobox | A drop-down list appears with only the values of node types that comply with the mask entered at step 12 |
 | 21 | Repeat step 17 |  |
-| 22 | Open the configuration created at step 19 of the EPMCMBIBPC-2637 case, expand the **Exec environment** section |  |
+| 22 | Open the configuration created at step 19 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case, expand the **Exec environment** section |  |
 | 23 | Click the **Node type** combobox | A drop-down list appears with only the values of node types that comply with the mask entered at step 13 |
 | 24 | Open the **Tools** page |  |
 | 25 | Select a registry and group, click on the tool from the prerequisites |  |

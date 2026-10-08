@@ -13,8 +13,8 @@ Test verifies that an instance-types mask set on ROLE_USER restricts the Node ty
 | 4 | In the pop-up that appears, specify a mask value into **Allowed instance types mask** that does not comply with the node types entered at steps 15 and 21 (e.g. `m5.*`) |  |
 | 5 | Click **OK** |  |
 | 6 | Log out |  |
-| 7 | Login as the non-admin user from step 4 of the EPMCMBIBPC-2637 case |  |
-| 8 | Repeat steps 8-15 of the [EPMCMBIBPC-2638](EPMCMBIBPC-2638.md) case | The results are the same as in the EPMCMBIBPC-2638 case |
+| 7 | Login as the non-admin user from step 4 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
+| 8 | Repeat steps 8-15 of the [EPMCMBIBPC-2638](EPMCMBIBPC-2638.md) case | The results are the same as in the [EPMCMBIBPC-2638](EPMCMBIBPC-2638.md) case |
 
 **After**:
 - Clear the **Allowed instance types mask** field that was changed at step 4

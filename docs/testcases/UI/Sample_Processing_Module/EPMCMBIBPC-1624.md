@@ -7,7 +7,7 @@ Test verifies binding configuration parameters to SampleSet-linked Sample fields
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Open the **Library** page, navigate to the detached configuration created at step 5 of the EPMCMBIBPC-1588 case |  |
+| 1 | Open the **Library** page, navigate to the detached configuration created at step 5 of the [EPMCMBIBPC-1588](EPMCMBIBPC-1588.md) case |  |
 | 2 | Perform the [EPMCMBIBPC-1593](EPMCMBIBPC-1593.md) and [EPMCMBIBPC-1623](EPMCMBIBPC-1623.md) cases |  |
 | 3 | Click the field opposite the **FASTQ_R1** parameter |  |
 | 4 | Enter `this.` | A drop-down list appears, containing the **Name**, **Samples** items |

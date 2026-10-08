@@ -10,12 +10,12 @@ Test verifies that an instance-types mask restricts the Node type dropdown when 
 | 1 | Login as admin |  |
 | 2 | Click the gear icon at the left menu to open system settings |  |
 | 3 | Click the **User management** tab |  |
-| 4 | Click the edit icon opposite the user name from the prerequisites of the EPMCMBIBPC-2637 case |  |
-| 5 | In the pop-up that appears, specify a mask value that does not comply with the node types entered at steps 15 and 21 of the EPMCMBIBPC-2637 case into **Allowed instance types mask** (e.g. `m5.*`) |  |
+| 4 | Click the edit icon opposite the user name from the prerequisites of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
+| 5 | In the pop-up that appears, specify a mask value that does not comply with the node types entered at steps 15 and 21 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case into **Allowed instance types mask** (e.g. `m5.*`) |  |
 | 6 | Click **OK** |  |
 | 7 | Log out |  |
-| 8 | Login as the non-admin user from the prerequisites of the EPMCMBIBPC-2637 case |  |
-| 9 | Open the **Library** page, navigate to the folder created at step 4 of the EPMCMBIBPC-2637 case |  |
+| 8 | Login as the non-admin user from the prerequisites of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
+| 9 | Open the **Library** page, navigate to the folder created at step 4 of the [EPMCMBIBPC-2637](EPMCMBIBPC-2637.md) case |  |
 | 10 | Hover over **+ Create v**, click **Pipeline** |  |
 | 11 | In the pop-up that appears, specify a valid pipeline name, click **CREATE** |  |
 | 12 | Open the created pipeline, click on the pipeline version |  |

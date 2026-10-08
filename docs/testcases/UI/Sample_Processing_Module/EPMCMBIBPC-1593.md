@@ -7,7 +7,7 @@ Test verifies binding configuration parameters to project-level attributes via t
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Open the **Library** page, navigate to the detached configuration created at step 5 of the EPMCMBIBPC-1588 case |  |
+| 1 | Open the **Library** page, navigate to the detached configuration created at step 5 of the [EPMCMBIBPC-1588](EPMCMBIBPC-1588.md) case |  |
 | 2 | Click the field opposite the **REFERENCE_GENOME_PATH** parameter |  |
 | 3 | Enter `project.` | A list appears containing: type, GRCh38_BWA, Exome_Panel, Project_Output |
 | 4 | Select `GRCh38_BWA` in the list that appears |  |

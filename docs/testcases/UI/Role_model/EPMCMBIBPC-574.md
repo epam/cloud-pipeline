@@ -21,4 +21,4 @@ Test verifies tool access for a user granted read+write permissions on a tool gr
 | 12 | Click the checkbox in the **Allow** column opposite **READ** and **WRITE** permissions |  |
 | 13 | Log out |  |
 | 14 | Login as the user specified at step 9 |  |
-| 15 | Perform the [EPMCMBIBPC-430](../Tools/EPMCMBIBPC-430.md) case | The result is the same as in the EPMCMBIBPC-430 case |
+| 15 | Perform the [EPMCMBIBPC-430](../Tools/EPMCMBIBPC-430.md) case | The result is the same as in the [EPMCMBIBPC-430](../Tools/EPMCMBIBPC-430.md) case |
