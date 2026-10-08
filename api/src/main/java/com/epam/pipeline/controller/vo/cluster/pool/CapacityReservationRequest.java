@@ -35,7 +35,7 @@ public class CapacityReservationRequest {
 
     private LocalDateTime requestedStartDate;
     private LocalDateTime requestedEndDate;
-    private Integer durationHours;
+    private Long commitmentDuration;
 
     private String instancePlatform;
 

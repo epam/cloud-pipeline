@@ -129,7 +129,7 @@ public class CapacityReservationApprovalService {
     private boolean sameEssentials(final CapacityReservation origin, final CapacityReservation retry) {
         return Objects.equals(origin.getInstanceType(), retry.getInstanceType())
                 && origin.getInstanceCount() == retry.getInstanceCount()
-                && Objects.equals(origin.getDurationHours(), retry.getDurationHours())
+                && Objects.equals(origin.getCommitmentDuration(), retry.getCommitmentDuration())
                 && Objects.equals(origin.getReservationType(), retry.getReservationType())
                 && Objects.equals(origin.getCloudProvider(), retry.getCloudProvider())
                 && Objects.equals(origin.getRegionId(), retry.getRegionId())

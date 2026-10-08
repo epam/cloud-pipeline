@@ -252,7 +252,7 @@ public class CapacityReservationService {
                 .instanceCount(request.getInstanceCount())
                 .requestedStartDate(request.getRequestedStartDate())
                 .requestedEndDate(request.getRequestedEndDate())
-                .durationHours(request.getDurationHours())
+                .commitmentDuration(request.getCommitmentDuration())
                 .instancePlatform(StringUtils.defaultIfBlank(request.getInstancePlatform(),
                         CapacityReservation.DEFAULT_INSTANCE_PLATFORM))
                 .build();

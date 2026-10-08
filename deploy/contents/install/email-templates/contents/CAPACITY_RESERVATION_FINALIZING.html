@@ -54,8 +54,15 @@
         <td>${CP_DOLLAR}!templateParameters.get("instanceCount")</td>
     </tr>
     <tr>
-        <td>Duration, hours</td>
-        <td>${CP_DOLLAR}!templateParameters.get("durationHours")</td>
+        <td>Commitment</td>
+#set( ${CP_DOLLAR}commitmentSeconds = ${CP_DOLLAR}templateParameters.get("commitmentDuration") )
+#if( ${CP_DOLLAR}commitmentSeconds )
+#set( ${CP_DOLLAR}commitmentDays = ${CP_DOLLAR}commitmentSeconds / 86400 )
+#set( ${CP_DOLLAR}commitmentHours = ( ${CP_DOLLAR}commitmentSeconds % 86400 ) / 3600 )
+        <td>${CP_DOLLAR}{commitmentDays}d ${CP_DOLLAR}{commitmentHours}h</td>
+#else
+        <td></td>
+#end
     </tr>
     <tr>
         <td>Requested by</td>

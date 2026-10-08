@@ -43,9 +43,9 @@ public enum CapacityReservationField implements SubjectEntityField<CapacityReser
         reservation -> str(reservation.getInstanceCount()),
         "instance.count"),
 
-    DURATION_HOURS(NUMERIC,
-        reservation -> str(reservation.getDurationHours()),
-        "duration.hours"),
+    COMMITMENT_DURATION(NUMERIC,
+        reservation -> str(reservation.getCommitmentDuration()),
+        "commitment.duration"),
 
     RESERVATION_TYPE(ENUM,
         reservation -> str(reservation.getReservationType()),
