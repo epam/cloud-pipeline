@@ -72,6 +72,7 @@ public class CapacityReservationMonitorCoreTest {
     private static final int FINALIZING_LEAD_HOURS = 1;
     private static final int DURATION_HOURS = 24;
     private static final int WINDOW_DAYS = 3;
+    private static final int MINUTES_LATE = 15;
     private static final int WITHIN_LEAD_MINUTES = 30;
     private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
 
@@ -362,6 +363,65 @@ public class CapacityReservationMonitorCoreTest {
                 .transition(eq(reservation), eq(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER), any());
         verify(statusService, never()).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), any());
         verify(statusService, never()).transition(eq(reservation), eq(CapacityReservationStatus.CANCELLED), any());
+    }
+
+    @Test
+    public void shouldKeepTheWindowAsLongAsTheCommitmentWhenTheProviderMovesTheStart() {
+        final CapacityReservation reservation = approved();
+        final LocalDateTime reported = reservation.getRequestedStartDate().plusMinutes(MINUTES_LATE);
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        givenSubmissionReturns(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .startDate(reported)
+                .build());
+
+        monitor.processApproved();
+
+        assertThat(reservation.getStartDate()).isEqualTo(reported);
+        assertThat(reservation.getEndDate()).isEqualTo(reported.plusHours(DURATION_HOURS));
+        verify(statusService)
+                .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+    }
+
+    @Test
+    public void shouldTakeTheWindowTheProviderReportsWhenItReportsAnEndDate() {
+        final CapacityReservation reservation = approved();
+        final LocalDateTime start = reservation.getRequestedStartDate();
+        final LocalDateTime end = start.plusHours(DURATION_HOURS).minusHours(1);
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        givenSubmissionReturns(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .startDate(start)
+                .endDate(end)
+                .build());
+
+        monitor.processApproved();
+
+        assertThat(reservation.getEndDate()).isEqualTo(end);
+    }
+
+    @Test
+    public void shouldSlideFromTheDateTheProviderReportsForAnAdoptedReservation() {
+        final CapacityReservation reservation = approved();
+        final LocalDateTime reported = reservation.getRequestedStartDate().plusDays(1);
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.findSubmitted(reservation)).thenReturn(Optional.of(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.FAILED)
+                .startDate(reported)
+                .stateReason(REFUSAL_REASON)
+                .build()));
+
+        monitor.processApproved();
+
+        assertThat(reservation.getStartDate())
+                .isEqualTo(reported.plusDays(CapacityReservationMonitorCore.SLIDE_WINDOW_STEP_DAYS));
+        assertThat(reservation.getEndDate())
+                .isEqualTo(reported.plusDays(CapacityReservationMonitorCore.SLIDE_WINDOW_STEP_DAYS)
+                        .plusHours(DURATION_HOURS));
+        verify(cloudFacade, never()).create(any());
     }
 
     @Test
