@@ -65,6 +65,8 @@ public class CapacityReservationTemplatesTest {
             assertFalse(text.getSubject().contains("$"), type + " left a reference unrendered");
             assertFalse(text.getBody().contains("$"), type + " left a reference unrendered");
             assertFalse(text.getBody().contains("#if"), type + " left a directive unrendered");
+            assertFalse(text.getBody().contains("#set"), type + " left a directive unrendered");
+            assertFalse(text.getBody().contains("#end"), type + " left a directive unrendered");
         }
     }
 

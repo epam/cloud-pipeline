@@ -231,7 +231,7 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DURATION_INVALID));
         Assert.isTrue(!start.plusSeconds(duration).isAfter(end),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW,
-                        start, end, duration));
+                        start, end, duration, Duration.ofSeconds(duration).toDays()));
 
         validateProviderLimits(start, duration);
     }
@@ -244,7 +244,8 @@ public class NodePoolValidator {
 
         Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_SECONDS,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT,
-                        duration, MIN_RESERVATION_COMMITMENT_SECONDS));
+                        duration, Duration.ofSeconds(duration).toDays(), MIN_RESERVATION_COMMITMENT_SECONDS,
+                        Duration.ofSeconds(MIN_RESERVATION_COMMITMENT_SECONDS).toDays()));
     }
 
     private void validateInstanceImage(final Long regionId, final String instanceImage) {
