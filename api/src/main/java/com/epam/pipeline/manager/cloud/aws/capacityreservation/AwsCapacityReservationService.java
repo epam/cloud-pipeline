@@ -82,7 +82,6 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     static final String RESERVATION_ID_TAG = "CP-capacity-reservation-id";
 
     private static final String NAME_TAG = "Name";
-    private static final int SECONDS_PER_HOUR = 3600;
     public static final int MINIMUM_LEAD_DAYS = 5;
 
     static final String CAPACITY_RESERVATION_SPECIFICATION = "CapacityReservationSpecification";
@@ -155,7 +154,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                 .instanceMatchCriteria(InstanceMatchCriteria.TARGETED)
                 .deliveryPreference(CapacityReservationDeliveryPreference.INCREMENTAL)
                 .startDate(toInstant(reservation.getStartDate()))
-                .commitmentDuration((long) reservation.getDurationHours() * SECONDS_PER_HOUR)
+                .commitmentDuration(reservation.getCommitmentDuration())
                 .clientToken(reservation.getClientToken())
                 .tagSpecifications(tags(reservation));
 
@@ -375,8 +374,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
             case "unsupported":
                 return CloudCapacityReservationState.UNSUPPORTED;
             case "failed":
-            case "payment-failed":
                 return CloudCapacityReservationState.FAILED;
+            case "payment-failed":
+                return CloudCapacityReservationState.PAYMENT_FAILED;
             case "cancelled":
             case "cancelling":
                 return CloudCapacityReservationState.CANCELLED;
@@ -404,7 +404,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
                         || state == CloudCapacityReservationState.PENDING
                         ? null
                         : String.format("AWS reported the reservation as '%s'", awsState))
-                .grantedCommitmentSeconds(Optional.ofNullable(reservation.commitmentInfo())
+                .grantedCommitmentDuration(Optional.ofNullable(reservation.commitmentInfo())
                         .map(CapacityReservationCommitmentInfo::commitmentDuration)
                         .orElse(null))
                 .build();

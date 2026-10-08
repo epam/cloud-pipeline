@@ -40,5 +40,5 @@ public class CloudCapacityReservation {
 
     private String stateReason;
 
-    private Long grantedCommitmentSeconds;
+    private Long grantedCommitmentDuration;
 }

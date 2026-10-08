@@ -20,18 +20,23 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.test.creator.cluster.capacityreservation.CapacityReservationCreatorUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+
+import java.util.Arrays;
+import java.util.Collections;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -88,6 +93,67 @@ public class CapacityReservationStatusServiceTest {
         statusService.recordRetry(reservation, REASON);
 
         verifyNoInteractions(notificationManager);
+    }
+
+    @Test
+    public void shouldLetARefusedSubmissionAskForAnotherDateOrZone() {
+        final CapacityReservation reservation = approved();
+        givenTheRowIsWritten();
+
+        statusService.transition(reservation, CapacityReservationStatus.APPROVED, REASON);
+
+        assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(reservation.getStatusReason()).isEqualTo(REASON);
+        verify(reservationDao).update(reservation);
+    }
+
+    @Test
+    public void shouldNotNotifyWhenARefusedRequestOnlyMovesToAnotherCandidate() {
+        final CapacityReservation reservation = approved();
+        givenTheRowIsWritten();
+
+        statusService.transition(reservation, CapacityReservationStatus.APPROVED, REASON);
+
+        verifyNoInteractions(notificationManager);
+    }
+
+    @Test
+    public void shouldNotifyWhenTheStatusActuallyChanges() {
+        final CapacityReservation reservation = approved();
+        givenTheRowIsWritten();
+
+        statusService.transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+
+        verify(notificationManager).notifyCapacityReservation(reservation,
+                NotificationType.CAPACITY_RESERVATION_STATUS_CHANGED, Collections.emptyList());
+    }
+
+    @Test
+    public void shouldLetAReservationThatExpiredUnwatchedFinish() {
+        givenTheRowIsWritten();
+        for (final CapacityReservationStatus from : Arrays.asList(
+                CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, CapacityReservationStatus.SCHEDULED)) {
+            final CapacityReservation reservation = approved();
+            reservation.setStatus(from);
+
+            statusService.transition(reservation, CapacityReservationStatus.FINISHED, null);
+
+            assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.FINISHED);
+        }
+    }
+
+    @Test
+    public void shouldRejectATransitionTheStateMachineDoesNotAllow() {
+        final CapacityReservation reservation = approved();
+
+        assertThatThrownBy(() -> statusService.transition(reservation, CapacityReservationStatus.ACTIVE, null))
+                .isInstanceOf(IllegalStateException.class);
+        verify(reservationDao, never()).update(any());
+    }
+
+    private void givenTheRowIsWritten() {
+        when(reservationDao.update(any()))
+                .thenAnswer(invocation -> (CapacityReservation) invocation.getArguments()[0]);
     }
 
     private static CapacityReservation approved() {

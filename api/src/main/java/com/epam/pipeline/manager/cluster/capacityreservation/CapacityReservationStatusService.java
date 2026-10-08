@@ -71,8 +71,14 @@ public class CapacityReservationStatusService {
         reservation.setStatusReason(statusReason);
         reservation.setUpdated(DateUtils.nowUTC());
         final CapacityReservation updated = reservationDao.update(reservation);
-        log.debug("Capacity reservation {} moved from {} to {}", updated.getId(), current, newStatus);
 
+        if (newStatus == current) {
+            // The request has not moved on - today only the monitor re-approving it for the next date or zone gets
+            // here - so there is nothing to tell its owner, who hears about the attempt that settles the request
+            log.debug("Capacity reservation {} stays {}: {}", updated.getId(), newStatus, statusReason);
+            return updated;
+        }
+        log.debug("Capacity reservation {} moved from {} to {}", updated.getId(), current, newStatus);
         notify(updated, notificationTypeFor(newStatus));
         return updated;
     }
@@ -123,18 +129,24 @@ public class CapacityReservationStatusService {
                 CapacityReservationStatus.CANCELLED));
         allowed.put(CapacityReservationStatus.APPROVED, EnumSet.of(
                 CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER,
+                // A submission the provider refuses outright re-approves the request for the next date or zone
+                CapacityReservationStatus.APPROVED,
                 CapacityReservationStatus.PURCHASE_FAILED,
                 CapacityReservationStatus.FAILED,
                 CapacityReservationStatus.CANCELLED));
+        // FINISHED is reachable from both: a reservation whose end date passes while the platform is not watching -
+        // its service down, or its own end date moved by the provider - is reported as expired on the next poll
         allowed.put(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, EnumSet.of(
                 CapacityReservationStatus.SCHEDULED,
                 CapacityReservationStatus.ACTIVE,
                 CapacityReservationStatus.APPROVED,
+                CapacityReservationStatus.FINISHED,
                 CapacityReservationStatus.FAILED,
                 CapacityReservationStatus.CANCELLED));
         allowed.put(CapacityReservationStatus.SCHEDULED, EnumSet.of(
                 CapacityReservationStatus.ACTIVE,
                 CapacityReservationStatus.APPROVED,
+                CapacityReservationStatus.FINISHED,
                 CapacityReservationStatus.FAILED,
                 CapacityReservationStatus.CANCELLED));
         allowed.put(CapacityReservationStatus.ACTIVE, EnumSet.of(

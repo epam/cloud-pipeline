@@ -69,7 +69,7 @@ public class ConditionExpressionEvaluator<T> {
         final String fieldName = expression.getField();
         final EntityConditionEvaluationStrategy<T> strategy = conditionEvaluationStrategies.get(fieldName);
         if (strategy == null) {
-            throw new IllegalArgumentException("Unknown quota rule field: '" + fieldName + "'");
+            throw new IllegalArgumentException("Unknown condition rule field: '" + fieldName + "'");
         }
         return strategy.evaluate(expression, subject, now);
     }
