@@ -505,6 +505,14 @@ public class AwsCapacityReservationServiceTest {
     }
 
     @Test
+    public void shouldKeepAPaymentFailureDistinctFromARefusedConfiguration() {
+        assertThat(AwsCapacityReservationService.toState("payment-failed"))
+                .isEqualTo(CloudCapacityReservationState.PAYMENT_FAILED);
+        assertThat(AwsCapacityReservationService.toState("failed"))
+                .isEqualTo(CloudCapacityReservationState.FAILED);
+    }
+
+    @Test
     public void shouldOnlySlideOnAStateAwsWillNotDeliver() {
         assertThat(AwsCapacityReservationService.toState("unsupported"))
                 .isEqualTo(CloudCapacityReservationState.UNSUPPORTED);
@@ -535,7 +543,7 @@ public class AwsCapacityReservationServiceTest {
         assertThat(AwsCapacityReservationService.toState("failed"))
                 .isEqualTo(CloudCapacityReservationState.FAILED);
         assertThat(AwsCapacityReservationService.toState("payment-failed"))
-                .isEqualTo(CloudCapacityReservationState.FAILED);
+                .isEqualTo(CloudCapacityReservationState.PAYMENT_FAILED);
         assertThat(AwsCapacityReservationService.toState("cancelled"))
                 .isEqualTo(CloudCapacityReservationState.CANCELLED);
         assertThat(AwsCapacityReservationService.toState("cancelling"))
