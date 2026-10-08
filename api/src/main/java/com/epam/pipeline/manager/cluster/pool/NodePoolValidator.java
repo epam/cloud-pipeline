@@ -73,7 +73,7 @@ public class NodePoolValidator {
 
     private static final int MIN_RESERVATION_LEAD_DAYS = AwsCapacityReservationService.MINIMUM_LEAD_DAYS;
     private static final int MAX_RESERVATION_LEAD_DAYS = 120;
-    private static final int MIN_RESERVATION_COMMITMENT_HOURS = 14 * 24;
+    private static final long MIN_RESERVATION_COMMITMENT_SECONDS = 14 * 24 * 3600L;
     private static final int MIN_RESERVATION_VCPUS = 32;
 
     private static final Set<String> SUPPORTED_INSTANCE_PLATFORMS = Collections.unmodifiableSet(
@@ -226,25 +226,25 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_INVALID,
                         end, start));
 
-        final Integer duration = request.getDurationHours();
+        final Long duration = request.getCommitmentDuration();
         Assert.isTrue(Objects.nonNull(duration) && duration > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DURATION_INVALID));
-        Assert.isTrue(!start.plusHours(duration).isAfter(end),
+        Assert.isTrue(!start.plusSeconds(duration).isAfter(end),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW,
                         start, end, duration));
 
         validateProviderLimits(start, duration);
     }
 
-    private void validateProviderLimits(final LocalDateTime start, final int duration) {
+    private void validateProviderLimits(final LocalDateTime start, final long duration) {
         final long leadDays = Duration.between(DateUtils.nowUTC(), start).toDays();
         Assert.isTrue(leadDays >= MIN_RESERVATION_LEAD_DAYS && leadDays <= MAX_RESERVATION_LEAD_DAYS,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID,
                         start, MIN_RESERVATION_LEAD_DAYS, MAX_RESERVATION_LEAD_DAYS));
 
-        Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_HOURS,
+        Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_SECONDS,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT,
-                        duration, MIN_RESERVATION_COMMITMENT_HOURS));
+                        duration, MIN_RESERVATION_COMMITMENT_SECONDS));
     }
 
     private void validateInstanceImage(final Long regionId, final String instanceImage) {

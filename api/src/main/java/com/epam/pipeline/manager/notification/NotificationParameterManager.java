@@ -134,7 +134,7 @@ public class NotificationParameterManager {
         parameters.put("regionId", reservation.getRegionId());
         parameters.put("instanceType", reservation.getInstanceType());
         parameters.put("instanceCount", reservation.getInstanceCount());
-        parameters.put("durationHours", reservation.getDurationHours());
+        parameters.put("commitmentDuration", reservation.getCommitmentDuration());
         parameters.put("startDate", reservation.getStartDate());
         parameters.put("endDate", reservation.getEndDate());
         parameters.put("availabilityZone", reservation.getAvailabilityZone());

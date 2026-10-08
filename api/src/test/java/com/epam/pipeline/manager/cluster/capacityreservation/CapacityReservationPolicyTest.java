@@ -38,7 +38,7 @@ public class CapacityReservationPolicyTest {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final int INSTANCE_COUNT = 4;
-    private static final int DURATION_HOURS = 48;
+    private static final long COMMITMENT_DURATION = 48 * 3600L;
 
     private static final String POLICIES_JSON = "["
             + "{"
@@ -48,7 +48,7 @@ public class CapacityReservationPolicyTest {
             + "    \"expressions\": ["
             + "      {\"type\": \"LOGICAL\", \"field\": \"cloud.provider\", \"operand\": \"=\", "
             + "       \"value\": \"AWS\"},"
-            + "      {\"type\": \"LOGICAL\", \"field\": \"duration.hours\", \"operand\": \">\", "
+            + "      {\"type\": \"LOGICAL\", \"field\": \"commitment.duration\", \"operand\": \">\", "
             + "       \"value\": \"336\"}"
             + "    ]"
             + "  }"
@@ -92,7 +92,7 @@ public class CapacityReservationPolicyTest {
     @Test
     public void shouldResolveEveryFieldNameUsedInPolicies() {
         assertThat(CapacityReservationField.findByDisplayName("cloud.provider").isPresent()).isTrue();
-        assertThat(CapacityReservationField.findByDisplayName("duration.hours").isPresent()).isTrue();
+        assertThat(CapacityReservationField.findByDisplayName("commitment.duration").isPresent()).isTrue();
         assertThat(CapacityReservationField.findByDisplayName("instance.type").isPresent()).isTrue();
         assertThat(CapacityReservationField.findByDisplayName("instance.count").isPresent()).isTrue();
         assertThat(CapacityReservationField.findByDisplayName("reservation.type").isPresent()).isTrue();
@@ -116,20 +116,20 @@ public class CapacityReservationPolicyTest {
         final CapacityReservation reservation = new CapacityReservation();
         reservation.setInstanceType("p5.48xlarge");
         reservation.setInstanceCount(INSTANCE_COUNT);
-        reservation.setDurationHours(DURATION_HOURS);
+        reservation.setCommitmentDuration(COMMITMENT_DURATION);
 
         assertThat(extract(CapacityReservationField.INSTANCE_TYPE, reservation)).isEqualTo("p5.48xlarge");
         assertThat(extract(CapacityReservationField.INSTANCE_COUNT, reservation))
                 .isEqualTo(String.valueOf(INSTANCE_COUNT));
-        assertThat(extract(CapacityReservationField.DURATION_HOURS, reservation))
-                .isEqualTo(String.valueOf(DURATION_HOURS));
+        assertThat(extract(CapacityReservationField.COMMITMENT_DURATION, reservation))
+                .isEqualTo(String.valueOf(COMMITMENT_DURATION));
     }
 
     @Test
     public void shouldExtractNullsFromEmptyReservation() {
         final CapacityReservation empty = new CapacityReservation();
 
-        assertThat(extract(CapacityReservationField.DURATION_HOURS, empty)).isNull();
+        assertThat(extract(CapacityReservationField.COMMITMENT_DURATION, empty)).isNull();
         assertThat(extract(CapacityReservationField.CLOUD_PROVIDER, empty)).isNull();
         assertThat(extract(CapacityReservationField.RESERVATION_TYPE, empty)).isNull();
         assertThat(extract(CapacityReservationField.OWNER, empty)).isNull();
