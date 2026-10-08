@@ -38,7 +38,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import jakarta.annotation.PostConstruct;
+import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -119,6 +119,36 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
         }
 
         /**
+         * Settles a just submitted request on the state the provider answered with. A refused reservation is not the
+         * end of the request: it moves on to the next date or zone its window allows, as a refusal seen by a later
+         * poll does. Every other answer parks the request at {@code ASSESSING_BY_CLOUD_PROVIDER} for the poll.
+         */
+        private void processSubmitted(final CapacityReservation reservation,
+                                      final CloudCapacityReservation submitted) {
+            final CloudCapacityReservationState state = submitted.getState();
+            switch (state) {
+                case UNSUPPORTED:
+                case FAILED:
+                case CANCELLED:
+                case EXPIRED:
+                case DELAYED:
+                    log.debug("Capacity reservation {} came back {} from its submission; asking for another date or "
+                            + "zone", reservation.getId(), state);
+                    slideOrFail(reservation, submitted.getStateReason());
+                    break;
+                case PAYMENT_FAILED:
+                    fail(reservation, submitted.getStateReason());
+                    break;
+                case PENDING:
+                case SCHEDULED:
+                case ACTIVE:
+                default:
+                    statusService.transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+                    break;
+            }
+        }
+
+        /**
          * Acts on what the provider says about a reservation.
          */
         private void applyState(final CapacityReservation reservation, final CloudCapacityReservation cloud) {
@@ -140,19 +170,13 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                     }
                     break;
                 case UNSUPPORTED:
+                case FAILED:
+                case CANCELLED:
+                case DELAYED:
                     slideOrFail(reservation, cloud.getStateReason());
                     break;
-                case DELAYED:
-                    cancelAndSlide(reservation, cloud.getStateReason());
-                    break;
-                case FAILED:
-                    statusService.transition(reservation, CapacityReservationStatus.FAILED, cloud.getStateReason());
-                    reservationService.deactivatePool(reservation);
-                    break;
-                case CANCELLED:
-                    statusService.transition(reservation, CapacityReservationStatus.CANCELLED,
-                            cloud.getStateReason());
-                    reservationService.deactivatePool(reservation);
+                case PAYMENT_FAILED:
+                    fail(reservation, cloud.getStateReason());
                     break;
                 case EXPIRED:
                     statusService.transition(reservation, CapacityReservationStatus.FINISHED, cloud.getStateReason());
@@ -195,7 +219,7 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
 
             reservation.setCloudReservationId(submitted.getCloudReservationId());
             Optional.ofNullable(submitted.getAvailabilityZone()).ifPresent(reservation::setAvailabilityZone);
-            statusService.transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+            processSubmitted(reservation, submitted);
         }
 
         void poll(final CapacityReservation reservation) {
@@ -264,18 +288,31 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                     });
         }
 
-        private void cancelAndSlide(final CapacityReservation reservation, final String reason) {
-            final CapacityReservation delayed = reservation.copy();
-            slideOrFail(reservation, reason);
-            cloudFacade.cancel(delayed);
-            reservationService.deactivatePool(delayed);
+        /**
+         * Moves a future-dated request to the next start date or zone inside the window the requester allowed, or
+         * gives up when the window cannot fit the duration any more. The pool stops pointing at the reservation the
+         * refused attempt had, and that reservation is released at the provider: the next attempt submits under a
+         * client token of its own, so nothing would ever reach it again, and a reservation the provider turns out to
+         * still hold would be paid for and forgotten.
+         */
+        private void slideOrFail(final CapacityReservation reservation, final String reason) {
+            final CapacityReservation abandoned = reservation.copy();
+            nextCandidateOrFail(reservation, reason);
+            reservationService.deactivatePool(reservation);
+            if (StringUtils.isNotBlank(abandoned.getCloudReservationId())) {
+                cloudFacade.cancel(abandoned);
+            }
         }
 
         /**
-         * Moves a future-dated request to the next start date inside the window the requester allowed, or gives up
-         * when the window cannot fit the duration any more.
+         * Ends the request for good: no other date or zone would fare any better.
          */
-        private void slideOrFail(final CapacityReservation reservation, final String reason) {
+        private void fail(final CapacityReservation reservation, final String reason) {
+            statusService.transition(reservation, CapacityReservationStatus.FAILED, reason);
+            reservationService.deactivatePool(reservation);
+        }
+
+        private void nextCandidateOrFail(final CapacityReservation reservation, final String reason) {
             final Optional<String> nextZone = fetchNextCandidateZone(reservation);
             if (nextZone.isPresent()) {
                 log.debug("Capacity reservation {} is unavailable in {} at {}; trying {} for the same date",
@@ -285,7 +322,9 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
                 resetForNextAttempt(reservation, reason);
                 return;
             }
-            final LocalDateTime nextStart = reservation.getStartDate().plusDays(SLIDE_WINDOW_STEP_DAYS);
+            final LocalDateTime currentStart = Optional.ofNullable(reservation.getStartDate())
+                    .orElse(reservation.getRequestedStartDate());
+            final LocalDateTime nextStart = currentStart.plusDays(SLIDE_WINDOW_STEP_DAYS);
             final LocalDateTime nextEnd = nextStart.plusHours(reservation.getDurationHours());
 
             if (nextEnd.isAfter(reservation.getRequestedEndDate())) {
@@ -297,7 +336,7 @@ public class CapacityReservationMonitor extends AbstractSchedulingManager {
             }
 
             log.debug("Capacity reservation {} is unavailable at {}; trying {}",
-                    reservation.getId(), reservation.getStartDate(), nextStart);
+                    reservation.getId(), currentStart, nextStart);
             reservation.setStartDate(nextStart);
             reservation.setEndDate(nextEnd);
             reservation.setAvailabilityZone(null);
