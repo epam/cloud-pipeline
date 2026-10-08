@@ -87,7 +87,6 @@ public class AwsCapacityReservationServiceTest {
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
     private static final String TOKEN = "cp-cr-10-0";
     private static final long COMMITMENT_DURATION = 24 * 3600L;
-    private static final long EXPECTED_COMMITMENT_SECONDS = 86400L;
     private static final int INSTANCE_COUNT = 8;
     private static final int LEAD_DAYS = 7;
     private static final String AWS_SCHEDULED = "scheduled";
@@ -132,7 +131,7 @@ public class AwsCapacityReservationServiceTest {
 
         assertThat(client.createRequest.instanceMatchCriteria()).isEqualTo(InstanceMatchCriteria.TARGETED);
         assertThat(client.createRequest.deliveryPreferenceAsString()).isEqualTo("incremental");
-        assertThat(client.createRequest.commitmentDuration()).isEqualTo(EXPECTED_COMMITMENT_SECONDS);
+        assertThat(client.createRequest.commitmentDuration()).isEqualTo(COMMITMENT_DURATION);
         assertThat(client.createRequest.startDate())
                 .isEqualTo(reservation.getStartDate().toInstant(ZoneOffset.UTC));
         assertThat(client.createRequest.instanceCount()).isEqualTo(INSTANCE_COUNT);
