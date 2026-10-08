@@ -30,6 +30,8 @@ public enum CloudCapacityReservationState {
 
     FAILED,
 
+    PAYMENT_FAILED,
+
     CANCELLED,
 
     EXPIRED
