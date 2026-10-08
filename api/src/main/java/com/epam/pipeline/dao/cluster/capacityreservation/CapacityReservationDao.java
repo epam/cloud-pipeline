@@ -243,14 +243,5 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 setter.accept(value);
             }
         }
-
-        private static void applyInteger(final ResultSet rs,
-                                         final String field,
-                                         final Consumer<Integer> setter) throws SQLException {
-            final int value = rs.getInt(field);
-            if (!rs.wasNull()) {
-                setter.accept(value);
-            }
-        }
     }
 }

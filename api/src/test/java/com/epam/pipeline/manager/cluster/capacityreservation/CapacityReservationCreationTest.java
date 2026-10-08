@@ -468,6 +468,16 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
+    public void shouldAutoApproveWhenTheDeniedCommitmentIsLongerThanTheRequestedOne() {
+        setPolicies("[" + autoApproveOnInstanceType() + "," + denyOnLongerDuration() + "]");
+
+        final NodePool created = poolManager.create(reservationPoolVO());
+
+        assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
     public void shouldRequireApprovalWhenDenyIsListedBeforeAutoApprove() {
         setPolicies("[" + denyOnDuration() + "," + autoApproveOnInstanceType() + "]");
 
@@ -823,7 +833,11 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     private static String denyOnDuration() {
-        return policy("DENY", logical("commitment.duration", ">", "12"));
+        return policy("DENY", logical("commitment.duration", ">", String.valueOf(COMMITMENT_DURATION - 1)));
+    }
+
+    private static String denyOnLongerDuration() {
+        return policy("DENY", logical("commitment.duration", ">", String.valueOf(COMMITMENT_DURATION)));
     }
 
     private static String denyOnNonMatchingInstanceType() {
