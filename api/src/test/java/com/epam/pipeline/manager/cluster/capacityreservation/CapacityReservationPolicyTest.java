@@ -49,7 +49,7 @@ public class CapacityReservationPolicyTest {
             + "      {\"type\": \"LOGICAL\", \"field\": \"cloud.provider\", \"operand\": \"=\", "
             + "       \"value\": \"AWS\"},"
             + "      {\"type\": \"LOGICAL\", \"field\": \"commitment.duration\", \"operand\": \">\", "
-            + "       \"value\": \"336\"}"
+            + "       \"value\": \"1209600\"}"
             + "    ]"
             + "  }"
             + "},"
