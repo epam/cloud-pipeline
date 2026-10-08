@@ -142,20 +142,38 @@ public class CapacityReservationService {
                 reservation.getNodePoolId(), reservation.getInstanceCount(), reservation.getId());
     }
 
+    /**
+     * Takes everything the reservation had given the pool back off it: its size, its window and the reservation's
+     * target, zone and subnet. The pool is left as a pool of no nodes, which {@link NodePool#isActive} reports as
+     * inactive whatever its dates say, until a reservation schedules it again.
+     */
     @Transactional
     public void deactivatePool(final CapacityReservation reservation) {
         final Set<String> reservationKeys = launchSpecificationOf(reservation).keySet();
         poolManager.applyReservationState(reservation.getNodePoolId(), pool -> {
             pool.setCount(0);
+            pool.setStartDate(null);
+            pool.setEndDate(null);
             pool.setAmiConfiguration(withoutReservation(pool.getAmiConfiguration(), reservationKeys));
         });
         log.debug("Deactivated node pool {} after capacity reservation {} ended",
                 reservation.getNodePoolId(), reservation.getId());
     }
 
+    /**
+     * Approves a request that is waiting for it. A request already approved is rejected rather than approved again:
+     * the monitor re-approves one itself for every date and zone it tries, and a second approval would drop the
+     * provider's last answer from it.
+     */
     @Transactional
     public CapacityReservation approve(final Long id) {
-        return statusService.transition(loadForUpdate(id), CapacityReservationStatus.APPROVED, null);
+        final CapacityReservation reservation = loadForUpdate(id);
+        if (CapacityReservationStatus.REQUIRED_APPROVE != reservation.getStatus()) {
+            throw new IllegalStateException(messageHelper.getMessage(
+                    MessageConstants.ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION,
+                    id, reservation.getStatus(), CapacityReservationStatus.APPROVED));
+        }
+        return statusService.transition(reservation, CapacityReservationStatus.APPROVED, null);
     }
 
     @Transactional
