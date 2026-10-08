@@ -29,9 +29,7 @@ Test verifies that a large `cluster.docker.extra_multi` preference triggers a di
 | 19 | Click **OK** button |  |
 | 20 | Open the **RUNS** page and click on the just-launched tool |  |
 | 21 | Wait until the **PAUSE** hyperlink appears in the right upper corner |  |
-| 22 | Click the **PAUSE** hyperlink | A pop-up window appears with the warning message:<br>```java
-This operation may fail due to 'Out of disk' error
-``` |
+| 22 | Click the **PAUSE** hyperlink | A pop-up window appears with the warning message:<br>`This operation may fail due to 'Out of disk' error` |
 | 23 | Click **CANCEL** button | <li> the label **PAUSING** doesn't display, the **PAUSE** hyperlink appears again <li> the pipeline is not stopped |
 
 **After**:

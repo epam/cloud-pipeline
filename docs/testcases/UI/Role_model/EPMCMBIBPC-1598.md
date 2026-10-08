@@ -4,7 +4,7 @@ Test verifies that launching a pipeline whose Docker image the user has no permi
 
 **Prerequisites**:
 - The user has permissions to create a pipeline from a template (ROLE_PIPELINE_MANAGER)
-- The user has no permissions on the Docker images used in the templates (e.g. `172.31.38.143:5000/library/base-generic-centos7`, `172.31.38.143:5000/library/exec-cromwell`, `172.31.38.143:5000/library/exec-luigi`)
+- The user has no permissions on the Docker images used in the templates
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
