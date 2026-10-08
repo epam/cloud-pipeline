@@ -3,7 +3,7 @@
 Test verifies that a pipeline run cannot write a file into a bucket folder for which its owning user only has read permission.
 
 **Prerequisites**:
-- A non-admin user with the ROLE_PIPELINE_MANAGER role and rights to create pipelines (`Auto_EPM-CMBI_Test2@epam.com`)
+- A non-admin user with the ROLE_PIPELINE_MANAGER role and rights to create pipelines
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
