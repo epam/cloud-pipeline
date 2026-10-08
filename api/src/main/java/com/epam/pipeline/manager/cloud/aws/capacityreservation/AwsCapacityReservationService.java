@@ -375,8 +375,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
             case "unsupported":
                 return CloudCapacityReservationState.UNSUPPORTED;
             case "failed":
-            case "payment-failed":
                 return CloudCapacityReservationState.FAILED;
+            case "payment-failed":
+                return CloudCapacityReservationState.PAYMENT_FAILED;
             case "cancelled":
             case "cancelling":
                 return CloudCapacityReservationState.CANCELLED;

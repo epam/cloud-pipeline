@@ -29,7 +29,10 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Arrays;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -85,6 +88,46 @@ public class CapacityReservationStatusServiceTest {
         statusService.recordRetry(reservation, REASON);
 
         verifyZeroInteractions(notificationManager);
+    }
+
+    @Test
+    public void shouldLetARefusedSubmissionAskForAnotherDateOrZone() {
+        final CapacityReservation reservation = approved();
+        givenTheRowIsWritten();
+
+        statusService.transition(reservation, CapacityReservationStatus.APPROVED, REASON);
+
+        assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(reservation.getStatusReason()).isEqualTo(REASON);
+        verify(reservationDao).update(reservation);
+    }
+
+    @Test
+    public void shouldLetAReservationThatExpiredUnwatchedFinish() {
+        givenTheRowIsWritten();
+        for (final CapacityReservationStatus from : Arrays.asList(
+                CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, CapacityReservationStatus.SCHEDULED)) {
+            final CapacityReservation reservation = approved();
+            reservation.setStatus(from);
+
+            statusService.transition(reservation, CapacityReservationStatus.FINISHED, null);
+
+            assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.FINISHED);
+        }
+    }
+
+    @Test
+    public void shouldRejectATransitionTheStateMachineDoesNotAllow() {
+        final CapacityReservation reservation = approved();
+
+        assertThatThrownBy(() -> statusService.transition(reservation, CapacityReservationStatus.ACTIVE, null))
+                .isInstanceOf(IllegalStateException.class);
+        verify(reservationDao, never()).update(any());
+    }
+
+    private void givenTheRowIsWritten() {
+        when(reservationDao.update(any()))
+                .thenAnswer(invocation -> (CapacityReservation) invocation.getArguments()[0]);
     }
 
     private static CapacityReservation approved() {
