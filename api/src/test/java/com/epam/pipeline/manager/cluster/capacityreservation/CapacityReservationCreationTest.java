@@ -69,10 +69,10 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final long REGION_ID = 1L;
     private static final int INSTANCE_DISK = 100;
     private static final int INSTANCE_COUNT = 2;
-    private static final int DURATION_HOURS = 14 * 24;
+    private static final long COMMITMENT_DURATION = 14 * 24 * 3600L;
     private static final int LEAD_DAYS = 7;
     private static final int WINDOW_DAYS = 30;
-    private static final int ONE_DAY_HOURS = 24;
+    private static final long ONE_DAY_SECONDS = 24 * 3600L;
     private static final String OWNER = "requester";
     private static final String ADMIN = "ADMIN";
     private static final int CALLER_CPU_RESERVED = 4;
@@ -206,7 +206,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         assertThat(reservation.get().getRegionId()).isEqualTo(REGION_ID);
         assertThat(reservation.get().getInstanceType()).isEqualTo(INSTANCE_TYPE);
         assertThat(reservation.get().getInstanceCount()).isEqualTo(INSTANCE_COUNT);
-        assertThat(reservation.get().getDurationHours()).isEqualTo(DURATION_HOURS);
+        assertThat(reservation.get().getCommitmentDuration()).isEqualTo(COMMITMENT_DURATION);
         assertThat(reservation.get().getOwner()).isEqualTo(OWNER);
         assertThat(reservation.get().getInstancePlatform())
                 .isEqualTo(CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
@@ -402,7 +402,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER)
     public void shouldRejectADurationShorterThanTheProvidersMinimumCommitment() {
         final NodePoolVO vo = reservationPoolVO();
-        vo.getCapacityReservationRequest().setDurationHours(ONE_DAY_HOURS);
+        vo.getCapacityReservationRequest().setCommitmentDuration(ONE_DAY_SECONDS);
 
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
@@ -806,7 +806,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final CapacityReservation reservation = reservationDao.findByNodePoolId(pool.getId())
                 .orElseThrow(AssertionError::new);
         reservation.setStartDate(reservation.getRequestedStartDate());
-        reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+        reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
         reservation.setAvailabilityZone(ZONE);
         reservation.setCloudReservationId(CLOUD_RESERVATION_ID);
         return withStatus(reservation, CapacityReservationStatus.ACTIVE);
@@ -823,7 +823,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     }
 
     private static String denyOnDuration() {
-        return policy("DENY", logical("duration.hours", ">", "12"));
+        return policy("DENY", logical("commitment.duration", ">", "12"));
     }
 
     private static String denyOnNonMatchingInstanceType() {
@@ -876,7 +876,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         final LocalDateTime start = DateUtils.nowUTC().plusDays(LEAD_DAYS);
         request.setRequestedStartDate(start);
         request.setRequestedEndDate(start.plusDays(WINDOW_DAYS));
-        request.setDurationHours(DURATION_HOURS);
+        request.setCommitmentDuration(COMMITMENT_DURATION);
         vo.setCapacityReservationRequest(request);
         return vo;
     }

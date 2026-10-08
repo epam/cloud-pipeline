@@ -66,14 +66,14 @@ public class CapacityReservation {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
 
-    private Integer durationHours;
+    private Long commitmentDuration;
 
     @Builder.Default
     private String instancePlatform = DEFAULT_INSTANCE_PLATFORM;
 
     private int attempt;
 
-    private Long grantedCommitmentSeconds;
+    private Long grantedCommitmentDuration;
 
     public CapacityReservation copy() {
         return toBuilder().build();

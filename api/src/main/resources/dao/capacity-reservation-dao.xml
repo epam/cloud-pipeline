@@ -44,10 +44,10 @@
                         requested_end_date,
                         start_date,
                         end_date,
-                        duration_hours,
+                        commitment_duration,
                         instance_platform,
                         attempt,
-                        granted_commitment_seconds
+                        granted_commitment_duration
                         )
                     VALUES (
                         :NODE_POOL_ID,
@@ -70,10 +70,10 @@
                         :REQUESTED_END_DATE,
                         :START_DATE,
                         :END_DATE,
-                        :DURATION_HOURS,
+                        :COMMITMENT_DURATION,
                         :INSTANCE_PLATFORM,
                         :ATTEMPT,
-                        :GRANTED_COMMITMENT_SECONDS)
+                        :GRANTED_COMMITMENT_DURATION)
                 ]]>
             </value>
         </constructor-arg>
@@ -93,10 +93,10 @@
                         instance_count = :INSTANCE_COUNT,
                         start_date = :START_DATE,
                         end_date = :END_DATE,
-                        duration_hours = :DURATION_HOURS,
+                        commitment_duration = :COMMITMENT_DURATION,
                         instance_platform = :INSTANCE_PLATFORM,
                         attempt = :ATTEMPT,
-                        granted_commitment_seconds = :GRANTED_COMMITMENT_SECONDS
+                        granted_commitment_duration = :GRANTED_COMMITMENT_DURATION
                     WHERE
                         id = :ID
                 ]]>
@@ -137,10 +137,10 @@
                         r.requested_end_date AS REQUESTED_END_DATE,
                         r.start_date AS START_DATE,
                         r.end_date AS END_DATE,
-                        r.duration_hours AS DURATION_HOURS,
+                        r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -174,10 +174,10 @@
                         r.requested_end_date AS REQUESTED_END_DATE,
                         r.start_date AS START_DATE,
                         r.end_date AS END_DATE,
-                        r.duration_hours AS DURATION_HOURS,
+                        r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -211,10 +211,10 @@
                         r.requested_end_date AS REQUESTED_END_DATE,
                         r.start_date AS START_DATE,
                         r.end_date AS END_DATE,
-                        r.duration_hours AS DURATION_HOURS,
+                        r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -248,10 +248,10 @@
                         r.requested_end_date AS REQUESTED_END_DATE,
                         r.start_date AS START_DATE,
                         r.end_date AS END_DATE,
-                        r.duration_hours AS DURATION_HOURS,
+                        r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
                     FROM
                         pipeline.capacity_reservation AS r
                     ORDER BY
@@ -285,10 +285,10 @@
                         r.requested_end_date AS REQUESTED_END_DATE,
                         r.start_date AS START_DATE,
                         r.end_date AS END_DATE,
-                        r.duration_hours AS DURATION_HOURS,
+                        r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -324,10 +324,10 @@
                         r.requested_end_date AS REQUESTED_END_DATE,
                         r.start_date AS START_DATE,
                         r.end_date AS END_DATE,
-                        r.duration_hours AS DURATION_HOURS,
+                        r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_seconds AS GRANTED_COMMITMENT_SECONDS
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE

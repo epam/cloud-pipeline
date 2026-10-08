@@ -52,7 +52,8 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
 
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
     private static final String ZONE = "us-east-1c";
-    private static final int DURATION_HOURS = 24;
+    private static final long COMMITMENT_DURATION = 24 * 3600L;
+    private static final long ONE_HOUR = 3600L;
 
     @Autowired
     private CapacityReservationMonitorCore monitor;
@@ -97,7 +98,7 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
             reservation.setCloudReservationId(CLOUD_ID);
             reservation.setAvailabilityZone(ZONE);
             reservation.setStartDate(reservation.getRequestedStartDate());
-            reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+            reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
             reservationId = reservationDao.create(reservation).getId();
             return null;
         });
@@ -108,7 +109,7 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
                 .availabilityZone(ZONE)
                 .state(CloudCapacityReservationState.ACTIVE)
                 .startDate(start)
-                .endDate(start.plusHours(DURATION_HOURS))
+                .endDate(start.plusSeconds(COMMITMENT_DURATION))
                 .build());
     }
 
@@ -142,7 +143,7 @@ public class CapacityReservationMonitorTransactionTest extends AbstractManagerTe
     @Test
     public void shouldKeepAReservationFinalizingWhenItsPoolCannotBeSwitchedOff() {
         givenReservation(CapacityReservationStatus.FINALIZING, reservation -> {
-            reservation.setStartDate(DateUtils.nowUTC().minusHours(DURATION_HOURS + 1));
+            reservation.setStartDate(DateUtils.nowUTC().minusSeconds(COMMITMENT_DURATION + ONE_HOUR));
             reservation.setEndDate(DateUtils.nowUTC().minusHours(1));
         });
         doThrow(new IllegalStateException("pool write failed")).when(reservationService).deactivatePool(any());

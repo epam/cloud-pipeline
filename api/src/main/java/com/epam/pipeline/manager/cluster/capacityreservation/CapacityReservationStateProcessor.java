@@ -52,8 +52,6 @@ public class CapacityReservationStateProcessor {
 
     static final Duration SUBMISSION_MARGIN = Duration.ofHours(1);
 
-    private static final int SECONDS_PER_HOUR = 3600;
-
     private final CapacityReservationService reservationService;
     private final CapacityReservationStatusService statusService;
     private final CapacityReservationCloudFacade cloudFacade;
@@ -201,8 +199,8 @@ public class CapacityReservationStateProcessor {
         // one: taking the start on its own would leave a window shorter than the commitment behind
         Optional.ofNullable(submitted.getStartDate()).ifPresent(start -> {
             reservation.setStartDate(start);
-            Optional.ofNullable(reservation.getDurationHours())
-                    .ifPresent(hours -> reservation.setEndDate(start.plusHours(hours)));
+            Optional.ofNullable(reservation.getCommitmentDuration())
+                    .ifPresent(seconds -> reservation.setEndDate(start.plusSeconds(seconds)));
         });
         Optional.ofNullable(submitted.getEndDate()).ifPresent(reservation::setEndDate);
         processSubmitted(reservation, submitted);
@@ -216,16 +214,16 @@ public class CapacityReservationStateProcessor {
         if (reservation.getStartDate() == null) {
             reservation.setStartDate(reservation.getRequestedStartDate());
             reservation.setEndDate(reservation.getRequestedStartDate()
-                    .plusHours(reservation.getDurationHours()));
+                    .plusSeconds(reservation.getCommitmentDuration()));
         }
         if (reservation.getStartDate().isBefore(cloudFacade.earliestAcceptedStart(reservation))) {
             final LocalDateTime start = cloudFacade.earliestAcceptedStart(reservation).plus(SUBMISSION_MARGIN);
-            final LocalDateTime end = start.plusHours(reservation.getDurationHours());
+            final LocalDateTime end = start.plusSeconds(reservation.getCommitmentDuration());
             if (end.isAfter(reservation.getRequestedEndDate())) {
                 throw new CapacityReservationNoCandidateException(String.format("No start date between %s and %s "
-                        + "leaves room for a reservation of %d hours: the earliest start the provider accepts now "
+                        + "leaves room for a commitment of %ds: the earliest start the provider accepts now "
                         + "is %s", reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
-                        reservation.getDurationHours(), cloudFacade.earliestAcceptedStart(reservation)));
+                        reservation.getCommitmentDuration(), cloudFacade.earliestAcceptedStart(reservation)));
             }
             log.debug("Capacity reservation {} can no longer start at {} with this provider; asking for {} instead",
                     reservation.getId(), reservation.getStartDate(), start);
@@ -257,16 +255,16 @@ public class CapacityReservationStateProcessor {
 
     private void recordGrantedCommitment(final CapacityReservation reservation,
                                          final CloudCapacityReservation cloud) {
-        Optional.ofNullable(cloud.getGrantedCommitmentSeconds())
-                .filter(granted -> !granted.equals(reservation.getGrantedCommitmentSeconds()))
+        Optional.ofNullable(cloud.getGrantedCommitmentDuration())
+                .filter(granted -> !granted.equals(reservation.getGrantedCommitmentDuration()))
                 .ifPresent(granted -> {
-                    if (reservation.getDurationHours() != null
-                            && granted < (long) reservation.getDurationHours() * SECONDS_PER_HOUR) {
-                        log.warn("Capacity reservation {} was granted a commitment of {}s, shorter than the {}h "
+                    if (reservation.getCommitmentDuration() != null
+                            && granted < reservation.getCommitmentDuration()) {
+                        log.warn("Capacity reservation {} was granted a commitment of {}s, shorter than the {}s "
                                         + "requested", reservation.getId(), granted,
-                                reservation.getDurationHours());
+                                reservation.getCommitmentDuration());
                     }
-                    reservation.setGrantedCommitmentSeconds(granted);
+                    reservation.setGrantedCommitmentDuration(granted);
                 });
     }
 
@@ -307,13 +305,14 @@ public class CapacityReservationStateProcessor {
         final LocalDateTime currentStart = Optional.ofNullable(reservation.getStartDate())
                 .orElse(reservation.getRequestedStartDate());
         final LocalDateTime nextStart = currentStart.plusDays(SLIDE_WINDOW_STEP_DAYS);
-        final LocalDateTime nextEnd = nextStart.plusHours(reservation.getDurationHours());
+        final LocalDateTime nextEnd = nextStart.plusSeconds(reservation.getCommitmentDuration());
 
         if (nextEnd.isAfter(reservation.getRequestedEndDate())) {
             statusService.transition(reservation, CapacityReservationStatus.FAILED, String.format(
-                    "No available start date between %s and %s for a reservation of %d hours%s",
+                    "No available start date between %s and %s for a commitment of %ds%s",
                     reservation.getRequestedStartDate(), reservation.getRequestedEndDate(),
-                    reservation.getDurationHours(), reason == null ? "" : ". Last provider response: " + reason));
+                    reservation.getCommitmentDuration(),
+                    reason == null ? "" : ". Last provider response: " + reason));
             return;
         }
 

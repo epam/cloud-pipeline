@@ -65,11 +65,11 @@ public class CapacityReservationStateProcessorTest {
     private static final String DATABASE_UNAVAILABLE = "database unavailable";
     private static final String PROVIDER_UNREACHABLE = "provider unreachable";
     private static final int FINALIZING_LEAD_HOURS = 1;
-    private static final int DURATION_HOURS = 24;
+    private static final long COMMITMENT_DURATION = 24 * 3600L;
     private static final int WINDOW_DAYS = 3;
     private static final int MINUTES_LATE = 15;
     private static final int WITHIN_LEAD_MINUTES = 30;
-    private static final long GRANTED_COMMITMENT_SECONDS = 864000L;
+    private static final long GRANTED_COMMITMENT_DURATION = 864000L;
 
     @Mock
     private CapacityReservationService reservationService;
@@ -125,7 +125,7 @@ public class CapacityReservationStateProcessorTest {
 
         assertThat(reservation.getStartDate()).isEqualTo(reservation.getRequestedStartDate());
         assertThat(reservation.getEndDate())
-                .isEqualTo(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+                .isEqualTo(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
     }
 
     @Test
@@ -144,7 +144,7 @@ public class CapacityReservationStateProcessorTest {
         processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
 
         assertThat(reservation.getStartDate()).isEqualTo(expectedStart);
-        assertThat(reservation.getEndDate()).isEqualTo(expectedStart.plusHours(DURATION_HOURS));
+        assertThat(reservation.getEndDate()).isEqualTo(expectedStart.plusSeconds(COMMITMENT_DURATION));
         assertThat(reservation.getAttempt()).isEqualTo(attemptBefore);
     }
 
@@ -227,7 +227,7 @@ public class CapacityReservationStateProcessorTest {
         final CapacityReservation reservation = approved();
         final LocalDateTime chosen = reservation.getRequestedStartDate().plusDays(2);
         reservation.setStartDate(chosen);
-        reservation.setEndDate(chosen.plusHours(DURATION_HOURS));
+        reservation.setEndDate(chosen.plusSeconds(COMMITMENT_DURATION));
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         when(cloudFacade.earliestAcceptedStart(reservation)).thenReturn(chosen.minusMinutes(1));
         givenSubmissionReturns(CloudCapacityReservation.builder()
@@ -373,7 +373,7 @@ public class CapacityReservationStateProcessorTest {
         processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
 
         assertThat(reservation.getStartDate()).isEqualTo(reported);
-        assertThat(reservation.getEndDate()).isEqualTo(reported.plusHours(DURATION_HOURS));
+        assertThat(reservation.getEndDate()).isEqualTo(reported.plusSeconds(COMMITMENT_DURATION));
         verify(statusService)
                 .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
     }
@@ -382,7 +382,7 @@ public class CapacityReservationStateProcessorTest {
     public void shouldTakeTheWindowTheProviderReportsWhenItReportsAnEndDate() {
         final CapacityReservation reservation = approved();
         final LocalDateTime start = reservation.getRequestedStartDate();
-        final LocalDateTime end = start.plusHours(DURATION_HOURS).minusHours(1);
+        final LocalDateTime end = start.plusSeconds(COMMITMENT_DURATION).minusHours(1);
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         givenSubmissionReturns(CloudCapacityReservation.builder()
                 .cloudReservationId(CLOUD_ID)
@@ -414,14 +414,14 @@ public class CapacityReservationStateProcessorTest {
                 .isEqualTo(reported.plusDays(CapacityReservationStateProcessor.SLIDE_WINDOW_STEP_DAYS));
         assertThat(reservation.getEndDate())
                 .isEqualTo(reported.plusDays(CapacityReservationStateProcessor.SLIDE_WINDOW_STEP_DAYS)
-                        .plusHours(DURATION_HOURS));
+                        .plusSeconds(COMMITMENT_DURATION));
         verify(cloudFacade, never()).create(any());
     }
 
     @Test
     public void shouldFailTheRequestWhenTheSubmissionIsRefusedAndTheWindowIsSpent() {
         final CapacityReservation reservation = approved();
-        reservation.setRequestedEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+        reservation.setRequestedEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
         givenSubmissionReturns(CloudCapacityReservation.builder()
                 .cloudReservationId(CLOUD_ID)
@@ -558,7 +558,7 @@ public class CapacityReservationStateProcessorTest {
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.ACTIVE)
                 .startDate(start)
-                .endDate(start.plusHours(DURATION_HOURS))
+                .endDate(start.plusSeconds(COMMITMENT_DURATION))
                 .availabilityZone(ZONE)
                 .build());
 
@@ -625,18 +625,18 @@ public class CapacityReservationStateProcessorTest {
         givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.SCHEDULED)
-                .grantedCommitmentSeconds(GRANTED_COMMITMENT_SECONDS)
+                .grantedCommitmentDuration(GRANTED_COMMITMENT_DURATION)
                 .build());
 
         processor.poll(RESERVATION_ID, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
 
-        assertThat(reservation.getGrantedCommitmentSeconds()).isEqualTo(GRANTED_COMMITMENT_SECONDS);
+        assertThat(reservation.getGrantedCommitmentDuration()).isEqualTo(GRANTED_COMMITMENT_DURATION);
     }
 
     @Test
     public void shouldKeepAGrantedCommitmentThatALaterPollOmits() {
         final CapacityReservation reservation = scheduled();
-        reservation.setGrantedCommitmentSeconds(GRANTED_COMMITMENT_SECONDS);
+        reservation.setGrantedCommitmentDuration(GRANTED_COMMITMENT_DURATION);
         givenStatus(CapacityReservationStatus.SCHEDULED, reservation);
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.SCHEDULED)
@@ -644,7 +644,7 @@ public class CapacityReservationStateProcessorTest {
 
         processor.poll(RESERVATION_ID, CapacityReservationStatus.SCHEDULED);
 
-        assertThat(reservation.getGrantedCommitmentSeconds()).isEqualTo(GRANTED_COMMITMENT_SECONDS);
+        assertThat(reservation.getGrantedCommitmentDuration()).isEqualTo(GRANTED_COMMITMENT_DURATION);
     }
 
     @Test
@@ -783,7 +783,7 @@ public class CapacityReservationStateProcessorTest {
     @Test
     public void shouldFailWhenTheWindowIsExhausted() {
         final CapacityReservation reservation = scheduled();
-        reservation.setStartDate(reservation.getRequestedEndDate().minusHours(DURATION_HOURS));
+        reservation.setStartDate(reservation.getRequestedEndDate().minusSeconds(COMMITMENT_DURATION));
         givenStatus(CapacityReservationStatus.SCHEDULED, reservation);
         when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
                 .state(CloudCapacityReservationState.UNSUPPORTED)
@@ -953,7 +953,7 @@ public class CapacityReservationStateProcessorTest {
         final CapacityReservation reservation = CapacityReservationCreatorUtils.getReservation(POOL_ID);
         reservation.setId(RESERVATION_ID);
         reservation.setStatus(CapacityReservationStatus.APPROVED);
-        reservation.setDurationHours(DURATION_HOURS);
+        reservation.setCommitmentDuration(COMMITMENT_DURATION);
         reservation.setRequestedStartDate(DateUtils.nowUTC().plusDays(1));
         reservation.setRequestedEndDate(DateUtils.nowUTC().plusDays(1 + WINDOW_DAYS));
         reservation.setStartDate(null);
@@ -966,7 +966,7 @@ public class CapacityReservationStateProcessorTest {
         reservation.setStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
         reservation.setCloudReservationId(CLOUD_ID);
         reservation.setStartDate(reservation.getRequestedStartDate());
-        reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+        reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
         return reservation;
     }
 
@@ -975,7 +975,7 @@ public class CapacityReservationStateProcessorTest {
         reservation.setStatus(CapacityReservationStatus.SCHEDULED);
         reservation.setCloudReservationId(CLOUD_ID);
         reservation.setStartDate(reservation.getRequestedStartDate());
-        reservation.setEndDate(reservation.getRequestedStartDate().plusHours(DURATION_HOURS));
+        reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
         return reservation;
     }
 
