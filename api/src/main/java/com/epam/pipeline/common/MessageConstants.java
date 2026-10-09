@@ -1000,6 +1000,36 @@ public final class MessageConstants {
     public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
             "error.platform.usage.credits.disabled";
 
+    /**
+     * Async tasks
+     */
+    public static final String ERROR_ASYNC_TASK_ID_REQUIRED = "error.async.task.id.required";
+    public static final String ERROR_ASYNC_TASK_TYPE_REQUIRED = "error.async.task.type.required";
+    public static final String ERROR_ASYNC_TASK_OWNER_REQUIRED = "error.async.task.owner.required";
+    public static final String ERROR_ASYNC_TASK_STATUS_REQUIRED = "error.async.task.status.required";
+    public static final String ERROR_ASYNC_TASK_NOT_FOUND = "error.async.task.not.found";
+    public static final String ERROR_ASYNC_TASK_TRANSITION_NOT_ALLOWED =
+            "error.async.task.transition.not.allowed";
+    public static final String ERROR_ASYNC_TASK_CHANGED_MEANWHILE = "error.async.task.changed.meanwhile";
+    public static final String ERROR_ASYNC_TASK_ALREADY_FINISHED = "error.async.task.already.finished";
+    public static final String ERROR_ASYNC_TASK_RESULT_INVALID = "error.async.task.result.invalid";
+    public static final String ERROR_ASYNC_TASK_PAYLOAD_TYPE_MISMATCH =
+            "error.async.task.payload.type.mismatch";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_PATHS_REQUIRED =
+            "error.async.task.archive.paths.required";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_NAME_INVALID =
+            "error.async.task.archive.name.invalid";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_NOT_READY = "error.async.task.archive.not.ready";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_STORAGE_NOT_CONFIGURED =
+            "error.async.task.archive.storage.not.configured";
+    public static final String ERROR_ASYNC_TASK_USER_QUOTA_EXCEEDED =
+            "error.async.task.user.quota.exceeded";
+    public static final String ERROR_ASYNC_TASK_PAYLOAD_REQUIRED = "error.async.task.payload.required";
+    public static final String ERROR_ASYNC_TASK_PAYLOAD_UNEXPECTED =
+            "error.async.task.payload.unexpected";
+    public static final String ERROR_ASYNC_TASK_STATUS_NOT_REPORTABLE =
+            "error.async.task.status.not.reportable";
+
     private MessageConstants() {
         // no-op
     }

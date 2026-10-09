@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationM
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
@@ -208,6 +209,19 @@ public class SystemPreferences {
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
         "storage.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<DownloadArchiveConfig> DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG =
+        new ObjectPreference<>(
+            "storage.download.archive.config",
+            DownloadArchiveConfig.builder()
+                .maxSizeBytes(107374182400L)
+                .ttlDays(7)
+                .maxUserTasks(3)
+                .workerMaxRunningMinutes(240)
+                .stuckTasksThresholdMinutes(360)
+                .build(),
+            new TypeReference<DownloadArchiveConfig>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<DownloadArchiveConfig>() {}));
     public static final IntPreference PROFILE_TEMP_CREDENTIALS_DURATION = new IntPreference(
             "profile.temp.credentials.duration", 3600, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_MOUNTS_PER_GB_RATIO = new IntPreference(

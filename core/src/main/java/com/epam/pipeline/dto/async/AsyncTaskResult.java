@@ -1,0 +1,36 @@
+/*
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.dto.async;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+/**
+ * What the executor produced. Written by the executor when it reports success, and only then.
+ *
+ * <p>Registered per {@link AsyncTaskType} the same way {@link AsyncTaskParams} is, and under the same
+ * names.</p>
+ */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = DownloadArchiveResult.class, name = "DOWNLOAD_ARCHIVE")
+    })
+public interface AsyncTaskResult {
+    @JsonIgnore
+    AsyncTaskType getType();
+}
