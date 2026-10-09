@@ -96,5 +96,25 @@ class ExecuteCommandReturnsTextTest(unittest.TestCase):
         self.assertEqual('failure-message', stderr.rstrip(wms.NEWLINE))
 
 
+class CurrentUtcTimeMillisTest(unittest.TestCase):
+    """Covers current_utc_time_millis() (issue #4531). current_utc_time() is tz-aware (via the
+    _UTC shim added in commit 9f85dc0533's Python 3 pass), but current_utc_time_millis() subtracted
+    a naive datetime(1970, 1, 1) from it, raising "can't subtract offset-naive and offset-aware
+    datetimes" - reproduced in production the first time a real filesystem event was dispatched
+    (Event.__init__ -> current_utc_time_millis()), on both Python 2 and 3 alike."""
+
+    def test_does_not_raise(self):
+        millis = wms.current_utc_time_millis()
+        self.assertIsInstance(millis, int)
+
+    def test_returns_a_plausible_epoch_millis_value(self):
+        # Loose sanity bound (year ~2001 to ~2192 in epoch millis) - catches a wrong reference
+        # point (e.g. "millis since 1970" accidentally computed as "millis since now") without
+        # pinning an exact value that would make this test flaky.
+        millis = wms.current_utc_time_millis()
+        self.assertGreater(millis, 1000000000000)
+        self.assertLess(millis, 7000000000000)
+
+
 if __name__ == '__main__':
     unittest.main()

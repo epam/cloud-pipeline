@@ -151,7 +151,9 @@ def current_utc_time():
 
 
 def current_utc_time_millis():
-    return int((current_utc_time() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
+    # current_utc_time() is tz-aware (via _UTC above) - the epoch reference must be too, or the
+    # subtraction raises "can't subtract offset-naive and offset-aware datetimes".
+    return int((current_utc_time() - datetime.datetime(1970, 1, 1, tzinfo=_UTC)).total_seconds() * 1000)
 
 
 def current_utc_time_str():
