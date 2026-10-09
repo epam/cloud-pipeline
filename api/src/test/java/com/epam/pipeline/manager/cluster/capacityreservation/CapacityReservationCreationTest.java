@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import com.epam.pipeline.entity.preference.Preference;
@@ -39,6 +40,7 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -82,6 +84,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final String RESERVATION_TARGET = "CapacityReservationSpecification";
     private static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
     private static final String OWN_SPEC_KEY = "IamInstanceProfile";
+    private static final Long SCHEDULE_ID = 5L;
     private static final String PROVIDER_ANSWER = "the provider had no capacity at that date";
     private static final String OWN_INIT_SCRIPT = "/opt/api/scripts/init_custom.sh";
     private static final int INSTANCE_VCPUS = 192;
@@ -124,6 +127,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @MockBean
     private InstanceOfferManager instanceOfferManager;
 
+    @MockBean
+    private NodeScheduleManager scheduleManager;
+
     @BeforeEach
     public void setUp() {
         final AwsRegion region = new AwsRegion();
@@ -133,6 +139,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         when(cloudFacade.launchSpecification(any())).thenAnswer(invocation -> Collections.singletonMap(
                 RESERVATION_TARGET, ((CapacityReservation) invocation.getArguments()[0]).getCloudReservationId()));
         when(cloudFacade.isSupported(CloudProvider.AWS)).thenReturn(true);
+        when(scheduleManager.load(SCHEDULE_ID)).thenReturn(new NodeSchedule());
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         givenVcpusPerInstance(INSTANCE_VCPUS);
@@ -576,6 +583,30 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
                 .hasMessageContaining("Cannot change the count");
         assertThat(poolDao.find(reservation.getNodePoolId()).orElseThrow(AssertionError::new).getCount())
                 .isEqualTo(INSTANCE_COUNT);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRefuseAReservationPoolThatFollowsASchedule() {
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setScheduleId(SCHEDULE_ID);
+
+        assertThatThrownBy(() -> poolManager.create(vo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot follow a schedule");
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseGivingAReservationPoolASchedule() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final NodePoolVO edit = editOf(created.getId());
+        edit.setScheduleId(SCHEDULE_ID);
+
+        assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot follow a schedule");
+        assertThat(poolOf(created).getSchedule()).isNull();
     }
 
     @Test

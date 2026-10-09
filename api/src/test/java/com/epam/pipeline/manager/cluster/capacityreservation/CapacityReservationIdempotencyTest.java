@@ -52,8 +52,8 @@ public class CapacityReservationIdempotencyTest {
 
     private static final Long RESERVATION_ID = 42L;
     private static final String EXISTING_CLOUD_ID = "cr-already-bought";
-    private static final String FIRST_ATTEMPT_TOKEN = "cp-cr-42-0";
-    private static final String SECOND_ATTEMPT_TOKEN = "cp-cr-42-1";
+    private static final String FIRST_ATTEMPT_TOKEN = "cp-capacity-reservation-42-0";
+    private static final String SECOND_ATTEMPT_TOKEN = "cp-capacity-reservation-42-1";
     private static final int PROVIDER_LEAD_DAYS = 5;
 
     @Mock

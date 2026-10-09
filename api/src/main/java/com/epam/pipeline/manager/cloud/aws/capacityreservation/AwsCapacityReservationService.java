@@ -77,9 +77,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AwsCapacityReservationService implements CapacityReservationCloudService {
 
-    static final String CLIENT_TOKEN_TAG = "CP-capacity-reservation-client-token";
+    static final String CLIENT_TOKEN_TAG = "cp-capacity-reservation-client-token";
 
-    static final String RESERVATION_ID_TAG = "CP-capacity-reservation-id";
+    static final String RESERVATION_ID_TAG = "cp-capacity-reservation-id";
 
     private static final String NAME_TAG = "Name";
     public static final int MINIMUM_LEAD_DAYS = 5;
@@ -275,7 +275,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     static String cancellationToken(final CapacityReservation reservation) {
-        return String.format("cp-cr-cancel-%d-%d", reservation.getId(), reservation.getAttempt());
+        return String.format("cp-capacity-reservation-cancel-%d-%d", reservation.getId(), reservation.getAttempt());
     }
 
     private Optional<software.amazon.awssdk.services.ec2.model.CapacityReservation> findById(

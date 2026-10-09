@@ -18,6 +18,9 @@ package com.epam.pipeline.manager.cluster.autoscale;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.PoolFilterOperator;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -35,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,6 +53,7 @@ public class ReassignHandlerTest {
 
     private static final String WINDOWS = "windows";
     private static final String POOL_NODE_ID = "p-12345";
+    private static final String ANOTHER_OWNER = "ANOTHER_USER";
 
     private final AutoscalerService autoscalerService = mock(AutoscalerService.class);
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
@@ -119,6 +124,34 @@ public class ReassignHandlerTest {
         assertThat(tryReassignOnto(pool)).isTrue();
     }
 
+    @Test
+    public void shouldReassignAFilteredPoolsNodeToThePoolsOwner() {
+        final NodePool pool = filteredPool();
+        pool.setOwner(TEST_STRING.toLowerCase());
+        doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
+
+        assertThat(tryReassignOnto(pool)).isTrue();
+    }
+
+    @Test
+    public void shouldNotReassignAFilteredPoolsNodeToSomeoneElsesRun() {
+        final NodePool pool = filteredPool();
+        pool.setOwner(ANOTHER_OWNER);
+
+        assertThat(tryReassignOnto(pool)).isFalse();
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldNotGiveAReservationPoolsOwnerANodeOutsideThePoolsWindow() {
+        final NodePool pool = filteredPool();
+        pool.setOwner(TEST_STRING);
+        pool.setCapacityReservation(true);
+
+        assertThat(tryReassignOnto(pool)).isFalse();
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
     private boolean tryReassignOnto(final NodePool pool) {
         final PipelineRun pipelineRun = getPipelineRun(ID);
         pipelineRun.setPipelineRunParameters(Collections.emptyList());
@@ -139,6 +172,14 @@ public class ReassignHandlerTest {
         pool.setId(ID);
         pool.setInstanceType("m5.large");
         pool.setCount(0);
+        return pool;
+    }
+
+    /** A pool whose filter matches no run: this test registers no filter handler to match one with. */
+    private static NodePool filteredPool() {
+        final NodePool pool = inactivePool();
+        pool.setFilter(new PoolFilter(PoolFilterOperator.AND,
+                Collections.singletonList(mock(PoolInstanceFilter.class))));
         return pool;
     }
 

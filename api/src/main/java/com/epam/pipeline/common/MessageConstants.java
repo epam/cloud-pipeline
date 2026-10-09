@@ -772,6 +772,8 @@ public final class MessageConstants {
             "error.capacity.reservation.provider.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED =
             "error.capacity.reservation.autoscaling.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED =
+            "error.capacity.reservation.schedule.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_NOT_TERMINAL =
             "error.capacity.reservation.not.terminal";
     public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
