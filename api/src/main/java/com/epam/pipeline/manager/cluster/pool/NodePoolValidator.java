@@ -133,6 +133,8 @@ public class NodePoolValidator {
         validateUnchanged(existing, "price type", existing.getPriceType(), vo.getPriceType());
         Assert.isTrue(!vo.isAutoscaled(),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+        Assert.isNull(vo.getScheduleId(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED));
         if (StringUtils.isNotBlank(vo.getInstanceImage())) {
             validateUnchanged(existing, "instance image", existing.getInstanceImage(), vo.getInstanceImage());
         }
@@ -158,6 +160,8 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
         Assert.isTrue(!vo.isAutoscaled(),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+        Assert.isNull(vo.getScheduleId(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED));
 
         final CapacityReservationType type = request.getReservationType();
         Assert.notNull(type,

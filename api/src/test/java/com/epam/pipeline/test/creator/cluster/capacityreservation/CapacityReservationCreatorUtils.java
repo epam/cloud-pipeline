@@ -35,7 +35,7 @@ public final class CapacityReservationCreatorUtils {
     public static final String OWNER = "user";
     public static final String AVAILABILITY_ZONE = "us-east-1c";
     public static final String CLOUD_RESERVATION_ID = "cr-0123456789abcdef0";
-    public static final String CLIENT_TOKEN = "cp-cr-1-0";
+    public static final String CLIENT_TOKEN = "cp-capacity-reservation-1-0";
     public static final String STATUS_REASON = "Capacity unavailable for the requested date";
     public static final long GRANTED_COMMITMENT_DURATION = 864000L;
     private static final int REQUEST_LEAD_DAYS = 7;
