@@ -1,4 +1,4 @@
-# [Manual] Do not send notifications if a run's status did not change
+# Do not send notifications if a run's status did not change
 
 Test verifies that notification isn't sent if a run's status doesn't change.
 
