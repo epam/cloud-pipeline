@@ -1372,65 +1372,6 @@ function api_register_pipeline {
     print_ok "Pipeline $pipeline_name is registered with ID $pipeline_id"
 }
 
-function api_register_demo_pipelines {
-    local demo_pipelines_path="${1:-$OTHER_PACKAGES_PATH/pipe-demo}"
-
-    for demo_pipeline_spec_file in $(find $demo_pipelines_path -type f -name "spec.json"); do
-        local demo_pipeline_dir=$(dirname $demo_pipeline_spec_file)
-
-        # Validate pipeline structure. At least we need src/ directory and a config.json
-        local demo_pipeline_config_json="$demo_pipeline_dir/config.json"
-        if [ ! -f "$demo_pipeline_config_json" ] || [ ! -d "$demo_pipeline_dir/src" ]; then
-            print_warn "Demo pipeline directory at ${demo_pipeline_dir} is malformed: it shall container src/ directory and a config.json at least. This pipeline will be skipped"
-            continue
-        fi
-
-        local demo_pipeline_spec_json=$(<$demo_pipeline_spec_file)
-        local demo_pipeline_parent_folder_name=$(jq -r '.parent_folder // "Pipelines"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_name=$(jq -r '.name // "NA"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_description=$(jq -r '.description // ""' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_version=$(jq -r '.version // "v1"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_grant_role_name=$(jq -r '.grant_role_name // "ROLE_USER"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_grant_role_permissions=$(jq -r '.grant_role_permissions // "21"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_cloud_provider_instance_type=$(jq -r ".${CP_CLOUD_PLATFORM} // \"NA\"" <<< "$demo_pipeline_spec_json")
-
-        if [ -z "$demo_pipeline_description" ]; then
-            print_warn "Demo pipeline at $demo_pipeline_dir does not contain a descripton in the spec.json. This pipeline will be skipped"
-        fi
-
-        if [ ! "$demo_pipeline_cloud_provider_instance_type" ] || [ "$demo_pipeline_cloud_provider_instance_type" == "NA" ]; then
-            print_warn "Demo pipeline at $demo_pipeline_dir is not support for the current cloud environment (${CP_CLOUD_PLATFORM}). This pipeline will be skipped"
-            continue
-        fi
-
-        # Update the pipeline's config.json with the environment variables (e.g. cloud-specific instance/vm type)
-        export CP_CONFIG_JSON_INSTANCE_TYPE="$demo_pipeline_cloud_provider_instance_type"
-        local demo_pipeline_config_json_contents="$(envsubst < "$demo_pipeline_config_json")"
-        cat <<< "$demo_pipeline_config_json_contents" > "$demo_pipeline_config_json"
-
-        print_info "Creating parent folder $demo_pipeline_parent_folder_name for the pipeline $demo_pipeline_name"
-        api_create_folder_path "$demo_pipeline_parent_folder_name"
-        if [ $? -ne 0 ]; then
-            print_warn "Errors occured while creating parent folder $demo_pipeline_parent_folder_name for the pipeline ${demo_pipeline_name}. This pipeline will be skipped"
-            continue
-        fi
-
-        api_register_pipeline   "$demo_pipeline_parent_folder_name" \
-                                "$demo_pipeline_name" \
-                                "$demo_pipeline_description" \
-                                "$demo_pipeline_dir" \
-                                "$demo_pipeline_grant_role_name" \
-                                "$demo_pipeline_grant_role_permissions" \
-                                "$demo_pipeline_version"
-
-        if [ $? -ne 0 ]; then
-            print_err "Error occured while registering a demo pipeline $demo_pipeline_name (see any output above)"
-            return 1
-        fi
-    done
-    unset CP_CONFIG_JSON_INSTANCE_TYPE
-}
-
 function api_register_data_transfer_pipeline {
     local dt_role_grant="${1:-ROLE_USER}"
     local dt_role_permissions="26"
