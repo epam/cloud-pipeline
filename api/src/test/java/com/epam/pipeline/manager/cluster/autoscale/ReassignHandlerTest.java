@@ -21,8 +21,10 @@ import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilter;
 import com.epam.pipeline.entity.cluster.pool.filter.PoolFilterOperator;
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilter;
+import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilterType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -125,8 +127,8 @@ public class ReassignHandlerTest {
     }
 
     @Test
-    public void shouldReassignAFilteredPoolsNodeToThePoolsOwner() {
-        final NodePool pool = filteredPool();
+    public void shouldReassignAPoolsNodeToItsOwnerWhateverTheOwnershipFilterSays() {
+        final NodePool pool = filteredPool(PoolInstanceFilterType.RUN_OWNER);
         pool.setOwner(TEST_STRING.toLowerCase());
         doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
 
@@ -134,8 +136,26 @@ public class ReassignHandlerTest {
     }
 
     @Test
+    public void shouldReassignAPoolsNodeToItsOwnerWhateverTheOwnerGroupFilterSays() {
+        final NodePool pool = filteredPool(PoolInstanceFilterType.RUN_OWNER_GROUP);
+        pool.setOwner(TEST_STRING);
+        doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
+
+        assertThat(tryReassignOnto(pool)).isTrue();
+    }
+
+    @Test
+    public void shouldHoldAFilterAboutTheRunItselfAgainstThePoolsOwnerToo() {
+        final NodePool pool = filteredPool(PoolInstanceFilterType.DOCKER_IMAGE);
+        pool.setOwner(TEST_STRING);
+
+        assertThat(tryReassignOnto(pool)).isFalse();
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
     public void shouldNotReassignAFilteredPoolsNodeToSomeoneElsesRun() {
-        final NodePool pool = filteredPool();
+        final NodePool pool = filteredPool(PoolInstanceFilterType.RUN_OWNER);
         pool.setOwner(ANOTHER_OWNER);
 
         assertThat(tryReassignOnto(pool)).isFalse();
@@ -144,7 +164,7 @@ public class ReassignHandlerTest {
 
     @Test
     public void shouldNotGiveAReservationPoolsOwnerANodeOutsideThePoolsWindow() {
-        final NodePool pool = filteredPool();
+        final NodePool pool = filteredPool(PoolInstanceFilterType.RUN_OWNER);
         pool.setOwner(TEST_STRING);
         pool.setCapacityReservation(true);
 
@@ -166,20 +186,23 @@ public class ReassignHandlerTest {
                 String.valueOf(ID), ID, request, Collections.singletonList(POOL_NODE_ID));
     }
 
-    /** A pool that is not active now - its count is 0. */
+    /** A pool that is not active now: it has nodes, and its window has passed. */
     private static NodePool inactivePool() {
         final NodePool pool = new NodePool();
         pool.setId(ID);
         pool.setInstanceType("m5.large");
-        pool.setCount(0);
+        pool.setCount(1);
+        pool.setStartDate(DateUtils.nowUTC().minusDays(2));
+        pool.setEndDate(DateUtils.nowUTC().minusMinutes(1));
         return pool;
     }
 
-    /** A pool whose filter matches no run: this test registers no filter handler to match one with. */
-    private static NodePool filteredPool() {
+    /** A pool with one filter of the given type that matches no run: no filter handler is registered here. */
+    private static NodePool filteredPool(final PoolInstanceFilterType type) {
+        final PoolInstanceFilter filter = mock(PoolInstanceFilter.class);
+        doReturn(type).when(filter).getType();
         final NodePool pool = inactivePool();
-        pool.setFilter(new PoolFilter(PoolFilterOperator.AND,
-                Collections.singletonList(mock(PoolInstanceFilter.class))));
+        pool.setFilter(new PoolFilter(PoolFilterOperator.AND, Collections.singletonList(filter)));
         return pool;
     }
 

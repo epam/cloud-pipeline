@@ -156,8 +156,9 @@ public class ReassignHandler {
     }
 
     /**
-     * Whether a pool's free node may take this run. A filter narrows whose runs the pool serves, but not its own
-     * owner's: a pool's owner reuses its nodes whatever the filter says.
+     * Whether a pool's free node may take this run. A filter about whose runs the pool serves does not hold against
+     * the pool's own owner, who reuses its nodes whatever it says; a filter about the run itself - its image, its
+     * pipeline, its parameters - holds for the owner as for anyone else.
      */
     private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {
         final PoolFilter filter = pool.getFilter();
@@ -165,7 +166,7 @@ public class ReassignHandler {
             return true;
         }
         return pipelineRun
-                .map(run -> ownsPool(pool, run) || matchRun(filter, run))
+                .map(run -> matchRun(pool, filter, run))
                 .orElse(false);
     }
 
@@ -174,19 +175,27 @@ public class ReassignHandler {
                 && StringUtils.equalsIgnoreCase(pool.getOwner(), run.getOwner());
     }
 
-    private boolean matchRun(final PoolFilter filter, final PipelineRun run) {
+    private boolean matchRun(final NodePool pool, final PoolFilter filter, final PipelineRun run) {
         final List<PoolInstanceFilter> filters = filter.filters();
         switch (filter.operator()) {
             case AND:
-                return filters.stream().allMatch(f -> matchRunToFilter(f, run));
+                return filters.stream().allMatch(f -> matchRunToFilter(pool, f, run));
             case OR:
-                return filters.stream().anyMatch(f -> matchRunToFilter(f, run));
+                return filters.stream().anyMatch(f -> matchRunToFilter(pool, f, run));
             default:
                 throw new IllegalArgumentException("Unsupported filter operator: " + filter.operator());
         }
     }
 
-    private boolean matchRunToFilter(final PoolInstanceFilter filter, final PipelineRun run) {
+    private boolean matchRunToFilter(final NodePool pool, final PoolInstanceFilter filter,
+                                     final PipelineRun run) {
+        final PoolInstanceFilterType type = filter.getType();
+        if ((PoolInstanceFilterType.RUN_OWNER == type || PoolInstanceFilterType.RUN_OWNER_GROUP == type)
+                && ownsPool(pool, run)) {
+            log.debug("Run {} belongs to the owner of the pool, so pool filter {} does not apply to it.",
+                    run.getId(), filter);
+            return true;
+        }
         log.debug("Matching run {} to filter pool filter {}.", run.getId(), filter);
         return Optional.ofNullable(filterHandlers.get(filter.getType()))
                 .map(handler -> handler.matches(filter, run))
