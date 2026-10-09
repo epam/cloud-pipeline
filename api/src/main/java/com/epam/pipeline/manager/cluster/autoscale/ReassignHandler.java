@@ -155,14 +155,23 @@ public class ReassignHandler {
         return !pool.isCapacityReservation() || pool.isActive(DateUtils.nowUTC());
     }
 
+    /**
+     * Whether a pool's free node may take this run. A filter narrows whose runs the pool serves, but not its own
+     * owner's: a pool's owner reuses its nodes whatever the filter says.
+     */
     private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {
         final PoolFilter filter = pool.getFilter();
         if (filter == null || filter.isEmpty()) {
             return true;
         }
         return pipelineRun
-                .map(run -> matchRun(filter, run))
+                .map(run -> ownsPool(pool, run) || matchRun(filter, run))
                 .orElse(false);
+    }
+
+    private boolean ownsPool(final NodePool pool, final PipelineRun run) {
+        return StringUtils.isNotBlank(pool.getOwner())
+                && StringUtils.equalsIgnoreCase(pool.getOwner(), run.getOwner());
     }
 
     private boolean matchRun(final PoolFilter filter, final PipelineRun run) {

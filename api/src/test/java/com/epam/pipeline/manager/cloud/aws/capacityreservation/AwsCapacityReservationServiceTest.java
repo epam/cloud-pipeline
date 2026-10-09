@@ -85,7 +85,7 @@ public class AwsCapacityReservationServiceTest {
     private static final String REGION_CODE = "eu-central-1";
     private static final String ZONE = "eu-central-1b";
     private static final String CLOUD_ID = "cr-0123456789abcdef0";
-    private static final String TOKEN = "cp-cr-10-0";
+    private static final String TOKEN = "cp-capacity-reservation-10-0";
     private static final long COMMITMENT_DURATION = 24 * 3600L;
     private static final int INSTANCE_COUNT = 8;
     private static final int LEAD_DAYS = 7;

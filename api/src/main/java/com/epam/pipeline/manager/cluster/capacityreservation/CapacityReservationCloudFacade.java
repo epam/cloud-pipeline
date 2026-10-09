@@ -104,7 +104,7 @@ public class CapacityReservationCloudFacade {
     }
 
     static String clientToken(final CapacityReservation reservation) {
-        return String.format("cp-cr-%d-%d", reservation.getId(), reservation.getAttempt());
+        return String.format("cp-capacity-reservation-%d-%d", reservation.getId(), reservation.getAttempt());
     }
 
     public boolean isSupported(final CloudProvider provider) {
