@@ -20,7 +20,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static com.epam.pipeline.test.creator.notification.NotificationCreatorUtils.getNotificationMessage;

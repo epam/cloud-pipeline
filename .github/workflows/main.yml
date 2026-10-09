@@ -8,6 +8,7 @@ on:
     branches:
       - develop
       - vscode-ext
+      - java21_migration
       # - 'release/**'
       # - 'stage/**'
 
@@ -24,7 +25,7 @@ jobs:
       - uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          java-version: '8'
+          java-version: '21'
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
@@ -53,7 +54,7 @@ jobs:
       - uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          java-version: '8'
+          java-version: '21'
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9'
@@ -74,7 +75,7 @@ jobs:
       - uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          java-version: '8'
+          java-version: '21'
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}

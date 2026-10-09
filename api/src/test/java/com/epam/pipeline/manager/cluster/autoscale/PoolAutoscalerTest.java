@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,8 +26,8 @@ import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -42,8 +42,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,9 +65,8 @@ public class PoolAutoscalerTest {
     @Mock
     private PreferenceManager preferenceManager;
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach    public void setUp() {
+        MockitoAnnotations.openMocks(this);
         poolAutoscaler = new PoolAutoscaler(poolManager, poolMapper, kubernetesManager, preferenceManager);
         doReturn(Optional.empty()).when(preferenceManager).findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE);
     }
@@ -81,7 +80,7 @@ public class PoolAutoscalerTest {
 
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() + pool.getScaleStep());
-        verify(poolManager).createOrUpdate(eq(vo));
+        verify(poolManager).update(eq(pool.getId()), eq(vo));
     }
 
     @Test
@@ -91,7 +90,7 @@ public class PoolAutoscalerTest {
 
         poolAutoscaler.adjustPoolSizes();
 
-        verify(poolManager, times(0)).createOrUpdate(any());
+        verify(poolManager, times(0)).update(any(), any());
     }
 
     @Test
@@ -103,7 +102,17 @@ public class PoolAutoscalerTest {
 
         final NodePoolVO vo = poolMapper.toVO(pool);
         vo.setCount(pool.getCount() - pool.getScaleStep());
-        verify(poolManager).createOrUpdate(eq(vo));
+        verify(poolManager).update(eq(pool.getId()), eq(vo));
+    }
+
+    @Test
+    public void shouldNotScaleAPoolBackedByACapacityReservation() {
+        initKubeResources(RUN_ID_1, RUN_ID_2, RUN_ID_3, RUN_ID_4);
+        initPool().setCapacityReservation(true);
+
+        poolAutoscaler.adjustPoolSizes();
+
+        verify(poolManager, times(0)).update(any(), any());
     }
 
     private List<Node> buildNodes(final Long poolId, final List<String> nodeIds) {

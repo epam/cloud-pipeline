@@ -160,7 +160,7 @@ public class MicrosoftGraphAPINotificationManager implements NotificationManager
         if (message.getToUserId() == null) {
             return Collections.emptyList();
         }
-        final PipelineUser targetUser = userRepository.findOne(message.getToUserId());
+        final PipelineUser targetUser = userRepository.findById(message.getToUserId()).orElse(null);
         if (targetUser == null) {
             log.info("Cannot find user with id {} for message {}", message.getToUserId(), message.getId());
             return Collections.emptyList();

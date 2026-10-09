@@ -22,12 +22,11 @@ import com.epam.pipeline.dts.submission.model.execution.Submission;
 import com.epam.pipeline.dts.submission.rest.dto.SubmissionDTO;
 import com.epam.pipeline.dts.submission.rest.mapper.SubmissionMapper;
 import com.epam.pipeline.dts.submission.service.execution.SubmissionService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,13 +40,9 @@ import java.util.Collection;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.API_STATUS_DESCRIPTION;
-import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.HTTP_STATUS_OK;
-
 @RequestMapping("submission")
-@Api(value = "SGE jobs management")
-@ApiResponses(
-        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-        })
+@Tag(name = "SGE jobs management")
+@ApiResponses(@ApiResponse(description = API_STATUS_DESCRIPTION))
 @RestController
 @RequiredArgsConstructor
 public class SubmissionController extends AbstractRestController {
@@ -56,45 +51,40 @@ public class SubmissionController extends AbstractRestController {
     private final SubmissionMapper submissionMapper;
 
     @PostMapping
-    @ApiOperation(
-            value = "Schedules new SGE job.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Schedules new SGE job.")
     public Result<SubmissionDTO> create(@RequestBody final SubmissionDTO submissionDTO) {
         Submission submission = submissionService.create(submissionMapper.dtoToModel(submissionDTO));
         return Result.success(submissionMapper.modelToDTO(submission));
     }
 
     @GetMapping(path = "/{submissionId}")
-    @ApiOperation(
-            value = "Loads existing submission specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads existing submission specified by ID.")
     public Result<SubmissionDTO> load(@PathVariable final Long submissionId) {
         Submission submission = submissionService.load(submissionId);
         return Result.success(submissionMapper.modelToDTO(submission));
     }
 
     @PutMapping(path = "/stop", params = {"runId"})
-    @ApiOperation(
-            value = "Stops execution of submission specified by runID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Stops execution of submission specified by runID.")
     public Result<SubmissionDTO> stop(@RequestParam final Long runId) {
         Submission submission = submissionService.stop(runId);
         return Result.success(submissionMapper.modelToDTO(submission));
     }
 
     @GetMapping(params = {"runId"})
-    @ApiOperation(
-            value = "Loads existing submission specified by external runID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads existing submission specified by external runID.")
     public Result<SubmissionDTO> loadByRunId(@RequestParam final Long runId) {
         Submission submission = submissionService.loadByRunId(runId);
         return Result.success(submissionMapper.modelToDTO(submission));
     }
 
     @GetMapping
-    @ApiOperation(
-            value = "Loads all active submissions.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all active submissions.")
     public Result<Collection<SubmissionDTO>> loadAllActive() {
         return Result.success(submissionService.loadActive().stream()
                 .map(submissionMapper::modelToDTO)

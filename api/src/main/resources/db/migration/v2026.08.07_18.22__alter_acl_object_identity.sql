@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.acl_object_identity ALTER COLUMN object_id_identity TYPE VARCHAR(256) USING object_id_identity::VARCHAR(256);

@@ -34,7 +34,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 
 /**
  * Utility class for testing help methods
@@ -101,7 +101,7 @@ public final class TestUtils {
         Map<String, Object> loadedProperties = objectMapper.convertValue(loaded, objectMapper.getTypeFactory()
             .constructParametricType(Map.class, String.class, Object.class));
 
-        originProperties.forEach((key, value) -> Assert.assertEquals(value, loadedProperties.get(key)));
+        originProperties.forEach((key, value) -> Assertions.assertEquals(value, loadedProperties.get(key)));
     }
 
     public static void generateScanResult(int criticalVulnerabilitiesCount, int highVulnerabilitiesCount,

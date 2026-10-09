@@ -21,36 +21,68 @@ import com.epam.pipeline.elasticsearch.model.SearchRequestInner;
 import com.epam.pipeline.elasticsearch.model.SearchSourceBuilder;
 import com.epam.pipeline.elasticsearch.model.v7.action.support.IndicesOptionsV7;
 import com.epam.pipeline.elasticsearch.model.v7.search.builder.SearchSourceBuilderV7;
-import lombok.Getter;
-import org.opensearch.common.unit.TimeValue;
-import org.opensearch.search.Scroll;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchRequest;
 
-@Getter
+import java.util.Arrays;
+import java.util.List;
+
 public class SearchRequestV7 implements SearchRequestInner {
 
-    private static final Scroll TIME_SCROLL = new Scroll(new TimeValue(60000));
+    private static final String DEFAULT_SCROLL_KEEPALIVE = "1m";
 
-    private final org.opensearch.action.search.SearchRequest inner;
+    private final List<String> indices;
+    private Boolean allowNoIndices;
+    private Boolean ignoreUnavailable;
+    private Query query;
+    private Integer size;
+    private String scrollKeepAlive;
 
     public SearchRequestV7(final String... indices) {
-        inner = new org.opensearch.action.search.SearchRequest(indices);
+        this.indices = Arrays.asList(indices);
     }
 
     @Override
     public SearchRequestV7 indicesOptions(final IndicesOptionsInner indicesOptions) {
-        inner.indicesOptions(((IndicesOptionsV7) indicesOptions).getInner());
+        final IndicesOptionsV7 opts = (IndicesOptionsV7) indicesOptions;
+        this.allowNoIndices = opts.isAllowNoIndices();
+        this.ignoreUnavailable = opts.isIgnoreUnavailable();
         return this;
     }
 
     @Override
     public SearchRequestV7 source(final SearchSourceBuilder sourceBuilder) {
-        inner.source(((SearchSourceBuilderV7) sourceBuilder.getInner()).getInner());
+        final SearchSourceBuilderV7 inner = (SearchSourceBuilderV7) sourceBuilder.getInner();
+        this.query = inner.getQuery();
+        this.size = inner.getSize();
         return this;
     }
 
     @Override
     public SearchRequestV7 scroll() {
-        inner.scroll(TIME_SCROLL);
+        this.scrollKeepAlive = DEFAULT_SCROLL_KEEPALIVE;
         return this;
+    }
+
+    public SearchRequest build() {
+        return SearchRequest.of(b -> {
+            b.index(indices);
+            if (allowNoIndices != null) {
+                b.allowNoIndices(allowNoIndices);
+            }
+            if (ignoreUnavailable != null) {
+                b.ignoreUnavailable(ignoreUnavailable);
+            }
+            if (query != null) {
+                b.query(query);
+            }
+            if (size != null) {
+                b.size(size);
+            }
+            if (scrollKeepAlive != null) {
+                b.scroll(t -> t.time(scrollKeepAlive));
+            }
+            return b;
+        });
     }
 }

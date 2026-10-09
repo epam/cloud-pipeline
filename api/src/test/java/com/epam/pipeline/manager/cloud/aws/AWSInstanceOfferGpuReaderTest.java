@@ -9,15 +9,15 @@ import com.epam.pipeline.manager.cloud.offer.StaticInstanceOfferReader;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class AWSInstanceOfferGpuReaderTest {
 

@@ -28,19 +28,19 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class S3StorageProviderTest extends AbstractSpringTest {
 
@@ -69,7 +69,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
     @Mock
     private AmazonS3 amazonClient;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         final StorageEventCollector events = mock(StorageEventCollector.class);
 
@@ -93,7 +93,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
         final S3bucketDataStorage storage = new S3bucketDataStorage(1L, BUCKET, BUCKET);
         storage.setRegionId(REGION_ID);
         final String createdBucketName = s3StorageProvider.createStorage(storage);
-        Assert.assertEquals(BUCKET, createdBucketName);
+        assertEquals(BUCKET, createdBucketName);
 
         s3StorageProvider.postCreationProcessing(storage);
 

@@ -20,7 +20,6 @@ import com.amazonaws.util.StringInputStream;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -29,7 +28,7 @@ import com.epam.pipeline.entity.metadata.MetadataFilter;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.metadata.MetadataCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -46,9 +45,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_LIST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_LONG_SET;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_MAP;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -148,19 +146,6 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailDeleteMetadataClass() {
         performUnauthorizedRequest(get(METADATA_CLASSES_LOAD_URL));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldUpdateExternalClass() {
-        doReturn(metadataClass).when(mockMetadataEntityApiService)
-                .updateExternalClassName(ID, FireCloudClass.PARTICIPANT);
-
-        final MvcResult mvcResult = performRequest(post(String.format(METADATA_CLASS_UPDATE_EXTERNAL_URL, ID))
-                .params(multiValueMapOf(EXTERNAL_CLASS_NAME, FireCloudClass.PARTICIPANT)));
-
-        verify(mockMetadataEntityApiService).updateExternalClassName(ID, FireCloudClass.PARTICIPANT);
-        assertResponse(mvcResult, metadataClass, MetadataCreatorUtils.METADATA_CLASS_TYPE);
     }
 
     @Test
@@ -326,7 +311,7 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
 
     @Test
     public void shouldFailUpdateMetadataEntity() {
-        performUnauthorizedRequest(post(METADATA_ENTITY_DELETE_URL, ID));
+        performUnauthorizedRequest(post(String.format(METADATA_ENTITY_DELETE_URL, ID)));
     }
 
     @Test
@@ -396,18 +381,6 @@ public class MetadataEntityControllerTest extends AbstractControllerTest {
     @Test
     public void shouldFailDeleteMetadataEntitiesFromProject() {
         performUnauthorizedRequest(delete(METADATA_ENTITY_DELETE_LIST_URL));
-    }
-
-    @Test
-    @WithMockUser
-    public void shouldLoadEntitiesData() throws Exception {
-        final String content = getObjectMapper().writeValueAsString(TEST_LONG_SET);
-        doReturn(TEST_STRING_MAP).when(mockMetadataEntityApiService).loadEntitiesData(TEST_LONG_SET);
-
-        final MvcResult mvcResult = performRequest(post(METADATA_ENTITY_ENTITIES_URL).content(content));
-
-        verify(mockMetadataEntityApiService).loadEntitiesData(TEST_LONG_SET);
-        assertResponse(mvcResult, TEST_STRING_MAP, CommonCreatorConstants.STRING_MAP_INSTANCE_TYPE);
     }
 
     @Test

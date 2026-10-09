@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -36,6 +36,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
 
@@ -91,9 +93,9 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
             final NFSQuotaNotificationEntry quota = triggerEntry.getQuota();
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(STORAGE_ID.name(), triggerEntry.getStorageId());
-            params.addValue(QUOTA_VALUE.name(), quota.getValue());
-            params.addValue(QUOTA_TYPE.name(), quota.getType().name());
-            params.addValue(ACTIONS.name(), JsonMapper.convertDataToJsonStringForQuery(quota.getActions()));
+            params.addValue(QUOTA_VALUE.name(), quota.value());
+            params.addValue(QUOTA_TYPE.name(), quota.type().name());
+            params.addValue(ACTIONS.name(), JsonMapper.convertDataToJsonStringForQuery(quota.actions()));
             params.addValue(RECIPIENTS.name(),
                             JsonMapper.convertDataToJsonStringForQuery(triggerEntry.getRecipients()));
             params.addValue(UPDATE_DATE.name(), triggerEntry.getExecutionTime());
@@ -126,27 +128,27 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreateQuotaTriggerQuery(final String createQuotaTriggerQuery) {
         this.createQuotaTriggerQuery = createQuotaTriggerQuery;
     }
 
-    @Required
     public void setUpdateQuotaTriggerQuery(final String updateQuotaTriggerQuery) {
         this.updateQuotaTriggerQuery = updateQuotaTriggerQuery;
     }
 
-    @Required
     public void setFindQuotaTriggerQuery(final String findQuotaTriggerQuery) {
         this.findQuotaTriggerQuery = findQuotaTriggerQuery;
     }
 
-    @Required
     public void setLoadAllQuotaTriggersQuery(final String loadAllQuotaTriggersQuery) {
         this.loadAllQuotaTriggersQuery = loadAllQuotaTriggersQuery;
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(deleteQuotaTriggerQuery, "Required query deleteQuotaTriggerQuery is not set");
+    }
 
-    @Required
+
     public void setDeleteQuotaTriggerQuery(String deleteQuotaTriggerQuery) {
         this.deleteQuotaTriggerQuery = deleteQuotaTriggerQuery;
     }

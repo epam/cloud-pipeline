@@ -24,12 +24,11 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,7 +40,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.List;
 
 @Controller
-@Api(value = "Permissions")
+@Tag(name = "permission-controller", description = "Permissions")
 public class PermissionController extends AbstractRestController {
 
     @Autowired
@@ -49,12 +48,11 @@ public class PermissionController extends AbstractRestController {
 
     @RequestMapping(value = "/grant", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Sets user's  permissions for an object.",
-            notes = "Sets user's permissions for an object.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Sets user's  permissions for an object.",
+            description = "Sets user's permissions for an object.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> grantPermissions(@RequestBody PermissionGrantVO grantVO) {
         return Result.success(permissionApiService.setPermissions(grantVO));
@@ -62,69 +60,66 @@ public class PermissionController extends AbstractRestController {
 
     @RequestMapping(value = "/grant", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes user's permissions for an object.",
-            notes = "Deletes user's permissions for an object.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes user's permissions for an object.",
+            description = "Deletes user's permissions for an object.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
-    public Result<AclSecuredEntry> deletePermissionsForUser(@RequestParam Long id,
-            @RequestParam AclClass aclClass, @RequestParam String user,
+    public Result<AclSecuredEntry> deletePermissionsForUser(
+            @RequestParam Long id,
+            @RequestParam AclClass aclClass,
+            @RequestParam String user,
             @RequestParam(required = false, defaultValue = "true") Boolean isPrincipal) {
         return Result.success(permissionApiService.deletePermissions(id, aclClass, user, isPrincipal));
     }
 
     @RequestMapping(value = "/grant/all", method = RequestMethod.DELETE)
     @ResponseBody
-    @ApiOperation(
-            value = "Deletes all permissions for an object.",
-            notes = "Deletes all permissions for an object.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Deletes all permissions for an object.",
+            description = "Deletes all permissions for an object.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> deleteAllPermissions(@RequestParam Long id,
-            @RequestParam AclClass aclClass) {
+                                                        @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.deleteAllPermissions(id, aclClass));
     }
 
     @RequestMapping(value = "/grant", method = RequestMethod.GET)
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all permissions for an object.",
-            notes = "Loads all permissions for an object.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all permissions for an object.",
+            description = "Loads all permissions for an object.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> getPipelinePermissions(@RequestParam Long id,
-            @RequestParam AclClass aclClass) {
+                                                          @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.getPermissions(id, aclClass));
     }
 
     @RequestMapping(value = "grant/owner", method = RequestMethod.POST)
     @ResponseBody
-    @ApiOperation(
-            value = "Change the owner of the particular acl object.",
-            notes = "Change the owner of the particular acl object.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Change the owner of the particular acl object.",
+            description = "Change the owner of the particular acl object.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<AclSecuredEntry> changeOwner(@RequestParam Long id,
-            @RequestParam AclClass aclClass, @RequestParam String userName) {
+                                               @RequestParam AclClass aclClass, @RequestParam String userName) {
         return Result.success(permissionApiService.changeOwner(id, aclClass, userName));
     }
 
     @GetMapping(value = "permissions")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads all permissions for entity specified by ID.",
-            notes = "Loads all permissions for entity specified by ID.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Loads all permissions for entity specified by ID.",
+            description = "Loads all permissions for entity specified by ID.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<EntityPermissionVO> loadEntityPermissions(@RequestParam Long id, @RequestParam AclClass aclClass) {
         return Result.success(permissionApiService.loadEntityPermission(id, aclClass));
@@ -132,20 +127,19 @@ public class PermissionController extends AbstractRestController {
 
     @GetMapping(value = "permissions/user")
     @ResponseBody
-    @ApiOperation(
-            value = "Loads permissions granted to a user on all entities of a class.",
-            notes = "Loads permissions granted to the user specified by ID on all entities of the class: for each "
-                    + "entity, its permissions merged with the inherited ones, as the 'permissions' method returns "
+    @Operation(
+            summary = "Loads permissions granted to a user on all entities of a class.",
+            description = "Loads permissions granted to the user specified by ID on all entities of the class: for each"
+                    + " entity, its permissions merged with the inherited ones, as the 'permissions' method returns "
                     + "them, keeping only the entries of the user, its roles and its groups. Entities without such "
                     + "entries are omitted. Requires ADMIN, USER_ADMIN or USER_READER role, or READ permission "
                     + "on the user. Admins get all entities, other users only the ones they can read. "
                     + "Only granted permissions are returned: access given by a role regardless of ACL "
                     + "(e.g. ROLE_ADMIN, ROLE_STORAGE_ADMIN, ROLE_STORAGE_READER), by ownership, or reduced "
                     + "by a quota or by the mount status of a storage is not reflected. "
-                    + "Supported classes: DATA_STORAGE, PIPELINE.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
+                    + "Supported classes: DATA_STORAGE, PIPELINE.")
     @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
             })
     public Result<List<EntityPermission>> loadUserEntitiesPermissions(@RequestParam final Long userId,
                                                                       @RequestParam final AclClass aclClass) {

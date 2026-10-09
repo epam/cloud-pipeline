@@ -18,11 +18,13 @@ package com.epam.pipeline.entity.git.bitbucketcloud;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class BitbucketCloudWorkspace {
     private String uuid;
     private String name;

@@ -17,6 +17,7 @@
 package com.epam.pipeline.utils.condition.field;
 
 import com.epam.pipeline.utils.condition.ConditionExpression;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.utils.condition.FieldType;
 
@@ -68,6 +69,9 @@ public interface SubjectEntityField<T> {
     static <T> List<SubjectEntityField<T>> forSubjectType(final Class<T> subjectType) {
         if (subjectType == PipelineRun.class) {
             return (List<SubjectEntityField<T>>) (List<?>) Arrays.asList(PipelineRunField.values());
+        }
+        if (subjectType == CapacityReservation.class) {
+            return (List<SubjectEntityField<T>>) (List<?>) Arrays.asList(CapacityReservationField.values());
         }
         return Collections.emptyList();
     }

@@ -24,7 +24,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -46,10 +46,11 @@ import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBal
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.deductionEvent;
 import static com.epam.pipeline.test.creator.credits.PlatformUsageCreditsUserBalanceCreatorUtils.increaseEvent;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -99,26 +100,29 @@ public class PlatformUsageCreditsUserBalanceServiceTest {
         verify(crudService, never()).upsertBalance(anyInt(), any(), any());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailResetWhenValueBelowMin() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
 
-        service.reset(MIN_BALANCE - 1, Collections.singletonList(USER_ID));
+        assertThrows(IllegalArgumentException.class,
+            () -> service.reset(MIN_BALANCE - 1, Collections.singletonList(USER_ID)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailResetWhenValueAboveMax() {
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
 
-        service.reset(MAX_BALANCE + 1, Collections.singletonList(USER_ID));
+        assertThrows(IllegalArgumentException.class,
+            () -> service.reset(MAX_BALANCE + 1, Collections.singletonList(USER_ID)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldFailResetOnFirstInvalidUserAndSkipRemaining() {
         final Long secondUserId = USER_ID + 1;
         mockPreferences(MIN_BALANCE, MAX_BALANCE, DEFAULT_BALANCE);
 
-        service.reset(MAX_BALANCE + 1, Arrays.asList(USER_ID, secondUserId));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.reset(MAX_BALANCE + 1, Arrays.asList(USER_ID, secondUserId)));
     }
 
     @Test

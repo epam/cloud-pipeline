@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -62,7 +62,7 @@ public class PoolAutoscaler {
     private void adjustPoolSize(final NodePool pool,
                                 final List<Node> availableNodes,
                                 final Set<String> activePodIds) {
-        if (!pool.isAutoscaled()) {
+        if (!pool.isAutoscaled() || pool.isCapacityReservation()) {
             return;
         }
         final long activePoolNodes = determineActiveNodesCount(availableNodes, activePodIds, pool.getId());
@@ -87,6 +87,6 @@ public class PoolAutoscaler {
     private void updatePoolSize(final NodePool pool, final int newSize) {
         final NodePoolVO nodePoolVO = poolMapper.toVO(pool);
         nodePoolVO.setCount(newSize);
-        poolManager.createOrUpdate(nodePoolVO);
+        poolManager.update(pool.getId(), nodePoolVO);
     }
 }

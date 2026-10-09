@@ -33,7 +33,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Row {
-
-    @Getter(onMethod_ = {@JsonValue})
     private Map<String, String> data;
+
+    @JsonValue
+    public Map<String, String> getData() {
+        return data;
+    }
 }

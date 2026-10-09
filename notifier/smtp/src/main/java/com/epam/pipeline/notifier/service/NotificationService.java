@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.notifier.repository.NotificationRepository;
+import com.epam.pipeline.notifier.service.task.NotificationDLQAwareService;
 import com.epam.pipeline.notifier.service.task.NotificationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
 
     @Autowired
-    private List<NotificationManager> notificationManagers;
+    private List<NotificationDLQAwareService> notificationManagers;
 
     /**
      * Scheduled task to load batch of {@link NotificationMessage} from database
@@ -59,10 +60,10 @@ public class NotificationService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void sendNotification() {
         LOGGER.debug("Start scheduled notification loop...");
-        Pageable limit = new PageRequest(0, notificationAtTime);
+        Pageable limit = PageRequest.of(0, notificationAtTime);
         List<NotificationMessage> result = notificationRepository.loadNotification(limit);
         result.forEach(message -> {
-            notificationRepository.deleteById(message.getId());
+            notificationRepository.removeById(message.getId());
 
             for (NotificationManager notificationManager : notificationManagers) {
                 CompletableFuture.runAsync(

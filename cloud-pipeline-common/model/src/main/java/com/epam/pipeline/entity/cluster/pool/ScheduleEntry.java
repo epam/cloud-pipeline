@@ -17,6 +17,7 @@ package com.epam.pipeline.entity.cluster.pool;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 
 @Data
+@NoArgsConstructor
 public class ScheduleEntry {
     private DayOfWeek from;
     private LocalTime fromTime;

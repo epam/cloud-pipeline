@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,7 +38,7 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
     private List<NodeDisk> toDisks(final String nodeId, final LocalDateTime creationDate,
                                    final List<DiskRegistrationRequest> requests) {
         return requests.stream()
-                .map(disk -> new NodeDisk(disk.getSize(), nodeId, creationDate))
+                .map(disk -> new NodeDisk(disk.size(), nodeId, creationDate))
                 .collect(Collectors.toList());
     }
 
@@ -61,9 +61,9 @@ public class NodeDiskDao extends NamedParameterJdbcDaoSupport {
 
         static MapSqlParameterSource getParameters(final NodeDisk disk) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
-            params.addValue(SIZE.name(), disk.getSize());
-            params.addValue(NODE_ID.name(), disk.getNodeId());
-            params.addValue(CREATED_DATE.name(), Timestamp.valueOf(disk.getCreatedDate()));
+            params.addValue(SIZE.name(), disk.size());
+            params.addValue(NODE_ID.name(), disk.nodeId());
+            params.addValue(CREATED_DATE.name(), Timestamp.valueOf(disk.createdDate()));
             return params;
         }
 

@@ -29,8 +29,8 @@ import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Collections;
@@ -42,9 +42,9 @@ import java.util.Set;
 import java.util.Arrays;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipeline;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class PipelineWithPermissionsTest extends AbstractAclTest {
@@ -73,8 +73,7 @@ public class PipelineWithPermissionsTest extends AbstractAclTest {
     private Pipeline pipeline1;
     private Pipeline pipeline2;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         folder1 = getFolder(TEST_FOLDER1, TEST_OWNER1);
         folder1.setId(1L);
 

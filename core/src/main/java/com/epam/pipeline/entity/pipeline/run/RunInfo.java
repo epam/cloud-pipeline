@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.pipeline.run;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.Date;
@@ -28,6 +29,7 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class RunInfo {
 
     private Long runId;

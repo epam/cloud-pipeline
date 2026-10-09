@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ package com.epam.pipeline.entity.cluster;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -30,4 +33,17 @@ public class CloudRegionsConfiguration {
 
     private List<NetworkConfiguration> regions;
     private Map<String, String> tags;
+
+    public Map<String, String> allowedNetworks(final String regionCode) {
+        if (regionCode == null) {
+            return Collections.emptyMap();
+        }
+        return ListUtils.emptyIfNull(regions).stream()
+                .filter(region -> regionCode.equals(region.getName()))
+                .filter(region -> MapUtils.isNotEmpty(region.getAllowedNetworks()))
+                .findFirst()
+                .map(NetworkConfiguration::getAllowedNetworks)
+                .map(Collections::unmodifiableMap)
+                .orElseGet(Collections::emptyMap);
+    }
 }

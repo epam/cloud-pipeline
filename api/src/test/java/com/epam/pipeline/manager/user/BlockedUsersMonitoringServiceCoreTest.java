@@ -25,8 +25,8 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -37,10 +37,10 @@ import java.util.Objects;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static com.epam.pipeline.util.CustomMatchers.matches;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -70,8 +70,7 @@ public class BlockedUsersMonitoringServiceCoreTest {
     private final BlockedUsersMonitoringServiceCore monitoringService = new BlockedUsersMonitoringServiceCore(
             userManager, notificationManager, preferenceManager, ldapManager);
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         set(SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED, true);
         set(SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_GRACE_PERIOD_DAYS, GRACE_DURATION_DAYS);
     }

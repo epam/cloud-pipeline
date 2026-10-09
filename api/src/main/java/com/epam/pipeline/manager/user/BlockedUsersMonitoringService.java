@@ -19,18 +19,19 @@ package com.epam.pipeline.manager.user;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 
 @Service
 @RequiredArgsConstructor
-public class BlockedUsersMonitoringService extends AbstractSchedulingManager {
+public class BlockedUsersMonitoringService extends AbstractSchedulingManager implements InitializingBean {
 
     private final BlockedUsersMonitoringServiceCore core;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_LDAP_USER_BLOCK_MONITOR_DELAY,
                 "BlockedUsersMonitor");
     }

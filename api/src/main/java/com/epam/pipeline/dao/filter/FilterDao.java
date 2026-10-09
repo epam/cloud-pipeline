@@ -22,13 +22,14 @@ import com.epam.pipeline.manager.filter.FilterExpression;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.manager.filter.converters.DateConverter;
 import org.apache.commons.collections4.map.HashedMap;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class FilterDao extends NamedParameterJdbcDaoSupport {
 
@@ -81,13 +82,18 @@ public class FilterDao extends NamedParameterJdbcDaoSupport {
                 .replaceFirst(filterExpression.toSQLStatement());
         return getNamedParameterJdbcTemplate().queryForObject(query, params, Integer.class);
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(filterPipelineRunsBaseQuery, "Required query filterPipelineRunsBaseQuery is not set");
+        Assert.notNull(countFilteredPipelineRunsBaseQuery,
+                "Required query countFilteredPipelineRunsBaseQuery is not set");
+    }
 
-    @Required
+
     public void setFilterPipelineRunsBaseQuery(String filterPipelineRunsBaseQuery) {
         this.filterPipelineRunsBaseQuery = filterPipelineRunsBaseQuery;
     }
 
-    @Required
     public void setCountFilteredPipelineRunsBaseQuery(String countFilteredPipelineRunsBaseQuery) {
         this.countFilteredPipelineRunsBaseQuery = countFilteredPipelineRunsBaseQuery;
     }

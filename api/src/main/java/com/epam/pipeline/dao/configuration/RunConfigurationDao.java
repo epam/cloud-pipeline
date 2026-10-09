@@ -31,13 +31,14 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class RunConfigurationDao extends NamedParameterJdbcDaoSupport {
 
@@ -185,48 +186,53 @@ public class RunConfigurationDao extends NamedParameterJdbcDaoSupport {
         }
 
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(configSequence, "Required query configSequence is not set");
+        Assert.notNull(createConfigQuery, "Required query createConfigQuery is not set");
+        Assert.notNull(updateConfigQuery, "Required query updateConfigQuery is not set");
+        Assert.notNull(deleteConfigQuery, "Required query deleteConfigQuery is not set");
+        Assert.notNull(loadConfigQuery, "Required query loadConfigQuery is not set");
+        Assert.notNull(loadAllConfigsQuery, "Required query loadAllConfigsQuery is not set");
+        Assert.notNull(loadAllRootConfigsQuery, "Required query loadAllRootConfigsQuery is not set");
+        Assert.notNull(updateConfigLocksQuery, "Required query updateConfigLocksQuery is not set");
+        Assert.notNull(loadConfigurationWithParentsQuery,
+                "Required query loadConfigurationWithParentsQuery is not set");
+    }
 
-    @Required
+
     public void setConfigSequence(String configSequence) {
         this.configSequence = configSequence;
     }
 
-    @Required
     public void setCreateConfigQuery(String createConfigQuery) {
         this.createConfigQuery = createConfigQuery;
     }
 
-    @Required
     public void setUpdateConfigQuery(String updateConfigQuery) {
         this.updateConfigQuery = updateConfigQuery;
     }
 
-    @Required
     public void setDeleteConfigQuery(String deleteConfigQuery) {
         this.deleteConfigQuery = deleteConfigQuery;
     }
 
-    @Required
     public void setLoadConfigQuery(String loadConfigQuery) {
         this.loadConfigQuery = loadConfigQuery;
     }
 
-    @Required
     public void setLoadAllConfigsQuery(String loadAllConfigsQuery) {
         this.loadAllConfigsQuery = loadAllConfigsQuery;
     }
 
-    @Required
     public void setLoadAllRootConfigsQuery(String loadAllRootConfigsQuery) {
         this.loadAllRootConfigsQuery = loadAllRootConfigsQuery;
     }
 
-    @Required
     public void setUpdateConfigLocksQuery(String updateConfigLocksQuery) {
         this.updateConfigLocksQuery = updateConfigLocksQuery;
     }
 
-    @Required
     public void setLoadConfigurationWithParentsQuery(String loadConfigurationWithParentsQuery) {
         this.loadConfigurationWithParentsQuery = loadConfigurationWithParentsQuery;
     }

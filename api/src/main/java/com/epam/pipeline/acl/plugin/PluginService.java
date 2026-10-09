@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.acl.plugin;
 
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.plugin.UIPluginRepository;
 import com.epam.pipeline.dto.plugin.PluginType;
@@ -38,7 +37,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
+
+import static com.epam.pipeline.common.MessageConstants.ERROR_ENTITY_NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor
@@ -53,11 +53,9 @@ public class PluginService {
     }
 
     public UIPlugin getPlugin(Long id) {
-        UIPluginEntity plugin = pluginRepository.findOne(id);
-        if (Objects.isNull(plugin)) {
-            throw new ObjectNotFoundException(messageHelper.getMessage(
-                    MessageConstants.ERROR_ENTITY_NOT_FOUND, id, UIPluginEntity.class.getSimpleName()));
-        }
+        UIPluginEntity plugin = pluginRepository.findById(id)
+            .orElseThrow(() ->  new ObjectNotFoundException(
+                messageHelper.getMessage(ERROR_ENTITY_NOT_FOUND, id, UIPluginEntity.class.getSimpleName())));
         return uiPluginMapper.toDto(plugin);
     }
 
@@ -71,7 +69,7 @@ public class PluginService {
     @Transactional
     public void deletePlugin(Long id) {
         UIPlugin entity = getPlugin(id);
-        pluginRepository.delete(entity.getId());
+        pluginRepository.deleteById(entity.getId());
     }
 
     public byte[] getPluginFileContent(Long id, String filePath) {

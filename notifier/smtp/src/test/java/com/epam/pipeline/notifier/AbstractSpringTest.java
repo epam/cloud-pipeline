@@ -17,13 +17,10 @@
 package com.epam.pipeline.notifier;
 
 import com.epam.pipeline.notifier.app.SMTPNotifierApplication;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
 @TestPropertySource(locations="classpath:test-application.properties")
-@ContextConfiguration(classes = SMTPNotifierApplication.class)
+@SpringBootTest(classes = SMTPNotifierApplication.class)
 public abstract class AbstractSpringTest {
 }

@@ -17,14 +17,14 @@
 package com.epam.pipeline.dao.security.acl;
 
 import java.util.List;
-
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.PrincipalSid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.util.CollectionUtils;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class AclDao extends NamedParameterJdbcDaoSupport {
 
@@ -38,8 +38,12 @@ public class AclDao extends NamedParameterJdbcDaoSupport {
             return result.get(0);
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(findSidByNameQuery, "Required query findSidByNameQuery is not set");
+    }
 
-    @Required
+
     public void setFindSidByNameQuery(String findSidByNameQuery) {
         this.findSidByNameQuery = findSidByNameQuery;
     }

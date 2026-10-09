@@ -140,12 +140,14 @@
                         run_id,
                         status,
                         reason,
-                        date)
+                        date,
+                        run_status_info)
                     VALUES (
                         :RUN_ID,
                         :STATUS,
                         :REASON,
-                        :DATE)
+                        :DATE,
+                        :RUN_STATUS_INFO::jsonb)
                 ]]>
             </value>
         </property>

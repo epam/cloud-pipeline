@@ -22,13 +22,8 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
-@SpringBootApplication(exclude = {
-        DataSourceAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class})
-@Import({
-        AppMVCConfiguration.class,
-        AppConfiguration.class
-    })
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class, HibernateJpaAutoConfiguration.class})
+@Import({AppMVCConfiguration.class, AppConfiguration.class})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class Application {
 

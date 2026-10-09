@@ -23,11 +23,12 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ParallelExecutorServiceTest extends AbstractManagerTest {
     private static final int TIMEOUT = 2000;
@@ -50,6 +51,6 @@ public class ParallelExecutorServiceTest extends AbstractManagerTest {
         Thread.sleep(TIMEOUT); // Wait for a new executor to be created
 
         ExecutorService service2 = parallelExecutorService.getExecutorService();
-        Assert.assertNotEquals(service1, service2);
+        assertNotEquals(service1, service2);
     }
 }

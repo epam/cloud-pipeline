@@ -33,8 +33,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
@@ -47,10 +47,11 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 public class S3HelperTest {
 
@@ -73,8 +74,7 @@ public class S3HelperTest {
     private final S3Helper helper = spy(new S3Helper(events, messageHelper));
     private final S3bucketDataStorage storage = new S3bucketDataStorage();
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(amazonS3).when(helper).getDefaultS3Client();
         storage.setPath(BUCKET);
     }

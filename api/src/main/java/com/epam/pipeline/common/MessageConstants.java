@@ -616,15 +616,6 @@ public final class MessageConstants {
     public static final String ERROR_PREFERENCE_VALUE_INVALID = "error.preference.value.invalid";
     public static final String ERROR_PREFERENCE_REQUIREMENTS_NOT_MET = "error.preference.requirements.not.met";
 
-    //Google and Firecloud
-    public static final String ERROR_GOOGLE_CREDENTIALS = "error.google.credentials";
-    public static final String ERROR_GOOGLE_AUTH_CODE_MISSING = "error.google.auth.code.missing";
-    public static final String ERROR_GOOGLE_SCOPES_MISSING = "error.google.scopes.missing";
-    public static final String ERROR_GOOGLE_REDIRECT_URL_MISSING = "error.google.redirect.uri.missing";
-    public static final String ERROR_GOOGLE_SECRET_MISSING = "error.google.secret.json.missing";
-    public static final String ERROR_GOOGLE_INVALID_SECRET_JSON = "error.google.secret.json.invalid";
-    public static final String ERROR_FIRECLOUD_REQUEST_FAILED = "error.firecloud.request.failed";
-
     //DTS
     public static final String ERROR_DTS_REGISTRY_ID_DOES_NOT_EXIST = "error.dts.registry.id.does.not.exist";
     public static final String ERROR_DTS_REGISTRY_NAME_DOES_NOT_EXIST = "error.dts.registry.name.does.not.exist";
@@ -773,6 +764,48 @@ public final class MessageConstants {
 
     //Persistent Nodes
     public static final String ERROR_NODE_POOL_NOT_FOUND = "error.node.pool.not.found";
+
+    public static final String ERROR_CAPACITY_RESERVATION_NOT_FOUND = "error.capacity.reservation.not.found";
+    public static final String ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE =
+            "error.capacity.reservation.pool.immutable";
+    public static final String ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED =
+            "error.capacity.reservation.provider.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED =
+            "error.capacity.reservation.autoscaling.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED =
+            "error.capacity.reservation.schedule.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_NOT_TERMINAL =
+            "error.capacity.reservation.not.terminal";
+    public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
+            "error.capacity.reservation.illegal.transition";
+    public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
+            "error.capacity.reservation.spot.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
+            "error.capacity.reservation.type.required";
+    public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =
+            "error.capacity.reservation.type.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
+            "error.capacity.reservation.dates.required";
+    public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =
+            "error.capacity.reservation.start.date.in.past";
+    public static final String ERROR_CAPACITY_RESERVATION_WINDOW_INVALID =
+            "error.capacity.reservation.window.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_DURATION_INVALID =
+            "error.capacity.reservation.duration.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW =
+            "error.capacity.reservation.window.too.narrow";
+    public static final String ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID =
+            "error.capacity.reservation.instance.count.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID =
+            "error.capacity.reservation.lead.time.invalid";
+    public static final String ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS =
+            "error.capacity.reservation.too.few.vcpus";
+    public static final String ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT =
+            "error.capacity.reservation.commitment.too.short";
+    public static final String ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED =
+            "error.capacity.reservation.platform.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED =
+            "error.capacity.reservation.family.not.supported";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
@@ -786,6 +819,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_WIN_TOOLS_ARE_NOT_ALLOWED = "error.node.pool.win.tools.not.allowed";
     public static final String ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED =
         "error.node.pool.win.instance.not.allowed";
+    public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
+    public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
+    public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";

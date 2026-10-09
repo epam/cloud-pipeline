@@ -15,10 +15,5 @@
 
 package com.epam.pipeline.manager.keypair;
 
-import lombok.Value;
-
-@Value
-public class SshKeyPair {
-    String privateKey;
-    String publicKey;
+public record SshKeyPair(String privateKey, String publicKey) {
 }

@@ -20,14 +20,18 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-_BUILD_SCRIPT_NAME=/tmp/build_cloud_data_linux_$(date +%s).sh
+# Write inner script under project dir so we only mount the project (no file bind-mount).
+# Binding a single file into Docker often creates a directory instead of a file on some hosts.
+_INNER_SCRIPT="$CP_CLOUD_DATA_SOURCES_DIR/.build_cli_inner.sh"
 
-cat >$_BUILD_SCRIPT_NAME <<'EOL'
+cat >"$_INNER_SCRIPT" <<'EOL'
 
 cd /cloud-data
 
 version_file="scripts/PublishVersionPlugin.js"
 cp $version_file /tmp/version.bkp
+# Allow sed -i to create temp file in scripts/ when dir is bind-mounted (e.g. Docker on Mac).
+chmod -R a+w scripts 2>/dev/null || true
 sed -i "s/1111111111111111111111111111111111111111/$CLOUD_DATA_COMMIT_HASH/g" $version_file
 
 npm install
@@ -35,12 +39,12 @@ npm run package-cli
 
 if [ $? -ne 0 ]; then
     echo "Unable to build CLI"
-    cp /tmp/version.bkp \$version_file
+    cp /tmp/version.bkp $version_file
     exit 1
 fi
 
 chmod -R 777 /cloud-data/dist-cli
-cp /tmp/version.bkp \$version_file
+cp /tmp/version.bkp $version_file
 
 EOL
 
@@ -49,17 +53,15 @@ CLOUD_DATA_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
 cd -
 
 docker run -i --rm \
-           -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \
-           -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           -v "$CP_CLOUD_DATA_SOURCES_DIR:/cloud-data" \
            --env CLOUD_DATA_APP_VERSION=$CLOUD_DATA_APP_VERSION \
            --env CLOUD_DATA_COMMIT_HASH=$CLOUD_DATA_COMMIT_HASH \
            $CP_NODE_DOCKER \
-           bash $_BUILD_SCRIPT_NAME
+           bash /cloud-data/.build_cli_inner.sh
 
-if [ $? -ne 0 ]; then
+_ERR=$?
+rm -f "$_INNER_SCRIPT"
+if [ $_ERR -ne 0 ]; then
     echo "An error occurred during Cloud Data linux build"
-    rm -f $_BUILD_SCRIPT_NAME
     exit 1
 fi
-
-rm -f $_BUILD_SCRIPT_NAME

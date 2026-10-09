@@ -25,7 +25,7 @@ import com.epam.pipeline.exception.InvalidPathException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -34,9 +34,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.FileNameMap;
@@ -49,7 +48,7 @@ import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
-@Api(value = "Static resources API")
+@Tag(name = "static-resources-controller", description = "Static resources API")
 public class StaticResourcesController extends AbstractRestController {
 
     private static final FileNameMap FILE_NAME_MAP = URLConnection.getFileNameMap();
@@ -62,8 +61,7 @@ public class StaticResourcesController extends AbstractRestController {
     public void getStaticFile(final HttpServletRequest request, final HttpServletResponse response)
             throws IOException {
         try {
-            final DataStorageStreamingContent content = resourcesService.getContent(
-                    request.getPathInfo().replaceFirst(STATIC_RESOURCES, ""));
+            final DataStorageStreamingContent content = resourcesService.getContent(extractStaticResourcePath(request));
             final String fileName = FilenameUtils.getName(content.getName());
             final MediaType mediaType = getMediaType(fileName);
             final StaticResourceSettings settings = getStaticResourceSettings(fileName);
@@ -119,5 +117,14 @@ public class StaticResourcesController extends AbstractRestController {
                     return MediaType.parseMediaType(mimeType);
                 })
                 .orElse(MediaType.APPLICATION_OCTET_STREAM);
+    }
+
+    protected String extractStaticResourcePath(final HttpServletRequest request) {
+        final String requestPath = request.getRequestURI();
+        final int staticResourcesIndex = requestPath.indexOf(STATIC_RESOURCES);
+        if (staticResourcesIndex < 0) {
+            throw new InvalidPathException("Invalid static resource path: " + requestPath);
+        }
+        return requestPath.substring(staticResourcesIndex + STATIC_RESOURCES.length());
     }
 }

@@ -20,11 +20,12 @@ import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -49,12 +50,11 @@ public class LogApiServiceTest extends AbstractAclTest {
         assertThat(logApiService.filter(logFilter)).isEqualTo(logPagination);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyAccessToLogPaginationForNotAdmin() {
         doReturn(logPagination).when(mockLogManager).filter(logFilter);
-
-        logApiService.filter(logFilter);
+        assertThrows(AccessDeniedException.class, () -> logApiService.filter(logFilter));
     }
 
     @Test
@@ -65,11 +65,10 @@ public class LogApiServiceTest extends AbstractAclTest {
         assertThat(logApiService.getFilters()).isEqualTo(logFilter);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyAccessToLogFilterForNotAdmin() {
         when(mockLogManager.getFilters()).thenReturn(logFilter);
-
-        logApiService.getFilters();
+        assertThrows(AccessDeniedException.class, () -> logApiService.getFilters());
     }
 }

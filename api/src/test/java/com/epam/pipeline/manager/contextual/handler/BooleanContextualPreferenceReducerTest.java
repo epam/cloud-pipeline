@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.nimbusds.jose.util.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,11 +28,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BooleanContextualPreferenceReducerTest {
 
@@ -59,7 +59,7 @@ public class BooleanContextualPreferenceReducerTest {
                 .forEach((inputs, expectedMergedValue) -> {
                     final Optional<ContextualPreference> reducedPreference = reducer.reduce(inputs);
                     assertTrue(reducedPreference.isPresent());
-                    assertThat(reducedPreference.get().getValue(), is(expectedMergedValue));
+                    assertThat(reducedPreference.get().value(), is(expectedMergedValue));
                 });
     }
 
@@ -81,7 +81,7 @@ public class BooleanContextualPreferenceReducerTest {
         final Optional<ContextualPreference> reducedPreference = reducer.reduce(preferences);
 
         assertTrue(reducedPreference.isPresent());
-        assertThat(reducedPreference.get().getCreatedDate(), is(nullValue()));
-        assertThat(reducedPreference.get().getResource(), is(nullValue()));
+        assertThat(reducedPreference.get().createdDate(), is(nullValue()));
+        assertThat(reducedPreference.get().resource(), is(nullValue()));
     }
 }

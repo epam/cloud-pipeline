@@ -19,7 +19,7 @@ package com.epam.pipeline.test.acl;
 import com.epam.pipeline.app.AclSecurityConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
@@ -41,7 +41,7 @@ import java.lang.annotation.Target;
 @ContextConfiguration(classes = {AclTestBeans.class, AclSecurityConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.security.acl", "com.epam.pipeline.manager.security"})
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
+@EnableMethodSecurity(securedEnabled = true)
 @TestPropertySource(value = {"classpath:test-application.properties"})
 public @interface AclTestConfiguration {
 

@@ -39,7 +39,7 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.docker.DockerCreatorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

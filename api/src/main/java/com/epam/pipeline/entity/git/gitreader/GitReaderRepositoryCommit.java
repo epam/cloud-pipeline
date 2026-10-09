@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.Date;
@@ -28,6 +29,7 @@ import java.util.List;
  */
 @Data
 @Builder(toBuilder = true)
+@Jacksonized
 public class GitReaderRepositoryCommit {
 
     @JsonProperty("commit")

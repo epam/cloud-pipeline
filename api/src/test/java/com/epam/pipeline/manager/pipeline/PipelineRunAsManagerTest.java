@@ -28,7 +28,7 @@ import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -99,7 +100,7 @@ public class PipelineRunAsManagerTest {
         assertThat(resultRunVO.getRunSids()).hasSize(1).contains(userRunSid());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser
     public void shouldNotRunPipelineIfAllDenied() {
         final PipelineStart pipelineStart = runVO();
@@ -113,11 +114,10 @@ public class PipelineRunAsManagerTest {
         doReturn(userRunnerSidPipelineDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
         doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
         doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
-
-        manager.runPipeline(pipelineStart);
+        assertThrows(IllegalArgumentException.class, () -> manager.runPipeline(pipelineStart));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser
     public void shouldNotRunPipelineIfIdIsNotAllowed() {
         final PipelineStart pipelineStart = runVO();
@@ -132,11 +132,10 @@ public class PipelineRunAsManagerTest {
         doReturn(userRunnerSidPipelineDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
         doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
         doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
-
-        manager.runPipeline(pipelineStart);
+        assertThrows(IllegalArgumentException.class, () -> manager.runPipeline(pipelineStart));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser
     public void shouldNotRunToolIfAllDenied() {
         final PipelineStart pipelineStart = runVO();
@@ -150,11 +149,10 @@ public class PipelineRunAsManagerTest {
         doReturn(userRunnerSidToolsDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
         doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
         doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
-
-        manager.runPipeline(pipelineStart);
+        assertThrows(IllegalArgumentException.class, () -> manager.runPipeline(pipelineStart));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     @WithMockUser
     public void shouldNotRunToolIfIdIsNotAllowed() {
         final PipelineStart pipelineStart = runVO();
@@ -173,8 +171,7 @@ public class PipelineRunAsManagerTest {
         doReturn(userRunnerSidToolsDenied).when(userRunnersManager).findRunnerSid(CURRENT_USER, SERVICE_ACCOUNT);
         doReturn(new PipelineConfiguration()).when(configurationManager).getPipelineConfiguration(pipelineStart);
         doReturn(SecurityContextHolder.createEmptyContext()).when(permissionHelper).createContext(SERVICE_ACCOUNT);
-
-        manager.runPipeline(pipelineStart);
+        assertThrows(IllegalArgumentException.class, () -> manager.runPipeline(pipelineStart));
     }
 
 

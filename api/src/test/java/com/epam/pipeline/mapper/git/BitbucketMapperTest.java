@@ -26,14 +26,14 @@ import com.epam.pipeline.entity.git.bitbucket.BitbucketProject;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
 import com.epam.pipeline.entity.pipeline.Revision;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
 import java.util.Arrays;
 import java.util.Date;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class BitbucketMapperTest {
     private static final String TEST_NAME = "name";

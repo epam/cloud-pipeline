@@ -28,13 +28,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.NAME,
-        property = "type",
-        defaultImpl = DataStorageFile.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = DataStorageFile.class)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = DataStorageFile.class, name = "File"),
-        @JsonSubTypes.Type(value = DataStorageFolder.class, name = "Folder")})
+    @JsonSubTypes.Type(value = DataStorageFile.class, name = "File"),
+    @JsonSubTypes.Type(value = DataStorageFolder.class, name = "Folder")})
 public abstract class AbstractDataStorageItem {
 
     public static final String DELIMITER = "/";

@@ -18,13 +18,13 @@ package com.epam.pipeline.external.datastorage.controller;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.external.datastorage.manager.user.UserManager;
 import com.epam.pipeline.rest.Result;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Api(value = "User API")
+@Tag(name = "User API")
 public class UserController {
 
     @Autowired

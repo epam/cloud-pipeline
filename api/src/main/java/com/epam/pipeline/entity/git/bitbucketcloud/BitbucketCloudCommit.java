@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.git.bitbucketcloud;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class BitbucketCloudCommit {
     private String hash;
     private String message;

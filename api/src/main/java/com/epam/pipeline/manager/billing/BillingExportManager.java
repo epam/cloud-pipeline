@@ -55,7 +55,7 @@ public class BillingExportManager {
     }
 
     private String getTitle(final BillingExportRequest request, final List<BillingExporter> exporters) {
-        final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
+        final BillingDiscount discount = Optional.ofNullable(request.discount()).orElseGet(BillingDiscount::empty);
         final NumberFormat discountFormat = new DecimalFormat(SIGNED_NUMBER_FORMAT);
         final StringBuilder builder = new StringBuilder()
                 .append(exporters.get(0).getName());
@@ -64,7 +64,7 @@ public class BillingExportManager {
         }
         if (discount.hasComputes()) {
             builder.append("Computes ")
-                    .append(discountFormat.format(discount.getComputes()))
+                    .append(discountFormat.format(discount.computes()))
                     .append('%');
         }
         if (discount.hasStorages()) {
@@ -72,16 +72,16 @@ public class BillingExportManager {
                 builder.append(" and ");
             }
             builder.append("Storages ")
-                    .append(discountFormat.format(discount.getStorages()))
+                    .append(discountFormat.format(discount.storages()))
                     .append('%');
         }
         if (discount.hasComputes() || discount.hasStorages()) {
             builder.append(')');
         }
         return builder.append(" - ")
-                .append(request.getFrom())
+                .append(request.from())
                 .append(" - ")
-                .append(request.getTo())
+                .append(request.to())
                 .append(".csv")
                 .toString();
     }
@@ -100,7 +100,7 @@ public class BillingExportManager {
 
     private List<BillingExportType> getBillingExportTypes(final BillingExportRequest request) {
         return Optional.ofNullable(request)
-                .map(BillingExportRequest::getTypes)
+                .map(BillingExportRequest::types)
                 .orElse(FALLBACK_BILLING_EXPORT_TYPES);
     }
 

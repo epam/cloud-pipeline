@@ -40,10 +40,12 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.ssl.TrustStrategy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -59,8 +61,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -69,6 +71,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -203,7 +206,7 @@ public class ServerlessConfigurationManager {
         List<PipelineRun> activeRunsForConfiguration = loadActiveRuns(configurationId);
         if (CollectionUtils.isEmpty(activeRunsForConfiguration)) {
             log.debug("No active runs found. A new run will be launched");
-            activeRunsForConfiguration = configurationRunner.runConfiguration(null,
+            activeRunsForConfiguration = configurationRunner.runConfiguration(
                     runConfigurationMapper.toRunConfigurationWithEntitiesVO(configuration), null);
         }
         return activeRunsForConfiguration.stream()
@@ -230,15 +233,15 @@ public class ServerlessConfigurationManager {
 
         if (StringUtils.isNotBlank(endpointName)) {
             return serviceUrls.stream()
-                    .filter(serviceUrl -> Objects.equals(serviceUrl.getName(), endpointName))
+                    .filter(serviceUrl -> Objects.equals(serviceUrl.name(), endpointName))
                     .findAny()
                     .orElseThrow(() -> new IllegalArgumentException(String
                             .format("Failed to find endpoint url for endpoint name '%s'", endpointName)))
-                    .getUrl();
+                    .url();
         }
         Assert.state(serviceUrls.size() == 1,
                 "Only one service url is allowed when endpoint name is not specified");
-        return serviceUrls.get(0).getUrl();
+        return serviceUrls.get(0).url();
     }
 
     String sendRequest(final HttpServletRequest request, final String appPath) {
@@ -287,8 +290,9 @@ public class ServerlessConfigurationManager {
     }
 
     private String getApplicationPath(final HttpServletRequest request) {
-        final Pattern pattern = Pattern.compile("/serverless/.*?/.*?/([^']*)");
-        final Matcher matcher = pattern.matcher(request.getPathInfo());
+        final String fullPath = request.getRequestURI();
+        final Pattern pattern = Pattern.compile(".*/serverless/.*?/.*?/([^']*)");
+        final Matcher matcher = pattern.matcher(fullPath);
         return matcher.matches() ? matcher.group(1) : "";
     }
 
@@ -328,18 +332,23 @@ public class ServerlessConfigurationManager {
         final RestTemplateBuilder builder = new RestTemplateBuilder()
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
         final TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-        final SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+        final SSLContext sslContext = SSLContextBuilder.create()
                 .loadTrustMaterial(null, acceptingTrustStrategy)
                 .build();
-        final SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-        final CloseableHttpClient httpClient = HttpClients.custom()
-                .setSSLSocketFactory(csf)
+        final var tlsStrategy = new DefaultClientTlsStrategy(sslContext);
+        final var connectionManager = PoolingHttpClientConnectionManagerBuilder.create()
+                .setTlsSocketStrategy(tlsStrategy)
                 .build();
+        final CloseableHttpClient httpClient = HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .build();
+
         final HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
         requestFactory.setHttpClient(httpClient);
+
         return builder
-                .requestFactory(requestFactory)
-                .setConnectTimeout(REQUEST_TIMEOUT)
+                .requestFactory(() -> requestFactory)
+                .setConnectTimeout(Duration.ofMillis(REQUEST_TIMEOUT))
                 .build();
     }
 

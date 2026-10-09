@@ -21,12 +21,14 @@ import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class DataStorageTemplate {
     private DataStorageVO datastorage;
     private List<PermissionVO> permissions;

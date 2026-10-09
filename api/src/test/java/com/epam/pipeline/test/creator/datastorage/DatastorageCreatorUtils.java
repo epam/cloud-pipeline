@@ -52,6 +52,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -238,7 +239,8 @@ public final class DatastorageCreatorUtils {
     }
 
     public static DataStorageTag getDataStorageTag() {
-        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING, TEST_LOCAL_DATE_TIME);
+        return new DataStorageTag(getDataStorageObject(), TEST_STRING, TEST_STRING,
+                TEST_LOCAL_DATE_TIME.truncatedTo(ChronoUnit.MILLIS));
     }
 
     private static DataStorageObject getDataStorageObject() {

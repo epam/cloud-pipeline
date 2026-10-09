@@ -128,12 +128,12 @@ public class ClairV4Client implements ClairClient {
                     true,  () -> client.getIndexReport(layerDigest));
 
             final Optional<String> indexState = indexResponse.flatMap(response -> {
-                final String errorMessage = response.getErr();
+                final String errorMessage = response.err();
                 if (StringUtils.isNotBlank(errorMessage)) {
                     log.error("Scan process was not successful: '{}'", errorMessage);
                     return Optional.empty();
                 }
-                return Optional.of(response.getState());
+                return Optional.of(response.state());
             });
             
             if (!indexState.isPresent()) {

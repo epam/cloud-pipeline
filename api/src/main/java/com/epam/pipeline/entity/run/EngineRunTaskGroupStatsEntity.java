@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.run;
 import com.epam.pipeline.entity.pipeline.run.EngineTaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.Date;
@@ -27,6 +28,7 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class EngineRunTaskGroupStatsEntity {
     private String taskGroup;
     private Date startDateTime;

@@ -30,15 +30,18 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PipelineVersionManagerTest extends AbstractManagerTest {
 
@@ -76,12 +79,11 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
     @InjectMocks
     private PipelineVersionManager pipelineVersionManager;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         MockitoAnnotations.initMocks(this.getClass());
         mockToolManager();
-        Mockito.when(messageHelper.getMessage(Mockito.anyString(), Mockito.anyObject())).thenReturn("");
-        Whitebox.setInternalState(pipelineVersionManager, "preferenceManager", preferenceManager);
+        Mockito.when(messageHelper.getMessage(Mockito.anyString(), anyList())).thenReturn("");
+        ReflectionTestUtils.setField(pipelineVersionManager, "preferenceManager", preferenceManager);
         Mockito.when(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE)).thenReturn(DOCKER_IMAGE);
 
         mockPipeline.setId(1L);
@@ -100,14 +102,14 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void getPipelineConfig() throws GitClientException, IOException {
         Mockito.when(gitManager.getConfigFileContent(mockPipeline, TEST_REVISION_1))
                 .thenReturn(getFileContent(TEST_CONFIG));
         PipelineConfiguration configuration =
                 pipelineVersionManager.loadParametersFromScript(mockPipeline.getId(), TEST_REVISION_1);
-        Assert.assertNotNull(configuration);
-        Assert.assertEquals(EXPECTED_DEFAULT_PARAMS, configuration.getParameters().size());
+        assertNotNull(configuration);
+        assertEquals(EXPECTED_DEFAULT_PARAMS, configuration.getParameters().size());
     }
 
     @Test
@@ -119,7 +121,7 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
             .thenReturn(getFileContent(WITHOUT_IMAGE_CONFIG));
         Mockito.when(toolManager.loadByNameOrId(IMAGE_FROM_PROPERTIES)).thenReturn(mockTool);
         PipelineConfiguration configuration = pipelineVersionManager.loadParametersFromScript(mockPipeline.getId(), "");
-        Assert.assertEquals(TEST_REPOSITORY  + "/" + IMAGE_FROM_PROPERTIES, configuration.getDockerImage());
+        assertEquals(TEST_REPOSITORY  + "/" + IMAGE_FROM_PROPERTIES, configuration.getDockerImage());
     }
 
     @Test
@@ -129,7 +131,7 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
             .thenReturn(getFileContent(WITH_IMAGE_CONFIG));
         Mockito.when(toolManager.loadByNameOrId(IMAGE_FROM_CONFIG)).thenReturn(mockTool);
         PipelineConfiguration configuration = pipelineVersionManager.loadParametersFromScript(mockPipeline.getId(), "");
-        Assert.assertEquals(TEST_REPOSITORY  + "/" + IMAGE_FROM_CONFIG, configuration.getDockerImage());
+        assertEquals(TEST_REPOSITORY  + "/" + IMAGE_FROM_CONFIG, configuration.getDockerImage());
     }
 
     @Test
@@ -141,10 +143,10 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
             .thenReturn(getFileContent(WITHOUT_IMAGE_CONFIG));
         Mockito.when(toolManager.loadByNameOrId(TEST_REPOSITORY  + "/" + IMAGE_FROM_PROPERTIES)).thenReturn(mockTool);
         PipelineConfiguration configuration = pipelineVersionManager.loadParametersFromScript(mockPipeline.getId(), "");
-        Assert.assertEquals(TEST_REPOSITORY  + "/" + IMAGE_FROM_PROPERTIES, configuration.getDockerImage());
+        assertEquals(TEST_REPOSITORY  + "/" + IMAGE_FROM_PROPERTIES, configuration.getDockerImage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testImageWithInvalidRepository() throws GitClientException, IOException {
         Mockito.when(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE))
                 .thenReturn("wrongRepository" + "/" + IMAGE_FROM_PROPERTIES);
@@ -152,7 +154,8 @@ public class PipelineVersionManagerTest extends AbstractManagerTest {
             .thenReturn(getFileContent(WITHOUT_IMAGE_CONFIG));
         Mockito.when(toolManager.loadByNameOrId("wrongRepository" + "/" + IMAGE_FROM_PROPERTIES))
                 .thenThrow(new IllegalArgumentException());
-        pipelineVersionManager.loadParametersFromScript(mockPipeline.getId(), "");
+        assertThrows(IllegalArgumentException.class, () -> pipelineVersionManager.
+            loadParametersFromScript(mockPipeline.getId(), ""));
     }
 
     private String getFileContent(String fileName) throws IOException {

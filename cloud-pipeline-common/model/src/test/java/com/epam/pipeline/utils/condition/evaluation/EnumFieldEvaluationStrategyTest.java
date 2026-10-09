@@ -4,14 +4,15 @@ import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.utils.condition.FieldType;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EnumFieldEvaluationStrategyTest {
 
@@ -59,9 +60,10 @@ public class EnumFieldEvaluationStrategyTest {
         assertFalse(strategy.evaluate(leaf("=", STATUS_RUNNING), null, NOW));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowForUnsupportedOperator() {
-        strategy.evaluate(leaf(">", STATUS_RUNNING), STATUS_RUNNING, NOW);
+        assertThrows(IllegalArgumentException.class,
+                () -> strategy.evaluate(leaf(">", STATUS_RUNNING), STATUS_RUNNING, NOW));
     }
 
     private static ConditionExpression leaf(final String operand, final String value) {

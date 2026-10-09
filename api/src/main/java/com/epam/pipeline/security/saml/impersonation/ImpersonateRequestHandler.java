@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.security.saml.impersonation;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface ImpersonateRequestHandler {
 

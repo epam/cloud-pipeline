@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.git.github;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class GitHubRef {
     private String ref;
     private String sha;

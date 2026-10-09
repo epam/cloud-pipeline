@@ -18,10 +18,12 @@ package com.epam.pipeline.elasticsearchagent.model;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 @AllArgsConstructor
 public class DataStorageDoc {
     private AbstractDataStorage storage;

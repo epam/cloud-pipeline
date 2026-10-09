@@ -72,7 +72,7 @@ abstract class AbstractCloudRegionDaoHelper<R extends AbstractCloudRegion, C ext
 
         final String slsPropertiesJson = Optional.ofNullable(region.getStorageLifecycleServiceProperties())
                 .map(props -> {
-                    if (MapUtils.isNotEmpty(props.getProperties())) {
+                    if (MapUtils.isNotEmpty(props.properties())) {
                         return JsonMapper.convertDataToJsonStringForQuery(
                                 region.getStorageLifecycleServiceProperties());
                     } else {

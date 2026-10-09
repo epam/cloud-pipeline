@@ -34,9 +34,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +45,8 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class VersionStorageReportTemplateManagerTest extends AbstractManagerTest {
 
@@ -82,8 +83,7 @@ public class VersionStorageReportTemplateManagerTest extends AbstractManagerTest
     @InjectMocks
     private VersionStorageReportTemplateManager reportTemplateManager;
 
-    @Before
-    public void setup() throws IOException {
+    @BeforeEach    public void setup() throws IOException {
         Pipeline mockPipeline = new Pipeline();
         mockPipeline.setName("pipeline");
         mockPipeline.setId(1L);
@@ -169,31 +169,31 @@ public class VersionStorageReportTemplateManagerTest extends AbstractManagerTest
         final VersionStorageReportFile report = reportTemplateManager.generateReport(1L, GIT_COMMITS_FILTER);
         //check that Apache poi could read such report -> this docx file is valid
         XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(report.getContent()));
-        Assert.assertFalse(document.getBodyElements().isEmpty());
+        assertFalse(document.getBodyElements().isEmpty());
         document.getParagraphs().stream().map(XWPFParagraph::getText).forEach(
-            text -> Assert.assertFalse(text.matches(".*\\{.*}.*"))
+            text -> assertFalse(text.matches(".*\\{.*}.*"))
         );
     }
 
     @Test
     public void fetchAndNormalizeDiffWorksWithBinaryAndText() {
         final GitParsedDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER);
-        Assert.assertEquals(2, gitDiff.getEntries().size());
+        assertEquals(2, gitDiff.getEntries().size());
 
         GitParsedDiffEntry first = gitDiff.getEntries().get(0);
         GitParsedDiffEntry second = gitDiff.getEntries().get(1);
 
-        Assert.assertEquals("/dev/null", first.getDiff().getFromFileName());
-        Assert.assertEquals("test.csv", first.getDiff().getToFileName());
+        assertEquals("/dev/null", first.getDiff().getFromFileName());
+        assertEquals("test.csv", first.getDiff().getToFileName());
 
-        Assert.assertEquals("src/test", second.getDiff().getFromFileName());
-        Assert.assertEquals("src/test", second.getDiff().getToFileName());
+        assertEquals("src/test", second.getDiff().getFromFileName());
+        assertEquals("src/test", second.getDiff().getToFileName());
 
-        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateFrom(), gitDiff.getFilters().getDateFrom());
-        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
-        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
-        Assert.assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
-        Assert.assertArrayEquals(
+        assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateFrom(), gitDiff.getFilters().getDateFrom());
+        assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
+        assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
+        assertEquals(GIT_COMMITS_FILTER.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
+        assertArrayEquals(
             GIT_COMMITS_FILTER.getCommitsFilter().getAuthors().toArray(),
             gitDiff.getFilters().getAuthors().toArray()
         );
@@ -202,19 +202,19 @@ public class VersionStorageReportTemplateManagerTest extends AbstractManagerTest
     @Test
     public void fetchAndNormalizeDiffWorksWithText() {
         final GitParsedDiff gitDiff = reportTemplateManager.fetchAndNormalizeDiffs(1L, GIT_COMMITS_FILTER_2);
-        Assert.assertEquals(1, gitDiff.getEntries().size());
+        assertEquals(1, gitDiff.getEntries().size());
 
         GitParsedDiffEntry first = gitDiff.getEntries().get(0);
 
-        Assert.assertEquals("/dev/null", first.getDiff().getFromFileName());
-        Assert.assertEquals("test.csv", first.getDiff().getToFileName());
+        assertEquals("/dev/null", first.getDiff().getFromFileName());
+        assertEquals("test.csv", first.getDiff().getToFileName());
 
 
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateFrom(), gitDiff.getFilters().getDateFrom());
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
-        Assert.assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
-        Assert.assertArrayEquals(
+        assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateFrom(), gitDiff.getFilters().getDateFrom());
+        assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getDateTo(), gitDiff.getFilters().getDateTo());
+        assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getPath(), gitDiff.getFilters().getPath());
+        assertEquals(GIT_COMMITS_FILTER_2.getCommitsFilter().getRef(), gitDiff.getFilters().getRef());
+        assertArrayEquals(
             GIT_COMMITS_FILTER_2.getCommitsFilter().getAuthors().toArray(),
             gitDiff.getFilters().getAuthors().toArray()
         );

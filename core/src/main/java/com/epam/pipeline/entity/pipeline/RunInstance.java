@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -87,7 +87,7 @@ public class RunInstance {
     public boolean isEmpty() {
         return nodeType == null && (nodeDisk == null || nodeDisk <= 0)
                 && nodeIP == null && nodeId == null && nodeImage == null
-                && spot == null && cloudRegionId == null && !StringUtils.hasText(nodeName);
+                && spot == null && cloudRegionId == null && StringUtils.isBlank(nodeName);
     }
 
     public boolean requirementsMatch(final RunInstance other, final Integer diskDelta) {

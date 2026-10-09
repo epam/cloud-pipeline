@@ -2,12 +2,13 @@ package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PodLaunchCommandHelperTest {
 
@@ -56,8 +57,8 @@ public class PodLaunchCommandHelperTest {
         final String ubuntuLaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                         COMMAND_TEMPLATES,
                         ToolOSVersion.builder().distribution(UBUNTU_OS).version("18.04").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
-        Assert.assertEquals(COMMAND_FOR_ALL_IMAGES, ubuntuLaunchCommand);
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
+        assertEquals(COMMAND_FOR_ALL_IMAGES, ubuntuLaunchCommand);
     }
 
     @Test
@@ -65,8 +66,8 @@ public class PodLaunchCommandHelperTest {
         final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
-        Assert.assertEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
+        assertEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
     }
 
     @Test
@@ -74,8 +75,8 @@ public class PodLaunchCommandHelperTest {
         final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
-                ROCKY_SHORT_IMAGE_WITHOUT_TAG).getCommand();
-        Assert.assertEquals(COMMAND_FOR_DOCKER, centos7LaunchCommand);
+                ROCKY_SHORT_IMAGE_WITHOUT_TAG).command();
+        assertEquals(COMMAND_FOR_DOCKER, centos7LaunchCommand);
     }
 
     @Test
@@ -83,8 +84,8 @@ public class PodLaunchCommandHelperTest {
         final String centos8LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("8").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
-        Assert.assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos8LaunchCommand);
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
+        assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos8LaunchCommand);
     }
 
     @Test
@@ -92,52 +93,52 @@ public class PodLaunchCommandHelperTest {
         final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                 COMMAND_TEMPLATES_WRONG_ORDER,
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
-                CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
-        Assert.assertNotEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
-        Assert.assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos7LaunchCommand);
+                CENTOS_FULL_IMAGE_WITH_TAG).command();
+        assertNotEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
+        assertEquals(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES, centos7LaunchCommand);
     }
 
     @Test
     public void shouldEvaluateLaunchCommandTemplateTest() {
         final String evaluatedCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
                 LAUNCH_COMMAND_TEMPLATE, Collections.singletonMap(VALUE, EVALUATED));
-        Assert.assertEquals(EVALUATED_LAUNCH_COMMAND_TEMPLATE, evaluatedCommand);
+        assertEquals(EVALUATED_LAUNCH_COMMAND_TEMPLATE, evaluatedCommand);
     }
 
     @Test
     public void shouldEvaluateOnlySpecificVarsInLaunchCommandTemplateTest() {
         final String evaluatedCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
                 LAUNCH_COMMAND_TEMPLATE_WITH_ADDITIONAL_VARS, Collections.singletonMap(VALUE, EVALUATED));
-        Assert.assertEquals(EVALUATED_LAUNCH_COMMAND_TEMPLATE_WITH_ADDITIONAL_VARS, evaluatedCommand);
+        assertEquals(EVALUATED_LAUNCH_COMMAND_TEMPLATE_WITH_ADDITIONAL_VARS, evaluatedCommand);
     }
 
     @Test
     public void shouldMatchImageWithoutTag() {
-        Assert.assertTrue(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITHOUT_TAG,
+        assertTrue(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITHOUT_TAG,
                 CENTOS_FULL_IMAGE_WITHOUT_TAG));
     }
 
     @Test
     public void shouldMatchImageWithoutTagAndRepo() {
-        Assert.assertTrue(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITHOUT_TAG,
+        assertTrue(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITHOUT_TAG,
                 CENTOS_SHORT_IMAGE_WITHOUT_TAG));
     }
 
     @Test
     public void shouldMathImageWithTag() {
-        Assert.assertTrue(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
+        assertTrue(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
                 CENTOS_FULL_IMAGE_WITH_TAG));
     }
 
     @Test
     public void shouldNotMatchImageWithoutTag() {
-        Assert.assertFalse(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
+        assertFalse(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
                 CENTOS_FULL_IMAGE_WITHOUT_TAG));
     }
 
     @Test
     public void shouldNotMatchImageWithWrongTag() {
-        Assert.assertFalse(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
+        assertFalse(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
                 CENTOS_FULL_IMAGE_WITH_TAG2));
     }
 }
