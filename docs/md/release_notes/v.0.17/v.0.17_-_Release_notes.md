@@ -1838,6 +1838,8 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 
 `pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (`boto3`/`botocore`, `azure-mgmt-*`, `google-api-python-client`, and `pipe-common` itself), so they run under either interpreter.
 
+The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got the same `CP_PYTHON_VERSION`/Python 3.12 support, covering its NFS-synchronization scripts and the storage `chown`/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.
+
 ***
 
 ## Notable Bug fixes
