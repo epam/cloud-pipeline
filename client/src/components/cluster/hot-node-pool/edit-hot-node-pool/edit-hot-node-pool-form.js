@@ -22,6 +22,7 @@ import classNames from 'classnames';
 import StringInput from './controls/StringInput';
 import SelectInput from './controls/SelectInput';
 import CheckboxControl from './controls/CheckboxControl';
+import ModeControl from './controls/ModeControl';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -30,7 +31,7 @@ import InstanceDetails from '../instance-details';
 import * as hints from '../hot-node-pool-hints';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
-import {DISK_MIN_SIZE, DISK_MAX_SIZE, COUNT_MIN_SIZE} from './constants';
+import {DISK_MIN_SIZE, DISK_MAX_SIZE, COUNT_MIN_SIZE, MODE_DEFAULT} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
@@ -169,6 +170,7 @@ function EditHotNodePoolForm ({
   onChange
 }) {
   const {
+    mode,
     name,
     autoscaled,
     count,
@@ -189,6 +191,12 @@ function EditHotNodePoolForm ({
   } = values;
   return (
     <div>
+      <ModeControl
+        value={mode || MODE_DEFAULT}
+        disabled={disabled || readOnly}
+        hint={hints.modeHint}
+        onChange={value => onChange('mode', value)}
+      />
       <StringInput
         label="Pool name:"
         value={name}

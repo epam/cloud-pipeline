@@ -133,6 +133,38 @@ test('shows "Edit" chrome and SAVE when a pool is given', async () => {
   expect(screen.getByText('SAVE')).toBeInTheDocument();
 });
 
+test('create mode: Mode is enabled and shows Default', async () => {
+  await renderPool();
+  const combobox = within(row('Mode:')).getByRole('combobox');
+  expect(combobox.closest('.ant-select')).not.toHaveClass('ant-select-disabled');
+  expect(screen.getByText('Default')).toBeInTheDocument();
+});
+
+test('edit mode: Mode is disabled and still shows Default', async () => {
+  await renderPool({pool: fullPool()});
+  const combobox = within(row('Mode:')).getByRole('combobox');
+  expect(combobox.closest('.ant-select')).toHaveClass('ant-select-disabled');
+  expect(screen.getByText('Default')).toBeInTheDocument();
+});
+
+test('create mode, selecting GPU leaves the Mode select showing GPU', async () => {
+  await renderPool();
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('GPU'));
+
+  expect(within(row('Mode:')).getByText('GPU')).toBeInTheDocument();
+});
+
+test('SAVE payload never carries mode', async () => {
+  const onSave = fn();
+  await renderPool({pool: fullPool(), onSave});
+
+  await click(screen.getByText('SAVE'));
+
+  expect(Object.keys(onSave.mock.calls[0][0])).not.toContain('mode');
+});
+
 test('readOnly (!isNew): Region/AMI/Disk are disabled with a pool', async () => {
   await renderPool({pool: fullPool()});
   const regionSelect = within(row('Region:')).getByRole('combobox').closest('.ant-select');

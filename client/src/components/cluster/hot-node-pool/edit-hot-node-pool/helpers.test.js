@@ -413,6 +413,11 @@ describe('buildPoolPayload', () => {
       tier: {value: 'web', monitored: false}
     });
   });
+
+  it('never includes mode: it has no backend slot', () => {
+    const payload = buildPoolPayload(values({mode: 'GPU'}));
+    expect(Object.keys(payload)).not.toContain('mode');
+  });
 });
 
 describe('buildSchedulePayload', () => {

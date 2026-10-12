@@ -18,3 +18,6 @@ export const DISK_MIN_SIZE = 15;
 export const DISK_MAX_SIZE = 15360;
 
 export const COUNT_MIN_SIZE = 0;
+
+export const MODE_DEFAULT = 'DEFAULT';
+export const MODE_GPU = 'GPU';

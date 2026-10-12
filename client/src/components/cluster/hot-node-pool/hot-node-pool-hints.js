@@ -60,11 +60,19 @@ const scaleStepHint = (
   </div>
 );
 
+const modeHint = (
+  <div>
+    <b>Default</b> pools keep a number of nodes up on a weekly recurring schedule.<br />
+    <b>GPU</b> pools reserve capacity for a single one-time window and cannot be autoscaled.
+  </div>
+);
+
 export {
   autoScaledHint,
   minSizeHint,
   maxSizeHint,
   scaleDownThresholdHint,
   scaleUpThresholdHint,
-  scaleStepHint
+  scaleStepHint,
+  modeHint
 };

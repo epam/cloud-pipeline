@@ -29,12 +29,14 @@ import {
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import Roles from '../../../../models/user/Roles';
+import {MODE_DEFAULT} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 @inject('awsRegions')
 @observer
 class EditHotNodePool extends React.Component {
   state = {
+    mode: MODE_DEFAULT,
     modified: false,
     valid: true,
     disk: undefined,
@@ -185,6 +187,7 @@ class EditHotNodePool extends React.Component {
         scheduleEntries: schedule = []
       } = scheduleObj;
       this.setState({
+        mode: MODE_DEFAULT,
         disk,
         initialDisk: disk,
         instanceType,
@@ -244,6 +247,7 @@ class EditHotNodePool extends React.Component {
       }, this.onChange);
     } else {
       this.setState({
+        mode: MODE_DEFAULT,
         disk: undefined,
         initialDisk: undefined,
         instanceType: undefined,
@@ -541,6 +545,7 @@ class EditHotNodePool extends React.Component {
     } = this.props;
     const isNew = !pool;
     const {
+      mode,
       name,
       autoscaled,
       count,
@@ -591,6 +596,7 @@ class EditHotNodePool extends React.Component {
       >
         <EditHotNodePoolForm
           values={{
+            mode,
             name,
             autoscaled,
             count,

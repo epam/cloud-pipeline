@@ -18,6 +18,7 @@ import React from 'react';
 import {observable} from 'mobx';
 import {renderWithStores, screen, within, click, change, fn} from '@test';
 import EditHotNodePoolForm from './edit-hot-node-pool-form';
+import {MODE_DEFAULT} from './constants';
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
@@ -57,6 +58,7 @@ function noopOnChange () {
 
 function baseValues (overrides = {}) {
   return {
+    mode: MODE_DEFAULT,
     name: 'my-pool',
     autoscaled: false,
     count: 1,
@@ -126,6 +128,32 @@ function selectIsDisabled (labelText) {
   const combobox = within(row(labelText)).getByRole('combobox');
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
 }
+
+test('the Mode row renders and precedes Pool name', () => {
+  renderForm();
+  const text = document.body.textContent;
+  expect(text.indexOf('Mode:')).toBeLessThan(text.indexOf('Pool name:'));
+});
+
+test('readOnly disables the Mode select; readOnly=false does not', () => {
+  renderForm({readOnly: true});
+  expect(selectIsDisabled('Mode:')).toBe(true);
+});
+
+test('readOnly=false leaves the Mode select enabled', () => {
+  renderForm({readOnly: false});
+  expect(selectIsDisabled('Mode:')).toBe(false);
+});
+
+test('choosing GPU calls onChange with (\'mode\', \'GPU\')', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('GPU'));
+
+  expect(onChange).toHaveBeenCalledWith('mode', 'GPU');
+});
 
 test('renders all three section headers', () => {
   renderForm();
