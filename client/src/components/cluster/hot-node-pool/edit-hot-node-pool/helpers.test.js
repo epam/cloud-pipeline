@@ -204,6 +204,65 @@ describe('getValidationErrors', () => {
     });
   });
 
+  describe('GPU commitment window', () => {
+    it('requires both the start date and the duration in GPU mode', () => {
+      const {valid, errors} = getValidationErrors(baseValues({mode: 'GPU'}));
+      expect(errors.commitmentStart).toBe('Start date is required');
+      expect(errors.commitmentDuration)
+        .toBe('Duration should be a positive number of seconds');
+      expect(valid).toBe(false);
+    });
+
+    it('accepts a valid start date and a positive duration in GPU mode', () => {
+      const {errors} = getValidationErrors(baseValues({
+        mode: 'GPU',
+        commitmentStart: '2026-01-01 10:00:00',
+        commitmentDuration: 3600
+      }));
+      expect(errors.commitmentStart).toBeUndefined();
+      expect(errors.commitmentDuration).toBeUndefined();
+    });
+
+    it.each([0, -5])('rejects a non-positive duration %i', (commitmentDuration) => {
+      const {errors} = getValidationErrors(baseValues({
+        mode: 'GPU',
+        commitmentStart: '2026-01-01 10:00:00',
+        commitmentDuration
+      }));
+      expect(errors.commitmentDuration)
+        .toBe('Duration should be a positive number of seconds');
+    });
+
+    it('accepts a duration given as a numeric string', () => {
+      const {errors} = getValidationErrors(baseValues({
+        mode: 'GPU',
+        commitmentStart: '2026-01-01 10:00:00',
+        commitmentDuration: '3600'
+      }));
+      expect(errors.commitmentDuration).toBeUndefined();
+    });
+
+    it('rejects an unparseable start date', () => {
+      const {errors} = getValidationErrors(baseValues({
+        mode: 'GPU',
+        commitmentStart: 'tomorrow',
+        commitmentDuration: 3600
+      }));
+      expect(errors.commitmentStart).toBe('Start date is required');
+    });
+
+    it('Default-mode regression: commitment fields are never validated', () => {
+      const {valid, errors} = getValidationErrors(baseValues({
+        mode: 'DEFAULT',
+        commitmentStart: 'tomorrow',
+        commitmentDuration: -5
+      }));
+      expect(errors.commitmentStart).toBeUndefined();
+      expect(errors.commitmentDuration).toBeUndefined();
+      expect(valid).toBe(true);
+    });
+  });
+
   describe('labels', () => {
     it('flags a label with an empty name as invalid', () => {
       const {errors} = getValidationErrors(baseValues({
@@ -424,6 +483,16 @@ describe('buildPoolPayload', () => {
   it('never includes mode when poolType is also set: neither has a backend slot', () => {
     const payload = buildPoolPayload(values({mode: 'GPU', poolType: 'STANDARD'}));
     expect(Object.keys(payload)).not.toContain('mode');
+  });
+
+  it('never includes commitmentStart/commitmentDuration even when both are set', () => {
+    const payload = buildPoolPayload(values({
+      mode: 'GPU',
+      commitmentStart: '2026-01-01 10:00:00',
+      commitmentDuration: 3600
+    }));
+    expect(Object.keys(payload)).not.toContain('commitmentStart');
+    expect(Object.keys(payload)).not.toContain('commitmentDuration');
   });
 });
 

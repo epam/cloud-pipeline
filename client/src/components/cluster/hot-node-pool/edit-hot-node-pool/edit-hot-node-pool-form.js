@@ -24,6 +24,7 @@ import SelectInput from './controls/SelectInput';
 import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
 import PoolTypeControl from './controls/PoolTypeControl';
+import GpuScheduleControl from './controls/GpuScheduleControl';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -197,7 +198,9 @@ function EditHotNodePoolForm ({
     dockerImages,
     labels,
     schedule,
-    filters
+    filters,
+    commitmentStart,
+    commitmentDuration
   } = values;
   const gpuMode = (mode || MODE_DEFAULT) === MODE_GPU;
   return (
@@ -229,14 +232,29 @@ function EditHotNodePoolForm ({
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Schedule</h2>
       </div>
-      <ScheduleControls
-        schedule={schedule}
-        error={validation.schedule}
-        touched={touched.schedule}
-        onAdd={() => onChange('schedule', {action: 'add'})}
-        onChange={id => payload => onChange('schedule', {action: 'update', id, payload})}
-        onRemove={id => () => onChange('schedule', {action: 'remove', id})}
-      />
+      {
+        gpuMode ? (
+          <GpuScheduleControl
+            start={commitmentStart}
+            duration={commitmentDuration}
+            disabled={disabled}
+            startError={validation.commitmentStart}
+            durationError={validation.commitmentDuration}
+            touched={touched.commitmentStart || touched.commitmentDuration}
+            onChangeStart={value => onChange('commitmentStart', value)}
+            onChangeDuration={value => onChange('commitmentDuration', value)}
+          />
+        ) : (
+          <ScheduleControls
+            schedule={schedule}
+            error={validation.schedule}
+            touched={touched.schedule}
+            onAdd={() => onChange('schedule', {action: 'add'})}
+            onChange={id => payload => onChange('schedule', {action: 'update', id, payload})}
+            onRemove={id => () => onChange('schedule', {action: 'remove', id})}
+          />
+        )
+      }
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Configuration</h2>
       </div>

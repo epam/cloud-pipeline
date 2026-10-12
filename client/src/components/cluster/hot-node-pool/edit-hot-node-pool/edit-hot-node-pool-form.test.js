@@ -187,6 +187,40 @@ test('DEFAULT mode regression: the Filters section stays enabled', () => {
   expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 });
 
+test('DEFAULT mode shows the weekly schedule UI, not the GPU commitment window', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'})});
+  expect(screen.getByText('Add schedule')).toBeInTheDocument();
+  expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
+});
+
+test('GPU mode shows the one-time commitment window, not the weekly schedule UI', () => {
+  renderForm({values: baseValues({mode: 'GPU'})});
+  expect(screen.getByText('Starts on:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  expect(screen.getByText('Ends on:')).toBeInTheDocument();
+  expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
+});
+
+test('GPU mode derives Ends on from Starts on + Duration', () => {
+  renderForm({
+    values: baseValues({
+      mode: 'GPU',
+      commitmentStart: '2026-01-01 10:00:00',
+      commitmentDuration: 7200
+    })
+  });
+  expect(screen.getByText('2026-01-01 12:00:00')).toBeInTheDocument();
+});
+
+test('GPU mode shows the commitment start error once touched', () => {
+  renderForm({
+    values: baseValues({mode: 'GPU'}),
+    validation: {commitmentStart: 'Start date is required'},
+    touched: {commitmentStart: true}
+  });
+  expect(screen.getByText('Start date is required')).toBeInTheDocument();
+});
+
 test('renders all three section headers', () => {
   renderForm();
   expect(screen.getByText('Schedule')).toBeInTheDocument();

@@ -40,6 +40,8 @@ class EditHotNodePool extends React.Component {
   state = {
     mode: MODE_DEFAULT,
     poolType: POOL_TYPE_STANDARD,
+    commitmentStart: undefined,
+    commitmentDuration: undefined,
     modified: false,
     valid: true,
     disk: undefined,
@@ -93,7 +95,9 @@ class EditHotNodePool extends React.Component {
       maxSize: undefined,
       scaleDownThreshold: undefined,
       scaleUpThreshold: undefined,
-      scaleStep: undefined
+      scaleStep: undefined,
+      commitmentStart: undefined,
+      commitmentDuration: undefined
     },
     touched: {
       disk: false,
@@ -108,7 +112,9 @@ class EditHotNodePool extends React.Component {
       maxSize: false,
       scaleDownThreshold: undefined,
       scaleUpThreshold: undefined,
-      scaleStep: undefined
+      scaleStep: undefined,
+      commitmentStart: undefined,
+      commitmentDuration: undefined
     }
   };
 
@@ -192,6 +198,8 @@ class EditHotNodePool extends React.Component {
       this.setState({
         mode: MODE_DEFAULT,
         poolType: POOL_TYPE_STANDARD,
+        commitmentStart: undefined,
+        commitmentDuration: undefined,
         disk,
         initialDisk: disk,
         instanceType,
@@ -246,13 +254,17 @@ class EditHotNodePool extends React.Component {
           maxSize: false,
           scaleDownThreshold: false,
           scaleUpThreshold: false,
-          scaleStep: false
+          scaleStep: false,
+          commitmentStart: false,
+          commitmentDuration: false
         }
       }, this.onChange);
     } else {
       this.setState({
         mode: MODE_DEFAULT,
         poolType: POOL_TYPE_STANDARD,
+        commitmentStart: undefined,
+        commitmentDuration: undefined,
         disk: undefined,
         initialDisk: undefined,
         instanceType: undefined,
@@ -304,7 +316,9 @@ class EditHotNodePool extends React.Component {
           maxSize: false,
           scaleDownThreshold: false,
           scaleUpThreshold: false,
-          scaleStep: false
+          scaleStep: false,
+          commitmentStart: false,
+          commitmentDuration: false
         }
       }, this.onChange);
     }
@@ -398,7 +412,9 @@ class EditHotNodePool extends React.Component {
           scaleDownThreshold: true,
           scaleUpThreshold: true,
           scaleStep: true,
-          labels: true
+          labels: true,
+          commitmentStart: true,
+          commitmentDuration: true
         }
       });
     } else if (onSave) {
@@ -597,6 +613,8 @@ class EditHotNodePool extends React.Component {
       labels,
       schedule,
       filters,
+      commitmentStart,
+      commitmentDuration,
       validation,
       touched,
       allowedInstanceTypes,
@@ -648,7 +666,9 @@ class EditHotNodePool extends React.Component {
             dockerImages,
             labels,
             schedule,
-            filters
+            filters,
+            commitmentStart,
+            commitmentDuration
           }}
           validation={validation}
           touched={touched}

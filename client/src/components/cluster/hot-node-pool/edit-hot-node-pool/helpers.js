@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+import moment from 'moment-timezone';
 import {getFiltersError, filtersAreEqual} from '../filters-control';
 import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
 import {
@@ -21,7 +22,8 @@ import {
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
   MODE_GPU,
-  POOL_TYPE_STANDARD
+  POOL_TYPE_STANDARD,
+  COMMITMENT_DATE_TIME_FORMAT
 } from './constants';
 
 // A STANDARD GPU pool is always restricted to the runs of the user who created it, so
@@ -76,7 +78,10 @@ export function getValidationErrors (values) {
     scaleDownThreshold,
     scaleUpThreshold,
     scaleStep,
-    labels = []
+    labels = [],
+    mode,
+    commitmentStart,
+    commitmentDuration
   } = values;
   let diskError,
     instanceTypeError,
@@ -91,7 +96,9 @@ export function getValidationErrors (values) {
     scaleDownThresholdError,
     scaleUpThresholdError,
     scaleStepError,
-    labelsError;
+    labelsError,
+    commitmentStartError,
+    commitmentDurationError;
   if (
     Number.isNaN(Number(disk)) ||
     Number(disk) < DISK_MIN_SIZE ||
@@ -186,6 +193,25 @@ export function getValidationErrors (values) {
       countError = `Count should be a positive value or zero (pool is disabled)`;
     }
   }
+  // GPU pools reserve a single one-time window. Both fields are client-only (no backend
+  // slot yet) but are validated as real required fields.
+  if (mode === MODE_GPU) {
+    if (
+      !commitmentStart ||
+      !moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true).isValid()
+    ) {
+      commitmentStartError = 'Start date is required';
+    }
+    if (
+      commitmentDuration === undefined ||
+      commitmentDuration === null ||
+      commitmentDuration === '' ||
+      Number.isNaN(Number(commitmentDuration)) ||
+      Number(commitmentDuration) <= 0
+    ) {
+      commitmentDurationError = 'Duration should be a positive number of seconds';
+    }
+  }
   const labelsNames = [...new Set(labels.map((lb) => (lb.name || '').trim().toLowerCase()))];
   if (labels.some((lb) => (lb.name || '').trim().length === 0)) {
     labelsError = 'There are invalid node labels';
@@ -205,7 +231,9 @@ export function getValidationErrors (values) {
     !scaleDownThresholdError &&
     !scaleUpThresholdError &&
     !scaleStepError &&
-    !labelsError;
+    !labelsError &&
+    !commitmentStartError &&
+    !commitmentDurationError;
   return {
     valid,
     errors: {
@@ -222,7 +250,9 @@ export function getValidationErrors (values) {
       scaleDownThreshold: scaleDownThresholdError,
       scaleUpThreshold: scaleUpThresholdError,
       scaleStep: scaleStepError,
-      labelsError
+      labelsError,
+      commitmentStart: commitmentStartError,
+      commitmentDuration: commitmentDurationError
     }
   };
 }

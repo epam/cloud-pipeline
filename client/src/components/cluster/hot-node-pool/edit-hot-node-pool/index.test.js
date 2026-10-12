@@ -21,6 +21,7 @@ import {
   screen,
   within,
   click,
+  change,
   waitFor,
   flushPromises,
   fn,
@@ -235,6 +236,62 @@ test('SAVE payload never carries mode', async () => {
   await click(screen.getByText('SAVE'));
 
   expect(Object.keys(onSave.mock.calls[0][0])).not.toContain('mode');
+});
+
+test('create mode, GPU with a duration but no start: CREATE is blocked', async () => {
+  const onSave = fn();
+  await renderPool({onSave});
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('GPU'));
+
+  await change(within(row('Duration (sec):')).getByRole('textbox'), '3600');
+
+  await click(screen.getByText('CREATE'));
+
+  expect(onSave).not.toHaveBeenCalled();
+  expect(screen.getByText('Start date is required')).toBeInTheDocument();
+});
+
+test('create mode, GPU with nothing filled: both commitment errors show', async () => {
+  const onSave = fn();
+  await renderPool({onSave});
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('GPU'));
+
+  await click(screen.getByText('CREATE'));
+
+  expect(screen.getByText('Start date is required')).toBeInTheDocument();
+  expect(screen.getByText('Duration should be a positive number of seconds')).toBeInTheDocument();
+  expect(onSave).not.toHaveBeenCalled();
+});
+
+test('Default-mode regression: SAVE still works and never shows a commitment error', async () => {
+  const onSave = fn();
+  await renderPool({pool: fullPool(), onSave});
+
+  await click(screen.getByText('SAVE'));
+
+  expect(onSave).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
+  expect(screen.queryByText('Duration should be a positive number of seconds'))
+    .not.toBeInTheDocument();
+});
+
+test('saved payloads never carry the commitment fields', async () => {
+  const onSave = fn();
+  await renderPool({pool: fullPool(), onSave});
+
+  await click(screen.getByText('SAVE'));
+
+  const [payload, schedulePayload] = onSave.mock.calls[0];
+  expect(Object.keys(payload)).not.toContain('commitmentStart');
+  expect(Object.keys(payload)).not.toContain('commitmentDuration');
+  expect(schedulePayload.name).toBe('my-pool');
+  expect(schedulePayload.scheduleEntries).toEqual([
+    {from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'}
+  ]);
 });
 
 test('readOnly (!isNew): Region/AMI/Disk are disabled with a pool', async () => {
