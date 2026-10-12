@@ -31,7 +31,7 @@ import {
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import Roles from '../../../../models/user/Roles';
-import {MODE_DEFAULT, MODE_GPU, POOL_TYPE_STANDARD} from './constants';
+import {MODE_DEFAULT, MODE_GPU, POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 @inject('awsRegions')
@@ -43,6 +43,9 @@ class EditHotNodePool extends React.Component {
     commitmentStart: undefined,
     commitmentEnd: undefined,
     commitmentDuration: undefined,
+    isExistingReservation: false,
+    reservationStartDate: undefined,
+    reservationEndDate: undefined,
     modified: false,
     valid: true,
     disk: undefined,
@@ -198,26 +201,39 @@ class EditHotNodePool extends React.Component {
         scaleDownThreshold,
         scaleUpThreshold,
         scaleStep,
-        kubeLabels: labels = {}
+        kubeLabels: labels = {},
+        isCapacityReservation,
+        poolType: poolPoolTypeRaw,
+        startDate: reservationStartDate,
+        endDate: reservationEndDate
       } = pool;
       const {
         scheduleEntries: schedule = []
       } = scheduleObj;
-      // `pool` is always truthy here, so `mode` always resolves to MODE_DEFAULT (an
-      // existing pool is never reopened in GPU mode) and `lockedFilters` always takes
-      // the `mapFilters(filters)` branch below — the ternary is kept only so this
-      // branch and the `else` one mirror each other; see the comment there for the
-      // case where `this.defaultMode` actually matters.
-      const mode = pool ? MODE_DEFAULT : this.defaultMode;
-      const lockedFilters = filtersAreLocked({mode, poolType: POOL_TYPE_STANDARD})
-        ? buildLockedFilters(this.props.currentUserName)
-        : mapFilters(filters);
+      // `isCapacityReservation` is the backend entity's own flag and the only
+      // reliable signal that a loaded pool is a reservation pool.
+      const mode = isCapacityReservation ? MODE_GPU : MODE_DEFAULT;
+      // After Phase 1 the two literals are identical ('STANDARD'/'SHARABLE_NODE'), so
+      // this is a validated passthrough rather than a translation.
+      const poolType = mode === MODE_GPU &&
+        [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
+        ? poolPoolTypeRaw
+        : POOL_TYPE_STANDARD;
+      // On an existing pool the persisted filter already holds the right RUN_OWNER;
+      // rebuilding it from `this.props.currentUserName` would silently rewrite another
+      // user's pool to the admin who opened it. The Filters section stays disabled for
+      // a GPU/Standard pool anyway, because the form's `FiltersControl` already
+      // computes `disabled={disabled || filtersAreLocked(values)}` from `mode`/`poolType`.
+      const mappedFilters = mapFilters(filters);
       this.setState({
         mode,
-        poolType: POOL_TYPE_STANDARD,
+        poolType,
         commitmentStart: undefined,
         commitmentEnd: undefined,
         commitmentDuration: undefined,
+        isExistingReservation: !!isCapacityReservation,
+        reservationStartDate,
+        reservationEndDate,
         disk,
         initialDisk: disk,
         instanceType,
@@ -241,8 +257,8 @@ class EditHotNodePool extends React.Component {
         initialName: name,
         region: regionId,
         initialRegion: regionId,
-        filters: lockedFilters,
-        initialFilters: mapFilters(filters),
+        filters: mappedFilters,
+        initialFilters: mappedFilters,
         prevRegion: -1,
         prevSpot: -1,
         allowedInstanceTypes: [],
@@ -295,6 +311,9 @@ class EditHotNodePool extends React.Component {
         commitmentStart: undefined,
         commitmentEnd: undefined,
         commitmentDuration: undefined,
+        isExistingReservation: false,
+        reservationStartDate: undefined,
+        reservationEndDate: undefined,
         disk: undefined,
         initialDisk: undefined,
         instanceType: undefined,
@@ -379,11 +398,18 @@ class EditHotNodePool extends React.Component {
                 const priceTypes = (payload[priceTypesKey] || ['SPOT', 'ON_DEMAND'])
                   .map(o => o.toUpperCase());
                 let {instanceType, spot} = this.state;
-                const {mode} = this.state;
+                const {mode, isExistingReservation} = this.state;
                 if (!typeNames.has(instanceType)) {
                   instanceType = undefined;
                 }
-                if (!(new Set(priceTypes)).has(spot)) {
+                // An existing reservation's `priceType` must round-trip unchanged
+                // (`validateReservationPoolUpdate`), and its control is locked for the
+                // same reason — so this auto-correction, which otherwise substitutes a
+                // price type the fetched allowed-list no longer offers, must leave it
+                // alone here even if the pool's own region/instance-type combination
+                // no longer offers it. Silently swapping it in would send a changed
+                // `priceType` on SAVE and the backend would reject it.
+                if (!isExistingReservation && !(new Set(priceTypes)).has(spot)) {
                   // A GPU pool is a capacity reservation and `NodePoolValidator` rejects a
                   // SPOT price type for one, so the auto-picked default must skip it too —
                   // otherwise a forced-GPU create, or a GPU create before a region is
@@ -661,6 +687,9 @@ class EditHotNodePool extends React.Component {
       commitmentStart,
       commitmentEnd,
       commitmentDuration,
+      isExistingReservation,
+      reservationStartDate,
+      reservationEndDate,
       validation,
       touched,
       allowedInstanceTypes,
@@ -722,6 +751,9 @@ class EditHotNodePool extends React.Component {
           touched={touched}
           disabled={disabled}
           readOnly={!isNew}
+          isExistingReservation={isExistingReservation}
+          reservationStartDate={reservationStartDate}
+          reservationEndDate={reservationEndDate}
           regions={this.regions}
           instanceTypes={this.instanceTypes}
           allowedInstanceTypes={allowedInstanceTypes}

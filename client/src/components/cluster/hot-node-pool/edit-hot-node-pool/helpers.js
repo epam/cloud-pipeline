@@ -87,7 +87,8 @@ export function getValidationErrors (values) {
     mode,
     commitmentStart,
     commitmentEnd,
-    commitmentDuration
+    commitmentDuration,
+    isExistingReservation
   } = values;
   let diskError,
     instanceTypeError,
@@ -205,49 +206,57 @@ export function getValidationErrors (values) {
   // request. The minimum-32-vCPU and allowed-instance-family rules are intentionally
   // left to the backend: both need async lookups this form does not have.
   if (mode === MODE_GPU) {
-    const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
-    const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
-    const now = moment();
-    if (!commitmentStart || !start.isValid()) {
-      commitmentStartError = 'Start date is required';
-    } else if (!start.isAfter(now)) {
-      commitmentStartError = 'Start date should be in the future';
-    } else {
-      // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
-      // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
-      // toward zero and happens to agree here, but is not the same operation).
-      const leadDays = Math.floor(start.diff(now, 'days', true));
-      if (leadDays < MIN_RESERVATION_LEAD_DAYS || leadDays > MAX_RESERVATION_LEAD_DAYS) {
-        commitmentStartError = `Start date should be between ${MIN_RESERVATION_LEAD_DAYS} ` +
-          `and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
+    // An existing reservation's window cannot be changed through this endpoint, so
+    // there is nothing to validate here, and SAVE must not be blocked by three fields
+    // the form intentionally leaves empty for an existing reservation pool (the
+    // requested duration is never echoed back by GET).
+    if (!isExistingReservation) {
+      const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
+      const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
+      const now = moment();
+      if (!commitmentStart || !start.isValid()) {
+        commitmentStartError = 'Start date is required';
+      } else if (!start.isAfter(now)) {
+        commitmentStartError = 'Start date should be in the future';
+      } else {
+        // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
+        // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
+        // toward zero and happens to agree here, but is not the same operation).
+        const leadDays = Math.floor(start.diff(now, 'days', true));
+        if (leadDays < MIN_RESERVATION_LEAD_DAYS || leadDays > MAX_RESERVATION_LEAD_DAYS) {
+          commitmentStartError = `Start date should be between ${MIN_RESERVATION_LEAD_DAYS} ` +
+            `and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
+        }
+      }
+      if (!commitmentEnd || !end.isValid()) {
+        commitmentEndError = 'End date is required';
+      } else if (start.isValid() && !end.isAfter(start)) {
+        commitmentEndError = 'End date should be after the start date';
+      }
+      if (
+        commitmentDuration === undefined ||
+        commitmentDuration === null ||
+        commitmentDuration === '' ||
+        Number.isNaN(Number(commitmentDuration)) ||
+        Number(commitmentDuration) <= 0
+      ) {
+        commitmentDurationError = 'Duration should be a positive number of seconds';
+      } else if (Number(commitmentDuration) < MIN_COMMITMENT_DURATION_SECONDS) {
+        commitmentDurationError = 'Duration should be at least ' +
+          `${MIN_COMMITMENT_DURATION_SECONDS} seconds (14 days)`;
+      } else if (
+        start.isValid() &&
+        end.isValid() &&
+        end.isAfter(start) &&
+        end.diff(start, 'seconds') < Number(commitmentDuration)
+      ) {
+        commitmentDurationError = 'Duration should fit between the start and end dates';
       }
     }
-    if (!commitmentEnd || !end.isValid()) {
-      commitmentEndError = 'End date is required';
-    } else if (start.isValid() && !end.isAfter(start)) {
-      commitmentEndError = 'End date should be after the start date';
-    }
-    if (
-      commitmentDuration === undefined ||
-      commitmentDuration === null ||
-      commitmentDuration === '' ||
-      Number.isNaN(Number(commitmentDuration)) ||
-      Number(commitmentDuration) <= 0
-    ) {
-      commitmentDurationError = 'Duration should be a positive number of seconds';
-    } else if (Number(commitmentDuration) < MIN_COMMITMENT_DURATION_SECONDS) {
-      commitmentDurationError = 'Duration should be at least ' +
-        `${MIN_COMMITMENT_DURATION_SECONDS} seconds (14 days)`;
-    } else if (
-      start.isValid() &&
-      end.isValid() &&
-      end.isAfter(start) &&
-      end.diff(start, 'seconds') < Number(commitmentDuration)
-    ) {
-      commitmentDurationError = 'Duration should fit between the start and end dates';
-    }
     // A GPU pool is never autoscaled, but this is explicit rather than relying on
-    // that: the backend rejects a reservation pool with `count < 1` outright.
+    // that: the backend rejects a reservation pool with `count < 1` outright, on both
+    // create and update — so this check stays unconditional even for an existing
+    // reservation pool, whose disabled Count input round-trips a valid value anyway.
     if (Number.isNaN(Number(count)) || Number(count) < GPU_COUNT_MIN_SIZE) {
       countError = 'Count should be at least 1 for a GPU pool';
     }
@@ -378,6 +387,7 @@ export function buildPoolPayload (values) {
   const {
     mode,
     poolType,
+    isExistingReservation,
     count,
     disk: instanceDisk,
     dockerImages,
@@ -423,7 +433,13 @@ export function buildPoolPayload (values) {
   };
   if (mode === MODE_GPU) {
     payload.poolType = poolType;
-    payload.capacityReservationRequest = buildCapacityReservationRequest(values);
+    // `NodePoolManager.update()` never reads `capacityReservationRequest` on an
+    // existing reservation pool — the window cannot be changed through this
+    // endpoint at all (a separate "extend" flow, out of scope) — so it is only ever
+    // sent on create, never on an update of an already-reserved pool.
+    if (!isExistingReservation) {
+      payload.capacityReservationRequest = buildCapacityReservationRequest(values);
+    }
   }
   return payload;
 }

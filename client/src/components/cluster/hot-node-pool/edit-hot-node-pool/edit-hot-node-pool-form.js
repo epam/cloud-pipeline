@@ -25,6 +25,7 @@ import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
 import PoolTypeControl from './controls/PoolTypeControl';
 import GpuScheduleControl from './controls/GpuScheduleControl';
+import GpuReservationSummary from './controls/GpuReservationSummary';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -173,6 +174,9 @@ function EditHotNodePoolForm ({
   touched,
   disabled,
   readOnly,
+  isExistingReservation,
+  reservationStartDate,
+  reservationEndDate,
   regions,
   instanceTypes,
   allowedInstanceTypes,
@@ -251,19 +255,31 @@ function EditHotNodePoolForm ({
       </div>
       {
         gpuMode ? (
-          <GpuScheduleControl
-            start={commitmentStart}
-            end={commitmentEnd}
-            duration={commitmentDuration}
-            disabled={disabled}
-            startError={validation.commitmentStart}
-            endError={validation.commitmentEnd}
-            durationError={validation.commitmentDuration}
-            touched={touched.commitmentStart || touched.commitmentEnd || touched.commitmentDuration}
-            onChangeStart={value => onChange('commitmentStart', value)}
-            onChangeEnd={value => onChange('commitmentEnd', value)}
-            onChangeDuration={value => onChange('commitmentDuration', value)}
-          />
+          isExistingReservation ? (
+            // A reservation's window is granted by the backend's scheduler and
+            // cannot be changed through this endpoint, so an existing reservation
+            // pool shows it as read-only text instead of the editable controls.
+            <GpuReservationSummary
+              start={reservationStartDate}
+              end={reservationEndDate}
+            />
+          ) : (
+            <GpuScheduleControl
+              start={commitmentStart}
+              end={commitmentEnd}
+              duration={commitmentDuration}
+              disabled={disabled}
+              startError={validation.commitmentStart}
+              endError={validation.commitmentEnd}
+              durationError={validation.commitmentDuration}
+              touched={
+                touched.commitmentStart || touched.commitmentEnd || touched.commitmentDuration
+              }
+              onChangeStart={value => onChange('commitmentStart', value)}
+              onChangeEnd={value => onChange('commitmentEnd', value)}
+              onChangeDuration={value => onChange('commitmentDuration', value)}
+            />
+          )
         ) : (
           <ScheduleControls
             schedule={schedule}
@@ -296,7 +312,11 @@ function EditHotNodePoolForm ({
             label="Nodes count:"
             value={count}
             onChange={value => onChange('count', value)}
-            disabled={disabled}
+            // `validateReservationPoolUpdate` rejects an update that changes `count`
+            // on a reservation pool, so the form does not offer the change. This is
+            // narrower than `readOnly={!isNew}` (which already disables other fields
+            // on every edit) and must not be folded into it.
+            disabled={disabled || isExistingReservation}
             min={COUNT_MIN_SIZE}
             error={validation.count}
             touched={touched.count}
@@ -399,7 +419,11 @@ function EditHotNodePoolForm ({
         currentProvider={currentProvider}
         value={spot}
         onChange={value => onChange('spot', value)}
-        disabled={disabled || allowedInstanceTypesPending || readOnly}
+        // `validateReservationPoolUpdate` rejects an update that changes `priceType`
+        // on a reservation pool, so the form does not offer the change. This is
+        // narrower than `readOnly={!isNew}` (already included below) and must not be
+        // folded into it.
+        disabled={disabled || allowedInstanceTypesPending || readOnly || isExistingReservation}
         gpuMode={gpuMode}
       />
       <InstanceTypeSelect
@@ -478,6 +502,9 @@ EditHotNodePoolForm.propTypes = {
   touched: PropTypes.object,
   disabled: PropTypes.bool,
   readOnly: PropTypes.bool,
+  isExistingReservation: PropTypes.bool,
+  reservationStartDate: PropTypes.string,
+  reservationEndDate: PropTypes.string,
   regions: PropTypes.array,
   instanceTypes: PropTypes.array,
   // MobX wraps a Remote's resolved value in an ObservableArray, which fails a

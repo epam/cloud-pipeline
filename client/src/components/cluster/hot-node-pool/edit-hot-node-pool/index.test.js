@@ -102,6 +102,22 @@ function fullPool (overrides = {}) {
   };
 }
 
+// `isCapacityReservation` is the backend entity's own flag — the only reliable signal
+// that a loaded pool is a reservation pool. `startDate`/`endDate` are the realized
+// window (null while pending/unscheduled); `schedule: undefined` because a GPU pool's
+// weekly schedule is always empty.
+function reservationPool (overrides = {}) {
+  return fullPool({
+    isCapacityReservation: true,
+    poolType: 'STANDARD',
+    priceType: 'ON_DEMAND',
+    schedule: undefined,
+    startDate: '2026-03-01 10:00:00.000',
+    endDate: '2026-04-01 10:00:00.000',
+    ...overrides
+  });
+}
+
 // Mounting always fires an AllowedInstanceTypes request (prevRegion starts at
 // -1), including in create mode with no region yet — this waits for it to
 // settle before the test's assertions and cleanup run, so the pending
@@ -414,6 +430,132 @@ test('updateFromProps maps every field from the pool payload', async () => {
   expect(screen.getByText('prod')).toBeInTheDocument();
   expect(screen.getByText('Starts on:')).toBeInTheDocument();
 });
+
+test(
+  'editing a reservation pool opens in GPU mode, disabled, with the right Pool type',
+  async () => {
+    await renderPool({pool: reservationPool()});
+
+    expect(within(row('Mode:')).getByText('GPU')).toBeInTheDocument();
+    expect(selectIsDisabled('Mode:')).toBe(true);
+    expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
+    expect(selectIsDisabled('Pool type:')).toBe(true);
+  }
+);
+
+test('a SHARABLE_NODE reservation pool opens showing Shareable', async () => {
+  await renderPool({pool: reservationPool({poolType: 'SHARABLE_NODE'})});
+
+  expect(within(row('Pool type:')).getByText('Shareable')).toBeInTheDocument();
+});
+
+test('editing a Default pool still opens in Default mode (regression)', async () => {
+  await renderPool({pool: fullPool()});
+
+  expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
+  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+  expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
+});
+
+test('a reservation pool shows its window read-only', async () => {
+  await renderPool({pool: reservationPool()});
+
+  expect(screen.getByText('Reservation window:')).toBeInTheDocument();
+  expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
+  expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
+});
+
+test('a pending reservation shows the pending message', async () => {
+  await renderPool({pool: reservationPool({startDate: undefined, endDate: undefined})});
+  expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
+});
+
+test('a pending reservation (end not yet scheduled) also shows the pending message', async () => {
+  await renderPool({pool: reservationPool({endDate: undefined})});
+  expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
+});
+
+test('a reservation pool disables Count and Price type; a Default pool does not', async () => {
+  await renderPool({pool: reservationPool()});
+  expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+});
+
+test('a Default pool regression: Count stays enabled', async () => {
+  await renderPool({pool: fullPool()});
+  expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();
+});
+
+test(
+  'SAVE on a reservation pool sends poolType but no capacityReservationRequest, ' +
+  'with count and priceType unchanged',
+  async () => {
+    const onSave = fn();
+    const {api} = await renderPool({pool: reservationPool(), onSave});
+
+    await click(screen.getByText('SAVE'));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [payload, schedulePayload] = onSave.mock.calls[0];
+    expect(payload.poolType).toBe('STANDARD');
+    expect(Object.keys(payload)).not.toContain('capacityReservationRequest');
+    expect(payload.count).toBe(2);
+    expect(payload.priceType).toBe('ON_DEMAND');
+    expect(schedulePayload).toBeUndefined();
+    expect(api.calls.every(c => !/nodeSchedule/.test(c.path))).toBe(true);
+  }
+);
+
+test('editing a Standard reservation pool keeps the persisted filter owner', async () => {
+  const onSave = fn();
+  await renderPool({
+    pool: reservationPool({
+      filter: {
+        operator: 'AND',
+        filters: [{type: 'RUN_OWNER', operator: 'EQUAL', value: 'OTHER_USER'}]
+      }
+    }),
+    currentUserName: 'USER1',
+    onSave
+  });
+
+  await click(screen.getByText('SAVE'));
+
+  const [payload] = onSave.mock.calls[0];
+  expect(JSON.stringify(payload.filter)).toContain('OTHER_USER');
+  expect(JSON.stringify(payload.filter)).not.toContain('USER1');
+});
+
+// Regression for a gap the mode-inference fix opened: before this phase, editing a pool
+// always resolved to MODE_DEFAULT, so `updateInstanceTypes`'s GPU auto-pick branch never
+// ran during an edit. Now that an existing reservation pool correctly opens in GPU mode,
+// that branch is reachable on every edit too — and `priceType` must round-trip unchanged
+// for a reservation pool (`validateReservationPoolUpdate`), the same reason its control is
+// disabled. If the region's fetched allowed price types no longer include the pool's own
+// (e.g. a narrowed preference), the auto-pick must still leave it alone rather than
+// silently substituting a different one that SAVE would then send and the backend reject.
+test(
+  'a reservation pool keeps its priceType unchanged even when the region no longer offers it',
+  async () => {
+    const onSave = fn();
+    const {api} = await renderPool(
+      {pool: reservationPool(), onSave},
+      () => ({
+        'cluster.allowed.instance.types': [
+          {sku: 's1', name: 'm5.xlarge', instanceFamily: 'General purpose'}
+        ],
+        'cluster.allowed.price.types': ['SPOT']
+      })
+    );
+    await flushPromises();
+
+    await click(screen.getByText('SAVE'));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [payload] = onSave.mock.calls[0];
+    expect(payload.priceType).toBe('ON_DEMAND');
+    expect(api.calls.every(c => !/nodeSchedule/.test(c.path))).toBe(true);
+  }
+);
 
 test('validation hides until CREATE, then shows required fields and skips the save', async () => {
   const onSave = fn();

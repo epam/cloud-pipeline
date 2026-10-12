@@ -250,6 +250,63 @@ test('GPU mode shows the commitment end error once touched', () => {
   expect(screen.getByText('End date is required')).toBeInTheDocument();
 });
 
+test('an existing reservation pool shows the window read-only instead of the editable controls',
+  () => {
+    renderForm({
+      values: baseValues({mode: 'GPU'}),
+      readOnly: true,
+      isExistingReservation: true,
+      reservationStartDate: '2026-03-01 10:00:00.000',
+      reservationEndDate: '2026-04-01 10:00:00.000'
+    });
+    expect(screen.getByText('Reservation window:')).toBeInTheDocument();
+    expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
+    expect(screen.queryByText('Starts on:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ends on:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
+  });
+
+test('an existing reservation pool disables Nodes count and Price type', () => {
+  renderForm({
+    values: baseValues({mode: 'GPU'}),
+    readOnly: true,
+    isExistingReservation: true,
+    reservationStartDate: '2026-03-01 10:00:00.000',
+    reservationEndDate: '2026-04-01 10:00:00.000'
+  });
+  expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+  expect(selectIsDisabled('Price type:')).toBe(true);
+});
+
+test('a Default-mode edit leaves Nodes count editable (regression)', () => {
+  renderForm({
+    values: baseValues({mode: 'DEFAULT'}),
+    readOnly: true,
+    isExistingReservation: false
+  });
+  expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();
+});
+
+test('a Default-mode edit leaves Price type editable (regression)', () => {
+  renderForm({
+    values: baseValues({mode: 'DEFAULT'}),
+    readOnly: false,
+    isExistingReservation: false
+  });
+  expect(selectIsDisabled('Price type:')).toBe(false);
+});
+
+test('a new GPU pool still renders the editable window', () => {
+  renderForm({
+    values: baseValues({mode: 'GPU'}),
+    isExistingReservation: false
+  });
+  expect(screen.getByText('Starts on:')).toBeInTheDocument();
+  expect(screen.getByText('Ends on:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  expect(screen.queryByText('Reservation window:')).not.toBeInTheDocument();
+});
+
 test('renders all three section headers', () => {
   renderForm();
   expect(screen.getByText('Schedule')).toBeInTheDocument();
