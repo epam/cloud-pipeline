@@ -202,6 +202,32 @@ test(
   }
 );
 
+test(
+  'switching to GPU mode removes Autoscaled and its rows; switching back leaves it unchecked',
+  async () => {
+    await renderPool();
+
+    await click(within(row('Autoscaled:')).getByRole('checkbox'));
+    expect(within(row('Min Size:')).getByRole('textbox')).toBeInTheDocument();
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('GPU'));
+
+    expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Max Size:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Up Threshold:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Down Threshold:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Step:')).not.toBeInTheDocument();
+    expect(screen.getByText('Nodes count:')).toBeInTheDocument();
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Default'));
+
+    expect(within(row('Autoscaled:')).getByRole('checkbox')).not.toBeChecked();
+  }
+);
+
 test('SAVE payload never carries mode', async () => {
   const onSave = fn();
   await renderPool({pool: fullPool(), onSave});

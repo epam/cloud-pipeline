@@ -199,6 +199,7 @@ function EditHotNodePoolForm ({
     schedule,
     filters
   } = values;
+  const gpuMode = (mode || MODE_DEFAULT) === MODE_GPU;
   return (
     <div>
       <ModeControl
@@ -239,13 +240,17 @@ function EditHotNodePoolForm ({
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Configuration</h2>
       </div>
-      <CheckboxControl
-        label="Autoscaled:"
-        checked={autoscaled}
-        onChange={e => onChange('autoscaled', e.target.checked)}
-        disabled={disabled}
-        hint={hints.autoScaledHint}
-      />
+      {
+        gpuMode ? null : (
+          <CheckboxControl
+            label="Autoscaled:"
+            checked={autoscaled}
+            onChange={e => onChange('autoscaled', e.target.checked)}
+            disabled={disabled}
+            hint={hints.autoScaledHint}
+          />
+        )
+      }
       {
         autoscaled ? null : (
           <StringInput
@@ -261,7 +266,7 @@ function EditHotNodePoolForm ({
         )
       }
       {
-        autoscaled ? (
+        autoscaled && !gpuMode ? (
           <StringInput
             type="number"
             label="Min Size:"
@@ -277,7 +282,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled ? (
+        autoscaled && !gpuMode ? (
           <StringInput
             type="number"
             label="Max Size:"
@@ -293,7 +298,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled ? (
+        autoscaled && !gpuMode ? (
           <StringInput
             type="number"
             label="Scale Up Threshold:"
@@ -310,7 +315,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled ? (
+        autoscaled && !gpuMode ? (
           <StringInput
             type="number"
             label="Scale Down Threshold:"
@@ -327,7 +332,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled ? (
+        autoscaled && !gpuMode ? (
           <StringInput
             type="number"
             label="Scale Step:"

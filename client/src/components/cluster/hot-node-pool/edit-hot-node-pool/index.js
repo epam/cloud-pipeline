@@ -31,7 +31,7 @@ import {
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import Roles from '../../../../models/user/Roles';
-import {MODE_DEFAULT, POOL_TYPE_STANDARD} from './constants';
+import {MODE_DEFAULT, MODE_GPU, POOL_TYPE_STANDARD} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 @inject('awsRegions')
@@ -453,6 +453,10 @@ class EditHotNodePool extends React.Component {
       [key]: value,
       touched: {...touched, [key]: true}
     };
+    // A GPU pool reserves a fixed block of capacity, so it can never be autoscaled.
+    if (next.mode === MODE_GPU) {
+      newState.autoscaled = false;
+    }
     if (filtersAreLocked(next)) {
       newState.filters = buildLockedFilters(currentUserName);
     } else if (filtersAreLocked({mode, poolType})) {

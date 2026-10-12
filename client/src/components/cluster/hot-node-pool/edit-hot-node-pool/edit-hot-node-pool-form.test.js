@@ -230,6 +230,32 @@ test('when autoscaled, the autoscale rows show, indented, in Min/Max/Up/Down/Ste
   });
 });
 
+test('GPU mode hides Autoscaled and keeps Nodes count', () => {
+  renderForm({values: baseValues({mode: 'GPU'})});
+  expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+  expect(screen.getByText('Nodes count:')).toBeInTheDocument();
+});
+
+test('GPU mode with an inconsistent autoscaled=true still hides every scaling row', () => {
+  renderForm({values: baseValues({mode: 'GPU', autoscaled: true})});
+  expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Max Size:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Scale Up Threshold:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Scale Down Threshold:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Scale Step:')).not.toBeInTheDocument();
+});
+
+test('DEFAULT mode regression: autoscaled=true still shows the checkbox and all five rows', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT', autoscaled: true})});
+  expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
+  expect(screen.getByText('Min Size:')).toBeInTheDocument();
+  expect(screen.getByText('Max Size:')).toBeInTheDocument();
+  expect(screen.getByText('Scale Up Threshold:')).toBeInTheDocument();
+  expect(screen.getByText('Scale Down Threshold:')).toBeInTheDocument();
+  expect(screen.getByText('Scale Step:')).toBeInTheDocument();
+  expect(screen.queryByText('Nodes count:')).not.toBeInTheDocument();
+});
+
 test('readOnly disables Region/Price/Instance Type/AMI/Disk, not Pool name/Nodes count', () => {
   renderForm({readOnly: true});
   expect(selectIsDisabled('Region:')).toBe(true);
