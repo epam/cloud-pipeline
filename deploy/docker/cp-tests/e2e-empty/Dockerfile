@@ -12,18 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE=library/centos:7.7.1908
+ARG BASE_IMAGE=rockylinux:8.7
 FROM ${BASE_IMAGE}
 
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/http:/https:/g' /etc/yum.repos.d/CentOS-*.repo && \
-    echo 'sslverify=0' >> /etc/yum.conf
-
-RUN yum install -y epel-release && \
-    yum install -y wget \
+RUN yum install -y wget \
                    bzip2 \
                    gcc \
                    zlib-devel \
@@ -33,14 +25,15 @@ RUN yum install -y epel-release && \
                    ncurses-devel \
                    unzip \
                    git \
-                   python \
+                   python2 \
                    fuse \
                    tzdata \
                    acl \
-                   coreutils \
                    openssh-server \
-                   yum-utils
+                   yum-utils && \
+    ln -sf /usr/bin/python2 /usr/bin/python
 
+RUN dnf install -y --allowerasing coreutils
 
 RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
