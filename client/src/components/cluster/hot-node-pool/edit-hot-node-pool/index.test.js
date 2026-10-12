@@ -229,6 +229,36 @@ test(
   }
 );
 
+test('switching to GPU mode resets a Spot price type to On-demand', async () => {
+  await renderPool();
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('GPU'));
+  await flushPromises();
+
+  await waitFor(() => {
+    expect(within(row('Price type:')).getByText('On-demand')).toBeInTheDocument();
+  });
+});
+
+test('Default-mode regression: Price type stays Spot and stays enabled', async () => {
+  await renderPool({pool: fullPool()});
+
+  expect(within(row('Price type:')).getByText('Spot')).toBeInTheDocument();
+});
+
+// Regression for a gap `onPoolKindChange`'s reset alone does not cover: a forced-GPU
+// create never fires `onPoolKindChange` for mode (the Mode row is hidden, mode is GPU
+// from the first render), so the auto-pick in `updateInstanceTypes` is the only thing
+// that ever sets `spot` here, and it must skip SPOT too.
+test('a forced-GPU create never auto-selects the Spot price type', async () => {
+  await renderPool({allowedModes: ['GPU']});
+
+  await waitFor(() => {
+    expect(within(row('Price type:')).getByText('On-demand')).toBeInTheDocument();
+  });
+});
+
 test('allowedModes=["GPU"]: opens forced into GPU mode, locked, with no Mode row', async () => {
   await renderPool({allowedModes: ['GPU']});
 

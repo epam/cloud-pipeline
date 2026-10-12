@@ -133,7 +133,10 @@ function InstanceTypeSelect ({
   );
 }
 
-function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disabled}) {
+function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disabled, gpuMode}) {
+  // `NodePoolValidator` rejects a `SPOT` price type for a capacity reservation, so the
+  // option is not offered in GPU mode.
+  const availablePriceTypes = gpuMode ? priceTypes.filter(pt => !pt) : priceTypes;
   return (
     <SelectInput
       label="Price type:"
@@ -147,7 +150,7 @@ function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disable
       }
     >
       {
-        priceTypes.map(priceType => (
+        availablePriceTypes.map(priceType => (
           <Select.Option
             key={priceType ? 'SPOT' : 'ON_DEMAND'}
             value={priceType ? 'SPOT' : 'ON_DEMAND'}
@@ -397,6 +400,7 @@ function EditHotNodePoolForm ({
         value={spot}
         onChange={value => onChange('spot', value)}
         disabled={disabled || allowedInstanceTypesPending || readOnly}
+        gpuMode={gpuMode}
       />
       <InstanceTypeSelect
         instanceTypes={instanceTypes}

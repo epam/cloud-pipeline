@@ -365,6 +365,27 @@ test('builds grouped region/instance options and provider-specific price type na
   expect(screen.getAllByText('Low priority').length).toBeGreaterThan(0);
 });
 
+test('GPU mode does not offer the Spot price type', async () => {
+  renderForm({values: baseValues({mode: 'GPU', spot: 'ON_DEMAND'})});
+
+  await click(within(row('Price type:')).getByRole('combobox'));
+
+  // 'On-demand' is both the already-selected value and the only dropdown option here,
+  // so it appears twice in the document (same precedent as the azure/"Low priority"
+  // case above) - getAllByText, not getByText, is what proves it is still offered.
+  expect(screen.getAllByText('On-demand').length).toBeGreaterThan(0);
+  expect(screen.queryByText('Spot')).not.toBeInTheDocument();
+});
+
+test('DEFAULT mode still offers both price types', async () => {
+  renderForm({values: baseValues({mode: 'DEFAULT', spot: 'ON_DEMAND'})});
+
+  await click(within(row('Price type:')).getByRole('combobox'));
+
+  expect(screen.getByText('Spot')).toBeInTheDocument();
+  expect(screen.getAllByText('On-demand').length).toBeGreaterThan(0);
+});
+
 test('wires Pool name and Disk to onChange, keyed by field name', async () => {
   const onChange = fn();
   renderForm({onChange});

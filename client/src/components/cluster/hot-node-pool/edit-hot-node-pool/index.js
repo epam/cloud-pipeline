@@ -379,11 +379,19 @@ class EditHotNodePool extends React.Component {
                 const priceTypes = (payload[priceTypesKey] || ['SPOT', 'ON_DEMAND'])
                   .map(o => o.toUpperCase());
                 let {instanceType, spot} = this.state;
+                const {mode} = this.state;
                 if (!typeNames.has(instanceType)) {
                   instanceType = undefined;
                 }
                 if (!(new Set(priceTypes)).has(spot)) {
-                  spot = priceTypes[0];
+                  // A GPU pool is a capacity reservation and `NodePoolValidator` rejects a
+                  // SPOT price type for one, so the auto-picked default must skip it too —
+                  // otherwise a forced-GPU create, or a GPU create before a region is
+                  // chosen, would silently default to a price type the form never offers
+                  // and the backend would reject on CREATE.
+                  spot = mode === MODE_GPU
+                    ? (priceTypes.find(p => !/^spot$/i.test(p)) || priceTypes[0])
+                    : priceTypes[0];
                 }
                 this.setState({
                   allowedInstanceTypes: types,
@@ -495,7 +503,7 @@ class EditHotNodePool extends React.Component {
   // combination restores the filters the form started with (`undefined` when creating).
   onPoolKindChange = (key, value) => {
     const {currentUserName} = this.props;
-    const {mode, poolType, touched, initialFilters} = this.state;
+    const {mode, poolType, spot, touched, initialFilters} = this.state;
     const next = {mode, poolType, [key]: value};
     const newState = {
       [key]: value,
@@ -504,6 +512,11 @@ class EditHotNodePool extends React.Component {
     // A GPU pool reserves a fixed block of capacity, so it can never be autoscaled.
     if (next.mode === MODE_GPU) {
       newState.autoscaled = false;
+      // A capacity reservation cannot use spot pricing, so leaving Default mode with
+      // Spot selected would carry an instantly-invalid price type into GPU mode.
+      if (spot && /^spot$/i.test(spot)) {
+        newState.spot = 'ON_DEMAND';
+      }
     }
     if (filtersAreLocked(next)) {
       newState.filters = buildLockedFilters(currentUserName);
