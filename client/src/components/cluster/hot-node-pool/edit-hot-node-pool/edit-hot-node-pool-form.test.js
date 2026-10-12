@@ -77,6 +77,7 @@ function baseValues (overrides = {}) {
     labels: [],
     schedule: [],
     filters: undefined,
+    commitmentEnd: undefined,
     ...overrides
   };
 }
@@ -214,15 +215,21 @@ test('GPU mode shows the one-time commitment window, not the weekly schedule UI'
   expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
 });
 
-test('GPU mode derives Ends on from Starts on + Duration', () => {
+test('GPU mode renders Starts on, Ends on and Duration as three editable rows', () => {
   renderForm({
     values: baseValues({
       mode: 'GPU',
       commitmentStart: '2026-01-01 10:00:00.000',
+      commitmentEnd: '2026-02-01 10:00:00.000',
       commitmentDuration: 7200
     })
   });
-  expect(screen.getByText('2026-01-01 12:00:00.000')).toBeInTheDocument();
+  expect(screen.getByText('Starts on:')).toBeInTheDocument();
+  expect(screen.getByText('Ends on:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  expect(
+    within(row('Ends on:')).getByRole('textbox').value
+  ).toBe('2026-02-01 10:00:00.000');
 });
 
 test('GPU mode shows the commitment start error once touched', () => {
@@ -232,6 +239,15 @@ test('GPU mode shows the commitment start error once touched', () => {
     touched: {commitmentStart: true}
   });
   expect(screen.getByText('Start date is required')).toBeInTheDocument();
+});
+
+test('GPU mode shows the commitment end error once touched', () => {
+  renderForm({
+    values: baseValues({mode: 'GPU'}),
+    validation: {commitmentEnd: 'End date is required'},
+    touched: {commitmentEnd: true}
+  });
+  expect(screen.getByText('End date is required')).toBeInTheDocument();
 });
 
 test('renders all three section headers', () => {

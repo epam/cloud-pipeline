@@ -24,37 +24,46 @@ import HintControl from './HintControl';
 import {COMMITMENT_DATE_TIME_FORMAT} from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// "Ends on" is derived, never independently editable: letting the user type it would
-// allow it to contradict Duration. Returns undefined when either input is missing.
-export function getCommitmentEnd (start, durationSeconds) {
+// undefined when any input is missing/unparseable (no hint is shown then);
+// true/false when all three are usable.
+export function windowCoversDuration (start, end, durationSeconds) {
   const duration = Number(durationSeconds);
-  if (!start || !durationSeconds || Number.isNaN(duration) || duration <= 0) {
+  if (
+    durationSeconds === undefined || durationSeconds === null || durationSeconds === '' ||
+    Number.isNaN(duration) || duration <= 0
+  ) {
     return undefined;
   }
-  const parsed = moment(start, COMMITMENT_DATE_TIME_FORMAT, true);
-  if (!parsed.isValid()) {
+  const startMoment = moment(start, COMMITMENT_DATE_TIME_FORMAT, true);
+  const endMoment = moment(end, COMMITMENT_DATE_TIME_FORMAT, true);
+  if (!startMoment.isValid() || !endMoment.isValid()) {
     return undefined;
   }
-  return parsed.add(duration, 'seconds').format(COMMITMENT_DATE_TIME_FORMAT);
+  return endMoment.diff(startMoment, 'seconds') >= duration;
 }
 
 // A GPU pool reserves capacity for a single one-time absolute window, unlike Default
 // mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
-// control does not reuse and must not touch). `start` is carried as a plain string in
-// `COMMITMENT_DATE_TIME_FORMAT`, parsed/formatted with `moment` in the local zone so it
-// round-trips; `duration` is a number of seconds. "Ends on" is read-only and derived.
+// control does not reuse and must not touch). `start`/`end` are carried as plain strings
+// in `COMMITMENT_DATE_TIME_FORMAT`, parsed/formatted with `moment` in the local zone so
+// they round-trip; `[start, end]` is the backend's reservation *search range* and
+// `duration` the committed length in seconds that must fit inside it. "Ends on" is
+// independently editable and no longer derived from `start` + `duration`.
 function GpuScheduleControl ({
   start,
+  end,
   duration,
   disabled,
   startError,
+  endError,
   durationError,
   touched,
   hint,
   onChangeStart,
+  onChangeEnd,
   onChangeDuration
 }) {
-  const end = getCommitmentEnd(start, duration);
+  const covers = windowCoversDuration(start, end, duration);
   return (
     <div>
       <div className={styles.formRow}>
@@ -79,6 +88,27 @@ function GpuScheduleControl ({
           </div>
         )
       }
+      <div className={styles.formRow}>
+        <span className={styles.label}>Ends on:</span>
+        <DatePicker
+          showTime
+          format={COMMITMENT_DATE_TIME_FORMAT}
+          placeholder="End date and time"
+          className={classNames(styles.formItem, styles.small)}
+          disabled={disabled}
+          value={end ? moment(end, COMMITMENT_DATE_TIME_FORMAT) : undefined}
+          onChange={date => onChangeEnd(
+            date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
+          )}
+        />
+      </div>
+      {
+        endError && touched && (
+          <div className={classNames(styles.formRow, styles.error, 'cp-error')}>
+            {endError}
+          </div>
+        )
+      }
       <StringInput
         type="number"
         label="Duration (sec):"
@@ -89,23 +119,36 @@ function GpuScheduleControl ({
         touched={touched}
         onChange={onChangeDuration}
       />
-      <div className={styles.formRow}>
-        <span className={styles.label}>Ends on:</span>
-        <span>{end || 'Not set'}</span>
-      </div>
+      {
+        covers === true && (
+          <div className={styles.formRow}>
+            <span>Reservation window covers this duration</span>
+          </div>
+        )
+      }
+      {
+        covers === false && (
+          <div className={styles.formRow}>
+            <span>This duration does not fit in the selected window</span>
+          </div>
+        )
+      }
     </div>
   );
 }
 
 GpuScheduleControl.propTypes = {
   start: PropTypes.string,
+  end: PropTypes.string,
   duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   disabled: PropTypes.bool,
   startError: PropTypes.string,
+  endError: PropTypes.string,
   durationError: PropTypes.string,
   touched: PropTypes.bool,
   hint: PropTypes.node,
   onChangeStart: PropTypes.func,
+  onChangeEnd: PropTypes.func,
   onChangeDuration: PropTypes.func
 };
 

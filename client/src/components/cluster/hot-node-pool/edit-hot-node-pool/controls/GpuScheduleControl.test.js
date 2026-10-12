@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {render, screen, within, change, fn} from '@test';
-import GpuScheduleControl, {getCommitmentEnd} from './GpuScheduleControl';
+import GpuScheduleControl, {windowCoversDuration} from './GpuScheduleControl';
 
 // Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
 // `formRow` div holding both the label and its control.
@@ -24,72 +24,174 @@ function row (labelText) {
   return screen.getByText(labelText).closest('div');
 }
 
-describe('getCommitmentEnd', () => {
-  test('adds whole hours', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00.000', 3600)).toBe('2026-01-01 11:00:00.000');
+describe('windowCoversDuration', () => {
+  test('a window well longer than the duration covers it', () => {
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-31 10:00:00.000', 3600)
+    ).toBe(true);
   });
 
-  test('adds seconds across a minute boundary', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00.000', 90)).toBe('2026-01-01 10:01:30.000');
+  test('an exact fit covers the duration', () => {
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', 3600)
+    ).toBe(true);
+  });
+
+  test('one second short does not cover the duration', () => {
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', 3601)
+    ).toBe(false);
   });
 
   test('undefined with no start', () => {
-    expect(getCommitmentEnd(undefined, 3600)).toBeUndefined();
+    expect(
+      windowCoversDuration(undefined, '2026-01-01 11:00:00.000', 3600)
+    ).toBeUndefined();
+  });
+
+  test('undefined with no end', () => {
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', undefined, 3600)
+    ).toBeUndefined();
   });
 
   test('undefined with no duration', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00', undefined)).toBeUndefined();
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', undefined)
+    ).toBeUndefined();
   });
 
   test('undefined with a zero duration', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00', 0)).toBeUndefined();
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', 0)
+    ).toBeUndefined();
   });
 
   test('undefined with a negative duration', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00', -5)).toBeUndefined();
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', -5)
+    ).toBeUndefined();
   });
 
   test('undefined with an unparseable start', () => {
-    expect(getCommitmentEnd('not-a-date', 3600)).toBeUndefined();
+    expect(
+      windowCoversDuration('not-a-date', '2026-01-01 11:00:00.000', 3600)
+    ).toBeUndefined();
+  });
+
+  test('undefined with an unparseable end', () => {
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00.000', 'not-a-date', 3600)
+    ).toBeUndefined();
+  });
+
+  test('undefined with a start that is missing milliseconds (strict parsing)', () => {
+    expect(
+      windowCoversDuration('2026-01-01 10:00:00', '2026-01-01 11:00:00.000', 3600)
+    ).toBeUndefined();
   });
 });
 
-test('renders all three labels', () => {
+test('renders the three date/duration labels', () => {
   render(
     <GpuScheduleControl
       start={undefined}
+      end={undefined}
       duration={undefined}
       onChangeStart={fn()}
+      onChangeEnd={fn()}
       onChangeDuration={fn()}
     />
   );
   expect(screen.getByText('Starts on:')).toBeInTheDocument();
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
   expect(screen.getByText('Ends on:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
 });
 
-test('Ends on shows "Not set" when start/duration are absent', () => {
-  render(
-    <GpuScheduleControl
-      start={undefined}
-      duration={undefined}
-      onChangeStart={fn()}
-      onChangeDuration={fn()}
-    />
-  );
-  expect(within(row('Ends on:')).getByText('Not set')).toBeInTheDocument();
-});
-
-test('Ends on shows the derived value when both start and duration are given', () => {
+test('Starts on and Ends on show their own values independently', () => {
   render(
     <GpuScheduleControl
       start="2026-01-01 10:00:00.000"
-      duration={3600}
+      end="2026-02-01 10:00:00.000"
+      duration={undefined}
       onChangeStart={fn()}
+      onChangeEnd={fn()}
       onChangeDuration={fn()}
     />
   );
-  expect(within(row('Ends on:')).getByText('2026-01-01 11:00:00.000')).toBeInTheDocument();
+  expect(
+    within(row('Starts on:')).getByRole('textbox').value
+  ).toBe('2026-01-01 10:00:00.000');
+  expect(
+    within(row('Ends on:')).getByRole('textbox').value
+  ).toBe('2026-02-01 10:00:00.000');
+});
+
+test('disabled disables all three inputs', () => {
+  render(
+    <GpuScheduleControl
+      start={undefined}
+      end={undefined}
+      duration={undefined}
+      disabled
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+
+  expect(within(row('Starts on:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Ends on:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Duration (sec):')).getByRole('textbox')).toBeDisabled();
+});
+
+test('startError and endError each show only when touched, independently', () => {
+  const {rerender} = render(
+    <GpuScheduleControl
+      start={undefined}
+      end={undefined}
+      duration={undefined}
+      startError="Start date is required"
+      endError="End date is required"
+      touched={false}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
+  expect(screen.queryByText('End date is required')).not.toBeInTheDocument();
+
+  rerender(
+    <GpuScheduleControl
+      start={undefined}
+      end={undefined}
+      duration={undefined}
+      endError="End date is required"
+      touched
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(screen.getByText('End date is required')).toBeInTheDocument();
+  expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
+
+  rerender(
+    <GpuScheduleControl
+      start={undefined}
+      end={undefined}
+      duration={undefined}
+      startError="Start date is required"
+      endError="End date is required"
+      touched
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(screen.getByText('Start date is required')).toBeInTheDocument();
+  expect(screen.getByText('End date is required')).toBeInTheDocument();
 });
 
 test('changing Duration calls onChangeDuration', async () => {
@@ -97,8 +199,10 @@ test('changing Duration calls onChangeDuration', async () => {
   render(
     <GpuScheduleControl
       start={undefined}
+      end={undefined}
       duration={undefined}
       onChangeStart={fn()}
+      onChangeEnd={fn()}
       onChangeDuration={onChangeDuration}
     />
   );
@@ -109,61 +213,61 @@ test('changing Duration calls onChangeDuration', async () => {
   expect(onChangeDuration).toHaveBeenCalledWith(7200);
 });
 
-test('disabled disables the duration input and the Starts on picker input', () => {
-  render(
-    <GpuScheduleControl
-      start={undefined}
-      duration={undefined}
-      disabled
-      onChangeStart={fn()}
-      onChangeDuration={fn()}
-    />
-  );
+// Deviation recorded per the Phase 2 plan: a `fireEvent('change', ...)` on the "Ends on"
+// textbox, including a trailing `keyDown({key: 'Enter'})` + `blur` to force rc-calendar to
+// commit it, never calls `onChangeEnd` under antd 2.13.14/React 15 in this harness — both
+// forms were genuinely tried and left `onChangeEnd` uncalled. There is no existing
+// precedent anywhere in this codebase for driving an antd DatePicker through a unit test
+// (see the plan's "Supporting facts"). The dedicated interaction test is dropped; tests
+// above ("Starts on and Ends on show their own values independently", "disabled disables
+// all three inputs", "startError and endError each show only when touched, independently")
+// already prove the end field is a real, independently-editable input.
 
-  expect(within(row('Duration (sec):')).getByRole('textbox')).toBeDisabled();
-  expect(within(row('Starts on:')).getByRole('textbox')).toBeDisabled();
-});
-
-test('startError shows only when touched', () => {
+test('the fit hint reflects the window', () => {
   const {rerender} = render(
     <GpuScheduleControl
-      start={undefined}
-      duration={undefined}
-      startError="Start date is required"
-      touched={false}
+      start="2026-01-01 10:00:00.000"
+      end="2026-01-31 10:00:00.000"
+      duration={3600}
       onChangeStart={fn()}
+      onChangeEnd={fn()}
       onChangeDuration={fn()}
     />
   );
-  expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
+  expect(screen.getByText('Reservation window covers this duration')).toBeInTheDocument();
+  expect(
+    screen.queryByText('This duration does not fit in the selected window')
+  ).not.toBeInTheDocument();
 
   rerender(
     <GpuScheduleControl
-      start={undefined}
-      duration={undefined}
-      startError="Start date is required"
-      touched
+      start="2026-01-01 10:00:00.000"
+      end="2026-01-01 10:30:00.000"
+      duration={3600}
       onChangeStart={fn()}
+      onChangeEnd={fn()}
       onChangeDuration={fn()}
     />
   );
-  expect(screen.getByText('Start date is required')).toBeInTheDocument();
-});
-
-test('durationError does not show when not touched', () => {
-  render(
-    <GpuScheduleControl
-      start={undefined}
-      duration={undefined}
-      startError="Start date is required"
-      durationError="Duration should be a positive number of seconds"
-      touched={false}
-      onChangeStart={fn()}
-      onChangeDuration={fn()}
-    />
-  );
-  expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
   expect(
-    screen.queryByText('Duration should be a positive number of seconds')
+    screen.getByText('This duration does not fit in the selected window')
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText('Reservation window covers this duration')
+  ).not.toBeInTheDocument();
+
+  rerender(
+    <GpuScheduleControl
+      start="2026-01-01 10:00:00.000"
+      end={undefined}
+      duration={3600}
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  expect(screen.queryByText('Reservation window covers this duration')).not.toBeInTheDocument();
+  expect(
+    screen.queryByText('This duration does not fit in the selected window')
   ).not.toBeInTheDocument();
 });

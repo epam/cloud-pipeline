@@ -204,11 +204,20 @@ function EditHotNodePoolForm ({
     schedule,
     filters,
     commitmentStart,
+    commitmentEnd,
     commitmentDuration
   } = values;
   const gpuMode = (mode || MODE_DEFAULT) === MODE_GPU;
   return (
     <div>
+      <StringInput
+        label="Pool name:"
+        value={name}
+        onChange={value => onChange('name', value)}
+        disabled={disabled}
+        error={validation.name}
+        touched={touched.name}
+      />
       {
         modes.length > 1 ? (
           <ModeControl
@@ -234,14 +243,6 @@ function EditHotNodePoolForm ({
           />
         ) : null
       }
-      <StringInput
-        label="Pool name:"
-        value={name}
-        onChange={value => onChange('name', value)}
-        disabled={disabled}
-        error={validation.name}
-        touched={touched.name}
-      />
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Schedule</h2>
       </div>
@@ -249,12 +250,15 @@ function EditHotNodePoolForm ({
         gpuMode ? (
           <GpuScheduleControl
             start={commitmentStart}
+            end={commitmentEnd}
             duration={commitmentDuration}
             disabled={disabled}
             startError={validation.commitmentStart}
+            endError={validation.commitmentEnd}
             durationError={validation.commitmentDuration}
-            touched={touched.commitmentStart || touched.commitmentDuration}
+            touched={touched.commitmentStart || touched.commitmentEnd || touched.commitmentDuration}
             onChangeStart={value => onChange('commitmentStart', value)}
+            onChangeEnd={value => onChange('commitmentEnd', value)}
             onChangeDuration={value => onChange('commitmentDuration', value)}
           />
         ) : (
