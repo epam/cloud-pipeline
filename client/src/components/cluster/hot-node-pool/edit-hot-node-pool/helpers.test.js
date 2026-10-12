@@ -23,9 +23,14 @@ import {
   buildSchedulePayload,
   buildCapacityReservationRequest,
   filtersAreLocked,
-  buildLockedFilters
+  buildLockedFilters,
+  getCapacityReservationStatus
 } from './helpers';
-import {COMMITMENT_DATE_TIME_FORMAT} from './constants';
+import {
+  COMMITMENT_DATE_TIME_FORMAT,
+  RESERVATION_STATUS_PENDING,
+  RESERVATION_STATUS_APPROVED
+} from './constants';
 
 const validSchedule = {from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'};
 const invalidSchedule = {from: 'MONDAY', fromTime: '09:00:00', to: undefined, toTime: undefined};
@@ -711,5 +716,46 @@ describe('arraysAreEqual', () => {
 
   it('detects differing membership', () => {
     expect(arraysAreEqual(['a', 'b'], ['a', 'c'])).toBe(false);
+  });
+});
+
+describe('getCapacityReservationStatus', () => {
+  it('is undefined for a non-reservation pool', () => {
+    expect(getCapacityReservationStatus({
+      isCapacityReservation: false,
+      startDate: '2026-03-01 10:00:00.000',
+      endDate: '2026-04-01 10:00:00.000'
+    })).toBeUndefined();
+  });
+
+  it('is undefined for an absent pool', () => {
+    expect(getCapacityReservationStatus(undefined)).toBeUndefined();
+  });
+
+  it('is pending for a reservation pool with no granted window yet', () => {
+    expect(getCapacityReservationStatus({
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    })).toBe(RESERVATION_STATUS_PENDING);
+  });
+
+  it.each([
+    ['startDate', 'endDate'],
+    ['endDate', 'startDate']
+  ])('is pending when only %s is granted', (present, missing) => {
+    expect(getCapacityReservationStatus({
+      isCapacityReservation: true,
+      [present]: '2026-03-01 10:00:00.000',
+      [missing]: undefined
+    })).toBe(RESERVATION_STATUS_PENDING);
+  });
+
+  it('is approved for a reservation pool with a granted window', () => {
+    expect(getCapacityReservationStatus({
+      isCapacityReservation: true,
+      startDate: '2026-03-01 10:00:00.000',
+      endDate: '2026-04-01 10:00:00.000'
+    })).toBe(RESERVATION_STATUS_APPROVED);
   });
 });

@@ -17,6 +17,7 @@
 import moment from 'moment-timezone';
 import {getFiltersError, filtersAreEqual} from '../filters-control';
 import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
+import {isReservationScheduled} from './controls/GpuReservationSummary';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,
@@ -28,7 +29,9 @@ import {
   MIN_COMMITMENT_DURATION_SECONDS,
   MIN_RESERVATION_LEAD_DAYS,
   MAX_RESERVATION_LEAD_DAYS,
-  RESERVATION_TYPE_FUTURE_DATED
+  RESERVATION_TYPE_FUTURE_DATED,
+  RESERVATION_STATUS_PENDING,
+  RESERVATION_STATUS_APPROVED
 } from './constants';
 
 // A STANDARD GPU pool is always restricted to the runs of the user who created it, so
@@ -442,6 +445,21 @@ export function buildPoolPayload (values) {
     }
   }
   return payload;
+}
+
+// A GPU/reservation pool's window is granted asynchronously by the backend scheduler, so
+// a pool loaded with `isCapacityReservation` but no `startDate`/`endDate` yet is still
+// awaiting approval — the same signal `GpuReservationSummary` uses to decide whether to
+// show the window or the "pending" text. Returns `undefined` for a non-reservation pool,
+// since the status has no meaning there.
+export function getCapacityReservationStatus (pool) {
+  const {isCapacityReservation, startDate, endDate} = pool || {};
+  if (!isCapacityReservation) {
+    return undefined;
+  }
+  return isReservationScheduled(startDate, endDate)
+    ? RESERVATION_STATUS_APPROVED
+    : RESERVATION_STATUS_PENDING;
 }
 
 export function buildSchedulePayload (values) {

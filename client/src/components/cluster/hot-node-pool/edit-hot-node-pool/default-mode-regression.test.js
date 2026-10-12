@@ -14,16 +14,6 @@
  * limitations under the License.
  */
 
-// This file is the explicit answer to the one question this plan's requester cares about
-// most: "check tests + standard mode, it should completely be the same as before changes.
-// We only added 2nd mode for form." Every assertion below is about Default mode (or about the
-// payload/validation shape as seen by a Default-mode user) and the one permitted difference —
-// an extra `Mode:` row showing `Default` (disabled only once an existing pool is being edited;
-// enabled on create, which is the scenario rendered below) — is the only thing that may differ
-// from the pre-change form. Deliberately self-contained: a test file must not import from
-// another test file, so the store/pool doubles below are copied from `index.test.js`, not
-// imported from it.
-
 import React from 'react';
 import {observable} from 'mobx';
 import moment from 'moment-timezone';

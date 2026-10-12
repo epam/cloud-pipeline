@@ -33,3 +33,8 @@ export const MIN_COMMITMENT_DURATION_SECONDS = 1209600; // 14 days — NodePoolV
 export const MIN_RESERVATION_LEAD_DAYS = 5; // NodePoolValidator.MINIMUM_LEAD_DAYS
 export const MAX_RESERVATION_LEAD_DAYS = 120; // NodePoolValidator.MAX_RESERVATION_LEAD_DAYS
 export const RESERVATION_TYPE_FUTURE_DATED = 'FUTURE_DATED'; // the only type the backend accepts
+
+// Client-only labels for a GPU reservation pool's approval state (there is no backend
+// enum for this — it is derived from whether `startDate`/`endDate` have been granted yet).
+export const RESERVATION_STATUS_PENDING = 'PENDING';
+export const RESERVATION_STATUS_APPROVED = 'APPROVED';

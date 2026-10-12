@@ -31,6 +31,13 @@ export function formatReservationDate (value) {
   return parsed.isValid() ? parsed.format('YYYY-MM-DD HH:mm:ss') : undefined;
 }
 
+// Shared with `getCapacityReservationStatus` in `../helpers`, so the pool-card badge and
+// this summary text never disagree about the same pool: a window only counts as granted
+// once both dates parse.
+export function isReservationScheduled (start, end) {
+  return Boolean(formatReservationDate(start) && formatReservationDate(end));
+}
+
 // A reservation's window is granted by the backend's scheduler and is not editable
 // through `/cluster/pool`, so an existing reservation pool shows it as read-only text
 // instead of rendering `GpuScheduleControl`; `startDate`/`endDate` are null until the
@@ -38,7 +45,7 @@ export function formatReservationDate (value) {
 function GpuReservationSummary ({start, end}) {
   const formattedStart = formatReservationDate(start);
   const formattedEnd = formatReservationDate(end);
-  const text = formattedStart && formattedEnd
+  const text = isReservationScheduled(start, end)
     ? `${formattedStart} – ${formattedEnd}`
     : 'Pending approval (not yet scheduled)';
   return (

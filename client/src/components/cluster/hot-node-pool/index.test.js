@@ -169,3 +169,54 @@ test('admin: Create opens the modal in Default mode, with the Mode row shown', a
 
   await click(screen.getByText('CANCEL'));
 });
+
+test('a Default-mode pool shows no reservation badge', async () => {
+  await renderCluster(admin);
+
+  expect(screen.queryByText('Pending approval')).not.toBeInTheDocument();
+  expect(screen.queryByText('Approved')).not.toBeInTheDocument();
+});
+
+async function renderClusterWithPool (pool) {
+  const api = stubApi();
+  api.reply(/^\/cluster\/pool\?/, [pool]);
+  api.reply(/^\/cluster\/node\/loadAll\?/, []);
+  api.handle(/\/cluster\/instance\/allowed/, () => ({
+    status: 'OK',
+    payload: instanceAllowedPayload
+  }));
+  renderWithStores(
+    <HotCluster router={{push: fn()}} />,
+    stores(admin)
+  );
+  await waitFor(() => expect(screen.getByText(pool.name)).toBeInTheDocument());
+  await flushPromises();
+}
+
+test('a GPU reservation pool with no granted window yet shows Pending approval', async () => {
+  await renderClusterWithPool({
+    ...myPool,
+    id: 2,
+    name: 'gpu-pool-pending',
+    isCapacityReservation: true,
+    startDate: undefined,
+    endDate: undefined
+  });
+
+  expect(screen.getByText('Pending approval')).toBeInTheDocument();
+  expect(screen.queryByText('Approved')).not.toBeInTheDocument();
+});
+
+test('a GPU reservation pool with a granted window shows Approved', async () => {
+  await renderClusterWithPool({
+    ...myPool,
+    id: 3,
+    name: 'gpu-pool-approved',
+    isCapacityReservation: true,
+    startDate: '2026-03-01 10:00:00.000',
+    endDate: '2026-04-01 10:00:00.000'
+  });
+
+  expect(screen.getByText('Approved')).toBeInTheDocument();
+  expect(screen.queryByText('Pending approval')).not.toBeInTheDocument();
+});

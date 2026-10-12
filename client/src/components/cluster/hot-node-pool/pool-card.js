@@ -25,6 +25,11 @@ import moment from 'moment-timezone';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
 import {parseDay} from './edit-hot-node-pool/controls/ScheduleControl';
+import {getCapacityReservationStatus} from './edit-hot-node-pool/helpers';
+import {
+  RESERVATION_STATUS_PENDING,
+  RESERVATION_STATUS_APPROVED
+} from './edit-hot-node-pool/constants';
 import PoolShortDescription from './pool-short-description';
 import styles from './pool-card.css';
 
@@ -107,6 +112,13 @@ function Schedule ({schedule}) {
 
 const CP_USE_NODES_COUNT_INFORMATION = 'CP_USE_NODES_COUNT_INFORMATION';
 
+// Keyed by `getCapacityReservationStatus`'s return value, so a status's color and label
+// stay in lockstep instead of being picked by two separate expressions.
+const RESERVATION_STATUS_PRESENTATION = {
+  [RESERVATION_STATUS_PENDING]: {tag: 'warning', label: 'Pending approval'},
+  [RESERVATION_STATUS_APPROVED]: {tag: 'success', label: 'Approved'}
+};
+
 function PoolCard ({
   awsRegions,
   disabled,
@@ -130,6 +142,7 @@ function PoolCard ({
     usage = 0,
     kubeLabels = {}
   } = pool;
+  const reservationStatus = getCapacityReservationStatus(pool);
   const {
     [CP_USE_NODES_COUNT_INFORMATION]: cpUseNodesCountInformationLabelValue
   } = kubeLabels;
@@ -212,6 +225,21 @@ function PoolCard ({
           <div className={styles.header}>
             <div className={styles.title}>
               <span className={styles.main}>{name}</span>
+              {
+                reservationStatus && (
+                  <span
+                    className={
+                      classNames(
+                        styles.reservationStatus,
+                        'cp-tag',
+                        RESERVATION_STATUS_PRESENTATION[reservationStatus].tag
+                      )
+                    }
+                  >
+                    {RESERVATION_STATUS_PRESENTATION[reservationStatus].label}
+                  </span>
+                )
+              }
               {
                 nodeCount === 0 && (
                   <span className={styles.disabledLabel}>(disabled)</span>
