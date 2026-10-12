@@ -22,5 +22,8 @@ export const COUNT_MIN_SIZE = 0;
 export const MODE_DEFAULT = 'DEFAULT';
 export const MODE_GPU = 'GPU';
 export const POOL_TYPE_STANDARD = 'STANDARD';
-export const POOL_TYPE_SHAREABLE = 'SHAREABLE';
-export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
+// The literal is the backend `NodePoolType` enum value, deliberately spelled without a second "e".
+export const POOL_TYPE_SHAREABLE = 'SHARABLE_NODE';
+// The backend's `LocalDateTime` pattern (`JsonMapper`/`Constants`): milliseconds required,
+// no `T`, no timezone.
+export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';

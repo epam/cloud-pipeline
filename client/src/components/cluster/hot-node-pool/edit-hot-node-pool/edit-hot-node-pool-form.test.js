@@ -189,7 +189,7 @@ test('GPU + Standard locks the Filters section: Condition and Add filter are dis
 });
 
 test('GPU + Shareable leaves the Filters section enabled', () => {
-  renderForm({values: baseValues({mode: 'GPU', poolType: 'SHAREABLE'})});
+  renderForm({values: baseValues({mode: 'GPU', poolType: 'SHARABLE_NODE'})});
   expect(selectIsDisabled('Condition:')).toBe(false);
   expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 });
@@ -218,11 +218,11 @@ test('GPU mode derives Ends on from Starts on + Duration', () => {
   renderForm({
     values: baseValues({
       mode: 'GPU',
-      commitmentStart: '2026-01-01 10:00:00',
+      commitmentStart: '2026-01-01 10:00:00.000',
       commitmentDuration: 7200
     })
   });
-  expect(screen.getByText('2026-01-01 12:00:00')).toBeInTheDocument();
+  expect(screen.getByText('2026-01-01 12:00:00.000')).toBeInTheDocument();
 });
 
 test('GPU mode shows the commitment start error once touched', () => {

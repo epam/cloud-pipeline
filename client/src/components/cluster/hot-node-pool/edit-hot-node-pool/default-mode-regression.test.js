@@ -168,8 +168,8 @@ describe('payload shape is closed (Default mode)', () => {
   it('buildPoolPayload exposes exactly the 16 pre-existing backend keys', () => {
     const payload = buildPoolPayload(baseValues({
       mode: 'DEFAULT',
-      poolType: 'SHAREABLE',
-      commitmentStart: '2026-01-01 10:00:00',
+      poolType: 'SHARABLE_NODE',
+      commitmentStart: '2026-01-01 10:00:00.000',
       commitmentDuration: 3600
     }));
     expect(Object.keys(payload).sort()).toEqual([
@@ -196,8 +196,8 @@ describe('payload shape is closed (Default mode)', () => {
     const payload = buildSchedulePayload(baseValues({
       schedule: [{from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'}],
       mode: 'DEFAULT',
-      poolType: 'SHAREABLE',
-      commitmentStart: '2026-01-01 10:00:00',
+      poolType: 'SHARABLE_NODE',
+      commitmentStart: '2026-01-01 10:00:00.000',
       commitmentDuration: 3600
     }));
     expect(Object.keys(payload).sort()).toEqual(['name', 'scheduleEntries'].sort());

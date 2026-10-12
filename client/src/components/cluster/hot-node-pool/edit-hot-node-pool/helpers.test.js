@@ -216,7 +216,7 @@ describe('getValidationErrors', () => {
     it('accepts a valid start date and a positive duration in GPU mode', () => {
       const {errors} = getValidationErrors(baseValues({
         mode: 'GPU',
-        commitmentStart: '2026-01-01 10:00:00',
+        commitmentStart: '2026-01-01 10:00:00.000',
         commitmentDuration: 3600
       }));
       expect(errors.commitmentStart).toBeUndefined();
@@ -226,7 +226,7 @@ describe('getValidationErrors', () => {
     it.each([0, -5])('rejects a non-positive duration %i', (commitmentDuration) => {
       const {errors} = getValidationErrors(baseValues({
         mode: 'GPU',
-        commitmentStart: '2026-01-01 10:00:00',
+        commitmentStart: '2026-01-01 10:00:00.000',
         commitmentDuration
       }));
       expect(errors.commitmentDuration)
@@ -236,7 +236,7 @@ describe('getValidationErrors', () => {
     it('accepts a duration given as a numeric string', () => {
       const {errors} = getValidationErrors(baseValues({
         mode: 'GPU',
-        commitmentStart: '2026-01-01 10:00:00',
+        commitmentStart: '2026-01-01 10:00:00.000',
         commitmentDuration: '3600'
       }));
       expect(errors.commitmentDuration).toBeUndefined();
@@ -488,7 +488,7 @@ describe('buildPoolPayload', () => {
   it('never includes commitmentStart/commitmentDuration even when both are set', () => {
     const payload = buildPoolPayload(values({
       mode: 'GPU',
-      commitmentStart: '2026-01-01 10:00:00',
+      commitmentStart: '2026-01-01 10:00:00.000',
       commitmentDuration: 3600
     }));
     expect(Object.keys(payload)).not.toContain('commitmentStart');
@@ -501,8 +501,8 @@ describe('filtersAreLocked', () => {
     expect(filtersAreLocked({mode: 'GPU', poolType: 'STANDARD'})).toBe(true);
   });
 
-  it('is false for a GPU/SHAREABLE pool', () => {
-    expect(filtersAreLocked({mode: 'GPU', poolType: 'SHAREABLE'})).toBe(false);
+  it('is false for a GPU/SHARABLE_NODE pool', () => {
+    expect(filtersAreLocked({mode: 'GPU', poolType: 'SHARABLE_NODE'})).toBe(false);
   });
 
   it('is false for a DEFAULT/STANDARD pool', () => {

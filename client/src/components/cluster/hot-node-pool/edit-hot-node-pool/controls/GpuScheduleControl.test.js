@@ -26,11 +26,11 @@ function row (labelText) {
 
 describe('getCommitmentEnd', () => {
   test('adds whole hours', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00', 3600)).toBe('2026-01-01 11:00:00');
+    expect(getCommitmentEnd('2026-01-01 10:00:00.000', 3600)).toBe('2026-01-01 11:00:00.000');
   });
 
   test('adds seconds across a minute boundary', () => {
-    expect(getCommitmentEnd('2026-01-01 10:00:00', 90)).toBe('2026-01-01 10:01:30');
+    expect(getCommitmentEnd('2026-01-01 10:00:00.000', 90)).toBe('2026-01-01 10:01:30.000');
   });
 
   test('undefined with no start', () => {
@@ -83,13 +83,13 @@ test('Ends on shows "Not set" when start/duration are absent', () => {
 test('Ends on shows the derived value when both start and duration are given', () => {
   render(
     <GpuScheduleControl
-      start="2026-01-01 10:00:00"
+      start="2026-01-01 10:00:00.000"
       duration={3600}
       onChangeStart={fn()}
       onChangeDuration={fn()}
     />
   );
-  expect(within(row('Ends on:')).getByText('2026-01-01 11:00:00')).toBeInTheDocument();
+  expect(within(row('Ends on:')).getByText('2026-01-01 11:00:00.000')).toBeInTheDocument();
 });
 
 test('changing Duration calls onChangeDuration', async () => {

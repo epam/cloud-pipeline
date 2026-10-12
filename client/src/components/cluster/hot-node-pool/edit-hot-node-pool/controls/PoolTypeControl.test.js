@@ -41,7 +41,7 @@ test('clicking Shareable calls onChange once with SHAREABLE', async () => {
   await click(screen.getByText('Shareable'));
 
   expect(onChange).toHaveBeenCalledTimes(1);
-  expect(onChange).toHaveBeenCalledWith('SHAREABLE');
+  expect(onChange).toHaveBeenCalledWith('SHARABLE_NODE');
 });
 
 test('disabled disables the combobox', () => {
