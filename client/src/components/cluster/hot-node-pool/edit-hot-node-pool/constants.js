@@ -23,3 +23,4 @@ export const MODE_DEFAULT = 'DEFAULT';
 export const MODE_GPU = 'GPU';
 export const POOL_TYPE_STANDARD = 'STANDARD';
 export const POOL_TYPE_SHAREABLE = 'SHAREABLE';
+export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
