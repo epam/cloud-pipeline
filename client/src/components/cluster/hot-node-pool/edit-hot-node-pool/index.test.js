@@ -274,9 +274,10 @@ test('create mode, GPU with a duration but no start: CREATE is blocked', async (
 
   expect(onSave).not.toHaveBeenCalled();
   expect(screen.getByText('Start date is required')).toBeInTheDocument();
+  expect(screen.getByText('End date is required')).toBeInTheDocument();
 });
 
-test('create mode, GPU with nothing filled: both commitment errors show', async () => {
+test('create mode, GPU with nothing filled: all three commitment errors show', async () => {
   const onSave = fn();
   await renderPool({onSave});
 
@@ -286,6 +287,7 @@ test('create mode, GPU with nothing filled: both commitment errors show', async 
   await click(screen.getByText('CREATE'));
 
   expect(screen.getByText('Start date is required')).toBeInTheDocument();
+  expect(screen.getByText('End date is required')).toBeInTheDocument();
   expect(screen.getByText('Duration should be a positive number of seconds')).toBeInTheDocument();
   expect(onSave).not.toHaveBeenCalled();
 });
@@ -302,19 +304,57 @@ test('Default-mode regression: SAVE still works and never shows a commitment err
     .not.toBeInTheDocument();
 });
 
-test('saved payloads never carry the commitment fields', async () => {
+test('Default-mode edit: payload never carries mode/poolType/commitment* fields', async () => {
   const onSave = fn();
   await renderPool({pool: fullPool(), onSave});
 
   await click(screen.getByText('SAVE'));
 
   const [payload, schedulePayload] = onSave.mock.calls[0];
-  expect(Object.keys(payload)).not.toContain('commitmentStart');
-  expect(Object.keys(payload)).not.toContain('commitmentDuration');
+  [
+    'mode',
+    'poolType',
+    'capacityReservationRequest',
+    'commitmentStart',
+    'commitmentEnd',
+    'commitmentDuration'
+  ].forEach((key) => {
+    expect(Object.keys(payload)).not.toContain(key);
+  });
   expect(schedulePayload.name).toBe('my-pool');
   expect(schedulePayload.scheduleEntries).toEqual([
     {from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'}
   ]);
+});
+
+// Driving antd 2.13.14's two commitment-window DatePickers through the UI proved
+// impractical (the same limitation Phase 2 hit — see GpuScheduleControl.test.js), so this
+// pins the regression at two levels instead: `buildSchedulePayload(gpuValues())` is
+// `undefined` at the helper level (in helpers.test.js), and here — the weaker but still
+// meaningful UI-level check — no `/cluster/nodeSchedule` call is ever made while the form
+// is in GPU mode, however far CREATE got blocked by the (undriveable) date fields.
+test('no schedule request is made while the form is in GPU mode', async () => {
+  const onSave = fn();
+  const {api} = await renderPool({onSave});
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('GPU'));
+
+  await change(within(row('Pool name:')).getByRole('textbox'), 'gpu-pool');
+  await change(within(row('Nodes count:')).getByRole('textbox'), '1');
+
+  await click(within(row('Region:')).getByRole('combobox'));
+  await click(screen.getByText('eu-central-1'));
+  await flushPromises();
+
+  await click(screen.getByText('CREATE'));
+  await flushPromises();
+
+  // CREATE is blocked by the (unfilled, undriveable in this harness) commitment
+  // fields, which is fine — the point of this test is only that nothing ever
+  // reaches /cluster/nodeSchedule from GPU mode.
+  expect(onSave).not.toHaveBeenCalled();
+  expect(api.calls.every(c => !/nodeSchedule/.test(c.path))).toBe(true);
 });
 
 test('readOnly (!isNew): Region/AMI/Disk are disabled with a pool', async () => {

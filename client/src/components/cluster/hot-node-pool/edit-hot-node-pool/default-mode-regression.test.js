@@ -26,6 +26,7 @@
 
 import React from 'react';
 import {observable} from 'mobx';
+import moment from 'moment-timezone';
 import {
   renderWithStores,
   screen,
@@ -39,6 +40,10 @@ import {
 } from '@test';
 import EditHotNodePool from './index';
 import {getValidationErrors, buildPoolPayload, buildSchedulePayload} from './helpers';
+import {COMMITMENT_DATE_TIME_FORMAT} from './constants';
+
+// Now-relative fixtures: see helpers.test.js for why a fixed past date no longer works.
+const inDays = (days) => moment().add(days, 'days').format(COMMITMENT_DATE_TIME_FORMAT);
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
@@ -133,6 +138,7 @@ function baseValues (overrides = {}) {
     mode: 'DEFAULT',
     poolType: 'STANDARD',
     commitmentStart: undefined,
+    commitmentEnd: undefined,
     commitmentDuration: undefined,
     ...overrides
   };
@@ -184,6 +190,37 @@ describe('payload shape is closed (Default mode)', () => {
       'maxSize',
       'minSize',
       'name',
+      'priceType',
+      'regionId',
+      'scaleDownThreshold',
+      'scaleStep',
+      'scaleUpThreshold'
+    ].sort());
+  });
+
+  it('buildPoolPayload adds exactly two keys in GPU mode', () => {
+    const payload = buildPoolPayload(baseValues({
+      mode: 'GPU',
+      poolType: 'SHARABLE_NODE',
+      count: 1,
+      commitmentStart: inDays(30),
+      commitmentEnd: inDays(90),
+      commitmentDuration: 1209600
+    }));
+    expect(Object.keys(payload).sort()).toEqual([
+      'autoscaled',
+      'capacityReservationRequest',
+      'count',
+      'dockerImages',
+      'filter',
+      'instanceDisk',
+      'instanceImage',
+      'instanceType',
+      'kubeLabels',
+      'maxSize',
+      'minSize',
+      'name',
+      'poolType',
       'priceType',
       'regionId',
       'scaleDownThreshold',

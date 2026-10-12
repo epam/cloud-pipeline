@@ -41,6 +41,7 @@ class EditHotNodePool extends React.Component {
     mode: MODE_DEFAULT,
     poolType: POOL_TYPE_STANDARD,
     commitmentStart: undefined,
+    commitmentEnd: undefined,
     commitmentDuration: undefined,
     modified: false,
     valid: true,
@@ -97,6 +98,7 @@ class EditHotNodePool extends React.Component {
       scaleUpThreshold: undefined,
       scaleStep: undefined,
       commitmentStart: undefined,
+      commitmentEnd: undefined,
       commitmentDuration: undefined
     },
     touched: {
@@ -114,6 +116,7 @@ class EditHotNodePool extends React.Component {
       scaleUpThreshold: undefined,
       scaleStep: undefined,
       commitmentStart: undefined,
+      commitmentEnd: undefined,
       commitmentDuration: undefined
     }
   };
@@ -213,6 +216,7 @@ class EditHotNodePool extends React.Component {
         mode,
         poolType: POOL_TYPE_STANDARD,
         commitmentStart: undefined,
+        commitmentEnd: undefined,
         commitmentDuration: undefined,
         disk,
         initialDisk: disk,
@@ -270,6 +274,7 @@ class EditHotNodePool extends React.Component {
           scaleUpThreshold: false,
           scaleStep: false,
           commitmentStart: false,
+          commitmentEnd: false,
           commitmentDuration: false
         }
       }, this.onChange);
@@ -288,6 +293,7 @@ class EditHotNodePool extends React.Component {
         mode,
         poolType: POOL_TYPE_STANDARD,
         commitmentStart: undefined,
+        commitmentEnd: undefined,
         commitmentDuration: undefined,
         disk: undefined,
         initialDisk: undefined,
@@ -342,6 +348,7 @@ class EditHotNodePool extends React.Component {
           scaleUpThreshold: false,
           scaleStep: false,
           commitmentStart: false,
+          commitmentEnd: false,
           commitmentDuration: false
         }
       }, this.onChange);
@@ -438,6 +445,7 @@ class EditHotNodePool extends React.Component {
           scaleStep: true,
           labels: true,
           commitmentStart: true,
+          commitmentEnd: true,
           commitmentDuration: true
         }
       });
@@ -638,6 +646,7 @@ class EditHotNodePool extends React.Component {
       schedule,
       filters,
       commitmentStart,
+      commitmentEnd,
       commitmentDuration,
       validation,
       touched,
@@ -652,6 +661,7 @@ class EditHotNodePool extends React.Component {
         closable={!disabled}
         maskClosable={!disabled}
         width="80vw"
+        bodyStyle={{maxHeight: 'calc(80vh - 130px)', overflowY: 'auto'}}
         footer={(
           <div className={styles.modalFooter}>
             <Button
@@ -692,6 +702,7 @@ class EditHotNodePool extends React.Component {
             schedule,
             filters,
             commitmentStart,
+            commitmentEnd,
             commitmentDuration
           }}
           validation={validation}

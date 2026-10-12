@@ -23,7 +23,12 @@ import {
   COUNT_MIN_SIZE,
   MODE_GPU,
   POOL_TYPE_STANDARD,
-  COMMITMENT_DATE_TIME_FORMAT
+  COMMITMENT_DATE_TIME_FORMAT,
+  GPU_COUNT_MIN_SIZE,
+  MIN_COMMITMENT_DURATION_SECONDS,
+  MIN_RESERVATION_LEAD_DAYS,
+  MAX_RESERVATION_LEAD_DAYS,
+  RESERVATION_TYPE_FUTURE_DATED
 } from './constants';
 
 // A STANDARD GPU pool is always restricted to the runs of the user who created it, so
@@ -81,6 +86,7 @@ export function getValidationErrors (values) {
     labels = [],
     mode,
     commitmentStart,
+    commitmentEnd,
     commitmentDuration
   } = values;
   let diskError,
@@ -98,6 +104,7 @@ export function getValidationErrors (values) {
     scaleStepError,
     labelsError,
     commitmentStartError,
+    commitmentEndError,
     commitmentDurationError;
   if (
     Number.isNaN(Number(disk)) ||
@@ -193,14 +200,32 @@ export function getValidationErrors (values) {
       countError = `Count should be a positive value or zero (pool is disabled)`;
     }
   }
-  // GPU pools reserve a single one-time window. Both fields are client-only (no backend
-  // slot yet) but are validated as real required fields.
+  // GPU pools reserve a single one-time window. These are the backend's own
+  // `NodePoolValidator` rules, pre-validated here so the user sees them before the
+  // request. The minimum-32-vCPU and allowed-instance-family rules are intentionally
+  // left to the backend: both need async lookups this form does not have.
   if (mode === MODE_GPU) {
-    if (
-      !commitmentStart ||
-      !moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true).isValid()
-    ) {
+    const start = moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true);
+    const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
+    const now = moment();
+    if (!commitmentStart || !start.isValid()) {
       commitmentStartError = 'Start date is required';
+    } else if (!start.isAfter(now)) {
+      commitmentStartError = 'Start date should be in the future';
+    } else {
+      // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
+      // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
+      // toward zero and happens to agree here, but is not the same operation).
+      const leadDays = Math.floor(start.diff(now, 'days', true));
+      if (leadDays < MIN_RESERVATION_LEAD_DAYS || leadDays > MAX_RESERVATION_LEAD_DAYS) {
+        commitmentStartError = `Start date should be between ${MIN_RESERVATION_LEAD_DAYS} ` +
+          `and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
+      }
+    }
+    if (!commitmentEnd || !end.isValid()) {
+      commitmentEndError = 'End date is required';
+    } else if (start.isValid() && !end.isAfter(start)) {
+      commitmentEndError = 'End date should be after the start date';
     }
     if (
       commitmentDuration === undefined ||
@@ -210,6 +235,21 @@ export function getValidationErrors (values) {
       Number(commitmentDuration) <= 0
     ) {
       commitmentDurationError = 'Duration should be a positive number of seconds';
+    } else if (Number(commitmentDuration) < MIN_COMMITMENT_DURATION_SECONDS) {
+      commitmentDurationError = 'Duration should be at least ' +
+        `${MIN_COMMITMENT_DURATION_SECONDS} seconds (14 days)`;
+    } else if (
+      start.isValid() &&
+      end.isValid() &&
+      end.isAfter(start) &&
+      end.diff(start, 'seconds') < Number(commitmentDuration)
+    ) {
+      commitmentDurationError = 'Duration should fit between the start and end dates';
+    }
+    // A GPU pool is never autoscaled, but this is explicit rather than relying on
+    // that: the backend rejects a reservation pool with `count < 1` outright.
+    if (Number.isNaN(Number(count)) || Number(count) < GPU_COUNT_MIN_SIZE) {
+      countError = 'Count should be at least 1 for a GPU pool';
     }
   }
   const labelsNames = [...new Set(labels.map((lb) => (lb.name || '').trim().toLowerCase()))];
@@ -233,6 +273,7 @@ export function getValidationErrors (values) {
     !scaleStepError &&
     !labelsError &&
     !commitmentStartError &&
+    !commitmentEndError &&
     !commitmentDurationError;
   return {
     valid,
@@ -252,6 +293,7 @@ export function getValidationErrors (values) {
       scaleStep: scaleStepError,
       labelsError,
       commitmentStart: commitmentStartError,
+      commitmentEnd: commitmentEndError,
       commitmentDuration: commitmentDurationError
     }
   };
@@ -313,8 +355,29 @@ export function isModified (values) {
     (autoscaled && Number(scaleStep) !== Number(initialScaleStep));
 }
 
+// `commitmentDuration` is seconds (the backend's unit; unchanged from what the client
+// already assumed), and `instancePlatform`/`originId` are deliberately not sent (the
+// backend defaults `instancePlatform` to `Linux/UNIX`).
+export function buildCapacityReservationRequest (values) {
+  const {commitmentStart, commitmentEnd, commitmentDuration} = values;
+  return {
+    reservationType: RESERVATION_TYPE_FUTURE_DATED,
+    // Re-formatting through `moment` (rather than passing the string straight through)
+    // normalizes whatever the picker produced into the backend's exact pattern,
+    // including the mandatory `.SSS`. Never append a `Z` and never call `.utc()` — the
+    // backend field is a zone-less local datetime.
+    requestedStartDate: moment(commitmentStart, COMMITMENT_DATE_TIME_FORMAT, true)
+      .format(COMMITMENT_DATE_TIME_FORMAT),
+    requestedEndDate: moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true)
+      .format(COMMITMENT_DATE_TIME_FORMAT),
+    commitmentDuration: Number(commitmentDuration)
+  };
+}
+
 export function buildPoolPayload (values) {
   const {
+    mode,
+    poolType,
     count,
     disk: instanceDisk,
     dockerImages,
@@ -332,7 +395,7 @@ export function buildPoolPayload (values) {
     scaleStep,
     labels
   } = values;
-  return {
+  const payload = {
     count: autoscaled ? minSize : count,
     instanceDisk,
     dockerImages: dockerImages
@@ -358,6 +421,11 @@ export function buildPoolPayload (values) {
       }
     }), {})
   };
+  if (mode === MODE_GPU) {
+    payload.poolType = poolType;
+    payload.capacityReservationRequest = buildCapacityReservationRequest(values);
+  }
+  return payload;
 }
 
 export function buildSchedulePayload (values) {
