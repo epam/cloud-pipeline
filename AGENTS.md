@@ -41,7 +41,7 @@ Gradle build. The version is declared in the root `build.gradle`.
 | `shaded` | `opensearch` — the OpenSearch jar with its packages relocated, so it can coexist with Elasticsearch V6 |
 | `storage-lifecycle-service` | Python app that executes the lifecycle rules set on a data storage — archiving (a rule's transitions, with user prolongation and notification) and restoring |
 | `vm-monitor` | Spring Boot; reconciles the cloud provider's running VMs against the platform's nodes and runs, and also checks certificate expiry, filesystem space and k8s state, notifying on a mismatch |
-| `workflows` | `pipe-common` (the `pipeline` package, in every job container), `gpustat`, `pipe-demo`, `pipe-templates`, `report-templates` |
+| `workflows` | `pipe-common` (the `pipeline` package, in every job container), `gpustat`, `pipe-templates`, `report-templates` |
 
 Everything else is support: `config/` (the checkstyle and pmd rulesets), `docs/` (the mkdocs manual
 and release notes), `gradle/` (the wrapper), `jwt-generator/` (a CLI that mints API JWTs),
