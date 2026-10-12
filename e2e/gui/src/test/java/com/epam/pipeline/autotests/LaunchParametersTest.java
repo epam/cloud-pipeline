@@ -506,7 +506,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         }
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase(value = "913")
     @CloudProviderOnly(values = {Cloud.AWS})
     public void addSupportForAutoscalingFilesystemForAWS() {
