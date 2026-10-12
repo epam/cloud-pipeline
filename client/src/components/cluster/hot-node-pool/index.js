@@ -35,7 +35,8 @@ import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolSchedu
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
 import roleModel from '../../../utils/roleModel';
-import {isAdmin} from '../utilities/access-permissinos';
+import {getPoolPermissions} from './permissions';
+import {MODE_DEFAULT, MODE_GPU} from './edit-hot-node-pool/constants';
 
 async function updateSchedule (payload, scheduleId) {
   const scheduleRequest = new HotNodePoolScheduleUpdate();
@@ -86,9 +87,13 @@ class HotCluster extends React.Component {
   };
 
   @computed
-  get isReadOnly () {
+  get permissions () {
     const {authenticatedUserInfo} = this.props;
-    return !authenticatedUserInfo.loaded || !isAdmin(authenticatedUserInfo.value);
+    return getPoolPermissions(authenticatedUserInfo);
+  }
+
+  get isReadOnly () {
+    return this.permissions.readOnly;
   }
 
   @computed
@@ -115,6 +120,9 @@ class HotCluster extends React.Component {
         editablePool: undefined
       });
     } else if (pool) {
+      if (!this.permissions.canManagePools) {
+        return;
+      }
       this.setState({
         createNewPool: false,
         editablePool: pool
@@ -265,6 +273,7 @@ class HotCluster extends React.Component {
       pending
     } = this.state;
     const readOnly = this.isReadOnly;
+    const {canCreate, canManagePools, canCreateAnyMode} = this.permissions;
     return (
       <div
         className="cp-panel cp-panel-transparent"
@@ -276,7 +285,7 @@ class HotCluster extends React.Component {
           <div
             className={styles.actions}
           >
-            {!readOnly && (
+            {canCreate && (
               <Button
                 disabled={pending}
                 type="primary"
@@ -304,7 +313,7 @@ class HotCluster extends React.Component {
                 pool={pool}
                 onEdit={this.openEditPoolModal({pool})}
                 onRemove={this.onRemovePool(pool)}
-                onClick={() => this.onPoolClick(pool)}
+                onClick={canManagePools ? () => this.onPoolClick(pool) : undefined}
                 nodes={(nodes.value || []).map(node => node)}
                 router={router}
               />
@@ -316,6 +325,7 @@ class HotCluster extends React.Component {
           visible={!!editablePool || createNewPool}
           pool={editablePool}
           currentUserName={this.currentUserName}
+          allowedModes={canCreateAnyMode ? [MODE_DEFAULT, MODE_GPU] : [MODE_GPU]}
           onCancel={this.closeEditPoolModal}
           onSave={this.operationWrapper(this.onSaveEditablePool)}
         />

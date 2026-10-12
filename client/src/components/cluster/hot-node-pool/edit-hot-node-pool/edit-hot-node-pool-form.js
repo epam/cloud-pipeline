@@ -177,8 +177,12 @@ function EditHotNodePoolForm ({
   priceTypes,
   currentProvider,
   roles,
+  allowedModes,
   onChange
 }) {
+  const modes = allowedModes && allowedModes.length > 0
+    ? allowedModes
+    : [MODE_DEFAULT, MODE_GPU];
   const {
     mode,
     poolType,
@@ -205,17 +209,26 @@ function EditHotNodePoolForm ({
   const gpuMode = (mode || MODE_DEFAULT) === MODE_GPU;
   return (
     <div>
-      <ModeControl
-        value={mode || MODE_DEFAULT}
-        disabled={disabled || readOnly}
-        hint={hints.modeHint}
-        onChange={value => onChange('mode', value)}
-      />
+      {
+        modes.length > 1 ? (
+          <ModeControl
+            modes={modes}
+            value={mode || MODE_DEFAULT}
+            disabled={disabled || readOnly}
+            hint={hints.modeHint}
+            onChange={value => onChange('mode', value)}
+          />
+        ) : null
+      }
       {
         (mode || MODE_DEFAULT) === MODE_GPU ? (
           <PoolTypeControl
             value={poolType || POOL_TYPE_STANDARD}
-            disabled={disabled || readOnly}
+            // A caller that forces a single mode (a non-admin's GPU-only Create) also
+            // forces Standard: without this, Pool type would stay a free choice and
+            // "Shareable" would unlock the Filters section the permission change exists
+            // to keep locked, letting that caller set an arbitrary usage filter.
+            disabled={disabled || readOnly || modes.length <= 1}
             hint={hints.poolTypeHint}
             onChange={value => onChange('poolType', value)}
           />
@@ -466,6 +479,7 @@ EditHotNodePoolForm.propTypes = {
   priceTypes: PropTypes.array,
   currentProvider: PropTypes.string,
   roles: PropTypes.object,
+  allowedModes: PropTypes.arrayOf(PropTypes.string),
   onChange: PropTypes.func
 };
 

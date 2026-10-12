@@ -50,3 +50,12 @@ test('disabled disables the combobox', () => {
   const select = screen.getByRole('combobox').closest('.ant-select');
   expect(select).toHaveClass('ant-select-disabled');
 });
+
+test('with modes={["GPU"]} only the GPU option is offered', async () => {
+  render(<ModeControl modes={['GPU']} onChange={fn()} />);
+
+  await click(screen.getByRole('combobox'));
+
+  expect(screen.queryByText('Default')).not.toBeInTheDocument();
+  expect(screen.getByText('GPU')).toBeInTheDocument();
+});

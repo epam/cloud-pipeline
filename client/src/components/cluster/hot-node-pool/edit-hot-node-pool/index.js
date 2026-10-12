@@ -170,6 +170,11 @@ class EditHotNodePool extends React.Component {
     return undefined;
   }
 
+  get defaultMode () {
+    const {allowedModes} = this.props;
+    return (allowedModes || [])[0] || MODE_DEFAULT;
+  }
+
   updateFromProps = () => {
     const {pool} = this.props;
     if (pool) {
@@ -195,8 +200,17 @@ class EditHotNodePool extends React.Component {
       const {
         scheduleEntries: schedule = []
       } = scheduleObj;
+      // `pool` is always truthy here, so `mode` always resolves to MODE_DEFAULT (an
+      // existing pool is never reopened in GPU mode) and `lockedFilters` always takes
+      // the `mapFilters(filters)` branch below — the ternary is kept only so this
+      // branch and the `else` one mirror each other; see the comment there for the
+      // case where `this.defaultMode` actually matters.
+      const mode = pool ? MODE_DEFAULT : this.defaultMode;
+      const lockedFilters = filtersAreLocked({mode, poolType: POOL_TYPE_STANDARD})
+        ? buildLockedFilters(this.props.currentUserName)
+        : mapFilters(filters);
       this.setState({
-        mode: MODE_DEFAULT,
+        mode,
         poolType: POOL_TYPE_STANDARD,
         commitmentStart: undefined,
         commitmentDuration: undefined,
@@ -223,7 +237,7 @@ class EditHotNodePool extends React.Component {
         initialName: name,
         region: regionId,
         initialRegion: regionId,
-        filters: mapFilters(filters),
+        filters: lockedFilters,
         initialFilters: mapFilters(filters),
         prevRegion: -1,
         prevSpot: -1,
@@ -260,8 +274,18 @@ class EditHotNodePool extends React.Component {
         }
       }, this.onChange);
     } else {
+      // `pool` is always falsy here (this is the Create path), so `mode` resolves to
+      // `this.defaultMode` — the first entry of `allowedModes`, i.e. GPU for a
+      // non-admin's forced-GPU Create. The mode a caller forces must apply before any
+      // `onChange` reaches the user, so that Create opens with the Filters section
+      // already locked to the current user's runs rather than waiting on a
+      // Mode/Pool type interaction that a non-admin never gets a chance to make.
+      const mode = pool ? MODE_DEFAULT : this.defaultMode;
+      const lockedFilters = filtersAreLocked({mode, poolType: POOL_TYPE_STANDARD})
+        ? buildLockedFilters(this.props.currentUserName)
+        : undefined;
       this.setState({
-        mode: MODE_DEFAULT,
+        mode,
         poolType: POOL_TYPE_STANDARD,
         commitmentStart: undefined,
         commitmentDuration: undefined,
@@ -284,7 +308,7 @@ class EditHotNodePool extends React.Component {
         initialName: undefined,
         region: undefined,
         initialRegion: undefined,
-        filters: undefined,
+        filters: lockedFilters,
         initialFilters: undefined,
         prevRegion: -1,
         prevSpot: -1,
@@ -681,6 +705,7 @@ class EditHotNodePool extends React.Component {
           priceTypes={this.priceTypes}
           currentProvider={this.currentProvider}
           roles={this.roles}
+          allowedModes={this.props.allowedModes}
           onChange={this.onChangeField}
         />
       </Modal>
@@ -694,7 +719,12 @@ EditHotNodePool.propTypes = {
   onCancel: PropTypes.func,
   pool: PropTypes.object,
   visible: PropTypes.bool,
-  currentUserName: PropTypes.string
+  currentUserName: PropTypes.string,
+  allowedModes: PropTypes.arrayOf(PropTypes.string)
+};
+
+EditHotNodePool.defaultProps = {
+  allowedModes: [MODE_DEFAULT, MODE_GPU]
 };
 
 export default EditHotNodePool;

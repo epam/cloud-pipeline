@@ -27,7 +27,9 @@ const MODE_NAMES = {
 
 // `mode` is client-only: there is no backend field for it, so an existing pool
 // always loads as DEFAULT and this control is locked (via `disabled`) while editing.
-function ModeControl ({value, disabled, hint, onChange}) {
+// `modes` narrows which options are offered — a non-admin's forced-GPU Create passes
+// `['GPU']`, which the form then skips rendering this control for entirely.
+function ModeControl ({value, disabled, hint, modes, onChange}) {
   return (
     <SelectInput
       label="Mode:"
@@ -37,7 +39,7 @@ function ModeControl ({value, disabled, hint, onChange}) {
       onChange={onChange}
     >
       {
-        [MODE_DEFAULT, MODE_GPU].map(mode => (
+        modes.map(mode => (
           <Select.Option key={mode} value={mode}>
             {MODE_NAMES[mode]}
           </Select.Option>
@@ -51,7 +53,12 @@ ModeControl.propTypes = {
   value: PropTypes.string,
   disabled: PropTypes.bool,
   hint: PropTypes.node,
+  modes: PropTypes.arrayOf(PropTypes.string),
   onChange: PropTypes.func
+};
+
+ModeControl.defaultProps = {
+  modes: [MODE_DEFAULT, MODE_GPU]
 };
 
 export {MODE_NAMES};

@@ -149,6 +149,19 @@ test('readOnly=false leaves the Mode select enabled', () => {
   expect(selectIsDisabled('Mode:')).toBe(false);
 });
 
+test('allowedModes={["GPU"]} hides the Mode row, GPU-only rows still render', () => {
+  renderForm({allowedModes: ['GPU'], values: baseValues({mode: 'GPU'})});
+  expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+  expect(screen.getByText('Pool type:')).toBeInTheDocument();
+  expect(selectIsDisabled('Pool type:')).toBe(true);
+  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+});
+
+test('allowedModes={["DEFAULT", "GPU"]} renders the Mode row', () => {
+  renderForm({allowedModes: ['DEFAULT', 'GPU']});
+  expect(screen.getByText('Mode:')).toBeInTheDocument();
+});
+
 test('choosing GPU calls onChange with (\'mode\', \'GPU\')', async () => {
   const onChange = fn();
   renderForm({onChange});

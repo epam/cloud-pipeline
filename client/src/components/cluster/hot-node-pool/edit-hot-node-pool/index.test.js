@@ -229,6 +229,29 @@ test(
   }
 );
 
+test('allowedModes=["GPU"]: opens forced into GPU mode, locked, with no Mode row', async () => {
+  await renderPool({allowedModes: ['GPU']});
+
+  expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+  expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
+  // Pool type is locked too: a non-admin forced into GPU-only Create must not be
+  // able to switch to Shareable and unlock the Filters section by hand.
+  expect(selectIsDisabled('Pool type:')).toBe(true);
+  expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  expect(selectIsDisabled('Condition:')).toBe(true);
+  expect(screen.getByText('Run owner')).toBeInTheDocument();
+  expect(screen.getByText('user1')).toBeInTheDocument();
+});
+
+test('allowedModes omitted: still opens in Default mode (admin default unchanged)', async () => {
+  await renderPool();
+
+  expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
+  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+  expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
+});
+
 test('SAVE payload never carries mode', async () => {
   const onSave = fn();
   await renderPool({pool: fullPool(), onSave});
