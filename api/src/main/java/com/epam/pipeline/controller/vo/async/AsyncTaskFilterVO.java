@@ -57,7 +57,8 @@ public class AsyncTaskFilterVO {
     @Schema(type = "string", example = "2026-10-08 18:30:35.000")
     private LocalDateTime createdTo;
 
-    @Schema(type = "string", example = "2026-10-09 06:30:35.000", description = "Tasks whose status has not changed since then.")
+    @Schema(type = "string", example = "2026-10-09 06:30:35.000",
+            description = "Tasks whose status has not changed since then.")
     private LocalDateTime statusChangedBefore;
 
     @Schema(type = "string", example = "2026-10-02 06:30:35.000", description = "Tasks finished before then.")

@@ -22,26 +22,24 @@ import com.epam.pipeline.controller.vo.DownloadArchiveVO;
 import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
+import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.dto.async.DownloadArchiveParams;
+import com.epam.pipeline.dto.async.DownloadArchiveResult;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
-import com.epam.pipeline.entity.region.AwsRegion;
-import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
-import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
-import com.epam.pipeline.manager.datastorage.providers.aws.s3.RegionAwareS3Helper;
-import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Objects;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -52,7 +50,8 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class DataStorageDownloadArchiveManager {
 
-    private static final String ARCHIVE_PREFIX = "archives/";
+    private static final String DEFAULT_ARCHIVE_PREFIX = "archives/";
+    private static final String SLASH = "/";
     private static final String ARCHIVE_EXTENSION = ".zip";
     private static final String DEFAULT_ARCHIVE_NAME = "archive.zip";
     private static final Pattern SAFE_ARCHIVE_NAME = Pattern.compile("^[\\w\\-. ]+$");
@@ -60,12 +59,7 @@ public class DataStorageDownloadArchiveManager {
     private final DataStorageManager dataStorageManager;
     private final AsyncTaskManager asyncTaskManager;
     private final PreferenceManager preferenceManager;
-    private final CloudRegionManager cloudRegionManager;
-    /**
-     * Five collectors are declared, one per cloud, so this field's name is what picks the S3 one, as
-     * in {@code S3StorageProvider}. Signing emits no event; the helper's constructor just wants one.
-     */
-    private final StorageEventCollector s3Events;
+    private final StorageProviderManager storageProviderManager;
     private final MessageHelper messageHelper;
 
     /**
@@ -82,33 +76,73 @@ public class DataStorageDownloadArchiveManager {
         return asyncTaskManager.create(AsyncTaskType.DOWNLOAD_ARCHIVE, owner, DownloadArchiveParams.builder()
                 .storageId(storageId)
                 .paths(request.getPaths())
-                .archiveName(archiveName(request.getArchiveName()))
+                .archiveName(validArchiveName(request.getArchiveName()))
                 .build());
     }
 
-    /**
-     * Signs a link to the finished archive anew on every call. A stored one would be dead by the time
-     * its owner returned: the signature lives hours, the archive days.
-     */
-    public DataStorageDownloadFileUrl generateUrl(final AsyncTask task) {
+    public DownloadArchiveConsumable consume(final AsyncTask task) {
         Assert.isTrue(AsyncTaskStatus.SUCCESS == task.getStatus(), messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ARCHIVE_NOT_READY, task.getId(), task.getStatus()));
         final DownloadArchiveConfig config = config();
-        Assert.isTrue(StringUtils.isNotBlank(config.getBucket()), messageHelper.getMessage(
+        final Long storageId = archiveStorageId(task, config);
+        Assert.notNull(storageId, messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ARCHIVE_STORAGE_NOT_CONFIGURED));
-        final AwsRegion region = (AwsRegion) cloudRegionManager.loadOrDefault(config.getRegionId());
-        final AwsRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        final S3Helper helper = new RegionAwareS3Helper(s3Events, messageHelper, region, credentials);
-        return helper.generateDownloadURL(config.getBucket(), archiveKey(task.getId()), null,
-                ContentDisposition.ATTACHMENT);
+        final AbstractDataStorage storage = dataStorageManager.load(storageId);
+        final DataStorageDownloadFileUrl signed = storageProviderManager.generateDownloadURL(storage,
+                archivePath(task, config), null, ContentDisposition.ATTACHMENT, offeredArchiveName(task));
+        return DownloadArchiveConsumable.builder()
+                .url(signed.getUrl())
+                .expires(signed.getExpires())
+                .build();
     }
 
-    /**
-     * Derived from the task id rather than chosen by the executor, so that the archive can be found -
-     * or cleaned up after a worker that died before reporting - from the task alone.
-     */
-    public String archiveKey(final String taskId) {
-        return ARCHIVE_PREFIX + taskId + ARCHIVE_EXTENSION;
+    private String archivePrefix(final DownloadArchiveConfig config) {
+        final String configured = StringUtils.defaultIfBlank(config.getDestinationPrefix(),
+                DEFAULT_ARCHIVE_PREFIX);
+        final String trimmed = StringUtils.strip(configured, SLASH);
+        return StringUtils.isEmpty(trimmed) ? StringUtils.EMPTY : trimmed + SLASH;
+    }
+
+
+    Long archiveStorageId(final AsyncTask task, final DownloadArchiveConfig config) {
+        return archiveResult(task)
+                .map(DownloadArchiveResult::getStorageId)
+                .orElseGet(config::getDestinationStorageId);
+    }
+
+    String archivePath(final AsyncTask task, final DownloadArchiveConfig config) {
+        final String recorded = archiveResult(task)
+                .map(DownloadArchiveResult::getPath)
+                .filter(StringUtils::isNotBlank)
+                .orElse(null);
+        if (Objects.isNull(recorded)) {
+            return archivePrefix(config) + task.getId() + ARCHIVE_EXTENSION;
+        }
+        Assert.isTrue(recorded.endsWith(task.getId() + ARCHIVE_EXTENSION), messageHelper.getMessage(
+                MessageConstants.ERROR_ASYNC_TASK_ARCHIVE_PATH_INVALID, recorded, task.getId()));
+        return recorded;
+    }
+
+    String offeredArchiveName(final AsyncTask task) {
+        final String requested = archiveParams(task)
+                .map(DownloadArchiveParams::getArchiveName)
+                .filter(StringUtils::isNotBlank)
+                .orElse(DEFAULT_ARCHIVE_NAME);
+        return StringUtils.endsWithIgnoreCase(requested, ARCHIVE_EXTENSION)
+                ? requested
+                : requested + ARCHIVE_EXTENSION;
+    }
+
+    private Optional<DownloadArchiveResult> archiveResult(final AsyncTask task) {
+        return task.getResult() instanceof DownloadArchiveResult result
+                ? Optional.of(result)
+                : Optional.empty();
+    }
+
+    private Optional<DownloadArchiveParams> archiveParams(final AsyncTask task) {
+        return task.getParams() instanceof DownloadArchiveParams params
+                ? Optional.of(params)
+                : Optional.empty();
     }
 
     private void assertUserQuota(final String owner) {
@@ -122,7 +156,7 @@ public class DataStorageDownloadArchiveManager {
         return preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG);
     }
 
-    private String archiveName(final String requested) {
+    private String validArchiveName(final String requested) {
         if (StringUtils.isBlank(requested)) {
             return DEFAULT_ARCHIVE_NAME;
         }

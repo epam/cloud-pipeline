@@ -22,8 +22,8 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskType;
-import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -69,15 +69,18 @@ public class AsyncTaskController extends AbstractRestController {
         return Result.success(asyncTaskApiService.load(id));
     }
 
-    @GetMapping("/{id}/url")
+    @GetMapping("/{id}/consume")
     @ResponseBody
     @Operation(
-            summary = "Returns a download url for the artifact a task produced.",
-            description = "Returns a download url for the artifact a task produced. The url is signed "
-                    + "anew on every call and the task is not changed by it.")
+            summary = "Hands over the artifact a finished task produced.",
+            description = "Hands over the artifact a finished task produced. What that is depends on "
+                    + "the type of the task, so the answer carries the type and a payload shaped by "
+                    + "it; a download-archive task hands over a signed url. Nothing is consumed in "
+                    + "the sense of being used up - the task is not changed, and a second call "
+                    + "answers afresh.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<DataStorageDownloadFileUrl> generateUrl(@PathVariable(value = ID) final String id) {
-        return Result.success(asyncTaskApiService.generateUrl(id));
+    public Result<AsyncTaskConsumeResult> consume(@PathVariable(value = ID) final String id) {
+        return Result.success(asyncTaskApiService.consume(id));
     }
 
     @PostMapping("/{id}/cancel")

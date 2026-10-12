@@ -133,6 +133,15 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
+    @SensitiveStorageOperation
+    public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
+                                                          String path, String version,
+                                                          ContentDisposition contentDisposition,
+                                                          String fileName) {
+        return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version,
+                contentDisposition, fileName);
+    }
+
     @StorageWriteOperation
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(AbstractDataStorage dataStorage,
                                                                        String path) {

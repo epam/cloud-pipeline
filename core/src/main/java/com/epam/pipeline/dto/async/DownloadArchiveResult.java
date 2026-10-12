@@ -31,6 +31,9 @@ import lombok.Setter;
 @AllArgsConstructor
 public class DownloadArchiveResult implements AsyncTaskResult {
 
+    private Long storageId;
+    private String path;
+
     private Long archiveSizeBytes;
     private Integer skippedFiles;
 

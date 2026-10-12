@@ -21,8 +21,8 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskType;
-import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
 import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -60,8 +60,8 @@ public class AsyncTaskApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
-    public DataStorageDownloadFileUrl generateUrl(final String id) {
-        return downloadArchiveManager.generateUrl(ownedByCaller(id));
+    public AsyncTaskConsumeResult consume(final String id) {
+        return AsyncTaskConsumeResult.of(downloadArchiveManager.consume(ownedByCaller(id)));
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

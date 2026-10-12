@@ -425,6 +425,12 @@ public class S3Helper {
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
                                                           String version, ContentDisposition contentDisposition) {
+        return generateDownloadURL(bucket, path, version, contentDisposition, FilenameUtils.getName(path));
+    }
+
+    public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path, String version,
+                                                          ContentDisposition contentDisposition,
+                                                          String fileName) {
         final AmazonS3 client = getDefaultS3Client();
         verifyArchiveState(getObjectHead(client, bucket, path, version));
         final Date expires = new Date((new Date()).getTime() + URL_EXPIRATION);
@@ -432,8 +438,11 @@ public class S3Helper {
         request.setVersionId(version);
         request.setExpiration(expires);
         if (contentDisposition != null) {
+            final String offeredName = StringUtils.isNullOrEmpty(fileName)
+                    ? FilenameUtils.getName(path)
+                    : fileName;
             request.setResponseHeaders(new ResponseHeaderOverrides()
-                    .withContentDisposition(contentDisposition.getHeader(FilenameUtils.getName(path))));
+                    .withContentDisposition(contentDisposition.getHeader(offeredName)));
         }
         return generatePresignedUrl(client, expires, request);
     }

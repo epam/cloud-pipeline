@@ -34,7 +34,9 @@ import lombok.Setter;
  * shape the rest of the object has, and a generated placeholder there cannot be resolved.</p>
  */
 @Schema(example = "{\"status\": \"SUCCESS\", \"result\": "
-        + "{\"type\": \"DOWNLOAD_ARCHIVE\", \"archiveSizeBytes\": 12345, \"skippedFiles\": 0}}")
+        + "{\"type\": \"DOWNLOAD_ARCHIVE\", \"storageId\": 9, "
+        + "\"path\": \"archives/4f1a2c90-0000-4000-8000-000000000001.zip\", "
+        + "\"archiveSizeBytes\": 12345, \"skippedFiles\": 0}}")
 @Getter
 @Setter
 @Builder(toBuilder = true)

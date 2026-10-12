@@ -213,7 +213,9 @@ public class SystemPreferences {
         new ObjectPreference<>(
             "storage.download.archive.config",
             DownloadArchiveConfig.builder()
+                .destinationPrefix("archives/")
                 .maxSizeBytes(107374182400L)
+                .maxFilesCount(100000)
                 .ttlDays(7)
                 .maxUserTasks(3)
                 .workerMaxRunningMinutes(240)

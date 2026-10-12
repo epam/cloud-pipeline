@@ -34,21 +34,30 @@ import lombok.NoArgsConstructor;
 public class DownloadArchiveConfig {
 
     /**
-     * Bucket the archives go to - a plain bucket, not a storage of the platform. Required.
+     * Data storage the archives go to. Required. A storage of the platform rather than a bare bucket,
+     * so that signing the link, resolving the region and reaching the right cloud all go through the
+     * machinery that already does it for every other storage.
      */
-    private String bucket;
+    private Long destinationStorageId;
 
     /**
-     * Region whose credentials sign the link. Empty means the platform's default region; set it when
-     * the bucket lives elsewhere, as a signature is bound to its region.
+     * Folder inside that storage. Storage-relative, as every path in the platform is.
      */
-    private Long regionId;
+    private String destinationPrefix;
 
     /**
      * Largest selection that may be archived. Counted by the executor, so an oversized request fails
      * once the task runs rather than when it is accepted.
      */
     private Long maxSizeBytes;
+
+    /**
+     * Largest number of files that may be archived. Counted by the executor next to the size and on the
+     * same listing pass, so an oversized request fails once the task runs rather than when it is
+     * accepted. Guards the case the size alone misses: a selection of many tiny files, cheap by bytes
+     * but expensive to download and pack one by one.
+     */
+    private Integer maxFilesCount;
 
     /**
      * How long a finished archive is kept, counted from the moment it became available.

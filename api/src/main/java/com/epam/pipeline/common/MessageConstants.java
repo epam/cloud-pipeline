@@ -1020,6 +1020,8 @@ public final class MessageConstants {
     public static final String ERROR_ASYNC_TASK_ARCHIVE_NAME_INVALID =
             "error.async.task.archive.name.invalid";
     public static final String ERROR_ASYNC_TASK_ARCHIVE_NOT_READY = "error.async.task.archive.not.ready";
+    public static final String ERROR_ASYNC_TASK_ARCHIVE_PATH_INVALID =
+            "error.async.task.archive.path.invalid";
     public static final String ERROR_ASYNC_TASK_ARCHIVE_STORAGE_NOT_CONFIGURED =
             "error.async.task.archive.storage.not.configured";
     public static final String ERROR_ASYNC_TASK_USER_QUOTA_EXCEEDED =
