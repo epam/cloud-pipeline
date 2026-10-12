@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
-import formStyles from './edit-hot-node-pool.css';
+import formStyles from '../../edit-hot-node-pool.css';
 
 const Dates = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 

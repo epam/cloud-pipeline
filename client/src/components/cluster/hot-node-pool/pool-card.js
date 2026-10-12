@@ -24,7 +24,7 @@ import {
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
-import {parseDay} from './schedule-control';
+import {parseDay} from './edit-hot-node-pool/controls/ScheduleControl';
 import PoolShortDescription from './pool-short-description';
 import styles from './pool-card.css';
 

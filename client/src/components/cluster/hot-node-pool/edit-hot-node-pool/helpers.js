@@ -15,7 +15,7 @@
  */
 
 import {getFiltersError, filtersAreEqual} from '../filters-control';
-import {compareSchedulesArray, scheduleIsValid} from '../schedule-control';
+import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
 import {DISK_MIN_SIZE, DISK_MAX_SIZE, COUNT_MIN_SIZE} from './constants';
 
 export function arraysAreEqual (a, b) {

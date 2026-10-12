@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {compareSchedulesArray, scheduleIsValid, parseDay} from './schedule-control';
+import {compareSchedulesArray, scheduleIsValid, parseDay} from './ScheduleControl';
 
 const full = {from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'};
 

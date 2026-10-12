@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon} from 'antd';
 import classNames from 'classnames';
-import ScheduleControl, {scheduleIsValid} from '../../schedule-control';
+import ScheduleControl, {scheduleIsValid} from './ScheduleControl';
 import styles from '../../edit-hot-node-pool.css';
 
 function ScheduleControls ({
