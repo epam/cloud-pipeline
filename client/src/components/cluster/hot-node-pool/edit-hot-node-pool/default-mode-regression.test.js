@@ -229,6 +229,50 @@ describe('payload shape is closed (Default mode)', () => {
     ].sort());
   });
 
+  it(
+    'the Default-mode payload shape is unchanged while GPU mode adds exactly poolType ' +
+    'and capacityReservationRequest',
+    () => {
+      const defaultPayload = buildPoolPayload(baseValues({mode: 'DEFAULT'}));
+      const gpuPayload = buildPoolPayload(baseValues({
+        mode: 'GPU',
+        poolType: 'STANDARD',
+        count: 1,
+        commitmentStart: inDays(30),
+        commitmentEnd: inDays(90),
+        commitmentDuration: 1209600
+      }));
+
+      const sixteenKeys = [
+        'autoscaled',
+        'count',
+        'dockerImages',
+        'filter',
+        'instanceDisk',
+        'instanceImage',
+        'instanceType',
+        'kubeLabels',
+        'maxSize',
+        'minSize',
+        'name',
+        'priceType',
+        'regionId',
+        'scaleDownThreshold',
+        'scaleStep',
+        'scaleUpThreshold'
+      ].sort();
+
+      expect(Object.keys(defaultPayload).sort()).toEqual(sixteenKeys);
+      expect(Object.keys(gpuPayload).sort()).toEqual(
+        [...sixteenKeys, 'capacityReservationRequest', 'poolType'].sort()
+      );
+      expect(gpuPayload.capacityReservationRequest.reservationType).toBe('FUTURE_DATED');
+      ['mode', 'commitmentStart', 'commitmentEnd', 'commitmentDuration'].forEach((key) => {
+        expect(Object.keys(gpuPayload)).not.toContain(key);
+      });
+    }
+  );
+
   it('buildSchedulePayload exposes exactly scheduleEntries and name', () => {
     const payload = buildSchedulePayload(baseValues({
       schedule: [{from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'}],
