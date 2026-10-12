@@ -6,7 +6,7 @@
     "main_file" : "@.py",
     "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "20",
-    "docker_image" : "library/centos:7",
+    "docker_image" : "library/rockylinux:latest",
     "cmd_template" : "${CP_DOLLAR}CP_PYTHON_PATH ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
     "parameters": {}
   }
