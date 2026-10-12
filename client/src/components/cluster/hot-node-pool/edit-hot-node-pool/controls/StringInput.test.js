@@ -23,17 +23,23 @@ test('renders the label text verbatim, including the colon', () => {
   expect(screen.getByText('Pool name:')).toBeInTheDocument();
 });
 
-test('type "string" renders an Input and onChange receives an event', async () => {
-  // React 15 pools SyntheticEvent and nullifies `.target` once the handler
-  // returns, so the value is read synchronously inside the handler itself.
-  const values = [];
-  const onChange = fn((e) => values.push(e.target.value));
+test('type "string" renders an Input and onChange receives the plain value', async () => {
+  const onChange = fn();
   render(<StringInput type="string" label="Pool name:" value="" onChange={onChange} />);
 
   await change(screen.getByRole('textbox'), 'abc');
 
   expect(onChange).toHaveBeenCalledTimes(1);
-  expect(values).toEqual(['abc']);
+  expect(onChange).toHaveBeenLastCalledWith('abc');
+});
+
+test('type "string" normalizes an emptied field to undefined', async () => {
+  const onChange = fn();
+  render(<StringInput type="string" label="Pool name:" value="abc" onChange={onChange} />);
+
+  await change(screen.getByRole('textbox'), '');
+
+  expect(onChange).toHaveBeenLastCalledWith(undefined);
 });
 
 test('type "number" renders an InputNumber and onChange receives a raw value', async () => {

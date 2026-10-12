@@ -37,6 +37,9 @@ function StringInput ({
   touched,
   style
 }) {
+  // antd's `Input` passes the raw DOM event, unlike `InputNumber`'s raw value - normalized
+  // here so callers always receive a plain value, string or number, regardless of `type`.
+  const onChangeString = (event) => onChange(event.target.value || undefined);
   return (
     <div style={style}>
       <div className={styles.formRow}>
@@ -58,7 +61,7 @@ function StringInput ({
               <Input
                 disabled={disabled}
                 value={value}
-                onChange={onChange}
+                onChange={onChangeString}
               />
             </div>
           )

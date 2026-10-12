@@ -51,34 +51,8 @@ function groupedInstanceTypes () {
   }));
 }
 
-function noopHandlers () {
-  return {
-    onChangeName: fn(),
-    onChangeAutoScaled: fn(),
-    onChangeCount: fn(),
-    onChangeMinSize: fn(),
-    onChangeMaxSize: fn(),
-    onChangeScaleUpThreshold: fn(),
-    onChangeScaleDownThreshold: fn(),
-    onChangeScaleStep: fn(),
-    onChangeRegion: fn(),
-    onChangeSpot: fn(),
-    onChangeInstanceType: fn(),
-    onChangeInstanceImage: fn(),
-    onChangeDisk: fn(),
-    onChangeDockerImage: () => fn(),
-    onRemoveDockerImage: () => fn(),
-    onAddDockerImage: fn(),
-    onAddSchedule: fn(),
-    onChangeSchedule: () => fn(),
-    onRemoveSchedule: () => fn(),
-    onAddLabel: fn(),
-    onRemoveLabel: () => fn(),
-    onChangeLabelName: () => fn(),
-    onChangeLabelValue: () => fn(),
-    onChangeLabelMonitored: () => fn(),
-    onChangeFilters: fn()
-  };
+function noopOnChange () {
+  return fn();
 }
 
 function baseValues (overrides = {}) {
@@ -109,7 +83,13 @@ const emptyTouched = {};
 
 const stores = () => ({
   awsRegions: awsRegionsStore(regions),
-  allInstanceTypes: loaded(instanceTypesList)
+  allInstanceTypes: loaded(instanceTypesList),
+  dockerRegistries: observable({
+    loaded: true,
+    pending: false,
+    value: {registries: []},
+    fetchIfNeededOrWait: () => Promise.resolve()
+  })
 });
 
 function renderForm (props = {}) {
@@ -127,7 +107,7 @@ function renderForm (props = {}) {
       priceTypes={[true, false]}
       currentProvider="aws"
       roles={{loaded: true, value: []}}
-      handlers={noopHandlers()}
+      onChange={noopOnChange()}
       {...props}
     />,
     stores()
@@ -236,23 +216,110 @@ test('builds grouped region/instance options and provider-specific price type na
   expect(screen.getAllByText('Low priority').length).toBeGreaterThan(0);
 });
 
-test('wires Pool name and Disk to their handlers', async () => {
-  const handlers = noopHandlers();
-  renderForm({handlers});
+test('wires Pool name and Disk to onChange, keyed by field name', async () => {
+  const onChange = fn();
+  renderForm({onChange});
 
   await change(within(row('Pool name:')).getByRole('textbox'), 'renamed');
-  expect(handlers.onChangeName).toHaveBeenCalledTimes(1);
+  expect(onChange).toHaveBeenLastCalledWith('name', 'renamed');
 
   await change(within(row('Disk:')).getByRole('textbox'), '60');
-  expect(handlers.onChangeDisk).toHaveBeenLastCalledWith(60);
+  expect(onChange).toHaveBeenLastCalledWith('disk', 60);
 });
 
-test('clicking Autoscaled calls onChangeAutoScaled with the raw event', async () => {
-  const handlers = noopHandlers();
-  renderForm({handlers});
+test('clicking Autoscaled calls onChange with the plain boolean', async () => {
+  const onChange = fn();
+  renderForm({onChange});
 
   await click(within(row('Autoscaled:')).getByRole('checkbox'));
 
-  expect(handlers.onChangeAutoScaled).toHaveBeenCalledTimes(1);
-  expect(handlers.onChangeAutoScaled.mock.calls[0][0].target.checked).toBe(true);
+  expect(onChange).toHaveBeenLastCalledWith('autoscaled', true);
+});
+
+test('Add docker image calls onChange with an add action', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(screen.getByRole('button', {name: 'Add docker image'}));
+
+  expect(onChange).toHaveBeenLastCalledWith('dockerImages', {action: 'add'});
+});
+
+test('removing a docker image calls onChange with a remove action and its id', async () => {
+  const onChange = fn();
+  renderForm({
+    onChange,
+    values: baseValues({
+      dockerImages: [{id: 7, image: 'registry.com/group/image:1', removed: false}]
+    })
+  });
+
+  await click(screen.getAllByRole('button', {name: ''})[0]);
+
+  expect(onChange).toHaveBeenLastCalledWith('dockerImages', {action: 'remove', id: 7});
+});
+
+test('Add schedule calls onChange with an add action', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(screen.getByRole('button', {name: 'Add schedule'}));
+
+  expect(onChange).toHaveBeenLastCalledWith('schedule', {action: 'add'});
+});
+
+test('removing a schedule entry calls onChange with a remove action and its id', async () => {
+  const onChange = fn();
+  const entry = {id: 3, from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'};
+  renderForm({onChange, values: baseValues({schedule: [entry]})});
+
+  await click(screen.getAllByRole('button', {name: ''})[0]);
+
+  expect(onChange).toHaveBeenLastCalledWith('schedule', {action: 'remove', id: 3});
+});
+
+test('Add node label calls onChange with an add action', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(screen.getByText('Add node label'));
+
+  expect(onChange).toHaveBeenLastCalledWith('labels', {action: 'add'});
+});
+
+test('removing a label calls onChange with a remove action and its key', async () => {
+  const onChange = fn();
+  const label = {key: 'a', name: 'env', value: 'prod', monitored: true};
+  renderForm({onChange, values: baseValues({labels: [label]})});
+
+  await click(screen.getAllByRole('button', {name: ''})[0]);
+
+  expect(onChange).toHaveBeenLastCalledWith('labels', {action: 'remove', key: 'a'});
+});
+
+test('editing a label name calls onChange with an update action for the name field', async () => {
+  const onChange = fn();
+  const label = {key: 'a', name: 'env', value: 'prod', monitored: true};
+  renderForm({onChange, values: baseValues({labels: [label]})});
+
+  const nameInput = screen.getAllByRole('textbox').find(i => i.value === 'env');
+  await change(nameInput, 'renamed');
+
+  expect(onChange).toHaveBeenLastCalledWith(
+    'labels',
+    {action: 'update', key: 'a', field: 'name', value: 'renamed'}
+  );
+});
+
+test('toggling a label\'s Monitored checkbox calls onChange with an update action', async () => {
+  const onChange = fn();
+  const label = {key: 'a', name: 'env', value: 'prod', monitored: true};
+  renderForm({onChange, values: baseValues({labels: [label]})});
+
+  await click(screen.getByLabelText('Monitored'));
+
+  expect(onChange).toHaveBeenLastCalledWith(
+    'labels',
+    {action: 'update', key: 'a', field: 'monitored', value: false}
+  );
 });

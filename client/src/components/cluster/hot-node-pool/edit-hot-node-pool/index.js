@@ -400,34 +400,35 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  onChangeInstanceType = (e) => {
-    const {touched} = this.state;
-    touched.instanceType = true;
-    this.setState({
-      instanceType: e || undefined,
-      touched
-    }, this.onChange);
+  // The single entry point every control's `onChange` is wired to: a plain
+  // scalar field sets itself and its own `touched` flag; the four compound
+  // fields (array items, or autoscaled's seeded siblings) dispatch to their
+  // own helper below, keyed by `value.action`.
+  onChangeField = (key, value) => {
+    switch (key) {
+      case 'autoscaled':
+        this.onAutoscaledChange(value);
+        return;
+      case 'dockerImages':
+        this.onDockerImagesChange(value);
+        return;
+      case 'schedule':
+        this.onScheduleChange(value);
+        return;
+      case 'labels':
+        this.onLabelsChange(value);
+        return;
+      default: {
+        const {touched} = this.state;
+        this.setState({
+          [key]: value,
+          touched: {...touched, [key]: true}
+        }, this.onChange);
+      }
+    }
   };
 
-  onChangeDisk = (e) => {
-    const {touched} = this.state;
-    touched.disk = true;
-    this.setState({
-      disk: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeCount = (e) => {
-    const {touched} = this.state;
-    touched.count = true;
-    this.setState({
-      count: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeAutoScaled = (e) => {
+  onAutoscaledChange = (autoscaled) => {
     const {
       count,
       touched,
@@ -435,7 +436,6 @@ class EditHotNodePool extends React.Component {
       scaleUpThreshold,
       scaleStep
     } = this.state;
-    const autoscaled = e.target.checked;
     const newState = {
       autoscaled
     };
@@ -449,220 +449,87 @@ class EditHotNodePool extends React.Component {
     this.setState(newState, this.onChange);
   };
 
-  onChangeMinSize = (e) => {
-    const {touched} = this.state;
-    touched.minSize = true;
-    this.setState({
-      minSize: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeMaxSize = (e) => {
-    const {touched} = this.state;
-    touched.maxSize = true;
-    this.setState({
-      maxSize: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeScaleDownThreshold = (e) => {
-    const {touched} = this.state;
-    touched.scaleDownThreshold = true;
-    this.setState({
-      scaleDownThreshold: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeScaleUpThreshold = (e) => {
-    const {touched} = this.state;
-    touched.scaleUpThreshold = true;
-    this.setState({
-      scaleUpThreshold: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeScaleStep = (e) => {
-    const {touched} = this.state;
-    touched.scaleStep = true;
-    this.setState({
-      scaleStep: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeName = (e) => {
-    const {touched} = this.state;
-    touched.name = true;
-    this.setState({
-      name: e.target.value || undefined,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeInstanceImage = (e) => {
-    this.setState({
-      instanceImage: e.target.value || undefined
-    }, this.onChange);
-  };
-
-  onChangeSpot = (e) => {
-    this.setState({
-      spot: e
-    }, this.onChange);
-  };
-
-  onChangeRegion = (e) => {
-    const {touched} = this.state;
-    touched.region = true;
-    this.setState({
-      region: e,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeFilters = (o) => {
-    const {touched} = this.state;
-    touched.filters = true;
-    this.setState({
-      filters: o,
-      touched
-    }, this.onChange);
-  };
-
-  onChangeDockerImage = (id) => (image) => {
+  // `action` is `{action: 'add'}`, `{action: 'remove', id}` or
+  // `{action: 'update', id, image}`.
+  onDockerImagesChange = (action) => {
     const {dockerImages, touched} = this.state;
     touched.dockerImages = true;
-    const dockerImage = dockerImages.find(o => o.id === id);
-    if (dockerImage) {
-      dockerImage.image = image;
+    if (action.action === 'add') {
+      const id = Math.max(...dockerImages.map(o => o.id), 0) + 1;
+      dockerImages.push({id, image: '', removed: false});
       this.setState({dockerImages, touched}, this.onChange);
+      return;
     }
-  };
-
-  onRemoveDockerImage = (id) => () => {
-    const {dockerImages, touched} = this.state;
-    touched.dockerImages = true;
-    const dockerImage = dockerImages.find(o => o.id === id);
-    if (dockerImage) {
+    const dockerImage = dockerImages.find(o => o.id === action.id);
+    if (!dockerImage) {
+      return;
+    }
+    if (action.action === 'remove') {
       dockerImage.removed = true;
-      this.setState({dockerImages, touched}, this.onChange);
+    } else if (action.action === 'update') {
+      dockerImage.image = action.image;
     }
-  };
-
-  onAddDockerImage = () => {
-    const {dockerImages, touched} = this.state;
-    touched.dockerImages = true;
-    const id = Math.max(...dockerImages.map(o => o.id), 0) + 1;
-    dockerImages.push({
-      id,
-      image: '',
-      removed: false
-    });
     this.setState({dockerImages, touched}, this.onChange);
   };
 
-  onAddSchedule = () => {
+  // `action` is `{action: 'add'}`, `{action: 'remove', id}` or
+  // `{action: 'update', id, payload}`.
+  onScheduleChange = (action) => {
     const {schedule, touched} = this.state;
     touched.schedule = true;
-    const id = Math.max(...schedule.map(s => s.id), 0) + 1;
-    schedule.push({id});
-    this.setState({
-      schedule,
-      touched
-    }, this.onChange);
-  };
-
-  onRemoveSchedule = (id) => () => {
-    const {schedule, touched} = this.state;
-    touched.schedule = true;
-    const index = schedule.findIndex(o => o.id === id);
-    if (index >= 0) {
+    if (action.action === 'add') {
+      const id = Math.max(...schedule.map(s => s.id), 0) + 1;
+      schedule.push({id});
+      this.setState({schedule, touched}, this.onChange);
+      return;
+    }
+    const index = schedule.findIndex(o => o.id === action.id);
+    if (index < 0) {
+      return;
+    }
+    if (action.action === 'remove') {
       schedule.splice(index, 1);
+    } else if (action.action === 'update') {
+      schedule.splice(index, 1, {...action.payload, id: action.id});
+    }
+    this.setState({schedule, touched}, this.onChange);
+  };
+
+  // `action` is `{action: 'add'}`, `{action: 'remove', key}` or
+  // `{action: 'update', key, field, value}`, `field` one of
+  // `name`/`value`/`monitored`.
+  onLabelsChange = (action) => {
+    const {labels} = this.state;
+    if (action.action === 'add') {
+      let idx = 0;
+      const existing = [...new Set(labels.map((lb) => lb.key))];
+      const generate = () => {
+        idx += 1;
+        return `node-label-${idx}`;
+      };
+      let nodeLabelKey = generate();
+      while (existing.includes(nodeLabelKey)) {
+        nodeLabelKey = generate();
+      }
       this.setState({
-        schedule,
-        touched
+        labels: [...labels, {key: nodeLabelKey, name: '', value: '', monitored: false}]
       }, this.onChange);
+      return;
     }
-  };
-
-  onChangeSchedule = (id) => (payload) => {
-    const {schedule, touched} = this.state;
-    touched.schedule = true;
-    const index = schedule.findIndex(o => o.id === id);
-    if (index >= 0) {
-      schedule.splice(index, 1, {...payload, id});
-      this.setState({
-        schedule,
-        touched
-      }, this.onChange);
+    if (action.action === 'remove') {
+      this.setState({labels: labels.filter(o => o.key !== action.key)}, this.onChange);
+      return;
     }
-  };
-
-  onAddLabel = () => {
-    const {labels} = this.state;
-    let idx = 0;
-    const existing = [...new Set(labels.map((lb) => lb.key))];
-    const generate = () => {
-      idx += 1;
-      return `node-label-${idx}`;
-    };
-    let nodeLabelKey = generate();
-    while (existing.includes(nodeLabelKey)) {
-      nodeLabelKey = generate();
-    }
-    this.setState({
-      labels: [...labels, {key: nodeLabelKey, name: '', value: '', monitored: false}]
-    }, this.onChange);
-  };
-
-  onRemoveLabel = (key) => () => {
-    const {labels} = this.state;
-    this.setState({
-      labels: labels.filter(o => o.key !== key)
-    }, this.onChange);
-  };
-
-  onChangeLabelName = (key) => (event) => {
-    const {labels} = this.state;
     const result = labels.slice();
-    const idx = result.findIndex(o => o.key === key);
-    if (idx >= 0) {
-      result.splice(idx, 1, {
-        ...result[idx],
-        name: event.target.value
-      });
-      this.setState({labels: result}, this.onChange);
+    const idx = result.findIndex(o => o.key === action.key);
+    if (idx < 0) {
+      return;
     }
-  };
-
-  onChangeLabelValue = (key) => (event) => {
-    const {labels} = this.state;
-    const result = labels.slice();
-    const idx = result.findIndex(o => o.key === key);
-    if (idx >= 0) {
-      result.splice(idx, 1, {
-        ...result[idx],
-        value: event.target.value
-      });
-      this.setState({labels: result}, this.onChange);
-    }
-  };
-
-  onChangeLabelMonitored = (key) => (event) => {
-    const {labels} = this.state;
-    const result = labels.slice();
-    const idx = result.findIndex(o => o.key === key);
-    if (idx >= 0) {
-      result.splice(idx, 1, {
-        ...result[idx],
-        monitored: event.target.checked
-      });
-      this.setState({labels: result}, this.onChange);
-    }
+    result.splice(idx, 1, {
+      ...result[idx],
+      [action.field]: action.value
+    });
+    this.setState({labels: result}, this.onChange);
   };
 
   render () {
@@ -753,33 +620,7 @@ class EditHotNodePool extends React.Component {
           priceTypes={this.priceTypes}
           currentProvider={this.currentProvider}
           roles={this.roles}
-          handlers={{
-            onChangeName: this.onChangeName,
-            onChangeAutoScaled: this.onChangeAutoScaled,
-            onChangeCount: this.onChangeCount,
-            onChangeMinSize: this.onChangeMinSize,
-            onChangeMaxSize: this.onChangeMaxSize,
-            onChangeScaleUpThreshold: this.onChangeScaleUpThreshold,
-            onChangeScaleDownThreshold: this.onChangeScaleDownThreshold,
-            onChangeScaleStep: this.onChangeScaleStep,
-            onChangeRegion: this.onChangeRegion,
-            onChangeSpot: this.onChangeSpot,
-            onChangeInstanceType: this.onChangeInstanceType,
-            onChangeInstanceImage: this.onChangeInstanceImage,
-            onChangeDisk: this.onChangeDisk,
-            onChangeDockerImage: this.onChangeDockerImage,
-            onRemoveDockerImage: this.onRemoveDockerImage,
-            onAddDockerImage: this.onAddDockerImage,
-            onAddSchedule: this.onAddSchedule,
-            onChangeSchedule: this.onChangeSchedule,
-            onRemoveSchedule: this.onRemoveSchedule,
-            onAddLabel: this.onAddLabel,
-            onRemoveLabel: this.onRemoveLabel,
-            onChangeLabelName: this.onChangeLabelName,
-            onChangeLabelValue: this.onChangeLabelValue,
-            onChangeLabelMonitored: this.onChangeLabelMonitored,
-            onChangeFilters: this.onChangeFilters
-          }}
+          onChange={this.onChangeField}
         />
       </Modal>
     );

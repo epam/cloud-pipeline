@@ -150,9 +150,9 @@ function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disable
   );
 }
 
-// `values`/`handlers` are built as fresh inline literals by index.js on every render,
-// which is what keeps mobx-react's shallow-prop shouldComponentUpdate from ever
-// skipping a re-render here, even though index.js mutates arrays in state in place.
+// `values` is built as a fresh inline literal by index.js on every render, which is
+// what keeps mobx-react's shallow-prop shouldComponentUpdate from ever skipping a
+// re-render here, even though index.js mutates arrays in state in place.
 function EditHotNodePoolForm ({
   values,
   validation,
@@ -166,7 +166,7 @@ function EditHotNodePoolForm ({
   priceTypes,
   currentProvider,
   roles,
-  handlers
+  onChange
 }) {
   const {
     name,
@@ -192,7 +192,7 @@ function EditHotNodePoolForm ({
       <StringInput
         label="Pool name:"
         value={name}
-        onChange={handlers.onChangeName}
+        onChange={value => onChange('name', value)}
         disabled={disabled}
         error={validation.name}
         touched={touched.name}
@@ -204,9 +204,9 @@ function EditHotNodePoolForm ({
         schedule={schedule}
         error={validation.schedule}
         touched={touched.schedule}
-        onAdd={handlers.onAddSchedule}
-        onChange={handlers.onChangeSchedule}
-        onRemove={handlers.onRemoveSchedule}
+        onAdd={() => onChange('schedule', {action: 'add'})}
+        onChange={id => payload => onChange('schedule', {action: 'update', id, payload})}
+        onRemove={id => () => onChange('schedule', {action: 'remove', id})}
       />
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Configuration</h2>
@@ -214,7 +214,7 @@ function EditHotNodePoolForm ({
       <CheckboxControl
         label="Autoscaled:"
         checked={autoscaled}
-        onChange={handlers.onChangeAutoScaled}
+        onChange={e => onChange('autoscaled', e.target.checked)}
         disabled={disabled}
         hint={hints.autoScaledHint}
       />
@@ -224,7 +224,7 @@ function EditHotNodePoolForm ({
             type="number"
             label="Nodes count:"
             value={count}
-            onChange={handlers.onChangeCount}
+            onChange={value => onChange('count', value)}
             disabled={disabled}
             min={COUNT_MIN_SIZE}
             error={validation.count}
@@ -238,7 +238,7 @@ function EditHotNodePoolForm ({
             type="number"
             label="Min Size:"
             value={minSize}
-            onChange={handlers.onChangeMinSize}
+            onChange={value => onChange('minSize', value)}
             disabled={disabled}
             min={1}
             hint={hints.minSizeHint}
@@ -254,7 +254,7 @@ function EditHotNodePoolForm ({
             type="number"
             label="Max Size:"
             value={maxSize}
-            onChange={handlers.onChangeMaxSize}
+            onChange={value => onChange('maxSize', value)}
             disabled={disabled}
             min={1}
             hint={hints.maxSizeHint}
@@ -270,7 +270,7 @@ function EditHotNodePoolForm ({
             type="number"
             label="Scale Up Threshold:"
             value={scaleUpThreshold}
-            onChange={handlers.onChangeScaleUpThreshold}
+            onChange={value => onChange('scaleUpThreshold', value)}
             disabled={disabled}
             min={0}
             max={100}
@@ -287,7 +287,7 @@ function EditHotNodePoolForm ({
             type="number"
             label="Scale Down Threshold:"
             value={scaleDownThreshold}
-            onChange={handlers.onChangeScaleDownThreshold}
+            onChange={value => onChange('scaleDownThreshold', value)}
             disabled={disabled}
             min={0}
             max={100}
@@ -304,7 +304,7 @@ function EditHotNodePoolForm ({
             type="number"
             label="Scale Step:"
             value={scaleStep}
-            onChange={handlers.onChangeScaleStep}
+            onChange={value => onChange('scaleStep', value)}
             disabled={disabled}
             min={0}
             max={100}
@@ -318,7 +318,7 @@ function EditHotNodePoolForm ({
       <RegionSelect
         regions={regions}
         value={region}
-        onChange={handlers.onChangeRegion}
+        onChange={value => onChange('region', value)}
         disabled={disabled || readOnly}
         error={validation.region}
         touched={touched.region}
@@ -327,14 +327,14 @@ function EditHotNodePoolForm ({
         priceTypes={priceTypes}
         currentProvider={currentProvider}
         value={spot}
-        onChange={handlers.onChangeSpot}
+        onChange={value => onChange('spot', value)}
         disabled={disabled || allowedInstanceTypesPending || readOnly}
       />
       <InstanceTypeSelect
         instanceTypes={instanceTypes}
         allowedInstanceTypes={allowedInstanceTypes}
         value={instanceType}
-        onChange={handlers.onChangeInstanceType}
+        onChange={value => onChange('instanceType', value)}
         disabled={disabled || allowedInstanceTypesPending || readOnly}
         error={validation.instanceType}
         touched={touched.instanceType}
@@ -342,7 +342,7 @@ function EditHotNodePoolForm ({
       <StringInput
         label="AMI:"
         value={instanceImage}
-        onChange={handlers.onChangeInstanceImage}
+        onChange={value => onChange('instanceImage', value)}
         disabled={disabled || readOnly}
         error={validation.instanceImage}
         touched={touched.instanceImage}
@@ -351,7 +351,7 @@ function EditHotNodePoolForm ({
         type="number"
         label="Disk:"
         value={disk}
-        onChange={handlers.onChangeDisk}
+        onChange={value => onChange('disk', value)}
         disabled={disabled || readOnly}
         min={DISK_MIN_SIZE}
         max={DISK_MAX_SIZE}
@@ -364,20 +364,26 @@ function EditHotNodePoolForm ({
         readOnly={readOnly}
         error={validation.dockerImages}
         touched={touched.dockerImages}
-        onChange={handlers.onChangeDockerImage}
-        onRemove={handlers.onRemoveDockerImage}
-        onAdd={handlers.onAddDockerImage}
+        onChange={id => image => onChange('dockerImages', {action: 'update', id, image})}
+        onRemove={id => () => onChange('dockerImages', {action: 'remove', id})}
+        onAdd={() => onChange('dockerImages', {action: 'add'})}
       />
       <LabelsControl
         labels={labels}
         disabled={disabled}
         readOnly={readOnly}
         error={validation.labelsError}
-        onAdd={handlers.onAddLabel}
-        onRemove={handlers.onRemoveLabel}
-        onChangeName={handlers.onChangeLabelName}
-        onChangeValue={handlers.onChangeLabelValue}
-        onChangeMonitored={handlers.onChangeLabelMonitored}
+        onAdd={() => onChange('labels', {action: 'add'})}
+        onRemove={key => () => onChange('labels', {action: 'remove', key})}
+        onChangeName={key => event => onChange('labels', {
+          action: 'update', key, field: 'name', value: event.target.value
+        })}
+        onChangeValue={key => event => onChange('labels', {
+          action: 'update', key, field: 'value', value: event.target.value
+        })}
+        onChangeMonitored={key => event => onChange('labels', {
+          action: 'update', key, field: 'monitored', value: event.target.checked
+        })}
       />
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Filters</h2>
@@ -388,7 +394,7 @@ function EditHotNodePoolForm ({
         filters={filters}
         error={validation.filters}
         touched={touched.filters}
-        onChange={handlers.onChangeFilters}
+        onChange={value => onChange('filters', value)}
       />
     </div>
   );
@@ -409,7 +415,7 @@ EditHotNodePoolForm.propTypes = {
   priceTypes: PropTypes.array,
   currentProvider: PropTypes.string,
   roles: PropTypes.object,
-  handlers: PropTypes.object
+  onChange: PropTypes.func
 };
 
 export default observer(EditHotNodePoolForm);
