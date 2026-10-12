@@ -61,7 +61,14 @@ function stores () {
       value: {registries: []},
       fetchIfNeededOrWait: () => Promise.resolve()
     }),
-    roles: loaded([])
+    roles: loaded([]),
+    users: loaded([{userName: 'USER1'}]),
+    // The forced criterion's value Select renders its matching Option's children
+    // (<UserName userName="USER1" />), which injects `usersInfo` on its own —
+    // separately from the `users` list the Select itself reads to build its options.
+    usersInfo: loaded([]),
+    pipelines: loaded([]),
+    allConfigurations: loaded([])
   };
 }
 
@@ -109,7 +116,7 @@ async function renderPool (props = {}, instanceTypesForCall = () => instanceAllo
     payload: instanceTypesForCall(call)
   }));
   const result = renderWithStores(
-    <EditHotNodePool visible disabled={false} {...props} />,
+    <EditHotNodePool visible disabled={false} currentUserName="USER1" {...props} />,
     stores()
   );
   await waitFor(() => expect(api.calls.length).toBeGreaterThan(0));
@@ -119,6 +126,13 @@ async function renderPool (props = {}, instanceTypesForCall = () => instanceAllo
 
 function row (labelText) {
   return screen.getByText(labelText).closest('div');
+}
+
+// antd's Select combobox carries no native `disabled` attribute; the state is
+// a class on the `.ant-select` ancestor instead.
+function selectIsDisabled (labelText) {
+  const combobox = within(row(labelText)).getByRole('combobox');
+  return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
 }
 
 test('shows "Create" chrome with no pool and "Edit" chrome with one', async () => {
@@ -155,6 +169,38 @@ test('create mode, selecting GPU leaves the Mode select showing GPU', async () =
 
   expect(within(row('Mode:')).getByText('GPU')).toBeInTheDocument();
 });
+
+test(
+  'GPU + Standard locks Filters to the current user; Shareable unlocks; back to Default clears it',
+  async () => {
+    await renderPool();
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('GPU'));
+
+    expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(true);
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    // UserName (injected with `usersInfo`) falls back to the lower-cased login
+    // when it cannot resolve a richer display name, which is the case here.
+    expect(screen.getByText('user1')).toBeInTheDocument();
+
+    await click(within(row('Pool type:')).getByRole('combobox'));
+    await click(screen.getByText('Shareable'));
+
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+
+    await click(within(row('Pool type:')).getByRole('combobox'));
+    await click(screen.getByText('Standard'));
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Default'));
+
+    expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.queryByText('Run owner')).not.toBeInTheDocument();
+  }
+);
 
 test('SAVE payload never carries mode', async () => {
   const onSave = fn();

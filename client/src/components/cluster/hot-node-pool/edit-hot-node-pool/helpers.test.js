@@ -19,7 +19,9 @@ import {
   getValidationErrors,
   isModified,
   buildPoolPayload,
-  buildSchedulePayload
+  buildSchedulePayload,
+  filtersAreLocked,
+  buildLockedFilters
 } from './helpers';
 
 const validSchedule = {from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'};
@@ -417,6 +419,42 @@ describe('buildPoolPayload', () => {
   it('never includes mode: it has no backend slot', () => {
     const payload = buildPoolPayload(values({mode: 'GPU'}));
     expect(Object.keys(payload)).not.toContain('mode');
+  });
+
+  it('never includes mode when poolType is also set: neither has a backend slot', () => {
+    const payload = buildPoolPayload(values({mode: 'GPU', poolType: 'STANDARD'}));
+    expect(Object.keys(payload)).not.toContain('mode');
+  });
+});
+
+describe('filtersAreLocked', () => {
+  it('is true for a GPU/STANDARD pool', () => {
+    expect(filtersAreLocked({mode: 'GPU', poolType: 'STANDARD'})).toBe(true);
+  });
+
+  it('is false for a GPU/SHAREABLE pool', () => {
+    expect(filtersAreLocked({mode: 'GPU', poolType: 'SHAREABLE'})).toBe(false);
+  });
+
+  it('is false for a DEFAULT/STANDARD pool', () => {
+    expect(filtersAreLocked({mode: 'DEFAULT', poolType: 'STANDARD'})).toBe(false);
+  });
+
+  it('is false for an empty values object', () => {
+    expect(filtersAreLocked({})).toBe(false);
+  });
+
+  it('is false for undefined', () => {
+    expect(filtersAreLocked(undefined)).toBe(false);
+  });
+});
+
+describe('buildLockedFilters', () => {
+  it('builds a single AND-ed RUN_OWNER/EQUAL criterion for the given user', () => {
+    expect(buildLockedFilters('USER1')).toEqual({
+      operator: 'AND',
+      filters: [{type: 'RUN_OWNER', operator: 'EQUAL', value: 'USER1'}]
+    });
   });
 });
 

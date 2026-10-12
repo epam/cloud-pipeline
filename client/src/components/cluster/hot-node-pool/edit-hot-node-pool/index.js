@@ -24,12 +24,14 @@ import {
   getValidationErrors as computeValidationErrors,
   isModified as checkModified,
   buildPoolPayload,
-  buildSchedulePayload
+  buildSchedulePayload,
+  filtersAreLocked,
+  buildLockedFilters
 } from './helpers';
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import Roles from '../../../../models/user/Roles';
-import {MODE_DEFAULT} from './constants';
+import {MODE_DEFAULT, POOL_TYPE_STANDARD} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 @inject('awsRegions')
@@ -37,6 +39,7 @@ import styles from '../edit-hot-node-pool.css';
 class EditHotNodePool extends React.Component {
   state = {
     mode: MODE_DEFAULT,
+    poolType: POOL_TYPE_STANDARD,
     modified: false,
     valid: true,
     disk: undefined,
@@ -188,6 +191,7 @@ class EditHotNodePool extends React.Component {
       } = scheduleObj;
       this.setState({
         mode: MODE_DEFAULT,
+        poolType: POOL_TYPE_STANDARD,
         disk,
         initialDisk: disk,
         instanceType,
@@ -248,6 +252,7 @@ class EditHotNodePool extends React.Component {
     } else {
       this.setState({
         mode: MODE_DEFAULT,
+        poolType: POOL_TYPE_STANDARD,
         disk: undefined,
         initialDisk: undefined,
         instanceType: undefined,
@@ -422,6 +427,10 @@ class EditHotNodePool extends React.Component {
       case 'labels':
         this.onLabelsChange(value);
         return;
+      case 'mode':
+      case 'poolType':
+        this.onPoolKindChange(key, value);
+        return;
       default: {
         const {touched} = this.state;
         this.setState({
@@ -430,6 +439,26 @@ class EditHotNodePool extends React.Component {
         }, this.onChange);
       }
     }
+  };
+
+  // `mode` and `poolType` are client-only (no backend slot) and together they decide
+  // whether the Filters section is editable: a GPU pool of the STANDARD type is always
+  // restricted to its creator's own runs, so the filter is derived here. Leaving that
+  // combination restores the filters the form started with (`undefined` when creating).
+  onPoolKindChange = (key, value) => {
+    const {currentUserName} = this.props;
+    const {mode, poolType, touched, initialFilters} = this.state;
+    const next = {mode, poolType, [key]: value};
+    const newState = {
+      [key]: value,
+      touched: {...touched, [key]: true}
+    };
+    if (filtersAreLocked(next)) {
+      newState.filters = buildLockedFilters(currentUserName);
+    } else if (filtersAreLocked({mode, poolType})) {
+      newState.filters = initialFilters;
+    }
+    this.setState(newState, this.onChange);
   };
 
   onAutoscaledChange = (autoscaled) => {
@@ -546,6 +575,7 @@ class EditHotNodePool extends React.Component {
     const isNew = !pool;
     const {
       mode,
+      poolType,
       name,
       autoscaled,
       count,
@@ -597,6 +627,7 @@ class EditHotNodePool extends React.Component {
         <EditHotNodePoolForm
           values={{
             mode,
+            poolType,
             name,
             autoscaled,
             count,
@@ -638,7 +669,8 @@ EditHotNodePool.propTypes = {
   onSave: PropTypes.func,
   onCancel: PropTypes.func,
   pool: PropTypes.object,
-  visible: PropTypes.bool
+  visible: PropTypes.bool,
+  currentUserName: PropTypes.string
 };
 
 export default EditHotNodePool;

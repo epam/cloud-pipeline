@@ -21,3 +21,5 @@ export const COUNT_MIN_SIZE = 0;
 
 export const MODE_DEFAULT = 'DEFAULT';
 export const MODE_GPU = 'GPU';
+export const POOL_TYPE_STANDARD = 'STANDARD';
+export const POOL_TYPE_SHAREABLE = 'SHAREABLE';

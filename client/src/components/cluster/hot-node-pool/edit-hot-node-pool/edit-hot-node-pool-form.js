@@ -23,6 +23,7 @@ import StringInput from './controls/StringInput';
 import SelectInput from './controls/SelectInput';
 import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
+import PoolTypeControl from './controls/PoolTypeControl';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -31,7 +32,15 @@ import InstanceDetails from '../instance-details';
 import * as hints from '../hot-node-pool-hints';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
-import {DISK_MIN_SIZE, DISK_MAX_SIZE, COUNT_MIN_SIZE, MODE_DEFAULT} from './constants';
+import {filtersAreLocked} from './helpers';
+import {
+  DISK_MIN_SIZE,
+  DISK_MAX_SIZE,
+  COUNT_MIN_SIZE,
+  MODE_DEFAULT,
+  MODE_GPU,
+  POOL_TYPE_STANDARD
+} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 function RegionSelect ({regions, value, onChange, disabled, error, touched}) {
@@ -171,6 +180,7 @@ function EditHotNodePoolForm ({
 }) {
   const {
     mode,
+    poolType,
     name,
     autoscaled,
     count,
@@ -197,6 +207,16 @@ function EditHotNodePoolForm ({
         hint={hints.modeHint}
         onChange={value => onChange('mode', value)}
       />
+      {
+        (mode || MODE_DEFAULT) === MODE_GPU ? (
+          <PoolTypeControl
+            value={poolType || POOL_TYPE_STANDARD}
+            disabled={disabled || readOnly}
+            hint={hints.poolTypeHint}
+            onChange={value => onChange('poolType', value)}
+          />
+        ) : null
+      }
       <StringInput
         label="Pool name:"
         value={name}
@@ -398,7 +418,7 @@ function EditHotNodePoolForm ({
       </div>
       <FiltersControl
         roles={roles}
-        disabled={disabled}
+        disabled={disabled || filtersAreLocked(values)}
         filters={filters}
         error={validation.filters}
         touched={touched.filters}

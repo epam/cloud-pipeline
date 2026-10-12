@@ -16,7 +16,29 @@
 
 import {getFiltersError, filtersAreEqual} from '../filters-control';
 import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
-import {DISK_MIN_SIZE, DISK_MAX_SIZE, COUNT_MIN_SIZE} from './constants';
+import {
+  DISK_MIN_SIZE,
+  DISK_MAX_SIZE,
+  COUNT_MIN_SIZE,
+  MODE_GPU,
+  POOL_TYPE_STANDARD
+} from './constants';
+
+// A STANDARD GPU pool is always restricted to the runs of the user who created it, so
+// its usage filter is derived from mode/poolType instead of being user-editable. This is
+// the already-backend-supported RUN_OWNER/EQUAL criterion, so it is sent in the payload
+// exactly like a hand-made filter.
+export function filtersAreLocked (values) {
+  const {mode, poolType} = values || {};
+  return mode === MODE_GPU && poolType === POOL_TYPE_STANDARD;
+}
+
+export function buildLockedFilters (userName) {
+  return {
+    operator: 'AND',
+    filters: [{type: 'RUN_OWNER', operator: 'EQUAL', value: userName}]
+  };
+}
 
 export function arraysAreEqual (a, b) {
   if (!a && !b) {

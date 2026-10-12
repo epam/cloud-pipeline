@@ -91,6 +91,15 @@ class HotCluster extends React.Component {
     return !authenticatedUserInfo.loaded || !isAdmin(authenticatedUserInfo.value);
   }
 
+  @computed
+  get currentUserName () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded && authenticatedUserInfo.value) {
+      return authenticatedUserInfo.value.userName;
+    }
+    return undefined;
+  }
+
   openEditPoolModal = (options) => (e) => {
     if (e) {
       e.stopPropagation();
@@ -306,6 +315,7 @@ class HotCluster extends React.Component {
           disabled={pending}
           visible={!!editablePool || createNewPool}
           pool={editablePool}
+          currentUserName={this.currentUserName}
           onCancel={this.closeEditPoolModal}
           onSave={this.operationWrapper(this.onSaveEditablePool)}
         />

@@ -67,6 +67,14 @@ const modeHint = (
   </div>
 );
 
+const poolTypeHint = (
+  <div>
+    A <b>Standard</b> GPU pool can be used only by the runs of the user who created it —<br />
+    its usage filter is set automatically and cannot be changed.<br />
+    A <b>Shareable</b> GPU pool can be restricted with any filters you define below.
+  </div>
+);
+
 export {
   autoScaledHint,
   minSizeHint,
@@ -74,5 +82,6 @@ export {
   scaleDownThresholdHint,
   scaleUpThresholdHint,
   scaleStepHint,
-  modeHint
+  modeHint,
+  poolTypeHint
 };

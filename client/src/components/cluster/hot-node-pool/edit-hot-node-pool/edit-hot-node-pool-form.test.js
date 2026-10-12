@@ -59,6 +59,7 @@ function noopOnChange () {
 function baseValues (overrides = {}) {
   return {
     mode: MODE_DEFAULT,
+    poolType: 'STANDARD',
     name: 'my-pool',
     autoscaled: false,
     count: 1,
@@ -91,7 +92,10 @@ const stores = () => ({
     pending: false,
     value: {registries: []},
     fetchIfNeededOrWait: () => Promise.resolve()
-  })
+  }),
+  users: loaded([{userName: 'USER1'}]),
+  pipelines: loaded([]),
+  allConfigurations: loaded([])
 });
 
 function renderForm (props = {}) {
@@ -153,6 +157,34 @@ test('choosing GPU calls onChange with (\'mode\', \'GPU\')', async () => {
   await click(screen.getByText('GPU'));
 
   expect(onChange).toHaveBeenCalledWith('mode', 'GPU');
+});
+
+test('Pool type row is absent in DEFAULT mode', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'})});
+  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+});
+
+test('Pool type row is present in GPU mode', () => {
+  renderForm({values: baseValues({mode: 'GPU'})});
+  expect(screen.getByText('Pool type:')).toBeInTheDocument();
+});
+
+test('GPU + Standard locks the Filters section: Condition and Add filter are disabled', () => {
+  renderForm({values: baseValues({mode: 'GPU', poolType: 'STANDARD'})});
+  expect(selectIsDisabled('Condition:')).toBe(true);
+  expect(screen.getByRole('button', {name: 'Add filter'})).toBeDisabled();
+});
+
+test('GPU + Shareable leaves the Filters section enabled', () => {
+  renderForm({values: baseValues({mode: 'GPU', poolType: 'SHAREABLE'})});
+  expect(selectIsDisabled('Condition:')).toBe(false);
+  expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+});
+
+test('DEFAULT mode regression: the Filters section stays enabled', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'})});
+  expect(selectIsDisabled('Condition:')).toBe(false);
+  expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 });
 
 test('renders all three section headers', () => {
