@@ -138,11 +138,14 @@ public final class MessageConstants {
     public static final String ERROR_RUN_OPERATION_FORBIDDEN = "error.run.operation.forbidden";
     public static final String ERROR_RUN_REGION_RELAUNCH_FORBIDDEN = "error.run.region.relaunch.forbidden";
     public static final String ERROR_RUN_NEXT_REGION_NOT_FOUND = "error.run.next.region.not.found";
+    public static final String ERROR_RUN_INSTANCE_TYPE_NOT_AVAILABLE_IN_REGIONS =
+            "error.run.instance.type.not.available.in.regions";
     public static final String ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT = "error.run.parameters.cloud.dependent";
     public static final String ERROR_RESTART_CLUSTER_FORBIDDEN = "error.restart.cluster.forbidden";
     public static final String ERROR_RESTART_WORKER_FORBIDDEN = "error.restart.worker.forbidden";
     public static final String ERROR_RUN_IS_NOT_CONFIGURED_FOR_RESTART = "error.restart.is.not.configured";
     public static final String ERROR_RESTART_RUN_FAILURE = "error.restart.run.failure";
+    public static final String ERROR_RESTART_RUN_IN_REGION_FAILURE = "error.restart.run.in.region.failure";
     public static final String INFO_RESTART_RUN_SUCCESS = "info.restart.run.success";
     public static final String ERROR_RUN_START_FAILURE = "error.run.start.failure";
 
