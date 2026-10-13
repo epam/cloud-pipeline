@@ -241,7 +241,7 @@ install_slurm_debian() {
                  /run/munge
     chmod +t /run/munge
 
-    wget -q "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
+    wget --no-verbose "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
     if ! apt-get install -y -f /tmp/slurm.deb; then
         return 1
     fi
@@ -269,10 +269,10 @@ install_slurm_rhel() {
     _pkgs_dir="$SHARED_FOLDER/slurm-pkgs"
     _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
     mkdir -p ${_pkgs_dir}
-    wget -q "$CP_SLURM_PACKAGE_RPM_URL" --directory-prefix=$_TMP_PACKAGE_DIR
+    wget --no-verbose "$CP_SLURM_PACKAGE_RPM_URL" --directory-prefix=$_TMP_PACKAGE_DIR
     if [[ $? -ne 0 ]]; then
         rm -rf /root/rpmbuild/RPMS/x86_64/*
-        wget -q $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+        wget --no-verbose $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
         rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
         cp /root/rpmbuild/RPMS/x86_64/* ${_pkgs_dir}/
     else
