@@ -60,6 +60,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
@@ -912,6 +914,67 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         vo.setPriceType(com.epam.pipeline.entity.cluster.PriceType.ON_DEMAND);
         vo.setCount(INSTANCE_COUNT);
         return vo;
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldDeleteAPoolWhoseReservationIsStillWaitingForApproval() {
+        setPolicies("[]");
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        assertThat(reservation.getStatus()).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
+
+        poolManager.delete(created.getId(), false);
+
+        assertThat(poolDao.find(created.getId()).isPresent()).isFalse();
+        assertThat(reservationDao.find(reservation.getId()).isPresent()).isFalse();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldRefuseToDeleteAPoolWhoseReservationIsApprovedWithoutForce() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final CapacityReservation reservation = withStatus(
+                reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new),
+                CapacityReservationStatus.APPROVED);
+
+        assertThatThrownBy(() -> poolManager.delete(created.getId(), false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("force=true");
+
+        assertThat(poolDao.find(created.getId()).isPresent()).isTrue();
+        assertThat(reservationDao.find(reservation.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldGiveUpAnApprovedReservationWhenTheDeletionIsForced() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final CapacityReservation reservation = withStatus(
+                reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new),
+                CapacityReservationStatus.APPROVED);
+
+        poolManager.delete(created.getId(), true);
+
+        verify(cloudFacade).cancel(any());
+        assertThat(poolDao.find(created.getId()).isPresent()).isFalse();
+        assertThat(reservationDao.find(reservation.getId()).isPresent()).isFalse();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldDeleteAPoolWhoseReservationHasAlreadyEndedWithoutForce() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+        final CapacityReservation reservation = withStatus(
+                reservationDao.findByNodePoolId(created.getId()).orElseThrow(AssertionError::new),
+                CapacityReservationStatus.CANCELLED);
+
+        poolManager.delete(created.getId(), false);
+
+        verify(cloudFacade, never()).cancel(any());
+        assertThat(poolDao.find(created.getId()).isPresent()).isFalse();
+        assertThat(reservationDao.find(reservation.getId()).isPresent()).isFalse();
     }
 
     private NodePoolVO reservationPoolVO() {

@@ -74,10 +74,12 @@ public class NodePoolController extends AbstractRestController {
     }
 
     @DeleteMapping("{id}")
-    @ApiOperation(value = "Deletes a node pool by id", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Deletes a node pool by id, if force=true also automatically deletes capacity reservation " +
+            "that was already provisioned for the pool", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePool> delete(final @PathVariable Long id) {
-        return Result.success(apiService.delete(id));
+    public Result<NodePool> delete(final @PathVariable Long id,
+                                   final @RequestParam(defaultValue = "false") boolean force) {
+        return Result.success(apiService.delete(id, force));
     }
 
     @PostMapping("/filter")
