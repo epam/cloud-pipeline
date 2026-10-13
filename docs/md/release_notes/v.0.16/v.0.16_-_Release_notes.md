@@ -61,6 +61,7 @@
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [A run is restarted in a region where its instance type is not available](#a-run-is-restarted-in-a-region-where-its-instance-type-is-not-available)
+    - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
 
 ***
 
@@ -784,3 +785,12 @@ Now, the original run is stopped only after the new run is launched. If the laun
 
 Previously, when a run was restarted in another region in case of insufficient capacity, the first region with the enabled option "**Run shift policy**" was taken, even if the instance type of the run was not allowed or not offered there. The restart in such a region always failed.
 Now, such regions are skipped. If no remaining region allows and offers the instance type, the `RestartPipelineRun` task logs of the original run show the message `Cannot restart run '<run ID>': instance type '<type>' is not available in any of the remaining regions.`
+
+### Unavailable cluster nodes are not detected
+
+[#4647](https://github.com/epam/cloud-pipeline/issues/4647)
+
+Previously, the platform checked only the first Kubernetes condition of a node to find out whether the node is unavailable. On clusters with `Flannel`, the first condition is `NetworkUnavailable`, which does not change when a node stops reporting its status. So such nodes were never detected as unavailable: their runs did not get the `NODE_UNAVAILABLE` tag, and the nodes were not terminated after the grace period.
+Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grace period (**`cluster.node.unavailable.grace.period.minutes`**) is counted from the moment Kubernetes marked the node unavailable.
+Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
+Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
