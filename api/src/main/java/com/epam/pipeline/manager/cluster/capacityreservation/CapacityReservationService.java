@@ -37,6 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -220,7 +221,7 @@ public class CapacityReservationService {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void onPoolDeletion(final NodePool pool) {
+    public void onPoolDeletion(final NodePool pool, final boolean force) {
         if (!pool.isCapacityReservation()) {
             return;
         }
@@ -229,9 +230,10 @@ public class CapacityReservationService {
             return;
         }
         if (!reservation.getStatus().isTerminal()) {
-            throw new IllegalStateException(messageHelper.getMessage(
-                    MessageConstants.ERROR_CAPACITY_RESERVATION_NOT_TERMINAL,
-                    pool.getId(), reservation.getStatus()));
+            Assert.isTrue(CapacityReservationStatus.REQUIRED_APPROVE == reservation.getStatus() || force,
+                    messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_NOT_TERMINAL,
+                            pool.getId(), reservation.getStatus()));
+            cancel(reservation.getId());
         }
         reservationDao.delete(reservation.getId());
     }

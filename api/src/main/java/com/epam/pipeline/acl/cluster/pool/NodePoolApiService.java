@@ -65,8 +65,8 @@ public class NodePoolApiService {
     }
 
     @PreAuthorize(AclExpressions.NODE_POOL_ID_OWNER)
-    public NodePool delete(final Long id) {
-        return nodeManager.delete(id);
+    public NodePool delete(final Long id, final boolean force) {
+        return nodeManager.delete(id, force);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY + AclExpressions.OR + AclExpressions.RUN_ADMIN_ONLY)

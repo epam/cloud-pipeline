@@ -143,9 +143,9 @@ public class NodePoolManager implements SecuredEntityManager {
     }
 
     @Transactional
-    public NodePool delete(final Long poolId) {
+    public NodePool delete(final Long poolId, final boolean force) {
         final NodePool node = loadForUpdate(poolId);
-        reservationService.onPoolDeletion(node);
+        reservationService.onPoolDeletion(node, force);
         poolDao.delete(poolId);
         notificationManager.removeNotificationTimestamps(poolId, NotificationType.FULL_NODE_POOL);
         return node;

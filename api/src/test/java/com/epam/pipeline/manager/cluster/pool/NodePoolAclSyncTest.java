@@ -92,7 +92,7 @@ public class NodePoolAclSyncTest extends AbstractManagerTest {
     public void shouldRemoveThePoolsAclIdentityWithThePool() {
         final NodePool created = poolManager.create(pool());
 
-        poolManager.delete(created.getId());
+        poolManager.delete(created.getId(), false);
 
         assertThat(identityOwners(created)).isEmpty();
     }
