@@ -62,6 +62,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
@@ -1836,6 +1837,15 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 ***
 
 ## Notable Bug fixes
+
+### Unavailable cluster nodes are not detected
+
+[#4647](https://github.com/epam/cloud-pipeline/issues/4647)
+
+Previously, the platform checked only the first Kubernetes condition of a node to find out whether the node is unavailable. On clusters with `Flannel`, the first condition is `NetworkUnavailable`, which does not change when a node stops reporting its status. So such nodes were never detected as unavailable: their runs did not get the `NODE_UNAVAILABLE` tag, and the nodes were not terminated after the grace period.
+Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grace period (**`cluster.node.unavailable.grace.period.minutes`**) is counted from the moment Kubernetes marked the node unavailable.
+Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
+Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
 
 ### Restarted runs lose parameters and get an API token of another user
 
