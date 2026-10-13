@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -76,6 +76,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
@@ -309,11 +310,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     createNodeForRun(tasks, runId, requiredInstance);
                     return;
                 }
-                List<String> freeNodes =
-                        nodes.stream().filter(nodeId -> !allPods.contains(nodeId)
-                                && !reassignedNodes.contains(nodeId) &&
-                                kubernetesManager.isNodeAvailable(client, nodeId))
-                                .collect(Collectors.toList());
+                List<String> freeNodes = getFreeNodes(nodes, allPods, reassignedNodes,
+                    nodeId -> kubernetesManager.isNodeReady(client, nodeId));
                 log.debug("Found {} free nodes.", freeNodes.size());
                 if (reassignHandler.tryReassignNode(client, scheduledRuns, reassignedNodes, runId,
                         longId, requiredInstance, freeNodes)) {
@@ -331,9 +329,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     log.debug("Current cluster size {} has reached limit {}. Checking free nodes.",
                             currentClusterSize, maxClusterSize);
 
-                    List<String> nonMatchingFreeNodes =
-                            freeNodes.stream().filter(id -> !reassignedNodes.contains(id))
-                                    .collect(Collectors.toList());
+                    // a free node which is not ready can't take the run either, so it can be scaled down as well
+                    List<String> nonMatchingFreeNodes = getFreeNodes(nodes, allPods, reassignedNodes,
+                        nodeId -> kubernetesManager.isNodeAvailable(client, nodeId));
 
                     if (!CollectionUtils.isEmpty(nonMatchingFreeNodes)) {
                         String nodeId = nonMatchingFreeNodes.get(0);
@@ -358,6 +356,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 log.error("Failed to create node for run {}.", runId);
                 log.error("An error during pod processing: {}" + e.getMessage(), e);
             }
+        }
+
+        private List<String> getFreeNodes(final Set<String> nodes, final Set<String> allPods,
+                                          final Set<String> reassignedNodes, final Predicate<String> nodeFilter) {
+            return nodes.stream()
+                    .filter(nodeId -> !allPods.contains(nodeId) && !reassignedNodes.contains(nodeId))
+                    .filter(nodeFilter)
+                    .collect(Collectors.toList());
         }
 
         private void labelPendingRun(final PipelineRun run) {
