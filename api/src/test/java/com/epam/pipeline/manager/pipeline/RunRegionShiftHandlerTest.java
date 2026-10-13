@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -33,6 +35,7 @@ import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 
 import java.util.Arrays;
@@ -44,9 +47,17 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class RunRegionShiftHandlerTest {
@@ -327,6 +338,40 @@ public class RunRegionShiftHandlerTest {
         doReturn(currentRun).when(pipelineRunManager).loadPipelineRun(CURRENT_RUN_ID);
 
         assertRunNotRestarted();
+    }
+
+    @Test
+    public void shouldStopRunOnlyAfterItWasRestarted() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRun());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        final InOrder inOrder = inOrder(pipelineRunManager);
+        inOrder.verify(pipelineRunManager).restartRun(expectedSuccessfulRun());
+        inOrder.verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotStopRunWhenRestartFails() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doThrow(new IllegalArgumentException(TEST_STRING)).when(pipelineRunManager)
+                .restartRun(expectedSuccessfulRun());
+
+        assertNull(runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID));
+        notInvoked(pipelineRunManager).stop(any());
+        verify(messageHelper).getMessage(eq(MessageConstants.ERROR_RESTART_RUN_IN_REGION_FAILURE),
+                eq(CURRENT_RUN_ID), any(), eq("IllegalArgumentException: " + TEST_STRING));
+        verify(runLogManager, times(2)).saveLog(argThat(hasProperty("status", is(TaskStatus.FAILURE))));
     }
 
     private void assertRunNotRestarted() {

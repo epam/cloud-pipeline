@@ -37,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -103,15 +104,34 @@ public class RunRegionShiftHandler {
             return null;
         }
 
-        pipelineRunManager.stop(currentRunId);
-
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setCloudRegionId(nextRegionId));
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setSpot(false));
-        final PipelineRun newRun = pipelineRunManager.restartRun(parentRun);
         final String nextRegionName = availableRegions.get(nextRegionId).getName();
+        final PipelineRun newRun = tryRestartRun(parentRun, currentRun, nextRegionName);
+        if (Objects.isNull(newRun)) {
+            return null;
+        }
+
+        // the current run is stopped only once the new one exists, so that a failed restart leaves it
+        // to fail as any other run which exceeded its nodeup attempts
+        pipelineRunManager.stop(currentRunId);
         addRunLog(parentRun, messageHelper.getMessage(MessageConstants.INFO_RESTART_RUN_SUCCESS, newRun.getId(),
                 nextRegionName), TaskStatus.STOPPED, currentRun);
         return newRun;
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private PipelineRun tryRestartRun(final PipelineRun parentRun, final PipelineRun currentRun,
+                                      final String nextRegionName) {
+        try {
+            return pipelineRunManager.restartRun(parentRun);
+        } catch (RuntimeException e) {
+            log.error(String.format("Failed to restart run '%d' in region '%s'.",
+                    currentRun.getId(), nextRegionName), e);
+            logRestartFailure(parentRun, messageHelper.getMessage(MessageConstants.ERROR_RESTART_RUN_IN_REGION_FAILURE,
+                    currentRun.getId(), nextRegionName, ExceptionUtils.getRootCauseMessage(e)), currentRun);
+            return null;
+        }
     }
 
     private boolean validate(final PipelineRun parentRun, final PipelineRun currentRun,
