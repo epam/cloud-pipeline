@@ -230,7 +230,7 @@ public final class AclExpressions {
 
     public static final String NODE_POOL_MANAGER_ONLY = "hasRole('NODE_POOL_MANAGER')";
     public static final String NODE_POOL_CREATE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
-            + NODE_POOL_MANAGER_ONLY;
+            + "(" + NODE_POOL_MANAGER_ONLY + AND + "#vo.capacityReservationRequest != null)";
     public static final String NODE_POOL_ID_WRITE = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
             + "hasPermission(#id, 'com.epam.pipeline.entity.cluster.pool.NodePool', 'WRITE')";
     public static final String NODE_POOL_ID_OWNER = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
