@@ -133,6 +133,11 @@ public class LogAO implements AccessObject<LogAO> {
 
     public Stream<String> logMessages() {
         $(byClassName("cp-console-output")).shouldBe(visible);
+        SelenideElement followLog = $(byText("Follow log"))
+                .parent().find(byClassName("ant-checkbox"));
+        if (followLog.has(cssClass("ant-checkbox-checked"))) {
+            followLog.click();
+        }
         Utils.scrollElementToPosition(".cp-console-output", 0);
         Set<String> lines = new LinkedHashSet<>();
         boolean keepScrolling = true;

@@ -282,7 +282,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         int maxAttempts = 5;
         while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
-            sleep(1, SECONDS);
+            sleep(3, SECONDS);
             attempt++;
         }
         selenideElement.shouldBe(expandedTab);

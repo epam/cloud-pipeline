@@ -103,7 +103,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         click(SETTINGS);
         get(SETTINGS).shouldBe(have(cssClass("ant-menu-item-selected")), ofMillis(DEFAULT_TIMEOUT));
         get(EXEC_ENVIRONMENT).shouldBe(exist);
-        return click(EXEC_ENVIRONMENT);
+        return expandTab(EXEC_ENVIRONMENT);
     }
 
     public ToolSettings addEndpoint(final String endpoint) {
