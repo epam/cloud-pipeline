@@ -122,7 +122,8 @@ const RESERVATION_STATUS_PRESENTATION = {
 function PoolCard ({
   awsRegions,
   disabled,
-  readOnly = false,
+  canEdit = false,
+  canDelete = false,
   pool,
   onEdit,
   onRemove,
@@ -247,7 +248,7 @@ function PoolCard ({
               }
             </div>
             <div className={styles.actions}>
-              {!readOnly && (
+              {canEdit && (
                 <Button
                   disabled={disabled}
                   size="small"
@@ -266,7 +267,7 @@ function PoolCard ({
               >
                 <Icon type="area-chart" />
               </Button>
-              {!readOnly && (
+              {canDelete && (
                 <Button
                   disabled={disabled}
                   size="small"

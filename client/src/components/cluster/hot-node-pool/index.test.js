@@ -88,6 +88,14 @@ const instanceAllowedPayload = {
 
 const admin = {loaded: true, pending: false, value: {admin: true}};
 const nonAdmin = {loaded: true, pending: false, value: {admin: false, roles: []}};
+// `NodePoolApiService.create`'s `NODE_POOL_CREATE` ACL expression is
+// `ADMIN OR RUN_ADMIN OR NODE_POOL_MANAGER`, so only a user carrying this role (and not
+// a plain authenticated non-admin) may create a pool at all.
+const nodePoolManager = {
+  loaded: true,
+  pending: false,
+  value: {admin: false, roles: [{name: 'ROLE_NODE_POOL_MANAGER'}]}
+};
 const unloaded = {loaded: false, pending: false, value: undefined};
 
 // `pools`/`clusterNodes` are module singletons `HotCluster` injects by name, so a
@@ -122,19 +130,24 @@ test('admin: Create is present, the pool card shows edit and remove buttons', as
     .toBeGreaterThanOrEqual(3);
 });
 
-test('non-admin: Create is present, no edit/remove on the card, click does nothing', async () => {
-  const router = {push: fn()};
-  await renderCluster(nonAdmin, {router});
+test(
+  'plain non-admin: no Create button, no edit/remove on the card, click does nothing',
+  async () => {
+    const router = {push: fn()};
+    await renderCluster(nonAdmin, {router});
 
-  expect(screen.getByText('Create')).toBeInTheDocument();
-  const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
-  // Only the "usage" (area-chart) button remains when readOnly hides edit/remove.
-  expect(card.querySelectorAll('button').length).toBe(1);
+    // `NODE_POOL_CREATE` is `ADMIN OR RUN_ADMIN OR NODE_POOL_MANAGER` - a plain
+    // authenticated user with none of the three gets a 403 from the backend, so Create
+    // must not be offered to them at all.
+    expect(screen.queryByText('Create')).not.toBeInTheDocument();
+    const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
+    // Only the "usage" (area-chart) button remains when canEdit/canDelete are both false.
+    expect(card.querySelectorAll('button').length).toBe(1);
 
-  await click(card);
+    await click(card);
 
-  expect(router.push).not.toHaveBeenCalled();
-});
+    expect(router.push).not.toHaveBeenCalled();
+  });
 
 test('unloaded: no Create button', async () => {
   await renderCluster(unloaded);
@@ -142,20 +155,37 @@ test('unloaded: no Create button', async () => {
   expect(screen.queryByText('Create')).not.toBeInTheDocument();
 });
 
-test('non-admin: Create opens the modal forced into GPU mode, with no Mode row', async () => {
-  await renderCluster(nonAdmin);
+test('NODE_POOL_MANAGER: Create is present, no edit/remove on the card, click does nothing',
+  async () => {
+    const router = {push: fn()};
+    await renderCluster(nodePoolManager, {router});
 
-  await click(screen.getByText('Create'));
+    expect(screen.getByText('Create')).toBeInTheDocument();
+    const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
+    // Only the "usage" (area-chart) button remains: a NODE_POOL_MANAGER may create a
+    // reservation pool, but holds no WRITE/OWNER grant on this pre-existing one.
+    expect(card.querySelectorAll('button').length).toBe(1);
 
-  await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
-  expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+    await click(card);
 
-  // Closes the modal before the test ends: antd's Dialog only removes its
-  // body-level portal node synchronously on unmount when `visible` is already
-  // false — left open, it defers removal to a CSS transition's `afterClose`
-  // that jsdom never fires, leaking this test's DOM into the next one.
-  await click(screen.getByText('CANCEL'));
-});
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+test('NODE_POOL_MANAGER: Create opens the modal forced into GPU mode, with no Mode row',
+  async () => {
+    await renderCluster(nodePoolManager);
+
+    await click(screen.getByText('Create'));
+
+    await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
+    expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+
+    // Closes the modal before the test ends: antd's Dialog only removes its
+    // body-level portal node synchronously on unmount when `visible` is already
+    // false — left open, it defers removal to a CSS transition's `afterClose`
+    // that jsdom never fires, leaking this test's DOM into the next one.
+    await click(screen.getByText('CANCEL'));
+  });
 
 test('admin: Create opens the modal in Default mode, with the Mode row shown', async () => {
   await renderCluster(admin);

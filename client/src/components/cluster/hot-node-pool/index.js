@@ -35,7 +35,7 @@ import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolSchedu
 import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
 import roleModel from '../../../utils/roleModel';
-import {getPoolPermissions} from './permissions';
+import {getPoolPermissions, canEditPool, canDeletePool} from './permissions';
 import {MODE_DEFAULT, MODE_GPU} from './edit-hot-node-pool/constants';
 
 async function updateSchedule (payload, scheduleId) {
@@ -92,10 +92,6 @@ class HotCluster extends React.Component {
     return getPoolPermissions(authenticatedUserInfo);
   }
 
-  get isReadOnly () {
-    return this.permissions.readOnly;
-  }
-
   @computed
   get currentUserName () {
     const {authenticatedUserInfo} = this.props;
@@ -120,7 +116,7 @@ class HotCluster extends React.Component {
         editablePool: undefined
       });
     } else if (pool) {
-      if (!this.permissions.canManagePools) {
+      if (!canEditPool(pool, this.props.authenticatedUserInfo)) {
         return;
       }
       this.setState({
@@ -135,7 +131,7 @@ class HotCluster extends React.Component {
       e.stopPropagation();
       e.preventDefault();
     }
-    if (pool) {
+    if (pool && canDeletePool(pool, this.props.authenticatedUserInfo)) {
       const {pools, clusterNodes: nodes} = this.props;
       const onConfirm = async () => {
         const hide = message.loading('Removing pool...', -1);
@@ -272,8 +268,8 @@ class HotCluster extends React.Component {
       editablePool,
       pending
     } = this.state;
-    const readOnly = this.isReadOnly;
-    const {canCreate, canManagePools, canCreateAnyMode} = this.permissions;
+    const {authenticatedUserInfo} = this.props;
+    const {canCreate, canCreateAnyMode} = this.permissions;
     return (
       <div
         className="cp-panel cp-panel-transparent"
@@ -305,19 +301,23 @@ class HotCluster extends React.Component {
         </div>
         <div>
           {
-            pools.map(pool => (
-              <PoolCard
-                disabled={pending}
-                readOnly={readOnly}
-                key={pool.id}
-                pool={pool}
-                onEdit={this.openEditPoolModal({pool})}
-                onRemove={this.onRemovePool(pool)}
-                onClick={canManagePools ? () => this.onPoolClick(pool) : undefined}
-                nodes={(nodes.value || []).map(node => node)}
-                router={router}
-              />
-            ))
+            pools.map(pool => {
+              const canEdit = canEditPool(pool, authenticatedUserInfo);
+              return (
+                <PoolCard
+                  disabled={pending}
+                  canEdit={canEdit}
+                  canDelete={canDeletePool(pool, authenticatedUserInfo)}
+                  key={pool.id}
+                  pool={pool}
+                  onEdit={this.openEditPoolModal({pool})}
+                  onRemove={this.onRemovePool(pool)}
+                  onClick={canEdit ? () => this.onPoolClick(pool) : undefined}
+                  nodes={(nodes.value || []).map(node => node)}
+                  router={router}
+                />
+              );
+            })
           }
         </div>
         <EditHotNodePool
