@@ -17,12 +17,7 @@
 import {isAdmin} from '../utilities/access-permissinos';
 import roleModel from '../../../utils/roleModel';
 
-// The backend's `NODE_POOL_MANAGER` role (`DefaultRoles.ROLE_NODE_POOL_MANAGER`) and
-// `RUN_ADMIN`: the two non-ADMIN roles `NodePoolApiService`'s `NODE_POOL_CREATE`/
-// `NODE_POOL_ID_WRITE`/`NODE_POOL_ID_OWNER` ACL expressions accept outright, regardless
-// of any per-pool grant.
-const ROLE_NODE_POOL_MANAGER = 'ROLE_NODE_POOL_MANAGER';
-const ROLE_RUN_ADMIN = 'ROLE_RUN_ADMIN';
+const {ROLE_RUN_ADMIN, ROLE_NODE_POOL_MANAGER} = roleModel.ROLES;
 
 // `userHasRole` resolves through `Array.find`, which returns the matching role object
 // rather than a strict boolean - coerced here so every capability below is a real
