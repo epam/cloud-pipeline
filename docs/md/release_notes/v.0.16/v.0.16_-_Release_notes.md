@@ -59,6 +59,8 @@
     - [Broken layouts](#broken-layouts)
     - [Tool version with upper case letters is launched in lower case](#tool-version-with-upper-case-letters-is-launched-in-lower-case)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
+    - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
+    - [A run is restarted in a region where its instance type is not available](#a-run-is-restarted-in-a-region-where-its-instance-type-is-not-available)
 
 ***
 
@@ -766,3 +768,19 @@ Previously, when a **Tool** version with upper case letters in its tag (e.g. `20
 
 Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
 Now, the alias is added to the run's tags alongside the tags set in the launch form.
+
+### New nodes stop being created after failed restarts in another region
+
+[#4641](https://github.com/epam/cloud-pipeline/issues/4641)
+
+Previously, when a run was restarted in another region in case of insufficient capacity, the original run was stopped first, and only then the new run was launched.
+If the launch of the new run failed - e.g. the instance type of the run was not allowed or not offered in the new region - the error was not logged, and the autoscaler kept counting a node creation for the stopped run until the API service was restarted.
+After `cluster.nodeup.max.threads` such failures, no new nodes were created for any run.
+Now, the original run is stopped only after the new run is launched. If the launch fails, the original run fails and the reason is shown in its `RestartPipelineRun` task logs. A failed restart no longer blocks the creation of new nodes.
+
+### A run is restarted in a region where its instance type is not available
+
+[#4642](https://github.com/epam/cloud-pipeline/issues/4642)
+
+Previously, when a run was restarted in another region in case of insufficient capacity, the first region with the enabled option "**Run shift policy**" was taken, even if the instance type of the run was not allowed or not offered there. The restart in such a region always failed.
+Now, such regions are skipped. If no remaining region allows and offers the instance type, the `RestartPipelineRun` task logs of the original run show the message `Cannot restart run '<run ID>': instance type '<type>' is not available in any of the remaining regions.`
