@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -26,6 +28,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -33,6 +36,8 @@ import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 
 import java.util.Arrays;
@@ -44,10 +49,20 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 public class RunRegionShiftHandlerTest {
 
@@ -59,8 +74,10 @@ public class RunRegionShiftHandlerTest {
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
     private final RunRegionShiftHandler runRegionShiftHandler = new RunRegionShiftHandler(
-            pipelineRunManager, cloudRegionManager, restartRunManager, runLogManager, messageHelper, preferenceManager);
+            pipelineRunManager, cloudRegionManager, restartRunManager, runLogManager, messageHelper, preferenceManager,
+            instanceOfferManager);
 
     private static final Long PARENT_RUN_ID = 1L;
     private static final Long CURRENT_RUN_ID = 2L;
@@ -68,11 +85,14 @@ public class RunRegionShiftHandlerTest {
     private static final Long NEXT_AVAILABLE_REGION_ID = 4L;
     private static final Long PARENT_AVAILABLE_REGION_ID = 6L;
     private static final Long NOT_AVAILABLE_REGION_ID = 5L;
+    private static final String INSTANCE_TYPE = "instance.type";
 
     @BeforeEach    public void setup() {
         doReturn(true).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
         doReturn(false).when(preferenceManager)
                 .getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED);
+        doReturn(true).when(instanceOfferManager).isInstanceAllowed(any(), any(), anyBoolean());
+        doReturn(true).when(instanceOfferManager).isToolInstanceAllowed(any(), any(), anyBoolean());
     }
 
     @Test
@@ -326,6 +346,100 @@ public class RunRegionShiftHandlerTest {
         doReturn(currentRun).when(pipelineRunManager).loadPipelineRun(CURRENT_RUN_ID);
 
         assertRunNotRestarted();
+        verify(messageHelper).getMessage(eq(MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND), eq(CURRENT_RUN_ID));
+    }
+
+    @Test
+    public void shouldRestartRunInNextRegionWhereInstanceTypeIsAvailable() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegionsWithParent()).when(cloudRegionManager).loadAll();
+        mockInstanceTypeNotAvailable(NEXT_AVAILABLE_REGION_ID);
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(any());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        assertRestartedInRegion(PARENT_AVAILABLE_REGION_ID);
+    }
+
+    @Test
+    public void shouldRestartRunInRegionWhereInstanceTypeIsAllowedForTools() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(false).when(instanceOfferManager)
+                .isInstanceAllowed(INSTANCE_TYPE, NEXT_AVAILABLE_REGION_ID, false);
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(any());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        assertRestartedInRegion(NEXT_AVAILABLE_REGION_ID);
+    }
+
+    @Test
+    public void shouldNotRestartRunWhenInstanceTypeIsNotAvailableInOtherRegions() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        mockInstanceTypeNotAvailable(NEXT_AVAILABLE_REGION_ID);
+
+        assertRunNotRestarted();
+        verify(messageHelper).getMessage(eq(MessageConstants.ERROR_RUN_INSTANCE_TYPE_NOT_AVAILABLE_IN_REGIONS),
+                eq(CURRENT_RUN_ID), eq(INSTANCE_TYPE));
+    }
+
+    // runs are equal by id only, so the region of a restarted run is checked explicitly
+    private void assertRestartedInRegion(final Long regionId) {
+        final ArgumentCaptor<PipelineRun> restartedRun = ArgumentCaptor.forClass(PipelineRun.class);
+        verify(pipelineRunManager).restartRun(restartedRun.capture());
+        assertEquals(regionId, restartedRun.getValue().getInstance().getCloudRegionId());
+        verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    private void mockInstanceTypeNotAvailable(final Long regionId) {
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(INSTANCE_TYPE, regionId, false);
+        doReturn(false).when(instanceOfferManager).isToolInstanceAllowed(INSTANCE_TYPE, regionId, false);
+    }
+
+    @Test
+    public void shouldStopRunOnlyAfterItWasRestarted() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doReturn(restartedRun()).when(pipelineRunManager).restartRun(expectedSuccessfulRun());
+
+        runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID);
+        final InOrder inOrder = inOrder(pipelineRunManager);
+        inOrder.verify(pipelineRunManager).restartRun(expectedSuccessfulRun());
+        inOrder.verify(pipelineRunManager).stop(CURRENT_RUN_ID);
+    }
+
+    @Test
+    public void shouldNotStopRunWhenRestartFails() {
+        final RunInstance runInstance = getInstance(AVAILABLE_REGION_ID);
+        final PipelineRun currentRun = getCurrentRun(runInstance);
+        currentRun.setPipelineRunParameters(Collections.singletonList(getCloudIndependentRunParameter()));
+
+        firstRestartCaseMock(currentRun);
+        doReturn(getRegions()).when(cloudRegionManager).loadAll();
+        doThrow(new IllegalArgumentException(TEST_STRING)).when(pipelineRunManager)
+                .restartRun(expectedSuccessfulRun());
+
+        assertNull(runRegionShiftHandler.restartRunInAnotherRegion(CURRENT_RUN_ID));
+        notInvoked(pipelineRunManager).stop(any());
+        verify(messageHelper).getMessage(eq(MessageConstants.ERROR_RESTART_RUN_IN_REGION_FAILURE),
+                eq(CURRENT_RUN_ID), any(), eq("IllegalArgumentException: " + TEST_STRING));
+        verify(runLogManager, times(2)).saveLog(argThat(hasProperty("status", is(TaskStatus.FAILURE))));
     }
 
     private void assertRunNotRestarted() {
@@ -390,6 +504,7 @@ public class RunRegionShiftHandlerTest {
         final RunInstance runInstance = new RunInstance();
         runInstance.setCloudProvider(CloudProvider.AWS);
         runInstance.setCloudRegionId(regionId);
+        runInstance.setNodeType(INSTANCE_TYPE);
         return runInstance;
     }
 

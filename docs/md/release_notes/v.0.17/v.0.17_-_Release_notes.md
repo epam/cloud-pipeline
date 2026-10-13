@@ -64,6 +64,7 @@
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
+    - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
@@ -1783,7 +1784,8 @@ If this setting is enabled for some `AWS region 1` and for some `AWS region 2` -
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_3.png)
 
 Original job is being automatically stopped, new job with the same instance type as in the original run but in the `AWS region 2` will be launched.  
-If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".  
+A region where the instance type of the run is not allowed or not offered is skipped ([#4642](https://github.com/epam/cloud-pipeline/issues/4642)).
 
 Feature is not available:
 
@@ -1858,6 +1860,15 @@ Now, the alias is added to the run's tags alongside the tags set in the launch f
 Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
 Also, the `API_TOKEN` inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
 Now, a restarted run keeps all parameters of the parent run, and the `API_TOKEN` of any launched run is always issued for the run owner.
+
+### New nodes stop being created after failed restarts in another region
+
+[#4641](https://github.com/epam/cloud-pipeline/issues/4641)
+
+Previously, when a run was restarted in another region in case of insufficient capacity, the original run was stopped first, and only then the new run was launched.
+If the launch of the new run failed - e.g. the instance type of the run was not allowed or not offered in the new region - the error was not logged, and the autoscaler kept counting a node creation for the stopped run until the API service was restarted.
+After `cluster.nodeup.max.threads` such failures, no new nodes were created for any run.
+Now, the original run is stopped only after the new run is launched. If the launch fails, the original run fails and the reason is shown in its `RestartPipelineRun` task logs. A failed restart no longer blocks the creation of new nodes.
 
 ### Storage files indexing stops when a storage is deleted during the sync
 
