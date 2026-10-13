@@ -1784,7 +1784,8 @@ If this setting is enabled for some `AWS region 1` and for some `AWS region 2` -
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_3.png)
 
 Original job is being automatically stopped, new job with the same instance type as in the original run but in the `AWS region 2` will be launched.  
-If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".  
+A region where the instance type of the run is not allowed or not offered is skipped ([#4642](https://github.com/epam/cloud-pipeline/issues/4642)).
 
 Feature is not available:
 
