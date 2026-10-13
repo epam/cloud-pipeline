@@ -422,15 +422,14 @@ test('builds grouped region/instance options and provider-specific price type na
   expect(screen.getAllByText('Low priority').length).toBeGreaterThan(0);
 });
 
-test('GPU mode does not offer the Spot price type', async () => {
+test('GPU mode locks Price type to On-demand and disables the control', () => {
   renderForm({values: baseValues({mode: 'GPU', spot: 'ON_DEMAND'})});
 
-  await click(within(row('Price type:')).getByRole('combobox'));
-
-  // 'On-demand' is both the already-selected value and the only dropdown option here,
-  // so it appears twice in the document (same precedent as the azure/"Low priority"
-  // case above) - getAllByText, not getByText, is what proves it is still offered.
-  expect(screen.getAllByText('On-demand').length).toBeGreaterThan(0);
+  expect(selectIsDisabled('Price type:')).toBe(true);
+  // On-demand is the only legal value for a capacity reservation (`NodePoolValidator`
+  // rejects SPOT outright), so there is nothing to pick between - the control is
+  // disabled rather than merely filtered, and Spot never appears at all.
+  expect(screen.getByText('On-demand')).toBeInTheDocument();
   expect(screen.queryByText('Spot')).not.toBeInTheDocument();
 });
 

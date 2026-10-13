@@ -422,8 +422,12 @@ function EditHotNodePoolForm ({
         // `validateReservationPoolUpdate` rejects an update that changes `priceType`
         // on a reservation pool, so the form does not offer the change. This is
         // narrower than `readOnly={!isNew}` (already included below) and must not be
-        // folded into it.
-        disabled={disabled || allowedInstanceTypesPending || readOnly || isExistingReservation}
+        // folded into it. `gpuMode` is included too: `NodePoolValidator` rejects SPOT
+        // for a capacity reservation outright, so On-demand is the only legal value and
+        // the control has nothing to offer a user to choose between.
+        disabled={
+          disabled || allowedInstanceTypesPending || readOnly || isExistingReservation || gpuMode
+        }
         gpuMode={gpuMode}
       />
       <InstanceTypeSelect
