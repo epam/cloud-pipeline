@@ -258,6 +258,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#new-nodes-stop-being-created-after-failed-restarts-in-another-region">New nodes stop being created after failed restarts in another region</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a>
@@ -704,6 +706,7 @@
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
 <li><a href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a></li>
 <li><a href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a></li>
+<li><a href="#new-nodes-stop-being-created-after-failed-restarts-in-another-region">New nodes stop being created after failed restarts in another region</a></li>
 <li><a href="#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</a></li>
 <li><a href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a></li>
 <li><a href="#pipe-storage-ls-works-incorrectly-with-the-option-page"><code>pipe storage ls</code> works incorrectly with the option <code>--page</code></a></li>
@@ -2128,7 +2131,8 @@ In the current version, the ability to automatically relaunch such runs in other
 <li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ShiftingRegion_3.png" /></li>
 </ul>
 <p>Original job is being automatically stopped, new job with the same instance type as in the original run but in the <code>AWS region 2</code> will be launched.<br />
-If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are <code>AWS</code> regions in the Platform with the enabled option "<strong>Run shift policy</strong>".</p>
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are <code>AWS</code> regions in the Platform with the enabled option "<strong>Run shift policy</strong>".<br />
+A region where the instance type of the run is not allowed or not offered is skipped (<a href="https://github.com/epam/cloud-pipeline/issues/4642">#4642</a>).</p>
 <p>Feature is not available:</p>
 <ul>
 <li>for spot runs</li>
@@ -2173,6 +2177,12 @@ Now, the alias is added to the run's tags alongside the tags set in the launch f
 <p>Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
 Also, the <code>API_TOKEN</code> inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
 Now, a restarted run keeps all parameters of the parent run, and the <code>API_TOKEN</code> of any launched run is always issued for the run owner.</p>
+<h3 id="new-nodes-stop-being-created-after-failed-restarts-in-another-region">New nodes stop being created after failed restarts in another region</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4641">#4641</a></p>
+<p>Previously, when a run was restarted in another region in case of insufficient capacity, the original run was stopped first, and only then the new run was launched.
+If the launch of the new run failed - e.g. the instance type of the run was not allowed or not offered in the new region - the error was not logged, and the autoscaler kept counting a node creation for the stopped run until the API service was restarted.
+After <code>cluster.nodeup.max.threads</code> such failures, no new nodes were created for any run.
+Now, the original run is stopped only after the new run is launched. If the launch fails, the original run fails and the reason is shown in its <code>RestartPipelineRun</code> task logs. A failed restart no longer blocks the creation of new nodes.</p>
 <h3 id="storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync">Storage files indexing stops when a storage is deleted during the sync</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4598">#4598</a></p>
 <p>Previously, if a data storage was deleted while the search service was indexing storage files, the rest of that indexing cycle was abandoned.
