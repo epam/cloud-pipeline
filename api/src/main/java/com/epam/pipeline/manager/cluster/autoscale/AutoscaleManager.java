@@ -624,10 +624,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 log.error(e.getMessage(), e);
                 try {
                     handleNodeUpFailure(longId, e);
-                } catch (Exception handlingError) {
-                    log.error("Failed to handle nodeup failure for run {}.", runId, handlingError);
+                } catch (Exception unhandledError) {
+                    log.error("Failed to handle nodeup failure for run {}.", runId, unhandledError);
                 } finally {
-                    // a nodeup task of a run that became final is not released anywhere else
+                    // release nodeup task
                     removeNodeUpTask(longId, false);
                 }
                 return null;
