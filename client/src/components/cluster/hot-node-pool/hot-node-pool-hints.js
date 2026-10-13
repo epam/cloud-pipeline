@@ -63,15 +63,17 @@ const scaleStepHint = (
 const modeHint = (
   <div>
     <b>Default</b> pools keep a number of nodes up on a weekly recurring schedule.<br />
-    <b>GPU</b> pools reserve capacity for a single one-time window and cannot be autoscaled.
+    <b>Future dated</b> pools reserve capacity for a single one-time window and cannot
+    be autoscaled.
   </div>
 );
 
 const poolTypeHint = (
   <div>
-    A <b>Standard</b> GPU pool can be used only by the runs of the user who created it —<br />
+    A <b>Standard</b> Future dated pool can be used only by the runs of the user who created
+    it —<br />
     its usage filter is set automatically and cannot be changed.<br />
-    A <b>Shareable</b> GPU pool can be restricted with any filters you define below.
+    A <b>Shareable</b> Future dated pool can be restricted with any filters you define below.
   </div>
 );
 

@@ -182,9 +182,9 @@ test('create mode, selecting GPU leaves the Mode select showing GPU', async () =
   await renderPool();
 
   await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
 
-  expect(within(row('Mode:')).getByText('GPU')).toBeInTheDocument();
+  expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
 });
 
 test(
@@ -193,7 +193,7 @@ test(
     await renderPool();
 
     await click(within(row('Mode:')).getByRole('combobox'));
-    await click(screen.getByText('GPU'));
+    await click(screen.getByText('Future dated'));
 
     expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
     expect(selectIsDisabled('Condition:')).toBe(true);
@@ -228,7 +228,7 @@ test(
     expect(within(row('Min Size:')).getByRole('textbox')).toBeInTheDocument();
 
     await click(within(row('Mode:')).getByRole('combobox'));
-    await click(screen.getByText('GPU'));
+    await click(screen.getByText('Future dated'));
 
     expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
     expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
@@ -249,7 +249,7 @@ test('switching to GPU mode resets a Spot price type to On-demand', async () => 
   await renderPool();
 
   await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
   await flushPromises();
 
   await waitFor(() => {
@@ -312,7 +312,7 @@ test('create mode, GPU with a duration but no start: CREATE is blocked', async (
   await renderPool({onSave});
 
   await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
 
   await change(within(row('Duration (sec):')).getByRole('textbox'), '3600');
 
@@ -328,7 +328,7 @@ test('create mode, GPU with nothing filled: all three commitment errors show', a
   await renderPool({onSave});
 
   await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
 
   await click(screen.getByText('CREATE'));
 
@@ -384,7 +384,7 @@ test('no schedule request is made while the form is in GPU mode', async () => {
   const {api} = await renderPool({onSave});
 
   await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
 
   await change(within(row('Pool name:')).getByRole('textbox'), 'gpu-pool');
   await change(within(row('Nodes count:')).getByRole('textbox'), '1');
@@ -436,7 +436,7 @@ test(
   async () => {
     await renderPool({pool: reservationPool()});
 
-    expect(within(row('Mode:')).getByText('GPU')).toBeInTheDocument();
+    expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
     expect(selectIsDisabled('Mode:')).toBe(true);
     expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
     expect(selectIsDisabled('Pool type:')).toBe(true);

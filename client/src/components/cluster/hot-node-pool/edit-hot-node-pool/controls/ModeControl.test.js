@@ -24,21 +24,21 @@ test('renders the label and shows Default as the current value', () => {
   expect(screen.getByText('Default')).toBeInTheDocument();
 });
 
-test('opening the combobox shows both Default and GPU options', async () => {
+test('opening the combobox shows both Default and Future dated options', async () => {
   render(<ModeControl value="DEFAULT" onChange={fn()} />);
 
   await click(screen.getByRole('combobox'));
 
   expect(screen.getAllByText('Default').length).toBeGreaterThan(0);
-  expect(screen.getByText('GPU')).toBeInTheDocument();
+  expect(screen.getByText('Future dated')).toBeInTheDocument();
 });
 
-test('clicking GPU calls onChange once with GPU', async () => {
+test('clicking Future dated calls onChange once with GPU', async () => {
   const onChange = fn();
   render(<ModeControl value="DEFAULT" onChange={onChange} />);
 
   await click(screen.getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
 
   expect(onChange).toHaveBeenCalledTimes(1);
   expect(onChange).toHaveBeenCalledWith('GPU');
@@ -51,11 +51,11 @@ test('disabled disables the combobox', () => {
   expect(select).toHaveClass('ant-select-disabled');
 });
 
-test('with modes={["GPU"]} only the GPU option is offered', async () => {
+test('with modes={["GPU"]} only the Future dated option is offered', async () => {
   render(<ModeControl modes={['GPU']} onChange={fn()} />);
 
   await click(screen.getByRole('combobox'));
 
   expect(screen.queryByText('Default')).not.toBeInTheDocument();
-  expect(screen.getByText('GPU')).toBeInTheDocument();
+  expect(screen.getByText('Future dated')).toBeInTheDocument();
 });

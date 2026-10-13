@@ -163,12 +163,12 @@ test('allowedModes={["DEFAULT", "GPU"]} renders the Mode row', () => {
   expect(screen.getByText('Mode:')).toBeInTheDocument();
 });
 
-test('choosing GPU calls onChange with (\'mode\', \'GPU\')', async () => {
+test('choosing Future dated calls onChange with (\'mode\', \'GPU\')', async () => {
   const onChange = fn();
   renderForm({onChange});
 
   await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('GPU'));
+  await click(screen.getByText('Future dated'));
 
   expect(onChange).toHaveBeenCalledWith('mode', 'GPU');
 });

@@ -307,7 +307,7 @@ describe('getValidationErrors', () => {
 
     it('requires count to be at least 1 for a GPU pool', () => {
       const {valid, errors} = getValidationErrors(gpuValues({count: 0}));
-      expect(errors.count).toBe('Count should be at least 1 for a GPU pool');
+      expect(errors.count).toBe('Count should be at least 1 for a Future dated pool');
       expect(valid).toBe(false);
     });
 

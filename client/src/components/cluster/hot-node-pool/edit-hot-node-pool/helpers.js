@@ -261,7 +261,7 @@ export function getValidationErrors (values) {
     // create and update — so this check stays unconditional even for an existing
     // reservation pool, whose disabled Count input round-trips a valid value anyway.
     if (Number.isNaN(Number(count)) || Number(count) < GPU_COUNT_MIN_SIZE) {
-      countError = 'Count should be at least 1 for a GPU pool';
+      countError = 'Count should be at least 1 for a Future dated pool';
     }
   }
   const labelsNames = [...new Set(labels.map((lb) => (lb.name || '').trim().toLowerCase()))];

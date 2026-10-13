@@ -22,7 +22,7 @@ import {MODE_DEFAULT, MODE_GPU} from '../constants';
 
 const MODE_NAMES = {
   [MODE_DEFAULT]: 'Default',
-  [MODE_GPU]: 'GPU'
+  [MODE_GPU]: 'Future dated'
 };
 
 // `mode` is client-only: there is no backend field for it, so an existing pool
