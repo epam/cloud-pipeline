@@ -72,7 +72,7 @@ export {
   jsonResponse
 } from './http';
 
-export {factory, sequence} from './factories';
+export {factory, sequence, pipelineRun} from './factories';
 
 export {
   apiPrefix,
