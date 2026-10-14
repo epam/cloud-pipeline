@@ -253,11 +253,12 @@ export function getValidationErrors (values) {
         commitmentDurationError = 'Duration should fit between "Search from" and "Search until"';
       }
     }
-    // A future-dated pool is never autoscaled, but this is explicit rather than relying
-    // on that: the backend rejects a reservation pool with `count < 1` outright, on both
-    // create and update — so this check stays unconditional even for an existing
-    // reservation pool, whose disabled Count input round-trips a valid value anyway.
-    if (Number.isNaN(Number(count)) || Number(count) < RESERVATION_COUNT_MIN_SIZE) {
+    // The backend enforces count >= 1 on the reservation request, but it then stores
+    // the pool with count 0 until the reservation is activated - so an existing
+    // future-dated pool legitimately loads with 0 and SAVE must not be blocked by it
+    // (its Count input is disabled and round-trips unchanged anyway).
+    if (!isExistingReservation && (Number.isNaN(Number(count)) ||
+        Number(count) < RESERVATION_COUNT_MIN_SIZE)) {
       countError = 'Count should be at least 1 for a Future dated pool';
     }
   }

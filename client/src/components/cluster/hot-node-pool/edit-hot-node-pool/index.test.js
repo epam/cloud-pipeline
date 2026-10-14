@@ -601,6 +601,25 @@ test(
   }
 );
 
+test(
+  'SAVE on a reservation pool with no nodes yet sends count 0, with no count error shown',
+  async () => {
+    // `NodePoolManager.create` stores a reservation pool with count 0 until the
+    // reservation is activated, so an existing pool legitimately loads with it -
+    // SAVE must not be blocked by the Future-dated "count >= 1" rule.
+    const onSave = fn();
+    await renderPool({pool: reservationPool({count: 0}), onSave});
+
+    await click(screen.getByText('SAVE'));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [payload] = onSave.mock.calls[0];
+    expect(payload.count).toBe(0);
+    expect(screen.queryByText('Count should be at least 1 for a Future dated pool'))
+      .not.toBeInTheDocument();
+  }
+);
+
 test('editing a Standard reservation pool keeps the persisted filter owner', async () => {
   const onSave = fn();
   await renderPool({

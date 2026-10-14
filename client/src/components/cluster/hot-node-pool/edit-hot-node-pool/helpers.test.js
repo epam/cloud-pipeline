@@ -315,11 +315,27 @@ describe('getValidationErrors', () => {
           .toBe('Duration should fit between "Search from" and "Search until"');
       });
 
-    it('requires count to be at least 1 for a future-dated pool', () => {
-      const {valid, errors} = getValidationErrors(futureDatedValues({count: 0}));
+    it('requires count to be at least 1 when creating a future-dated pool', () => {
+      const {valid, errors} = getValidationErrors(
+        futureDatedValues({count: 0, isExistingReservation: false})
+      );
       expect(errors.count).toBe('Count should be at least 1 for a Future dated pool');
       expect(valid).toBe(false);
     });
+
+    it(
+      'does not block an existing future-dated pool whose count legitimately loads as 0',
+      () => {
+        // `NodePoolManager.create` stores a reservation pool with count 0 until the
+        // reservation is activated, so SAVE must not be blocked by it on an existing
+        // pool - the Count input is disabled and round-trips the value unchanged.
+        const {valid, errors} = getValidationErrors(
+          futureDatedValues({count: 0, isExistingReservation: true})
+        );
+        expect(errors.count).toBeUndefined();
+        expect(valid).toBe(true);
+      }
+    );
 
     it('Default-mode regression: a count of 0 means a disabled pool, not an error', () => {
       const {errors} = getValidationErrors(baseValues({mode: 'DEFAULT', count: 0}));

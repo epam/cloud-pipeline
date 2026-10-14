@@ -252,3 +252,41 @@ test('a future-dated reservation pool with a granted window shows Approved', asy
   expect(screen.getByText('Approved')).toBeInTheDocument();
   expect(screen.queryByText('Pending approval')).not.toBeInTheDocument();
 });
+
+test(
+  'a future-dated pool with no nodes shows no (disabled) marker, unlike a Default pool',
+  async () => {
+    await renderClusterWithPool({
+      ...myPool,
+      id: 4,
+      name: 'reservation-pool-no-nodes',
+      count: 0,
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    });
+
+    // A future-dated pool legitimately has no nodes until its reservation is
+    // activated, so it must not read as a fault - its reservation badge already
+    // carries the real state.
+    expect(screen.getByText('Pending approval')).toBeInTheDocument();
+    expect(screen.queryByText('(disabled)')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('reservation-pool-no-nodes').closest('.cp-hot-node-pool')
+    ).not.toHaveClass('cp-disabled');
+  }
+);
+
+test('a Default-mode pool with no nodes still shows (disabled)', async () => {
+  await renderClusterWithPool({
+    ...myPool,
+    id: 5,
+    name: 'default-pool-no-nodes',
+    count: 0
+  });
+
+  expect(screen.getByText('(disabled)')).toBeInTheDocument();
+  expect(
+    screen.getByText('default-pool-no-nodes').closest('.cp-hot-node-pool')
+  ).toHaveClass('cp-disabled');
+});

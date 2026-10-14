@@ -144,6 +144,10 @@ function PoolCard ({
     kubeLabels = {}
   } = pool;
   const reservationStatus = getCapacityReservationStatus(pool);
+  // A future-dated pool legitimately has no nodes until its reservation is activated,
+  // so the "disabled" treatment would read as a fault. Its reservation badge carries
+  // the real state instead.
+  const showAsDisabled = nodeCount === 0 && !reservationStatus;
   const {
     [CP_USE_NODES_COUNT_INFORMATION]: cpUseNodesCountInformationLabelValue
   } = kubeLabels;
@@ -178,8 +182,8 @@ function PoolCard ({
           'cp-panel-card',
           'cp-hot-node-pool',
           {
-            [styles.poolDisabled]: nodeCount === 0,
-            'cp-disabled': nodeCount === 0
+            [styles.poolDisabled]: showAsDisabled,
+            'cp-disabled': showAsDisabled
           }
         )
       }
@@ -242,7 +246,7 @@ function PoolCard ({
                 )
               }
               {
-                nodeCount === 0 && (
+                showAsDisabled && (
                   <span className={styles.disabledLabel}>(disabled)</span>
                 )
               }
