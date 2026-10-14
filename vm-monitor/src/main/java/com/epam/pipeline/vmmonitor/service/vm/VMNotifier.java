@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -71,6 +72,13 @@ public class VMNotifier {
     public void queueMissingNodeNotification(final VirtualMachine vm, final List<PipelineRun> matchingRuns,
                                              final Long matchingPoolId) {
         missingNodes.add(new MissingNodeSummary(vm, matchingRuns, matchingPoolId));
+    }
+
+    public void checkMissingNodesQueue(final Set<String> runningVmsIds) {
+        if (CollectionUtils.isNotEmpty(missingNodes)) {
+            missingNodes.removeIf(missingNodeSummary ->
+                                      !runningVmsIds.contains(missingNodeSummary.getVm().getInstanceId()));
+        }
     }
 
     public void queueMissingLabelsNotification(final NodeInstance node, final VirtualMachine vm,
