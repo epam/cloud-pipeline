@@ -550,7 +550,7 @@
 <tbody>
 <tr>
 <td><strong>PAUSE/RESUME</strong></td>
-<td>Pauses/resumes a run. Available for <strong>On-demand</strong> non-cluster instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#pauseresume-run">here</a>.</td>
+<td>Pauses/resumes a run. Available for <strong>On-demand</strong> non-cluster instances only. <strong>PAUSE</strong> is not shown while the run's node is unavailable - see <a href="#controls">Controls</a>. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#pauseresume-run">here</a>.</td>
 </tr>
 <tr>
 <td><strong>TERMINATE</strong></td>
@@ -859,6 +859,10 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong><em>Note</em></strong>: if the compute node of an active run stops reporting its status, the run gets the <strong>NODE_UNAVAILABLE</strong> tag. While the run has this tag, the <strong>PAUSE</strong>, <strong>COMMIT</strong>, <strong>BROWSE</strong> and <strong>VERSIONED STORAGE</strong> controls are hidden, because these operations cannot complete without the node. The same applies wherever these controls appear - the <strong>ACTIVE RUNS</strong> tab, the <strong>Home</strong> page and the actions of in-app notifications. Also, the <strong>STOP</strong> dialog does not offer to persist the current docker image state.<br />
+The controls are shown again once the node recovers and the tag is removed. If the node does not recover within the grace period (the <code>cluster.node.unavailable.grace.period.minutes</code> system preference, or the <code>NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES</code> run parameter), the node is terminated.</p>
+</blockquote>
 <h2 id="automatically-rerun-if-a-spot-instance-is-terminated">Automatically rerun if a spot instance is terminated</h2>
 <p>In certain cases - Cloud Provider may terminate a node, that is used to run a job or an interactive tool. It may be in cases:</p>
 <ul>
