@@ -92,6 +92,7 @@ import * as validatorUtilities from './utilities/validator-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
+import getDockerImageVersion from './utilities/get-docker-image-version';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
   SubmitButton,
@@ -3200,7 +3201,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const [imageGroup] = (imageRegistry.groups || [])
           .filter(g => g.name.toLowerCase() === group);
         if (imageGroup) {
-          const [image, version] = toolAndVersion.split(':');
+          const [image] = toolAndVersion.split(':');
+          const version = getDockerImageVersion(dockerImage);
           const [im] = (imageGroup.tools || [])
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
           if (im && im.id) {
