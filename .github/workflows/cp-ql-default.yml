@@ -1,0 +1,46 @@
+name: "Build Quick Launcher"
+env:
+  FAVICON: "assets/favicon.png"
+  BACKGROUND: "assets/background.png"
+  LOGO: "assets/logo.png"
+  USE_CLOUD_PIPELINE_TOOLS: "1"
+  USE_CLOUD_PIPELINE_API: "1"
+# Controls when the workflow will run
+on:
+  push:
+    branches: 
+      - 'develop'
+      - 'release/**'
+    paths:
+      - 'quick-launcher/**'
+  pull_request:
+    branches: 
+      - '**'
+    paths:
+      - 'quick-launcher/**'
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  
+defaults:
+  run:
+    working-directory: 'quick-launcher'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: 16.x
+    
+    - run: npm ci
+    - run: npm run build
+
+    - name: Upload a Build Artifact on the GitHub Actions Job page
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: cppl-ql-app-${{ github.run_number }}.${{ github.sha }}
+        path: quick-launcher/build/**
