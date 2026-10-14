@@ -36,6 +36,9 @@
     Jobs already running on its nodes are not stopped.</p>
 <p>You are receiving this because you own the reservation, are a platform administrator or have a job running on
     the pool.</p>
+#if( ${CP_DOLLAR}templateParameters.get("statusReason") )
+<p>Reason: ${CP_DOLLAR}templateParameters.get("statusReason")</p>
+#end
 <table>
     <tr>
         <td>Reservation</td>

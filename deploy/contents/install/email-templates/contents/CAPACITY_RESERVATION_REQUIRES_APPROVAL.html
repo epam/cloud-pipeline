@@ -33,6 +33,9 @@
 <p>*** This is a system generated email, do not reply to this email ***</p>
 <p>A capacity reservation for node pool <b>${CP_DOLLAR}!templateParameters.get("reservationName")</b> has been requested and
     is waiting for approval. Nothing is reserved - or charged - until an administrator approves it.</p>
+#if( ${CP_DOLLAR}templateParameters.get("statusReason") )
+<p>Reason: ${CP_DOLLAR}templateParameters.get("statusReason")</p>
+#end
 <table>
     <tr>
         <td>Reservation</td>

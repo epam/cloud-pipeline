@@ -49,6 +49,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +80,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final int LEAD_DAYS = 7;
     private static final int WINDOW_DAYS = 30;
     private static final long ONE_DAY_SECONDS = 24 * 3600L;
+    private static final String APPROVER = "APPROVER";
     private static final String OWNER = "requester";
     private static final String ADMIN = "ADMIN";
     private static final int CALLER_CPU_RESERVED = 4;
@@ -145,6 +149,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         when(instanceOfferManager.isPriceTypeAllowed(any())).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         givenVcpusPerInstance(INSTANCE_VCPUS);
+        setPolicies("[]");
     }
 
     @Test
@@ -467,12 +472,14 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldRequireApprovalWhenDenyMatchesAlongsideAutoApprove() {
+    public void shouldRefuseTheRequestWhenDenyMatchesAlongsideAutoApprove() {
         setPolicies("[" + autoApproveOnInstanceType() + "," + denyOnDuration() + "]");
 
-        final NodePool created = poolManager.create(reservationPoolVO());
-
-        assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
+        // the pool write rolls back with the refused request - not assertable here, since the rollback happens
+        // at the boundary of the test's own transaction
+        assertThatThrownBy(() -> poolManager.create(reservationPoolVO()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("deny");
     }
 
     @Test
@@ -487,12 +494,11 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldRequireApprovalWhenDenyIsListedBeforeAutoApprove() {
+    public void shouldRefuseTheRequestWhenDenyIsListedBeforeAutoApprove() {
         setPolicies("[" + denyOnDuration() + "," + autoApproveOnInstanceType() + "]");
 
-        final NodePool created = poolManager.create(reservationPoolVO());
-
-        assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
+        assertThatThrownBy(() -> poolManager.create(reservationPoolVO()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -899,6 +905,62 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(preference));
     }
 
+    @Test
+    @WithMockUser(username = OWNER, roles = ADMIN)
+    public void shouldSayWhyAnAdministratorsReservationNeededNoApproval() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+
+        assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(reservationOf(created).getStatusReason()).contains("administrator");
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldSayWhyAPolicyApprovedAReservation() {
+        setPolicies("[" + autoApproveOnInstanceType() + "]");
+
+        final NodePool created = poolManager.create(reservationPoolVO());
+
+        assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(reservationOf(created).getStatusReason()).contains("policies");
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldSayNothingAboutAReservationThatWaitsForApproval() {
+        final NodePool created = poolManager.create(reservationPoolVO());
+
+        assertThat(statusOf(created)).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
+        assertThat(reservationOf(created).getStatusReason()).isNull();
+    }
+
+    @Test
+    @WithMockUser(username = APPROVER, roles = ADMIN)
+    public void shouldSayWhoApprovedAReservationOverTheApi() {
+        final NodePool created;
+        final CapacityReservation waiting;
+        final SecurityContext context = SecurityContextHolder.getContext();
+        try {
+            SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken(OWNER, null, Collections.emptyList()));
+            created = poolManager.create(reservationPoolVO());
+            waiting = reservationOf(created);
+        } finally {
+            SecurityContextHolder.setContext(context);
+        }
+        assertThat(waiting.getStatus()).isEqualTo(CapacityReservationStatus.REQUIRED_APPROVE);
+
+        final CapacityReservation approved = reservationService.approve(waiting.getId());
+
+        assertThat(approved.getStatus()).isEqualTo(CapacityReservationStatus.APPROVED);
+        assertThat(approved.getStatusReason()).contains(APPROVER);
+    }
+
+    private CapacityReservation reservationOf(final NodePool pool) {
+        return reservationDao.findByNodePoolId(pool.getId()).orElseThrow(AssertionError::new);
+    }
+
     private CapacityReservationStatus statusOf(final NodePool pool) {
         return reservationDao.findByNodePoolId(pool.getId())
                 .orElseThrow(AssertionError::new)
@@ -919,7 +981,6 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @Test
     @WithMockUser(username = OWNER)
     public void shouldDeleteAPoolWhoseReservationIsStillWaitingForApproval() {
-        setPolicies("[]");
         final NodePool created = poolManager.create(reservationPoolVO());
         final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
                 .orElseThrow(AssertionError::new);
