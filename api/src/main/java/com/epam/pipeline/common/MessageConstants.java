@@ -774,6 +774,16 @@ public final class MessageConstants {
             "error.capacity.reservation.autoscaling.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED =
             "error.capacity.reservation.schedule.not.supported";
+    public static final String INFO_CAPACITY_RESERVATION_APPROVAL_INHERITED =
+            "info.capacity.reservation.approval.inherited";
+    public static final String INFO_CAPACITY_RESERVATION_APPROVED_AS_ADMIN =
+            "info.capacity.reservation.approved.as.admin";
+    public static final String INFO_CAPACITY_RESERVATION_APPROVED_BY_POLICY =
+            "info.capacity.reservation.approved.by.policy";
+    public static final String INFO_CAPACITY_RESERVATION_APPROVED_BY_USER =
+            "info.capacity.reservation.approved.by.user";
+    public static final String ERROR_CAPACITY_RESERVATION_DENIED_BY_POLICY =
+            "error.capacity.reservation.denied.by.policy";
     public static final String ERROR_CAPACITY_RESERVATION_NOT_TERMINAL =
             "error.capacity.reservation.not.terminal";
     public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
