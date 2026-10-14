@@ -30,6 +30,7 @@ import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -61,6 +62,7 @@ public class CapacityReservationService {
     private final CloudRegionManager regionManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
+    private final AuthManager authManager;
 
     @Autowired
     @Lazy
@@ -174,7 +176,9 @@ public class CapacityReservationService {
                     MessageConstants.ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION,
                     id, reservation.getStatus(), CapacityReservationStatus.APPROVED));
         }
-        return statusService.transition(reservation, CapacityReservationStatus.APPROVED, null);
+        return statusService.transition(reservation, CapacityReservationStatus.APPROVED,
+                messageHelper.getMessage(MessageConstants.INFO_CAPACITY_RESERVATION_APPROVED_BY_USER,
+                        authManager.getAuthorizedUser()));
     }
 
     @Transactional
