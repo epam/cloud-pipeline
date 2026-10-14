@@ -31,7 +31,12 @@ import {
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import Roles from '../../../../models/user/Roles';
-import {MODE_DEFAULT, MODE_GPU, POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE} from './constants';
+import {
+  MODE_DEFAULT,
+  MODE_FUTURE_DATED,
+  POOL_TYPE_STANDARD,
+  POOL_TYPE_SHAREABLE
+} from './constants';
 import styles from '../edit-hot-node-pool.css';
 
 @inject('awsRegions')
@@ -212,17 +217,17 @@ class EditHotNodePool extends React.Component {
       } = scheduleObj;
       // `isCapacityReservation` is the backend entity's own flag and the only
       // reliable signal that a loaded pool is a reservation pool.
-      const mode = isCapacityReservation ? MODE_GPU : MODE_DEFAULT;
+      const mode = isCapacityReservation ? MODE_FUTURE_DATED : MODE_DEFAULT;
       // After Phase 1 the two literals are identical ('STANDARD'/'SHARABLE_NODE'), so
       // this is a validated passthrough rather than a translation.
-      const poolType = mode === MODE_GPU &&
+      const poolType = mode === MODE_FUTURE_DATED &&
         [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
         ? poolPoolTypeRaw
         : POOL_TYPE_STANDARD;
       // On an existing pool the persisted filter already holds the right RUN_OWNER;
       // rebuilding it from `this.props.currentUserName` would silently rewrite another
       // user's pool to the admin who opened it. The Filters section stays disabled for
-      // a GPU/Standard pool anyway, because the form's `FiltersControl` already
+      // a future-dated/Standard pool anyway, because the form's `FiltersControl` already
       // computes `disabled={disabled || filtersAreLocked(values)}` from `mode`/`poolType`.
       const mappedFilters = mapFilters(filters);
       this.setState({
@@ -296,10 +301,10 @@ class EditHotNodePool extends React.Component {
       }, this.onChange);
     } else {
       // `pool` is always falsy here (this is the Create path), so `mode` resolves to
-      // `this.defaultMode` — the first entry of `allowedModes`, i.e. GPU for a
-      // non-admin's forced-GPU Create. The mode a caller forces must apply before any
-      // `onChange` reaches the user, so that Create opens with the Filters section
-      // already locked to the current user's runs rather than waiting on a
+      // `this.defaultMode` — the first entry of `allowedModes`, i.e. future-dated for a
+      // non-admin's forced-future-dated Create. The mode a caller forces must apply
+      // before any `onChange` reaches the user, so that Create opens with the Filters
+      // section already locked to the current user's runs rather than waiting on a
       // Mode/Pool type interaction that a non-admin never gets a chance to make.
       const mode = pool ? MODE_DEFAULT : this.defaultMode;
       const lockedFilters = filtersAreLocked({mode, poolType: POOL_TYPE_STANDARD})
@@ -410,12 +415,13 @@ class EditHotNodePool extends React.Component {
                 // no longer offers it. Silently swapping it in would send a changed
                 // `priceType` on SAVE and the backend would reject it.
                 if (!isExistingReservation && !(new Set(priceTypes)).has(spot)) {
-                  // A GPU pool is a capacity reservation and `NodePoolValidator` rejects a
-                  // SPOT price type for one, so the auto-picked default must skip it too —
-                  // otherwise a forced-GPU create, or a GPU create before a region is
-                  // chosen, would silently default to a price type the form never offers
-                  // and the backend would reject on CREATE.
-                  spot = mode === MODE_GPU
+                  // A future-dated pool is a capacity reservation and `NodePoolValidator`
+                  // rejects a SPOT price type for one, so the auto-picked default must
+                  // skip it too — otherwise a forced-future-dated create, or a
+                  // future-dated create before a region is chosen, would silently
+                  // default to a price type the form never offers and the backend would
+                  // reject on CREATE.
+                  spot = mode === MODE_FUTURE_DATED
                     ? (priceTypes.find(p => !/^spot$/i.test(p)) || priceTypes[0])
                     : priceTypes[0];
                 }
@@ -524,9 +530,10 @@ class EditHotNodePool extends React.Component {
   };
 
   // `mode` and `poolType` are client-only (no backend slot) and together they decide
-  // whether the Filters section is editable: a GPU pool of the STANDARD type is always
-  // restricted to its creator's own runs, so the filter is derived here. Leaving that
-  // combination restores the filters the form started with (`undefined` when creating).
+  // whether the Filters section is editable: a future-dated pool of the STANDARD type is
+  // always restricted to its creator's own runs, so the filter is derived here. Leaving
+  // that combination restores the filters the form started with (`undefined` when
+  // creating).
   onPoolKindChange = (key, value) => {
     const {currentUserName} = this.props;
     const {mode, poolType, spot, touched, initialFilters} = this.state;
@@ -535,11 +542,12 @@ class EditHotNodePool extends React.Component {
       [key]: value,
       touched: {...touched, [key]: true}
     };
-    // A GPU pool reserves a fixed block of capacity, so it can never be autoscaled.
-    if (next.mode === MODE_GPU) {
+    // A future-dated pool reserves a fixed block of capacity, so it can never be
+    // autoscaled.
+    if (next.mode === MODE_FUTURE_DATED) {
       newState.autoscaled = false;
       // A capacity reservation cannot use spot pricing, so leaving Default mode with
-      // Spot selected would carry an instantly-invalid price type into GPU mode.
+      // Spot selected would carry an instantly-invalid price type into future-dated mode.
       if (spot && /^spot$/i.test(spot)) {
         newState.spot = 'ON_DEMAND';
       }
@@ -780,7 +788,7 @@ EditHotNodePool.propTypes = {
 };
 
 EditHotNodePool.defaultProps = {
-  allowedModes: [MODE_DEFAULT, MODE_GPU]
+  allowedModes: [MODE_DEFAULT, MODE_FUTURE_DATED]
 };
 
 export default EditHotNodePool;

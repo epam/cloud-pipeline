@@ -20,7 +20,7 @@ export const DISK_MAX_SIZE = 15360;
 export const COUNT_MIN_SIZE = 0;
 
 export const MODE_DEFAULT = 'DEFAULT';
-export const MODE_GPU = 'GPU';
+export const MODE_FUTURE_DATED = 'FUTURE_DATED';
 export const POOL_TYPE_STANDARD = 'STANDARD';
 // The literal is the backend `NodePoolType` enum value, deliberately spelled without a second "e".
 export const POOL_TYPE_SHAREABLE = 'SHARABLE_NODE';
@@ -28,13 +28,13 @@ export const POOL_TYPE_SHAREABLE = 'SHARABLE_NODE';
 // no `T`, no timezone.
 export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
-export const GPU_COUNT_MIN_SIZE = 1; // reservation pools cannot be "disabled"
+export const RESERVATION_COUNT_MIN_SIZE = 1; // reservation pools cannot be "disabled"
 export const MIN_COMMITMENT_DURATION_SECONDS = 1209600; // 14 days — NodePoolValidator
 export const MIN_RESERVATION_LEAD_DAYS = 5; // NodePoolValidator.MINIMUM_LEAD_DAYS
 export const MAX_RESERVATION_LEAD_DAYS = 120; // NodePoolValidator.MAX_RESERVATION_LEAD_DAYS
 export const RESERVATION_TYPE_FUTURE_DATED = 'FUTURE_DATED'; // the only type the backend accepts
 
-// Client-only labels for a GPU reservation pool's approval state (there is no backend
+// Client-only labels for a future-dated reservation pool's approval state (there is no backend
 // enum for this — it is derived from whether `startDate`/`endDate` have been granted yet).
 export const RESERVATION_STATUS_PENDING = 'PENDING';
 export const RESERVATION_STATUS_APPROVED = 'APPROVED';

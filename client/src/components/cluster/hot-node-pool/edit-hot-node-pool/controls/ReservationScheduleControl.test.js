@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {render, screen, within, change, fn} from '@test';
-import GpuScheduleControl, {windowCoversDuration} from './GpuScheduleControl';
+import ReservationScheduleControl, {windowCoversDuration} from './ReservationScheduleControl';
 
 // Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
 // `formRow` div holding both the label and its control.
@@ -94,7 +94,7 @@ describe('windowCoversDuration', () => {
 
 test('renders the three date/duration labels', () => {
   render(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start={undefined}
       end={undefined}
       duration={undefined}
@@ -110,7 +110,7 @@ test('renders the three date/duration labels', () => {
 
 test('Starts on and Ends on show their own values independently', () => {
   render(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end="2026-02-01 10:00:00.000"
       duration={undefined}
@@ -129,7 +129,7 @@ test('Starts on and Ends on show their own values independently', () => {
 
 test('disabled disables all three inputs', () => {
   render(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start={undefined}
       end={undefined}
       duration={undefined}
@@ -147,7 +147,7 @@ test('disabled disables all three inputs', () => {
 
 test('startError and endError each show only when touched, independently', () => {
   const {rerender} = render(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start={undefined}
       end={undefined}
       duration={undefined}
@@ -163,7 +163,7 @@ test('startError and endError each show only when touched, independently', () =>
   expect(screen.queryByText('End date is required')).not.toBeInTheDocument();
 
   rerender(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start={undefined}
       end={undefined}
       duration={undefined}
@@ -178,7 +178,7 @@ test('startError and endError each show only when touched, independently', () =>
   expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
 
   rerender(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start={undefined}
       end={undefined}
       duration={undefined}
@@ -197,7 +197,7 @@ test('startError and endError each show only when touched, independently', () =>
 test('changing Duration calls onChangeDuration', async () => {
   const onChangeDuration = fn();
   render(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start={undefined}
       end={undefined}
       duration={undefined}
@@ -225,7 +225,7 @@ test('changing Duration calls onChangeDuration', async () => {
 
 test('the fit hint reflects the window', () => {
   const {rerender} = render(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end="2026-01-31 10:00:00.000"
       duration={3600}
@@ -240,7 +240,7 @@ test('the fit hint reflects the window', () => {
   ).not.toBeInTheDocument();
 
   rerender(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end="2026-01-01 10:30:00.000"
       duration={3600}
@@ -257,7 +257,7 @@ test('the fit hint reflects the window', () => {
   ).not.toBeInTheDocument();
 
   rerender(
-    <GpuScheduleControl
+    <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end={undefined}
       duration={3600}

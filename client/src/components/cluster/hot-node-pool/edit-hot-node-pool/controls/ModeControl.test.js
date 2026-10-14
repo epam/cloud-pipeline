@@ -33,7 +33,7 @@ test('opening the combobox shows both Default and Future dated options', async (
   expect(screen.getByText('Future dated')).toBeInTheDocument();
 });
 
-test('clicking Future dated calls onChange once with GPU', async () => {
+test('clicking Future dated calls onChange once with FUTURE_DATED', async () => {
   const onChange = fn();
   render(<ModeControl value="DEFAULT" onChange={onChange} />);
 
@@ -41,7 +41,7 @@ test('clicking Future dated calls onChange once with GPU', async () => {
   await click(screen.getByText('Future dated'));
 
   expect(onChange).toHaveBeenCalledTimes(1);
-  expect(onChange).toHaveBeenCalledWith('GPU');
+  expect(onChange).toHaveBeenCalledWith('FUTURE_DATED');
 });
 
 test('disabled disables the combobox', () => {
@@ -51,8 +51,8 @@ test('disabled disables the combobox', () => {
   expect(select).toHaveClass('ant-select-disabled');
 });
 
-test('with modes={["GPU"]} only the Future dated option is offered', async () => {
-  render(<ModeControl modes={['GPU']} onChange={fn()} />);
+test('with modes={["FUTURE_DATED"]} only the Future dated option is offered', async () => {
+  render(<ModeControl modes={['FUTURE_DATED']} onChange={fn()} />);
 
   await click(screen.getByRole('combobox'));
 

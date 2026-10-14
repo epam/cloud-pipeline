@@ -171,7 +171,7 @@ test('NODE_POOL_MANAGER: Create is present, no edit/remove on the card, click do
     expect(router.push).not.toHaveBeenCalled();
   });
 
-test('NODE_POOL_MANAGER: Create opens the modal forced into GPU mode, with no Mode row',
+test('NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode, with no Mode row',
   async () => {
     await renderCluster(nodePoolManager);
 
@@ -223,21 +223,22 @@ async function renderClusterWithPool (pool) {
   await flushPromises();
 }
 
-test('a GPU reservation pool with no granted window yet shows Pending approval', async () => {
-  await renderClusterWithPool({
-    ...myPool,
-    id: 2,
-    name: 'gpu-pool-pending',
-    isCapacityReservation: true,
-    startDate: undefined,
-    endDate: undefined
+test('a future-dated reservation pool with no granted window yet shows Pending approval',
+  async () => {
+    await renderClusterWithPool({
+      ...myPool,
+      id: 2,
+      name: 'gpu-pool-pending',
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    });
+
+    expect(screen.getByText('Pending approval')).toBeInTheDocument();
+    expect(screen.queryByText('Approved')).not.toBeInTheDocument();
   });
 
-  expect(screen.getByText('Pending approval')).toBeInTheDocument();
-  expect(screen.queryByText('Approved')).not.toBeInTheDocument();
-});
-
-test('a GPU reservation pool with a granted window shows Approved', async () => {
+test('a future-dated reservation pool with a granted window shows Approved', async () => {
   await renderClusterWithPool({
     ...myPool,
     id: 3,

@@ -40,9 +40,9 @@ export function isReservationScheduled (start, end) {
 
 // A reservation's window is granted by the backend's scheduler and is not editable
 // through `/cluster/pool`, so an existing reservation pool shows it as read-only text
-// instead of rendering `GpuScheduleControl`; `startDate`/`endDate` are null until the
+// instead of rendering `ReservationScheduleControl`; `startDate`/`endDate` are null until the
 // reservation is actually scheduled.
-function GpuReservationSummary ({start, end}) {
+function ReservationSummary ({start, end}) {
   const formattedStart = formatReservationDate(start);
   const formattedEnd = formatReservationDate(end);
   const text = isReservationScheduled(start, end)
@@ -56,9 +56,9 @@ function GpuReservationSummary ({start, end}) {
   );
 }
 
-GpuReservationSummary.propTypes = {
+ReservationSummary.propTypes = {
   start: PropTypes.string,
   end: PropTypes.string
 };
 
-export default GpuReservationSummary;
+export default ReservationSummary;

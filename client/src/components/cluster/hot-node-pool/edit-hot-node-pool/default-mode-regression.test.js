@@ -188,9 +188,9 @@ describe('payload shape is closed (Default mode)', () => {
     ].sort());
   });
 
-  it('buildPoolPayload adds exactly two keys in GPU mode', () => {
+  it('buildPoolPayload adds exactly two keys in future-dated mode', () => {
     const payload = buildPoolPayload(baseValues({
-      mode: 'GPU',
+      mode: 'FUTURE_DATED',
       poolType: 'SHARABLE_NODE',
       count: 1,
       commitmentStart: inDays(30),
@@ -220,12 +220,12 @@ describe('payload shape is closed (Default mode)', () => {
   });
 
   it(
-    'the Default-mode payload shape is unchanged while GPU mode adds exactly poolType ' +
-    'and capacityReservationRequest',
+    'the Default-mode payload shape is unchanged while future-dated mode adds exactly ' +
+    'poolType and capacityReservationRequest',
     () => {
       const defaultPayload = buildPoolPayload(baseValues({mode: 'DEFAULT'}));
-      const gpuPayload = buildPoolPayload(baseValues({
-        mode: 'GPU',
+      const futureDatedPayload = buildPoolPayload(baseValues({
+        mode: 'FUTURE_DATED',
         poolType: 'STANDARD',
         count: 1,
         commitmentStart: inDays(30),
@@ -253,12 +253,12 @@ describe('payload shape is closed (Default mode)', () => {
       ].sort();
 
       expect(Object.keys(defaultPayload).sort()).toEqual(sixteenKeys);
-      expect(Object.keys(gpuPayload).sort()).toEqual(
+      expect(Object.keys(futureDatedPayload).sort()).toEqual(
         [...sixteenKeys, 'capacityReservationRequest', 'poolType'].sort()
       );
-      expect(gpuPayload.capacityReservationRequest.reservationType).toBe('FUTURE_DATED');
+      expect(futureDatedPayload.capacityReservationRequest.reservationType).toBe('FUTURE_DATED');
       ['mode', 'commitmentStart', 'commitmentEnd', 'commitmentDuration'].forEach((key) => {
-        expect(Object.keys(gpuPayload)).not.toContain(key);
+        expect(Object.keys(futureDatedPayload)).not.toContain(key);
       });
     }
   );

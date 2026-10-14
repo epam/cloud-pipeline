@@ -16,10 +16,10 @@
 
 import React from 'react';
 import {render, screen} from '@test';
-import GpuReservationSummary, {
+import ReservationSummary, {
   formatReservationDate,
   isReservationScheduled
-} from './GpuReservationSummary';
+} from './ReservationSummary';
 
 describe('formatReservationDate', () => {
   test('drops milliseconds from a valid wire-format value', () => {
@@ -37,7 +37,7 @@ describe('formatReservationDate', () => {
 
 test('renders the label and the dash-joined window when both dates are given', () => {
   render(
-    <GpuReservationSummary
+    <ReservationSummary
       start="2026-03-01 10:00:00.000"
       end="2026-04-01 10:00:00.000"
     />
@@ -47,17 +47,17 @@ test('renders the label and the dash-joined window when both dates are given', (
 });
 
 test('renders the pending message when end is missing', () => {
-  render(<GpuReservationSummary start="2026-03-01 10:00:00.000" end={undefined} />);
+  render(<ReservationSummary start="2026-03-01 10:00:00.000" end={undefined} />);
   expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
 });
 
 test('renders the pending message when start is missing', () => {
-  render(<GpuReservationSummary start={undefined} end="2026-04-01 10:00:00.000" />);
+  render(<ReservationSummary start={undefined} end="2026-04-01 10:00:00.000" />);
   expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
 });
 
 test('renders the pending message when both dates are missing', () => {
-  render(<GpuReservationSummary start={undefined} end={undefined} />);
+  render(<ReservationSummary start={undefined} end={undefined} />);
   expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
 });
 

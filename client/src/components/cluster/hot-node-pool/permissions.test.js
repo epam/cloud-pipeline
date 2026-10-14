@@ -19,7 +19,6 @@ import {getPoolPermissions, canEditPool, canDeletePool} from './permissions';
 const everyCapabilityDenied = {
   canManagePools: false,
   canCreateAnyMode: false,
-  canCreateGpuPool: false,
   canCreate: false,
   readOnly: true
 };
@@ -40,7 +39,6 @@ test('an admin gets every capability, and is not read-only', () => {
   const permissions = getPoolPermissions({loaded: true, value: {admin: true}});
   expect(permissions.canManagePools).toBe(true);
   expect(permissions.canCreateAnyMode).toBe(true);
-  expect(permissions.canCreateGpuPool).toBe(true);
   expect(permissions.canCreate).toBe(true);
   expect(permissions.readOnly).toBe(false);
 });
@@ -51,7 +49,6 @@ test('an admin gets every capability, and is not read-only', () => {
 test('a plain non-admin, with no role, cannot create or manage anything', () => {
   const permissions = getPoolPermissions({loaded: true, value: {admin: false, roles: []}});
   expect(permissions.canCreate).toBe(false);
-  expect(permissions.canCreateGpuPool).toBe(false);
   expect(permissions.canManagePools).toBe(false);
   expect(permissions.canCreateAnyMode).toBe(false);
   expect(permissions.readOnly).toBe(true);
@@ -63,19 +60,17 @@ test('a cluster reader gains no management rights beyond a plain non-admin', () 
     value: {admin: false, roles: [{name: 'ROLE_CLUSTER_READER'}]}
   });
   expect(permissions.canCreate).toBe(false);
-  expect(permissions.canCreateGpuPool).toBe(false);
   expect(permissions.canManagePools).toBe(false);
   expect(permissions.canCreateAnyMode).toBe(false);
   expect(permissions.readOnly).toBe(true);
 });
 
-test('a NODE_POOL_MANAGER may create a GPU pool only, and is read-only otherwise', () => {
+test('a NODE_POOL_MANAGER may create a future-dated pool only, and is read-only otherwise', () => {
   const permissions = getPoolPermissions({
     loaded: true,
     value: {admin: false, roles: [{name: 'ROLE_NODE_POOL_MANAGER'}]}
   });
   expect(permissions.canCreate).toBe(true);
-  expect(permissions.canCreateGpuPool).toBe(true);
   expect(permissions.canManagePools).toBe(false);
   expect(permissions.canCreateAnyMode).toBe(false);
   expect(permissions.readOnly).toBe(true);
@@ -87,7 +82,6 @@ test('a RUN_ADMIN gets every capability, same as an admin', () => {
     value: {admin: false, roles: [{name: 'ROLE_RUN_ADMIN'}]}
   });
   expect(permissions.canCreate).toBe(true);
-  expect(permissions.canCreateGpuPool).toBe(true);
   expect(permissions.canManagePools).toBe(true);
   expect(permissions.canCreateAnyMode).toBe(true);
   expect(permissions.readOnly).toBe(false);

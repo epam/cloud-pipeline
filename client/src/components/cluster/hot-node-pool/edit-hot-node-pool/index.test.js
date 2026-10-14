@@ -104,8 +104,8 @@ function fullPool (overrides = {}) {
 
 // `isCapacityReservation` is the backend entity's own flag — the only reliable signal
 // that a loaded pool is a reservation pool. `startDate`/`endDate` are the realized
-// window (null while pending/unscheduled); `schedule: undefined` because a GPU pool's
-// weekly schedule is always empty.
+// window (null while pending/unscheduled); `schedule: undefined` because a future-dated
+// pool's weekly schedule is always empty.
 function reservationPool (overrides = {}) {
   return fullPool({
     isCapacityReservation: true,
@@ -178,17 +178,19 @@ test('edit mode: Mode is disabled and still shows Default', async () => {
   expect(screen.getByText('Default')).toBeInTheDocument();
 });
 
-test('create mode, selecting GPU leaves the Mode select showing GPU', async () => {
-  await renderPool();
+test('create mode, selecting future-dated leaves the Mode select showing Future dated',
+  async () => {
+    await renderPool();
 
-  await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('Future dated'));
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Future dated'));
 
-  expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
-});
+    expect(within(row('Mode:')).getByText('Future dated')).toBeInTheDocument();
+  });
 
 test(
-  'GPU + Standard locks Filters to the current user; Shareable unlocks; back to Default clears it',
+  'future-dated + Standard locks Filters to the current user; Shareable unlocks; ' +
+  'back to Default clears it',
   async () => {
     await renderPool();
 
@@ -220,7 +222,8 @@ test(
 );
 
 test(
-  'switching to GPU mode removes Autoscaled and its rows; switching back leaves it unchecked',
+  'switching to future-dated mode removes Autoscaled and its rows; switching back leaves it ' +
+  'unchecked',
   async () => {
     await renderPool();
 
@@ -245,7 +248,7 @@ test(
   }
 );
 
-test('switching to GPU mode resets a Spot price type to On-demand', async () => {
+test('switching to future-dated mode resets a Spot price type to On-demand', async () => {
   await renderPool();
 
   await click(within(row('Mode:')).getByRole('combobox'));
@@ -263,32 +266,35 @@ test('Default-mode regression: Price type stays Spot and stays enabled', async (
   expect(within(row('Price type:')).getByText('Spot')).toBeInTheDocument();
 });
 
-// Regression for a gap `onPoolKindChange`'s reset alone does not cover: a forced-GPU
-// create never fires `onPoolKindChange` for mode (the Mode row is hidden, mode is GPU
-// from the first render), so the auto-pick in `updateInstanceTypes` is the only thing
-// that ever sets `spot` here, and it must skip SPOT too.
-test('a forced-GPU create never auto-selects the Spot price type', async () => {
-  await renderPool({allowedModes: ['GPU']});
+// Regression for a gap `onPoolKindChange`'s reset alone does not cover: a
+// forced-future-dated create never fires `onPoolKindChange` for mode (the Mode row is
+// hidden, mode is future-dated from the first render), so the auto-pick in
+// `updateInstanceTypes` is the only thing that ever sets `spot` here, and it must skip
+// SPOT too.
+test('a forced-future-dated create never auto-selects the Spot price type', async () => {
+  await renderPool({allowedModes: ['FUTURE_DATED']});
 
   await waitFor(() => {
     expect(within(row('Price type:')).getByText('On-demand')).toBeInTheDocument();
   });
 });
 
-test('allowedModes=["GPU"]: opens forced into GPU mode, locked, with no Mode row', async () => {
-  await renderPool({allowedModes: ['GPU']});
+test(
+  'allowedModes=["FUTURE_DATED"]: opens forced into future-dated mode, locked, with no Mode row',
+  async () => {
+    await renderPool({allowedModes: ['FUTURE_DATED']});
 
-  expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
-  expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
-  // Pool type is locked too: a non-admin forced into GPU-only Create must not be
-  // able to switch to Shareable and unlock the Filters section by hand.
-  expect(selectIsDisabled('Pool type:')).toBe(true);
-  expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-  expect(selectIsDisabled('Condition:')).toBe(true);
-  expect(screen.getByText('Run owner')).toBeInTheDocument();
-  expect(screen.getByText('user1')).toBeInTheDocument();
-});
+    expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+    expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
+    // Pool type is locked too: a non-admin forced into future-dated-only Create must not
+    // be able to switch to Shareable and unlock the Filters section by hand.
+    expect(selectIsDisabled('Pool type:')).toBe(true);
+    expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+    expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(true);
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+  });
 
 test('allowedModes omitted: still opens in Default mode (admin default unchanged)', async () => {
   await renderPool();
@@ -307,7 +313,7 @@ test('SAVE payload never carries mode', async () => {
   expect(Object.keys(onSave.mock.calls[0][0])).not.toContain('mode');
 });
 
-test('create mode, GPU with a duration but no start: CREATE is blocked', async () => {
+test('create mode, future-dated with a duration but no start: CREATE is blocked', async () => {
   const onSave = fn();
   await renderPool({onSave});
 
@@ -323,20 +329,22 @@ test('create mode, GPU with a duration but no start: CREATE is blocked', async (
   expect(screen.getByText('End date is required')).toBeInTheDocument();
 });
 
-test('create mode, GPU with nothing filled: all three commitment errors show', async () => {
-  const onSave = fn();
-  await renderPool({onSave});
+test('create mode, future-dated with nothing filled: all three commitment errors show',
+  async () => {
+    const onSave = fn();
+    await renderPool({onSave});
 
-  await click(within(row('Mode:')).getByRole('combobox'));
-  await click(screen.getByText('Future dated'));
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Future dated'));
 
-  await click(screen.getByText('CREATE'));
+    await click(screen.getByText('CREATE'));
 
-  expect(screen.getByText('Start date is required')).toBeInTheDocument();
-  expect(screen.getByText('End date is required')).toBeInTheDocument();
-  expect(screen.getByText('Duration should be a positive number of seconds')).toBeInTheDocument();
-  expect(onSave).not.toHaveBeenCalled();
-});
+    expect(screen.getByText('Start date is required')).toBeInTheDocument();
+    expect(screen.getByText('End date is required')).toBeInTheDocument();
+    expect(screen.getByText('Duration should be a positive number of seconds'))
+      .toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+  });
 
 test('Default-mode regression: SAVE still works and never shows a commitment error', async () => {
   const onSave = fn();
@@ -374,19 +382,20 @@ test('Default-mode edit: payload never carries mode/poolType/commitment* fields'
 });
 
 // Driving antd 2.13.14's two commitment-window DatePickers through the UI proved
-// impractical (the same limitation Phase 2 hit — see GpuScheduleControl.test.js), so this
-// pins the regression at two levels instead: `buildSchedulePayload(gpuValues())` is
-// `undefined` at the helper level (in helpers.test.js), and here — the weaker but still
-// meaningful UI-level check — no `/cluster/nodeSchedule` call is ever made while the form
-// is in GPU mode, however far CREATE got blocked by the (undriveable) date fields.
-test('no schedule request is made while the form is in GPU mode', async () => {
+// impractical (the same limitation ReservationScheduleControl.test.js documents),
+// so this pins the regression at two levels instead:
+// `buildSchedulePayload(futureDatedValues())` is `undefined` at the helper level (in
+// helpers.test.js), and here — the weaker but still meaningful UI-level check — no
+// `/cluster/nodeSchedule` call is ever made while the form is in future-dated mode,
+// however far CREATE got blocked by the (undriveable) date fields.
+test('no schedule request is made while the form is in future-dated mode', async () => {
   const onSave = fn();
   const {api} = await renderPool({onSave});
 
   await click(within(row('Mode:')).getByRole('combobox'));
   await click(screen.getByText('Future dated'));
 
-  await change(within(row('Pool name:')).getByRole('textbox'), 'gpu-pool');
+  await change(within(row('Pool name:')).getByRole('textbox'), 'future-dated-pool');
   await change(within(row('Nodes count:')).getByRole('textbox'), '1');
 
   await click(within(row('Region:')).getByRole('combobox'));
@@ -398,7 +407,7 @@ test('no schedule request is made while the form is in GPU mode', async () => {
 
   // CREATE is blocked by the (unfilled, undriveable in this harness) commitment
   // fields, which is fine — the point of this test is only that nothing ever
-  // reaches /cluster/nodeSchedule from GPU mode.
+  // reaches /cluster/nodeSchedule from future-dated mode.
   expect(onSave).not.toHaveBeenCalled();
   expect(api.calls.every(c => !/nodeSchedule/.test(c.path))).toBe(true);
 });
@@ -432,7 +441,7 @@ test('updateFromProps maps every field from the pool payload', async () => {
 });
 
 test(
-  'editing a reservation pool opens in GPU mode, disabled, with the right Pool type',
+  'editing a reservation pool opens in future-dated mode, disabled, with the right Pool type',
   async () => {
     await renderPool({pool: reservationPool()});
 
@@ -526,9 +535,10 @@ test('editing a Standard reservation pool keeps the persisted filter owner', asy
 });
 
 // Regression for a gap the mode-inference fix opened: before this phase, editing a pool
-// always resolved to MODE_DEFAULT, so `updateInstanceTypes`'s GPU auto-pick branch never
-// ran during an edit. Now that an existing reservation pool correctly opens in GPU mode,
-// that branch is reachable on every edit too — and `priceType` must round-trip unchanged
+// always resolved to MODE_DEFAULT, so `updateInstanceTypes`'s future-dated auto-pick
+// branch never ran during an edit. Now that an existing reservation pool correctly opens
+// in future-dated mode, that branch is reachable on every edit too — and `priceType` must
+// round-trip unchanged
 // for a reservation pool (`validateReservationPoolUpdate`), the same reason its control is
 // disabled. If the region's fetched allowed price types no longer include the pool's own
 // (e.g. a narrowed preference), the auto-pick must still leave it alone rather than

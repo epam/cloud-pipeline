@@ -42,14 +42,14 @@ export function windowCoversDuration (start, end, durationSeconds) {
   return endMoment.diff(startMoment, 'seconds') >= duration;
 }
 
-// A GPU pool reserves capacity for a single one-time absolute window, unlike Default
+// A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
 // mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
 // control does not reuse and must not touch). `start`/`end` are carried as plain strings
 // in `COMMITMENT_DATE_TIME_FORMAT`, parsed/formatted with `moment` in the local zone so
 // they round-trip; `[start, end]` is the backend's reservation *search range* and
 // `duration` the committed length in seconds that must fit inside it. "Ends on" is
 // independently editable and no longer derived from `start` + `duration`.
-function GpuScheduleControl ({
+function ReservationScheduleControl ({
   start,
   end,
   duration,
@@ -137,7 +137,7 @@ function GpuScheduleControl ({
   );
 }
 
-GpuScheduleControl.propTypes = {
+ReservationScheduleControl.propTypes = {
   start: PropTypes.string,
   end: PropTypes.string,
   duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -152,4 +152,4 @@ GpuScheduleControl.propTypes = {
   onChangeDuration: PropTypes.func
 };
 
-export default GpuScheduleControl;
+export default ReservationScheduleControl;

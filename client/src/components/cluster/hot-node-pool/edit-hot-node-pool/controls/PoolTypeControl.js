@@ -25,7 +25,7 @@ const POOL_TYPE_NAMES = {
   [POOL_TYPE_SHAREABLE]: 'Shareable'
 };
 
-// `poolType` is GPU-only and client-only: a Standard pool forces its Filters
+// `poolType` is future-dated-only and client-only: a Standard pool forces its Filters
 // section to a single run-owner criterion (see `filtersAreLocked`/`buildLockedFilters`
 // in `../helpers`); a Shareable pool leaves filters user-editable, same as Default mode.
 function PoolTypeControl ({value, disabled, hint, onChange}) {

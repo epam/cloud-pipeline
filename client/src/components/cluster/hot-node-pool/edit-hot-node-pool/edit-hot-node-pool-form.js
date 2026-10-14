@@ -24,8 +24,8 @@ import SelectInput from './controls/SelectInput';
 import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
 import PoolTypeControl from './controls/PoolTypeControl';
-import GpuScheduleControl from './controls/GpuScheduleControl';
-import GpuReservationSummary from './controls/GpuReservationSummary';
+import ReservationScheduleControl from './controls/ReservationScheduleControl';
+import ReservationSummary from './controls/ReservationSummary';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -40,7 +40,7 @@ import {
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
   MODE_DEFAULT,
-  MODE_GPU,
+  MODE_FUTURE_DATED,
   POOL_TYPE_STANDARD
 } from './constants';
 import styles from '../edit-hot-node-pool.css';
@@ -134,10 +134,10 @@ function InstanceTypeSelect ({
   );
 }
 
-function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disabled, gpuMode}) {
+function PriceTypeSelect ({priceTypes, currentProvider, value, onChange, disabled, futureDated}) {
   // `NodePoolValidator` rejects a `SPOT` price type for a capacity reservation, so the
-  // option is not offered in GPU mode.
-  const availablePriceTypes = gpuMode ? priceTypes.filter(pt => !pt) : priceTypes;
+  // option is not offered in future-dated mode.
+  const availablePriceTypes = futureDated ? priceTypes.filter(pt => !pt) : priceTypes;
   return (
     <SelectInput
       label="Price type:"
@@ -189,7 +189,7 @@ function EditHotNodePoolForm ({
 }) {
   const modes = allowedModes && allowedModes.length > 0
     ? allowedModes
-    : [MODE_DEFAULT, MODE_GPU];
+    : [MODE_DEFAULT, MODE_FUTURE_DATED];
   const {
     mode,
     poolType,
@@ -214,7 +214,7 @@ function EditHotNodePoolForm ({
     commitmentEnd,
     commitmentDuration
   } = values;
-  const gpuMode = (mode || MODE_DEFAULT) === MODE_GPU;
+  const futureDated = (mode || MODE_DEFAULT) === MODE_FUTURE_DATED;
   return (
     <div>
       <StringInput
@@ -226,6 +226,21 @@ function EditHotNodePoolForm ({
         touched={touched.name}
       />
       {
+        (mode || MODE_DEFAULT) === MODE_FUTURE_DATED ? (
+          <PoolTypeControl
+            value={poolType || POOL_TYPE_STANDARD}
+            // A caller that forces a single mode (a non-admin's future-dated-only
+            // Create) also forces Standard: without this, Pool type would stay a free
+            // choice and "Shareable" would unlock the Filters section the permission
+            // change exists to keep locked, letting that caller set an arbitrary usage
+            // filter.
+            disabled={disabled || readOnly || modes.length <= 1}
+            hint={hints.poolTypeHint}
+            onChange={value => onChange('poolType', value)}
+          />
+        ) : null
+      }
+      {
         modes.length > 1 ? (
           <ModeControl
             modes={modes}
@@ -236,35 +251,21 @@ function EditHotNodePoolForm ({
           />
         ) : null
       }
-      {
-        (mode || MODE_DEFAULT) === MODE_GPU ? (
-          <PoolTypeControl
-            value={poolType || POOL_TYPE_STANDARD}
-            // A caller that forces a single mode (a non-admin's GPU-only Create) also
-            // forces Standard: without this, Pool type would stay a free choice and
-            // "Shareable" would unlock the Filters section the permission change exists
-            // to keep locked, letting that caller set an arbitrary usage filter.
-            disabled={disabled || readOnly || modes.length <= 1}
-            hint={hints.poolTypeHint}
-            onChange={value => onChange('poolType', value)}
-          />
-        ) : null
-      }
       <div className={classNames(styles.sectionHeader, 'cp-divider', 'bottom')}>
         <h2>Schedule</h2>
       </div>
       {
-        gpuMode ? (
+        futureDated ? (
           isExistingReservation ? (
             // A reservation's window is granted by the backend's scheduler and
             // cannot be changed through this endpoint, so an existing reservation
             // pool shows it as read-only text instead of the editable controls.
-            <GpuReservationSummary
+            <ReservationSummary
               start={reservationStartDate}
               end={reservationEndDate}
             />
           ) : (
-            <GpuScheduleControl
+            <ReservationScheduleControl
               start={commitmentStart}
               end={commitmentEnd}
               duration={commitmentDuration}
@@ -295,7 +296,7 @@ function EditHotNodePoolForm ({
         <h2>Configuration</h2>
       </div>
       {
-        gpuMode ? null : (
+        futureDated ? null : (
           <CheckboxControl
             label="Autoscaled:"
             checked={autoscaled}
@@ -324,7 +325,7 @@ function EditHotNodePoolForm ({
         )
       }
       {
-        autoscaled && !gpuMode ? (
+        autoscaled && !futureDated ? (
           <StringInput
             type="number"
             label="Min Size:"
@@ -340,7 +341,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !gpuMode ? (
+        autoscaled && !futureDated ? (
           <StringInput
             type="number"
             label="Max Size:"
@@ -356,7 +357,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !gpuMode ? (
+        autoscaled && !futureDated ? (
           <StringInput
             type="number"
             label="Scale Up Threshold:"
@@ -373,7 +374,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !gpuMode ? (
+        autoscaled && !futureDated ? (
           <StringInput
             type="number"
             label="Scale Down Threshold:"
@@ -390,7 +391,7 @@ function EditHotNodePoolForm ({
         ) : null
       }
       {
-        autoscaled && !gpuMode ? (
+        autoscaled && !futureDated ? (
           <StringInput
             type="number"
             label="Scale Step:"
@@ -422,13 +423,14 @@ function EditHotNodePoolForm ({
         // `validateReservationPoolUpdate` rejects an update that changes `priceType`
         // on a reservation pool, so the form does not offer the change. This is
         // narrower than `readOnly={!isNew}` (already included below) and must not be
-        // folded into it. `gpuMode` is included too: `NodePoolValidator` rejects SPOT
+        // folded into it. `futureDated` is included too: `NodePoolValidator` rejects SPOT
         // for a capacity reservation outright, so On-demand is the only legal value and
         // the control has nothing to offer a user to choose between.
         disabled={
-          disabled || allowedInstanceTypesPending || readOnly || isExistingReservation || gpuMode
+          disabled || allowedInstanceTypesPending || readOnly ||
+          isExistingReservation || futureDated
         }
-        gpuMode={gpuMode}
+        futureDated={futureDated}
       />
       <InstanceTypeSelect
         instanceTypes={instanceTypes}

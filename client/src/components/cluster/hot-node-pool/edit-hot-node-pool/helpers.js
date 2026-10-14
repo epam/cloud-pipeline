@@ -17,15 +17,15 @@
 import moment from 'moment-timezone';
 import {getFiltersError, filtersAreEqual} from '../filters-control';
 import {compareSchedulesArray, scheduleIsValid} from './controls/ScheduleControl';
-import {isReservationScheduled} from './controls/GpuReservationSummary';
+import {isReservationScheduled} from './controls/ReservationSummary';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
-  MODE_GPU,
+  MODE_FUTURE_DATED,
   POOL_TYPE_STANDARD,
   COMMITMENT_DATE_TIME_FORMAT,
-  GPU_COUNT_MIN_SIZE,
+  RESERVATION_COUNT_MIN_SIZE,
   MIN_COMMITMENT_DURATION_SECONDS,
   MIN_RESERVATION_LEAD_DAYS,
   MAX_RESERVATION_LEAD_DAYS,
@@ -34,13 +34,13 @@ import {
   RESERVATION_STATUS_APPROVED
 } from './constants';
 
-// A STANDARD GPU pool is always restricted to the runs of the user who created it, so
-// its usage filter is derived from mode/poolType instead of being user-editable. This is
-// the already-backend-supported RUN_OWNER/EQUAL criterion, so it is sent in the payload
-// exactly like a hand-made filter.
+// A STANDARD future-dated pool is always restricted to the runs of the user who created
+// it, so its usage filter is derived from mode/poolType instead of being user-editable.
+// This is the already-backend-supported RUN_OWNER/EQUAL criterion, so it is sent in the
+// payload exactly like a hand-made filter.
 export function filtersAreLocked (values) {
   const {mode, poolType} = values || {};
-  return mode === MODE_GPU && poolType === POOL_TYPE_STANDARD;
+  return mode === MODE_FUTURE_DATED && poolType === POOL_TYPE_STANDARD;
 }
 
 export function buildLockedFilters (userName) {
@@ -204,11 +204,11 @@ export function getValidationErrors (values) {
       countError = `Count should be a positive value or zero (pool is disabled)`;
     }
   }
-  // GPU pools reserve a single one-time window. These are the backend's own
+  // Future-dated pools reserve a single one-time window. These are the backend's own
   // `NodePoolValidator` rules, pre-validated here so the user sees them before the
   // request. The minimum-32-vCPU and allowed-instance-family rules are intentionally
   // left to the backend: both need async lookups this form does not have.
-  if (mode === MODE_GPU) {
+  if (mode === MODE_FUTURE_DATED) {
     // An existing reservation's window cannot be changed through this endpoint, so
     // there is nothing to validate here, and SAVE must not be blocked by three fields
     // the form intentionally leaves empty for an existing reservation pool (the
@@ -256,11 +256,11 @@ export function getValidationErrors (values) {
         commitmentDurationError = 'Duration should fit between the start and end dates';
       }
     }
-    // A GPU pool is never autoscaled, but this is explicit rather than relying on
-    // that: the backend rejects a reservation pool with `count < 1` outright, on both
+    // A future-dated pool is never autoscaled, but this is explicit rather than relying
+    // on that: the backend rejects a reservation pool with `count < 1` outright, on both
     // create and update — so this check stays unconditional even for an existing
     // reservation pool, whose disabled Count input round-trips a valid value anyway.
-    if (Number.isNaN(Number(count)) || Number(count) < GPU_COUNT_MIN_SIZE) {
+    if (Number.isNaN(Number(count)) || Number(count) < RESERVATION_COUNT_MIN_SIZE) {
       countError = 'Count should be at least 1 for a Future dated pool';
     }
   }
@@ -434,7 +434,7 @@ export function buildPoolPayload (values) {
       }
     }), {})
   };
-  if (mode === MODE_GPU) {
+  if (mode === MODE_FUTURE_DATED) {
     payload.poolType = poolType;
     // `NodePoolManager.update()` never reads `capacityReservationRequest` on an
     // existing reservation pool — the window cannot be changed through this
@@ -447,11 +447,11 @@ export function buildPoolPayload (values) {
   return payload;
 }
 
-// A GPU/reservation pool's window is granted asynchronously by the backend scheduler, so
-// a pool loaded with `isCapacityReservation` but no `startDate`/`endDate` yet is still
-// awaiting approval — the same signal `GpuReservationSummary` uses to decide whether to
-// show the window or the "pending" text. Returns `undefined` for a non-reservation pool,
-// since the status has no meaning there.
+// A future-dated/reservation pool's window is granted asynchronously by the backend
+// scheduler, so a pool loaded with `isCapacityReservation` but no `startDate`/`endDate`
+// yet is still awaiting approval — the same signal `ReservationSummary` uses to decide
+// whether to show the window or the "pending" text. Returns `undefined` for a
+// non-reservation pool, since the status has no meaning there.
 export function getCapacityReservationStatus (pool) {
   const {isCapacityReservation, startDate, endDate} = pool || {};
   if (!isCapacityReservation) {

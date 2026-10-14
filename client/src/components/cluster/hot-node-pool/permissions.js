@@ -54,7 +54,6 @@ export function getPoolPermissions (authenticatedUserInfo) {
     return {
       canManagePools: false,
       canCreateAnyMode: false,
-      canCreateGpuPool: false,
       canCreate: false,
       readOnly: true
     };
@@ -64,8 +63,7 @@ export function getPoolPermissions (authenticatedUserInfo) {
   const create = canCreatePools(user);
   return {
     canManagePools: blanketManager, // open / edit / remove any pool outright
-    canCreateAnyMode: blanketManager, // choose between Default and GPU on create
-    canCreateGpuPool: create,
+    canCreateAnyMode: blanketManager, // choose between Default and future-dated on create
     canCreate: create,
     readOnly: !blanketManager
   };

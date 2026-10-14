@@ -18,17 +18,17 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Select} from 'antd';
 import SelectInput from './SelectInput';
-import {MODE_DEFAULT, MODE_GPU} from '../constants';
+import {MODE_DEFAULT, MODE_FUTURE_DATED} from '../constants';
 
 const MODE_NAMES = {
   [MODE_DEFAULT]: 'Default',
-  [MODE_GPU]: 'Future dated'
+  [MODE_FUTURE_DATED]: 'Future dated'
 };
 
 // `mode` is client-only: there is no backend field for it, so an existing pool
 // always loads as DEFAULT and this control is locked (via `disabled`) while editing.
-// `modes` narrows which options are offered — a non-admin's forced-GPU Create passes
-// `['GPU']`, which the form then skips rendering this control for entirely.
+// `modes` narrows which options are offered — a non-admin's forced-future-dated Create
+// passes `['FUTURE_DATED']`, which the form then skips rendering this control for entirely.
 function ModeControl ({value, disabled, hint, modes, onChange}) {
   return (
     <SelectInput
@@ -58,7 +58,7 @@ ModeControl.propTypes = {
 };
 
 ModeControl.defaultProps = {
-  modes: [MODE_DEFAULT, MODE_GPU]
+  modes: [MODE_DEFAULT, MODE_FUTURE_DATED]
 };
 
 export {MODE_NAMES};

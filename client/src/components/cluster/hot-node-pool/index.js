@@ -36,7 +36,7 @@ import PoolCard from './pool-card';
 import styles from './hot-node-pool.css';
 import roleModel from '../../../utils/roleModel';
 import {getPoolPermissions, canEditPool, canDeletePool} from './permissions';
-import {MODE_DEFAULT, MODE_GPU} from './edit-hot-node-pool/constants';
+import {MODE_DEFAULT, MODE_FUTURE_DATED} from './edit-hot-node-pool/constants';
 
 async function updateSchedule (payload, scheduleId) {
   const scheduleRequest = new HotNodePoolScheduleUpdate();
@@ -325,7 +325,7 @@ class HotCluster extends React.Component {
           visible={!!editablePool || createNewPool}
           pool={editablePool}
           currentUserName={this.currentUserName}
-          allowedModes={canCreateAnyMode ? [MODE_DEFAULT, MODE_GPU] : [MODE_GPU]}
+          allowedModes={canCreateAnyMode ? [MODE_DEFAULT, MODE_FUTURE_DATED] : [MODE_FUTURE_DATED]}
           onCancel={this.closeEditPoolModal}
           onSave={this.operationWrapper(this.onSaveEditablePool)}
         />

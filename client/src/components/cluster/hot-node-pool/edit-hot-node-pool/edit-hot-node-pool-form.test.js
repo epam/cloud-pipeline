@@ -134,10 +134,12 @@ function selectIsDisabled (labelText) {
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
 }
 
-test('the Mode row renders and precedes Pool name', () => {
+// The form renders Pool name, then Pool type, then Mode. This assertion used to pin the
+// opposite order, which an earlier reorder of the two rows had already made wrong.
+test('the Mode row renders and follows Pool name', () => {
   renderForm();
   const text = document.body.textContent;
-  expect(text.indexOf('Mode:')).toBeLessThan(text.indexOf('Pool name:'));
+  expect(text.indexOf('Pool name:')).toBeLessThan(text.indexOf('Mode:'));
 });
 
 test('readOnly disables the Mode select; readOnly=false does not', () => {
@@ -150,27 +152,31 @@ test('readOnly=false leaves the Mode select enabled', () => {
   expect(selectIsDisabled('Mode:')).toBe(false);
 });
 
-test('allowedModes={["GPU"]} hides the Mode row, GPU-only rows still render', () => {
-  renderForm({allowedModes: ['GPU'], values: baseValues({mode: 'GPU'})});
-  expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
-  expect(screen.getByText('Pool type:')).toBeInTheDocument();
-  expect(selectIsDisabled('Pool type:')).toBe(true);
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-});
+test('allowedModes={["FUTURE_DATED"]} hides the Mode row, future-dated-only rows still render',
+  () => {
+    renderForm({
+      allowedModes: ['FUTURE_DATED'],
+      values: baseValues({mode: 'FUTURE_DATED'})
+    });
+    expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+    expect(screen.getByText('Pool type:')).toBeInTheDocument();
+    expect(selectIsDisabled('Pool type:')).toBe(true);
+    expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  });
 
-test('allowedModes={["DEFAULT", "GPU"]} renders the Mode row', () => {
-  renderForm({allowedModes: ['DEFAULT', 'GPU']});
+test('allowedModes={["DEFAULT", "FUTURE_DATED"]} renders the Mode row', () => {
+  renderForm({allowedModes: ['DEFAULT', 'FUTURE_DATED']});
   expect(screen.getByText('Mode:')).toBeInTheDocument();
 });
 
-test('choosing Future dated calls onChange with (\'mode\', \'GPU\')', async () => {
+test('choosing Future dated calls onChange with (\'mode\', \'FUTURE_DATED\')', async () => {
   const onChange = fn();
   renderForm({onChange});
 
   await click(within(row('Mode:')).getByRole('combobox'));
   await click(screen.getByText('Future dated'));
 
-  expect(onChange).toHaveBeenCalledWith('mode', 'GPU');
+  expect(onChange).toHaveBeenCalledWith('mode', 'FUTURE_DATED');
 });
 
 test('Pool type row is absent in DEFAULT mode', () => {
@@ -178,19 +184,20 @@ test('Pool type row is absent in DEFAULT mode', () => {
   expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
 });
 
-test('Pool type row is present in GPU mode', () => {
-  renderForm({values: baseValues({mode: 'GPU'})});
+test('Pool type row is present in future-dated mode', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
   expect(screen.getByText('Pool type:')).toBeInTheDocument();
 });
 
-test('GPU + Standard locks the Filters section: Condition and Add filter are disabled', () => {
-  renderForm({values: baseValues({mode: 'GPU', poolType: 'STANDARD'})});
-  expect(selectIsDisabled('Condition:')).toBe(true);
-  expect(screen.getByRole('button', {name: 'Add filter'})).toBeDisabled();
-});
+test('future-dated + Standard locks the Filters section: Condition and Add filter are disabled',
+  () => {
+    renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'STANDARD'})});
+    expect(selectIsDisabled('Condition:')).toBe(true);
+    expect(screen.getByRole('button', {name: 'Add filter'})).toBeDisabled();
+  });
 
-test('GPU + Shareable leaves the Filters section enabled', () => {
-  renderForm({values: baseValues({mode: 'GPU', poolType: 'SHARABLE_NODE'})});
+test('future-dated + Shareable leaves the Filters section enabled', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'SHARABLE_NODE'})});
   expect(selectIsDisabled('Condition:')).toBe(false);
   expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 });
@@ -201,24 +208,25 @@ test('DEFAULT mode regression: the Filters section stays enabled', () => {
   expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 });
 
-test('DEFAULT mode shows the weekly schedule UI, not the GPU commitment window', () => {
+test('DEFAULT mode shows the weekly schedule UI, not the future-dated commitment window', () => {
   renderForm({values: baseValues({mode: 'DEFAULT'})});
   expect(screen.getByText('Add schedule')).toBeInTheDocument();
   expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
 });
 
-test('GPU mode shows the one-time commitment window, not the weekly schedule UI', () => {
-  renderForm({values: baseValues({mode: 'GPU'})});
-  expect(screen.getByText('Starts on:')).toBeInTheDocument();
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-  expect(screen.getByText('Ends on:')).toBeInTheDocument();
-  expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
-});
+test('future-dated mode shows the one-time commitment window, not the weekly schedule UI',
+  () => {
+    renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+    expect(screen.getByText('Starts on:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+    expect(screen.getByText('Ends on:')).toBeInTheDocument();
+    expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
+  });
 
-test('GPU mode renders Starts on, Ends on and Duration as three editable rows', () => {
+test('future-dated mode renders Starts on, Ends on and Duration as three editable rows', () => {
   renderForm({
     values: baseValues({
-      mode: 'GPU',
+      mode: 'FUTURE_DATED',
       commitmentStart: '2026-01-01 10:00:00.000',
       commitmentEnd: '2026-02-01 10:00:00.000',
       commitmentDuration: 7200
@@ -232,18 +240,18 @@ test('GPU mode renders Starts on, Ends on and Duration as three editable rows', 
   ).toBe('2026-02-01 10:00:00.000');
 });
 
-test('GPU mode shows the commitment start error once touched', () => {
+test('future-dated mode shows the commitment start error once touched', () => {
   renderForm({
-    values: baseValues({mode: 'GPU'}),
+    values: baseValues({mode: 'FUTURE_DATED'}),
     validation: {commitmentStart: 'Start date is required'},
     touched: {commitmentStart: true}
   });
   expect(screen.getByText('Start date is required')).toBeInTheDocument();
 });
 
-test('GPU mode shows the commitment end error once touched', () => {
+test('future-dated mode shows the commitment end error once touched', () => {
   renderForm({
-    values: baseValues({mode: 'GPU'}),
+    values: baseValues({mode: 'FUTURE_DATED'}),
     validation: {commitmentEnd: 'End date is required'},
     touched: {commitmentEnd: true}
   });
@@ -253,7 +261,7 @@ test('GPU mode shows the commitment end error once touched', () => {
 test('an existing reservation pool shows the window read-only instead of the editable controls',
   () => {
     renderForm({
-      values: baseValues({mode: 'GPU'}),
+      values: baseValues({mode: 'FUTURE_DATED'}),
       readOnly: true,
       isExistingReservation: true,
       reservationStartDate: '2026-03-01 10:00:00.000',
@@ -268,7 +276,7 @@ test('an existing reservation pool shows the window read-only instead of the edi
 
 test('an existing reservation pool disables Nodes count and Price type', () => {
   renderForm({
-    values: baseValues({mode: 'GPU'}),
+    values: baseValues({mode: 'FUTURE_DATED'}),
     readOnly: true,
     isExistingReservation: true,
     reservationStartDate: '2026-03-01 10:00:00.000',
@@ -296,9 +304,9 @@ test('a Default-mode edit leaves Price type editable (regression)', () => {
   expect(selectIsDisabled('Price type:')).toBe(false);
 });
 
-test('a new GPU pool still renders the editable window', () => {
+test('a new future-dated pool still renders the editable window', () => {
   renderForm({
-    values: baseValues({mode: 'GPU'}),
+    values: baseValues({mode: 'FUTURE_DATED'}),
     isExistingReservation: false
   });
   expect(screen.getByText('Starts on:')).toBeInTheDocument();
@@ -350,20 +358,21 @@ test('when autoscaled, the autoscale rows show, indented, in Min/Max/Up/Down/Ste
   });
 });
 
-test('GPU mode hides Autoscaled and keeps Nodes count', () => {
-  renderForm({values: baseValues({mode: 'GPU'})});
+test('future-dated mode hides Autoscaled and keeps Nodes count', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
   expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
   expect(screen.getByText('Nodes count:')).toBeInTheDocument();
 });
 
-test('GPU mode with an inconsistent autoscaled=true still hides every scaling row', () => {
-  renderForm({values: baseValues({mode: 'GPU', autoscaled: true})});
-  expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
-  expect(screen.queryByText('Max Size:')).not.toBeInTheDocument();
-  expect(screen.queryByText('Scale Up Threshold:')).not.toBeInTheDocument();
-  expect(screen.queryByText('Scale Down Threshold:')).not.toBeInTheDocument();
-  expect(screen.queryByText('Scale Step:')).not.toBeInTheDocument();
-});
+test('future-dated mode with an inconsistent autoscaled=true still hides every scaling row',
+  () => {
+    renderForm({values: baseValues({mode: 'FUTURE_DATED', autoscaled: true})});
+    expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Max Size:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Up Threshold:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Down Threshold:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Step:')).not.toBeInTheDocument();
+  });
 
 test('DEFAULT mode regression: autoscaled=true still shows the checkbox and all five rows', () => {
   renderForm({values: baseValues({mode: 'DEFAULT', autoscaled: true})});
@@ -422,8 +431,8 @@ test('builds grouped region/instance options and provider-specific price type na
   expect(screen.getAllByText('Low priority').length).toBeGreaterThan(0);
 });
 
-test('GPU mode locks Price type to On-demand and disables the control', () => {
-  renderForm({values: baseValues({mode: 'GPU', spot: 'ON_DEMAND'})});
+test('future-dated mode locks Price type to On-demand and disables the control', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', spot: 'ON_DEMAND'})});
 
   expect(selectIsDisabled('Price type:')).toBe(true);
   // On-demand is the only legal value for a capacity reservation (`NodePoolValidator`

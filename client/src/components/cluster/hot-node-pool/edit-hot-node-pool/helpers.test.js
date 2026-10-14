@@ -60,12 +60,12 @@ function baseValues (overrides = {}) {
 // Now-relative fixtures: the backend's lead-time/duration rules are relative to "now",
 // so a fixed past date (like the old `'2026-01-01 10:00:00.000'`) would fail them. `fmt`
 // formats a moment through the backend's own wire format; `inDays` is "N days from now,
-// in that format"; `gpuValues` is a fully valid GPU values object a single field can be
-// overridden from.
+// in that format"; `futureDatedValues` is a fully valid future-dated values object a
+// single field can be overridden from.
 const fmt = (m) => m.format(COMMITMENT_DATE_TIME_FORMAT);
 const inDays = (days) => fmt(moment().add(days, 'days'));
-const gpuValues = (overrides = {}) => baseValues({
-  mode: 'GPU',
+const futureDatedValues = (overrides = {}) => baseValues({
+  mode: 'FUTURE_DATED',
   poolType: 'STANDARD',
   count: 1,
   commitmentStart: inDays(30),
@@ -230,41 +230,42 @@ describe('getValidationErrors', () => {
     });
   });
 
-  describe('GPU commitment window', () => {
-    it('is valid, every commitment error undefined, for a fully valid GPU values object', () => {
-      const {valid, errors} = getValidationErrors(gpuValues());
-      expect(valid).toBe(true);
-      expect(errors.commitmentStart).toBeUndefined();
-      expect(errors.commitmentEnd).toBeUndefined();
-      expect(errors.commitmentDuration).toBeUndefined();
-    });
+  describe('future-dated commitment window', () => {
+    it('is valid, every commitment error undefined, for a fully valid future-dated values object',
+      () => {
+        const {valid, errors} = getValidationErrors(futureDatedValues());
+        expect(valid).toBe(true);
+        expect(errors.commitmentStart).toBeUndefined();
+        expect(errors.commitmentEnd).toBeUndefined();
+        expect(errors.commitmentDuration).toBeUndefined();
+      });
 
     it.each([
       ['missing', undefined],
       ['unparseable', 'tomorrow'],
       ['missing milliseconds', '2026-01-01 10:00:00']
     ])('requires a valid, strictly-formatted start date (%s)', (name, commitmentStart) => {
-      const {errors} = getValidationErrors(gpuValues({commitmentStart}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentStart}));
       expect(errors.commitmentStart).toBe('Start date is required');
     });
 
     it('requires an end date', () => {
-      const {errors} = getValidationErrors(gpuValues({commitmentEnd: undefined}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentEnd: undefined}));
       expect(errors.commitmentEnd).toBe('End date is required');
     });
 
     it('rejects a start date in the past', () => {
-      const {errors} = getValidationErrors(gpuValues({commitmentStart: inDays(-1)}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentStart: inDays(-1)}));
       expect(errors.commitmentStart).toBe('Start date should be in the future');
     });
 
     it('rejects a start date with too little lead time', () => {
-      const {errors} = getValidationErrors(gpuValues({commitmentStart: inDays(3)}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentStart: inDays(3)}));
       expect(errors.commitmentStart).toBe('Start date should be between 5 and 120 days from now');
     });
 
     it('rejects a start date with too much lead time', () => {
-      const {errors} = getValidationErrors(gpuValues({
+      const {errors} = getValidationErrors(futureDatedValues({
         commitmentStart: inDays(150),
         commitmentEnd: inDays(200)
       }));
@@ -272,7 +273,7 @@ describe('getValidationErrors', () => {
     });
 
     it('rejects an end date that is not after the start date', () => {
-      const {errors} = getValidationErrors(gpuValues({
+      const {errors} = getValidationErrors(futureDatedValues({
         commitmentStart: inDays(30),
         commitmentEnd: inDays(10)
       }));
@@ -280,24 +281,24 @@ describe('getValidationErrors', () => {
     });
 
     it.each([0, -5])('rejects a non-positive duration %i', (commitmentDuration) => {
-      const {errors} = getValidationErrors(gpuValues({commitmentDuration}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDuration}));
       expect(errors.commitmentDuration)
         .toBe('Duration should be a positive number of seconds');
     });
 
     it('rejects a duration shorter than the 14-day minimum', () => {
-      const {errors} = getValidationErrors(gpuValues({commitmentDuration: 3600}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDuration: 3600}));
       expect(errors.commitmentDuration)
         .toBe('Duration should be at least 1209600 seconds (14 days)');
     });
 
     it('accepts a duration given as a numeric string', () => {
-      const {errors} = getValidationErrors(gpuValues({commitmentDuration: '1209600'}));
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDuration: '1209600'}));
       expect(errors.commitmentDuration).toBeUndefined();
     });
 
     it('rejects a duration that does not fit between the start and end dates', () => {
-      const {errors} = getValidationErrors(gpuValues({
+      const {errors} = getValidationErrors(futureDatedValues({
         commitmentStart: inDays(30),
         commitmentEnd: inDays(40),
         commitmentDuration: 1209600 * 2
@@ -305,8 +306,8 @@ describe('getValidationErrors', () => {
       expect(errors.commitmentDuration).toBe('Duration should fit between the start and end dates');
     });
 
-    it('requires count to be at least 1 for a GPU pool', () => {
-      const {valid, errors} = getValidationErrors(gpuValues({count: 0}));
+    it('requires count to be at least 1 for a future-dated pool', () => {
+      const {valid, errors} = getValidationErrors(futureDatedValues({count: 0}));
       expect(errors.count).toBe('Count should be at least 1 for a Future dated pool');
       expect(valid).toBe(false);
     });
@@ -592,15 +593,16 @@ describe('buildPoolPayload', () => {
     });
   });
 
-  it.each(['GPU', 'DEFAULT'])('never includes mode: it has no backend slot (%s)', (mode) => {
-    const payload = buildPoolPayload(values({mode}));
-    expect(Object.keys(payload)).not.toContain('mode');
-  });
+  it.each(['FUTURE_DATED', 'DEFAULT'])('never includes mode: it has no backend slot (%s)',
+    (mode) => {
+      const payload = buildPoolPayload(values({mode}));
+      expect(Object.keys(payload)).not.toContain('mode');
+    });
 
-  describe('GPU mode', () => {
-    function gpuPayloadValues (overrides = {}) {
+  describe('future-dated mode', () => {
+    function futureDatedPayloadValues (overrides = {}) {
       return values({
-        mode: 'GPU',
+        mode: 'FUTURE_DATED',
         poolType: 'STANDARD',
         commitmentStart: inDays(30),
         commitmentEnd: inDays(90),
@@ -610,19 +612,19 @@ describe('buildPoolPayload', () => {
     }
 
     it('sends poolType as given', () => {
-      expect(buildPoolPayload(gpuPayloadValues()).poolType).toBe('STANDARD');
-      expect(buildPoolPayload(gpuPayloadValues({poolType: 'SHARABLE_NODE'})).poolType)
+      expect(buildPoolPayload(futureDatedPayloadValues()).poolType).toBe('STANDARD');
+      expect(buildPoolPayload(futureDatedPayloadValues({poolType: 'SHARABLE_NODE'})).poolType)
         .toBe('SHARABLE_NODE');
     });
 
     it('sends capacityReservationRequest matching buildCapacityReservationRequest', () => {
-      const input = gpuPayloadValues();
+      const input = futureDatedPayloadValues();
       const payload = buildPoolPayload(input);
       expect(payload.capacityReservationRequest).toEqual(buildCapacityReservationRequest(input));
     });
 
     it('never includes commitmentStart/commitmentEnd/commitmentDuration as top-level keys', () => {
-      const payload = buildPoolPayload(gpuPayloadValues());
+      const payload = buildPoolPayload(futureDatedPayloadValues());
       expect(Object.keys(payload)).not.toContain('commitmentStart');
       expect(Object.keys(payload)).not.toContain('commitmentEnd');
       expect(Object.keys(payload)).not.toContain('commitmentDuration');
@@ -644,12 +646,12 @@ describe('buildPoolPayload', () => {
 });
 
 describe('filtersAreLocked', () => {
-  it('is true for a GPU/STANDARD pool', () => {
-    expect(filtersAreLocked({mode: 'GPU', poolType: 'STANDARD'})).toBe(true);
+  it('is true for a FUTURE_DATED/STANDARD pool', () => {
+    expect(filtersAreLocked({mode: 'FUTURE_DATED', poolType: 'STANDARD'})).toBe(true);
   });
 
-  it('is false for a GPU/SHARABLE_NODE pool', () => {
-    expect(filtersAreLocked({mode: 'GPU', poolType: 'SHARABLE_NODE'})).toBe(false);
+  it('is false for a FUTURE_DATED/SHARABLE_NODE pool', () => {
+    expect(filtersAreLocked({mode: 'FUTURE_DATED', poolType: 'SHARABLE_NODE'})).toBe(false);
   });
 
   it('is false for a DEFAULT/STANDARD pool', () => {
@@ -689,12 +691,13 @@ describe('buildSchedulePayload', () => {
     expect(payload.scheduleEntries.every(e => !('id' in e))).toBe(true);
   });
 
-  // Pins the GPU-mode regression at the helper level, since driving the real
-  // DatePickers through the UI to reach a savable GPU state is impractical under
-  // antd 2.13.14 (see index.test.js's "no schedule request" test for the matching
+  // Pins the future-dated-mode regression at the helper level, since driving the real
+  // DatePickers through the UI to reach a savable future-dated state is impractical
+  // under antd 2.13.14 (see index.test.js's "no schedule request" test for the matching
   // UI-level, weaker check).
-  it('is undefined for a GPU pool: nothing in the GPU UI can add a schedule entry', () => {
-    expect(buildSchedulePayload(gpuValues())).toBeUndefined();
+  it('is undefined for a future-dated pool: nothing in the future-dated UI can add a schedule' +
+    ' entry', () => {
+    expect(buildSchedulePayload(futureDatedValues())).toBeUndefined();
   });
 });
 
