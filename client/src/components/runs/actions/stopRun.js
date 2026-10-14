@@ -27,6 +27,7 @@ import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import getCommitAllowedForTool from './get-commit-allowed-for-tool';
 import {diskSizeAllowsPause} from './warnings/disk-size-warning';
+import runNodeIsUnavailable from './node-availability';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -43,7 +44,7 @@ export function runIsCommittable (run) {
 
 export function canCommitRun (run) {
   // Checks only run state, not user permissions
-  return canStopRun(run) && runIsCommittable(run);
+  return canStopRun(run) && runIsCommittable(run) && !runNodeIsUnavailable(run);
 }
 
 export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
@@ -94,7 +95,8 @@ export function canPauseRun (run, preferences) {
     diskSizeAllowsPause(
       preferences,
       instance ? instance.nodeDisk : 0
-    );
+    ) &&
+    !runNodeIsUnavailable(run);
 }
 
 export function stopRun (parent, callback) {

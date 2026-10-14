@@ -102,6 +102,7 @@ import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import getRunInvestigationUrl from '../../../utils/run-investigation-url';
+import runNodeIsUnavailable from '../actions/node-availability';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1348,7 +1349,8 @@ class Logs extends localization.LocalizedReactComponent {
       }
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(run) &&
-        podIP;
+        podIP &&
+        !runNodeIsUnavailable(run);
     }
     return false;
   }
