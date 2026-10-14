@@ -1623,6 +1623,27 @@ public class DataStorageManager implements SecuredEntityManager {
         }
     }
 
+    /**
+     * Checks read access to each of the given paths, a trailing slash marking a folder.
+     *
+     * <p>Storage level {@code READ} is not enough where path permissions are in use: a user may hold
+     * it and still be denied on a folder inside the storage. Anything that reads several paths at once
+     * on behalf of a user has to ask for all of them up front, because by the time the reading happens
+     * the user may no longer be there to authorize it.</p>
+     */
+    public void checkReadPermissionsOnPaths(final AbstractDataStorage storage, final List<String> paths) {
+        if (!needToLoadReadPathPermissions(storage)) {
+            return;
+        }
+        ListUtils.emptyIfNull(paths).forEach(path -> {
+            if (path.endsWith(ProviderUtils.DELIMITER)) {
+                storagePathPermissionsService.canReadFolder(storage.getId(), path);
+            } else {
+                storagePathPermissionsService.canReadFile(storage.getId(), path);
+            }
+        });
+    }
+
     private void checkReadPermissionsOnFile(final AbstractDataStorage storage, final String path) {
         if (needToLoadReadPathPermissions(storage)) {
             storagePathPermissionsService.canReadFile(storage.getId(), path);

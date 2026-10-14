@@ -242,6 +242,16 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
+    public DataStorageDownloadFileUrl generateDownloadURL(S3bucketDataStorage dataStorage,
+                                                          String path, String version,
+                                                          ContentDisposition contentDisposition,
+                                                          String fileName) {
+        validateFilePathMatchingMasks(dataStorage, path);
+        return getS3HelperForSignedUrl(dataStorage, version, false).generateDownloadURL(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path), version, contentDisposition, fileName);
+    }
+
+    @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3HelperForSignedUrl(dataStorage, null, true).generateDataStorageItemUploadUrl(
