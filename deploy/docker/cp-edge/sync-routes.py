@@ -28,6 +28,13 @@ CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 CP_EDGE_ENDPOINT_TAG_NAME = 'CP_EDGE_ENDPOINT_TAG_NAME'
 
 try:
+        # Python 2 has no "datetime.timezone" - datetime.utcfromtimestamp() stays the only way to get UTC there.
+        from datetime import timezone
+        UTC = timezone.utc
+except ImportError:
+        UTC = None
+
+try:
         from pykube.config import KubeConfig
         from pykube.http import HTTPClient
         from pykube.http import HTTPError
@@ -50,7 +57,7 @@ SVC_URL_TMPL = '{{ ' \
                '"regionId": {region_id} ' \
                '}}'
 ROUTE_ID_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
-ROUTE_ID_PATTERN = '^(.*)-(\d+)-(\d+)$'
+ROUTE_ID_PATTERN = r'^(.*)-(\d+)-(\d+)$'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
@@ -195,7 +202,8 @@ class RunLogger:
 
         def _log(self, message, status):
                 do_log("Log run log: " + message)
-                now = datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+                now = datetime.fromtimestamp(time.time(), UTC).strftime(DATE_FORMAT) if UTC \
+                        else datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
                 date = now[0:len(now) - 3]
                 log_entry = json.dumps({"runId": self.run_id,
                                         "date": date,
@@ -389,7 +397,7 @@ def is_system_endpoint_name(endpoint):
 def construct_additional_endpoints_from_run_parameters(run_details):
 
         def extract_endpoint_num_from_run_parameter(run_parameter):
-                match = re.search('{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
+                match = re.search(r'{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
                 if match:
                         return match.group(1)
                 return None

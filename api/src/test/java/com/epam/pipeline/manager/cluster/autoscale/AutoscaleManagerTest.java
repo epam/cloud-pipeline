@@ -61,6 +61,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.any;
@@ -69,6 +70,7 @@ import static org.mockito.Matchers.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -430,6 +432,24 @@ public class AutoscaleManagerTest {
         verify(reassignHandler).tryReassignNode(eq(kubernetesClient), any(), any(), eq(TEST_RUN_ID.toString()),
                 eq(TEST_RUN_ID), any(), eq(Collections.emptyList()));
         verify(cloudFacade).scaleDownNode(Long.valueOf(NOT_READY_FREE_NODE_ID));
+    }
+
+    @Test
+    public void testNodeUpTaskReleasedWhenRegionShiftFails() {
+        mockNodeUpFailure(AutoscaleContants.NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE);
+        doThrow(new IllegalArgumentException("restart failed"))
+                .when(runRegionShiftHandler).restartRunInAnotherRegion(eq(TEST_RUN_ID));
+
+        runAutoscaling(PREFERENCE_RETRY_COUNT);
+
+        verify(runRegionShiftHandler).restartRunInAnotherRegion(eq(TEST_RUN_ID));
+        assertThat((Set<?>) Whitebox.getInternalState(autoscaleManagerCore, "nodeUpTaskInProgress"),
+                Matchers.empty());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, times(PREFERENCE_RETRY_COUNT)).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 
     private void mockNodeUpRetryCountParameter(final String value) {

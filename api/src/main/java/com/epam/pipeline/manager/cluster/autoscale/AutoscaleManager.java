@@ -630,39 +630,47 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 );
             }, executorService.getExecutorService()).exceptionally(e -> {
                 log.error(e.getMessage(), e);
-
-                if (e.getCause() instanceof CmdExecutionException &&
-                        Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE,
-                                ((CmdExecutionException) e.getCause()).getExitCode())) {
-                    spotNodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal + 1);
+                try {
+                    handleNodeUpFailure(longId, e);
+                } catch (Exception unhandledError) {
+                    log.error("Failed to handle nodeup failure for run {}.", runId, unhandledError);
+                } finally {
+                    // release nodeup task
+                    removeNodeUpTask(longId, false);
                 }
-                if (e.getCause() instanceof CmdExecutionException && Objects.equals(
-                        NODEUP_LIMIT_EXCEEDED_EXIT_CODE,
-                        ((CmdExecutionException) e.getCause()).getExitCode())) {
-                    // do not fail and do not change attempts count if instance quota exceeded
-                    nodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal - 1);
-                }
-                if (e.getCause() instanceof CmdExecutionException && Objects.equals(
-                        NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
-                        ((CmdExecutionException) e.getCause()).getExitCode())) {
-                    final int retryCount = nodeUpAttempts.getOrDefault(longId, 0);
-
-                    final PipelineRun runToReschedule = pipelineRunManager.findRun(longId)
-                            .orElseThrow(() -> new IllegalArgumentException(
-                                    String.format("Cannot find run by id: %d", longId)));
-                    final int nodeUpRetryCount = getNodeUpRetryCount(runToReschedule,
-                            preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT));
-
-                    if (retryCount >= nodeUpRetryCount && !runToReschedule.getStatus().isFinal()) {
-                        pipelineRunManager.updateStateReasonMessageById(longId, preferenceManager
-                                .getPreference(SystemPreferences.LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE));
-                        runRegionShiftHandler.restartRunInAnotherRegion(longId);
-                    }
-                }
-
-                removeNodeUpTask(longId, false);
                 return null;
             }));
+        }
+
+        private void handleNodeUpFailure(final long longId, final Throwable e) {
+            if (e.getCause() instanceof CmdExecutionException &&
+                    Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE,
+                            ((CmdExecutionException) e.getCause()).getExitCode())) {
+                spotNodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal + 1);
+            }
+            if (e.getCause() instanceof CmdExecutionException && Objects.equals(
+                    NODEUP_LIMIT_EXCEEDED_EXIT_CODE,
+                    ((CmdExecutionException) e.getCause()).getExitCode())) {
+                // do not fail and do not change attempts count if instance quota exceeded
+                nodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal - 1);
+            }
+            if (e.getCause() instanceof CmdExecutionException && Objects.equals(
+                    NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE,
+                    ((CmdExecutionException) e.getCause()).getExitCode())) {
+                final int retryCount = nodeUpAttempts.getOrDefault(longId, 0);
+
+                final PipelineRun runToReschedule = pipelineRunManager.findRun(longId)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                String.format("Cannot find run by id: %d", longId)));
+                final int nodeUpRetryCount = getNodeUpRetryCount(runToReschedule,
+                        preferenceManager.getPreference(SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT));
+
+                if (retryCount >= nodeUpRetryCount && !runToReschedule.getStatus().isFinal()) {
+                    pipelineRunManager.updateStateReasonMessageById(longId, preferenceManager
+                            .getPreference(SystemPreferences.LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE));
+                    runRegionShiftHandler.restartRunInAnotherRegion(longId);
+                }
+            }
         }
 
         private boolean cancelNodeUpForNonMaster(long longId, String runId) {

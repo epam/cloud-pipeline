@@ -41,7 +41,7 @@ Gradle build. The version is declared in the root `build.gradle`.
 | `shaded` | `opensearch` — the OpenSearch jar with its packages relocated, so it can coexist with Elasticsearch V6 |
 | `storage-lifecycle-service` | Python app that executes the lifecycle rules set on a data storage — archiving (a rule's transitions, with user prolongation and notification) and restoring |
 | `vm-monitor` | Spring Boot; reconciles the cloud provider's running VMs against the platform's nodes and runs, and also checks certificate expiry, filesystem space and k8s state, notifying on a mismatch |
-| `workflows` | `pipe-common` (the `pipeline` package, in every job container), `gpustat`, `pipe-demo`, `pipe-templates`, `report-templates` |
+| `workflows` | `pipe-common` (the `pipeline` package, in every job container), `gpustat`, `pipe-templates`, `report-templates` |
 
 Everything else is support: `config/` (the checkstyle and pmd rulesets), `docs/` (the mkdocs manual
 and release notes), `gradle/` (the wrapper), `jwt-generator/` (a CLI that mints API JWTs),
@@ -101,8 +101,9 @@ replies, short sentences, simple words, no idioms.
 ## Files agents must not read
 
 `.env`, `.env.local` and `.env.<environment>.local` files, `secrets/`, keystores and private keys,
-and the credential stores under `~` — `.ssh`, `.aws`, `.azure`, `.config/gcloud`, `.config/gh`,
-`.kube/config`, `.gnupg`. A `.env.example` is a template, not a secret, and is fine to read.
+files ending in `.secret`, and the credential stores under `~` — `.ssh`, `.aws`, `.azure`,
+`.config/gcloud`, `.config/gh`, `.kube/config`, `.gnupg`. A `.env.example` is a template, not a
+secret, and is fine to read.
 
 ## Anti-patterns
 
@@ -127,7 +128,8 @@ Things that have gone wrong here before, or that are expensive to undo:
   use, and a construct that looks obsolete may be load-bearing. Toolchain levels are per-module and
   mid-migration, so read that module's own `build.gradle`.
 - **Don't run deployment tooling** (`pipectl`, `docker push`, `deploy/pipectl/build-pipectl.sh`,
-  `aws s3 rm|mv`) as part of a code change.
+  `aws s3 rm|mv`) as part of a code change, except the `dev-sandbox` skill's sandbox lifecycle when
+  someone asks for it.
 - **Don't document what you did not verify.** Prefer a command that finds the answer over a copied
   value that will drift.
 - **Don't claim a command passed if you did not run it.** Say what you actually ran.

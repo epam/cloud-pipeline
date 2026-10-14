@@ -58,12 +58,15 @@
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
+- [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
+    - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
+    - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
     - [`pipe storage ls` works incorrectly with the option `--page`](#pipe-storage-ls-works-incorrectly-with-the-option-page)
@@ -1783,7 +1786,8 @@ If this setting is enabled for some `AWS region 1` and for some `AWS region 2` -
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_3.png)
 
 Original job is being automatically stopped, new job with the same instance type as in the original run but in the `AWS region 2` will be launched.  
-If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".  
+A region where the instance type of the run is not allowed or not offered is skipped ([#4642](https://github.com/epam/cloud-pipeline/issues/4642)).
 
 Feature is not available:
 
@@ -1819,6 +1823,10 @@ If the tool versions can't be loaded, `pipe` prints a warning and continues the 
 
 For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
+## Python 3 support for the EDGE service
+
+The `cp-edge` service (the sync-routes and maintenance jobs) now has Python 3.12 installed alongside Python 2, and can run either one. The active interpreter is selected by the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility; set it to `3` to run under Python 3.12).
+
 ## Node start retries for a specific run
 
 Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
@@ -1834,6 +1842,18 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 
 `pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (`boto3`/`botocore`, `azure-mgmt-*`, `google-api-python-client`, and `pipe-common` itself), so they run under either interpreter.
 
+The `data_loader` system pipeline and the `Python` pipeline template now resolve their interpreter via `CP_PYTHON_PATH` as well, instead of a hardcoded `python`, so they also run under either Python version. The `pipe-demo` NGS demo pipelines and the `Luigi` pipeline template, which still only ran under Python 2, were removed.
+
+***
+
+## Run controls for an unavailable node
+
+When the compute node of a run stops reporting its status, the run gets the `NODE_UNAVAILABLE` tag. If the node does not recover within the grace period (the `cluster.node.unavailable.grace.period.minutes` system preference, or the `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` run parameter), the node is terminated.  
+Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VERSIONED STORAGE** controls for such a run, though these operations cannot complete without the node.
+
+In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
 ***
 
 ## Notable Bug fixes
@@ -1847,6 +1867,13 @@ Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grac
 Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
 Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
 
+### Launch: a run name alias replaces the run's custom and required tags
+
+[#4626](https://github.com/epam/cloud-pipeline/issues/4626)
+
+Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
+Now, the alias is added to the run's tags alongside the tags set in the launch form.
+
 ### Restarted runs lose parameters and get an API token of another user
 
 [#4622](https://github.com/epam/cloud-pipeline/issues/4622)
@@ -1854,6 +1881,15 @@ Please note: after the update, nodes that have already been unavailable for long
 Previously, a run restarted by the platform - a spot run restarted after its instance was lost, or a run restarted in another region in case of insufficient capacity - started without any of the parent run parameters.
 Also, the `API_TOKEN` inside such a run was issued for the system administrator instead of the run owner. The same happened when one user (e.g. an admin) resumed a paused run of another user.
 Now, a restarted run keeps all parameters of the parent run, and the `API_TOKEN` of any launched run is always issued for the run owner.
+
+### New nodes stop being created after failed restarts in another region
+
+[#4641](https://github.com/epam/cloud-pipeline/issues/4641)
+
+Previously, when a run was restarted in another region in case of insufficient capacity, the original run was stopped first, and only then the new run was launched.
+If the launch of the new run failed - e.g. the instance type of the run was not allowed or not offered in the new region - the error was not logged, and the autoscaler kept counting a node creation for the stopped run until the API service was restarted.
+After `cluster.nodeup.max.threads` such failures, no new nodes were created for any run.
+Now, the original run is stopped only after the new run is launched. If the launch fails, the original run fails and the reason is shown in its `RestartPipelineRun` task logs. A failed restart no longer blocks the creation of new nodes.
 
 ### Storage files indexing stops when a storage is deleted during the sync
 
