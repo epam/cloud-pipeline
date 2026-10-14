@@ -22,6 +22,7 @@ import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 import DataStorageLink from '../../../../special/data-storage-link';
 import roleModel from '../../../../../utils/roleModel';
+import runNodeIsUnavailable from '../../../../runs/actions/node-availability';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -115,6 +116,7 @@ export default function (
           }
           if (
             !run.sensitive &&
+            !runNodeIsUnavailable(run) &&
             vsActions &&
             vsActions.available
           ) {
