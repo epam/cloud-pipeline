@@ -21,15 +21,19 @@ import classNames from 'classnames';
 import moment from 'moment-timezone';
 import StringInput from './StringInput';
 import HintControl from './HintControl';
-import {COMMITMENT_DATE_TIME_FORMAT} from '../constants';
+import {
+  COMMITMENT_DATE_TIME_FORMAT,
+  SECONDS_PER_DAY,
+  MIN_COMMITMENT_DURATION_DAYS
+} from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
 // undefined when any input is missing/unparseable (no hint is shown then);
 // true/false when all three are usable.
-export function windowCoversDuration (start, end, durationSeconds) {
-  const duration = Number(durationSeconds);
+export function windowCoversDuration (start, end, durationDays) {
+  const duration = Number(durationDays);
   if (
-    durationSeconds === undefined || durationSeconds === null || durationSeconds === '' ||
+    durationDays === undefined || durationDays === null || durationDays === '' ||
     Number.isNaN(duration) || duration <= 0
   ) {
     return undefined;
@@ -39,35 +43,39 @@ export function windowCoversDuration (start, end, durationSeconds) {
   if (!startMoment.isValid() || !endMoment.isValid()) {
     return undefined;
   }
-  return endMoment.diff(startMoment, 'seconds') >= duration;
+  return endMoment.diff(startMoment, 'seconds') >= duration * SECONDS_PER_DAY;
 }
 
 // A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
 // mode's weekly recurring schedule (see `ScheduleControl`/`ScheduleControls`, which this
 // control does not reuse and must not touch). `start`/`end` are carried as plain strings
 // in `COMMITMENT_DATE_TIME_FORMAT`, parsed/formatted with `moment` in the local zone so
-// they round-trip; `[start, end]` is the backend's reservation *search range* and
-// `duration` the committed length in seconds that must fit inside it. "Ends on" is
-// independently editable and no longer derived from `start` + `duration`.
+// they round-trip; `[start, end]` is the window the platform *searches* in for matching
+// capacity, and `durationDays` the committed length, in days, that must fit somewhere
+// inside it - converted to the backend's seconds only in
+// `buildCapacityReservationRequest`. "Search until" is independently editable and never
+// derived from `start` + `durationDays`.
 function ReservationScheduleControl ({
   start,
   end,
-  duration,
+  durationDays,
   disabled,
   startError,
   endError,
   durationError,
   touched,
-  hint,
+  startHint,
+  endHint,
+  durationHint,
   onChangeStart,
   onChangeEnd,
   onChangeDuration
 }) {
-  const covers = windowCoversDuration(start, end, duration);
+  const covers = windowCoversDuration(start, end, durationDays);
   return (
     <div>
       <div className={styles.formRow}>
-        <span className={styles.label}>Starts on:</span>
+        <span className={styles.label}>Search from:</span>
         <DatePicker
           showTime
           format={COMMITMENT_DATE_TIME_FORMAT}
@@ -79,7 +87,7 @@ function ReservationScheduleControl ({
             date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
           )}
         />
-        <HintControl hint={hint} />
+        <HintControl hint={startHint} />
       </div>
       {
         startError && touched && (
@@ -89,7 +97,7 @@ function ReservationScheduleControl ({
         )
       }
       <div className={styles.formRow}>
-        <span className={styles.label}>Ends on:</span>
+        <span className={styles.label}>Search until:</span>
         <DatePicker
           showTime
           format={COMMITMENT_DATE_TIME_FORMAT}
@@ -101,6 +109,7 @@ function ReservationScheduleControl ({
             date ? date.format(COMMITMENT_DATE_TIME_FORMAT) : undefined
           )}
         />
+        <HintControl hint={endHint} />
       </div>
       {
         endError && touched && (
@@ -111,10 +120,11 @@ function ReservationScheduleControl ({
       }
       <StringInput
         type="number"
-        label="Duration (sec):"
-        value={duration}
-        min={1}
+        label="Duration (days):"
+        value={durationDays}
+        min={MIN_COMMITMENT_DURATION_DAYS}
         disabled={disabled}
+        hint={durationHint}
         error={durationError}
         touched={touched}
         onChange={onChangeDuration}
@@ -140,13 +150,15 @@ function ReservationScheduleControl ({
 ReservationScheduleControl.propTypes = {
   start: PropTypes.string,
   end: PropTypes.string,
-  duration: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  durationDays: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   disabled: PropTypes.bool,
   startError: PropTypes.string,
   endError: PropTypes.string,
   durationError: PropTypes.string,
   touched: PropTypes.bool,
-  hint: PropTypes.node,
+  startHint: PropTypes.node,
+  endHint: PropTypes.node,
+  durationHint: PropTypes.node,
   onChangeStart: PropTypes.func,
   onChangeEnd: PropTypes.func,
   onChangeDuration: PropTypes.func

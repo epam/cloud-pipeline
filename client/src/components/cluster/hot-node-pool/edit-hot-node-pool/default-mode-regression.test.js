@@ -129,7 +129,7 @@ function baseValues (overrides = {}) {
     poolType: 'STANDARD',
     commitmentStart: undefined,
     commitmentEnd: undefined,
-    commitmentDuration: undefined,
+    commitmentDurationDays: undefined,
     ...overrides
   };
 }
@@ -167,7 +167,7 @@ describe('payload shape is closed (Default mode)', () => {
       mode: 'DEFAULT',
       poolType: 'SHARABLE_NODE',
       commitmentStart: '2026-01-01 10:00:00.000',
-      commitmentDuration: 3600
+      commitmentDurationDays: 14
     }));
     expect(Object.keys(payload).sort()).toEqual([
       'autoscaled',
@@ -197,7 +197,7 @@ describe('payload shape is closed (Default mode)', () => {
       count: 1,
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
-      commitmentDuration: 1209600
+      commitmentDurationDays: 14
     }));
     expect(Object.keys(payload).sort()).toEqual([
       'autoscaled',
@@ -232,7 +232,7 @@ describe('payload shape is closed (Default mode)', () => {
         count: 1,
         commitmentStart: inDays(30),
         commitmentEnd: inDays(90),
-        commitmentDuration: 1209600
+        commitmentDurationDays: 14
       }));
 
       const seventeenKeys = [
@@ -260,7 +260,7 @@ describe('payload shape is closed (Default mode)', () => {
         [...seventeenKeys, 'capacityReservationRequest'].sort()
       );
       expect(futureDatedPayload.capacityReservationRequest.reservationType).toBe('FUTURE_DATED');
-      ['mode', 'commitmentStart', 'commitmentEnd', 'commitmentDuration'].forEach((key) => {
+      ['mode', 'commitmentStart', 'commitmentEnd', 'commitmentDurationDays'].forEach((key) => {
         expect(Object.keys(futureDatedPayload)).not.toContain(key);
       });
     }
@@ -272,7 +272,7 @@ describe('payload shape is closed (Default mode)', () => {
       mode: 'DEFAULT',
       poolType: 'SHARABLE_NODE',
       commitmentStart: '2026-01-01 10:00:00.000',
-      commitmentDuration: 3600
+      commitmentDurationDays: 14
     }));
     expect(Object.keys(payload).sort()).toEqual(['name', 'scheduleEntries'].sort());
   });
@@ -291,10 +291,10 @@ describe('validation key set and result are unchanged in Default mode', () => {
     const {valid, errors} = getValidationErrors(baseValues({
       mode: 'DEFAULT',
       commitmentStart: 'tomorrow',
-      commitmentDuration: -5
+      commitmentDurationDays: -5
     }));
     expect(errors.commitmentStart).toBeUndefined();
-    expect(errors.commitmentDuration).toBeUndefined();
+    expect(errors.commitmentDurationDays).toBeUndefined();
     expect(valid).toBe(true);
   });
 
@@ -354,9 +354,9 @@ describe('rendered Default-mode control set is unchanged', () => {
     expect(screen.getByText('CANCEL')).toBeInTheDocument();
 
     [
-      'Starts on:',
-      'Duration (sec):',
-      'Ends on:'
+      'Search from:',
+      'Duration (days):',
+      'Search until:'
     ].forEach((text) => {
       expect(screen.queryByText(text)).not.toBeInTheDocument();
     });

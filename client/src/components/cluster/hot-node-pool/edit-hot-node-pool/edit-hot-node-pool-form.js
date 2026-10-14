@@ -211,7 +211,7 @@ function EditHotNodePoolForm ({
     filters,
     commitmentStart,
     commitmentEnd,
-    commitmentDuration
+    commitmentDurationDays
   } = values;
   const futureDated = (mode || MODE_DEFAULT) === MODE_FUTURE_DATED;
   return (
@@ -258,17 +258,21 @@ function EditHotNodePoolForm ({
             <ReservationScheduleControl
               start={commitmentStart}
               end={commitmentEnd}
-              duration={commitmentDuration}
+              durationDays={commitmentDurationDays}
               disabled={disabled}
               startError={validation.commitmentStart}
               endError={validation.commitmentEnd}
-              durationError={validation.commitmentDuration}
+              durationError={validation.commitmentDurationDays}
               touched={
-                touched.commitmentStart || touched.commitmentEnd || touched.commitmentDuration
+                touched.commitmentStart || touched.commitmentEnd ||
+                touched.commitmentDurationDays
               }
+              startHint={hints.searchFromHint}
+              endHint={hints.searchUntilHint}
+              durationHint={hints.commitmentDurationHint}
               onChangeStart={value => onChange('commitmentStart', value)}
               onChangeEnd={value => onChange('commitmentEnd', value)}
-              onChangeDuration={value => onChange('commitmentDuration', value)}
+              onChangeDuration={value => onChange('commitmentDurationDays', value)}
             />
           )
         ) : (

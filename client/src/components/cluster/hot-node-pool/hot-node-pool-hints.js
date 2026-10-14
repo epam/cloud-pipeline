@@ -77,6 +77,31 @@ const poolTypeHint = (
   </div>
 );
 
+const searchFromHint = (
+  <div>
+    The earliest moment the reservation may begin. Together with <b>Search until</b> it<br />
+    defines a search window: the cloud provider (AWS) reserves the requested<br />
+    <b>Duration</b> somewhere inside that window, as soon as matching capacity is<br />
+    available. The granted dates are shown on the pool once the reservation is made.<br />
+    Must be between 5 and 120 days from now.
+  </div>
+);
+
+const searchUntilHint = (
+  <div>
+    The end of the search window - the reservation must finish by then.<br />
+    The window has to be at least as long as <b>Duration</b>; the provider picks the<br />
+    actual start inside it, so these two dates are not the reservation's own bounds.
+  </div>
+);
+
+const commitmentDurationHint = (
+  <div>
+    How long the capacity is committed for, in whole days, minimum 14.<br />
+    It must fit between <b>Search from</b> and <b>Search until</b>.
+  </div>
+);
+
 export {
   autoScaledHint,
   minSizeHint,
@@ -85,5 +110,8 @@ export {
   scaleUpThresholdHint,
   scaleStepHint,
   modeHint,
-  poolTypeHint
+  poolTypeHint,
+  searchFromHint,
+  searchUntilHint,
+  commitmentDurationHint
 };

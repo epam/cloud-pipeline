@@ -344,7 +344,7 @@ test(
     // ROLE_NODE_POOL_MANAGER's forced-future-dated Create chooses it like anyone else.
     expect(selectIsDisabled('Pool type:')).toBe(false);
     expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
-    expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
     expect(screen.getByText('Run owner')).toBeInTheDocument();
     expect(screen.getByText('user1')).toBeInTheDocument();
     expect(selectIsDisabled('Condition:')).toBe(false);
@@ -376,13 +376,13 @@ test('create mode, future-dated with a duration but no start: CREATE is blocked'
   await click(within(row('Mode:')).getByRole('combobox'));
   await click(screen.getByText('Future dated'));
 
-  await change(within(row('Duration (sec):')).getByRole('textbox'), '3600');
+  await change(within(row('Duration (days):')).getByRole('textbox'), '14');
 
   await click(screen.getByText('CREATE'));
 
   expect(onSave).not.toHaveBeenCalled();
-  expect(screen.getByText('Start date is required')).toBeInTheDocument();
-  expect(screen.getByText('End date is required')).toBeInTheDocument();
+  expect(screen.getByText('Search from date is required')).toBeInTheDocument();
+  expect(screen.getByText('Search until date is required')).toBeInTheDocument();
 });
 
 test('create mode, future-dated with nothing filled: all three commitment errors show',
@@ -395,11 +395,27 @@ test('create mode, future-dated with nothing filled: all three commitment errors
 
     await click(screen.getByText('CREATE'));
 
-    expect(screen.getByText('Start date is required')).toBeInTheDocument();
-    expect(screen.getByText('End date is required')).toBeInTheDocument();
-    expect(screen.getByText('Duration should be a positive number of seconds'))
+    expect(screen.getByText('Search from date is required')).toBeInTheDocument();
+    expect(screen.getByText('Search until date is required')).toBeInTheDocument();
+    expect(screen.getByText('Duration should be a positive number of days'))
       .toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+test('create mode, future-dated with a duration of 7: CREATE is blocked on the 14-day minimum',
+  async () => {
+    const onSave = fn();
+    await renderPool({onSave});
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Future dated'));
+
+    await change(within(row('Duration (days):')).getByRole('textbox'), '7');
+
+    await click(screen.getByText('CREATE'));
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText('Duration should be at least 14 days')).toBeInTheDocument();
   });
 
 test('Default-mode regression: SAVE still works and never shows a commitment error', async () => {
@@ -409,8 +425,8 @@ test('Default-mode regression: SAVE still works and never shows a commitment err
   await click(screen.getByText('SAVE'));
 
   expect(onSave).toHaveBeenCalledTimes(1);
-  expect(screen.queryByText('Start date is required')).not.toBeInTheDocument();
-  expect(screen.queryByText('Duration should be a positive number of seconds'))
+  expect(screen.queryByText('Search from date is required')).not.toBeInTheDocument();
+  expect(screen.queryByText('Duration should be a positive number of days'))
     .not.toBeInTheDocument();
 });
 
@@ -430,7 +446,7 @@ test('Default-mode edit: payload carries poolType but never mode/commitment*/' +
     'capacityReservationRequest',
     'commitmentStart',
     'commitmentEnd',
-    'commitmentDuration'
+    'commitmentDurationDays'
   ].forEach((key) => {
     expect(Object.keys(payload)).not.toContain(key);
   });
@@ -542,7 +558,7 @@ test('a reservation pool shows its window read-only', async () => {
 
   expect(screen.getByText('Reservation window:')).toBeInTheDocument();
   expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
-  expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
+  expect(screen.queryByText('Duration (days):')).not.toBeInTheDocument();
 });
 
 test('a pending reservation shows the pending message', async () => {

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {render, screen, within, change, fn} from '@test';
+import {render, screen, within, change, hover, fn} from '@test';
 import ReservationScheduleControl, {windowCoversDuration} from './ReservationScheduleControl';
 
 // Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
@@ -25,69 +25,69 @@ function row (labelText) {
 }
 
 describe('windowCoversDuration', () => {
-  test('a window well longer than the duration covers it', () => {
+  test('a window well longer than the duration (in days) covers it', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-31 10:00:00.000', 3600)
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-02-01 10:00:00.000', 14)
     ).toBe(true);
   });
 
-  test('an exact fit covers the duration', () => {
+  test('an exact fit at 14 days covers the duration', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', 3600)
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', 14)
     ).toBe(true);
   });
 
-  test('one second short does not cover the duration', () => {
+  test('15 days in a 14-day window does not cover the duration', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', 3601)
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', 15)
     ).toBe(false);
   });
 
   test('undefined with no start', () => {
     expect(
-      windowCoversDuration(undefined, '2026-01-01 11:00:00.000', 3600)
+      windowCoversDuration(undefined, '2026-01-15 10:00:00.000', 14)
     ).toBeUndefined();
   });
 
   test('undefined with no end', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', undefined, 3600)
+      windowCoversDuration('2026-01-01 10:00:00.000', undefined, 14)
     ).toBeUndefined();
   });
 
   test('undefined with no duration', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', undefined)
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', undefined)
     ).toBeUndefined();
   });
 
   test('undefined with a zero duration', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', 0)
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', 0)
     ).toBeUndefined();
   });
 
   test('undefined with a negative duration', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-01 11:00:00.000', -5)
+      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', -5)
     ).toBeUndefined();
   });
 
   test('undefined with an unparseable start', () => {
     expect(
-      windowCoversDuration('not-a-date', '2026-01-01 11:00:00.000', 3600)
+      windowCoversDuration('not-a-date', '2026-01-15 10:00:00.000', 14)
     ).toBeUndefined();
   });
 
   test('undefined with an unparseable end', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', 'not-a-date', 3600)
+      windowCoversDuration('2026-01-01 10:00:00.000', 'not-a-date', 14)
     ).toBeUndefined();
   });
 
   test('undefined with a start that is missing milliseconds (strict parsing)', () => {
     expect(
-      windowCoversDuration('2026-01-01 10:00:00', '2026-01-01 11:00:00.000', 3600)
+      windowCoversDuration('2026-01-01 10:00:00', '2026-01-15 10:00:00.000', 14)
     ).toBeUndefined();
   });
 });
@@ -97,33 +97,33 @@ test('renders the three date/duration labels', () => {
     <ReservationScheduleControl
       start={undefined}
       end={undefined}
-      duration={undefined}
+      durationDays={undefined}
       onChangeStart={fn()}
       onChangeEnd={fn()}
       onChangeDuration={fn()}
     />
   );
-  expect(screen.getByText('Starts on:')).toBeInTheDocument();
-  expect(screen.getByText('Ends on:')).toBeInTheDocument();
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  expect(screen.getByText('Search from:')).toBeInTheDocument();
+  expect(screen.getByText('Search until:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (days):')).toBeInTheDocument();
 });
 
-test('Starts on and Ends on show their own values independently', () => {
+test('Search from and Search until show their own values independently', () => {
   render(
     <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end="2026-02-01 10:00:00.000"
-      duration={undefined}
+      durationDays={undefined}
       onChangeStart={fn()}
       onChangeEnd={fn()}
       onChangeDuration={fn()}
     />
   );
   expect(
-    within(row('Starts on:')).getByRole('textbox').value
+    within(row('Search from:')).getByRole('textbox').value
   ).toBe('2026-01-01 10:00:00.000');
   expect(
-    within(row('Ends on:')).getByRole('textbox').value
+    within(row('Search until:')).getByRole('textbox').value
   ).toBe('2026-02-01 10:00:00.000');
 });
 
@@ -132,7 +132,7 @@ test('disabled disables all three inputs', () => {
     <ReservationScheduleControl
       start={undefined}
       end={undefined}
-      duration={undefined}
+      durationDays={undefined}
       disabled
       onChangeStart={fn()}
       onChangeEnd={fn()}
@@ -140,9 +140,9 @@ test('disabled disables all three inputs', () => {
     />
   );
 
-  expect(within(row('Starts on:')).getByRole('textbox')).toBeDisabled();
-  expect(within(row('Ends on:')).getByRole('textbox')).toBeDisabled();
-  expect(within(row('Duration (sec):')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Search from:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Search until:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Duration (days):')).getByRole('textbox')).toBeDisabled();
 });
 
 test('startError and endError each show only when touched, independently', () => {
@@ -150,7 +150,7 @@ test('startError and endError each show only when touched, independently', () =>
     <ReservationScheduleControl
       start={undefined}
       end={undefined}
-      duration={undefined}
+      durationDays={undefined}
       startError="Start date is required"
       endError="End date is required"
       touched={false}
@@ -166,7 +166,7 @@ test('startError and endError each show only when touched, independently', () =>
     <ReservationScheduleControl
       start={undefined}
       end={undefined}
-      duration={undefined}
+      durationDays={undefined}
       endError="End date is required"
       touched
       onChangeStart={fn()}
@@ -181,7 +181,7 @@ test('startError and endError each show only when touched, independently', () =>
     <ReservationScheduleControl
       start={undefined}
       end={undefined}
-      duration={undefined}
+      durationDays={undefined}
       startError="Start date is required"
       endError="End date is required"
       touched
@@ -200,35 +200,34 @@ test('changing Duration calls onChangeDuration', async () => {
     <ReservationScheduleControl
       start={undefined}
       end={undefined}
-      duration={undefined}
+      durationDays={undefined}
       onChangeStart={fn()}
       onChangeEnd={fn()}
       onChangeDuration={onChangeDuration}
     />
   );
 
-  const durationInput = within(row('Duration (sec):')).getByRole('textbox');
-  await change(durationInput, '7200');
+  const durationInput = within(row('Duration (days):')).getByRole('textbox');
+  await change(durationInput, '30');
 
-  expect(onChangeDuration).toHaveBeenCalledWith(7200);
+  expect(onChangeDuration).toHaveBeenCalledWith(30);
 });
 
-// Deviation recorded per the Phase 2 plan: a `fireEvent('change', ...)` on the "Ends on"
-// textbox, including a trailing `keyDown({key: 'Enter'})` + `blur` to force rc-calendar to
-// commit it, never calls `onChangeEnd` under antd 2.13.14/React 15 in this harness — both
-// forms were genuinely tried and left `onChangeEnd` uncalled. There is no existing
-// precedent anywhere in this codebase for driving an antd DatePicker through a unit test
-// (see the plan's "Supporting facts"). The dedicated interaction test is dropped; tests
-// above ("Starts on and Ends on show their own values independently", "disabled disables
-// all three inputs", "startError and endError each show only when touched, independently")
-// already prove the end field is a real, independently-editable input.
+// There is no test here driving the "Search until" picker through the UI, and that is
+// deliberate: a `change` on its textbox, with or without a trailing `Enter`/blur to make
+// rc-calendar commit the value, never reaches `onChangeEnd` under antd 2.13.14 and React
+// 15 — both forms were tried. Nothing anywhere in this codebase drives an antd DatePicker
+// from a unit test. The tests above ("Search from and Search until show their own values
+// independently", "disabled disables all three inputs", "startError and endError each
+// show only when touched, independently") carry the proof instead: the end date is a real
+// input of its own, not a value derived from the other two fields.
 
 test('the fit hint reflects the window', () => {
   const {rerender} = render(
     <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end="2026-01-31 10:00:00.000"
-      duration={3600}
+      durationDays={14}
       onChangeStart={fn()}
       onChangeEnd={fn()}
       onChangeDuration={fn()}
@@ -242,8 +241,8 @@ test('the fit hint reflects the window', () => {
   rerender(
     <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
-      end="2026-01-01 10:30:00.000"
-      duration={3600}
+      end="2026-01-05 10:00:00.000"
+      durationDays={14}
       onChangeStart={fn()}
       onChangeEnd={fn()}
       onChangeDuration={fn()}
@@ -260,7 +259,7 @@ test('the fit hint reflects the window', () => {
     <ReservationScheduleControl
       start="2026-01-01 10:00:00.000"
       end={undefined}
-      duration={3600}
+      durationDays={14}
       onChangeStart={fn()}
       onChangeEnd={fn()}
       onChangeDuration={fn()}
@@ -270,4 +269,53 @@ test('the fit hint reflects the window', () => {
   expect(
     screen.queryByText('This duration does not fit in the selected window')
   ).not.toBeInTheDocument();
+});
+
+test('each of the three rows renders a hint trigger', () => {
+  render(
+    <ReservationScheduleControl
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      startHint="Explains Search from"
+      endHint="Explains Search until"
+      durationHint="Explains Duration"
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+  // HintControl.test.js establishes this is the only accessible selector for the
+  // trigger - antd's Icon exposes no role.
+  const triggers = document.querySelectorAll('.anticon-question-circle');
+  expect(triggers.length).toBe(3);
+});
+
+test('hovering each row\'s hint trigger shows its own content', async () => {
+  render(
+    <ReservationScheduleControl
+      start={undefined}
+      end={undefined}
+      durationDays={undefined}
+      startHint="Explains Search from"
+      endHint="Explains Search until"
+      durationHint="Explains Duration"
+      onChangeStart={fn()}
+      onChangeEnd={fn()}
+      onChangeDuration={fn()}
+    />
+  );
+
+  const [startTrigger, endTrigger, durationTrigger] = Array.from(
+    document.querySelectorAll('.anticon-question-circle')
+  );
+
+  await hover(startTrigger);
+  expect(await screen.findByText('Explains Search from')).toBeInTheDocument();
+
+  await hover(endTrigger);
+  expect(await screen.findByText('Explains Search until')).toBeInTheDocument();
+
+  await hover(durationTrigger);
+  expect(await screen.findByText('Explains Duration')).toBeInTheDocument();
 });

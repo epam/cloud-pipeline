@@ -29,7 +29,10 @@ export const POOL_TYPE_SHAREABLE = 'SHARABLE_NODE';
 export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
 export const RESERVATION_COUNT_MIN_SIZE = 1; // reservation pools cannot be "disabled"
-export const MIN_COMMITMENT_DURATION_SECONDS = 1209600; // 14 days — NodePoolValidator
+export const SECONDS_PER_DAY = 24 * 60 * 60;
+// The duration is entered in whole days and sent in seconds: `NodePoolValidator`
+// requires at least 1209600 seconds, i.e. these 14 days.
+export const MIN_COMMITMENT_DURATION_DAYS = 14;
 export const MIN_RESERVATION_LEAD_DAYS = 5; // NodePoolValidator.MINIMUM_LEAD_DAYS
 export const MAX_RESERVATION_LEAD_DAYS = 120; // NodePoolValidator.MAX_RESERVATION_LEAD_DAYS
 export const RESERVATION_TYPE_FUTURE_DATED = 'FUTURE_DATED'; // the only type the backend accepts

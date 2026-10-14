@@ -69,7 +69,7 @@ const futureDatedValues = (overrides = {}) => baseValues({
   count: 1,
   commitmentStart: inDays(30),
   commitmentEnd: inDays(90),
-  commitmentDuration: 1209600,
+  commitmentDurationDays: 14,
   ...overrides
 });
 
@@ -236,7 +236,7 @@ describe('getValidationErrors', () => {
         expect(valid).toBe(true);
         expect(errors.commitmentStart).toBeUndefined();
         expect(errors.commitmentEnd).toBeUndefined();
-        expect(errors.commitmentDuration).toBeUndefined();
+        expect(errors.commitmentDurationDays).toBeUndefined();
       });
 
     it.each([
@@ -245,22 +245,23 @@ describe('getValidationErrors', () => {
       ['missing milliseconds', '2026-01-01 10:00:00']
     ])('requires a valid, strictly-formatted start date (%s)', (name, commitmentStart) => {
       const {errors} = getValidationErrors(futureDatedValues({commitmentStart}));
-      expect(errors.commitmentStart).toBe('Start date is required');
+      expect(errors.commitmentStart).toBe('Search from date is required');
     });
 
     it('requires an end date', () => {
       const {errors} = getValidationErrors(futureDatedValues({commitmentEnd: undefined}));
-      expect(errors.commitmentEnd).toBe('End date is required');
+      expect(errors.commitmentEnd).toBe('Search until date is required');
     });
 
     it('rejects a start date in the past', () => {
       const {errors} = getValidationErrors(futureDatedValues({commitmentStart: inDays(-1)}));
-      expect(errors.commitmentStart).toBe('Start date should be in the future');
+      expect(errors.commitmentStart).toBe('Search from date should be in the future');
     });
 
     it('rejects a start date with too little lead time', () => {
       const {errors} = getValidationErrors(futureDatedValues({commitmentStart: inDays(3)}));
-      expect(errors.commitmentStart).toBe('Start date should be between 5 and 120 days from now');
+      expect(errors.commitmentStart)
+        .toBe('Search from date should be between 5 and 120 days from now');
     });
 
     it('rejects a start date with too much lead time', () => {
@@ -268,7 +269,8 @@ describe('getValidationErrors', () => {
         commitmentStart: inDays(150),
         commitmentEnd: inDays(200)
       }));
-      expect(errors.commitmentStart).toBe('Start date should be between 5 and 120 days from now');
+      expect(errors.commitmentStart)
+        .toBe('Search from date should be between 5 and 120 days from now');
     });
 
     it('rejects an end date that is not after the start date', () => {
@@ -276,34 +278,42 @@ describe('getValidationErrors', () => {
         commitmentStart: inDays(30),
         commitmentEnd: inDays(10)
       }));
-      expect(errors.commitmentEnd).toBe('End date should be after the start date');
+      expect(errors.commitmentEnd).toBe('Search until date should be after the search from date');
     });
 
-    it.each([0, -5])('rejects a non-positive duration %i', (commitmentDuration) => {
-      const {errors} = getValidationErrors(futureDatedValues({commitmentDuration}));
-      expect(errors.commitmentDuration)
-        .toBe('Duration should be a positive number of seconds');
+    it.each([0, -5])('rejects a non-positive duration %i', (commitmentDurationDays) => {
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDurationDays}));
+      expect(errors.commitmentDurationDays)
+        .toBe('Duration should be a positive number of days');
+    });
+
+    it('rejects a non-integer duration', () => {
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDurationDays: 14.5}));
+      expect(errors.commitmentDurationDays)
+        .toBe('Duration should be a whole number of days');
     });
 
     it('rejects a duration shorter than the 14-day minimum', () => {
-      const {errors} = getValidationErrors(futureDatedValues({commitmentDuration: 3600}));
-      expect(errors.commitmentDuration)
-        .toBe('Duration should be at least 1209600 seconds (14 days)');
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDurationDays: 7}));
+      expect(errors.commitmentDurationDays)
+        .toBe('Duration should be at least 14 days');
     });
 
     it('accepts a duration given as a numeric string', () => {
-      const {errors} = getValidationErrors(futureDatedValues({commitmentDuration: '1209600'}));
-      expect(errors.commitmentDuration).toBeUndefined();
+      const {errors} = getValidationErrors(futureDatedValues({commitmentDurationDays: '14'}));
+      expect(errors.commitmentDurationDays).toBeUndefined();
     });
 
-    it('rejects a duration that does not fit between the start and end dates', () => {
-      const {errors} = getValidationErrors(futureDatedValues({
-        commitmentStart: inDays(30),
-        commitmentEnd: inDays(40),
-        commitmentDuration: 1209600 * 2
-      }));
-      expect(errors.commitmentDuration).toBe('Duration should fit between the start and end dates');
-    });
+    it('rejects a duration that does not fit between the search-from and search-until dates',
+      () => {
+        const {errors} = getValidationErrors(futureDatedValues({
+          commitmentStart: inDays(30),
+          commitmentEnd: inDays(40),
+          commitmentDurationDays: 30
+        }));
+        expect(errors.commitmentDurationDays)
+          .toBe('Duration should fit between "Search from" and "Search until"');
+      });
 
     it('requires count to be at least 1 for a future-dated pool', () => {
       const {valid, errors} = getValidationErrors(futureDatedValues({count: 0}));
@@ -321,11 +331,11 @@ describe('getValidationErrors', () => {
         mode: 'DEFAULT',
         commitmentStart: 'tomorrow',
         commitmentEnd: 'whenever',
-        commitmentDuration: -5
+        commitmentDurationDays: -5
       }));
       expect(errors.commitmentStart).toBeUndefined();
       expect(errors.commitmentEnd).toBeUndefined();
-      expect(errors.commitmentDuration).toBeUndefined();
+      expect(errors.commitmentDurationDays).toBeUndefined();
       expect(valid).toBe(true);
     });
   });
@@ -477,7 +487,7 @@ describe('buildCapacityReservationRequest', () => {
     const request = buildCapacityReservationRequest({
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
-      commitmentDuration: 1209600
+      commitmentDurationDays: 14
     });
     expect(Object.keys(request).sort()).toEqual([
       'commitmentDuration',
@@ -491,16 +501,25 @@ describe('buildCapacityReservationRequest', () => {
     const request = buildCapacityReservationRequest({
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
-      commitmentDuration: 1209600
+      commitmentDurationDays: 14
     });
     expect(request.reservationType).toBe('FUTURE_DATED');
   });
 
-  it('converts commitmentDuration to a number even when given as a string', () => {
+  it('converts the 14 days to exactly 1209600 seconds, the backend minimum', () => {
     const request = buildCapacityReservationRequest({
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
-      commitmentDuration: '1209600'
+      commitmentDurationDays: 14
+    });
+    expect(request.commitmentDuration).toBe(1209600);
+  });
+
+  it('converts commitmentDurationDays to a number even when given as a string', () => {
+    const request = buildCapacityReservationRequest({
+      commitmentStart: inDays(30),
+      commitmentEnd: inDays(90),
+      commitmentDurationDays: '14'
     });
     expect(typeof request.commitmentDuration).toBe('number');
     expect(request.commitmentDuration).toBe(1209600);
@@ -510,7 +529,7 @@ describe('buildCapacityReservationRequest', () => {
     const request = buildCapacityReservationRequest({
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
-      commitmentDuration: 1209600
+      commitmentDurationDays: 14
     });
     const pattern = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/;
     expect(request.requestedStartDate).toMatch(pattern);
@@ -605,7 +624,7 @@ describe('buildPoolPayload', () => {
         poolType: 'STANDARD',
         commitmentStart: inDays(30),
         commitmentEnd: inDays(90),
-        commitmentDuration: 1209600,
+        commitmentDurationDays: 14,
         ...overrides
       });
     }
@@ -622,12 +641,20 @@ describe('buildPoolPayload', () => {
       expect(payload.capacityReservationRequest).toEqual(buildCapacityReservationRequest(input));
     });
 
-    it('never includes commitmentStart/commitmentEnd/commitmentDuration as top-level keys', () => {
-      const payload = buildPoolPayload(futureDatedPayloadValues());
-      expect(Object.keys(payload)).not.toContain('commitmentStart');
-      expect(Object.keys(payload)).not.toContain('commitmentEnd');
-      expect(Object.keys(payload)).not.toContain('commitmentDuration');
-    });
+    it('its capacityReservationRequest.commitmentDuration is in seconds (14 days = 1209600)',
+      () => {
+        const payload = buildPoolPayload(futureDatedPayloadValues());
+        expect(payload.capacityReservationRequest.commitmentDuration).toBe(14 * 86400);
+        expect(payload.capacityReservationRequest.commitmentDuration).toBe(1209600);
+      });
+
+    it('never includes commitmentStart/commitmentEnd/commitmentDurationDays as top-level keys',
+      () => {
+        const payload = buildPoolPayload(futureDatedPayloadValues());
+        expect(Object.keys(payload)).not.toContain('commitmentStart');
+        expect(Object.keys(payload)).not.toContain('commitmentEnd');
+        expect(Object.keys(payload)).not.toContain('commitmentDurationDays');
+      });
   });
 
   it('Default mode sends poolType too (STANDARD by default, SHARABLE_NODE when chosen), ' +
@@ -641,7 +668,7 @@ describe('buildPoolPayload', () => {
       poolType: 'SHARABLE_NODE',
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
-      commitmentDuration: 1209600
+      commitmentDurationDays: 14
     }));
     expect(shareablePayload.poolType).toBe('SHARABLE_NODE');
     expect(Object.keys(shareablePayload)).not.toContain('capacityReservationRequest');

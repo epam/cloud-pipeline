@@ -165,7 +165,7 @@ test(
     // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) chooses its Pool type
     // like anyone else - the dropped `modes.length <= 1` lock no longer applies.
     expect(selectIsDisabled('Pool type:')).toBe(false);
-    expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
   }
 );
 
@@ -239,51 +239,52 @@ test('DEFAULT mode regression: the Filters section stays enabled', () => {
 test('DEFAULT mode shows the weekly schedule UI, not the future-dated commitment window', () => {
   renderForm({values: baseValues({mode: 'DEFAULT'})});
   expect(screen.getByText('Add schedule')).toBeInTheDocument();
-  expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
+  expect(screen.queryByText('Duration (days):')).not.toBeInTheDocument();
 });
 
 test('future-dated mode shows the one-time commitment window, not the weekly schedule UI',
   () => {
     renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
-    expect(screen.getByText('Starts on:')).toBeInTheDocument();
-    expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-    expect(screen.getByText('Ends on:')).toBeInTheDocument();
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+    expect(screen.getByText('Search until:')).toBeInTheDocument();
     expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
   });
 
-test('future-dated mode renders Starts on, Ends on and Duration as three editable rows', () => {
-  renderForm({
-    values: baseValues({
-      mode: 'FUTURE_DATED',
-      commitmentStart: '2026-01-01 10:00:00.000',
-      commitmentEnd: '2026-02-01 10:00:00.000',
-      commitmentDuration: 7200
-    })
+test('future-dated mode renders Search from, Search until and Duration as three editable rows',
+  () => {
+    renderForm({
+      values: baseValues({
+        mode: 'FUTURE_DATED',
+        commitmentStart: '2026-01-01 10:00:00.000',
+        commitmentEnd: '2026-02-01 10:00:00.000',
+        commitmentDurationDays: 14
+      })
+    });
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText('Search until:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+    expect(
+      within(row('Search until:')).getByRole('textbox').value
+    ).toBe('2026-02-01 10:00:00.000');
   });
-  expect(screen.getByText('Starts on:')).toBeInTheDocument();
-  expect(screen.getByText('Ends on:')).toBeInTheDocument();
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-  expect(
-    within(row('Ends on:')).getByRole('textbox').value
-  ).toBe('2026-02-01 10:00:00.000');
-});
 
 test('future-dated mode shows the commitment start error once touched', () => {
   renderForm({
     values: baseValues({mode: 'FUTURE_DATED'}),
-    validation: {commitmentStart: 'Start date is required'},
+    validation: {commitmentStart: 'Search from date is required'},
     touched: {commitmentStart: true}
   });
-  expect(screen.getByText('Start date is required')).toBeInTheDocument();
+  expect(screen.getByText('Search from date is required')).toBeInTheDocument();
 });
 
 test('future-dated mode shows the commitment end error once touched', () => {
   renderForm({
     values: baseValues({mode: 'FUTURE_DATED'}),
-    validation: {commitmentEnd: 'End date is required'},
+    validation: {commitmentEnd: 'Search until date is required'},
     touched: {commitmentEnd: true}
   });
-  expect(screen.getByText('End date is required')).toBeInTheDocument();
+  expect(screen.getByText('Search until date is required')).toBeInTheDocument();
 });
 
 test('an existing reservation pool shows the window read-only instead of the editable controls',
@@ -297,9 +298,9 @@ test('an existing reservation pool shows the window read-only instead of the edi
     });
     expect(screen.getByText('Reservation window:')).toBeInTheDocument();
     expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
-    expect(screen.queryByText('Starts on:')).not.toBeInTheDocument();
-    expect(screen.queryByText('Ends on:')).not.toBeInTheDocument();
-    expect(screen.queryByText('Duration (sec):')).not.toBeInTheDocument();
+    expect(screen.queryByText('Search from:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Search until:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Duration (days):')).not.toBeInTheDocument();
   });
 
 test('an existing reservation pool disables Nodes count and Price type', () => {
@@ -337,9 +338,9 @@ test('a new future-dated pool still renders the editable window', () => {
     values: baseValues({mode: 'FUTURE_DATED'}),
     isExistingReservation: false
   });
-  expect(screen.getByText('Starts on:')).toBeInTheDocument();
-  expect(screen.getByText('Ends on:')).toBeInTheDocument();
-  expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
+  expect(screen.getByText('Search from:')).toBeInTheDocument();
+  expect(screen.getByText('Search until:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (days):')).toBeInTheDocument();
   expect(screen.queryByText('Reservation window:')).not.toBeInTheDocument();
 });
 

@@ -25,7 +25,8 @@ import {
   MODE_FUTURE_DATED,
   COMMITMENT_DATE_TIME_FORMAT,
   RESERVATION_COUNT_MIN_SIZE,
-  MIN_COMMITMENT_DURATION_SECONDS,
+  SECONDS_PER_DAY,
+  MIN_COMMITMENT_DURATION_DAYS,
   MIN_RESERVATION_LEAD_DAYS,
   MAX_RESERVATION_LEAD_DAYS,
   RESERVATION_TYPE_FUTURE_DATED,
@@ -84,7 +85,7 @@ export function getValidationErrors (values) {
     mode,
     commitmentStart,
     commitmentEnd,
-    commitmentDuration,
+    commitmentDurationDays,
     isExistingReservation
   } = values;
   let diskError,
@@ -212,42 +213,44 @@ export function getValidationErrors (values) {
       const end = moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true);
       const now = moment();
       if (!commitmentStart || !start.isValid()) {
-        commitmentStartError = 'Start date is required';
+        commitmentStartError = 'Search from date is required';
       } else if (!start.isAfter(now)) {
-        commitmentStartError = 'Start date should be in the future';
+        commitmentStartError = 'Search from date should be in the future';
       } else {
         // Matches `ChronoUnit.DAYS.between` on the backend: `Math.floor` on the
         // fractional diff, not a plain integer `diff(now, 'days')` (which truncates
         // toward zero and happens to agree here, but is not the same operation).
         const leadDays = Math.floor(start.diff(now, 'days', true));
         if (leadDays < MIN_RESERVATION_LEAD_DAYS || leadDays > MAX_RESERVATION_LEAD_DAYS) {
-          commitmentStartError = `Start date should be between ${MIN_RESERVATION_LEAD_DAYS} ` +
-            `and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
+          commitmentStartError = 'Search from date should be between ' +
+            `${MIN_RESERVATION_LEAD_DAYS} and ${MAX_RESERVATION_LEAD_DAYS} days from now`;
         }
       }
       if (!commitmentEnd || !end.isValid()) {
-        commitmentEndError = 'End date is required';
+        commitmentEndError = 'Search until date is required';
       } else if (start.isValid() && !end.isAfter(start)) {
-        commitmentEndError = 'End date should be after the start date';
+        commitmentEndError = 'Search until date should be after the search from date';
       }
       if (
-        commitmentDuration === undefined ||
-        commitmentDuration === null ||
-        commitmentDuration === '' ||
-        Number.isNaN(Number(commitmentDuration)) ||
-        Number(commitmentDuration) <= 0
+        commitmentDurationDays === undefined ||
+        commitmentDurationDays === null ||
+        commitmentDurationDays === '' ||
+        Number.isNaN(Number(commitmentDurationDays)) ||
+        Number(commitmentDurationDays) <= 0
       ) {
-        commitmentDurationError = 'Duration should be a positive number of seconds';
-      } else if (Number(commitmentDuration) < MIN_COMMITMENT_DURATION_SECONDS) {
+        commitmentDurationError = 'Duration should be a positive number of days';
+      } else if (!Number.isInteger(Number(commitmentDurationDays))) {
+        commitmentDurationError = 'Duration should be a whole number of days';
+      } else if (Number(commitmentDurationDays) < MIN_COMMITMENT_DURATION_DAYS) {
         commitmentDurationError = 'Duration should be at least ' +
-          `${MIN_COMMITMENT_DURATION_SECONDS} seconds (14 days)`;
+          `${MIN_COMMITMENT_DURATION_DAYS} days`;
       } else if (
         start.isValid() &&
         end.isValid() &&
         end.isAfter(start) &&
-        end.diff(start, 'seconds') < Number(commitmentDuration)
+        end.diff(start, 'seconds') < Number(commitmentDurationDays) * SECONDS_PER_DAY
       ) {
-        commitmentDurationError = 'Duration should fit between the start and end dates';
+        commitmentDurationError = 'Duration should fit between "Search from" and "Search until"';
       }
     }
     // A future-dated pool is never autoscaled, but this is explicit rather than relying
@@ -300,7 +303,7 @@ export function getValidationErrors (values) {
       labelsError,
       commitmentStart: commitmentStartError,
       commitmentEnd: commitmentEndError,
-      commitmentDuration: commitmentDurationError
+      commitmentDurationDays: commitmentDurationError
     }
   };
 }
@@ -361,11 +364,12 @@ export function isModified (values) {
     (autoscaled && Number(scaleStep) !== Number(initialScaleStep));
 }
 
-// `commitmentDuration` is seconds (the backend's unit; unchanged from what the client
-// already assumed), and `instancePlatform`/`originId` are deliberately not sent (the
-// backend defaults `instancePlatform` to `Linux/UNIX`).
+// The form carries the duration in whole days (`commitmentDurationDays`), the unit a
+// user reasons about; the backend's `commitmentDuration` field is seconds, so the
+// conversion happens exactly once, here, on the way out. `instancePlatform`/`originId`
+// are deliberately not sent (the backend defaults `instancePlatform` to `Linux/UNIX`).
 export function buildCapacityReservationRequest (values) {
-  const {commitmentStart, commitmentEnd, commitmentDuration} = values;
+  const {commitmentStart, commitmentEnd, commitmentDurationDays} = values;
   return {
     reservationType: RESERVATION_TYPE_FUTURE_DATED,
     // Re-formatting through `moment` (rather than passing the string straight through)
@@ -376,7 +380,7 @@ export function buildCapacityReservationRequest (values) {
       .format(COMMITMENT_DATE_TIME_FORMAT),
     requestedEndDate: moment(commitmentEnd, COMMITMENT_DATE_TIME_FORMAT, true)
       .format(COMMITMENT_DATE_TIME_FORMAT),
-    commitmentDuration: Number(commitmentDuration)
+    commitmentDuration: Number(commitmentDurationDays) * SECONDS_PER_DAY
   };
 }
 

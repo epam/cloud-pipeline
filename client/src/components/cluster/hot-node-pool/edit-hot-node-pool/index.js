@@ -46,7 +46,7 @@ class EditHotNodePool extends React.Component {
     poolType: POOL_TYPE_STANDARD,
     commitmentStart: undefined,
     commitmentEnd: undefined,
-    commitmentDuration: undefined,
+    commitmentDurationDays: undefined,
     isExistingReservation: false,
     reservationStartDate: undefined,
     reservationEndDate: undefined,
@@ -106,7 +106,7 @@ class EditHotNodePool extends React.Component {
       scaleStep: undefined,
       commitmentStart: undefined,
       commitmentEnd: undefined,
-      commitmentDuration: undefined
+      commitmentDurationDays: undefined
     },
     touched: {
       disk: false,
@@ -124,7 +124,7 @@ class EditHotNodePool extends React.Component {
       scaleStep: undefined,
       commitmentStart: undefined,
       commitmentEnd: undefined,
-      commitmentDuration: undefined
+      commitmentDurationDays: undefined
     }
   };
 
@@ -232,7 +232,7 @@ class EditHotNodePool extends React.Component {
         poolType,
         commitmentStart: undefined,
         commitmentEnd: undefined,
-        commitmentDuration: undefined,
+        commitmentDurationDays: undefined,
         isExistingReservation: !!isCapacityReservation,
         reservationStartDate,
         reservationEndDate,
@@ -293,7 +293,7 @@ class EditHotNodePool extends React.Component {
           scaleStep: false,
           commitmentStart: false,
           commitmentEnd: false,
-          commitmentDuration: false
+          commitmentDurationDays: false
         }
       }, this.onChange);
     } else {
@@ -316,7 +316,7 @@ class EditHotNodePool extends React.Component {
         poolType: POOL_TYPE_STANDARD,
         commitmentStart: undefined,
         commitmentEnd: undefined,
-        commitmentDuration: undefined,
+        commitmentDurationDays: undefined,
         isExistingReservation: false,
         reservationStartDate: undefined,
         reservationEndDate: undefined,
@@ -374,7 +374,7 @@ class EditHotNodePool extends React.Component {
           scaleStep: false,
           commitmentStart: false,
           commitmentEnd: false,
-          commitmentDuration: false
+          commitmentDurationDays: false
         }
       }, this.onChange);
     }
@@ -487,7 +487,7 @@ class EditHotNodePool extends React.Component {
           labels: true,
           commitmentStart: true,
           commitmentEnd: true,
-          commitmentDuration: true
+          commitmentDurationDays: true
         }
       });
     } else if (onSave) {
@@ -698,7 +698,7 @@ class EditHotNodePool extends React.Component {
       filters,
       commitmentStart,
       commitmentEnd,
-      commitmentDuration,
+      commitmentDurationDays,
       isExistingReservation,
       reservationStartDate,
       reservationEndDate,
@@ -757,7 +757,7 @@ class EditHotNodePool extends React.Component {
             filters,
             commitmentStart,
             commitmentEnd,
-            commitmentDuration
+            commitmentDurationDays
           }}
           validation={validation}
           touched={touched}
