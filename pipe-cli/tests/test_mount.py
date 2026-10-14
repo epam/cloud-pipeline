@@ -13,13 +13,16 @@
 # limitations under the License.
 
 import os
-import shutil
 import subprocess
 from collections import namedtuple
 from time import sleep as real_sleep
 
 import pytest
-from unittest.mock import MagicMock, patch
+
+try:
+    from unittest.mock import MagicMock, create_autospec, patch
+except ImportError:
+    from mock import MagicMock, create_autospec, patch
 
 from src.utilities.storage import mount as mount_module
 from src.utilities.storage.mount import Mount
@@ -37,6 +40,11 @@ def no_sleep():
 @pytest.fixture(autouse=True)
 def mount_delay(monkeypatch):
     monkeypatch.setenv('CP_PIPE_FUSE_MOUNT_DELAY', '500')
+
+
+@pytest.fixture(autouse=True)
+def no_stop_timeout(monkeypatch):
+    monkeypatch.setattr(mount_module, 'MOUNT_STOP_TIMEOUT_SEC', 0)
 
 
 @pytest.fixture(autouse=True)
@@ -96,44 +104,55 @@ def test_wait_fails_when_mount_process_exits(capsys):
     with patch.object(mount_module.os.path, 'ismount', return_value=False), pytest.raises(SystemExit) as exit_info:
         Mount()._wait_mount_point(10000, process(returncode=3), MOUNT_POINT)
     assert exit_info.value.code == 1
-    assert 'Mount command exited with return code: 3' in capsys.readouterr().err
+    assert 'Mount command exited with return code: 3' in capsys.readouterr()[1]
 
 
 def test_wait_fails_on_timeout_and_stops_the_fuse_process_first(no_sleep, fuse_child, capsys):
     proc = process()
+    fuse_child.terminate.side_effect = lambda: proc.poll.configure_mock(return_value=0)
     with patch.object(mount_module.os.path, 'ismount', return_value=False), pytest.raises(SystemExit) as exit_info:
         Mount()._wait_mount_point(2000, proc, MOUNT_POINT)
     assert exit_info.value.code == 1
     assert no_sleep.call_count == 4
     fuse_child.terminate.assert_called_once_with()
     fuse_child.wait_procs.assert_called_once_with([fuse_child], timeout=mount_module.MOUNT_STOP_TIMEOUT_SEC)
-    proc.wait.assert_called_once_with(timeout=mount_module.MOUNT_STOP_TIMEOUT_SEC)
     proc.terminate.assert_not_called()
-    assert 'timeout expired' in capsys.readouterr().err
+    assert 'timeout expired' in capsys.readouterr()[1]
 
 
 def test_stop_terminates_the_mount_process_that_does_not_exit(fuse_child):
     proc = process()
-    proc.wait.side_effect = subprocess.TimeoutExpired('bash', 5)
     Mount._stop_mount_proc(proc)
     fuse_child.terminate.assert_called_once_with()
     proc.terminate.assert_called_once_with()
 
 
+def test_stop_waits_for_the_mount_process_to_exit(no_sleep, fuse_child, monkeypatch):
+    monkeypatch.setattr(mount_module, 'MOUNT_STOP_TIMEOUT_SEC', 5)
+    # A real Popen signature, so a call that Python 2 does not support fails here as well
+    proc = create_autospec(subprocess.Popen, instance=True)
+    proc.pid = 1
+    proc.poll.side_effect = [None, None, 0, 0]
+    Mount._stop_mount_proc(proc)
+    assert no_sleep.call_count == 2
+    no_sleep.assert_called_with(mount_module.MOUNT_STOP_POLLING_DELAY_SEC)
+    proc.terminate.assert_not_called()
+
+
 def test_stop_ignores_processes_that_have_already_exited():
-    proc = process()
+    proc = process(returncode=0)
     with patch.object(mount_module.psutil, 'Process', side_effect=mount_module.psutil.NoSuchProcess(1)), \
             patch.object(mount_module.psutil, 'wait_procs', return_value=([], [])) as wait_procs:
         Mount._stop_mount_proc(proc)
     wait_procs.assert_called_once_with([], timeout=mount_module.MOUNT_STOP_TIMEOUT_SEC)
-    proc.wait.assert_called_once_with(timeout=mount_module.MOUNT_STOP_TIMEOUT_SEC)
+    proc.terminate.assert_not_called()
 
 
 def test_stop_continues_when_a_child_has_already_exited(fuse_child):
     fuse_child.terminate.side_effect = mount_module.psutil.NoSuchProcess(2)
     proc = process()
     Mount._stop_mount_proc(proc)
-    proc.wait.assert_called_once_with(timeout=mount_module.MOUNT_STOP_TIMEOUT_SEC)
+    proc.terminate.assert_called_once_with()
 
 
 def test_wait_checks_at_least_once_with_a_timeout_below_the_delay(no_sleep):
@@ -155,7 +174,7 @@ def test_wait_fails_and_stops_fuse_when_something_else_stays_mounted(no_sleep, f
         Mount()._wait_mount_point(1000, process(), MOUNT_POINT)
     assert exit_info.value.code == 1
     assert no_sleep.call_count == 2
-    assert 'unexpected FS name: overlay; expected: PIPE_FUSE.' in capsys.readouterr().err
+    assert 'unexpected FS name: overlay; expected: PIPE_FUSE.' in capsys.readouterr()[1]
     fuse_child.terminate.assert_called_once_with()
 
 
@@ -165,7 +184,7 @@ def test_wait_fails_and_stops_fuse_when_fs_name_cannot_be_determined(fuse_child,
             pytest.raises(SystemExit) as exit_info:
         Mount()._wait_mount_point(1000, process(), MOUNT_POINT)
     assert exit_info.value.code == 1
-    assert 'failed to determine FS name' in capsys.readouterr().err
+    assert 'failed to determine FS name' in capsys.readouterr()[1]
     fuse_child.terminate.assert_called_once_with()
 
 
@@ -269,12 +288,17 @@ def test_cli_default_timeout_is_ten_seconds():
     assert timeout.default == 10000
 
 
-@pytest.mark.skipif(os.name == 'nt' or not shutil.which('bash'), reason='the wrapper script is a bash script')
-def test_stop_lets_the_wrapper_script_clean_up(tmp_path, no_sleep):
+def has_bash():
+    return any(os.access(os.path.join(path, 'bash'), os.X_OK) for path in os.environ.get('PATH', '').split(os.pathsep))
+
+
+@pytest.mark.skipif(os.name == 'nt' or not has_bash(), reason='the wrapper script is a bash script')
+def test_stop_lets_the_wrapper_script_clean_up(tmpdir, no_sleep, monkeypatch):
     no_sleep.side_effect = real_sleep
-    cleaned = tmp_path / 'cleaned'
-    script = tmp_path / 'pipe-fuse-script'
-    script.write_text('sleep 60\ntouch {}\n'.format(cleaned))
+    monkeypatch.setattr(mount_module, 'MOUNT_STOP_TIMEOUT_SEC', 5)
+    cleaned = tmpdir.join('cleaned')
+    script = tmpdir.join('pipe-fuse-script')
+    script.write('sleep 60\ntouch {}\n'.format(cleaned))
     proc = subprocess.Popen(['bash', str(script)])
     try:
         children = []
@@ -287,7 +311,7 @@ def test_stop_lets_the_wrapper_script_clean_up(tmp_path, no_sleep):
         Mount._stop_mount_proc(proc)
         assert proc.poll() is not None
         assert not [child for child in children if child.is_running()]
-        assert cleaned.exists()
+        assert cleaned.check()
     finally:
         if proc.poll() is None:
             proc.kill()

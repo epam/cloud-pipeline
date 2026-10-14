@@ -38,6 +38,9 @@ if platform.system() == 'Windows':
 MS_IN_SEC = 1000
 DEFAULT_MOUNT_DELAY_MS = 500
 MOUNT_STOP_TIMEOUT_SEC = 5
+MOUNT_STOP_POLLING_DELAY_SEC = 0.1
+# Python 2 has no monotonic clock
+_monotonic = getattr(time, 'monotonic', time.time)
 
 
 class AbstractMount(object):
@@ -258,9 +261,10 @@ class Mount(object):
                 child.kill()
             except psutil.Error:
                 pass
-        try:
-            mount_aps_proc.wait(timeout=MOUNT_STOP_TIMEOUT_SEC)
-        except subprocess.TimeoutExpired:
+        stop_deadline = _monotonic() + MOUNT_STOP_TIMEOUT_SEC
+        while mount_aps_proc.poll() is None and _monotonic() < stop_deadline:
+            time.sleep(MOUNT_STOP_POLLING_DELAY_SEC)
+        if mount_aps_proc.poll() is None:
             mount_aps_proc.terminate()
 
     @staticmethod
