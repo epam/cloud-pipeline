@@ -94,7 +94,10 @@ const nonAdmin = {loaded: true, pending: false, value: {admin: false, roles: []}
 const nodePoolManager = {
   loaded: true,
   pending: false,
-  value: {admin: false, roles: [{name: 'ROLE_NODE_POOL_MANAGER'}]}
+  // `userName` matches the `users` store fixture below, so the Run owner criterion
+  // a forced-future-dated Create seeds (`buildRunOwnerFilter(currentUserName)`) has a
+  // matching option to render, same as `edit-hot-node-pool/index.test.js` does.
+  value: {admin: false, userName: 'USER1', roles: [{name: 'ROLE_NODE_POOL_MANAGER'}]}
 };
 const unloaded = {loaded: false, pending: false, value: undefined};
 
@@ -104,6 +107,17 @@ beforeEach(() => {
   pools.invalidateCache();
   clusterNodes.invalidateCache();
 });
+
+function row (labelText) {
+  return screen.getByText(labelText).closest('div');
+}
+
+// antd's Select combobox carries no native `disabled` attribute; the state is
+// a class on the `.ant-select` ancestor instead.
+function selectIsDisabled (labelText) {
+  const combobox = within(row(labelText)).getByRole('combobox');
+  return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
+}
 
 async function renderCluster (authenticatedUserInfo, props = {}) {
   const api = stubApi();
@@ -171,7 +185,10 @@ test('NODE_POOL_MANAGER: Create is present, no edit/remove on the card, click do
     expect(router.push).not.toHaveBeenCalled();
   });
 
-test('NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode, with no Mode row',
+test(
+  'NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode end to end - ' +
+  'no Mode row, an enabled Pool type, the seeded Run owner criterion with Filters enabled, ' +
+  'and the search-window controls',
   async () => {
     await renderCluster(nodePoolManager);
 
@@ -179,6 +196,18 @@ test('NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode, w
 
     await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
     expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+    // Pool type is not locked by a single-mode caller: a ROLE_NODE_POOL_MANAGER's
+    // forced-future-dated Create chooses it like anyone else.
+    expect(selectIsDisabled('Pool type:')).toBe(false);
+    // The creator's own run-owner criterion is seeded, editable, in an unlocked
+    // Filters panel.
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+    // The reservation's search-window controls render under their current names.
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
 
     // Closes the modal before the test ends: antd's Dialog only removes its
     // body-level portal node synchronously on unmount when `visible` is already
