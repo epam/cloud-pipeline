@@ -1,0 +1,252 @@
+.application-setting,
+.application-session-info,
+.application-hide-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 32px;
+  margin: 2px 0;
+}
+
+.application-setting.multi-selection-setting,
+.application-setting.boolean-setting {
+  cursor: pointer;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.string-setting {
+  align-items: stretch;
+  position: relative;
+}
+
+.string-setting.error.show-message {
+  padding-bottom: 12px;
+}
+
+.string-setting.error input{
+  border-color: #f5222d;
+  outline-color: #f5222d;
+  background-color: rgba(255, 204, 199, 0.75);
+}
+
+.string-setting input {
+  box-sizing: border-box;
+  padding: 0 3px;
+  height: 32px;
+  margin: 0;
+  background-color: rgba(255,255,255, 0.75);
+}
+
+.string-setting .link {
+  color: #ddd;
+  cursor: pointer;
+  padding-left: 5px;
+  text-decoration: none;
+}
+
+.string-setting .link:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.string-setting.error .link {
+  color: #ff7875;
+}
+
+.string-setting .error-text {
+  font-size: 12px;
+  padding-left: 5px;
+  position: absolute;
+  bottom: 5px;
+  color: #f5222d;
+  line-height: 0;
+}
+
+.application-setting.boolean-setting .boolean-setting-value {
+  display: inline-flex;
+}
+
+.application-setting.multi-selection-setting .multi-selection-value {
+  display: inline-flex;
+  align-items: center;
+}
+
+.application-setting.multi-selection-setting:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.application-setting-divider {
+  background-color: rgba(255, 255, 255, 0.2);
+  height: 1px;
+}
+
+.application-setting-divider:first-child,
+.application-setting-divider + .application-setting-divider {
+  display: none;
+}
+
+.application-setting-title,
+.application-setting-value {
+  color: #ddd;
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.application-setting-title,
+.application-session-info,
+.application-hide-action {
+  padding-left: 5px;
+}
+
+.application-settings-selection-value {
+  padding-left: 10px;
+  color: #eee;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.application-settings-selection-value > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.application-session-info,
+.application-hide-action {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  cursor: pointer;
+}
+
+.context-menu.settings-context-menu,
+.context-menu.application-setting-sub-options-menu {
+  padding: 0 5px;
+  width: 250px;
+}
+
+.context-menu.application-setting-sub-options-menu.multi-selection-menu {
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.multi-selection-menu .application-setting {
+  overflow: auto;
+  flex: 1;
+}
+
+.multi-selection-menu .sub-menu-header,
+.multi-selection-menu .sub-menu-footer {
+  line-height: 32px;
+  margin: 2px 0;
+  display: flex;
+  align-items: center;
+  padding: 2px 0;
+}
+
+.multi-selection-menu .sub-menu-footer {
+  justify-content: flex-end;
+}
+
+.multi-selection-menu .sub-menu-footer .sub-menu-action {
+  cursor: pointer;
+}
+
+.multi-selection-menu .sub-menu-footer .sub-menu-action:hover {
+  color: white;
+}
+
+.sub-menu-header .sub-menu-filter {
+  flex: 1;
+  line-height: 22px;
+  height: 22px;
+  font-size: 12px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
+  outline: none;
+  border-radius: 5px;
+  color: white;
+}
+
+.extended-setting-presentation {
+  font-size: 9pt;
+  margin-right: 5px;
+  text-align: right;
+}
+
+.extended-setting-presentation.sensitive {
+  color: #e44d4d;
+}
+
+.application-setting-divider:last-child {
+  display: none;
+}
+
+.application-settings-selection-value:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.application-settings-selection-value.selected,
+.application-settings-selection-value.selected:hover {
+  background-color: rgba(255, 255, 255, 0.75);
+  color: #333;
+}
+
+.application-settings-selection-value-details {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: 10px;
+  overflow: hidden;
+}
+
+.application-settings-selection-value-details .dependencies {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: smaller;
+  text-align: right;
+}
+
+.application-settings .gear-container {
+  position: relative;
+}
+
+.application-session-info .clear-session-info-link,
+.application-hide-action .show-hide-link {
+  color: #999;
+}
+
+.application-settings .gear-container .gear {
+  color: #999;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.application-session-info:hover .clear-session-info-link,
+.application-hide-action:hover .show-hide-link {
+  color: #ccc;
+  text-decoration: underline;
+}
+
+.application-settings .gear-container .gear > svg{
+  fill: #999;
+}
+
+.application-settings .gear-container .gear:hover {
+  color: #ccc;
+  text-decoration: underline;
+}
+
+.application-settings .gear-container .gear:hover > svg {
+  fill: #ccc;
+}

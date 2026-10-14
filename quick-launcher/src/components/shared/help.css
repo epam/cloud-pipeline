@@ -1,0 +1,54 @@
+.help-button-container {
+  z-index: 102;
+}
+
+.help-button {
+  display: inline-flex;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: xx-large;
+  font-weight: bold;
+  content: '?';
+  width: 1.25em;
+  height: 1.25em;
+  justify-content: center;
+  align-items: center;
+  border-radius: 0.6em;
+}
+
+.help-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 1);
+}
+
+.help-button-container .overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: none;
+}
+
+.help-button-container .content {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 100%;
+  margin: 0 0 -0.5em -0.5em;
+  min-width: 25vw;
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #ccc;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.2);
+}
+
+.help-button-container.visible .content,
+.help-button-container.visible .overlay {
+  display: initial;
+}
