@@ -23,7 +23,8 @@ import {
   buildSchedulePayload,
   buildCapacityReservationRequest,
   buildRunOwnerFilter,
-  getCapacityReservationStatus
+  getCapacityReservationStatus,
+  getReservationDisplayInstanceCount
 } from './helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
@@ -785,4 +786,82 @@ describe('getCapacityReservationStatus', () => {
       endDate: '2026-04-01 10:00:00.000'
     })).toBe(RESERVATION_STATUS_APPROVED);
   });
+
+  it.each([
+    'REQUIRED_APPROVE',
+    'APPROVED',
+    'ASSESSING_BY_CLOUD_PROVIDER',
+    'SCHEDULED',
+    'ACTIVE',
+    'FINALIZING',
+    'FINISHED',
+    'PURCHASE_FAILED',
+    'FAILED',
+    'CANCELLED'
+  ])('returns the reservation record\'s own status verbatim (%s)', (status) => {
+    expect(getCapacityReservationStatus(
+      {isCapacityReservation: true},
+      {status}
+    )).toBe(status);
+  });
+
+  it('returns an unrecognised reservation status verbatim too - the record is the source ' +
+    'of truth, not a value this helper validates', () => {
+    expect(getCapacityReservationStatus(
+      {isCapacityReservation: true},
+      {status: 'SOME_NEW_STATUS'}
+    )).toBe('SOME_NEW_STATUS');
+  });
+
+  it('falls back to pool field inference when reservation is undefined', () => {
+    expect(getCapacityReservationStatus(
+      {
+        isCapacityReservation: true,
+        startDate: '2026-03-01 10:00:00.000',
+        endDate: '2026-04-01 10:00:00.000'
+      },
+      undefined
+    )).toBe(RESERVATION_STATUS_APPROVED);
+  });
+
+  it('non-reservation pool returns undefined regardless of reservation arg', () => {
+    expect(getCapacityReservationStatus(
+      {isCapacityReservation: false},
+      {status: 'SCHEDULED'}
+    )).toBeUndefined();
+  });
+});
+
+describe('getReservationDisplayInstanceCount', () => {
+  it.each([
+    'REQUIRED_APPROVE',
+    'APPROVED',
+    'ASSESSING_BY_CLOUD_PROVIDER',
+    'SCHEDULED',
+    'ACTIVE',
+    'FINALIZING'
+  ])('returns the instance count while the reservation is still live (%s)', (status) => {
+    expect(getReservationDisplayInstanceCount({status, instanceCount: 4})).toBe(4);
+  });
+
+  it.each([
+    'PURCHASE_FAILED',
+    'FINISHED',
+    'FAILED',
+    'CANCELLED'
+  ])('is undefined once the reservation reaches a terminal status (%s)', (status) => {
+    expect(getReservationDisplayInstanceCount({status, instanceCount: 4})).toBeUndefined();
+  });
+
+  it('is undefined when there is no reservation record', () => {
+    expect(getReservationDisplayInstanceCount(undefined)).toBeUndefined();
+  });
+
+  it.each([null, undefined])(
+    'is undefined when the record has no usable instanceCount (%s)',
+    (instanceCount) => {
+      expect(getReservationDisplayInstanceCount({status: 'ACTIVE', instanceCount}))
+        .toBeUndefined();
+    }
+  );
 });

@@ -561,15 +561,61 @@ test('a reservation pool shows its window read-only', async () => {
   expect(screen.queryByText('Duration (days):')).not.toBeInTheDocument();
 });
 
-test('a pending reservation shows the pending message', async () => {
-  await renderPool({pool: reservationPool({startDate: undefined, endDate: undefined})});
-  expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
-});
+test(
+  'an unscheduled reservation (no startDate/endDate) shows the requested-window controls ' +
+  'disabled and a disclaimer, not the ReservationSummary text',
+  async () => {
+    await renderPool({pool: reservationPool({startDate: undefined, endDate: undefined})});
 
-test('a pending reservation (end not yet scheduled) also shows the pending message', async () => {
-  await renderPool({pool: reservationPool({endDate: undefined})});
-  expect(screen.getByText('Pending approval (not yet scheduled)')).toBeInTheDocument();
-});
+    // ReservationScheduleControl fields are present (read-only view of requested window)
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+    // Disclaimer is shown
+    expect(screen.getByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).toBeInTheDocument();
+    // The old ReservationSummary text is gone
+    expect(screen.queryByText('Pending approval (not yet scheduled)')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reservation window:')).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'an unscheduled reservation (end missing) also shows the disclaimer',
+  async () => {
+    await renderPool({pool: reservationPool({endDate: undefined})});
+
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).toBeInTheDocument();
+    expect(screen.queryByText('Pending approval (not yet scheduled)')).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'an unscheduled reservation with reservation data shows the requested dates read-only',
+  async () => {
+    await renderPool({
+      pool: reservationPool({startDate: undefined, endDate: undefined}),
+      reservations: [{
+        nodePoolId: reservationPool().id,
+        requestedStartDate: '2026-12-27 12:49:19.968',
+        requestedEndDate: '2027-01-10 12:49:23.291',
+        commitmentDuration: 1209600,
+        status: 'PENDING'
+      }]
+    });
+
+    // Duration (1209600 s = 14 days) is displayed in the disabled control
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+    const durationInput = screen.getByDisplayValue('14');
+    expect(durationInput).toBeDisabled();
+    expect(screen.getByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).toBeInTheDocument();
+  }
+);
 
 test('a reservation pool disables Count and Price type; a Default pool does not', async () => {
   await renderPool({pool: reservationPool()});
@@ -580,6 +626,94 @@ test('a Default pool regression: Count stays enabled', async () => {
   await renderPool({pool: fullPool()});
   expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();
 });
+
+// The pool's own `count` is 0 until the reservation is activated, so a matched
+// reservation record's `instanceCount` is what actually shows the reserved amount.
+test(
+  'a reservation pool with count 0 and a matched reservation shows "0 out of 4", no input',
+  async () => {
+    await renderPool({
+      pool: reservationPool({count: 0}),
+      reservations: [{
+        nodePoolId: reservationPool().id,
+        instanceCount: 4,
+        status: 'PENDING'
+      }]
+    });
+
+    expect(within(row('Nodes count:')).getByText('0 out of 4')).toBeInTheDocument();
+    expect(within(row('Nodes count:')).queryByRole('textbox')).not.toBeInTheDocument();
+  }
+);
+
+// A terminal reservation (e.g. finished or cancelled) never again holds capacity, so its
+// instanceCount must not be presented as currently reserved - the form falls back to its
+// ordinary disabled Nodes count input instead.
+test(
+  'a reservation pool whose record is FINISHED shows the disabled input, not "out of"',
+  async () => {
+    await renderPool({
+      pool: reservationPool({count: 0}),
+      reservations: [{
+        nodePoolId: reservationPool().id,
+        instanceCount: 4,
+        status: 'FINISHED'
+      }]
+    });
+
+    expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+    expect(screen.queryByText(/out of/)).not.toBeInTheDocument();
+  }
+);
+
+// Once the reservation is activated the pool reports its own nodes, and that count is
+// the real one - so the reserved number stops being substituted here, the same way the
+// pool card stops substituting it.
+test(
+  'an activated reservation pool shows its own count, not "out of"',
+  async () => {
+    await renderPool({
+      pool: reservationPool({count: 4}),
+      reservations: [{
+        nodePoolId: reservationPool().id,
+        instanceCount: 4,
+        status: 'ACTIVE'
+      }]
+    });
+
+    const input = within(row('Nodes count:')).getByRole('textbox');
+    expect(input).toBeDisabled();
+    expect(input).toHaveValue('4');
+    expect(screen.queryByText(/out of/)).not.toBeInTheDocument();
+  }
+);
+
+// Regression guard: with no matching reservation record (e.g. the reservations list
+// hasn't loaded yet, or carries no record for this pool), the field falls back to the
+// disabled number input exactly as before this change.
+test(
+  'a reservation pool with no matching reservation record still shows the disabled input',
+  async () => {
+    await renderPool({pool: reservationPool({count: 0})});
+
+    expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+    expect(screen.queryByText(/out of/)).not.toBeInTheDocument();
+  }
+);
+
+// A Default-mode pool never matches a reservation record (`updateFromProps` only
+// looks one up when `isCapacityReservation` is set), so it must keep the ordinary
+// editable Nodes count input even when a `reservations` prop is passed in.
+test('a Default-mode pool keeps the editable Nodes count input regardless of reservations',
+  async () => {
+    await renderPool({
+      pool: fullPool(),
+      reservations: [{nodePoolId: fullPool().id, instanceCount: 4, status: 'PENDING'}]
+    });
+
+    expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();
+    expect(screen.queryByText(/out of/)).not.toBeInTheDocument();
+  });
 
 test(
   'SAVE on a reservation pool sends poolType but no capacityReservationRequest, ' +

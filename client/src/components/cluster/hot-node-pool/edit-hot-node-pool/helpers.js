@@ -31,7 +31,8 @@ import {
   MAX_RESERVATION_LEAD_DAYS,
   RESERVATION_TYPE_FUTURE_DATED,
   RESERVATION_STATUS_PENDING,
-  RESERVATION_STATUS_APPROVED
+  RESERVATION_STATUS_APPROVED,
+  RESERVATION_TERMINAL_STATUSES
 } from './constants';
 
 // A new future-dated pool opens with its creator as the run owner - a default the
@@ -449,19 +450,36 @@ export function buildPoolPayload (values) {
   return payload;
 }
 
-// A future-dated/reservation pool's window is granted asynchronously by the backend
-// scheduler, so a pool loaded with `isCapacityReservation` but no `startDate`/`endDate`
-// yet is still awaiting approval — the same signal `ReservationSummary` uses to decide
-// whether to show the window or the "pending" text. Returns `undefined` for a
-// non-reservation pool, since the status has no meaning there.
-export function getCapacityReservationStatus (pool) {
+// Returns the pool-card badge status for a future-dated pool. The reservation record is
+// the source of truth for its own lifecycle, so once one is available its `status` is
+// returned verbatim - the ten-state backend enum (REQUIRED_APPROVE through FINISHED, plus
+// the terminal failures) is for the caller to present, not to collapse here. When no record
+// is provided (data still loading, endpoint returned nothing) the function falls back to
+// inferring Approved/Pending from `pool.startDate`/`endDate` so the badge never goes blank.
+// Returns `undefined` for a non-reservation pool.
+export function getCapacityReservationStatus (pool, reservation) {
   const {isCapacityReservation, startDate, endDate} = pool || {};
   if (!isCapacityReservation) {
     return undefined;
   }
+  if (reservation) {
+    return reservation.status;
+  }
   return isReservationScheduled(startDate, endDate)
     ? RESERVATION_STATUS_APPROVED
     : RESERVATION_STATUS_PENDING;
+}
+
+// The reserved count a matched reservation record carries is only real while that
+// reservation still holds, or may still hold, capacity - a terminal status (see
+// `RESERVATION_TERMINAL_STATUSES`) means it never will again, so neither the pool card
+// nor the edit form may present its `instanceCount` as currently reserved.
+export function getReservationDisplayInstanceCount (reservation) {
+  if (!reservation || RESERVATION_TERMINAL_STATUSES.includes(reservation.status)) {
+    return undefined;
+  }
+  const {instanceCount} = reservation;
+  return instanceCount === null || instanceCount === undefined ? undefined : instanceCount;
 }
 
 export function buildSchedulePayload (values) {

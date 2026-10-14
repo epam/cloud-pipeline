@@ -28,6 +28,7 @@ import LoadingView from '../../special/LoadingView';
 import EditHotNodePool from './edit-hot-node-pool';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
 import pools from '../../../models/cluster/HotNodePools';
+import reservations from '../../../models/cluster/CapacityReservations';
 import HotNodePoolUpdate from '../../../models/cluster/HotNodePoolUpdate';
 import HotNodePoolDelete from '../../../models/cluster/HotNodePoolDelete';
 import HotNodePoolScheduleUpdate from '../../../models/cluster/HotNodePoolScheduleUpdate';
@@ -57,12 +58,11 @@ async function removeSchedule (scheduleId) {
 }
 
 @roleModel.authenticationInfo
-@inject(() => {
-  return {
-    pools,
-    clusterNodes
-  };
-})
+@inject(() => ({
+  pools,
+  clusterNodes,
+  reservations
+}))
 @observer
 class HotCluster extends React.Component {
   state = {
@@ -180,7 +180,7 @@ class HotCluster extends React.Component {
 
   onSaveEditablePool = async (pool, schedule) => {
     const {createNewPool, editablePool} = this.state;
-    const {pools, clusterNodes: nodes} = this.props;
+    const {pools, clusterNodes: nodes, reservations: res} = this.props;
     const loadingTitle = createNewPool ? 'Creating new pool...' : 'Update pool...';
     const hide = message.loading(loadingTitle, -1);
     try {
@@ -212,7 +212,7 @@ class HotCluster extends React.Component {
       if (currentScheduleId && !hasSchedule) {
         await removeSchedule(currentScheduleId);
       }
-      await Promise.all([pools.fetch(), nodes.fetch()]);
+      await Promise.all([pools.fetch(), nodes.fetch(), res.fetch()]);
     } catch (error) {
       message.error(error.message, 5);
     } finally {
@@ -222,9 +222,8 @@ class HotCluster extends React.Component {
   };
 
   refresh = async () => {
-    const {pools: poolsRequest, clusterNodes: nodes} = this.props;
-    await poolsRequest.fetch();
-    await nodes.fetch();
+    const {pools: poolsRequest, clusterNodes: nodes, reservations: res} = this.props;
+    await Promise.all([poolsRequest.fetch(), nodes.fetch(), res.fetch()]);
   };
 
   onPoolClick = (pool) => {
@@ -236,6 +235,7 @@ class HotCluster extends React.Component {
     const {
       pools: poolsRequest,
       clusterNodes: nodes,
+      reservations: res,
       router
     } = this.props;
     if (
@@ -263,6 +263,11 @@ class HotCluster extends React.Component {
       );
     }
     const {value: pools = []} = poolsRequest;
+    // Reservations are rendered without a loading guard, so `res.value` can still be
+    // the model's `defaultValue` here. MobX also wraps a resolved value in an
+    // ObservableArray, which fails a `PropTypes.array` check, so copy it into a plain
+    // array before passing it down — the same thing `nodes` does below.
+    const reservationsList = ((res || {}).value || []).map(reservation => reservation);
     const {
       createNewPool,
       editablePool,
@@ -314,6 +319,7 @@ class HotCluster extends React.Component {
                   onRemove={this.onRemovePool(pool)}
                   onClick={canEdit ? () => this.onPoolClick(pool) : undefined}
                   nodes={(nodes.value || []).map(node => node)}
+                  reservations={reservationsList}
                   router={router}
                 />
               );
@@ -326,6 +332,7 @@ class HotCluster extends React.Component {
           pool={editablePool}
           currentUserName={this.currentUserName}
           allowedModes={canCreateAnyMode ? [MODE_DEFAULT, MODE_FUTURE_DATED] : [MODE_FUTURE_DATED]}
+          reservations={reservationsList}
           onCancel={this.closeEditPoolModal}
           onSave={this.operationWrapper(this.onSaveEditablePool)}
         />

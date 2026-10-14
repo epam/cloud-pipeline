@@ -37,7 +37,30 @@ export const MIN_RESERVATION_LEAD_DAYS = 5; // NodePoolValidator.MINIMUM_LEAD_DA
 export const MAX_RESERVATION_LEAD_DAYS = 120; // NodePoolValidator.MAX_RESERVATION_LEAD_DAYS
 export const RESERVATION_TYPE_FUTURE_DATED = 'FUTURE_DATED'; // the only type the backend accepts
 
-// Client-only labels for a future-dated reservation pool's approval state (there is no backend
-// enum for this — it is derived from whether `startDate`/`endDate` have been granted yet).
+// Client-only label for a future-dated reservation pool's approval state before any
+// reservation record exists (there is no backend enum for this — it is derived from
+// whether `startDate`/`endDate` have been granted yet).
 export const RESERVATION_STATUS_PENDING = 'PENDING';
+
+// These mirror the backend's `CapacityReservationStatus` enum verbatim, so a reservation
+// record's own `status` can be used as the pool-card badge key directly.
+export const RESERVATION_STATUS_REQUIRED_APPROVE = 'REQUIRED_APPROVE';
 export const RESERVATION_STATUS_APPROVED = 'APPROVED';
+export const RESERVATION_STATUS_ASSESSING = 'ASSESSING_BY_CLOUD_PROVIDER';
+export const RESERVATION_STATUS_SCHEDULED = 'SCHEDULED';
+export const RESERVATION_STATUS_ACTIVE = 'ACTIVE';
+export const RESERVATION_STATUS_FINALIZING = 'FINALIZING';
+export const RESERVATION_STATUS_FINISHED = 'FINISHED';
+export const RESERVATION_STATUS_PURCHASE_FAILED = 'PURCHASE_FAILED';
+export const RESERVATION_STATUS_FAILED = 'FAILED';
+export const RESERVATION_STATUS_CANCELLED = 'CANCELLED';
+
+// Mirrors the backend's `CapacityReservationStatus.terminalStatuses()`: once a reservation
+// reaches one of these it will never again hold capacity, so a count sourced from it must
+// not be presented as currently reserved.
+export const RESERVATION_TERMINAL_STATUSES = [
+  RESERVATION_STATUS_PURCHASE_FAILED,
+  RESERVATION_STATUS_FINISHED,
+  RESERVATION_STATUS_FAILED,
+  RESERVATION_STATUS_CANCELLED
+];

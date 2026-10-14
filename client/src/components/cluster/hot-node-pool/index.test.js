@@ -29,6 +29,7 @@ import {
 import HotCluster from './index';
 import pools from '../../../models/cluster/HotNodePools';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
+import reservations from '../../../models/cluster/CapacityReservations';
 
 const loaded = (value) => observable({loaded: true, pending: false, value});
 
@@ -101,11 +102,12 @@ const nodePoolManager = {
 };
 const unloaded = {loaded: false, pending: false, value: undefined};
 
-// `pools`/`clusterNodes` are module singletons `HotCluster` injects by name, so a
-// previous test's resolved value would otherwise leak into the next one.
+// `pools`/`clusterNodes`/`reservations` are module singletons `HotCluster` injects by
+// name, so a previous test's resolved value would otherwise leak into the next one.
 beforeEach(() => {
   pools.invalidateCache();
   clusterNodes.invalidateCache();
+  reservations.invalidateCache();
 });
 
 function row (labelText) {
@@ -123,6 +125,7 @@ async function renderCluster (authenticatedUserInfo, props = {}) {
   const api = stubApi();
   api.reply(/^\/cluster\/pool\?/, [myPool]);
   api.reply(/^\/cluster\/node\/loadAll\?/, []);
+  api.reply(/^\/cluster\/capacity-reservation/, []);
   api.handle(/\/cluster\/instance\/allowed/, () => ({
     status: 'OK',
     payload: instanceAllowedPayload
@@ -237,10 +240,11 @@ test('a Default-mode pool shows no reservation badge', async () => {
   expect(screen.queryByText('Approved')).not.toBeInTheDocument();
 });
 
-async function renderClusterWithPool (pool) {
+async function renderClusterWithPool (pool, reservationsList = []) {
   const api = stubApi();
   api.reply(/^\/cluster\/pool\?/, [pool]);
   api.reply(/^\/cluster\/node\/loadAll\?/, []);
+  api.reply(/^\/cluster\/capacity-reservation/, reservationsList);
   api.handle(/\/cluster\/instance\/allowed/, () => ({
     status: 'OK',
     payload: instanceAllowedPayload
@@ -319,3 +323,117 @@ test('a Default-mode pool with no nodes still shows (disabled)', async () => {
     screen.getByText('default-pool-no-nodes').closest('.cp-hot-node-pool')
   ).toHaveClass('cp-disabled');
 });
+
+test(
+  'a future-dated pool with a reservation record shows instanceCount as effective total',
+  async () => {
+    const pool = {
+      ...myPool,
+      id: 6,
+      name: 'reservation-pool-count',
+      count: 0,
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    };
+    await renderClusterWithPool(pool, [
+      {nodePoolId: 6, instanceCount: 4, status: 'PENDING'}
+    ]);
+
+    const card = screen.getByText('reservation-pool-count').closest('.cp-hot-node-pool');
+    expect(within(card).getByText('4')).toBeInTheDocument();
+    expect(screen.queryByText('(disabled)')).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'a FINISHED reservation shows its badge but not its instanceCount as the card total',
+  async () => {
+    const pool = {
+      ...myPool,
+      id: 12,
+      name: 'reservation-pool-finished',
+      count: 0,
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    };
+    await renderClusterWithPool(pool, [
+      {nodePoolId: 12, instanceCount: 4, status: 'FINISHED'}
+    ]);
+
+    const card = screen.getByText('reservation-pool-finished').closest('.cp-hot-node-pool');
+    expect(screen.getByText('Finished')).toBeInTheDocument();
+    // A finished reservation never again holds capacity, so its instanceCount must not
+    // be shown as the card's total - unlike the live-reservation case above.
+    expect(within(card).queryByText('4')).not.toBeInTheDocument();
+  }
+);
+
+// The badge now shows the reservation record's own status, translated to the backend's
+// ten-state `CapacityReservationStatus` lifecycle - not collapsed into the old two-bucket
+// Approved/Pending approval reading.
+function statusPool (id, name) {
+  return {
+    ...myPool,
+    id,
+    name,
+    count: 0,
+    isCapacityReservation: true,
+    startDate: undefined,
+    endDate: undefined
+  };
+}
+
+test('badge status comes from reservation.status: SCHEDULED shows Scheduled', async () => {
+  const pool = statusPool(7, 'status-scheduled');
+  await renderClusterWithPool(pool, [
+    {nodePoolId: 7, instanceCount: 2, status: 'SCHEDULED'}
+  ]);
+
+  expect(screen.getByText('Scheduled')).toBeInTheDocument();
+  expect(screen.queryByText('Approved')).not.toBeInTheDocument();
+  expect(screen.queryByText('Pending approval')).not.toBeInTheDocument();
+});
+
+test('badge status comes from reservation.status: ACTIVE shows Active', async () => {
+  const pool = statusPool(8, 'status-active');
+  await renderClusterWithPool(pool, [
+    {nodePoolId: 8, instanceCount: 2, status: 'ACTIVE'}
+  ]);
+
+  expect(screen.getByText('Active')).toBeInTheDocument();
+});
+
+test('badge status comes from reservation.status: FAILED shows Failed', async () => {
+  const pool = statusPool(9, 'status-failed');
+  await renderClusterWithPool(pool, [
+    {nodePoolId: 9, instanceCount: 2, status: 'FAILED'}
+  ]);
+
+  expect(screen.getByText('Failed')).toBeInTheDocument();
+});
+
+test(
+  'badge status comes from reservation.status: REQUIRED_APPROVE shows Requires approval',
+  async () => {
+    const pool = statusPool(10, 'status-required-approve');
+    await renderClusterWithPool(pool, [
+      {nodePoolId: 10, instanceCount: 2, status: 'REQUIRED_APPROVE'}
+    ]);
+
+    expect(screen.getByText('Requires approval')).toBeInTheDocument();
+  }
+);
+
+test(
+  'an unknown reservation status renders a humanised label instead of crashing the card',
+  async () => {
+    const pool = statusPool(11, 'status-unknown');
+    await renderClusterWithPool(pool, [
+      {nodePoolId: 11, instanceCount: 2, status: 'SOME_NEW_STATUS'}
+    ]);
+
+    expect(screen.getByText('Some new status')).toBeInTheDocument();
+  }
+);

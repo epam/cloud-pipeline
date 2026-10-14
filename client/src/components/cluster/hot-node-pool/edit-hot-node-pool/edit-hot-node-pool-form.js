@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Select} from 'antd';
+import {Alert, Select} from 'antd';
 import classNames from 'classnames';
 import StringInput from './controls/StringInput';
 import SelectInput from './controls/SelectInput';
@@ -25,7 +25,7 @@ import CheckboxControl from './controls/CheckboxControl';
 import ModeControl from './controls/ModeControl';
 import PoolTypeControl from './controls/PoolTypeControl';
 import ReservationScheduleControl from './controls/ReservationScheduleControl';
-import ReservationSummary from './controls/ReservationSummary';
+import ReservationSummary, {isReservationScheduled} from './controls/ReservationSummary';
 import ScheduleControls from './controls/ScheduleControls';
 import DockerImagesControl from './controls/DockerImagesControl';
 import LabelsControl from './controls/LabelsControl';
@@ -176,6 +176,10 @@ function EditHotNodePoolForm ({
   isExistingReservation,
   reservationStartDate,
   reservationEndDate,
+  reservationRequestedStartDate,
+  reservationRequestedEndDate,
+  reservationCommitmentDurationDays,
+  reservationInstanceCount,
   regions,
   instanceTypes,
   allowedInstanceTypes,
@@ -247,14 +251,39 @@ function EditHotNodePoolForm ({
       {
         futureDated ? (
           isExistingReservation ? (
-            // A reservation's window is granted by the backend's scheduler and
-            // cannot be changed through this endpoint, so an existing reservation
-            // pool shows it as read-only text instead of the editable controls.
-            <ReservationSummary
-              start={reservationStartDate}
-              end={reservationEndDate}
-            />
+            isReservationScheduled(reservationStartDate, reservationEndDate) ? (
+              // Granted window: show as read-only text.
+              <ReservationSummary
+                start={reservationStartDate}
+                end={reservationEndDate}
+              />
+            ) : (
+              // Not yet scheduled: show the originally-requested window read-only so the
+              // user can see what was requested, plus an informational disclaimer.
+              <div>
+                <ReservationScheduleControl
+                  start={reservationRequestedStartDate}
+                  end={reservationRequestedEndDate}
+                  durationDays={reservationCommitmentDurationDays}
+                  disabled
+                  onChangeStart={() => {}}
+                  onChangeEnd={() => {}}
+                  onChangeDuration={() => {}}
+                />
+                <div className={styles.formRow}>
+                  <Alert
+                    type="info"
+                    showIcon
+                    message={
+                      'This pool is waiting to be scheduled by the capacity ' +
+                      'reservation service.'
+                    }
+                  />
+                </div>
+              </div>
+            )
           ) : (
+            // New pool: editable controls.
             <ReservationScheduleControl
               start={commitmentStart}
               end={commitmentEnd}
@@ -302,20 +331,32 @@ function EditHotNodePoolForm ({
       }
       {
         autoscaled ? null : (
-          <StringInput
-            type="number"
-            label="Nodes count:"
-            value={count}
-            onChange={value => onChange('count', value)}
-            // `validateReservationPoolUpdate` rejects an update that changes `count`
-            // on a reservation pool, so the form does not offer the change. This is
-            // narrower than `readOnly={!isNew}` (which already disables other fields
-            // on every edit) and must not be folded into it.
-            disabled={disabled || isExistingReservation}
-            min={COUNT_MIN_SIZE}
-            error={validation.count}
-            touched={touched.count}
-          />
+          isExistingReservation && !count && reservationInstanceCount != null ? (
+            // The pool's own `count` stays 0 until the reservation is activated, so
+            // the reserved amount - what the user actually asked for - comes from
+            // the matched reservation record instead. Once the pool reports nodes of
+            // its own, that count is the real one again, the same way the pool card
+            // stops substituting the reserved number.
+            <div className={styles.formRow}>
+              <span className={styles.label}>Nodes count:</span>
+              <span>{`${count || 0} out of ${reservationInstanceCount}`}</span>
+            </div>
+          ) : (
+            <StringInput
+              type="number"
+              label="Nodes count:"
+              value={count}
+              onChange={value => onChange('count', value)}
+              // `validateReservationPoolUpdate` rejects an update that changes `count`
+              // on a reservation pool, so the form does not offer the change. This is
+              // narrower than `readOnly={!isNew}` (which already disables other fields
+              // on every edit) and must not be folded into it.
+              disabled={disabled || isExistingReservation}
+              min={COUNT_MIN_SIZE}
+              error={validation.count}
+              touched={touched.count}
+            />
+          )
         )
       }
       {
@@ -505,6 +546,10 @@ EditHotNodePoolForm.propTypes = {
   isExistingReservation: PropTypes.bool,
   reservationStartDate: PropTypes.string,
   reservationEndDate: PropTypes.string,
+  reservationRequestedStartDate: PropTypes.string,
+  reservationRequestedEndDate: PropTypes.string,
+  reservationCommitmentDurationDays: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  reservationInstanceCount: PropTypes.number,
   regions: PropTypes.array,
   instanceTypes: PropTypes.array,
   // MobX wraps a Remote's resolved value in an ObservableArray, which fails a

@@ -25,7 +25,8 @@ import {
   isModified as checkModified,
   buildPoolPayload,
   buildSchedulePayload,
-  buildRunOwnerFilter
+  buildRunOwnerFilter,
+  getReservationDisplayInstanceCount
 } from './helpers';
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -34,7 +35,8 @@ import {
   MODE_DEFAULT,
   MODE_FUTURE_DATED,
   POOL_TYPE_STANDARD,
-  POOL_TYPE_SHAREABLE
+  POOL_TYPE_SHAREABLE,
+  SECONDS_PER_DAY
 } from './constants';
 import styles from '../edit-hot-node-pool.css';
 
@@ -50,6 +52,10 @@ class EditHotNodePool extends React.Component {
     isExistingReservation: false,
     reservationStartDate: undefined,
     reservationEndDate: undefined,
+    reservationRequestedStartDate: undefined,
+    reservationRequestedEndDate: undefined,
+    reservationCommitmentDurationDays: undefined,
+    reservationInstanceCount: undefined,
     modified: false,
     valid: true,
     disk: undefined,
@@ -227,6 +233,10 @@ class EditHotNodePool extends React.Component {
       // `this.props.currentUserName` would rewrite another user's pool to whoever opened
       // it.
       const mappedFilters = mapFilters(filters);
+      const {reservations} = this.props;
+      const matchedReservation = isCapacityReservation && reservations
+        ? reservations.find(r => r.nodePoolId === pool.id)
+        : undefined;
       this.setState({
         mode,
         poolType,
@@ -236,6 +246,17 @@ class EditHotNodePool extends React.Component {
         isExistingReservation: !!isCapacityReservation,
         reservationStartDate,
         reservationEndDate,
+        reservationRequestedStartDate: matchedReservation
+          ? matchedReservation.requestedStartDate
+          : undefined,
+        reservationRequestedEndDate: matchedReservation
+          ? matchedReservation.requestedEndDate
+          : undefined,
+        reservationCommitmentDurationDays: matchedReservation &&
+          matchedReservation.commitmentDuration != null
+          ? Math.round(matchedReservation.commitmentDuration / SECONDS_PER_DAY)
+          : undefined,
+        reservationInstanceCount: getReservationDisplayInstanceCount(matchedReservation),
         disk,
         initialDisk: disk,
         instanceType,
@@ -320,6 +341,10 @@ class EditHotNodePool extends React.Component {
         isExistingReservation: false,
         reservationStartDate: undefined,
         reservationEndDate: undefined,
+        reservationRequestedStartDate: undefined,
+        reservationRequestedEndDate: undefined,
+        reservationCommitmentDurationDays: undefined,
+        reservationInstanceCount: undefined,
         disk: undefined,
         initialDisk: undefined,
         instanceType: undefined,
@@ -702,6 +727,10 @@ class EditHotNodePool extends React.Component {
       isExistingReservation,
       reservationStartDate,
       reservationEndDate,
+      reservationRequestedStartDate,
+      reservationRequestedEndDate,
+      reservationCommitmentDurationDays,
+      reservationInstanceCount,
       validation,
       touched,
       allowedInstanceTypes,
@@ -766,6 +795,10 @@ class EditHotNodePool extends React.Component {
           isExistingReservation={isExistingReservation}
           reservationStartDate={reservationStartDate}
           reservationEndDate={reservationEndDate}
+          reservationRequestedStartDate={reservationRequestedStartDate}
+          reservationRequestedEndDate={reservationRequestedEndDate}
+          reservationCommitmentDurationDays={reservationCommitmentDurationDays}
+          reservationInstanceCount={reservationInstanceCount}
           regions={this.regions}
           instanceTypes={this.instanceTypes}
           allowedInstanceTypes={allowedInstanceTypes}
@@ -788,7 +821,8 @@ EditHotNodePool.propTypes = {
   pool: PropTypes.object,
   visible: PropTypes.bool,
   currentUserName: PropTypes.string,
-  allowedModes: PropTypes.arrayOf(PropTypes.string)
+  allowedModes: PropTypes.arrayOf(PropTypes.string),
+  reservations: PropTypes.array
 };
 
 EditHotNodePool.defaultProps = {
