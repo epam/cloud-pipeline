@@ -98,6 +98,20 @@ public class CapacityReservationTemplatesTest {
         assertFalse(render("CAPACITY_RESERVATION_STATUS_CHANGED", parameters(null)).getBody().contains("Reason:"));
     }
 
+    @Test
+    public void shouldGiveTheReasonInEveryTemplateThatHasOne() throws IOException {
+        for (final String type : TYPES) {
+            assertTrue(type, render(type, parameters(REASON)).getBody().contains(REASON));
+        }
+    }
+
+    @Test
+    public void shouldLeaveTheReasonOutOfEveryTemplateWhenThereIsNone() throws IOException {
+        for (final String type : TYPES) {
+            assertFalse(type, render(type, parameters(null)).getBody().contains("Reason:"));
+        }
+    }
+
     private MessageText render(final String type, final Map<String, Object> parameters) throws IOException {
         final String body = envsubst(read(TEMPLATES.resolve("contents").resolve(type + ".html")));
         final String subject = new ObjectMapper()

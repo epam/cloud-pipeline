@@ -24,6 +24,8 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -57,6 +59,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class CapacityReservationApprovalService {
 
+    private final MessageHelper messageHelper;
     private final ConditionExpressionEvaluator<CapacityReservation> evaluator;
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -66,9 +69,11 @@ public class CapacityReservationApprovalService {
     private CapacityReservationService reservationService;
 
     @Autowired
-    public CapacityReservationApprovalService(final PreferenceManager preferenceManager,
+    public CapacityReservationApprovalService(final MessageHelper messageHelper,
+                                             final PreferenceManager preferenceManager,
                                              final AuthManager authManager,
                                              final UserManager userManager) {
+        this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.authManager = authManager;
         this.evaluator = new ConditionExpressionEvaluator<>(buildRegistry(username -> {
@@ -94,11 +99,15 @@ public class CapacityReservationApprovalService {
         if (inheritsApproval(reservation)) {
             log.debug("Capacity reservation for node pool {} inherits the approval of reservation {}",
                     reservation.getNodePoolId(), reservation.getOriginId());
+            reservation.setStatusReason(messageHelper.getMessage(
+                    MessageConstants.INFO_CAPACITY_RESERVATION_APPROVAL_INHERITED, reservation.getOriginId()));
             return CapacityReservationStatus.APPROVED;
         }
         if (authManager.isAdmin()) {
             log.debug("Capacity reservation for node pool {} auto-approved: requester is an administrator",
                     reservation.getNodePoolId());
+            reservation.setStatusReason(messageHelper.getMessage(
+                    MessageConstants.INFO_CAPACITY_RESERVATION_APPROVED_AS_ADMIN));
             return CapacityReservationStatus.APPROVED;
         }
 
@@ -106,9 +115,13 @@ public class CapacityReservationApprovalService {
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_POLICIES));
 
         if (matchesAny(policies, CapacityReservationPolicyAction.DENY, reservation)) {
-            return CapacityReservationStatus.REQUIRED_APPROVE;
+            throw new IllegalArgumentException(messageHelper.getMessage(
+                    MessageConstants.ERROR_CAPACITY_RESERVATION_DENIED_BY_POLICY,
+                    reservation.getInstanceCount(), reservation.getInstanceType()));
         }
         if (matchesAny(policies, CapacityReservationPolicyAction.AUTO_APPROVE, reservation)) {
+            reservation.setStatusReason(messageHelper.getMessage(
+                    MessageConstants.INFO_CAPACITY_RESERVATION_APPROVED_BY_POLICY));
             return CapacityReservationStatus.APPROVED;
         }
         return CapacityReservationStatus.REQUIRED_APPROVE;
@@ -191,10 +204,12 @@ public class CapacityReservationApprovalService {
         }
     }
 
-    CapacityReservationApprovalService(final PreferenceManager preferenceManager,
+    CapacityReservationApprovalService(final MessageHelper messageHelper,
+                                       final PreferenceManager preferenceManager,
                                        final AuthManager authManager,
                                        final Map<String, EntityConditionEvaluationStrategy<CapacityReservation>>
                                                registry) {
+        this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.authManager = authManager;
         this.evaluator = new ConditionExpressionEvaluator<>(registry);
