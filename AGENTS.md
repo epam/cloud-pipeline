@@ -101,8 +101,9 @@ replies, short sentences, simple words, no idioms.
 ## Files agents must not read
 
 `.env`, `.env.local` and `.env.<environment>.local` files, `secrets/`, keystores and private keys,
-and the credential stores under `~` — `.ssh`, `.aws`, `.azure`, `.config/gcloud`, `.config/gh`,
-`.kube/config`, `.gnupg`. A `.env.example` is a template, not a secret, and is fine to read.
+files ending in `.secret`, and the credential stores under `~` — `.ssh`, `.aws`, `.azure`,
+`.config/gcloud`, `.config/gh`, `.kube/config`, `.gnupg`. A `.env.example` is a template, not a
+secret, and is fine to read.
 
 ## Anti-patterns
 
@@ -127,7 +128,8 @@ Things that have gone wrong here before, or that are expensive to undo:
   use, and a construct that looks obsolete may be load-bearing. Toolchain levels are per-module and
   mid-migration, so read that module's own `build.gradle`.
 - **Don't run deployment tooling** (`pipectl`, `docker push`, `deploy/pipectl/build-pipectl.sh`,
-  `aws s3 rm|mv`) as part of a code change.
+  `aws s3 rm|mv`) as part of a code change, except the `dev-sandbox` skill's sandbox lifecycle when
+  someone asks for it.
 - **Don't document what you did not verify.** Prefer a command that finds the answer over a copied
   value that will drift.
 - **Don't claim a command passed if you did not run it.** Say what you actually ran.

@@ -47,6 +47,7 @@
       "Read(**/*.p12)",
       "Read(**/*.jks)",
       "Read(**/*.keystore)",
+      "Read(**/*.secret)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)",
       "Read(~/.azure/**)",
