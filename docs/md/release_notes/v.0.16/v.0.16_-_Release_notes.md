@@ -32,6 +32,7 @@
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 - [Group permissions](#group-permissions)
 - [Investigate the failure reason of a run](#investigate-the-failure-reason-of-a-run)
+- [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 
 ***
 
@@ -619,6 +620,14 @@ If `url` is set, the **Run logs** page of a run in the `FAILURE` state shows the
 If `roles` is set, only the members of these roles/groups see the link. Otherwise, all users see it.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#investigate-failure-reason).
+
+## Run controls for an unavailable node
+
+When the compute node of a run stops reporting its status, the run gets the `NODE_UNAVAILABLE` tag. If the node does not recover within the grace period (the `cluster.node.unavailable.grace.period.minutes` system preference, or the `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` run parameter), the node is terminated.  
+Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VERSIONED STORAGE** controls for such a run, though these operations cannot complete without the node.
+
+In the current version, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
 
 ***
 
