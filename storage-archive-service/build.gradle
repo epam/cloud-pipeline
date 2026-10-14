@@ -1,0 +1,66 @@
+// Packages the service as a source distribution, the same way storage-lifecycle-service does: the
+// version from the root build is written into sas/version.py, `setup.py sdist` builds the tarball, and
+// the result is copied to a name without the version in it, so whatever installs it can refer to one
+// fixed name.
+//
+// sas/version.py is a tracked file, and rewriting a tracked file during a build is a thing to undo
+// properly. The original text is kept in memory and put back by a `finalizedBy` task, which Gradle runs
+// even when the task it finalizes fails - so an sdist that breaks halfway does not leave a generated
+// version string in the working tree.
+
+ext.savedVersionText = null
+
+task restoreVersionFile {
+    doLast {
+        restoreVersion()
+    }
+}
+
+task build(type: Exec) {
+    group = 'build'
+    finalizedBy restoreVersionFile
+    doFirst {
+        saveVersion()
+        setVersion(version)
+    }
+    commandLine 'python', "$project.rootDir/storage-archive-service/setup.py", 'sdist'
+    doLast {
+        copy {
+            from "$project.rootDir/storage-archive-service/dist/sas-${version}.tar.gz"
+            into "$project.rootDir/storage-archive-service/dist/"
+            rename { String fileName ->
+                fileName.replace("sas-${version}", "sas")
+            }
+        }
+    }
+}
+
+def versionFile() {
+    return file('sas/version.py')
+}
+
+def saveVersion() {
+    project.ext.savedVersionText = versionFile().getText('UTF-8')
+}
+
+def setVersion(String value) {
+    def target = versionFile()
+    def text = target.getText('UTF-8')
+    text = text.replaceAll(/(__version__ = '.+')/, "__version__ = \'$value\'")
+    target.write(text, 'UTF-8')
+}
+
+def restoreVersion() {
+    if (project.ext.savedVersionText != null) {
+        versionFile().write(project.ext.savedVersionText, 'UTF-8')
+        project.ext.savedVersionText = null
+    }
+}
+
+task clean(type: Delete) {
+    group = 'build'
+    doLast {
+        delete("$project.rootDir/storage-archive-service/sas.egg-info")
+        delete("$project.rootDir/storage-archive-service/dist")
+    }
+}

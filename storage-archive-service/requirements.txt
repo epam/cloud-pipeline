@@ -1,0 +1,11 @@
+# Runtime dependencies, pinned. Keep in step with `install_requires` in setup.py - that file is what
+# the gradle build and `pip install .` read, this one is for a plain `pip install -r`.
+#
+# requests  - the HTTP client used to talk to the platform API
+# urllib3   - requests' own transport; pinned because the warning suppression in api.py imports it
+# boto3     - the AWS SDK: listing, downloading and the multipart upload
+# botocore  - boto3's core; pinned together with it, as the two are released as a pair
+requests==2.32.3
+urllib3==2.2.3
+boto3==1.35.49
+botocore==1.35.49
