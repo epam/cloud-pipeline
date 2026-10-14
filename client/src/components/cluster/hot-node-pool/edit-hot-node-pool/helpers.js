@@ -434,8 +434,11 @@ export function buildPoolPayload (values) {
       }
     }), {})
   };
+  // `poolType` applies to every pool, not only a future-dated one, and the backend
+  // only reads it on create — its UPDATE statement does not include the `pool_type`
+  // column — so sending it unconditionally can never overwrite an existing pool's type.
+  payload.poolType = poolType;
   if (mode === MODE_FUTURE_DATED) {
-    payload.poolType = poolType;
     // `NodePoolManager.update()` never reads `capacityReservationRequest` on an
     // existing reservation pool — the window cannot be changed through this
     // endpoint at all (a separate "extend" flow, out of scope) — so it is only ever

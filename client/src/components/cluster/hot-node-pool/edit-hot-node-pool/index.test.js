@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -190,7 +190,7 @@ test('create mode, selecting future-dated leaves the Mode select showing Future 
 
 test(
   'future-dated + Standard locks Filters to the current user; Shareable unlocks; ' +
-  'back to Default clears it',
+ 'back to Default clears it',
   async () => {
     await renderPool();
 
@@ -205,7 +205,7 @@ test(
     expect(screen.getByText('user1')).toBeInTheDocument();
 
     await click(within(row('Pool type:')).getByRole('combobox'));
-    await click(screen.getByText('Shareable'));
+    await click(screen.getByText('Shareable node'));
 
     expect(selectIsDisabled('Condition:')).toBe(false);
     expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
@@ -215,15 +215,55 @@ test(
     await click(within(row('Mode:')).getByRole('combobox'));
     await click(screen.getByText('Default'));
 
-    expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+    // Pool type applies in every mode: it stays on screen,
+    // showing the value Default mode started with, instead of disappearing.
+    expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
     expect(selectIsDisabled('Condition:')).toBe(false);
     expect(screen.queryByText('Run owner')).not.toBeInTheDocument();
   }
 );
 
+test('Default mode: selecting Shareable node and clicking CREATE sends poolType SHARABLE_NODE',
+  async () => {
+    const onSave = fn();
+    const {api} = await renderPool({onSave});
+
+    await change(within(row('Pool name:')).getByRole('textbox'), 'default-pool');
+
+    await click(within(row('Pool type:')).getByRole('combobox'));
+    await click(screen.getByText('Shareable node'));
+
+    const callsBeforeRegion = api.calls
+      .filter(c => /cluster\/instance\/allowed/.test(c.path)).length;
+    await click(within(row('Region:')).getByRole('combobox'));
+    await click(screen.getByText('eu-central-1'));
+    await waitFor(() => {
+      const callsAfterRegion = api.calls
+        .filter(c => /cluster\/instance\/allowed/.test(c.path)).length;
+      expect(callsAfterRegion).toBeGreaterThan(callsBeforeRegion);
+    });
+    await flushPromises();
+    await waitFor(() => {
+      const select = within(row('Instance Type:')).getByRole('combobox').closest('.ant-select');
+      expect(select).not.toHaveClass('ant-select-disabled');
+    });
+
+    await click(within(row('Instance Type:')).getByRole('combobox'));
+    await click(screen.getByText('m5.xlarge'));
+
+    await change(within(row('Disk:')).getByRole('textbox'), '50');
+    await change(within(row('Nodes count:')).getByRole('textbox'), '1');
+
+    await click(screen.getByText('CREATE'));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const [payload] = onSave.mock.calls[0];
+    expect(payload.poolType).toBe('SHARABLE_NODE');
+  });
+
 test(
   'switching to future-dated mode removes Autoscaled and its rows; switching back leaves it ' +
-  'unchecked',
+ 'unchecked',
   async () => {
     await renderPool();
 
@@ -286,9 +326,9 @@ test(
 
     expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
     expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
-    // Pool type is locked too: a non-admin forced into future-dated-only Create must not
-    // be able to switch to Shareable and unlock the Filters section by hand.
-    expect(selectIsDisabled('Pool type:')).toBe(true);
+    // Pool type is not locked by a single-mode caller: a
+    // ROLE_NODE_POOL_MANAGER's forced-future-dated Create chooses it like anyone else.
+    expect(selectIsDisabled('Pool type:')).toBe(false);
     expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
     expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
     expect(selectIsDisabled('Condition:')).toBe(true);
@@ -300,7 +340,8 @@ test('allowedModes omitted: still opens in Default mode (admin default unchanged
   await renderPool();
 
   expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
-  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+  // Pool type applies to every pool, so it is offered in Default mode too.
+  expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
   expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
 });
 
@@ -358,16 +399,19 @@ test('Default-mode regression: SAVE still works and never shows a commitment err
     .not.toBeInTheDocument();
 });
 
-test('Default-mode edit: payload never carries mode/poolType/commitment* fields', async () => {
+test('Default-mode edit: payload carries poolType but never mode/commitment*/' +
+ 'capacityReservationRequest', async () => {
   const onSave = fn();
   await renderPool({pool: fullPool(), onSave});
 
   await click(screen.getByText('SAVE'));
 
   const [payload, schedulePayload] = onSave.mock.calls[0];
+  // poolType is sent for every pool; fullPool() carries none of its own,
+  // so the form falls back to Standard.
+  expect(payload.poolType).toBe('STANDARD');
   [
     'mode',
-    'poolType',
     'capacityReservationRequest',
     'commitmentStart',
     'commitmentEnd',
@@ -452,19 +496,31 @@ test(
   }
 );
 
-test('a SHARABLE_NODE reservation pool opens showing Shareable', async () => {
+test('a SHARABLE_NODE reservation pool opens showing Shareable node, disabled', async () => {
   await renderPool({pool: reservationPool({poolType: 'SHARABLE_NODE'})});
 
-  expect(within(row('Pool type:')).getByText('Shareable')).toBeInTheDocument();
+  expect(within(row('Pool type:')).getByText('Shareable node')).toBeInTheDocument();
+  expect(selectIsDisabled('Pool type:')).toBe(true);
 });
 
 test('editing a Default pool still opens in Default mode (regression)', async () => {
   await renderPool({pool: fullPool()});
 
   expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
-  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+  // Pool type is offered - and read - in Default mode too; fullPool() carries
+  // none of its own, so it falls back to Standard.
+  expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
   expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
 });
+
+test('editing a Default pool loaded with poolType SHARABLE_NODE shows Shareable node, disabled',
+  async () => {
+    await renderPool({pool: fullPool({poolType: 'SHARABLE_NODE'})});
+
+    expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
+    expect(within(row('Pool type:')).getByText('Shareable node')).toBeInTheDocument();
+    expect(selectIsDisabled('Pool type:')).toBe(true);
+  });
 
 test('a reservation pool shows its window read-only', async () => {
   await renderPool({pool: reservationPool()});
@@ -496,7 +552,7 @@ test('a Default pool regression: Count stays enabled', async () => {
 
 test(
   'SAVE on a reservation pool sends poolType but no capacityReservationRequest, ' +
-  'with count and priceType unchanged',
+ 'with count and priceType unchanged',
   async () => {
     const onSave = fn();
     const {api} = await renderPool({pool: reservationPool(), onSave});

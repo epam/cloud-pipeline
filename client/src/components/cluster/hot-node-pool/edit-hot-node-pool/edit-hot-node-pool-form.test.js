@@ -152,7 +152,9 @@ test('readOnly=false leaves the Mode select enabled', () => {
   expect(selectIsDisabled('Mode:')).toBe(false);
 });
 
-test('allowedModes={["FUTURE_DATED"]} hides the Mode row, future-dated-only rows still render',
+test(
+  'allowedModes={["FUTURE_DATED"]} hides the Mode row, future-dated-only rows still render, ' +
+  'and Pool type is not disabled by a single mode (regression)',
   () => {
     renderForm({
       allowedModes: ['FUTURE_DATED'],
@@ -160,9 +162,12 @@ test('allowedModes={["FUTURE_DATED"]} hides the Mode row, future-dated-only rows
     });
     expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
     expect(screen.getByText('Pool type:')).toBeInTheDocument();
-    expect(selectIsDisabled('Pool type:')).toBe(true);
+    // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) chooses its Pool type
+    // like anyone else - the dropped `modes.length <= 1` lock no longer applies.
+    expect(selectIsDisabled('Pool type:')).toBe(false);
     expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-  });
+  }
+);
 
 test('allowedModes={["DEFAULT", "FUTURE_DATED"]} renders the Mode row', () => {
   renderForm({allowedModes: ['DEFAULT', 'FUTURE_DATED']});
@@ -179,14 +184,38 @@ test('choosing Future dated calls onChange with (\'mode\', \'FUTURE_DATED\')', a
   expect(onChange).toHaveBeenCalledWith('mode', 'FUTURE_DATED');
 });
 
-test('Pool type row is absent in DEFAULT mode', () => {
+test('Pool type row is present in Default mode too, and precedes Mode', () => {
   renderForm({values: baseValues({mode: 'DEFAULT'})});
-  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+  const text = document.body.textContent;
+  expect(screen.getByText('Pool type:')).toBeInTheDocument();
+  expect(text.indexOf('Pool type:')).toBeLessThan(text.indexOf('Mode:'));
 });
 
-test('Pool type row is present in future-dated mode', () => {
+test('Pool type row is present in future-dated mode, and precedes Mode', () => {
   renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+  const text = document.body.textContent;
   expect(screen.getByText('Pool type:')).toBeInTheDocument();
+  expect(text.indexOf('Pool type:')).toBeLessThan(text.indexOf('Mode:'));
+});
+
+test('Pool type is enabled with readOnly=false in Default mode', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'}), readOnly: false});
+  expect(selectIsDisabled('Pool type:')).toBe(false);
+});
+
+test('Pool type is disabled with readOnly=true in Default mode', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'}), readOnly: true});
+  expect(selectIsDisabled('Pool type:')).toBe(true);
+});
+
+test('Pool type is enabled with readOnly=false in future-dated mode', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'}), readOnly: false});
+  expect(selectIsDisabled('Pool type:')).toBe(false);
+});
+
+test('Pool type is disabled with readOnly=true in future-dated mode', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'}), readOnly: true});
+  expect(selectIsDisabled('Pool type:')).toBe(true);
 });
 
 test('future-dated + Standard locks the Filters section: Condition and Add filter are disabled',

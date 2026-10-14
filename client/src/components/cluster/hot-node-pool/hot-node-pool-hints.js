@@ -70,10 +70,10 @@ const modeHint = (
 
 const poolTypeHint = (
   <div>
-    A <b>Standard</b> Future dated pool can be used only by the runs of the user who created
-    it —<br />
-    its usage filter is set automatically and cannot be changed.<br />
-    A <b>Shareable</b> Future dated pool can be restricted with any filters you define below.
+    <b>Standard</b> - a pool node runs one job at a time, as every pool does today.<br />
+    <b>Shareable node</b> - several jobs may share one pool node, which the platform<br />
+    divides between them.<br />
+    The pool type is chosen when the pool is created and cannot be changed afterwards.
   </div>
 );
 

@@ -631,17 +631,21 @@ describe('buildPoolPayload', () => {
     });
   });
 
-  it('Default mode with all commitment fields populated adds neither poolType nor ' +
-    'capacityReservationRequest', () => {
-    const payload = buildPoolPayload(values({
+  it('Default mode sends poolType too (STANDARD by default, SHARABLE_NODE when chosen), ' +
+    'but no capacityReservationRequest even with every commitment field populated', () => {
+    const standardPayload = buildPoolPayload(values({mode: 'DEFAULT', poolType: 'STANDARD'}));
+    expect(standardPayload.poolType).toBe('STANDARD');
+    expect(Object.keys(standardPayload)).not.toContain('capacityReservationRequest');
+
+    const shareablePayload = buildPoolPayload(values({
       mode: 'DEFAULT',
       poolType: 'SHARABLE_NODE',
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
       commitmentDuration: 1209600
     }));
-    expect(Object.keys(payload)).not.toContain('poolType');
-    expect(Object.keys(payload)).not.toContain('capacityReservationRequest');
+    expect(shareablePayload.poolType).toBe('SHARABLE_NODE');
+    expect(Object.keys(shareablePayload)).not.toContain('capacityReservationRequest');
   });
 });
 

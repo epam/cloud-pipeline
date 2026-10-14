@@ -225,21 +225,12 @@ function EditHotNodePoolForm ({
         error={validation.name}
         touched={touched.name}
       />
-      {
-        (mode || MODE_DEFAULT) === MODE_FUTURE_DATED ? (
-          <PoolTypeControl
-            value={poolType || POOL_TYPE_STANDARD}
-            // A caller that forces a single mode (a non-admin's future-dated-only
-            // Create) also forces Standard: without this, Pool type would stay a free
-            // choice and "Shareable" would unlock the Filters section the permission
-            // change exists to keep locked, letting that caller set an arbitrary usage
-            // filter.
-            disabled={disabled || readOnly || modes.length <= 1}
-            hint={hints.poolTypeHint}
-            onChange={value => onChange('poolType', value)}
-          />
-        ) : null
-      }
+      <PoolTypeControl
+        value={poolType || POOL_TYPE_STANDARD}
+        disabled={disabled || readOnly}
+        hint={hints.poolTypeHint}
+        onChange={value => onChange('poolType', value)}
+      />
       {
         modes.length > 1 ? (
           <ModeControl

@@ -24,21 +24,21 @@ test('renders the label and shows Standard as the current value', () => {
   expect(screen.getByText('Standard')).toBeInTheDocument();
 });
 
-test('opening the combobox shows both Standard and Shareable options', async () => {
+test('opening the combobox shows both Standard and Shareable node options', async () => {
   render(<PoolTypeControl value="STANDARD" onChange={fn()} />);
 
   await click(screen.getByRole('combobox'));
 
   expect(screen.getAllByText('Standard').length).toBeGreaterThan(0);
-  expect(screen.getByText('Shareable')).toBeInTheDocument();
+  expect(screen.getByText('Shareable node')).toBeInTheDocument();
 });
 
-test('clicking Shareable calls onChange once with SHAREABLE', async () => {
+test('clicking Shareable node calls onChange once with SHARABLE_NODE', async () => {
   const onChange = fn();
   render(<PoolTypeControl value="STANDARD" onChange={onChange} />);
 
   await click(screen.getByRole('combobox'));
-  await click(screen.getByText('Shareable'));
+  await click(screen.getByText('Shareable node'));
 
   expect(onChange).toHaveBeenCalledTimes(1);
   expect(onChange).toHaveBeenCalledWith('SHARABLE_NODE');

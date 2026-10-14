@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -161,7 +161,8 @@ function row (labelText) {
 }
 
 describe('payload shape is closed (Default mode)', () => {
-  it('buildPoolPayload exposes exactly the 16 pre-existing backend keys', () => {
+  it('buildPoolPayload exposes exactly the 16 pre-existing backend keys plus poolType, ' +
+ 'now sent in Default mode too', () => {
     const payload = buildPoolPayload(baseValues({
       mode: 'DEFAULT',
       poolType: 'SHARABLE_NODE',
@@ -180,6 +181,7 @@ describe('payload shape is closed (Default mode)', () => {
       'maxSize',
       'minSize',
       'name',
+      'poolType',
       'priceType',
       'regionId',
       'scaleDownThreshold',
@@ -220,8 +222,8 @@ describe('payload shape is closed (Default mode)', () => {
   });
 
   it(
-    'the Default-mode payload shape is unchanged while future-dated mode adds exactly ' +
-    'poolType and capacityReservationRequest',
+    'the Default-mode payload shape carries poolType too, and future-dated mode adds ' +
+ 'exactly capacityReservationRequest on top of that',
     () => {
       const defaultPayload = buildPoolPayload(baseValues({mode: 'DEFAULT'}));
       const futureDatedPayload = buildPoolPayload(baseValues({
@@ -233,7 +235,7 @@ describe('payload shape is closed (Default mode)', () => {
         commitmentDuration: 1209600
       }));
 
-      const sixteenKeys = [
+      const seventeenKeys = [
         'autoscaled',
         'count',
         'dockerImages',
@@ -245,6 +247,7 @@ describe('payload shape is closed (Default mode)', () => {
         'maxSize',
         'minSize',
         'name',
+        'poolType',
         'priceType',
         'regionId',
         'scaleDownThreshold',
@@ -252,9 +255,9 @@ describe('payload shape is closed (Default mode)', () => {
         'scaleUpThreshold'
       ].sort();
 
-      expect(Object.keys(defaultPayload).sort()).toEqual(sixteenKeys);
+      expect(Object.keys(defaultPayload).sort()).toEqual(seventeenKeys);
       expect(Object.keys(futureDatedPayload).sort()).toEqual(
-        [...sixteenKeys, 'capacityReservationRequest', 'poolType'].sort()
+        [...seventeenKeys, 'capacityReservationRequest'].sort()
       );
       expect(futureDatedPayload.capacityReservationRequest.reservationType).toBe('FUTURE_DATED');
       ['mode', 'commitmentStart', 'commitmentEnd', 'commitmentDuration'].forEach((key) => {
@@ -322,11 +325,14 @@ describe('validation key set and result are unchanged in Default mode', () => {
 });
 
 describe('rendered Default-mode control set is unchanged', () => {
-  it('shows exactly the pre-existing controls plus the new Mode: row', async () => {
+  it('shows exactly the pre-existing controls plus the new Mode: and Pool type: rows', async () => {
     await renderPool();
 
     [
       'Mode:',
+      // Pool type applies in every mode: it is offered in
+      // Default mode too, so it belongs in the "present" list, not the "absent" one.
+      'Pool type:',
       'Pool name:',
       'Autoscaled:',
       'Nodes count:',
@@ -348,7 +354,6 @@ describe('rendered Default-mode control set is unchanged', () => {
     expect(screen.getByText('CANCEL')).toBeInTheDocument();
 
     [
-      'Pool type:',
       'Starts on:',
       'Duration (sec):',
       'Ends on:'
@@ -359,7 +364,8 @@ describe('rendered Default-mode control set is unchanged', () => {
 });
 
 describe('edit-mode round trip is byte-identical', () => {
-  it('SAVE produces the exact pre-existing pool and schedule payloads', async () => {
+  it('SAVE produces the exact pre-existing pool payload plus poolType, and the exact ' +
+ 'pre-existing schedule payload', async () => {
     const onSave = fn();
     await renderPool({pool: fullPool(), onSave});
 
@@ -373,6 +379,9 @@ describe('edit-mode round trip is byte-identical', () => {
       dockerImages: ['registry.com/group/image:1'],
       instanceType: 'm5.xlarge',
       name: 'my-pool',
+      // poolType is sent for every pool; fullPool() carries none of its own,
+      // so the form falls back to Standard.
+      poolType: 'STANDARD',
       priceType: 'SPOT',
       regionId: 1,
       instanceImage: 'ami-1',

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -195,7 +195,8 @@ test('admin: Create opens the modal in Default mode, with the Mode row shown', a
   await waitFor(() => expect(within(
     screen.getByText('Mode:').closest('div')
   ).getByText('Default')).toBeInTheDocument());
-  expect(screen.queryByText('Pool type:')).not.toBeInTheDocument();
+  // Pool type applies to every pool, so it is offered in Default mode too.
+  expect(screen.getByText('Pool type:')).toBeInTheDocument();
 
   await click(screen.getByText('CANCEL'));
 });

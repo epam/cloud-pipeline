@@ -22,12 +22,15 @@ import {POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE} from '../constants';
 
 const POOL_TYPE_NAMES = {
   [POOL_TYPE_STANDARD]: 'Standard',
-  [POOL_TYPE_SHAREABLE]: 'Shareable'
+  [POOL_TYPE_SHAREABLE]: 'Shareable node'
 };
 
-// `poolType` is future-dated-only and client-only: a Standard pool forces its Filters
-// section to a single run-owner criterion (see `filtersAreLocked`/`buildLockedFilters`
-// in `../helpers`); a Shareable pool leaves filters user-editable, same as Default mode.
+// `poolType` is a real backend field (`NodePoolVO.poolType`, enum `STANDARD`/
+// `SHARABLE_NODE`) that applies to a pool in either mode, not just a future-dated one:
+// a `SHARABLE_NODE` pool's node is shared between several runs, and the backend derives
+// its launch config from that. The backend's UPDATE statement does not carry
+// `pool_type`, so the value can only be chosen at create time - which is why the form
+// disables this control when editing.
 function PoolTypeControl ({value, disabled, hint, onChange}) {
   return (
     <SelectInput

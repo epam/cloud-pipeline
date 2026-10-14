@@ -218,10 +218,10 @@ class EditHotNodePool extends React.Component {
       // `isCapacityReservation` is the backend entity's own flag and the only
       // reliable signal that a loaded pool is a reservation pool.
       const mode = isCapacityReservation ? MODE_FUTURE_DATED : MODE_DEFAULT;
-      // After Phase 1 the two literals are identical ('STANDARD'/'SHARABLE_NODE'), so
-      // this is a validated passthrough rather than a translation.
-      const poolType = mode === MODE_FUTURE_DATED &&
-        [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
+      // `poolType` applies to every pool, not only a future-dated one, so it is read
+      // straight off the pool regardless of mode: it is a validated passthrough
+      // (the wire value and the client constant are the same literal).
+      const poolType = [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
         ? poolPoolTypeRaw
         : POOL_TYPE_STANDARD;
       // On an existing pool the persisted filter already holds the right RUN_OWNER;
