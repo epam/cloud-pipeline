@@ -25,8 +25,7 @@ import {
   isModified as checkModified,
   buildPoolPayload,
   buildSchedulePayload,
-  filtersAreLocked,
-  buildLockedFilters
+  buildRunOwnerFilter
 } from './helpers';
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -187,7 +186,7 @@ class EditHotNodePool extends React.Component {
   }
 
   updateFromProps = () => {
-    const {pool} = this.props;
+    const {pool, currentUserName} = this.props;
     if (pool) {
       const {
         instanceDisk: disk,
@@ -224,11 +223,9 @@ class EditHotNodePool extends React.Component {
       const poolType = [POOL_TYPE_STANDARD, POOL_TYPE_SHAREABLE].includes(poolPoolTypeRaw)
         ? poolPoolTypeRaw
         : POOL_TYPE_STANDARD;
-      // On an existing pool the persisted filter already holds the right RUN_OWNER;
-      // rebuilding it from `this.props.currentUserName` would silently rewrite another
-      // user's pool to the admin who opened it. The Filters section stays disabled for
-      // a future-dated/Standard pool anyway, because the form's `FiltersControl` already
-      // computes `disabled={disabled || filtersAreLocked(values)}` from `mode`/`poolType`.
+      // On an existing pool the persisted filter is used as loaded: rebuilding it from
+      // `this.props.currentUserName` would rewrite another user's pool to whoever opened
+      // it.
       const mappedFilters = mapFilters(filters);
       this.setState({
         mode,
@@ -303,12 +300,16 @@ class EditHotNodePool extends React.Component {
       // `pool` is always falsy here (this is the Create path), so `mode` resolves to
       // `this.defaultMode` — the first entry of `allowedModes`, i.e. future-dated for a
       // non-admin's forced-future-dated Create. The mode a caller forces must apply
-      // before any `onChange` reaches the user, so that Create opens with the Filters
-      // section already locked to the current user's runs rather than waiting on a
-      // Mode/Pool type interaction that a non-admin never gets a chance to make.
+      // before any `onChange` reaches the user, so that Create opens with its filters
+      // already seeded rather than waiting on a Mode interaction a non-admin never gets
+      // a chance to make.
       const mode = pool ? MODE_DEFAULT : this.defaultMode;
-      const lockedFilters = filtersAreLocked({mode, poolType: POOL_TYPE_STANDARD})
-        ? buildLockedFilters(this.props.currentUserName)
+      // A new future-dated pool opens with the creator pre-filled as the run owner. The
+      // caller can force the mode (a NODE_POOL_MANAGER's Create), so the seed cannot wait
+      // for an onChange that user never gets to make. Seeded only when the login is known -
+      // an empty criterion would fail validation with nothing to show for it.
+      const seededFilters = mode === MODE_FUTURE_DATED && currentUserName
+        ? buildRunOwnerFilter(currentUserName)
         : undefined;
       this.setState({
         mode,
@@ -338,7 +339,7 @@ class EditHotNodePool extends React.Component {
         initialName: undefined,
         region: undefined,
         initialRegion: undefined,
-        filters: lockedFilters,
+        filters: seededFilters,
         initialFilters: undefined,
         prevRegion: -1,
         prevSpot: -1,
@@ -529,22 +530,20 @@ class EditHotNodePool extends React.Component {
     }
   };
 
-  // `mode` and `poolType` are client-only (no backend slot) and together they decide
-  // whether the Filters section is editable: a future-dated pool of the STANDARD type is
-  // always restricted to its creator's own runs, so the filter is derived here. Leaving
-  // that combination restores the filters the form started with (`undefined` when
-  // creating).
+  // A mode switch into future-dated seeds the Filters section with the creator's
+  // run-owner criterion (see the `filters` block below); a `poolType` switch never
+  // touches filters.
   onPoolKindChange = (key, value) => {
     const {currentUserName} = this.props;
-    const {mode, poolType, spot, touched, initialFilters} = this.state;
-    const next = {mode, poolType, [key]: value};
+    const {mode, spot, touched, initialFilters} = this.state;
+    const nextMode = key === 'mode' ? value : mode;
     const newState = {
       [key]: value,
       touched: {...touched, [key]: true}
     };
     // A future-dated pool reserves a fixed block of capacity, so it can never be
     // autoscaled.
-    if (next.mode === MODE_FUTURE_DATED) {
+    if (nextMode === MODE_FUTURE_DATED) {
       newState.autoscaled = false;
       // A capacity reservation cannot use spot pricing, so leaving Default mode with
       // Spot selected would carry an instantly-invalid price type into future-dated mode.
@@ -552,10 +551,15 @@ class EditHotNodePool extends React.Component {
         newState.spot = 'ON_DEMAND';
       }
     }
-    if (filtersAreLocked(next)) {
-      newState.filters = buildLockedFilters(currentUserName);
-    } else if (filtersAreLocked({mode, poolType})) {
-      newState.filters = initialFilters;
+    // Only a real mode switch touches the filters: entering future-dated mode seeds the
+    // creator's run-owner criterion, leaving it restores what the form started with.
+    // A Pool type switch must not discard filters the user has already edited.
+    if (key === 'mode' && value !== mode) {
+      if (value === MODE_FUTURE_DATED && currentUserName) {
+        newState.filters = buildRunOwnerFilter(currentUserName);
+      } else if (mode === MODE_FUTURE_DATED) {
+        newState.filters = initialFilters;
+      }
     }
     this.setState(newState, this.onChange);
   };

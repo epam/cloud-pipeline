@@ -189,8 +189,8 @@ test('create mode, selecting future-dated leaves the Mode select showing Future 
   });
 
 test(
-  'future-dated + Standard locks Filters to the current user; Shareable unlocks; ' +
- 'back to Default clears it',
+  'entering future-dated mode seeds an editable Run owner filter; a Pool type switch ' +
+ 'leaves it untouched; leaving future-dated mode clears it',
   async () => {
     await renderPool();
 
@@ -198,30 +198,43 @@ test(
     await click(screen.getByText('Future dated'));
 
     expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
-    expect(selectIsDisabled('Condition:')).toBe(true);
     expect(screen.getByText('Run owner')).toBeInTheDocument();
     // UserName (injected with `usersInfo`) falls back to the lower-cased login
     // when it cannot resolve a richer display name, which is the case here.
     expect(screen.getByText('user1')).toBeInTheDocument();
-
-    await click(within(row('Pool type:')).getByRole('combobox'));
-    await click(screen.getByText('Shareable node'));
-
     expect(selectIsDisabled('Condition:')).toBe(false);
     expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 
     await click(within(row('Pool type:')).getByRole('combobox'));
+    await click(screen.getByText('Shareable node'));
+
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+
+    await click(within(row('Pool type:')).getByRole('combobox'));
     await click(screen.getByText('Standard'));
+
+    expect(screen.getByText('Run owner')).toBeInTheDocument();
+    expect(screen.getByText('user1')).toBeInTheDocument();
+
     await click(within(row('Mode:')).getByRole('combobox'));
     await click(screen.getByText('Default'));
 
-    // Pool type applies in every mode: it stays on screen,
-    // showing the value Default mode started with, instead of disappearing.
-    expect(within(row('Pool type:')).getByText('Standard')).toBeInTheDocument();
-    expect(selectIsDisabled('Condition:')).toBe(false);
     expect(screen.queryByText('Run owner')).not.toBeInTheDocument();
   }
 );
+
+test('currentUserName omitted: entering future-dated mode seeds no filter, panel stays enabled',
+  async () => {
+    await renderPool({currentUserName: undefined});
+
+    await click(within(row('Mode:')).getByRole('combobox'));
+    await click(screen.getByText('Future dated'));
+
+    expect(screen.queryByText('Run owner')).not.toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.queryByText('Some conditions are invalid')).not.toBeInTheDocument();
+  });
 
 test('Default mode: selecting Shareable node and clicking CREATE sends poolType SHARABLE_NODE',
   async () => {
@@ -320,7 +333,8 @@ test('a forced-future-dated create never auto-selects the Spot price type', asyn
 });
 
 test(
-  'allowedModes=["FUTURE_DATED"]: opens forced into future-dated mode, locked, with no Mode row',
+  'allowedModes=["FUTURE_DATED"]: opens forced into future-dated mode, with no Mode row, ' +
+ 'the Run owner criterion already seeded and the Filters panel enabled',
   async () => {
     await renderPool({allowedModes: ['FUTURE_DATED']});
 
@@ -331,9 +345,10 @@ test(
     expect(selectIsDisabled('Pool type:')).toBe(false);
     expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
     expect(screen.getByText('Duration (sec):')).toBeInTheDocument();
-    expect(selectIsDisabled('Condition:')).toBe(true);
     expect(screen.getByText('Run owner')).toBeInTheDocument();
     expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(selectIsDisabled('Condition:')).toBe(false);
+    expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
   });
 
 test('allowedModes omitted: still opens in Default mode (admin default unchanged)', async () => {

@@ -23,7 +23,6 @@ import {
   DISK_MAX_SIZE,
   COUNT_MIN_SIZE,
   MODE_FUTURE_DATED,
-  POOL_TYPE_STANDARD,
   COMMITMENT_DATE_TIME_FORMAT,
   RESERVATION_COUNT_MIN_SIZE,
   MIN_COMMITMENT_DURATION_SECONDS,
@@ -34,16 +33,11 @@ import {
   RESERVATION_STATUS_APPROVED
 } from './constants';
 
-// A STANDARD future-dated pool is always restricted to the runs of the user who created
-// it, so its usage filter is derived from mode/poolType instead of being user-editable.
-// This is the already-backend-supported RUN_OWNER/EQUAL criterion, so it is sent in the
-// payload exactly like a hand-made filter.
-export function filtersAreLocked (values) {
-  const {mode, poolType} = values || {};
-  return mode === MODE_FUTURE_DATED && poolType === POOL_TYPE_STANDARD;
-}
-
-export function buildLockedFilters (userName) {
+// A new future-dated pool opens with its creator as the run owner - a default the
+// user may edit or remove, not a derived or enforced value. It is the already
+// backend-supported RUN_OWNER/EQUAL criterion, sent in the payload exactly like a
+// hand-made filter.
+export function buildRunOwnerFilter (userName) {
   return {
     operator: 'AND',
     filters: [{type: 'RUN_OWNER', operator: 'EQUAL', value: userName}]

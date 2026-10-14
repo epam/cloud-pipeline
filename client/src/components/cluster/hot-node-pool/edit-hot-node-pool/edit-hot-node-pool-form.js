@@ -34,7 +34,6 @@ import InstanceDetails from '../instance-details';
 import * as hints from '../hot-node-pool-hints';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
-import {filtersAreLocked} from './helpers';
 import {
   DISK_MIN_SIZE,
   DISK_MAX_SIZE,
@@ -483,7 +482,7 @@ function EditHotNodePoolForm ({
       </div>
       <FiltersControl
         roles={roles}
-        disabled={disabled || filtersAreLocked(values)}
+        disabled={disabled}
         filters={filters}
         error={validation.filters}
         touched={touched.filters}

@@ -218,12 +218,11 @@ test('Pool type is disabled with readOnly=true in future-dated mode', () => {
   expect(selectIsDisabled('Pool type:')).toBe(true);
 });
 
-test('future-dated + Standard locks the Filters section: Condition and Add filter are disabled',
-  () => {
-    renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'STANDARD'})});
-    expect(selectIsDisabled('Condition:')).toBe(true);
-    expect(screen.getByRole('button', {name: 'Add filter'})).toBeDisabled();
-  });
+test('future-dated + Standard leaves the Filters section enabled', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'STANDARD'})});
+  expect(selectIsDisabled('Condition:')).toBe(false);
+  expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+});
 
 test('future-dated + Shareable leaves the Filters section enabled', () => {
   renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'SHARABLE_NODE'})});

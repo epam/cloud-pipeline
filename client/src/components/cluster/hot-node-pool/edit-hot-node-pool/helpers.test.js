@@ -22,8 +22,7 @@ import {
   buildPoolPayload,
   buildSchedulePayload,
   buildCapacityReservationRequest,
-  filtersAreLocked,
-  buildLockedFilters,
+  buildRunOwnerFilter,
   getCapacityReservationStatus
 } from './helpers';
 import {
@@ -649,31 +648,9 @@ describe('buildPoolPayload', () => {
   });
 });
 
-describe('filtersAreLocked', () => {
-  it('is true for a FUTURE_DATED/STANDARD pool', () => {
-    expect(filtersAreLocked({mode: 'FUTURE_DATED', poolType: 'STANDARD'})).toBe(true);
-  });
-
-  it('is false for a FUTURE_DATED/SHARABLE_NODE pool', () => {
-    expect(filtersAreLocked({mode: 'FUTURE_DATED', poolType: 'SHARABLE_NODE'})).toBe(false);
-  });
-
-  it('is false for a DEFAULT/STANDARD pool', () => {
-    expect(filtersAreLocked({mode: 'DEFAULT', poolType: 'STANDARD'})).toBe(false);
-  });
-
-  it('is false for an empty values object', () => {
-    expect(filtersAreLocked({})).toBe(false);
-  });
-
-  it('is false for undefined', () => {
-    expect(filtersAreLocked(undefined)).toBe(false);
-  });
-});
-
-describe('buildLockedFilters', () => {
+describe('buildRunOwnerFilter', () => {
   it('builds a single AND-ed RUN_OWNER/EQUAL criterion for the given user', () => {
-    expect(buildLockedFilters('USER1')).toEqual({
+    expect(buildRunOwnerFilter('USER1')).toEqual({
       operator: 'AND',
       filters: [{type: 'RUN_OWNER', operator: 'EQUAL', value: 'USER1'}]
     });
