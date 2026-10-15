@@ -840,6 +840,14 @@ public class SystemPreferences {
             "launch.docker.preflight.checks", true, LAUNCH_GROUP, pass, true);
 
     /**
+     * Pins the pod of a launched run to the digest, which the run's docker image tag points to at the launch,
+     * so the run cannot pick up another image if the tag is moved later. Applies to the runs launched
+     * after it is enabled only, the runs created before keep using the tag.
+     */
+    public static final BooleanPreference LAUNCH_DOCKER_IMAGE_PIN_DIGEST = new BooleanPreference(
+            "launch.docker.image.pin.digest", false, LAUNCH_GROUP, pass);
+
+    /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
      * from run container.
      */
