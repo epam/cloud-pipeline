@@ -25,8 +25,8 @@ whole one, because that is where the prefix handling can go wrong: a path in a t
 storage, while a key in S3 is not.
 """
 
-from sas.model import Storage, StorageType
-from sas.datastorage_providers.s3 import S3Source
+from sats.model import Storage, StorageType
+from sats.datastorage_providers.s3 import S3Source
 
 from .fakes import FakeS3Client
 

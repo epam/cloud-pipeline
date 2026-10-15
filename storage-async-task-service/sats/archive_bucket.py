@@ -19,7 +19,7 @@ The destination is the platform data storage named by `destinationStorageId` in
 `storage.download.archive.config`, and this class works on the bucket behind it. A storage rather than a
 bare bucket, so that the API can sign the download link through the machinery it already has for every
 other storage - and so that this service reaches it the same way it reaches the storage being archived:
-through the cloud region recorded against it and the role that region names. `sas/cloud/aws.py` holds that
+through the cloud region recorded against it and the role that region names. `sats/cloud/aws.py` holds that
 part; here the client simply arrives built.
 
 The object key is `archives/<task id>.zip`, derived from the task and not chosen here. That is what

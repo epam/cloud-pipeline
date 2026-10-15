@@ -17,12 +17,12 @@
 
 from setuptools import find_packages, setup
 
-from sas.version import __version__
+from sats.version import __version__
 
 setup(
-    name='sas',
+    name='sats',
     version=__version__,
-    # Finds `sas` and its subpackages by looking for directories holding an `__init__.py`. Listing them
+    # Finds `sats` and its subpackages by looking for directories holding an `__init__.py`. Listing them
     # by hand is the alternative and goes stale the first time a package is added.
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
@@ -41,10 +41,10 @@ setup(
         'boto3==1.35.49',
         'botocore==1.35.49',
     ],
-    # Installs a `sas` command on the PATH that calls `sas.app.main`. The same string shape the
+    # Installs a `sats` command on the PATH that calls `sats.app.main`. The same string shape the
     # lifecycle service uses for its own entry point.
     entry_points='''
         [console_scripts]
-        sas=sas.app:main
+        sats=sats.app:main
     '''
 )

@@ -19,7 +19,7 @@ No HTTP happens - `_request` is replaced. The request is the whole subject, beca
 caller can check for itself: a wrong endpoint or a field the API does not know answers 404 or a refusal
 at run time, in a deployment, and says nothing about having been asked wrongly.
 
-The executor of these tasks is `storage-archive-service`, which is where the answers are parsed.
+The executor of these tasks is `storage-async-task-service`, which is where the answers are parsed.
 """
 
 from mock import Mock

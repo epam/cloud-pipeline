@@ -29,9 +29,9 @@ network.
 import pytest
 from botocore.credentials import DeferredRefreshableCredentials
 
-from sas.cloud.aws import ROLE_SESSION_NAME, build_s3_client, resolve_role_arn
-from sas.errors import CredentialsUnavailable
-from sas.model import ArchiveTask, CloudRegion, Storage, StorageType, TaskStatus
+from sats.cloud.aws import ROLE_SESSION_NAME, build_s3_client, resolve_role_arn
+from sats.errors import CredentialsUnavailable
+from sats.model import ArchiveTask, CloudRegion, Storage, StorageType, TaskStatus
 
 from .fakes import FakeApi
 

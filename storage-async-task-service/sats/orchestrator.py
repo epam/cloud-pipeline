@@ -39,6 +39,7 @@ CPU barely matters, and at level 9 the slots would be competing for one core.
 from __future__ import annotations
 
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 from .api import CloudPipelineApi
@@ -82,6 +83,9 @@ class Orchestrator:
         # Remembered so that the warnings of the preference are logged when they appear or change,
         # rather than once per round for as long as the misconfiguration lasts.
         self._reported_warnings: tuple[str, ...] = ()
+        # When the cleanups may run again, on the monotonic clock. `None` means "never run yet", which
+        # is what makes the first round do them: a restart is exactly when there is most to clean up.
+        self._next_cleanup: float | None = None
 
     def run(self) -> None:
         """
@@ -98,6 +102,14 @@ class Orchestrator:
         """
         LOG.info('Starting with %s slot(s), polling every %s s, work directory %s',
                  self._config.slots, self._config.poll_interval_seconds, self._config.work_dir)
+        if self._config.cleanup_interval_seconds:
+            LOG.info('Cleanups run every %s s', self._config.cleanup_interval_seconds)
+        else:
+            # Loud, because the consequence is silent: a task whose worker died stays RUNNING for
+            # ever, counts against its owner's quota, and its archive is never deleted.
+            LOG.warning('Cleanups are turned off (--cleanup-interval-seconds 0). Nothing in this '
+                        'process will finish a task whose worker is gone, delete an expired archive '
+                        'or remove an abandoned scratch directory')
         self._config.work_dir.mkdir(parents=True, exist_ok=True)
         with ThreadPoolExecutor(max_workers=self._config.slots,
                                 thread_name_prefix='worker') as pool:
@@ -133,7 +145,8 @@ class Orchestrator:
         archive_config = self._load_archive_config()
         if archive_config is None:
             return
-        self._cleaner.cleanup(archive_config, self._active_ids())
+        if self._cleanup_due():
+            self._cleaner.cleanup(archive_config, self._active_ids())
         if self._shutdown.is_set():
             return
         if not archive_config.is_usable:
@@ -142,6 +155,34 @@ class Orchestrator:
             # here would lose work for a mistake that is about to be corrected.
             return
         self._claim_while_free(pool, archive_config)
+
+    def _cleanup_due(self) -> bool:
+        """
+        Whether this round runs the cleanups, and books the next one if it does.
+
+        They are throttled apart from the loop because the loop is also what claims new tasks and so
+        has to stay fast, while nothing the cleanups look for appears in seconds - the thresholds they
+        act on are hours. At the default settings this turns 540 `async-task/filter` calls an hour into
+        fifteen.
+
+        The clock is `time.monotonic()`, never the wall clock: a monotonic clock only moves forward at
+        a steady rate, while the wall clock can jump - NTP correcting a drift, a container resuming -
+        and a schedule measured against it can skip an interval or repeat one.
+
+        `None` as the initial value is what makes the first round clean up. That is deliberate rather
+        than incidental: a process that has just started is the one case where something certainly
+        needs cleaning - the tasks of the worker that was killed with the previous process.
+        """
+        interval = self._config.cleanup_interval_seconds
+        if not interval:
+            return False
+        now = time.monotonic()
+        if self._next_cleanup is not None and now < self._next_cleanup:
+            return False
+        # Booked from now rather than from the previous slot, so a long round does not make the next
+        # cleanup immediate.
+        self._next_cleanup = now + interval
+        return True
 
     def _load_archive_config(self) -> StorageDownloadArchiveConfig | None:
         """

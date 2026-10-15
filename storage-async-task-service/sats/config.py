@@ -86,6 +86,14 @@ class ServiceConfig:
     slots: int = 2
     # How long the loop sleeps when it found nothing to claim.
     poll_interval_seconds: int = 20
+    # How often the cleanups run. They cost three `async-task/filter` calls and a walk of the work
+    # directory, and nothing they look for appears in seconds: the thresholds they act on are
+    # `stuckTasksThresholdMinutes` and `ttlDays`. So they are throttled separately from the loop, which
+    # has to stay fast because it is also what claims new tasks. `0` turns them off entirely, for a
+    # deployment that runs the cleanups elsewhere - the service says so loudly at startup, because
+    # without them a task whose worker died stays `RUNNING` for ever and counts against its owner's
+    # quota.
+    cleanup_interval_seconds: int = 300
     # How often a running worker asks the API whether its task is still wanted. The lower bound on how
     # fast a cancellation is noticed; also, with as many workers as slots, the load this puts on the
     # API.
@@ -98,7 +106,7 @@ class ServiceConfig:
     # research data, and level 6 would spend minutes of CPU per gigabyte to gain a few percent.
     compress_level: int = 1
     # Where NFS shares get mounted. One subdirectory per share.
-    nfs_mount_root: Path = Path('/mnt/sas-shares')
+    nfs_mount_root: Path = Path('/mnt/sats-shares')
     # Hard limit on a `mount` call and on the liveness check of an existing mount point. A dead NFS
     # server makes both hang forever by default, and a hung mount in a worker thread is unkillable.
     nfs_mount_timeout_seconds: int = 30

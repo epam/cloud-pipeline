@@ -1,9 +1,9 @@
 // Packages the service as a source distribution, the same way storage-lifecycle-service does: the
-// version from the root build is written into sas/version.py, `setup.py sdist` builds the tarball, and
+// version from the root build is written into sats/version.py, `setup.py sdist` builds the tarball, and
 // the result is copied to a name without the version in it, so whatever installs it can refer to one
 // fixed name.
 //
-// sas/version.py is a tracked file, and rewriting a tracked file during a build is a thing to undo
+// sats/version.py is a tracked file, and rewriting a tracked file during a build is a thing to undo
 // properly. The original text is kept in memory and put back by a `finalizedBy` task, which Gradle runs
 // even when the task it finalizes fails - so an sdist that breaks halfway does not leave a generated
 // version string in the working tree.
@@ -23,20 +23,20 @@ task build(type: Exec) {
         saveVersion()
         setVersion(version)
     }
-    commandLine 'python', "$project.rootDir/storage-archive-service/setup.py", 'sdist'
+    commandLine 'python', "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
     doLast {
         copy {
-            from "$project.rootDir/storage-archive-service/dist/sas-${version}.tar.gz"
-            into "$project.rootDir/storage-archive-service/dist/"
+            from "$project.rootDir/storage-async-task-service/dist/sats-${version}.tar.gz"
+            into "$project.rootDir/storage-async-task-service/dist/"
             rename { String fileName ->
-                fileName.replace("sas-${version}", "sas")
+                fileName.replace("sats-${version}", "sats")
             }
         }
     }
 }
 
 def versionFile() {
-    return file('sas/version.py')
+    return file('sats/version.py')
 }
 
 def saveVersion() {
@@ -60,7 +60,7 @@ def restoreVersion() {
 task clean(type: Delete) {
     group = 'build'
     doLast {
-        delete("$project.rootDir/storage-archive-service/sas.egg-info")
-        delete("$project.rootDir/storage-archive-service/dist")
+        delete("$project.rootDir/storage-async-task-service/sats.egg-info")
+        delete("$project.rootDir/storage-async-task-service/dist")
     }
 }

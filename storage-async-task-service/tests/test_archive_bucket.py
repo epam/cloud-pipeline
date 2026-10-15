@@ -23,7 +23,7 @@ writes with boto3 and has to prepend it itself, so the two must agree on the res
 
 import pytest
 
-from sas.archive_bucket import absolute_key, archive_key
+from sats.archive_bucket import absolute_key, archive_key
 
 TASK_ID = '4f1a2c90-0000-4000-8000-000000000001'
 

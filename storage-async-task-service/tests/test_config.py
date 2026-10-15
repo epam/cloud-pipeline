@@ -25,7 +25,7 @@ import json
 
 import pytest
 
-from sas.config import DEFAULT_DESTINATION_PREFIX, DEFAULT_MAX_FILES_COUNT, \
+from sats.config import DEFAULT_DESTINATION_PREFIX, DEFAULT_MAX_FILES_COUNT, \
     DEFAULT_MAX_SIZE_BYTES, StorageDownloadArchiveConfig, normalise_prefix
 
 

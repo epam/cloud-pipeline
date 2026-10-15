@@ -21,7 +21,7 @@ Nothing here is a second source of truth about behaviour - every box names the f
 ## The layout
 
 ```
- sas/
+ sats/
    app.py                       flags, environment, signals
    orchestrator.py              the loop: read the preference, clean up, claim, sleep
    api.py                       the layer over pipeline.PipelineAPI
@@ -63,7 +63,8 @@ Nothing here is a second source of truth about behaviour - every box names the f
    |     |    unreadable or unparsable -> skip this round entirely, nothing is claimed
    |     |    no destinationStorageId  -> warn once, claim nothing     config.py  is_usable
    |     |
-   |     | 2. four cleaner cleanups            cleaner.py  Cleaner.cleanup()
+   |     | 2. four cleanups, if one is due     orchestrator.py  _cleanup_due()
+   |     |                                     worker/cleaner.py  Cleaner.cleanup()
    |     |      1  CANCEL_REQUESTED stuck -> STOPPING -> CANCELLED   _finish_unconfirmed_cancellations
    |     |      2  RUNNING/STOPPING stuck -> FAILED                  _fail_stuck_tasks
    |     |      3  SUCCESS past ttlDays   -> EXPIRED                 _expire_finished_tasks
@@ -177,9 +178,9 @@ There is no cron and no timer thread. Everything is one of three clocks:
 
 | What | How often | Controlled by | Where |
 |---|---|---|---|
-| a round of the loop | after each round, if nothing stopped it | `--poll-interval-seconds` (`CP_SAS_POLL_INTERVAL`, 20 s) | `orchestrator.py run()`, via `Event.wait` so a shutdown cuts it short |
-| the four cleanups | once per round | nothing of their own | `worker/cleaner.py cleanup()` |
-| "is my task still wanted?" | per worker, between files and between upload parts | `--status-poll-seconds` (`CP_SAS_STATUS_POLL`, 15 s) | `worker/task_stop_watcher.py TaskStopWatcher.check()`; the first poll is due one interval after the task was taken |
+| a round of the loop | after each round, if nothing stopped it | `--poll-interval-seconds` (`CP_SATS_POLL_INTERVAL`, 20 s) | `orchestrator.py run()`, via `Event.wait` so a shutdown cuts it short |
+| the four cleanups | every `--cleanup-interval-seconds` (300 s), and always on the first round after a start | `--cleanup-interval-seconds` (`CP_SATS_CLEANUP_INTERVAL`); `0` turns them off | `orchestrator.py _cleanup_due()`, then `worker/cleaner.py cleanup()` |
+| "is my task still wanted?" | per worker, between files and between upload parts | `--status-poll-seconds` (`CP_SATS_STATUS_POLL`, 15 s) | `worker/task_stop_watcher.py TaskStopWatcher.check()`; the first poll is due one interval after the task was taken |
 | "have I run too long?" | the same check, no API call | preference `workerMaxRunningMinutes` | `worker/task_stop_watcher.py TaskStopWatcher`, deadline fixed when the worker starts |
 | a task counts as stuck | measured on the API's clock, not ours | preference `stuckTasksThresholdMinutes` | `worker/cleaner.py _stuck_before()` |
 | an archive counts as expired | measured on the API's clock | preference `ttlDays` | `worker/cleaner.py _expire_finished_tasks()` |
@@ -222,17 +223,18 @@ Read once at startup; every one is both a flag and an environment variable, and 
 |---|---|---|---|
 | `--cp-api-url` | `API` | required | `api.py` |
 | `--cp-api-token` | `API_TOKEN` | required | `api.py` (never logged) |
-| `--verify-ssl` | `CP_SAS_VERIFY_SSL` | off | nowhere: the platform's API client cannot honour it, and `api.py` warns once at startup if it is on |
-| `--work-dir` | `CP_SAS_WORK_DIR` | `/tmp/sas` | `worker/archive_preparation_worker.py` (one subdirectory per task), `worker/cleaner.py` cleanup 4, `worker/archive_preparation_worker.py _assert_fits_locally` |
-| `--slots` | `CP_SAS_SLOTS` | 2 | `orchestrator.py` pool size and semaphore |
-| `--poll-interval-seconds` | `CP_SAS_POLL_INTERVAL` | 20 | `orchestrator.py run()` |
-| `--status-poll-seconds` | `CP_SAS_STATUS_POLL` | 15 | `worker/task_stop_watcher.py TaskStopWatcher` |
-| `--part-size-mb` | `CP_SAS_PART_SIZE_MB` | 8 | `archive_bucket.py` upload |
-| `--compress-level` | `CP_SAS_COMPRESS_LEVEL` | 1 | `worker/archive_preparation_worker.py _pack` |
-| `--nfs-mount-root` | `CP_SAS_NFS_MOUNT_ROOT` | `/mnt/sas-shares` | `datastorage_providers/nfs.py` |
-| `--nfs-mount-timeout-seconds` | `CP_SAS_NFS_MOUNT_TIMEOUT` | 30 | `datastorage_providers/nfs.py` mount and liveness check |
-| `--once` | `CP_SAS_ONCE` | off | `orchestrator.py run()` |
-| `--log-level` | `CP_SAS_LOG_LEVEL` | `INFO` | `log.py` |
+| `--verify-ssl` | `CP_SATS_VERIFY_SSL` | off | nowhere: the platform's API client cannot honour it, and `api.py` warns once at startup if it is on |
+| `--work-dir` | `CP_SATS_WORK_DIR` | `/tmp/sats` | `worker/archive_preparation_worker.py` (one subdirectory per task), `worker/cleaner.py` cleanup 4, `worker/archive_preparation_worker.py _assert_fits_locally` |
+| `--slots` | `CP_SATS_SLOTS` | 2 | `orchestrator.py` pool size and semaphore |
+| `--poll-interval-seconds` | `CP_SATS_POLL_INTERVAL` | 20 | `orchestrator.py run()` |
+| `--cleanup-interval-seconds` | `CP_SATS_CLEANUP_INTERVAL` | 300 | `orchestrator.py _cleanup_due()`; `0` means never, and is warned about at startup |
+| `--status-poll-seconds` | `CP_SATS_STATUS_POLL` | 15 | `worker/task_stop_watcher.py TaskStopWatcher` |
+| `--part-size-mb` | `CP_SATS_PART_SIZE_MB` | 8 | `archive_bucket.py` upload |
+| `--compress-level` | `CP_SATS_COMPRESS_LEVEL` | 1 | `worker/archive_preparation_worker.py _pack` |
+| `--nfs-mount-root` | `CP_SATS_NFS_MOUNT_ROOT` | `/mnt/sats-shares` | `datastorage_providers/nfs.py` |
+| `--nfs-mount-timeout-seconds` | `CP_SATS_NFS_MOUNT_TIMEOUT` | 30 | `datastorage_providers/nfs.py` mount and liveness check |
+| `--once` | `CP_SATS_ONCE` | off | `orchestrator.py run()` |
+| `--log-level` | `CP_SATS_LOG_LEVEL` | `INFO` | `log.py` |
 
 Cloud credentials are not among these, by design: the role comes from the storage's region and is
 assumed with whatever the host has - on a node, its instance profile. See `cloud/aws.py`.
@@ -265,7 +267,7 @@ Nobody can tune these; they are here so that a number seen in the code can be fo
 | `GET filesharemount/{id}` | worker | NFS storages only |
 | `GET cloud/region/{id}` | worker | once per S3 client, so twice per task; cleaner once per destination storage |
 
-Every one of them goes through `pipeline.PipelineAPI` from `workflows/pipe-common`; `sas/api.py` adds
+Every one of them goes through `pipeline.PipelineAPI` from `workflows/pipe-common`; `sats/api.py` adds
 only the two error kinds and the parsing. The four async-task methods were added to that client for this
 service, next to the storage, region and preference methods it already had.
 

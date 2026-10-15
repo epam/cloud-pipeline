@@ -31,9 +31,9 @@ from pathlib import Path
 
 from botocore.exceptions import ClientError
 
-from sas.errors import ApiRejected
-from sas.model import ArchiveTask, CloudRegion, FileShare, Storage, StorageType, TaskStatus
-from sas.datastorage_providers.base import FileSource, SourceFile
+from sats.errors import ApiRejected
+from sats.model import ArchiveTask, CloudRegion, FileShare, Storage, StorageType, TaskStatus
+from sats.datastorage_providers.base import FileSource, SourceFile
 
 
 class FakeApi:

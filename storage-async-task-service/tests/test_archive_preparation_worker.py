@@ -27,10 +27,10 @@ module-level function safe to do in a test suite.
 
 import zipfile
 
-from sas.archive_bucket import archive_key
-from sas.config import StorageDownloadArchiveConfig, ServiceConfig
-from sas.model import ArchiveTask, Storage, StorageType, TaskStatus
-from sas.worker.archive_preparation_worker import ArchivePreparationWorker
+from sats.archive_bucket import archive_key
+from sats.config import StorageDownloadArchiveConfig, ServiceConfig
+from sats.model import ArchiveTask, Storage, StorageType, TaskStatus
+from sats.worker.archive_preparation_worker import ArchivePreparationWorker
 
 from .fakes import FakeApi, FakeBucket, FakeSource
 
@@ -80,14 +80,14 @@ def _run(tmp_path, monkeypatch, source, api=None, archive_config=None, bucket=No
 
     The `open_source` function is replaced rather than injected through the constructor. It is a
     module-level function the worker calls by name, and `monkeypatch.setattr` with a dotted string
-    rebinds that name inside `sas.worker` only - the real factory is untouched everywhere else, and is
+    rebinds that name inside `sats.worker` only - the real factory is untouched everywhere else, and is
     restored when the test ends.
     """
     api = api or FakeApi(_task())
     archive_config = archive_config or _archive_config()
     bucket = bucket or FakeBucket()
     config = service_config or _service_config(tmp_path)
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
     ArchivePreparationWorker(api, config, archive_config, api.task, bucket=bucket).run()
     return api, bucket
 
@@ -148,7 +148,7 @@ def test_the_archive_note_says_why_each_file_is_missing(tmp_path, monkeypatch):
 
     api = FakeApi(_task())
     bucket = FakeBucket()
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
 
     # This one needs the archive itself rather than its listing, so the upload is captured by hand.
     captured = {}
@@ -270,7 +270,7 @@ def test_keeps_the_users_own_readme_and_renames_the_note(tmp_path, monkeypatch):
 
     api = FakeApi(_task())
     bucket = FakeBucket()
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
     captured = {}
 
     def capture(path, key, heartbeat):
@@ -341,11 +341,11 @@ def test_builds_the_destination_client_from_the_destination_storages_region(tmp_
     # which returns before this happens.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
     # The real `build_s3_client` runs - that is what is under test, and it reaches nothing but the fake
     # API - while the bucket around it is replaced, so no upload is attempted. The arguments of a call
     # are evaluated before the call, so replacing the class does not skip the client it is given.
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.ArchiveBucket',
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.ArchiveBucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
@@ -362,7 +362,7 @@ def test_fails_the_task_when_the_destination_is_not_an_object_storage(tmp_path, 
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.storage = Storage(id=9, name='shared-fs', type=StorageType.NFS, path='10.0.0.1:/export')
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 
@@ -374,7 +374,7 @@ def test_fails_the_task_when_the_destinations_region_cannot_be_read(tmp_path, mo
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.region_missing = True
-    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
 
     ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 

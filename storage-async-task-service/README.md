@@ -82,11 +82,11 @@ storage in one region and write the archive to another.
 Assuming the role directly rather than asking `POST /datastorage/tempCredentials/` for ready credentials
 is deliberate: botocore re-assumes by itself when the session is close to expiring, where credentials
 fetched once would have to be watched and re-fetched by us, and an archive can take longer than they
-live. `sas/cloud/aws.py` is that whole subject, and its module docstring is the long form of this paragraph.
+live. `sats/cloud/aws.py` is that whole subject, and its module docstring is the long form of this paragraph.
 
 **A task is never lost and never silently abandoned.** A worker ends its own task on every path it can
 reach, including cancellation and its own timeout. For the one case it cannot handle - the process being
-killed - the cleaner finishes the task from the outside. See the module docstring of `sas/worker/cleaner.py`.
+killed - the cleaner finishes the task from the outside. See the module docstring of `sats/worker/cleaner.py`.
 
 ## Requirements
 
@@ -94,11 +94,11 @@ killed - the cleaner finishes the task from the outside. See the module docstrin
   `Path.is_relative_to`, and will not import on an older interpreter.
 - `boto3` - pinned in `requirements.txt`.
 - **pipe-common**, the platform's own API client, from `workflows/pipe-common`. It is what talks to the
-  API - see `sas/api.py` - and it is not on any package index, so locally it is
+  API - see `sats/api.py` - and it is not on any package index, so locally it is
   `pip install -e ../workflows/pipe-common`. That pulls some forty packages, luigi and paramiko among
   them, because `pipeline/__init__.py` imports the whole of pipe-common; the service imports it inside
   one function so that the tests do not need any of it. **This service has no container yet** - there
-  is no `deploy/docker/cp-storage-archive-service/` - so how pipe-common reaches it in a deployment is
+  is no `deploy/docker/cp-storage-async-task-service/` - so how pipe-common reaches it in a deployment is
   still to be decided; `deploy/docker/cp-storage-lifecycle-service/Dockerfile` installs it from the API
   distribution, and that is the obvious shape to copy.
 - **No S3 access of its own.** What the host does need is credentials that may *assume* the roles the
@@ -118,7 +118,7 @@ The repository does not record how your machine is set up, so these are the plai
 **1. Check the interpreter.** Anything other than 3.12 here means the rest will not work:
 
 ```bash
-cd storage-archive-service
+cd storage-async-task-service
 python3 --version
 ```
 
@@ -151,7 +151,7 @@ pip install -e ../workflows/pipe-common
 
 Expect some forty packages: `pipeline/__init__.py` imports the whole of pipe-common - luigi, tornado,
 paramiko - and pip resolves its pins, including its own `requests`. Without it the service stops at
-startup with `No module named 'pipeline'`; the tests do not need it, because `sas/api.py` imports it
+startup with `No module named 'pipeline'`; the tests do not need it, because `sats/api.py` imports it
 inside the function that builds the client.
 
 **4. Get a token.** The service needs a JWT of a user with the `ROLE_ADMIN` role, because it reads any
@@ -168,7 +168,7 @@ export API=https://your-deployment.example.com/pipeline/restapi
 **5. Run one round and stop:**
 
 ```bash
-python -m sas.app --once --slots 1 --work-dir ./tasks --log-level DEBUG
+python -m sats.app --once --slots 1 --work-dir ./tasks --log-level DEBUG
 ```
 
 With `--once` the service does one round - preference, cleanups, claim - waits for whatever it started,
@@ -178,7 +178,7 @@ decision visible at `DEBUG`.
 Without `--once` it loops until `Ctrl-C`, which is how it runs in a container:
 
 ```bash
-python -m sas.app --slots 2 --work-dir ./tasks
+python -m sats.app --slots 2 --work-dir ./tasks
 ```
 
 `Ctrl-C` does not kill it. The signal asks the orchestrator to stop claiming and to wait for the
@@ -212,7 +212,7 @@ The answer holds the new task, `"status": "PENDING"`. Note its `id` - a string, 
 **2. Run one round of the service:**
 
 ```bash
-python -m sas.app --once --slots 1 --work-dir ./tasks --log-level DEBUG
+python -m sats.app --once --slots 1 --work-dir ./tasks --log-level DEBUG
 ```
 
 **3. Look at the task:**
@@ -251,13 +251,13 @@ The platform API answers a business failure with **HTTP 200** and a body of
 envelope rather than the status code and raises `APIError` for it, without retrying; this service turns
 that into `ApiRejected` - a refusal that will never succeed, such as a transition the task model does
 not allow - and everything else into `ApiError`, which is worth retrying. See `_refused` in
-`sas/api.py`, and the limit noted in the module's docstring: the older methods of that client flatten
+`sats/api.py`, and the limit noted in the module's docstring: the older methods of that client flatten
 both kinds into one, so for the storage, region and preference calls everything looks retryable.
 
 ## Settings
 
 Every setting is both a command line option and an environment variable, and the option wins.
-`python -m sas.app --help` prints them with their defaults; this table is the same list with the reason
+`python -m sats.app --help` prints them with their defaults; this table is the same list with the reason
 for each default.
 
 The two switches can be turned off as well as on - `--once` / `--no-once`, `--verify-ssl` /
@@ -268,17 +268,18 @@ the command line.
 |---|---|---|---|
 | `--cp-api-url` | `API` | - | Base url of the API, **including** `/restapi`. Required. |
 | `--cp-api-token` | `API_TOKEN` | - | Administrator JWT. Required. Never logged. |
-| `--verify-ssl` | `CP_SAS_VERIFY_SSL` | off | Off because a deployment normally signs its own certificate. **Turning it on has no effect**: the platform's API client passes `verify=False` on every call and offers no way to change it, and the service says so once at startup. |
-| `--work-dir` | `CP_SAS_WORK_DIR` | `/tmp/sas` | Scratch space, one subdirectory per task. Needs room for the largest archive the thresholds allow, times `--slots`. |
-| `--slots` | `CP_SAS_SLOTS` | `2` | Tasks at once. One slot is one thread, and one archive on disk. |
-| `--poll-interval-seconds` | `CP_SAS_POLL_INTERVAL` | `20` | Sleep between rounds when nothing was claimed. |
-| `--status-poll-seconds` | `CP_SAS_STATUS_POLL` | `15` | How often a worker asks whether its task is still wanted. The lower bound on how fast a cancellation is noticed. |
-| `--part-size-mb` | `CP_SAS_PART_SIZE_MB` | `8` | Upload part size. S3 allows 10000 parts, so this caps one archive at 80 GiB - `archive_bucket.py` raises the part size by itself when a bigger archive needs it. |
-| `--compress-level` | `CP_SAS_COMPRESS_LEVEL` | `1` | ZIP deflate level. Low on purpose: research data is usually already compressed, and level 6 would spend minutes of CPU per gigabyte for a few percent. |
-| `--nfs-mount-root` | `CP_SAS_NFS_MOUNT_ROOT` | `/mnt/sas-shares` | Where NFS shares are mounted, one subdirectory per share. |
-| `--nfs-mount-timeout-seconds` | `CP_SAS_NFS_MOUNT_TIMEOUT` | `30` | Hard limit on `mount` and on the liveness check. A dead NFS server hangs both forever by default, and a hung mount in a worker thread is unkillable. |
-| `--once` | `CP_SAS_ONCE` | off | One round, then exit. |
-| `--log-level` | `CP_SAS_LOG_LEVEL` | `INFO` | `DEBUG` logs every file considered, which is a great deal of output for a large selection. |
+| `--verify-ssl` | `CP_SATS_VERIFY_SSL` | off | Off because a deployment normally signs its own certificate. **Turning it on has no effect**: the platform's API client passes `verify=False` on every call and offers no way to change it, and the service says so once at startup. |
+| `--work-dir` | `CP_SATS_WORK_DIR` | `/tmp/sats` | Scratch space, one subdirectory per task. Needs room for the largest archive the thresholds allow, times `--slots`. |
+| `--slots` | `CP_SATS_SLOTS` | `2` | Tasks at once. One slot is one thread, and one archive on disk. |
+| `--poll-interval-seconds` | `CP_SATS_POLL_INTERVAL` | `20` | Sleep between rounds when nothing was claimed. |
+| `--cleanup-interval-seconds` | `CP_SATS_CLEANUP_INTERVAL` | `300` | How often the cleanups run. Apart from the loop, because the loop also claims tasks and has to stay fast, while nothing the cleanups look for appears in seconds - their thresholds are `stuckTasksThresholdMinutes` and `ttlDays`. The first round after a start always cleans up, whatever this says: a restart is when there is most to clean. `0` turns them off, and the service warns about it at startup. |
+| `--status-poll-seconds` | `CP_SATS_STATUS_POLL` | `15` | How often a worker asks whether its task is still wanted. The lower bound on how fast a cancellation is noticed. |
+| `--part-size-mb` | `CP_SATS_PART_SIZE_MB` | `8` | Upload part size. S3 allows 10000 parts, so this caps one archive at 80 GiB - `archive_bucket.py` raises the part size by itself when a bigger archive needs it. |
+| `--compress-level` | `CP_SATS_COMPRESS_LEVEL` | `1` | ZIP deflate level. Low on purpose: research data is usually already compressed, and level 6 would spend minutes of CPU per gigabyte for a few percent. |
+| `--nfs-mount-root` | `CP_SATS_NFS_MOUNT_ROOT` | `/mnt/sats-shares` | Where NFS shares are mounted, one subdirectory per share. |
+| `--nfs-mount-timeout-seconds` | `CP_SATS_NFS_MOUNT_TIMEOUT` | `30` | Hard limit on `mount` and on the liveness check. A dead NFS server hangs both forever by default, and a hung mount in a worker thread is unkillable. |
+| `--once` | `CP_SATS_ONCE` | off | One round, then exit. |
+| `--log-level` | `CP_SATS_LOG_LEVEL` | `INFO` | `DEBUG` logs every file considered, which is a great deal of output for a large selection. |
 
 ## The platform preference
 
@@ -353,6 +354,7 @@ a parameter is how a test asks for it. `tmp_path` is a fresh directory, deleted 
 | `Both the API url and the API token are required`, exit code 22 | Neither the options nor `API`/`API_TOKEN` were set. 22 is `EINVAL`, the same code the other Python services in the platform use for a bad setting. |
 | `--slots`, `--compress-level`, `--part-size-mb` or a poll interval rejected, exit code 22 | A setting outside its range. Checked at startup rather than at first use, because a value that arrived through the environment goes through none of `argparse`'s own validation. |
 | `Preference storage.download.archive.config has no destinationStorageId` | The preference is missing or has no `destinationStorageId`. The service keeps running and claims nothing; tasks stay `PENDING` until it is filled in. Mind the spelling: the API silently ignores a field it does not know, so a typo leaves the destination unset with no complaint. |
+| A task stays `RUNNING` long after `stuckTasksThresholdMinutes`, or an expired archive is still there | The cleanups may be off (`--cleanup-interval-seconds 0`, which is warned about at startup) or simply not due yet - they run every `--cleanup-interval-seconds`, five minutes by default. |
 | Tasks stay `PENDING` and the log says nothing was claimed | Either no destination storage (above), or every slot is busy, or the tasks are not of type `DOWNLOAD_ARCHIVE`. |
 | `Task ... cannot move to ...` at `INFO` | Normal. The cleaner and a slow worker both tried to finish the same task; the API refused the loser. The task did end properly. |
 | A task fails with `more than N files` or `larger than` | A threshold from the preference. The message is the one the user sees. |
@@ -377,24 +379,24 @@ Read them in this order; each one only uses the ones above it.
 
 | File | What is in it |
 |---|---|
-| `sas/errors.py` | The exception types. The important split is `ApiRejected` (never retry) against `ApiError` (retry); then `StopRequested` with the reason a worker is stopping, and `CredentialsUnavailable` for a storage whose region says nothing about how to reach it. |
-| `sas/log.py` | One function that configures logging to stdout, with the thread name in every line - which is how you tell two workers apart. |
-| `sas/model.py` | The task, the storage, the file share, the status enum, and the API's `LocalDateTime` wire format. Nothing in here calls anything. |
-| `sas/config.py` | `ServiceConfig` (ours, read once) against `StorageDownloadArchiveConfig` (the platform's, read every round). Separate types so the reload boundary is visible. |
-| `sas/api.py` | The layer over `pipeline.PipelineAPI`, the platform's own client: two error kinds (a refusal that must not be retried against a failure that may be), this service's model instead of dictionaries, and a second client with one attempt for claiming. |
-| `sas/worker/__init__.py` | The registry: which worker runs which task type, and `worker_for`, the only name the orchestrator knows. |
-| `sas/worker/base.py` | What a worker has to be: `run()`, and the type it serves. |
-| `sas/worker/task_stop_watcher.py` | How any worker learns that it must give up - a cancellation, or its own deadline. |
-| `sas/cloud/aws.py` | Where every S3 client comes from: the role resolved from the storage and its region, the assumed session botocore re-assumes by itself, and the region each client signs for. |
-| `sas/datastorage_providers/base.py` | What a file source has to be able to do: list and download. |
-| `sas/datastorage_providers/s3.py` | Object storages. Paginated listing, the Glacier check that decides a file is unreadable rather than letting the download fail, and the report for a selected path that holds nothing. Takes its client as given. |
-| `sas/datastorage_providers/nfs.py` | Mounted shares. Mounts read-only, with a timeout, refuses anything that is not NFS, and reports a selected path that is not on the share. |
-| `sas/datastorage_providers/__init__.py` | Picks the source for a storage type. |
-| `sas/archive_bucket.py` | Uploading and deleting the archive object. Multipart by hand, so that a failed upload can be aborted instead of leaving billable parts behind. |
-| `sas/worker/archive_preparation_worker.py` | One `DOWNLOAD_ARCHIVE` task from start to finish. The table at the top of `run` is the whole contract: every way a task can end, and what is reported for it. |
-| `sas/worker/cleaner.py` | The four cleanups that end tasks whose workers are gone, and delete archives past their lifetime. Not a worker: nobody claims a task for it. |
-| `sas/orchestrator.py` | The loop: read the preference, cleanup, claim while a slot is free, sleep. Owns the thread pool and the shutdown flag. |
-| `sas/app.py` | Arguments, logging, signal handlers. |
+| `sats/errors.py` | The exception types. The important split is `ApiRejected` (never retry) against `ApiError` (retry); then `StopRequested` with the reason a worker is stopping, and `CredentialsUnavailable` for a storage whose region says nothing about how to reach it. |
+| `sats/log.py` | One function that configures logging to stdout, with the thread name in every line - which is how you tell two workers apart. |
+| `sats/model.py` | The task, the storage, the file share, the status enum, and the API's `LocalDateTime` wire format. Nothing in here calls anything. |
+| `sats/config.py` | `ServiceConfig` (ours, read once) against `StorageDownloadArchiveConfig` (the platform's, read every round). Separate types so the reload boundary is visible. |
+| `sats/api.py` | The layer over `pipeline.PipelineAPI`, the platform's own client: two error kinds (a refusal that must not be retried against a failure that may be), this service's model instead of dictionaries, and a second client with one attempt for claiming. |
+| `sats/worker/__init__.py` | The registry: which worker runs which task type, and `worker_for`, the only name the orchestrator knows. |
+| `sats/worker/base.py` | What a worker has to be: `run()`, and the type it serves. |
+| `sats/worker/task_stop_watcher.py` | How any worker learns that it must give up - a cancellation, or its own deadline. |
+| `sats/cloud/aws.py` | Where every S3 client comes from: the role resolved from the storage and its region, the assumed session botocore re-assumes by itself, and the region each client signs for. |
+| `sats/datastorage_providers/base.py` | What a file source has to be able to do: list and download. |
+| `sats/datastorage_providers/s3.py` | Object storages. Paginated listing, the Glacier check that decides a file is unreadable rather than letting the download fail, and the report for a selected path that holds nothing. Takes its client as given. |
+| `sats/datastorage_providers/nfs.py` | Mounted shares. Mounts read-only, with a timeout, refuses anything that is not NFS, and reports a selected path that is not on the share. |
+| `sats/datastorage_providers/__init__.py` | Picks the source for a storage type. |
+| `sats/archive_bucket.py` | Uploading and deleting the archive object. Multipart by hand, so that a failed upload can be aborted instead of leaving billable parts behind. |
+| `sats/worker/archive_preparation_worker.py` | One `DOWNLOAD_ARCHIVE` task from start to finish. The table at the top of `run` is the whole contract: every way a task can end, and what is reported for it. |
+| `sats/worker/cleaner.py` | The four cleanups that end tasks whose workers are gone, and delete archives past their lifetime. Not a worker: nobody claims a task for it. |
+| `sats/orchestrator.py` | The loop: read the preference, cleanup, claim while a slot is free, sleep. Owns the thread pool and the shutdown flag. |
+| `sats/app.py` | Arguments, logging, signal handlers. |
 
 ## How to read this Python
 
@@ -404,7 +406,7 @@ features that have no direct Java equivalent; these are the ones that will look 
 **A virtual environment and `pip`** are Maven's local repository and `mvn install`, except the
 dependencies land in a directory you can delete (`.venv`) and the versions are pinned in a text file
 (`requirements.txt`). There is no compile step: `pip install -e .` registers the source directory, and
-`python -m sas.app` runs it.
+`python -m sats.app` runs it.
 
 **A module is a file, a package is a directory** with an `__init__.py` in it. `from .config import
 ServiceConfig` is a relative import - the leading dot means "the package this file is in". There is no
@@ -475,7 +477,7 @@ sounds fatal and is not: this service spends its time waiting on sockets and dis
 released during every one of those waits. Threads are the right tool here for the reason they are the
 wrong tool for arithmetic.
 
-**`pathlib`**: `Path('/tmp') / 'sas' / 'archive.zip'` builds a path with `/`, and `Path` carries
+**`pathlib`**: `Path('/tmp') / 'sats' / 'archive.zip'` builds a path with `/`, and `Path` carries
 `exists()`, `mkdir()`, `read_bytes()`, `rglob()` with it. `is_relative_to` is the one that matters for
 safety - in `datastorage_providers/nfs.py` it is how a listing refuses a path that resolves outside the storage's own
 folder, a symbolic link being the usual way that happens.

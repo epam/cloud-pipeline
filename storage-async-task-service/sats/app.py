@@ -60,14 +60,14 @@ def build_parser() -> argparse.ArgumentParser:
     The two booleans use `argparse.BooleanOptionalAction`, which declares `--once` and `--no-once`
     together, rather than `action='store_true'`. With `store_true` a setting turned on through the
     environment could not be turned off on the command line - the flag would already be true and there
-    would be no spelling for "no" - so `CP_SAS_ONCE=true` left behind in a container environment would
+    would be no spelling for "no" - so `CP_SATS_ONCE=true` left behind in a container environment would
     silently win over every later run.
 
     Defaults are read from the environment here rather than in `ServiceConfig`, so that a value given
     on the command line simply overwrites the environment one with no precedence logic anywhere.
     """
     parser = argparse.ArgumentParser(
-        prog='storage-archive-service',
+        prog='storage-async-task-service',
         description='Builds the archives users ask for, and cleans up after itself.')
     parser.add_argument('--version', action='version', version=__version__)
 
@@ -79,49 +79,53 @@ def build_parser() -> argparse.ArgumentParser:
         help='JWT of a system administrator. Environment: API_TOKEN')
     parser.add_argument(
         '--verify-ssl', action=argparse.BooleanOptionalAction,
-        default=_env_flag('CP_SAS_VERIFY_SSL', False),
+        default=_env_flag('CP_SATS_VERIFY_SSL', False),
         help='Verify the API certificate. Off by default, as a platform normally signs its own. '
-             'Environment: CP_SAS_VERIFY_SSL')
+             'Environment: CP_SATS_VERIFY_SSL')
 
     parser.add_argument(
-        '--work-dir', type=Path, default=os.getenv('CP_SAS_WORK_DIR', '/tmp/sas'),
-        help='Scratch space, one subdirectory per running task. Environment: CP_SAS_WORK_DIR')
+        '--work-dir', type=Path, default=os.getenv('CP_SATS_WORK_DIR', '/tmp/sats'),
+        help='Scratch space, one subdirectory per running task. Environment: CP_SATS_WORK_DIR')
     parser.add_argument(
-        '--slots', type=int, default=_env_int('CP_SAS_SLOTS', 2),
-        help='How many tasks may run at once. Environment: CP_SAS_SLOTS')
+        '--slots', type=int, default=_env_int('CP_SATS_SLOTS', 2),
+        help='How many tasks may run at once. Environment: CP_SATS_SLOTS')
     parser.add_argument(
-        '--poll-interval-seconds', type=int, default=_env_int('CP_SAS_POLL_INTERVAL', 20),
-        help='How long to sleep between rounds. Environment: CP_SAS_POLL_INTERVAL')
+        '--poll-interval-seconds', type=int, default=_env_int('CP_SATS_POLL_INTERVAL', 20),
+        help='How long to sleep between rounds. Environment: CP_SATS_POLL_INTERVAL')
     parser.add_argument(
-        '--status-poll-seconds', type=int, default=_env_int('CP_SAS_STATUS_POLL', 15),
+        '--cleanup-interval-seconds', type=int, default=_env_int('CP_SATS_CLEANUP_INTERVAL', 300),
+        help='How often to run the cleanups that finish tasks whose workers are gone and delete '
+             'expired archives. 0 turns them off. Environment: CP_SATS_CLEANUP_INTERVAL')
+    parser.add_argument(
+        '--status-poll-seconds', type=int, default=_env_int('CP_SATS_STATUS_POLL', 15),
         help='How often a running worker checks whether its task was cancelled. '
-             'Environment: CP_SAS_STATUS_POLL')
+             'Environment: CP_SATS_STATUS_POLL')
     parser.add_argument(
-        '--part-size-mb', type=int, default=_env_int('CP_SAS_PART_SIZE_MB', 8),
-        help='Multipart upload part size, in mebibytes. Environment: CP_SAS_PART_SIZE_MB')
+        '--part-size-mb', type=int, default=_env_int('CP_SATS_PART_SIZE_MB', 8),
+        help='Multipart upload part size, in mebibytes. Environment: CP_SATS_PART_SIZE_MB')
     parser.add_argument(
-        '--compress-level', type=int, default=_env_int('CP_SAS_COMPRESS_LEVEL', 1),
+        '--compress-level', type=int, default=_env_int('CP_SATS_COMPRESS_LEVEL', 1),
         choices=range(0, 10),
         help='ZIP deflate level, 0 to 9. Low on purpose: research data is usually already compressed. '
-             'Environment: CP_SAS_COMPRESS_LEVEL')
+             'Environment: CP_SATS_COMPRESS_LEVEL')
 
     parser.add_argument(
-        '--nfs-mount-root', type=Path, default=os.getenv('CP_SAS_NFS_MOUNT_ROOT', '/mnt/sas-shares'),
+        '--nfs-mount-root', type=Path, default=os.getenv('CP_SATS_NFS_MOUNT_ROOT', '/mnt/sats-shares'),
         help='Where NFS shares are mounted, one subdirectory per share. '
-             'Environment: CP_SAS_NFS_MOUNT_ROOT')
+             'Environment: CP_SATS_NFS_MOUNT_ROOT')
     parser.add_argument(
-        '--nfs-mount-timeout-seconds', type=int, default=_env_int('CP_SAS_NFS_MOUNT_TIMEOUT', 30),
+        '--nfs-mount-timeout-seconds', type=int, default=_env_int('CP_SATS_NFS_MOUNT_TIMEOUT', 30),
         help='Hard limit on a mount call and on the liveness check of a mount point. '
-             'Environment: CP_SAS_NFS_MOUNT_TIMEOUT')
+             'Environment: CP_SATS_NFS_MOUNT_TIMEOUT')
 
     parser.add_argument(
-        '--once', action=argparse.BooleanOptionalAction, default=_env_flag('CP_SAS_ONCE', False),
+        '--once', action=argparse.BooleanOptionalAction, default=_env_flag('CP_SATS_ONCE', False),
         help='Run one round and exit, after the workers it started have finished. '
-             'Environment: CP_SAS_ONCE')
+             'Environment: CP_SATS_ONCE')
     parser.add_argument(
-        '--log-level', default=os.getenv('CP_SAS_LOG_LEVEL', 'INFO'),
+        '--log-level', default=os.getenv('CP_SATS_LOG_LEVEL', 'INFO'),
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-        help='Environment: CP_SAS_LOG_LEVEL')
+        help='Environment: CP_SATS_LOG_LEVEL')
     return parser
 
 
@@ -140,6 +144,7 @@ def to_config(args: argparse.Namespace) -> ServiceConfig:
         work_dir=args.work_dir,
         slots=args.slots,
         poll_interval_seconds=args.poll_interval_seconds,
+        cleanup_interval_seconds=args.cleanup_interval_seconds,
         status_poll_seconds=args.status_poll_seconds,
         part_size_bytes=args.part_size_mb * 1024 * 1024,
         compress_level=args.compress_level,
@@ -175,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_BAD_CONFIG
     # The numeric settings are checked here and not only by argparse. `choices` and `type` apply to a
     # value *parsed from the command line*; a default taken from the environment goes through neither.
-    # So `CP_SAS_COMPRESS_LEVEL=10` would reach `zipfile` untouched and fail every task with an
+    # So `CP_SATS_COMPRESS_LEVEL=10` would reach `zipfile` untouched and fail every task with an
     # "Internal error of the archive service", which tells an operator nothing about the cause.
     if not 0 <= args.compress_level <= 9:
         LOG.error('--compress-level must be between 0 and 9, got %s', args.compress_level)
@@ -187,6 +192,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.poll_interval_seconds < 1 or args.status_poll_seconds < 1:
         LOG.error('--poll-interval-seconds and --status-poll-seconds must be at least 1, got %s '
                   'and %s', args.poll_interval_seconds, args.status_poll_seconds)
+        return EXIT_BAD_CONFIG
+    if args.cleanup_interval_seconds < 0:
+        # Zero is a meaning - "never" - and negative is not.
+        LOG.error('--cleanup-interval-seconds must be 0 or more, got %s',
+                  args.cleanup_interval_seconds)
         return EXIT_BAD_CONFIG
 
     config = to_config(args)
@@ -212,7 +222,7 @@ def _env_int(name: str, default: int) -> int:
     Reads an integer from the environment, falling back to the default on anything unusable.
 
     An empty variable is treated as unset. That matters here: a container template that writes
-    `CP_SAS_SLOTS=` for a value nobody configured is a very normal thing to happen, and
+    `CP_SATS_SLOTS=` for a value nobody configured is a very normal thing to happen, and
     `int('')` raises.
     """
     raw = os.getenv(name)
@@ -242,8 +252,8 @@ def _env_flag(name: str, default: bool) -> bool:
     return raw.strip().lower() in ('1', 'true', 'yes', 'on')
 
 
-# This runs only when the file is executed as a program - `python -m sas.app` or
-# `python sas/app.py` - and not when it is imported. Python has no `public static void main`: a module
+# This runs only when the file is executed as a program - `python -m sats.app` or
+# `python sats/app.py` - and not when it is imported. Python has no `public static void main`: a module
 # is executed from top to bottom when imported, so without this guard the service would start up inside
 # any test that imported it. `__name__` is the module's own name, and it is the literal string
 # `'__main__'` exactly in the module the interpreter was given to run.

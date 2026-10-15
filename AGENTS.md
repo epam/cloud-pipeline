@@ -39,6 +39,7 @@ Gradle build. The version is declared in the root `build.gradle`.
 | `pipe-cli` | the `pipe` client (Python) — storage transfer, run and cluster management; plus FUSE `mount/` and `pipe-omics/` |
 | `scripts` | code that **ships in the distribution**, not developer tooling: `scripts/pipeline-launch/` (the job-container entrypoint, bundled into the API jar and fetched by every run), `scripts/autoscaling/`, the git/NFS role helpers and other service-container scripts |
 | `shaded` | `opensearch` — the OpenSearch jar with its packages relocated, so it can coexist with Elasticsearch V6 |
+| `storage-async-task-service` | Python app that executes the `pipeline.async_task` queue `api` writes — one worker per task type, `DOWNLOAD_ARCHIVE` being the only one today: it packs the selected paths of a data storage into a ZIP and uploads it. Polls the API, has no inbound port, and assumes a role of the storage's cloud region rather than holding credentials |
 | `storage-lifecycle-service` | Python app that executes the lifecycle rules set on a data storage — archiving (a rule's transitions, with user prolongation and notification) and restoring |
 | `vm-monitor` | Spring Boot; reconciles the cloud provider's running VMs against the platform's nodes and runs, and also checks certificate expiry, filesystem space and k8s state, notifying on a mismatch |
 | `workflows` | `pipe-common` (the `pipeline` package, in every job container), `gpustat`, `pipe-demo`, `pipe-templates`, `report-templates` |

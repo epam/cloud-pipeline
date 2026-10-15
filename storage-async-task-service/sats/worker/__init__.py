@@ -40,7 +40,7 @@ from .base import AsyncTaskWorker
 from .cleaner import Cleaner
 from .task_stop_watcher import TaskStopWatcher
 
-# `__all__` lists what `from sas.worker import *` would bring in. Nobody should write that import, but
+# `__all__` lists what `from sats.worker import *` would bring in. Nobody should write that import, but
 # the list doubles as a statement of what this package offers - and the re-exports above are otherwise
 # flagged as unused by linters.
 __all__ = ['ArchivePreparationWorker', 'AsyncTaskWorker', 'Cleaner', 'TaskStopWatcher',

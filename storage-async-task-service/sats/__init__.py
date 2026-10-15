@@ -17,11 +17,11 @@ Storage archive service - the executor behind "download a folder as one archive"
 
 A directory becomes an importable Python package by holding a file named `__init__.py`. It is the
 rough equivalent of a Java package declaration, except that it is a real module: whatever it defines
-is visible as `sas.<name>`. This one defines nothing on purpose - imports placed here run before any
+is visible as `sats.<name>`. This one defines nothing on purpose - imports placed here run before any
 submodule can be imported, which makes circular imports easy to create and hard to see.
 
 A string literal as the first statement of a module, class or function is its docstring: the same idea
-as a javadoc comment, but it is a value the program can read (`sas.__doc__`), not something stripped
+as a javadoc comment, but it is a value the program can read (`sats.__doc__`), not something stripped
 out before execution.
 
 The service takes `DOWNLOAD_ARCHIVE` tasks from the platform API, packs the requested files into a ZIP

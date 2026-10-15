@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 LOG = get_logger(__name__)
 
-# `__all__` lists what `from sas.datastorage_providers import *` would bring in. Nobody should write
+# `__all__` lists what `from sats.datastorage_providers import *` would bring in. Nobody should write
 # that import, but
 # the list doubles as a statement of what this package means to export - and the re-exports above are
 # otherwise flagged as unused by linters.

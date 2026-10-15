@@ -27,17 +27,18 @@ import json
 import threading
 import time
 
-from sas.config import ServiceConfig
-from sas.errors import ApiError
-from sas.model import ArchiveTask, TaskStatus
-from sas.orchestrator import Orchestrator
+from sats.config import ServiceConfig
+from sats.errors import ApiError
+from sats.model import ArchiveTask, TaskStatus
+from sats.orchestrator import Orchestrator
 
 from .fakes import FakeApi
 
 
-def _config(tmp_path, slots=2):
+def _config(tmp_path, slots=2, cleanup_interval=300):
     return ServiceConfig(api_url='https://api', api_token='token', work_dir=tmp_path, slots=slots,
-                         poll_interval_seconds=1, run_once=True)
+                         poll_interval_seconds=1, cleanup_interval_seconds=cleanup_interval,
+                         run_once=True)
 
 
 def _api(preference=None):
@@ -128,7 +129,7 @@ def test_claims_tasks_until_the_queue_is_empty(tmp_path, monkeypatch):
     queue = [_task('a'), _task('b')]
     api.claim_next = lambda _type: queue.pop(0) if queue else None
     _RecordingWorker.started = []
-    monkeypatch.setattr('sas.orchestrator.worker_for', lambda *args: _RecordingWorker(*args))
+    monkeypatch.setattr('sats.orchestrator.worker_for', lambda *args: _RecordingWorker(*args))
     orchestrator = Orchestrator(api, _config(tmp_path, slots=2))
 
     orchestrator.run()
@@ -146,7 +147,7 @@ def test_never_runs_more_workers_than_there_are_slots(tmp_path, monkeypatch):
     queue = [_task('a'), _task('b'), _task('c'), _task('d')]
     api.claim_next = lambda _type: queue.pop(0) if queue else None
     _CountingWorker.reset()
-    monkeypatch.setattr('sas.orchestrator.worker_for', lambda *args: _CountingWorker(*args))
+    monkeypatch.setattr('sats.orchestrator.worker_for', lambda *args: _CountingWorker(*args))
     orchestrator = Orchestrator(api, _config(tmp_path, slots=2))
 
     orchestrator.run()
@@ -180,7 +181,7 @@ def test_claims_nothing_without_a_bucket(tmp_path, monkeypatch):
     claimed = []
     api.claim_next = lambda task_type: claimed.append(task_type)
     _RecordingWorker.started = []
-    monkeypatch.setattr('sas.orchestrator.worker_for', lambda *args: _RecordingWorker(*args))
+    monkeypatch.setattr('sats.orchestrator.worker_for', lambda *args: _RecordingWorker(*args))
     orchestrator = Orchestrator(api, _config(tmp_path))
 
     orchestrator.run()
@@ -204,6 +205,45 @@ def test_cleans_up_even_when_there_is_no_bucket(tmp_path):
     orchestrator.run()
 
     assert len(cleaned) == 1
+
+
+def test_cleans_up_on_the_first_round_and_then_waits_out_the_interval(tmp_path, monkeypatch):
+    # The cleanups cost three `async-task/filter` calls and a walk of the work directory, and nothing
+    # they look for appears in seconds, so they are throttled apart from the loop. The first round is
+    # the exception: a process that has just started is the one that has a dead worker's tasks to
+    # finish.
+    clock = [1000.0]
+    monkeypatch.setattr('sats.orchestrator.time.monotonic', lambda: clock[0])
+    orchestrator = Orchestrator(_api(), _config(tmp_path, cleanup_interval=300))
+
+    assert orchestrator._cleanup_due() is True, 'the first round must clean up'
+    assert orchestrator._cleanup_due() is False, 'the next round is inside the interval'
+
+    clock[0] += 299
+    assert orchestrator._cleanup_due() is False
+
+    clock[0] += 2
+    assert orchestrator._cleanup_due() is True, 'the interval has passed'
+    assert orchestrator._cleanup_due() is False, 'and the next one is booked again'
+
+
+def test_the_cleanups_can_be_turned_off_altogether(tmp_path):
+    # For a deployment that runs them elsewhere - several replicas of this service, one of them
+    # cleaning. `run` says so at WARNING, because the consequence is otherwise silent.
+    api = _api()
+    cleaned = []
+
+    class _RecordingCleaner:
+        def cleanup(self, archive_config, active_ids):
+            cleaned.append(archive_config)
+
+    orchestrator = Orchestrator(api, _config(tmp_path, cleanup_interval=0),
+                                cleaner=_RecordingCleaner())
+
+    orchestrator.run()
+
+    assert cleaned == []
+    assert orchestrator._cleanup_due() is False
 
 
 def test_skips_the_round_when_the_preference_cannot_be_read(tmp_path):

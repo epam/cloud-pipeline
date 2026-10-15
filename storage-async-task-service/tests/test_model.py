@@ -24,7 +24,7 @@ import datetime
 
 import pytest
 
-from sas.model import ArchiveTask, AsyncTaskType, CloudRegion, Storage, StorageType, TaskStatus, \
+from sats.model import ArchiveTask, AsyncTaskType, CloudRegion, Storage, StorageType, TaskStatus, \
     format_api_datetime, parse_api_datetime
 
 

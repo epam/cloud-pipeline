@@ -13,8 +13,8 @@
 # limitations under the License.
 
 # This file has two jobs. First, pytest adds the directory holding the topmost `conftest.py` to
-# `sys.path`, which is what lets `tests/` write `import sas` without the package having been installed
-# first - deleting the file makes every test fail with `ModuleNotFoundError: No module named 'sas'`.
+# `sys.path`, which is what lets `tests/` write `import sats` without the package having been installed
+# first - deleting the file makes every test fail with `ModuleNotFoundError: No module named 'sats'`.
 #
 # Second, the fixture below. Beyond it there are none: the fakes live in `tests/fakes.py`, because they
 # are plain classes rather than fixtures and reading them next to the tests is easier than chasing an

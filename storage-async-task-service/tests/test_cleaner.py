@@ -22,9 +22,9 @@ these tests are the only place that behaviour is exercised at all.
 import datetime
 import os
 
-from sas.config import StorageDownloadArchiveConfig, ServiceConfig
-from sas.worker.cleaner import ORPHAN_GRACE_MINUTES, Cleaner
-from sas.model import ArchiveTask, TaskStatus
+from sats.config import StorageDownloadArchiveConfig, ServiceConfig
+from sats.worker.cleaner import ORPHAN_GRACE_MINUTES, Cleaner
+from sats.model import ArchiveTask, TaskStatus
 
 from .fakes import FakeApi, FakeBucket
 
@@ -289,7 +289,7 @@ def test_builds_its_client_from_the_destination_storages_region(tmp_path, monkey
     api.filtered = {TaskStatus.SUCCESS: [expired]}
     # The real client is built - that is what is under test - and the bucket around it is replaced, so
     # nothing is sent anywhere.
-    monkeypatch.setattr('sas.worker.cleaner.ArchiveBucket',
+    monkeypatch.setattr('sats.worker.cleaner.ArchiveBucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 
     Cleaner(api, _service_config(tmp_path)).cleanup(_archive_config(), active_ids=set())

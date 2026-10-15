@@ -22,9 +22,9 @@ matters most on the day the second task type arrives.
 
 import pytest
 
-from sas.config import ServiceConfig, StorageDownloadArchiveConfig
-from sas.model import ArchiveTask, AsyncTaskType, TaskStatus
-from sas.worker import SUPPORTED_TASK_TYPES, ArchivePreparationWorker, AsyncTaskWorker, worker_for
+from sats.config import ServiceConfig, StorageDownloadArchiveConfig
+from sats.model import ArchiveTask, AsyncTaskType, TaskStatus
+from sats.worker import SUPPORTED_TASK_TYPES, ArchivePreparationWorker, AsyncTaskWorker, worker_for
 
 from .fakes import FakeApi
 

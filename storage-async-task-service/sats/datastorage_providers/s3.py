@@ -15,11 +15,11 @@
 """
 Reading the selection out of an S3 storage.
 
-Who the client is and which region it talks to is `sas/cloud/aws.py`'s subject, not this module's: both follow
-from the storage's cloud region, and the same rules apply to the bucket the finished archive is uploaded
-to. Everything here takes a client as given and is about listing and reading objects. The region a
-download link is signed for is the destination storage's own, settled on the API side, and has nothing
-to do with these calls.
+Who the client is and which region it talks to is `sats/cloud/aws.py`'s subject, not this module's:
+both follow from the storage's cloud region, and the same rules apply to the bucket the finished
+archive is uploaded to. Everything here takes a client as given and is about listing and reading
+objects. The region a download link is signed for is the destination storage's own, settled on the API
+side, and has nothing to do with these calls.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ from .base import ARCHIVED_STORAGE_CLASSES, DOWNLOAD_BLOCK_BYTES, FileSource, He
 from ..log import get_logger
 from ..model import Storage
 
-# Two dots mean "one package up": `..log` is `sas/log.py`, read from `sas/datastorage_providers/s3.py`.
+# Two dots mean "one package up": `..log` is `sats/log.py`, read from `sats/datastorage_providers/s3.py`.
 
 LOG = get_logger(__name__)
 
