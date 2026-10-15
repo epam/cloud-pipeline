@@ -165,6 +165,64 @@ def test_takes_the_pools_additional_spec_even_when_no_rule_matched():
     assert configuration['additional_spec'] == {'CapacityReservationSpecification': RESERVATION_TARGET}
 
 
+def _logs(pool_configuration=None, ins_img='null', availability_zone=None, subnet=None, rule=RULE):
+    with patch.object(aws_nodeup, 'PipelineAPI') as api, patch.object(aws_nodeup, 'pipe_log') as log, \
+            patch.object(aws_nodeup, 'get_matching_instance_image', return_value=dict(rule)):
+        api.return_value.load_node_pool.return_value = {'amiConfiguration': pool_configuration}
+        aws_nodeup.resolve_launch_configuration(
+            'region', 'm5.large', 'linux', 'token', 'p-1', POOL_ID if pool_configuration is not None else None,
+            ins_img, availability_zone, subnet)
+        messages = [call[0][0] for call in log.call_args_list]
+    aws_nodeup.load_pool_launch_configuration(None)
+    return messages
+
+
+def test_says_of_an_ordinary_run_exactly_what_it_always_said():
+    assert _logs(rule=dict(RULE, availability_zone=ZONE)) == [
+        'Found matching rule * for requested instance type m5.large',
+        "Additional custom instance configuration will be added: {'IamInstanceProfile': %s}" % INSTANCE_PROFILE,
+        'Instance image was not provided explicitly, ami-rule will be used (retrieved for */m5.large rule)',
+        'Particular availability_zone: {} is configured in allowed_instance configuration'.format(ZONE)]
+
+
+def test_says_an_explicitly_requested_image_is_the_configured_one_as_it_always_did():
+    messages = _logs(ins_img='ami-explicit', subnet=SUBNET)
+
+    assert 'Specified in configuration image ami-explicit will be used' in messages
+    assert not [message for message in messages if 'not provided explicitly' in message]
+
+
+def test_says_a_pool_configured_the_image_and_the_zone_it_launches_with():
+    messages = _logs({'ami': 'ami-pool', 'availability_zone': ZONE})
+
+    assert messages == [
+        'Found matching rule * for requested instance type m5.large',
+        'Pool {} has its own launch configuration, it will be applied over the matching rule'.format(POOL_ID),
+        "Additional custom instance configuration will be added: {'IamInstanceProfile': %s}" % INSTANCE_PROFILE,
+        'Instance image was not provided explicitly, ami-pool will be used (configured for the pool)',
+        'Particular availability_zone: {} is configured for the pool'.format(ZONE)]
+
+
+def test_credits_the_pool_for_what_it_configures_even_when_the_rule_says_the_same():
+    messages = _logs({'ami': RULE['ami'], 'availability_zone': ZONE}, rule=dict(RULE, availability_zone=ZONE))
+
+    assert 'Instance image was not provided explicitly, ami-rule will be used (configured for the pool)' in messages
+    assert 'Particular availability_zone: {} is configured for the pool'.format(ZONE) in messages
+
+
+def test_says_nothing_about_a_zone_the_run_asked_for_itself():
+    assert not [message for message in _logs({'availability_zone': ZONE}, availability_zone='us-east-1a')
+                if 'availability_zone' in message]
+
+
+def test_says_nothing_about_a_zone_nothing_configures():
+    assert not [message for message in _logs() if 'availability_zone' in message]
+
+
+def test_says_nothing_about_an_image_nothing_configures():
+    assert not [message for message in _logs(rule=dict(RULE, ami=None)) if 'image' in message]
+
+
 def _ec2(subnet_zones=None):
     ec2 = MagicMock()
     ec2.run_instances.return_value = {'Instances': [{'InstanceId': 'i-1', 'PrivateIpAddress': '10.0.0.1'}]}
