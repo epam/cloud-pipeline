@@ -58,6 +58,7 @@
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
+- [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 
 ***
 
@@ -1841,6 +1842,16 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 `pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (`boto3`/`botocore`, `azure-mgmt-*`, `google-api-python-client`, and `pipe-common` itself), so they run under either interpreter.
 
 The `data_loader` system pipeline and the `Python` pipeline template now resolve their interpreter via `CP_PYTHON_PATH` as well, instead of a hardcoded `python`, so they also run under either Python version. The `pipe-demo` NGS demo pipelines and the `Luigi` pipeline template, which still only ran under Python 2, were removed.
+
+***
+
+## Run controls for an unavailable node
+
+When the compute node of a run stops reporting its status, the run gets the `NODE_UNAVAILABLE` tag. If the node does not recover within the grace period (the `cluster.node.unavailable.grace.period.minutes` system preference, or the `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` run parameter), the node is terminated.  
+Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VERSIONED STORAGE** controls for such a run, though these operations cannot complete without the node.
+
+In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
 
 ***
 
