@@ -291,6 +291,10 @@ class PipelineAPI:
     RUN_ENGINE_EVENTS_URL = '/run/{id}/engine/tasks'
     RUN_RESULT_URL = '/run/{id}/result'
     STORAGE_PATH_TYPE = 'datastorage/{id}/type'
+    ASYNC_TASK_NEXT_URL = '/async-task/next'
+    ASYNC_TASK_FILTER_URL = '/async-task/filter'
+    ASYNC_TASK_LOAD_URL = '/async-task/{id}'
+    ASYNC_TASK_STATUS_URL = '/async-task/{id}/status'
 
     # Pipeline API default header
 
@@ -1385,6 +1389,12 @@ class PipelineAPI:
     def load_datastorage(self, storage_id):
         try:
             return self._request(endpoint=self.DATA_STORAGE_LOAD_URL.format(id=storage_id), http_method="get")
+        except APIError:
+            # The API answered "no" - the storage was deleted, or this user may not see it. Let it
+            # through as it is: it never succeeds on a retry, and a caller that has to tell that apart
+            # from an unreachable API cannot do it through a RuntimeError. `APIError` is a
+            # `RuntimeError` itself, so a caller that catches that still catches this.
+            raise
         except Exception as e:
             raise RuntimeError("Failed to load datastorage by id: '{}'.",
                                "Error message: {}".format(storage_id, str(e)))
@@ -1647,6 +1657,9 @@ class PipelineAPI:
         try:
             result = self._request(endpoint=self.DATA_STORAGE_MOUNT_LOAD.format(id=mount_id), http_method="get")
             return {} if result is None else FileShareMount.from_json(result)
+        except APIError:
+            # Let through for the same reason as in `load_datastorage` above.
+            raise
         except Exception as e:
             raise RuntimeError("Failed to load file share mount: {}".format(str(e)))
 
@@ -1690,3 +1703,52 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load item type for storage ID '{}', error: {}".format(str(storage_id),
                                                                                                 str(e)))
+
+
+    # Asynchronous tasks: the queue the API keeps for work that an external service performs.
+    # These four methods deliberately let the error through as it comes out of `_request`, rather
+    # than wrapping it in a `RuntimeError` as the older methods above do. The caller has to be able
+    # to tell an `APIError` - the API answered "no", which never changes on a retry - from a
+    # transport failure, because for a task queue the two mean opposite things: a refused status
+    # transition means somebody else has already finished the task, while a timeout means try again.
+
+    def claim_next_async_task(self, task_type):
+        """
+        Takes the oldest pending task of a type and moves it to RUNNING, atomically, on the API side.
+
+        Returns None when the queue is empty, which is the ordinary answer rather than a failure.
+
+        This call is not idempotent: the API hands the task over and marks it RUNNING in one
+        transaction, so a lost *response* leaves a task claimed with nobody working on it. A caller
+        that must not have it retried should use a client built with attempts=1.
+        """
+        return self._request(endpoint=self.ASYNC_TASK_NEXT_URL + '?type=' + str(task_type),
+                             http_method='post')
+
+    def load_async_task(self, task_id):
+        return self._request(endpoint=self.ASYNC_TASK_LOAD_URL.format(id=task_id), http_method='get')
+
+    def filter_async_tasks(self, task_filter):
+        """
+        Lists tasks matching a filter: type, statuses, statusChangedBefore, finishedBefore, pageSize.
+
+        The filter is passed as given, so that a new field on the API side needs no change here.
+        """
+        return self._request(endpoint=self.ASYNC_TASK_FILTER_URL, http_method='post',
+                             data=task_filter) or []
+
+    def update_async_task_status(self, task_id, status, result=None, error_message=None):
+        """
+        Reports a status change.
+
+        The API is strict about which payload goes with which status - a result for SUCCESS, an error
+        message for FAILED, neither for the rest - and refuses the request rather than ignoring the
+        extra field, so nothing is sent that was not passed in.
+        """
+        data = {'status': status}
+        if result is not None:
+            data['result'] = result
+        if error_message is not None:
+            data['errorMessage'] = error_message
+        return self._request(endpoint=self.ASYNC_TASK_STATUS_URL.format(id=task_id),
+                             http_method='post', data=data)

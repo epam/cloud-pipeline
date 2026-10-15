@@ -1,0 +1,7 @@
+# What the tests and the local checks need, on top of requirements.txt.
+#
+# pytest - the test runner. `tests/` holds plain functions; pytest finds them by name.
+# flake8 - the style and unused-import check. Its settings are in setup.cfg next to this file.
+-r requirements.txt
+pytest==8.3.3
+flake8==7.1.1
