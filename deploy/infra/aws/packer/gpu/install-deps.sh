@@ -64,16 +64,22 @@ ln -s /opt/conda/bin/pip /usr/bin/pip2 && \
 ln -s /opt/conda/bin/pip /usr/bin/pip
 
 # python3
+cd /opt && \
+rm -rf python3.12 openssl && \
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz" -O python3.12.tar.gz && \
+tar -zxf python3.12.tar.gz && \
+rm -f python3.12.tar.gz
+
 if command -v python3 &>/dev/null; then
-    echo "python3 is already installed ($(python3 --version 2>&1)), skipping the bundled distribution"
+    echo "python3 is already available ($(command -v python3)), leaving it untouched"
 else
-    cd /opt && \
-    rm -rf python3.12 openssl && \
-    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz" -O python3.12.tar.gz && \
-    tar -zxf python3.12.tar.gz && \
-    rm -f python3.12.tar.gz && \
-    ln -sf /opt/python3.12/bin/python3.12 /usr/bin/python3 && \
-    ln -sf /opt/python3.12/bin/pip3.12 /usr/bin/pip3
+    ln -s /opt/python3.12/bin/python3.12 /usr/bin/python3
+fi
+
+if command -v pip3 &>/dev/null; then
+    echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
+else
+    ln -s /opt/python3.12/bin/pip3.12 /usr/bin/pip3
 fi
 
 # Install jq

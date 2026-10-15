@@ -47,17 +47,22 @@ function install_python3_packages {
 
       tar zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
       rm -f "${_tmp_install_dir}/python3.tgz"
-
-      ln -sf "${_install_path}/python3.12/bin/python3.12" "/usr/bin/python3"
-      ln -sf "${_install_path}/python3.12/bin/pip3.12"    "/usr/bin/pip3"
       echo "Python3 distro is installed into ${_install_path}/python3.12"
+
+      if command -v python3 &>/dev/null; then
+            echo "python3 is already available ($(command -v python3)), leaving it untouched"
+      else
+            ln -s "${_install_path}/python3.12/bin/python3.12" "/usr/bin/python3"
+      fi
+
+      if command -v pip3 &>/dev/null; then
+            echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
+      else
+            ln -s "${_install_path}/python3.12/bin/pip3.12" "/usr/bin/pip3"
+      fi
 }
 
-if command -v python3 &>/dev/null; then
-    echo "python3 is already installed ($(python3 --version 2>&1)), skipping the bundled distribution"
-else
-    install_python3_packages "/usr/local"
-fi
+install_python3_packages "/usr/local"
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
