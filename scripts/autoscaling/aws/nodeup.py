@@ -297,17 +297,47 @@ def resolve_launch_configuration(aws_region, ins_type, ins_platform, api_token, 
     Resolves the node's launch configuration in three layers, each laid over the one before: the region's matching
     amis rule (or the defaults), the pool's launch configuration, and the explicit image, zone and subnet arguments.
     """
-    ami_configuration = get_matching_instance_image(aws_region, ins_type, ins_platform, api_token, run_id)
-    if ami_configuration['instance_mask']:
-        pipe_log('Found matching rule {} for requested instance type {}'.format(ami_configuration['instance_mask'], ins_type))
-    if pool_id:
-        pool_ami_configuration = load_pool_launch_configuration(pool_id)
-        ami_configuration = overlay_dict(ami_configuration, pool_ami_configuration)
-    explicit_ami_configuration = {
+    rule_configuration = get_matching_instance_image(aws_region, ins_type, ins_platform, api_token, run_id)
+    if rule_configuration['instance_mask']:
+        pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'
+                 .format(instance_mask=rule_configuration['instance_mask'], instance_type=ins_type))
+    pool_configuration = load_pool_launch_configuration(pool_id)
+    explicit_configuration = {
         'ami': None if ins_img == 'null' else ins_img,
         'availability_zone': availability_zone,
         'subnet': subnet}
-    return overlay_dict(ami_configuration, explicit_ami_configuration)
+    resolved = overlay_dict(overlay_dict(rule_configuration, pool_configuration), explicit_configuration)
+    log_launch_configuration(resolved, rule_configuration, pool_configuration, ins_type, ins_img, availability_zone)
+    return resolved
+
+
+def log_launch_configuration(resolved, rule_configuration, pool_configuration, ins_type,
+                             requested_image, requested_availability_zone):
+    """
+    Says where the image and the zone a node launches with came from, naming the layer that supplied it and keeping
+    the wording a rule match or an explicitly requested image had before a pool could configure either.
+    """
+    if resolved['additional_spec']:
+        pipe_log('Additional custom instance configuration will be added: {}'.format(resolved['additional_spec']))
+
+    if requested_image and requested_image != 'null':
+        pipe_log('Specified in configuration image {ami} will be used'.format(ami=requested_image))
+    elif pool_configuration.get('ami'):
+        pipe_log('Instance image was not provided explicitly, {instance_image} will be used (configured for the '
+                 'pool)'.format(instance_image=resolved['ami']))
+    elif rule_configuration['ami']:
+        pipe_log('Instance image was not provided explicitly, {instance_image} will be used (retrieved for '
+                 '{instance_mask}/{instance_type} rule)'
+                 .format(instance_image=resolved['ami'], instance_mask=rule_configuration['instance_mask'],
+                         instance_type=ins_type))
+
+    if not requested_availability_zone:
+        if pool_configuration.get('availability_zone'):
+            pipe_log('Particular availability_zone: {availability_zone} is configured for the pool'
+                     .format(availability_zone=resolved['availability_zone']))
+        elif rule_configuration['availability_zone']:
+            pipe_log('Particular availability_zone: {availability_zone} is configured in allowed_instance '
+                     'configuration'.format(availability_zone=resolved['availability_zone']))
 
 
 def zone_pinned_by_pool(availability_zone):
@@ -1793,13 +1823,6 @@ def main():
         instance_additional_spec = launch_configuration['additional_spec']
         availability_zone = launch_configuration['availability_zone']
         subnet = launch_configuration['subnet']
-        pipe_log('Instance image {} will be used'.format(ins_img))
-        if instance_additional_spec:
-            pipe_log('Additional custom instance configuration will be added: {}'.format(instance_additional_spec))
-        if availability_zone:
-            pipe_log('Particular availability_zone: {availability_zone} will be used'.format(availability_zone=availability_zone))
-        if subnet:
-            pipe_log('Particular subnet: {subnet} will be used'.format(subnet=subnet))
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
