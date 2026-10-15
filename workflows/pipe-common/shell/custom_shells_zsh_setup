@@ -60,7 +60,7 @@ if [ -d ~/.oh-my-zsh ] && [ "$CP_CAP_SHELL_LIST_ZSH_REINSTALL" == "true" ]; then
     rm -rf ~/.oh-my-zsh ${OWNER_HOME}/.oh-my-zsh
 fi
 
-wget "$_oh_my_zsh_url" -O /tmp/omz_install.sh && \
+wget --no-verbose "$_oh_my_zsh_url" -O /tmp/omz_install.sh && \
 echo y | bash /tmp/omz_install.sh
 
 if [ $? -ne 0 ]; then

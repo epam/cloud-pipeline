@@ -44,7 +44,7 @@ then
     LUSTRE_CLIENT_URL="${GLOBAL_DISTRIBUTION_URL}tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       yum install -y -q wget yum-utils &&
-      wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
+      wget --no-verbose $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
       mkdir -p lustre-client &&
       tar -xzvf lustre-client.tar.gz -C lustre-client/ &&
       rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm &&
@@ -63,7 +63,7 @@ else
     fi
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       apt-get install wget -y -qq  &&
-      wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
+      wget --no-verbose $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
       mkdir lustre-client-install/ &&
       tar -C lustre-client-install/ -zxvf lustre-client.tar.gz &&
       mkdir -p /lib/modules/$(uname -r) &&

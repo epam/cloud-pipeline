@@ -94,7 +94,7 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 
 [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
 
-wget -q -O docker.tgz "${CP_CAP_DIND_DISTR_PREFIX}/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
+wget --no-verbose -O docker.tgz "${CP_CAP_DIND_DISTR_PREFIX}/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
 
 if [ $? -ne 0 ]; then
     pipe_log_fail "Unable to download docker distribution ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
@@ -153,7 +153,7 @@ fi
 
 if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" "<"; then
     export DIND_COMMIT=37498f009d8bf25fbb6199e8ccd34bed84f2874b
-    wget -q -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
+    wget --no-verbose -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
 
     if [ $? -ne 0 ]; then
         pipe_log_fail "Unable to install download dind fix $DIND_COMMIT" "$DIND_SETUP_TASK"
@@ -234,7 +234,7 @@ if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" ">" && \
     pipe_log_info "- install dir: $CP_CAP_DIND_BUILDX_INSTALL_DIR" "$DIND_SETUP_TASK"
     
     mkdir -p "${CP_CAP_DIND_BUILDX_INSTALL_DIR}" && \
-    wget -q -O "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx" "${CP_CAP_DIND_BUILDX_DISTR_PREFIX}/buildx-v${CP_CAP_DIND_BUILDX_VERSION}.linux-amd64" && \
+    wget --no-verbose -O "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx" "${CP_CAP_DIND_BUILDX_DISTR_PREFIX}/buildx-v${CP_CAP_DIND_BUILDX_VERSION}.linux-amd64" && \
     chmod +x "$CP_CAP_DIND_BUILDX_INSTALL_DIR/docker-buildx"
 
     if [ $? -ne 0 ]; then

@@ -59,12 +59,12 @@ if [ "$CP_CAP_MODULE_PREINSTALLED" != "true" ]; then
         MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
     fi
 
-    wget -q "$MODULES_SOURCES_URL" -O modules.tar.gz
+    wget --no-verbose "$MODULES_SOURCES_URL" -O modules.tar.gz
     if [ $? -ne 0 ]; then
         pipe_log_info "Unable to get the modules sources from ${MODULES_SOURCES_URL}, trying alternative source" "$MODULES_INSTALL_TASK"
         MODULES_SOURCES_URL="$MODULES_SOURCES_URL_ALT"
 
-        wget -q "$MODULES_SOURCES_URL" -O modules.tar.gz
+        wget --no-verbose "$MODULES_SOURCES_URL" -O modules.tar.gz
         if [ $? -ne 0 ]; then
             pipe_log_fail "Failed to download modules sources from ${MODULES_SOURCES_URL}, exiting" "$MODULES_INSTALL_TASK"
             exit 1
@@ -126,7 +126,7 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
             _MODULES_INSTALL_RESULT=$?
         else
             apt install make tcl-dev rsync lua5.2 lua-bitop lua-filesystem lua-json lua-lpeg lua-posix lua-term less gcc  -y
-            wget -q https://sourceforge.net/projects/lmod/files/lua-5.1.4.9.tar.bz2 -O lua-5.1.4.9.tar.bz2 && \
+            wget --no-verbose https://sourceforge.net/projects/lmod/files/lua-5.1.4.9.tar.bz2 -O lua-5.1.4.9.tar.bz2 && \
             tar xf lua-5.1.4.9.tar.bz2 && rm -f lua-5.1.4.9.tar.bz2 && \
             cd lua-5.1.4.9 && \
             ./configure --prefix=/opt/apps/lua/5.1.4.9 && \
