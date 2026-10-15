@@ -857,7 +857,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (145 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (152 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -932,6 +932,13 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4608_7**](Run_tools_in_sandbox/4608_capacity_retries/4608_7.md) | "Capacity retries" field in the Tool settings |  |
 | [**4608_8**](Run_tools_in_sandbox/4608_capacity_retries/4608_8.md) | "Capacity retries" limits the number of node-up attempts after `Insufficient instance capacity` |  |
 | [**4608_9**](Run_tools_in_sandbox/4608_capacity_retries/4608_9.md) | "Capacity retries" applies to every "Fallback node types" entry too |  |
+| [**4656_1**](Run_tools_in_sandbox/4656_digest_pinning/4656_1.md) | Docker image digest pinning is disabled by default |  |
+| [**4656_2**](Run_tools_in_sandbox/4656_digest_pinning/4656_2.md) | A run launched with the digest pinning enabled shows the docker image digest |  |
+| [**4656_3**](Run_tools_in_sandbox/4656_digest_pinning/4656_3.md) | Pause and resume of a run pinned to the docker image digest keep the run's changes |  |
+| [**4656_4**](Run_tools_in_sandbox/4656_digest_pinning/4656_4.md) | Commit of a run pinned to the docker image digest |  |
+| [**4656_5**](Run_tools_in_sandbox/4656_digest_pinning/4656_5.md) | A run launched before the digest pinning is enabled keeps working with the tag |  |
+| [**4656_6**](Run_tools_in_sandbox/4656_digest_pinning/4656_6.md) | Disabling the digest pinning does not affect the runs that are already pinned |  |
+| [**4656_7**](Run_tools_in_sandbox/4656_digest_pinning/4656_7.md) | A rerun of a pinned run is pinned to the digest its tag points to at the rerun |  |
 | [**223**](Run_tools_in_sandbox/Launch_parameters/223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) | :white_check_mark: |
 | [**2234**](Run_tools_in_sandbox/Launch_parameters/2234.md) | "Custom" capabilities implementation | :white_check_mark: |
 | [**2295**](Run_tools_in_sandbox/Launch_parameters/2295.md) | "Custom" capabilities with configured job parameters | :white_check_mark: |
