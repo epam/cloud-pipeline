@@ -149,24 +149,12 @@ export LAYERS_COUNT_TO_SQUASH=${13}
 
 
 export TASK_NAME="PausePipelineRun"
-if [ -x /usr/bin/python3 ]; then
-    CP_PYTHON3_PATH="/usr/bin/python3"
-elif command -v python3 &>/dev/null; then
-    CP_PYTHON3_PATH="$(command -v python3)"
-fi
-
-if [ -n "${CP_PYTHON3_PATH:-}" ]; then
+# scripts/pipeline-launch/launch.sh installs the bundled python3.12 distro at this fixed
+# path on every run start - check for its presence rather than any system python3's version.
+export CP_PYTHON3_PATH="/usr/local/python3.12/bin/python3.12"
+if [ -x "$CP_PYTHON3_PATH" ]; then
+    export CP_PYTHON_VERSION="3"
     export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
-    CP_PYTHON3_VERSION="$("$CP_PYTHON3_PATH" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null)"
-    CP_PYTHON3_MAJOR="${CP_PYTHON3_VERSION%%.*}"
-    CP_PYTHON3_MINOR="${CP_PYTHON3_VERSION##*.}"
-    if [ "$CP_PYTHON3_MAJOR" -eq 3 ] 2>/dev/null && [ "$CP_PYTHON3_MINOR" -ge 12 ] 2>/dev/null; then
-        # Python >= 3.12: use the pypi3 mirror and the newer setuptools, in common_commit_initialization.sh
-        export CP_PYTHON_VERSION="3"
-    else
-        # Older python3 (e.g. 3.6): still run it, but with the pypi (py2) mirror and setuptools==44.1.1
-        export CP_PYTHON_VERSION="2"
-    fi
 else
     export CP_PYTHON_VERSION="2"
     export CP_PYTHON_PATH=$(command -v python2)
