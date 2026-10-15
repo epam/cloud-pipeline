@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -974,51 +974,76 @@ public class KubernetesManager {
     }
 
     public boolean isNodeAvailable(final KubernetesClient client, final String nodeId) {
+        return findNotPausedNode(client, nodeId)
+                .filter(this::isNodeAvailable)
+                .isPresent();
+    }
+
+    /**
+     * Only a node with Ready condition True can take a new run: Kubernetes does not schedule pods
+     * on a node which is not ready.
+     */
+    public boolean isNodeReady(final KubernetesClient client, final String nodeId) {
+        return findNotPausedNode(client, nodeId)
+                .filter(this::isNodeReady)
+                .isPresent();
+    }
+
+    private Optional<Node> findNotPausedNode(final KubernetesClient client, final String nodeId) {
         return client.nodes()
                 .withLabel(KubernetesConstants.RUN_ID_LABEL, nodeId)
                 .withoutLabel(KubernetesConstants.PAUSED_NODE_LABEL)
                 .list().getItems()
                 .stream()
-                .findFirst()
-                .filter(this::isNodeAvailable)
-                .isPresent();
+                .findFirst();
     }
 
+    private boolean isNodeReady(final Node node) {
+        return getReadyCondition(node)
+                .map(condition -> KubernetesConstants.TRUE.equalsIgnoreCase(condition.getStatus()))
+                .orElse(false);
+    }
+
+    /**
+     * A node without a Ready condition yet (e.g. just registered) is neither available nor unavailable.
+     */
     public boolean isNodeAvailable(final Node node) {
-        return !isLastConditionUnavailable(node);
+        return getReadyCondition(node)
+                .map(condition -> !isOutOfOrder(node, condition))
+                .orElse(false);
     }
 
+    /**
+     * A node is unavailable when its Ready condition is Unknown, i.e. the kubelet stopped posting
+     * the node status or never posted it.
+     */
     public boolean isNodeUnavailable(final Node node) {
-        return isLastConditionUnavailable(node);
+        return getReadyCondition(node)
+                .map(condition -> isOutOfOrder(node, condition))
+                .orElse(false);
     }
 
-    private boolean isLastConditionUnavailable(final Node node) {
-        return getLastCondition(node)
-                .map(NodeCondition::getReason)
-                .map(lastReason -> {
-                    for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
-                        if (lastReason.contains(reason)) {
-                            log.debug("Node is out of order: {}", node.getStatus().getConditions());
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                .orElse(true);
+    private boolean isOutOfOrder(final Node node, final NodeCondition readyCondition) {
+        if (KubernetesConstants.UNKNOWN.equalsIgnoreCase(readyCondition.getStatus())) {
+            log.debug("Node is out of order: {}", node.getStatus().getConditions());
+            return true;
+        }
+        return false;
     }
 
-    public Optional<LocalDateTime> getLastConditionDateTime(final Node node) {
-        return getLastCondition(node)
-                .map(NodeCondition::getLastHeartbeatTime)
+    public Optional<LocalDateTime> getReadyTransitionDateTime(final Node node) {
+        return getReadyCondition(node)
+                .map(NodeCondition::getLastTransitionTime)
                 .map(dateTime -> LocalDateTime.parse(dateTime, KubernetesConstants.KUBE_DATE_FORMATTER));
     }
 
-    private Optional<NodeCondition> getLastCondition(final Node node) {
+    private Optional<NodeCondition> getReadyCondition(final Node node) {
         return Optional.ofNullable(node)
                 .map(Node::getStatus)
                 .map(NodeStatus::getConditions)
                 .orElseGet(Collections::emptyList)
                 .stream()
+                .filter(condition -> KubernetesConstants.READY.equals(condition.getType()))
                 .findFirst();
     }
 
