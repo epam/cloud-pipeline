@@ -31,13 +31,15 @@ them.
   The admin token is `admin-token.secret` in the local state, for scripts to read; the REST API is
   `https://api:9999/pipeline/restapi/` on the sandbox's network. **Call it with `sandbox.sh api
   <method> <path> [<json body>] [--jq <filter>]`**, which blanks out the secrets in the answer,
-  never with curl and the token. `README.md` → "A run" launches the tool and follows it. **Read
-  a log with `services --log [<container>]`** — the API's, or `db`, `elasticsearch`, `billing`,
-  `search`, `monitoring` — which blanks out the tokens and credentials it holds, never with
-  `docker logs`.
+  never with curl and the token. `README.md` → "A run" launches the tool, follows it, and commits,
+  pauses and resumes it. **Read a log with `services --log [<container>]`** — the API's, or `db`,
+  `elasticsearch`, `billing`, `search`, `monitoring` — which blanks out the tokens and credentials
+  it holds, never with `docker logs`.
 - **A run's pod holds the developer's AWS credentials**, in its spec and its environment: never
   print either (`kubectl get pod -o yaml` or `-o json`, `kubectl describe pod`, `env` in it).
-  Follow a run through `sandbox.sh api` and `services --log`.
+  Follow a run through `sandbox.sh api` and `services --log`. A committed image keeps the run's
+  API token in `/etc/cp_env.sh`, for anyone who can pull from the master's registry: commit only
+  when asked.
 - **`down` and `ami --rebuild` list what they would remove and stop.** Pass `--yes` only after the
   person has confirmed that list.
 - **At every hand-back, name the sandboxes still running, with their tunnels and services**, as

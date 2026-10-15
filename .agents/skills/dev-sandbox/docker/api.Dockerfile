@@ -1,6 +1,7 @@
 # The image the dev sandbox runs the platform's API in, on the developer's workstation, and its
 # optional services: Java 8 for them, Python 3.12 with the packages of the node scripts the API
-# runs (scripts/autoscaling's requirements and pipe-common's), and tun2socks, which routes the VPC
+# runs (scripts/autoscaling's requirements and pipe-common's), the SSH client the API runs a run's
+# commit, pause and the other operations on its node with, and tun2socks, which routes the VPC
 # through the tunnel's SOCKS proxy.
 #
 # Built by scripts/sandbox.sh services, from a context holding this file, the entrypoints,
@@ -18,8 +19,8 @@ ARG TUN2SOCKS_SHA256_ARM64=3931476c9cfa8fa236d23aeaf36767df0eb27cc11ecaab699faba
 ARG TARGETARCH
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates curl iproute2 openssl python3 \
-      python3-venv unzip \
+ && apt-get install -y --no-install-recommends ca-certificates curl iproute2 openssh-client \
+      openssl python3 python3-venv unzip \
  && rm -rf /var/lib/apt/lists/*
 
 RUN set -eu; \

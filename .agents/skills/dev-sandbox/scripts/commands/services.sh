@@ -36,6 +36,18 @@ API_POLL_SECONDS=10
 DEV_PROFILE=api/profiles/dev/application.properties
 NODE_SCRIPTS_DIR=scripts/autoscaling/aws
 NODE_INIT_SCRIPT=scripts/autoscaling/init_multicloud_v1.15.4_al2023.sh
+# Where the API serves the scripts it runs on a run's node over SSH, for its commit, pause and the
+# other operations there: the jar holds scripts/commit-run-scripts/ there.
+COMMIT_SCRIPTS_PATH=commit-run-scripts
+# Where the API's container keeps the sandbox's SSH key, which the API logs in to the nodes with,
+# as SSH_USER (docker/api-entrypoint.sh copies it there).
+NODE_SSH_KEY_IN_API=/root/.ssh/cp-sandbox-node-key.pem
+# What a commit blanks in the image's environment beyond its own list: the API's default for
+# commit.additional.envs.to.clean, and, by the region's ID, the AWS credentials the API hands every
+# run's container (SystemParams.CLOUD_ACCOUNT_*_PREFIX), which would go to the master's registry
+# with the image.
+COMMIT_ENVS_TO_CLEAN_DEFAULT=CP_EXEC_TIMEOUT
+COMMIT_CREDENTIAL_ENV_PREFIXES=(CP_ACCOUNT_ID_ CP_ACCOUNT_KEY_ CP_ACCOUNT_TOKEN_)
 PIPE_COMMON_DIR=workflows/pipe-common
 DB_URL=jdbc:postgresql://db:5432/pipeline
 TLS_DAYS=3650
@@ -343,15 +355,16 @@ render_properties() {
 # write_api_settings <name> <private-ip>: api.properties, the dev profile with what the sandbox
 # changes, and api.env, the environment the API's container starts with.
 write_api_settings() {
-  local name=$1 ip=$2 root=$SANDBOX_REPO_ROOT properties env url cluster
+  local name=$1 ip=$2 root=$SANDBOX_REPO_ROOT properties env url scripts cluster
   properties=$(api_properties_file "$name")
   env=$(api_env_file "$name")
   url=https://$ip:$SERVICES_API_PORT/pipeline
+  scripts=$url/$COMMIT_SCRIPTS_PATH
   # Only EKS nodes are told the cluster's name, but nodeup.py fails without one, and the API leaves
   # it off nodeup.py's command line while kube.cluster.name is empty, as the dev profile has it.
   cluster=$(sandbox_network "$name")
   if dry_run; then
-    dry_run_note "write $properties: $DEV_PROFILE with the database, the node scripts, the master and the API's address set"
+    dry_run_note "write $properties: $DEV_PROFILE with the database, the node scripts, the master, the API's address and the scripts it serves set"
     dry_run_note "write $env"
     return 0
   fi
@@ -370,6 +383,12 @@ write_api_settings() {
       "launch.script.url.linux=$url/launch.sh" \
       "init.script.url.linux=$url/init.sh" \
       "launch.script.url.windows=$url/launch.py" \
+      "commit.run.scripts.root.url=$scripts/" \
+      "commit.run.script.starter.url=$scripts/commit_run_starter.sh" \
+      "container.layers.script.url=$scripts/container_layers_count.sh" \
+      "container.size.script.url=$scripts/container_size.sh" \
+      "limit.run.bandwidth.script.url=$scripts/limit_bandwidth.sh" \
+      "pause.run.script.url=$scripts/pause_run.sh" \
       "kube.master.ip=$ip:$KUBE_API_PORT" \
       "kube.kubeadm.token=\${CP_KUBE_KUBEADM_TOKEN}" \
       "kube.kubeadm.cert.hash=$(state_get "$name" kube_ca_cert_hash)" \
@@ -381,6 +400,7 @@ SANDBOX_DIR=$(state_dir "$name")
 SANDBOX_VPC_CIDRS=$(state_get "$name" vpc_cidrs)
 SANDBOX_SOCKS_PROXY=$(tunnel_socks "$name")
 SANDBOX_MASTER_IP=$ip
+SANDBOX_NODE_SSH_KEY=$NODE_SSH_KEY_IN_API
 PYTHONPATH=$root/$PIPE_COMMON_DIR
 EOF
 }
@@ -614,20 +634,25 @@ networks_config() {
     }'
 }
 
-# preferences <name>: the preferences the sandbox sets, as the API's POST /preferences takes them,
-# in two lists: cluster.instance.type is checked against cluster.allowed.instance.types, so that
-# one goes first.
+# preferences <name> <region-id>: the preferences the sandbox sets, as the API's POST /preferences
+# takes them, in two lists: cluster.instance.type is checked against cluster.allowed.instance.types,
+# so that one goes first. The user and the key the API logs in to a run's node with, over SSH, are
+# not visible, as the platform's installer sets them.
 preferences() {
-  local name=$1 networks
+  local name=$1 region=$2 networks prefix envs=$COMMIT_ENVS_TO_CLEAN_DEFAULT
   # An assignment of its own, which errexit sees fail; as an argument, it would not.
   networks=$(networks_config "$name")
+  for prefix in "${COMMIT_CREDENTIAL_ENV_PREFIXES[@]}"; do
+    envs+=,$prefix$region
+  done
   jq -cn --arg type "$CP_SANDBOX_WORKER_INSTANCE_TYPE" '[
     {name: "cluster.allowed.instance.types", value: $type, visible: true},
     {name: "cluster.allowed.instance.types.docker", value: $type, visible: true}]'
   jq -cn --arg type "$CP_SANDBOX_WORKER_INSTANCE_TYPE" --arg networks "$networks" \
     --arg max "$CLUSTER_MAX_SIZE" --arg policy "$CLUSTER_KEEP_ALIVE_POLICY" \
     --arg minutes "$CLUSTER_KEEP_ALIVE_MINUTES" --arg api "$(recorded "$name" api_url)" \
-    --arg distribution "$(recorded "$name" distribution_url)" '[
+    --arg distribution "$(recorded "$name" distribution_url)" --arg user "$SSH_USER" \
+    --arg key "$NODE_SSH_KEY_IN_API" --arg envs "$envs" '[
     {name: "cluster.networks.config", value: $networks, visible: true},
     {name: "cluster.instance.type", value: $type, visible: true},
     {name: "cluster.max.size", value: $max, visible: true},
@@ -635,7 +660,10 @@ preferences() {
     {name: "cluster.keep.alive.policy", value: $policy, visible: true},
     {name: "cluster.keep.alive.minutes", value: $minutes, visible: true},
     {name: "base.api.host", value: $api, visible: true},
-    {name: "base.pipe.distributions.url", value: $distribution, visible: true}]'
+    {name: "base.pipe.distributions.url", value: $distribution, visible: true},
+    {name: "commit.username", value: $user, visible: false},
+    {name: "commit.deploy.key", value: $key, visible: false},
+    {name: "commit.additional.envs.to.clean", value: $envs, visible: true}]'
 }
 
 # installer_search_lines: the search preferences the platform's installer sets, as
@@ -751,7 +779,7 @@ cmd_services_configure() {
   use_sandbox_region "$name"
   region=$(ensure_region "$name")
   # Made first, so that a failure stops the command rather than the loop.
-  lists=$(preferences "$name")
+  lists=$(preferences "$name" "$region")
   if with_service search billing; then
     lists+=$'\n'$(search_preferences)
   fi

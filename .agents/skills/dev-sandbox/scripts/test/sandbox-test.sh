@@ -923,6 +923,8 @@ expect "the image's context holds its Dockerfile, the entrypoints, the node scri
   "$(calls 'context: ')" 'context: api-entrypoint.sh api.Dockerfile pipe-common requirements.txt service-entrypoint.sh tools-entrypoint.sh'
 expect "and its tag is the hash of what it is built from" \
   "$(calls 'docker build -f' | grep -cE -- '-t cp-sandbox-api:[0-9a-f]{12} ' || true)" 1
+expect "the image installs OpenSSH's client, which the API logs in to a run's node with" \
+  "$(sed -n '/apt-get install/,/rm -rf/p' "$SKILL_DIR/docker/api.Dockerfile" | grep -cw openssh-client || true)" 1
 end_case
 
 start_case "services needs a tunnel that runs, and touches nothing without one"

@@ -41,6 +41,12 @@ api.host=
 launch.script.url.linux=
 init.script.url.linux=
 launch.script.url.windows=
+commit.run.scripts.root.url=
+commit.run.script.starter.url=
+container.layers.script.url=
+container.size.script.url=
+limit.run.bandwidth.script.url=
+pause.run.script.url=
 jwt.key.public=${CP_API_JWT_KEY_PUBLIC}
 kube.master.ip=
 kube.kubeadm.token=
@@ -213,12 +219,20 @@ test_services_prepare() {
   check "api.properties is the dev profile with the sandbox's database, node scripts, master, cluster name and addresses" \
     "$(grep -E '^(database.url|monitoring.elasticsearch.url|cluster.nodeup.script|cluster.node.terminate.script|api.host|launch.script.url.linux|init.script.url.linux|kube.master.ip|kube.kubeadm.token|kube.kubeadm.cert.hash|kube.node.token|kube.cluster.name)=' "$dir/api.properties" | paste -sd '|')" \
     "database.url=jdbc:postgresql://db:5432/pipeline|monitoring.elasticsearch.url=localhost|cluster.nodeup.script=$SANDBOX_REPO_ROOT/scripts/autoscaling/aws/nodeup.py|cluster.node.terminate.script=$SANDBOX_REPO_ROOT/scripts/autoscaling/aws/terminate_node.py|api.host=https://10.0.0.7:9999/pipeline/restapi/|launch.script.url.linux=https://10.0.0.7:9999/pipeline/launch.sh|init.script.url.linux=https://10.0.0.7:9999/pipeline/init.sh|kube.master.ip=10.0.0.7:6443|kube.kubeadm.token=\${CP_KUBE_KUBEADM_TOKEN}|kube.kubeadm.cert.hash=$FAKE_HASH|kube.node.token=not-used-by-linux-nodes|kube.cluster.name=cp-sandbox-dev-svc"
+  check "and the scripts the API runs on a run's node over SSH, as the API serves them at the master's address, each set once" \
+    "$(grep -E '^(commit.run.scripts.root.url|commit.run.script.starter.url|container.layers.script.url|container.size.script.url|limit.run.bandwidth.script.url|pause.run.script.url)=' "$dir/api.properties" | paste -sd '|')" \
+    "commit.run.scripts.root.url=https://10.0.0.7:9999/pipeline/commit-run-scripts/|commit.run.script.starter.url=https://10.0.0.7:9999/pipeline/commit-run-scripts/commit_run_starter.sh|container.layers.script.url=https://10.0.0.7:9999/pipeline/commit-run-scripts/container_layers_count.sh|container.size.script.url=https://10.0.0.7:9999/pipeline/commit-run-scripts/container_size.sh|limit.run.bandwidth.script.url=https://10.0.0.7:9999/pipeline/commit-run-scripts/limit_bandwidth.sh|pause.run.script.url=https://10.0.0.7:9999/pipeline/commit-run-scripts/pause_run.sh"
+  # shellcheck disable=SC2016 # $rootDir is the build file's, not this shell's
+  check "each is a script of the checkout's scripts/commit-run-scripts/, which the API's build puts where the URLs name" \
+    "$(sed -n -E 's#^[a-z.]+=https://10\.0\.0\.7:9999/pipeline/commit-run-scripts/(.+)$#\1#p' "$dir/api.properties" |
+      while read -r script; do [[ -f $REAL_REPO_ROOT/scripts/commit-run-scripts/$script ]] && echo "$script"; done | wc -l | tr -d ' ') $(grep -c 'into "$rootDir/api/src/main/resources/static/commit-run-scripts"' "$REAL_REPO_ROOT/api/build.gradle")" \
+    '5 1'
   check "api.properties and api.env hold no secret: the join token and the keys stay in their files" \
     "$(grep -c -e "$FAKE_TOKEN" -e "$(sed -n 2p "$dir/jwt-private-key.pem")" "$dir/api.properties" "$dir/api.env" "$(state_file "$name")" | cut -d: -f2 | paste -sd ' ')" \
     '0 0 0'
-  check "api.env gives the container the state, the VPC, the SOCKS proxy, the master and pipe-common's code" \
+  check "api.env gives the container the state, the VPC, the SOCKS proxy, the master, where to keep the SSH key and pipe-common's code" \
     "$(paste -sd '|' "$dir/api.env")" \
-    "SANDBOX_DIR=$dir|SANDBOX_VPC_CIDRS=10.0.0.0/16 10.1.0.0/16|SANDBOX_SOCKS_PROXY=cp-sandbox-dev-svc-master:1080|SANDBOX_MASTER_IP=10.0.0.7|PYTHONPATH=$SANDBOX_REPO_ROOT/workflows/pipe-common"
+    "SANDBOX_DIR=$dir|SANDBOX_VPC_CIDRS=10.0.0.0/16 10.1.0.0/16|SANDBOX_SOCKS_PROXY=cp-sandbox-dev-svc-master:1080|SANDBOX_MASTER_IP=10.0.0.7|SANDBOX_NODE_SSH_KEY=/root/.ssh/cp-sandbox-node-key.pem|PYTHONPATH=$SANDBOX_REPO_ROOT/workflows/pipe-common"
 
   cert_before=$(openssl x509 -in "$dir/api-tls.crt" -noout -fingerprint)
   base_before=$(state_get "$name" run_id_base)
@@ -525,10 +539,16 @@ test_services_configure() {
   preferences=$(api_called 'POST preferences' | cut -d' ' -f3-)
   check "the allowed instance types go first, as the instance type is checked against them" \
     "$(jq -c '[.[].name]' <<<"$preferences" | paste -sd ' ')" \
-    '["cluster.allowed.instance.types","cluster.allowed.instance.types.docker"] ["cluster.networks.config","cluster.instance.type","cluster.max.size","cluster.spot","cluster.keep.alive.policy","cluster.keep.alive.minutes","base.api.host","base.pipe.distributions.url"]'
+    '["cluster.allowed.instance.types","cluster.allowed.instance.types.docker"] ["cluster.networks.config","cluster.instance.type","cluster.max.size","cluster.spot","cluster.keep.alive.policy","cluster.keep.alive.minutes","base.api.host","base.pipe.distributions.url","commit.username","commit.deploy.key","commit.additional.envs.to.clean"]'
   check "the instance type, the cluster's size, on demand, idle nodes kept 5 minutes, and the addresses of the API and the distribution, all visible" \
-    "$(sed -n 2p <<<"$preferences" | jq -c '[.[1:][] | .value] + [all(.[]; .visible)]')" \
+    "$(sed -n 2p <<<"$preferences" | jq -c '[.[1:8][] | .value] + [all(.[:8][]; .visible)]')" \
     '["t3.medium","2","false","IDLE_MINUTES","5","https://10.0.0.7:9999/pipeline/restapi/","http://10.0.0.7:8090/",true]'
+  check "the API logs in to a run's node as the nodes' user, with the key where the API's container keeps it, neither visible, as the installer sets them" \
+    "$(sed -n 2p <<<"$preferences" | jq -c '[.[8:10][] | [.value, .visible]]')" \
+    '[["ec2-user",false],["/root/.ssh/cp-sandbox-node-key.pem",false]]'
+  check "a commit blanks the AWS credentials the API hands the run's container, by the region's ID, besides the API's default" \
+    "$(sed -n 2p <<<"$preferences" | jq -c '.[10] | [.value, .visible]')" \
+    '["CP_EXEC_TIMEOUT,CP_ACCOUNT_ID_4,CP_ACCOUNT_KEY_4,CP_ACCOUNT_TOKEN_4",true]'
   networks=$(sed -n 2p <<<"$preferences" | jq -r '.[0].value')
   check "the networks config starts nodes in the subnet and security groups, from the host image, with the AL2023 init script and the worker profile" \
     "$(jq -c '.regions[0] | [.name, .default, .networks, .security_group_ids, .amis[0].platform, .amis[0].instance_mask, .amis[0].ami, .amis[0].init_script, .amis[0].additional_spec]' <<<"$networks")" \
@@ -543,7 +563,7 @@ test_services_configure() {
     "$(api_called 'POST toolGroup' | cut -d' ' -f3- | jq -c '[.name, .registryId]') $(api_called 'POST tool/register' | cut -d' ' -f3- | jq -c '[.image, .toolGroupId, .cpu, .ram]')" \
     '["library",5] ["library/centos",6,"1","1Gi"]'
   check "it reads every preference back, and shows them, and the registries" \
-    "$(api_called 'GET preferences/' | wc -l) $(logged '  cluster.max.size = 2') $(logged 'Registries, tool groups and tools')" '10 1 1'
+    "$(api_called 'GET preferences/' | wc -l) $(logged '  cluster.max.size = 2') $(logged 'Registries, tool groups and tools')" '13 1 1'
 
   : >"$API_CALLS"
   API_ANSWERS=(["GET cloud/region"]='[{"id": 4, "regionId": "eu-west-1"}]'
@@ -646,6 +666,18 @@ test_services_api() {
   reset_stubs
 }
 
+# The names a commit blanks are the API's own, read from the checkout: the variables it hands a run's
+# container the AWS credentials in, and the default of the preference.
+test_commit_envs_are_the_apis() {
+  local java=$REAL_REPO_ROOT/api/src/main/java/com/epam/pipeline/manager
+  check "the credential variables a commit blanks are those SystemParams names" \
+    "$(sed -n -E 's/.* CLOUD_ACCOUNT(_KEY|_TOKEN)?_PREFIX = "([^"]+)";.*/\2/p' "$java/execution/SystemParams.java" | paste -sd ' ')" \
+    "${COMMIT_CREDENTIAL_ENV_PREFIXES[*]}"
+  check "and the rest is the API's default for commit.additional.envs.to.clean" \
+    "$(sed -n -E 's/.*"commit\.additional\.envs\.to\.clean", "([^"]*)".*/\1/p' "$java/preference/SystemPreferences.java")" \
+    "$COMMIT_ENVS_TO_CLEAN_DEFAULT"
+}
+
 test_down_deletes_the_key_pair() {
   reset_stubs
   DESCRIBED=$(described "$(instance i-master dev-key master running 2030-01-01T00:00:00Z)")
@@ -686,5 +718,6 @@ test_services_wait
 test_services_configure
 test_services_configure_with
 test_services_api
+test_commit_envs_are_the_apis
 test_down_deletes_the_key_pair
 finish

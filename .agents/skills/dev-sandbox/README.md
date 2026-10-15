@@ -204,7 +204,8 @@ In order, `services`:
    in `.gradle-home` in the local state root;
 2. builds the API's image, `docker/api.Dockerfile`, when it has changed: Java 8, Python 3.12 with
    the packages of `scripts/autoscaling/requirements.txt` and pipe-common, for the node scripts
-   the API runs, and tun2socks;
+   the API runs, OpenSSH's client, for what the API does on a run's node ("A run", below), and
+   tun2socks;
 3. in the tools image, `services-prepare`:
    - looks up the VPC's address ranges, and refuses a sandbox network that overlaps them;
    - imports the sandbox's SSH key as the EC2 key pair `cp-sandbox-<name>`, tagged as the
@@ -224,7 +225,9 @@ In order, `services`:
      node scripts of the checkout (`scripts/autoscaling/aws/`), the master
      (`kube.master.ip`, the join token, the CA cert hash), `kube.cluster.name`
      (`cp-sandbox-<name>`, which only EKS nodes use, but without which `nodeup.py` fails), and
-     the API's address on the master for `api.host` and the launch and init script URLs;
+     the API's address on the master for `api.host`, the launch and init script URLs, and the
+     URLs of the scripts the API runs on a run's node, under `commit-run-scripts/`, which the jar
+     holds;
 4. mints a token for the platform's admin, `pipe_admin`, with jwt-generator, valid 30 days;
 5. starts the database, and then the API, which takes three to four minutes to start, Flyway
    creating the schema the first time;
@@ -246,6 +249,8 @@ In order, `services`:
 | `cluster.keep.alive.policy`, `cluster.keep.alive.minutes` | `IDLE_MINUTES` and 5: a node goes once it has been idle 5 minutes, where the platform's default policy would keep it until the end of its first hour |
 | `base.api.host` | `https://<private IP>:9999/pipeline/restapi/` |
 | `base.pipe.distributions.url` | `http://<private IP>:8090/` |
+| `commit.username`, `commit.deploy.key` | `ec2-user`, and `/root/.ssh/cp-sandbox-node-key.pem`, the copy of the sandbox's SSH key that the API's container keeps: what the API logs in to a run's node with. Neither is visible, as the platform's installer sets them |
+| `commit.additional.envs.to.clean` | the API's default, `CP_EXEC_TIMEOUT`, and `CP_ACCOUNT_ID_<region ID>`, `CP_ACCOUNT_KEY_<region ID>`, `CP_ACCOUNT_TOKEN_<region ID>`: a commit blanks them in the image's environment, so that the AWS credentials a run's container holds ("A run", below) do not go to the master's registry with it |
 
 - `services` is safe to run again: the master's steps skip what is done, a database that runs
   is left, an API that runs on the same image, jar and settings is left, and the configuration
@@ -353,9 +358,13 @@ $S api --jq .id POST run '{"dockerImage": "<private IP>:5000/library/centos:7",
   "cloudRegionId": <the region ID services prints>, "timeout": 0,
   "cmdTemplate": "echo hello from $(hostname) && sleep 30"}'
 $S api --jq '{status, endDate, node: .instance.nodeId}' GET run/<id>
-$S api --jq '.[] | "\(.date) \(.taskName) \(.logText)"' GET run/<id>/logs
+$S api --jq '.[] | "\(.date) \(.task.name) \(.logText)"' GET run/<id>/logs
 .agents/skills/dev-sandbox/scripts/tools.sh --sandbox <name> kubectl get nodes,pods -o wide
 ```
+
+After its first start, the API takes a few minutes more to load the region's price list, its
+instance offers; until it has, a launch fails with `Instance type '<type>' is not allowed`. Its
+log says `Inserted <count> instance offers` once it is done (`services --log`).
 
 The API starts a node for the run with `nodeup.py`: an instance from the host image, tagged
 `Name=<run ID>` and with the sandbox's four tags, `cp-sandbox-role=worker`, which joins the master.
@@ -364,6 +373,33 @@ API through the tunnel, reaches the API there too. On a `t3.medium`, the node wa
 `Ready` 3 minutes after the launch, and the run `SUCCESS` 6 minutes after it. Once the node has
 been idle 5 minutes, the API runs `nodedown.py`, which terminates the instance tagged with the
 run's ID.
+
+While a run is `RUNNING`, what the API does on its node over SSH works too, as on the platform:
+commit, pause and so resume, and the container's size and layer count, which a client checks
+before a commit (`GET run/<id>/commit/check`, `GET run/<id>/layers`). The network bandwidth limit
+is set up the same way, but only the platform's network monitor starts it, and it has not been
+tried here. The API logs in to the node as `ec2-user`, with the sandbox's SSH key, which the node
+starts with as its key pair, and runs a script it serves from
+`https://<private IP>:9999/pipeline/commit-run-scripts/`, as root, in a login shell. The commit
+and pause scripts install pipe-common there, for the host image's Python 3.12 ("The host image",
+below), so on a sandbox whose master started from an image without it, they fail: make the
+sandbox again. A commit pushes the image to the master's registry, with the AWS credentials of
+the run's environment blanked out (`commit.additional.envs.to.clean`, above). Its files keep
+`/etc/cp_env.sh` all the same, which `launch.sh` writes with every variable of the run but the
+AWS key ID and secret key, and which a commit does not clean: the run's `API_TOKEN`, an admin's
+token here, among them, and the session token of temporary credentials. Anyone who can pull from
+the master's registry can read them, so commit only what you would hand them. A pause commits the
+container on the node, and stops the instance; a resume starts it again, and the run goes on in
+that image. For a run long enough to do it, give it a longer `cmdTemplate`, such as `sleep 1800`.
+The registry's ID is the one `services` prints:
+
+```bash
+$S api --jq .commitStatus POST run/<id>/commit '{"registryToCommitId": <registry ID>,
+  "newImageName": "library/centos:committed"}'
+$S api --jq '{status, commitStatus}' GET run/<id>
+$S api --jq .status POST run/<id>/pause
+$S api --jq .status POST run/<id>/resume
+```
 
 The API hands every run's container the AWS credentials it runs with, as the platform's
 deployments hand it those of their instance role: here they are yours, from the config, as
@@ -378,9 +414,19 @@ with them.
 
 Masters and the platform's workers start from one image, shared by everyone in the account: stock
 Amazon Linux 2023 as `scripts/host/prepare-host.sh` leaves it (the packages, the legacy iptables,
-btrfs, Python 2, jq, the kernel settings, SELinux permissive and cgroup v1), rebooted into cgroup v1.
-Its version is the start of the SHA-256 of `prepare-host.sh`, so a change to that script makes a new
-version, which the next `ami` or `up` builds.
+btrfs, Python 2, the platform's Python 3.12, jq, the kernel settings, SELinux permissive and cgroup
+v1), rebooted into cgroup v1. Its version is the start of the SHA-256 of `prepare-host.sh`, so a
+change to that script makes a new version, which the next `ami` or `up` builds. A sandbox's workers
+start from the image its master did, which `services` puts in `cluster.networks.config`: one made
+before a new version keeps the old one until it is made again.
+
+`python3` on `PATH` is the platform's Python 3.12, `/usr/local/bin/python3`, as in the platform's
+own images: the commit and pause scripts that the API runs on a node, in a login shell as root,
+take `python3` when there is one, and install pipe-common for it from the platform's mirror. For
+the system's Python 3.9, pipe-common asks for packages the mirror does not have. `/usr/local/bin`
+comes before `/usr/bin` in sudo's `PATH`, and in the one that the platform's node init script
+writes into root's `.bashrc`, which a login shell reads last. The system's Python stays
+`/usr/bin/python3`, which dnf, cloud-init and the AWS CLI name.
 
 A build launches a builder instance tagged `cp-sandbox=ami-<version>`, runs `prepare-host.sh` on it
 with Run Command, reboots it, checks that it runs on cgroup v1, creates the image and terminates the
@@ -485,7 +531,7 @@ holds Gradle's home and cache for the builds of `services`.
 | File | Holds |
 |---|---|
 | `state.json` | the instance, region, AMI, private IP, created, expires; the Kubernetes API port, the hash of the cluster CA's public key, and the name the API server's certificate carries for the tunnel; while the tunnel works, its container and network, the Kubernetes API's address on the network, the API port's address on the master and where it leads, and the SOCKS proxy: `connect` writes these once its checks pass, and they go when a check fails, when the tunnel gives up, and on `connect --stop`; once `services` has run, the VPC's ranges, the subnet's zone, the key pair, the registry's path, the distribution's address and source, the API's address and the block of run IDs |
-| `ssh-key.pem`, `ssh-key.pem.pub` | the sandbox's SSH key; the public half reaches the master through its user data |
+| `ssh-key.pem`, `ssh-key.pem.pub` | the sandbox's SSH key; the public half reaches the master through its user data, and the platform's nodes as the key pair `services` imports; the API's container keeps a copy, which the API logs in to the nodes with |
 | `known_hosts` | the master's SSH host key, recorded the first time |
 | `kubeconfig.secret` | the master's `admin.conf`: cluster-admin, for `https://cp-sandbox-<name>-master:6443`, through the tunnel |
 | `kube-join-token.secret` | the token the platform's nodes join the cluster with |
@@ -516,11 +562,16 @@ steps of `connect`, `services` and `down` with `docker` stubbed. Then, in the to
 `in-tools-test.sh`, `check-test.sh`, `ami-test.sh`, `connect-test.sh` and `services-test.sh`: the
 libraries and the commands, with AWS, Run Command, SSH, kubectl and the API's REST API replaced
 by the stubs in `stubs.sh` and the tests; `services-test.sh` reads the search preferences from the
-checkout's own installer, and the billing schedule from its billing image's settings.
+checkout's own installer, the billing schedule from its billing image's settings, the names of the
+credential variables and the default that a commit blanks from the API's `SystemParams` and
+`SystemPreferences`, and checks the scripts the API's settings name against
+`scripts/commit-run-scripts/` and `api/build.gradle`.
 `api-entrypoint-test.sh` runs the entrypoints of the API's image, with
 what they call stubbed. Last, `host-test.sh` runs the host scripts twice each,
 as root in a container of their own, with every command that would change the host or reach the
-network replaced by a stub, and runs `install-master.sh` on `deploy/`'s `canal.yaml` too, to
+network replaced by a stub, checks which `python3` a login shell as root finds once
+`prepare-host.sh` has run, with the `PATH` a node's root gets, and runs `install-master.sh` on
+`deploy/`'s `canal.yaml` too, to
 check which flannel image it looks for; and `services-host-test.sh` does the same for
 `install-services.sh`, in `python:3.12`, since it needs Python 3, as the master has. Then it runs
 the reaper's tests, `lambda/test/`, with pytest and EC2 replaced by botocore's `Stubber`, and
