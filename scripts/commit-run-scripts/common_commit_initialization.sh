@@ -114,9 +114,14 @@ install_pip() {
     $CP_PYTHON_PATH -m pip --version
     if [[ "$?" -ne 0 ]]; then
         echo "Installing pip"
-        if [ "$CP_PYTHON_VERSION" == "2" ]; then
+        # Bootstrap by the actual interpreter, not CP_PYTHON_VERSION - CP_PYTHON_PATH may be
+        # a python3 binary even when CP_PYTHON_VERSION is "2" (see install_pipeline_code below),
+        # and get-pip.py's py2.7 build does not support python3.
+        if $CP_PYTHON_PATH -c 'import sys; sys.exit(0 if sys.version_info[0] == 2 else 1)' 2>/dev/null; then
             curl "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" -o "get-pip.py"
             $CP_PYTHON_PATH get-pip.py 2>/dev/null || true
+        else
+            $CP_PYTHON_PATH -m ensurepip --default-pip 2>/dev/null || true
         fi
     fi
     configure_pip
@@ -124,6 +129,8 @@ install_pip() {
 
 install_pipeline_code() {
     echo "Installing pipeline packages and code"
+    # CP_PYTHON_VERSION selects the pip mirror/setuptools version, not the interpreter -
+    # CP_PYTHON_PATH may still be a python3 binary here (e.g. 3.6) even when CP_PYTHON_VERSION is "2"
     if [ "$CP_PYTHON_VERSION" == "3" ]; then
         $CP_PYTHON_PATH -m pip install $CP_PIP3_EXTRA_ARGS -I -q setuptools==68.0.0
     else

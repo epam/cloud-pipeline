@@ -53,7 +53,11 @@ function install_python3_packages {
       echo "Python3 distro is installed into ${_install_path}/python3.12"
 }
 
-install_python3_packages "/usr/local"
+if command -v python3 &>/dev/null; then
+    echo "python3 is already installed ($(python3 --version 2>&1)), skipping the bundled distribution"
+else
+    install_python3_packages "/usr/local"
+fi
 
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
