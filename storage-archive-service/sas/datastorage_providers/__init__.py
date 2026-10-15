@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 from .base import FileSource, SourceFile
 from .nfs import NfsSource
 from .s3 import S3Source
-from ..aws import build_s3_client
+from ..cloud.aws import build_s3_client
 from ..config import ServiceConfig
 from ..errors import UnsupportedSource
 from ..log import get_logger
@@ -43,7 +43,8 @@ if TYPE_CHECKING:
 
 LOG = get_logger(__name__)
 
-# `__all__` lists what `from sas.sources import *` would bring in. Nobody should write that import, but
+# `__all__` lists what `from sas.datastorage_providers import *` would bring in. Nobody should write
+# that import, but
 # the list doubles as a statement of what this package means to export - and the re-exports above are
 # otherwise flagged as unused by linters.
 __all__ = ['FileSource', 'SourceFile', 'open_source']

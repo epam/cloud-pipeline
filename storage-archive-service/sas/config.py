@@ -19,12 +19,14 @@ The two kinds of settings this service has, kept apart on purpose.
 from the command line and the environment, it is read once at startup, and changing it means restarting
 the container. Nobody but an operator of this service cares about any of it.
 
-`PlatformConfig` is the platform's: the bucket, the thresholds, the time limits. It comes from the
+`StorageDownloadArchiveConfig` is the platform's: the bucket, the thresholds, the time limits. It
+comes from the
 `storage.download.archive.config` preference, it is read anew on every round of the loop, and an
 administrator changing it in the UI takes effect without a restart. The field names mirror
 `DownloadArchiveConfig` on the Java side one for one.
 
-Keeping them in separate types makes the reload boundary visible: anything in `PlatformConfig` may
+Keeping them in separate types makes the reload boundary visible: anything in
+`StorageDownloadArchiveConfig` may
 differ from one task to the next, anything in `ServiceConfig` cannot.
 """
 
@@ -108,7 +110,7 @@ class ServiceConfig:
 
 
 @dataclass(frozen=True, slots=True)
-class PlatformConfig:
+class StorageDownloadArchiveConfig:
     """
     Mirror of `com.epam.pipeline.entity.datastorage.DownloadArchiveConfig`.
 
@@ -129,7 +131,7 @@ class PlatformConfig:
     stuck_tasks_threshold_minutes: int
 
     @classmethod
-    def from_preference(cls, raw: str | dict[str, Any] | None) -> PlatformConfig:
+    def from_preference(cls, raw: str | dict[str, Any] | None) -> StorageDownloadArchiveConfig:
         """
         Parses the preference.
 
@@ -188,9 +190,9 @@ class PlatformConfig:
             found.append(f'Preference {PREFERENCE_KEY} has no destinationStorageId, no task can be '
                          f'executed')
         if self.stuck_tasks_threshold_minutes <= self.worker_max_running_minutes:
-            # The janitor fails a task whose status has not changed within the stuck threshold. If that
+            # The cleaner fails a task whose status has not changed within the stuck threshold. If that
             # threshold is not strictly larger than the worker's own limit, plus the worker's poll
-            # interval and the time it needs to clean up and report, then the janitor fails tasks whose
+            # interval and the time it needs to clean up and report, then the cleaner fails tasks whose
             # workers are alive and about to stop by themselves. That worker then deletes the archive
             # it has just uploaded, and the user sees a task that failed for no visible reason.
             found.append(

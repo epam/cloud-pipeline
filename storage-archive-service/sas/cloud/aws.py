@@ -63,15 +63,15 @@ from botocore.config import Config
 from botocore.credentials import AssumeRoleCredentialFetcher, DeferredRefreshableCredentials
 from botocore.exceptions import ProfileNotFound
 
-from .errors import ApiError, CredentialsUnavailable
-from .log import get_logger
-from .model import CloudRegion, Storage
+from ..errors import ApiError, CredentialsUnavailable
+from ..log import get_logger
+from ..model import CloudRegion, Storage
 
 if TYPE_CHECKING:
     # Read only by a type checker, so naming the API client in an annotation costs no import at
     # runtime - and breaks no cycle, which this one would otherwise be: `api.py` must stay unaware of
     # this module.
-    from .api import CloudPipelineApi
+    from ..api import CloudPipelineApi
 
 LOG = get_logger(__name__)
 

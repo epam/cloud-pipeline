@@ -29,7 +29,7 @@ network.
 import pytest
 from botocore.credentials import DeferredRefreshableCredentials
 
-from sas.aws import ROLE_SESSION_NAME, build_s3_client, resolve_role_arn
+from sas.cloud.aws import ROLE_SESSION_NAME, build_s3_client, resolve_role_arn
 from sas.errors import CredentialsUnavailable
 from sas.model import ArchiveTask, CloudRegion, Storage, StorageType, TaskStatus
 

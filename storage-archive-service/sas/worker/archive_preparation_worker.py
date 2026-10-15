@@ -21,7 +21,7 @@ result. Then it deletes everything it created locally, whichever way it ended.
 
 The shape of this module is set by one constraint: **a Python thread cannot be stopped from outside.**
 There is no `Thread.stop()`, no interrupt, nothing an orchestrator can do to a worker that must give up
-a task. So a worker stops itself: it calls `StopWatcher.check()` at every point where abandoning the
+a task. So a worker stops itself: it calls `TaskStopWatcher.check()` at every point where abandoning the
 work is safe, and that method raises when it is time to go. Everything between two checks is short - a
 block of a file, a part of an upload - so the delay between a user pressing cancel and the task
 actually stopping is bounded by the poll interval, not by the size of the data.
@@ -50,15 +50,17 @@ import time
 import zipfile
 from pathlib import Path
 
-from .api import CloudPipelineApi
-from .archive_bucket import ArchiveBucket, absolute_key, archive_key
-from .aws import build_s3_client
-from .config import PlatformConfig, ServiceConfig
-from .errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
+from ..api import CloudPipelineApi
+from ..archive_bucket import ArchiveBucket, absolute_key, archive_key
+from ..cloud.aws import build_s3_client
+from ..config import ServiceConfig, StorageDownloadArchiveConfig
+from ..errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
     StopRequested, ThresholdExceeded, UnsupportedSource
-from .log import get_logger
-from .model import ArchiveTask, StorageType, TASK_TYPE, TaskStatus
-from .sources import FileSource, SourceFile, open_source
+from ..log import get_logger
+from ..model import ArchiveTask, AsyncTaskType, StorageType, TaskStatus
+from ..datastorage_providers import FileSource, SourceFile, open_source
+from .base import AsyncTaskWorker
+from .task_stop_watcher import TaskStopWatcher
 
 # A backslash continues a statement onto the next line. Parentheses are the usual way to wrap an
 # expression, but an `import ... from` list cannot take them around the whole clause, so this is the
@@ -85,63 +87,7 @@ SKIPPED_NOTE_FALLBACK = 'CLOUD-PIPELINE-SKIPPED-FILES.txt'
 MAX_ERROR_MESSAGE = 1000
 
 
-class StopWatcher:
-    """
-    Answers one question - may this worker carry on? - and raises when the answer is no.
-
-    Two independent reasons to stop, with deliberately different costs:
-
-      * **the deadline** is local arithmetic, so it is checked on every call;
-      * **a cancellation** has to be read from the API, so it is checked at most once per
-        `status_poll_seconds`. With one poll per worker per interval, the load this puts on the API is
-        the number of slots divided by the interval, and that is the whole reason the throttle exists.
-
-    Time is measured with `time.monotonic()`, never with the clock. A monotonic clock only ever moves
-    forward at a steady rate; the wall clock can jump - NTP correcting a drift, a container resuming,
-    a daylight-saving change - and a deadline measured against it can jump an hour into the past or
-    the future.
-    """
-
-    def __init__(self, api: CloudPipelineApi, task_id: str, deadline_seconds: float,
-                 poll_seconds: float):
-        self._api = api
-        self._task_id = task_id
-        self._deadline = time.monotonic() + deadline_seconds
-        self._poll_seconds = poll_seconds
-        # The first poll is due one interval from now: the task was handed to us as RUNNING a moment
-        # ago, so asking again immediately would learn nothing.
-        self._next_poll = time.monotonic() + poll_seconds
-
-    def check(self) -> None:
-        """
-        Raises `StopRequested` if the task should be abandoned. Returns nothing otherwise.
-
-        A method called for its exceptions rather than its value reads oddly at first, and it is the
-        right shape here: the alternative is a boolean every caller has to remember to act on, in a
-        loop that copies a file, where forgetting is both easy and invisible.
-        """
-        now = time.monotonic()
-        if now >= self._deadline:
-            raise StopRequested(StopReason.TIMEOUT)
-        if now < self._next_poll:
-            return
-        self._next_poll = now + self._poll_seconds
-        try:
-            status = self._api.load_task(self._task_id).status
-        except (ApiError, ApiRejected) as error:
-            # The API being briefly unreachable is not a reason to throw away work in progress. The
-            # next check tries again; if the API stays down, the deadline eventually stops us anyway.
-            LOG.warning('Cannot read the status of task %s (%s), carrying on', self._task_id, error)
-            return
-        if status == TaskStatus.CANCEL_REQUESTED:
-            raise StopRequested(StopReason.CANCELLED)
-        if status.is_terminal:
-            # Somebody else ended this task - the janitor failing it as stuck, in practice. Nothing we
-            # report will be accepted, and the archive we are building belongs to nobody.
-            raise StopRequested(StopReason.ABANDONED)
-
-
-class ArchiveWorker:
+class ArchivePreparationWorker(AsyncTaskWorker):
     """
     Builds the archive for one task.
 
@@ -150,12 +96,16 @@ class ArchiveWorker:
     mounted shares.
     """
 
+    # The kind of task this worker runs. `worker/__init__` builds its registry from this, so a worker
+    # cannot be registered under a type it does not serve.
+    TASK_TYPE = AsyncTaskType.DOWNLOAD_ARCHIVE
+
     def __init__(self, api: CloudPipelineApi, service_config: ServiceConfig,
-                 platform_config: PlatformConfig, task: ArchiveTask,
+                 archive_config: StorageDownloadArchiveConfig, task: ArchiveTask,
                  bucket: ArchiveBucket | None = None):
         self._api = api
         self._config = service_config
-        self._platform = platform_config
+        self._archive_config = archive_config
         self._task = task
         # Resolved in `_resolve_destination`, because the bucket behind the destination storage is
         # behind an API call. Injected whole by a test, which then needs no storage at all.
@@ -164,12 +114,12 @@ class ArchiveWorker:
         # reported: that is the vocabulary the API signs in. The absolute one carries the storage's own
         # folder in front and is what boto3 is given. They are equal for a storage that is a whole
         # bucket, which is why a test with an injected bucket needs no storage.
-        self._relative_key = archive_key(platform_config.destination_prefix, task.id)
+        self._relative_key = archive_key(archive_config.destination_prefix, task.id)
         self._key = self._relative_key
         self._task_dir = service_config.work_dir / task.id
-        self._watcher = StopWatcher(api, task.id,
-                                    platform_config.worker_max_running_minutes * 60,
-                                    service_config.status_poll_seconds)
+        self._watcher = TaskStopWatcher(api, task.id,
+                                        archive_config.worker_max_running_minutes * 60,
+                                        service_config.status_poll_seconds)
         # Set once the archive is in the bucket. Everything that cleans up consults it, so that a
         # delete is only issued for an object that can exist.
         self._uploaded = False
@@ -179,7 +129,7 @@ class ArchiveWorker:
         Runs the task to one of its end states. Never raises.
 
         It must never raise: it is the body of a thread-pool task, and an exception escaping here would
-        be stored in a future nobody reads - the task would stay RUNNING until the janitor noticed, and
+        be stored in a future nobody reads - the task would stay RUNNING until the cleaner noticed, and
         the log would say nothing. So every path ends in a status report or an explained decision not
         to report one.
 
@@ -244,7 +194,7 @@ class ArchiveWorker:
         if self._bucket is not None:
             return
         try:
-            storage = self._api.load_storage(self._platform.destination_storage_id)
+            storage = self._api.load_storage(self._archive_config.destination_storage_id)
         except ApiRejected as rejected:
             raise InvalidTask(f'The archive storage this service is configured with is not available: '
                               f'{rejected}') from rejected
@@ -274,7 +224,7 @@ class ArchiveWorker:
 
         Without this, `run`'s `except ApiRejected` arm would take it. That arm means "the API will not
         let us report anything about this task any more", and it reports nothing at all - so the task
-        would stay `RUNNING` until the janitor failed it hours later with a message about a worker that
+        would stay `RUNNING` until the cleaner failed it hours later with a message about a worker that
         vanished, which is both wrong and useless to the user.
         """
         try:
@@ -339,12 +289,12 @@ class ArchiveWorker:
         files per second runs past any sane time limit. Conversely one ten-terabyte file is a single
         download that no file count would stop.
         """
-        limit_files = self._platform.max_files_count
+        limit_files = self._archive_config.max_files_count
         if limit_files is not None and count > limit_files:
             raise ThresholdExceeded(
                 f'The selection holds more than {limit_files} files, which is the maximum one archive '
                 f'may contain. Ask for fewer folders at a time.')
-        limit_size = self._platform.max_size_bytes
+        limit_size = self._archive_config.max_size_bytes
         if limit_size is not None and total > limit_size:
             raise ThresholdExceeded(
                 f'The selection is larger than {_human(limit_size)}, which is the maximum one archive '
@@ -441,25 +391,25 @@ class ArchiveWorker:
         """
         Reports success, and deletes the archive if the report is refused.
 
-        The refusal is the interesting case. It means the task is not RUNNING any more - the janitor
+        The refusal is the interesting case. It means the task is not RUNNING any more - the cleaner
         failed it as stuck while we were working, most likely - so nothing will ever point at the
         archive we have just uploaded. Leaving it would be a file nobody can reach and nobody will
-        clean up, since the janitor only expires archives of tasks that *did* succeed.
+        clean up, since the cleaner only expires archives of tasks that *did* succeed.
         """
         result = {
             # The discriminator of the polymorphic result. Jackson selects `DownloadArchiveResult` by
             # it, and refuses the whole report if it is missing or names another type.
-            'type': TASK_TYPE,
+            'type': AsyncTaskType.DOWNLOAD_ARCHIVE,
             # Where the archive actually went. Reported rather than left to be derived later, because
             # the destination is a preference an administrator may change: after a change, a derived
             # location points at a key that was never written, the signed link gives the user a 404,
-            # and - since deleting an absent key succeeds - the expiry sweep reports a clean delete
+            # and - since deleting an absent key succeeds - the expiry cleanup reports a clean delete
             # while the real object stays where it was for ever.
             # A snapshot of the destination as it was when this archive was written, and only of the
             # parts that are settings: the key's own tail is `<taskId>.zip` and the API derives it, so
             # reporting the whole key would store a second copy of something already known and let it
             # disagree with the task it belongs to.
-            'storageId': self._platform.destination_storage_id,
+            'storageId': self._archive_config.destination_storage_id,
             'path': self._relative_key,
             'archiveSizeBytes': size,
             'skippedFiles': skipped,
@@ -472,11 +422,11 @@ class ArchiveWorker:
                         self._task.id, rejected)
             self._discard_archive()
         except ApiError as error:
-            # The report could not be delivered at all, after retries. The archive stays: the janitor
+            # The report could not be delivered at all, after retries. The archive stays: the cleaner
             # will fail the task as stuck and delete the object, which is the right outcome, and
             # deleting it here would only make a window where the task is SUCCESS with nothing behind
             # it if the report did in fact arrive.
-            LOG.error('Task %s succeeded but its report could not be delivered (%s); the janitor '
+            LOG.error('Task %s succeeded but its report could not be delivered (%s); the cleaner '
                       'will clean it up', self._task.id, error)
 
     def _finish_stopped(self, reason: StopReason) -> None:
@@ -489,7 +439,7 @@ class ArchiveWorker:
 
         For the other two the task is moved to `STOPPING` first. It is not required - `RUNNING` may go
         straight to `FAILED` - and it is worth the extra call: cleaning up a large archive takes time,
-        a user watching the task sees why it is not finished yet, and the janitor's stuck-task window
+        a user watching the task sees why it is not finished yet, and the cleaner's stuck-task window
         starts again from the moment the status changed rather than running out mid-cleanup.
         """
         if reason == StopReason.ABANDONED:
@@ -506,7 +456,7 @@ class ArchiveWorker:
             self._try_report(
                 TaskStatus.FAILED,
                 error_message=f'The archive was not finished within '
-                              f'{self._platform.worker_max_running_minutes} minutes and was stopped. '
+                              f'{self._archive_config.worker_max_running_minutes} minutes and was stopped. '
                               f'Ask for fewer files at a time.')
 
     def _finish_failed(self, message: str) -> None:
@@ -520,8 +470,8 @@ class ArchiveWorker:
 
         Called only from paths that are already ending the task, where there is nothing left to do
         about a failure and raising would replace the real reason with a reporting error. A task left
-        in a non-terminal status by a failure here is the janitor's to finish, which is exactly what the
-        janitor is for.
+        in a non-terminal status by a failure here is the cleaner's to finish, which is exactly what the
+        cleaner is for.
         """
         try:
             self._api.report_status(self._task.id, status, error_message=error_message)
@@ -549,7 +499,7 @@ class ArchiveWorker:
 
         `ignore_errors=True` because this is the last thing a worker does: a file that cannot be deleted
         is worth a log line, not an exception at the end of a task that otherwise went well. The
-        janitor sweeps directories left behind by workers that never got here at all.
+        cleaner cleanups directories left behind by workers that never got here at all.
         """
         if not self._task_dir.exists():
             return

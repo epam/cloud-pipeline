@@ -29,7 +29,7 @@ def isolated_aws_environment(monkeypatch):
     Cuts every test off from this machine's AWS configuration.
 
     `autouse=True` applies it to every test without any of them asking. It is needed because building an
-    S3 client is the subject of `tests/test_aws.py` and happens inside the worker and janitor tests too,
+    S3 client is the subject of `tests/test_aws.py` and happens inside the worker and cleaner tests too,
     and `boto3.Session().get_credentials()` walks the real credential chain: it reads `~/.aws`, honours
     `AWS_PROFILE`, and on a host with nothing configured it probes the instance metadata endpoint over
     the network. That would make the suite depend on the developer's own cloud setup - a test failing

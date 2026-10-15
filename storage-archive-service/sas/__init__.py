@@ -30,14 +30,17 @@ reports back. It never accepts an inbound request; the API is always the one bei
 
 Module map, which is also the reading order:
 
-    model.py          the task, the storage, the share - plain data, no behaviour
-    errors.py         the exception types that steer control flow
-    config.py         our own settings, and the ones that come from the preference
-    api.py            the only place that talks HTTP to the platform API
-    sources/          where files are read from: a bucket, or an NFS share
-    archive_bucket.py where the finished archive is written to
-    worker.py         one task, start to finish
-    janitor.py        the sweeps that clean up after workers that died
-    orchestrator.py   the loop that claims tasks and hands them to workers
-    app.py            command line and entry point
+    model.py                the task, the storage, the share - plain data, no behaviour
+    errors.py               the exception types that steer control flow
+    config.py               our own settings, and the ones that come from the preference
+    api.py                  the layer over the platform's own API client, pipeline.PipelineAPI
+    cloud/                  which role is assumed to reach a storage, and the client that results
+    datastorage_providers/  where files are read from: a bucket, or an NFS share
+    archive_bucket.py       where the finished archive is written to
+    worker/                 one task start to finish, per task type, plus the cleaner
+    orchestrator.py         the loop that claims tasks and hands them to workers
+    app.py                  command line and entry point
+
+`ARCHITECTURE.md`, next to the README, is the same map with the schedules, the settings and the API
+calls on it.
 """

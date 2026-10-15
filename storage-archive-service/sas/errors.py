@@ -40,7 +40,7 @@ class StopReason(StrEnum):
     CANCELLED = 'cancelled'
     # We have been working on this task longer than `workerMaxRunningMinutes` allows.
     TIMEOUT = 'timeout'
-    # The task is already in a terminal status - the janitor failed it as stuck while we were working,
+    # The task is already in a terminal status - the cleaner failed it as stuck while we were working,
     # or someone else reported it. Nothing we report now would be accepted, so we only clean up.
     ABANDONED = 'abandoned'
 
@@ -96,7 +96,7 @@ class CredentialsUnavailable(Exception):
 
     Raised when the cloud region of a storage cannot be had: the storage belongs to none, or the region
     cannot be read. Without it there is neither a role to assume nor a region to sign for, and the only
-    alternative would be to guess from the environment - see `aws.py`.
+    alternative would be to guess from the environment - see `cloud/aws.py`.
 
     Separate from `InvalidTask`, which is about a task that describes no work, and from the catch-all,
     which reads as a defect of this service. This one is a deployment that is not finished, so the

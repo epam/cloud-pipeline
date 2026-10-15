@@ -34,9 +34,6 @@ from typing import Any
 # platform sends. Writing needs care - see `format_api_datetime`.
 API_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
 
-# The only task type this service claims. The platform's `AsyncTaskType` has exactly this one member
-# today, but `/async-task/next` takes the type as a parameter, so it has to be named.
-TASK_TYPE = 'DOWNLOAD_ARCHIVE'
 
 # Folder paths in a task come with a trailing slash, files come without one. That is the whole
 # distinction, and the API makes no other, so it is a constant rather than a repeated literal.
@@ -119,7 +116,7 @@ class TaskStatus(StrEnum):
         which is the point.
 
         `SUCCESS` is listed as terminal although `SUCCESS -> EXPIRED` exists. For a worker it is
-        terminal - the work is done and no report will be accepted - and the janitor, which is the only
+        terminal - the work is done and no report will be accepted - and the cleaner, which is the only
         thing that expires a task, selects by `finishedBefore` rather than by asking this.
         """
         return self in _TERMINAL
@@ -136,6 +133,18 @@ class TaskStatus(StrEnum):
 _TERMINAL = frozenset({TaskStatus.SUCCESS, TaskStatus.FAILED, TaskStatus.CANCELLED, TaskStatus.EXPIRED})
 _ACTIVE = frozenset({TaskStatus.PENDING, TaskStatus.RUNNING, TaskStatus.CANCEL_REQUESTED,
                      TaskStatus.STOPPING})
+
+
+class AsyncTaskType(StrEnum):
+    """
+    Mirror of `com.epam.pipeline.dto.async.AsyncTaskType`.
+
+    One member today, and declared as an enum rather than a constant because the orchestrator asks the
+    API for each type it supports in turn and the workers are registered by it - see `worker/__init__`.
+    The next one, unarchiving an archive back into a storage, is a member here and a worker there.
+    """
+
+    DOWNLOAD_ARCHIVE = 'DOWNLOAD_ARCHIVE'
 
 
 class StorageType(StrEnum):
@@ -193,6 +202,12 @@ class ArchiveTask:
     status: TaskStatus
     owner: str | None
     storage_id: int | None
+    # Which kind of work this task is: the registry in `worker/__init__` reads it to pick a worker.
+    # Every call this service makes asks for one type, so in practice it is always a type this service
+    # runs. The default is the one type that exists today, so that a task built by hand - in a test,
+    # say - does not have to name it; when a second type is added, that default is the thing to
+    # remove, or an answer with no type will be dispatched as this one.
+    type: AsyncTaskType = AsyncTaskType.DOWNLOAD_ARCHIVE
     # `tuple[str, ...]` is an immutable sequence of strings of any length. A `list` would be mutable
     # and would break `frozen=True`'s promise - frozen stops field assignment, not mutation of what a
     # field points at. `field(default_factory=tuple)` gives each instance its own empty tuple; a plain
@@ -202,7 +217,7 @@ class ArchiveTask:
     archive_name: str = 'archive.zip'
     # Where the archive of a finished task actually went: the storage, and the key inside it,
     # storage-relative. Both are `None` until a task succeeds, and stay `None` for a task whose worker
-    # died before reporting; the janitor derives the key from the configured destination for that case.
+    # died before reporting; the cleaner derives the key from the configured destination for that case.
     result_storage_id: int | None = None
     result_path: str | None = None
     created: datetime.datetime | None = None
@@ -222,7 +237,7 @@ class ArchiveTask:
         optional is read with `get`; only the id is required, because a task without one cannot be
         reported about.
 
-        `params` is absent for a task listed by the janitor's filter in some orders of events, and is
+        `params` is absent for a task listed by the cleaner's filter in some orders of events, and is
         polymorphic - its `type` discriminator selects the shape. Only our own type is read; anything
         else is left as an empty selection, and the worker refuses it.
         """
@@ -236,18 +251,19 @@ class ArchiveTask:
         if not status:
             raise ValueError(f'Task {task_id} has no status in the API answer')
         params = raw.get('params') or {}
-        if params.get('type') not in (None, TASK_TYPE):
+        if params.get('type') not in (None, AsyncTaskType.DOWNLOAD_ARCHIVE):
             raise ValueError(f'Task {task_id} carries params of a foreign type {params.get("type")}')
         paths = params.get('paths') or []
         # The result is read only for the location it records, and only our own type carries one. A
-        # foreign type is not an error here, unlike in the params: the janitor lists tasks and a type it
+        # foreign type is not an error here, unlike in the params: the cleaner lists tasks and a type it
         # does not execute simply has nothing for it to clean up.
         result = raw.get('result') or {}
-        if result.get('type') != TASK_TYPE:
+        if result.get('type') != AsyncTaskType.DOWNLOAD_ARCHIVE:
             result = {}
         return cls(
             id=task_id,
             status=TaskStatus(status),
+            type=AsyncTaskType(raw.get('type') or AsyncTaskType.DOWNLOAD_ARCHIVE),
             owner=raw.get('owner'),
             storage_id=params.get('storageId'),
             paths=tuple(paths),
@@ -357,6 +373,24 @@ class FileShare:
             mount_type=MountType(raw['mountType']),
             mount_options=raw.get('mountOptions'),
             region_id=raw.get('regionId'),
+        )
+
+    @classmethod
+    def from_share_mount(cls, share: Any) -> FileShare:
+        """
+        Builds a share from pipe-common's own `FileShareMount`, which is what its client answers with.
+
+        The fields line up one for one; what this adds is the `MountType` member - the platform client
+        keeps the mount type as a plain string, and the protocol to pass to `mount` is derived from the
+        enum. Annotated as `Any` because naming the type would mean importing pipe-common into this
+        module, which `api.build_client` exists to avoid.
+        """
+        return cls(
+            id=share.id,
+            mount_root=share.mount_root,
+            mount_type=MountType(share.mount_type),
+            mount_options=share.mount_options,
+            region_id=share.region_id,
         )
 
 

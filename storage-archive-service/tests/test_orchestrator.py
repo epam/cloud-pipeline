@@ -43,7 +43,7 @@ def _config(tmp_path, slots=2):
 def _api(preference=None):
     api = FakeApi(_task('task-1'))
     # A preference with a bucket, so that the round gets as far as claiming. Without one the
-    # orchestrator stops after the sweeps, which is its own behaviour and tested below.
+    # orchestrator stops after the cleanups, which is its own behaviour and tested below.
     api.preference = (preference if preference is not None
                       else json.dumps({'destinationStorageId': 9}))
     return api
@@ -69,11 +69,13 @@ def _free_slots(orchestrator, limit):
 
 class _RecordingWorker:
     """
-    Stands in for `ArchiveWorker`, so that a round can be driven without a storage behind it.
+    Stands in for whatever worker the registry would return, so that a round can be driven without a
+    storage behind it. `worker_for` is replaced rather than a worker class, because that is the only
+    name the orchestrator knows - which is the point of the registry.
 
-    `*args` accepts whatever the orchestrator passes positionally; the task is the fourth argument. A
-    fake that listed the real constructor's parameters would have to be edited whenever one is added,
-    and this one only cares which task it was given.
+    `*args` accepts whatever the factory is called with; the task is the fourth argument. A fake that
+    listed the real constructor's parameters would have to be edited whenever one is added, and this
+    one only cares which task it was given.
     """
 
     started: list[str] = []
@@ -87,7 +89,7 @@ class _RecordingWorker:
 
 class _CountingWorker:
     """
-    Stands in for `ArchiveWorker` and records how many ran at the same time.
+    Stands in for the worker the registry returns, and records how many ran at the same time.
 
     The counters are class attributes - shared by every instance, like a Java static field - because
     the test needs one number across all the workers of a round. They are guarded by a lock: the
@@ -126,7 +128,7 @@ def test_claims_tasks_until_the_queue_is_empty(tmp_path, monkeypatch):
     queue = [_task('a'), _task('b')]
     api.claim_next = lambda _type: queue.pop(0) if queue else None
     _RecordingWorker.started = []
-    monkeypatch.setattr('sas.orchestrator.ArchiveWorker', _RecordingWorker)
+    monkeypatch.setattr('sas.orchestrator.worker_for', lambda *args: _RecordingWorker(*args))
     orchestrator = Orchestrator(api, _config(tmp_path, slots=2))
 
     orchestrator.run()
@@ -144,7 +146,7 @@ def test_never_runs_more_workers_than_there_are_slots(tmp_path, monkeypatch):
     queue = [_task('a'), _task('b'), _task('c'), _task('d')]
     api.claim_next = lambda _type: queue.pop(0) if queue else None
     _CountingWorker.reset()
-    monkeypatch.setattr('sas.orchestrator.ArchiveWorker', _CountingWorker)
+    monkeypatch.setattr('sas.orchestrator.worker_for', lambda *args: _CountingWorker(*args))
     orchestrator = Orchestrator(api, _config(tmp_path, slots=2))
 
     orchestrator.run()
@@ -178,7 +180,7 @@ def test_claims_nothing_without_a_bucket(tmp_path, monkeypatch):
     claimed = []
     api.claim_next = lambda task_type: claimed.append(task_type)
     _RecordingWorker.started = []
-    monkeypatch.setattr('sas.orchestrator.ArchiveWorker', _RecordingWorker)
+    monkeypatch.setattr('sas.orchestrator.worker_for', lambda *args: _RecordingWorker(*args))
     orchestrator = Orchestrator(api, _config(tmp_path))
 
     orchestrator.run()
@@ -186,26 +188,26 @@ def test_claims_nothing_without_a_bucket(tmp_path, monkeypatch):
     assert claimed == []
 
 
-def test_sweeps_even_when_there_is_no_bucket(tmp_path):
-    # The sweeps have to run anyway: three of the four need nothing from the preference but the bucket
+def test_cleans_up_even_when_there_is_no_bucket(tmp_path):
+    # The cleanups have to run anyway: three of the four need nothing from the preference but the bucket
     # name, and if clearing the preference stopped them, nothing would ever finish a cancellation or
     # expire an archive again.
     api = _api(preference=json.dumps({'maxSizeBytes': 1024}))
-    swept = []
+    cleaned = []
 
-    class _RecordingJanitor:
-        def sweep(self, platform, active_ids):
-            swept.append(platform)
+    class _RecordingCleaner:
+        def cleanup(self, archive_config, active_ids):
+            cleaned.append(archive_config)
 
-    orchestrator = Orchestrator(api, _config(tmp_path), janitor=_RecordingJanitor())
+    orchestrator = Orchestrator(api, _config(tmp_path), cleaner=_RecordingCleaner())
 
     orchestrator.run()
 
-    assert len(swept) == 1
+    assert len(cleaned) == 1
 
 
 def test_skips_the_round_when_the_preference_cannot_be_read(tmp_path):
-    # Nothing at all is done under invented settings - not even a sweep, which would decide what to
+    # Nothing at all is done under invented settings - not even a cleanup, which would decide what to
     # delete from a time to live nobody configured.
     api = _api()
 
@@ -213,14 +215,14 @@ def test_skips_the_round_when_the_preference_cannot_be_read(tmp_path):
         raise ApiError('the API is down')
 
     api.get_preference = explode
-    swept = []
+    cleaned = []
 
-    class _RecordingJanitor:
-        def sweep(self, platform, active_ids):
-            swept.append(platform)
+    class _RecordingCleaner:
+        def cleanup(self, archive_config, active_ids):
+            cleaned.append(archive_config)
 
-    orchestrator = Orchestrator(api, _config(tmp_path), janitor=_RecordingJanitor())
+    orchestrator = Orchestrator(api, _config(tmp_path), cleaner=_RecordingCleaner())
 
     orchestrator.run()
 
-    assert swept == []
+    assert cleaned == []

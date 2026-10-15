@@ -26,7 +26,7 @@ import json
 import pytest
 
 from sas.config import DEFAULT_DESTINATION_PREFIX, DEFAULT_MAX_FILES_COUNT, \
-    DEFAULT_MAX_SIZE_BYTES, PlatformConfig, normalise_prefix
+    DEFAULT_MAX_SIZE_BYTES, StorageDownloadArchiveConfig, normalise_prefix
 
 
 @pytest.mark.parametrize('configured,expected', [
@@ -51,7 +51,7 @@ def test_normalises_the_destination_prefix(configured, expected):
 
 
 def test_reads_the_destination_prefix_from_the_preference():
-    config = PlatformConfig.from_preference(
+    config = StorageDownloadArchiveConfig.from_preference(
         {'destinationStorageId': 9, 'destinationPrefix': 'team/archives'})
 
     assert config.destination_prefix == 'team/archives/'
@@ -59,7 +59,7 @@ def test_reads_the_destination_prefix_from_the_preference():
 
 def test_falls_back_to_the_default_prefix_when_the_preference_omits_it():
     # The case of an installation whose preference was saved before the prefix existed as a field.
-    config = PlatformConfig.from_preference({'destinationStorageId': 9})
+    config = StorageDownloadArchiveConfig.from_preference({'destinationStorageId': 9})
 
     assert config.destination_prefix == DEFAULT_DESTINATION_PREFIX
 
@@ -77,7 +77,7 @@ def test_reads_the_preference_as_the_json_string_the_api_sends():
         'stuckTasksThresholdMinutes': 120,
     })
 
-    config = PlatformConfig.from_preference(raw)
+    config = StorageDownloadArchiveConfig.from_preference(raw)
 
     assert config.destination_storage_id == 9
     assert config.max_size_bytes == 1024
@@ -89,14 +89,14 @@ def test_reads_the_preference_as_the_json_string_the_api_sends():
 
 
 def test_an_absent_threshold_falls_back_to_the_platform_default():
-    config = PlatformConfig.from_preference({'destinationStorageId': 9})
+    config = StorageDownloadArchiveConfig.from_preference({'destinationStorageId': 9})
 
     assert config.max_size_bytes == DEFAULT_MAX_SIZE_BYTES
     assert config.max_files_count == DEFAULT_MAX_FILES_COUNT
 
 
 def test_a_threshold_set_to_null_means_no_limit():
-    config = PlatformConfig.from_preference(
+    config = StorageDownloadArchiveConfig.from_preference(
         {'destinationStorageId': 9, 'maxSizeBytes': None, 'maxFilesCount': None})
 
     assert config.max_size_bytes is None
@@ -109,22 +109,22 @@ def test_a_threshold_set_to_null_means_no_limit():
 def test_a_missing_preference_is_the_same_as_an_empty_one():
     # An administrator who clears the field leaves an empty string behind, which is not valid JSON.
     for raw in (None, '', '   ', '{}'):
-        config = PlatformConfig.from_preference(raw)
+        config = StorageDownloadArchiveConfig.from_preference(raw)
 
         assert not config.is_usable
         assert config.ttl_days > 0
 
 
 def test_a_preference_without_a_bucket_cannot_be_used():
-    config = PlatformConfig.from_preference({'maxSizeBytes': 1})
+    config = StorageDownloadArchiveConfig.from_preference({'maxSizeBytes': 1})
 
     assert not config.is_usable
     assert any('destinationStorageId' in warning for warning in config.warnings())
 
 
 def test_warns_when_the_stuck_threshold_does_not_exceed_the_worker_limit():
-    # The combination that makes the janitor fail tasks whose workers are alive and about to finish.
-    config = PlatformConfig.from_preference({
+    # The combination that makes the cleaner fail tasks whose workers are alive and about to finish.
+    config = StorageDownloadArchiveConfig.from_preference({
         'destinationStorageId': 9,
         'workerMaxRunningMinutes': 240,
         'stuckTasksThresholdMinutes': 240,
@@ -134,7 +134,7 @@ def test_warns_when_the_stuck_threshold_does_not_exceed_the_worker_limit():
 
 
 def test_a_fully_configured_preference_warns_about_nothing():
-    config = PlatformConfig.from_preference({
+    config = StorageDownloadArchiveConfig.from_preference({
         'destinationStorageId': 9,
         'maxSizeBytes': 107374182400,
         'maxFilesCount': 100000,

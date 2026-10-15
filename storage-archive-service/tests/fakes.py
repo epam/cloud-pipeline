@@ -33,12 +33,12 @@ from botocore.exceptions import ClientError
 
 from sas.errors import ApiRejected
 from sas.model import ArchiveTask, CloudRegion, FileShare, Storage, StorageType, TaskStatus
-from sas.sources.base import FileSource, SourceFile
+from sas.datastorage_providers.base import FileSource, SourceFile
 
 
 class FakeApi:
     """
-    The platform API, as far as a worker or the janitor can tell.
+    The platform API, as far as a worker or the cleaner can tell.
 
     `reports` is the list of every status report, in order. Most assertions in the worker tests are
     about that list: the sequence of statuses *is* the observable behaviour of a worker.
@@ -53,9 +53,9 @@ class FakeApi:
                                           path='some-bucket', region_id=1)
         self.preference = preference
         self.reports: list[tuple[TaskStatus, dict | None, str | None]] = []
-        # What `filter_tasks` answers, per status asked about. The janitor runs three filters in one
-        # sweep and each asks about different statuses, so a single list would be returned to all three
-        # and every sweep would act on every task.
+        # What `filter_tasks` answers, per status asked about. The cleaner runs three filters in one
+        # cleanup and each asks about different statuses, so a single list would be returned to all three
+        # and every cleanup would act on every task.
         self.filtered: dict[TaskStatus, list[ArchiveTask]] = {}
         # Set to make `report_status` refuse, as the real API does for a transition that is no longer
         # allowed.
@@ -69,7 +69,7 @@ class FakeApi:
         # tests have one region and set this; a test about two regions sets the map instead.
         self.region = CloudRegion(id=1, code='eu-central-1')
         self.regions: dict[int, CloudRegion] = {}
-        # Every region id asked about, in order. The tests of `aws.py` assert on it to show that a
+        # Every region id asked about, in order. The tests of `cloud/aws.py` assert on it to show that a
         # client is built from the storage's own region.
         self.region_requests: list[int] = []
         # Set to make `load_region` refuse, as the real API does for a region that was deleted.
@@ -89,7 +89,7 @@ class FakeApi:
     def filter_tasks(self, statuses: list[TaskStatus] | None = None, **_kwargs) -> list[ArchiveTask]:
         # `**_kwargs` accepts the remaining keyword arguments and ignores them. The real method has
         # six, and a fake that listed them all would have to be edited every time one is added without
-        # any test caring. The statuses are the exception: the janitor's sweeps are told apart by them.
+        # any test caring. The statuses are the exception: the cleaner's cleanups are told apart by them.
         found = []
         for status in statuses or []:
             found += self.filtered.get(status, [])

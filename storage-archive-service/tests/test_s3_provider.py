@@ -26,7 +26,7 @@ storage, while a key in S3 is not.
 """
 
 from sas.model import Storage, StorageType
-from sas.sources.s3 import S3Source
+from sas.datastorage_providers.s3 import S3Source
 
 from .fakes import FakeS3Client
 

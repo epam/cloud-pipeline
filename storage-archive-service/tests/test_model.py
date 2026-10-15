@@ -24,7 +24,7 @@ import datetime
 
 import pytest
 
-from sas.model import ArchiveTask, CloudRegion, Storage, StorageType, TaskStatus, \
+from sas.model import ArchiveTask, AsyncTaskType, CloudRegion, Storage, StorageType, TaskStatus, \
     format_api_datetime, parse_api_datetime
 
 
@@ -74,8 +74,8 @@ def test_reads_a_task_with_its_params():
 
 
 def test_reads_a_task_without_params():
-    # What the janitor's filter returns in some orders of events, and what a task of another type would
-    # look like if one existed. It has to parse, because the janitor only needs the id and the status.
+    # What the cleaner's filter returns in some orders of events, and what a task of another type would
+    # look like if one existed. It has to parse, because the cleaner only needs the id and the status.
     task = ArchiveTask.from_api({'id': 'x', 'status': 'PENDING'})
 
     assert task.paths == ()
@@ -137,7 +137,7 @@ def test_strips_a_trailing_slash_from_a_storage_path():
 
 
 def test_reads_the_recorded_archive_location_from_a_finished_task():
-    # What the janitor deletes by and the API signs from. Absent on an unfinished task, so both fields
+    # What the cleaner deletes by and the API signs from. Absent on an unfinished task, so both fields
     # are read with `get` and both are allowed to be missing.
     task = ArchiveTask.from_api({
         'id': 'task-1',
@@ -160,7 +160,7 @@ def test_reads_no_location_from_a_task_that_has_not_finished():
 
 
 def test_ignores_a_result_of_a_foreign_task_type():
-    # Unlike foreign params, which are an error: the janitor lists tasks, and a type this service does
+    # Unlike foreign params, which are an error: the cleaner lists tasks, and a type this service does
     # not execute simply has no archive for it to clean up.
     task = ArchiveTask.from_api({
         'id': 'task-1',
@@ -170,6 +170,28 @@ def test_ignores_a_result_of_a_foreign_task_type():
 
     assert task.result_storage_id is None
     assert task.result_path is None
+
+
+def test_reads_the_type_the_task_carries():
+    task = ArchiveTask.from_api({'id': 'task-1', 'type': 'DOWNLOAD_ARCHIVE', 'status': 'RUNNING'})
+
+    assert task.type is AsyncTaskType.DOWNLOAD_ARCHIVE
+
+
+def test_a_task_without_a_type_falls_back_to_the_only_one_there_is():
+    # The platform always sends it; the fallback is what keeps a task built by hand - in a test, or by
+    # an older API - dispatchable. It is also what will hide a mistake when a second type arrives, which
+    # is why `worker_for` names the type it could not run.
+    task = ArchiveTask.from_api({'id': 'task-1', 'status': 'RUNNING'})
+
+    assert task.type is AsyncTaskType.DOWNLOAD_ARCHIVE
+
+
+def test_a_type_this_service_does_not_know_is_refused():
+    # `ValueError` rather than a silent default: the orchestrator catches it and leaves the task to the
+    # cleaner, which is better than running the wrong worker over somebody's data.
+    with pytest.raises(ValueError):
+        ArchiveTask.from_api({'id': 'task-1', 'type': 'SOMETHING_ELSE', 'status': 'RUNNING'})
 
 
 def test_reads_a_storages_own_credentials_role():

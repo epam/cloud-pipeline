@@ -13,20 +13,20 @@
 # limitations under the License.
 
 """
-The loop. Reads the preference, runs the janitor, claims what it has room for, and sleeps.
+The loop. Reads the preference, runs the cleaner, claims what it has room for, and sleeps.
 
 One round:
 
     1. read `storage.download.archive.config`      so an administrator's change applies without a
                                                    restart, and a task never runs under settings older
                                                    than the round it started in
-    2. run the four janitor sweeps                 before claiming, so a stuck task is out of the way
+    2. run the four cleaner cleanups                 before claiming, so a stuck task is out of the way
     3. claim tasks while slots are free            one call per task, see below
     4. sleep until the next round                  interruptibly
 
 **One task per claim, and a slot taken before the claim.** `POST /async-task/next` marks a task
 `RUNNING` and hands it over. Between that moment and the moment a worker actually starts on it, nobody
-is working on the task and a crash leaves it hanging until the janitor times it out. Claiming into a
+is working on the task and a crash leaves it hanging until the cleaner times it out. Claiming into a
 slot we already hold keeps exactly one task in that window, instead of a batch of them.
 
 **Threads, not processes.** Every slow part of a task - listing a bucket, downloading, uploading - is
@@ -42,12 +42,11 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from .api import CloudPipelineApi
-from .config import PREFERENCE_KEY, PlatformConfig, ServiceConfig
+from .config import PREFERENCE_KEY, ServiceConfig, StorageDownloadArchiveConfig
 from .errors import ApiError, ApiRejected
-from .janitor import Janitor
 from .log import get_logger
-from .model import ArchiveTask, TASK_TYPE
-from .worker import ArchiveWorker
+from .model import ArchiveTask, AsyncTaskType
+from .worker import SUPPORTED_TASK_TYPES, Cleaner, worker_for
 
 LOG = get_logger(__name__)
 
@@ -61,10 +60,10 @@ class Orchestrator:
     """
 
     def __init__(self, api: CloudPipelineApi, config: ServiceConfig,
-                 janitor: Janitor | None = None):
+                 cleaner: Cleaner | None = None):
         self._api = api
         self._config = config
-        self._janitor = janitor if janitor is not None else Janitor(api, config)
+        self._cleaner = cleaner if cleaner is not None else Cleaner(api, config)
         # `Event` is a flag threads can wait on. Setting it both tells the loop to finish and wakes it
         # up out of its sleep immediately - which is why the sleep below is `wait(timeout)` and not
         # `time.sleep`. With `time.sleep` a container asked to stop would sit there for the rest of the
@@ -76,7 +75,7 @@ class Orchestrator:
         # released-twice bug otherwise silently grants an extra slot, and that is a very hard bug to
         # find later.
         self._slots = threading.BoundedSemaphore(config.slots)
-        # Task ids workers of this process are busy with. Read by the janitor, written from the done
+        # Task ids workers of this process are busy with. Read by the cleaner, written from the done
         # callback, which runs on a worker thread - so both go through the lock.
         self._active: set[str] = set()
         self._active_lock = threading.Lock()
@@ -92,7 +91,7 @@ class Orchestrator:
         is what makes a shutdown orderly: the loop stops claiming, each worker notices the deadline or
         finishes its task, reports, and only then does the process exit. A container stopped with the
         usual grace period may not have long enough for a large task, and that task is left to the
-        janitor - which is the design, not a gap.
+        cleaner - which is the design, not a gap.
 
         `max_workers` equals the number of slots, so the pool never queues: a submit only happens with
         a slot in hand, and there is always a thread free for it.
@@ -131,20 +130,20 @@ class Orchestrator:
     # ------------------------------------------------------------------ one round
 
     def _round(self, pool: ThreadPoolExecutor) -> None:
-        platform = self._load_platform()
-        if platform is None:
+        archive_config = self._load_archive_config()
+        if archive_config is None:
             return
-        self._janitor.sweep(platform, self._active_ids())
+        self._cleaner.cleanup(archive_config, self._active_ids())
         if self._shutdown.is_set():
             return
-        if not platform.is_usable:
+        if not archive_config.is_usable:
             # Already said by the warnings above. Tasks stay pending, which is the right place for
             # them: an administrator filling the preference in makes the backlog run, and failing them
             # here would lose work for a mistake that is about to be corrected.
             return
-        self._claim_while_free(pool, platform)
+        self._claim_while_free(pool, archive_config)
 
-    def _load_platform(self) -> PlatformConfig | None:
+    def _load_archive_config(self) -> StorageDownloadArchiveConfig | None:
         """
         Reads and parses the preference. Returns `None` when it cannot be read.
 
@@ -158,30 +157,31 @@ class Orchestrator:
             LOG.warning('Cannot read preference %s (%s), skipping this round', PREFERENCE_KEY, error)
             return None
         try:
-            platform = PlatformConfig.from_preference(raw)
+            archive_config = StorageDownloadArchiveConfig.from_preference(raw)
         except ValueError as error:
             # `json.loads` raises `JSONDecodeError`, which is a `ValueError`. An administrator has
             # saved something that is not JSON, and the only useful thing to do is to say so.
             LOG.error('Preference %s does not parse (%s), skipping this round', PREFERENCE_KEY, error)
             return None
-        self._report_warnings(platform)
-        return platform
+        self._report_warnings(archive_config)
+        return archive_config
 
-    def _report_warnings(self, platform: PlatformConfig) -> None:
+    def _report_warnings(self, archive_config: StorageDownloadArchiveConfig) -> None:
         """
         Logs what is wrong with the preference, once per change rather than once per round.
 
         A misconfiguration lasts until someone fixes it, which may be days. Repeating the same two
         lines every twenty seconds is how a log stops being read.
         """
-        warnings = tuple(platform.warnings())
+        warnings = tuple(archive_config.warnings())
         if warnings == self._reported_warnings:
             return
         self._reported_warnings = warnings
         for warning in warnings:
             LOG.warning('%s', warning)
 
-    def _claim_while_free(self, pool: ThreadPoolExecutor, platform: PlatformConfig) -> None:
+    def _claim_while_free(self, pool: ThreadPoolExecutor,
+                          archive_config: StorageDownloadArchiveConfig) -> None:
         """
         Claims tasks one at a time for as long as there is a slot and the queue is not empty.
 
@@ -204,26 +204,41 @@ class Orchestrator:
                 task = self._claim()
                 if task is None:
                     return
-                handed_over = self._start(pool, platform, task)
+                handed_over = self._start(pool, archive_config, task)
             finally:
                 if not handed_over:
                     self._slots.release()
 
     def _claim(self) -> ArchiveTask | None:
-        """Takes the next task, or `None` if there is none or the call failed."""
+        """
+        Takes the next task of any type this service runs, or `None` if there is none.
+
+        One call per type, because `/async-task/next` takes a single type - there is no "give me
+        anything" form of it. The types are asked for in the order `SUPPORTED_TASK_TYPES` declares,
+        which with one type is no order at all; when there are two, the first in that tuple is the one
+        that gets a free slot first, and that is the place to change if it ever has to be fairer.
+        """
+        for task_type in SUPPORTED_TASK_TYPES:
+            task = self._claim_type(task_type)
+            if task is not None:
+                return task
+        return None
+
+    def _claim_type(self, task_type: AsyncTaskType) -> ArchiveTask | None:
+        """Takes the next task of one type, or `None` if there is none or the call failed."""
         try:
-            return self._api.claim_next(TASK_TYPE)
+            return self._api.claim_next(task_type)
         except (ApiError, ApiRejected) as error:
             LOG.warning('Cannot claim a task (%s), skipping the rest of this round', error)
             return None
         except ValueError as error:
             # The task was claimed but does not parse - a params shape we do not understand. It is
-            # already RUNNING on the API side, and the janitor will fail it as stuck. Nothing better is
+            # already RUNNING on the API side, and the cleaner will fail it as stuck. Nothing better is
             # available: we cannot report a status for a task we could not read the id of.
-            LOG.error('Claimed a task that cannot be read (%s); the janitor will clean it up', error)
+            LOG.error('Claimed a task that cannot be read (%s); the cleaner will clean it up', error)
             return None
 
-    def _start(self, pool: ThreadPoolExecutor, platform: PlatformConfig,
+    def _start(self, pool: ThreadPoolExecutor, archive_config: StorageDownloadArchiveConfig,
                task: ArchiveTask) -> bool:
         """
         Hands a claimed task to the pool. Returns whether the pool has taken it.
@@ -245,26 +260,29 @@ class Orchestrator:
         """
         self._track(task.id)
         try:
-            future = pool.submit(self._run_worker, platform, task)
+            future = pool.submit(self._run_worker, archive_config, task)
         except RuntimeError as error:
             # The pool is shutting down. The task is RUNNING on the API side and nothing will work on
-            # it; the janitor's business again.
-            LOG.error('Cannot start task %s (%s); the janitor will clean it up', task.id, error)
+            # it; the cleaner's business again.
+            LOG.error('Cannot start task %s (%s); the cleaner will clean it up', task.id, error)
             self._forget(task.id)
             return False
         future.add_done_callback(lambda _, task_id=task.id: self._release(task_id))
         return True
 
-    def _run_worker(self, platform: PlatformConfig, task: ArchiveTask) -> None:
+    def _run_worker(self, archive_config: StorageDownloadArchiveConfig, task: ArchiveTask) -> None:
         """
-        The body of a pool thread.
+        The body of a pool thread: the worker for whatever type of task was claimed.
 
-        `ArchiveWorker.run` is written never to raise, and this is wrapped anyway. An exception here
+        This class never names a worker. `worker_for` holds the mapping from task type to class, so a
+        second kind of task - unarchiving an archive back into a storage - needs nothing here.
+
+        `AsyncTaskWorker.run` is written never to raise, and this is wrapped anyway. An exception here
         would otherwise be stored in a future nobody reads and vanish without a line in the log - the
         failure mode where a task quietly stays RUNNING and nobody can say why.
         """
         try:
-            ArchiveWorker(self._api, self._config, platform, task).run()
+            worker_for(self._api, self._config, archive_config, task).run()
         except Exception as error:
             LOG.exception('Worker of task %s crashed (%s)', task.id, error)
 
@@ -284,17 +302,17 @@ class Orchestrator:
         Gives a slot back and forgets the task.
 
         Runs on the worker's own thread, as the callback of its future. The order matters a little: the
-        task is forgotten before the slot is released, so that the moment a slot is free, no janitor
-        sweep can still believe that task is being worked on.
+        task is forgotten before the slot is released, so that the moment a slot is free, no cleaner
+        cleanup can still believe that task is being worked on.
         """
         self._forget(task_id)
         self._slots.release()
 
     def _active_ids(self) -> set[str]:
         """
-        A copy of the active set, for the janitor.
+        A copy of the active set, for the cleaner.
 
-        A copy and not the set itself: the janitor iterates it while workers finish and remove
+        A copy and not the set itself: the cleaner iterates it while workers finish and remove
         themselves, and changing a set during iteration raises `RuntimeError`.
         """
         with self._active_lock:

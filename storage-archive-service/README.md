@@ -25,6 +25,10 @@ polls the API, and the API is the only state it has.
 - [The files, and what each one is for](#the-files-and-what-each-one-is-for)
 - [How to read this Python](#how-to-read-this-python)
 
+`ARCHITECTURE.md`, next to this file, is the other half: a map of what runs when, on which thread, in
+which function, and which setting is consulted at that moment. Read it when you need to find something;
+read this one when you need to know why it is the way it is.
+
 ## How a task flows through the service
 
 ```
@@ -39,7 +43,7 @@ polls the API, and the API is the only state it has.
   +-------------------------------------+
             |
             |  1. GET /preferences/storage.download.archive.config   destination and thresholds
-            |  2. four janitor sweeps                                clean up after dead workers
+            |  2. four cleaner cleanups                                clean up after dead workers
             |  3. POST /async-task/next?type=DOWNLOAD_ARCHIVE        claim, while a slot is free
             |                                                        (the API moves PENDING -> RUNNING)
             v
@@ -57,7 +61,7 @@ polls the API, and the API is the only state it has.
             v
   user asks GET /async-task/{id}/consume and downloads the archive
 
-  seven days later, the janitor deletes the object and marks the task EXPIRED
+  seven days later, the cleaner deletes the object and marks the task EXPIRED
 ```
 
 Two things about this shape are worth knowing before reading the code.
@@ -78,17 +82,25 @@ storage in one region and write the archive to another.
 Assuming the role directly rather than asking `POST /datastorage/tempCredentials/` for ready credentials
 is deliberate: botocore re-assumes by itself when the session is close to expiring, where credentials
 fetched once would have to be watched and re-fetched by us, and an archive can take longer than they
-live. `sas/aws.py` is that whole subject, and its module docstring is the long form of this paragraph.
+live. `sas/cloud/aws.py` is that whole subject, and its module docstring is the long form of this paragraph.
 
 **A task is never lost and never silently abandoned.** A worker ends its own task on every path it can
 reach, including cancellation and its own timeout. For the one case it cannot handle - the process being
-killed - the janitor finishes the task from the outside. See the module docstring of `sas/janitor.py`.
+killed - the cleaner finishes the task from the outside. See the module docstring of `sas/worker/cleaner.py`.
 
 ## Requirements
 
 - **Python 3.12.** Not "3.8 or newer": the code uses `StrEnum`, `match`, `datetime.UTC` and
   `Path.is_relative_to`, and will not import on an older interpreter.
-- `requests`, `boto3` - pinned in `requirements.txt`.
+- `boto3` - pinned in `requirements.txt`.
+- **pipe-common**, the platform's own API client, from `workflows/pipe-common`. It is what talks to the
+  API - see `sas/api.py` - and it is not on any package index, so locally it is
+  `pip install -e ../workflows/pipe-common`. That pulls some forty packages, luigi and paramiko among
+  them, because `pipeline/__init__.py` imports the whole of pipe-common; the service imports it inside
+  one function so that the tests do not need any of it. **This service has no container yet** - there
+  is no `deploy/docker/cp-storage-archive-service/` - so how pipe-common reaches it in a deployment is
+  still to be decided; `deploy/docker/cp-storage-lifecycle-service/Dockerfile` installs it from the API
+  distribution, and that is the obvious shape to copy.
 - **No S3 access of its own.** What the host does need is credentials that may *assume* the roles the
   platform records - on a platform node, its instance profile, the same thing the API server and the
   lifecycle service assume from. The role is the region's `iamRole` if it has one, otherwise its
@@ -130,6 +142,18 @@ pip install -e .
 pip install -r requirements-dev.txt
 ```
 
+This is enough to run the tests and the linter. **Running the service also needs the platform's API
+client**, which is in this repository and not on any index:
+
+```bash
+pip install -e ../workflows/pipe-common
+```
+
+Expect some forty packages: `pipeline/__init__.py` imports the whole of pipe-common - luigi, tornado,
+paramiko - and pip resolves its pins, including its own `requests`. Without it the service stops at
+startup with `No module named 'pipeline'`; the tests do not need it, because `sas/api.py` imports it
+inside the function that builds the client.
+
 **4. Get a token.** The service needs a JWT of a user with the `ROLE_ADMIN` role, because it reads any
 storage any user asked about. In the GUI: **Settings → CLI → Pipe CLI**, press **Generate access key**,
 and take the token out of the **CLI configure command** it shows - that command passes it as
@@ -147,7 +171,7 @@ export API=https://your-deployment.example.com/pipeline/restapi
 python -m sas.app --once --slots 1 --work-dir ./tasks --log-level DEBUG
 ```
 
-With `--once` the service does one round - preference, sweeps, claim - waits for whatever it started,
+With `--once` the service does one round - preference, cleanups, claim - waits for whatever it started,
 and exits. That is the mode to develop in: a full round against a real API, over in seconds, and every
 decision visible at `DEBUG`.
 
@@ -159,8 +183,8 @@ python -m sas.app --slots 2 --work-dir ./tasks
 
 `Ctrl-C` does not kill it. The signal asks the orchestrator to stop claiming and to wait for the
 workers, so an upload in progress is either finished or aborted properly. Pressing it a second time
-changes nothing; if you really need the process gone now, `kill -9` it and let the janitor clean up -
-which is exactly the case the janitor exists for, and a decent way to see it work.
+changes nothing; if you really need the process gone now, `kill -9` it and let the cleaner clean up -
+which is exactly the case the cleaner exists for, and a decent way to see it work.
 
 ### Pointing it at nothing in particular
 
@@ -223,10 +247,12 @@ be killed from the outside; see [How to read this Python](#how-to-read-this-pyth
 ### Reading an error that is not an error
 
 The platform API answers a business failure with **HTTP 200** and a body of
-`{"status": "ERROR", "message": "..."}`. So `curl -f` will not notice, and neither can this service: it
-reads the envelope rather than the status code, and the distinction it draws is between a failure worth
-retrying (`ApiError` - a timeout, a 502) and a refusal that will never succeed (`ApiRejected` - a
-transition the task model does not allow). See `_unwrap` in `sas/api.py`.
+`{"status": "ERROR", "message": "..."}`. So `curl -f` will not notice. The platform's client reads the
+envelope rather than the status code and raises `APIError` for it, without retrying; this service turns
+that into `ApiRejected` - a refusal that will never succeed, such as a transition the task model does
+not allow - and everything else into `ApiError`, which is worth retrying. See `_refused` in
+`sas/api.py`, and the limit noted in the module's docstring: the older methods of that client flatten
+both kinds into one, so for the storage, region and preference calls everything looks retryable.
 
 ## Settings
 
@@ -242,7 +268,7 @@ the command line.
 |---|---|---|---|
 | `--cp-api-url` | `API` | - | Base url of the API, **including** `/restapi`. Required. |
 | `--cp-api-token` | `API_TOKEN` | - | Administrator JWT. Required. Never logged. |
-| `--verify-ssl` | `CP_SAS_VERIFY_SSL` | off | Off because a deployment normally signs its own certificate. |
+| `--verify-ssl` | `CP_SAS_VERIFY_SSL` | off | Off because a deployment normally signs its own certificate. **Turning it on has no effect**: the platform's API client passes `verify=False` on every call and offers no way to change it, and the service says so once at startup. |
 | `--work-dir` | `CP_SAS_WORK_DIR` | `/tmp/sas` | Scratch space, one subdirectory per task. Needs room for the largest archive the thresholds allow, times `--slots`. |
 | `--slots` | `CP_SAS_SLOTS` | `2` | Tasks at once. One slot is one thread, and one archive on disk. |
 | `--poll-interval-seconds` | `CP_SAS_POLL_INTERVAL` | `20` | Sleep between rounds when nothing was claimed. |
@@ -282,7 +308,7 @@ names mirror `DownloadArchiveConfig` on the Java side one for one:
 - **`destinationPrefix`** is the folder inside that storage where the archives go, storage-relative.
   Blank means `archives/`, a lone `/` means the root of the storage. Changing it is safe for a
   **finished** archive: a worker records the storage and the key it actually wrote in the task's
-  result, and both the link and the expiry sweep use the recorded pair as it stands. It is **not** safe
+  result, and both the link and the expiry cleanup use the recorded pair as it stands. It is **not** safe
   for one in flight - a worker that uploaded and then died recorded nothing, so its key can only be
   derived from the setting, and after a change the derived key names an object that was never written.
   Deleting an absent key succeeds, so the cleanup reports done while the real object stays where it
@@ -294,9 +320,9 @@ names mirror `DownloadArchiveConfig` on the Java side one for one:
 - **`ttlDays`** is how long a finished archive is kept.
 - **`maxUserTasks`** is enforced by the API at task creation, not here.
 - **`workerMaxRunningMinutes`** is when a worker gives up on its own task.
-- **`stuckTasksThresholdMinutes`** is when the janitor gives up on a worker. It has to exceed
+- **`stuckTasksThresholdMinutes`** is when the cleaner gives up on a worker. It has to exceed
   `workerMaxRunningMinutes` by enough for a worker to notice its own deadline, clean up and report -
-  otherwise the janitor fails tasks whose workers are alive and about to finish properly, and the user
+  otherwise the cleaner fails tasks whose workers are alive and about to finish properly, and the user
   sees a task fail for no visible reason. The service warns at startup if the two are too close.
 
 ## Running the tests and the linter
@@ -328,11 +354,11 @@ a parameter is how a test asks for it. `tmp_path` is a fresh directory, deleted 
 | `--slots`, `--compress-level`, `--part-size-mb` or a poll interval rejected, exit code 22 | A setting outside its range. Checked at startup rather than at first use, because a value that arrived through the environment goes through none of `argparse`'s own validation. |
 | `Preference storage.download.archive.config has no destinationStorageId` | The preference is missing or has no `destinationStorageId`. The service keeps running and claims nothing; tasks stay `PENDING` until it is filled in. Mind the spelling: the API silently ignores a field it does not know, so a typo leaves the destination unset with no complaint. |
 | Tasks stay `PENDING` and the log says nothing was claimed | Either no destination storage (above), or every slot is busy, or the tasks are not of type `DOWNLOAD_ARCHIVE`. |
-| `Task ... cannot move to ...` at `INFO` | Normal. The janitor and a slow worker both tried to finish the same task; the API refused the loser. The task did end properly. |
+| `Task ... cannot move to ...` at `INFO` | Normal. The cleaner and a slow worker both tried to finish the same task; the API refused the loser. The task did end properly. |
 | A task fails with `more than N files` or `larger than` | A threshold from the preference. The message is the one the user sees. |
 | A task fails with `has ... of local space free and needs about ...` | `--work-dir` cannot hold the archive plus the largest single file. Checked before downloading, so it fails in seconds rather than running out of disk mid-pack. |
 | Files missing from the archive, and a `README.txt` inside it | Expected, and deliberate: a file that cannot be read costs that file only, not the whole archive. The note names every path the user ticked that did not make it in, and why: an object archived in Glacier and not restored, a file the assumed role may not read, a download that failed, or a path that is not in the storage at all - `nothing found at s3://...`, which names the place that was looked at. If the selection already has a `README.txt` of its own, the note is called `CLOUD-PIPELINE-SKIPPED-FILES.txt` instead. |
-| `Removing scratch directory` never fires for a directory you expected it to | The sweep only touches directories whose name is a task id, so a `--work-dir` shared with something else is safe. Clean the rest up yourself. |
+| `Removing scratch directory` never fires for a directory you expected it to | The cleanup only touches directories whose name is a task id, so a `--work-dir` shared with something else is safe. Clean the rest up yourself. |
 | A task fails with `Cannot read cloud region N of storage X` | The region behind the storage could not be read, so there is no role to assume and no region to sign for. The API's own message is in the line: usually the region was deleted, or this service's token lost its administrator role. |
 | A task fails with `Storage X belongs to no cloud region` | A cloud storage with no region record. Nothing in this service can fix it; the storage needs one. |
 | `AccessDenied` from boto3, with a role that was assumed | The assumed role cannot do what was asked. Which role it was is in the `Assuming the role ...` line at `DEBUG`. A storage whose objects are encrypted with a KMS key that role cannot use looks the same way. |
@@ -342,8 +368,8 @@ a parameter is how a test asks for it. `tmp_path` is a fresh directory, deleted 
 | `ExpiredToken` during a long task | Should not happen: the assumed session is re-assumed by botocore when it is close to expiring, inside the signing path. If it does, the re-assume itself failed, and its error is logged above this one. |
 | A multipart upload left its parts behind, with `Could not abort multipart upload` above it | The assumed role has no `s3:AbortMultipartUpload`. The archive itself is unaffected; the parts stay until the bucket's lifecycle rule clears incomplete uploads, which such a bucket should have. |
 | An NFS task fails with `cannot be mounted` | No `mount` command, no permission for it, or the share is unreachable from where you are running. Expected on a laptop. |
-| A task stays `RUNNING` with no log output | Its worker is gone. Nothing to do: the janitor fails it after `stuckTasksThresholdMinutes`, deletes any archive, and the directory under `--work-dir` goes with it. |
-| `Removing scratch directory ...` after a restart | The janitor collecting after a killed process. Working as intended. |
+| A task stays `RUNNING` with no log output | Its worker is gone. Nothing to do: the cleaner fails it after `stuckTasksThresholdMinutes`, deletes any archive, and the directory under `--work-dir` goes with it. |
+| `Removing scratch directory ...` after a restart | The cleaner collecting after a killed process. Working as intended. |
 
 ## The files, and what each one is for
 
@@ -351,20 +377,23 @@ Read them in this order; each one only uses the ones above it.
 
 | File | What is in it |
 |---|---|
-| `sas/errors.py` | The exception types. The important split is `ApiRejected` (never retry) against `ApiError` (retry), and `StopRequested` with the reason a worker is stopping. |
+| `sas/errors.py` | The exception types. The important split is `ApiRejected` (never retry) against `ApiError` (retry); then `StopRequested` with the reason a worker is stopping, and `CredentialsUnavailable` for a storage whose region says nothing about how to reach it. |
 | `sas/log.py` | One function that configures logging to stdout, with the thread name in every line - which is how you tell two workers apart. |
 | `sas/model.py` | The task, the storage, the file share, the status enum, and the API's `LocalDateTime` wire format. Nothing in here calls anything. |
-| `sas/config.py` | `ServiceConfig` (ours, read once) against `PlatformConfig` (the platform's, read every round). Separate types so the reload boundary is visible. |
-| `sas/api.py` | The HTTP client. One session per thread, retries, and the envelope unwrapping that turns an `"ERROR"` body into the right exception. |
-| `sas/aws.py` | Where every S3 client comes from: the role resolved from the storage and its region, the assumed session botocore re-assumes by itself, and the region each client signs for. Read it before either of the two modules that call it. |
-| `sas/sources/base.py` | What a file source has to be able to do: list and download. |
-| `sas/sources/s3.py` | Object storages. Paginated listing, the Glacier check that decides a file is unreadable rather than letting the download fail, and the report for a selected path that holds nothing. Takes its client as given. |
-| `sas/sources/nfs.py` | Mounted shares. Mounts read-only, with a timeout, refuses anything that is not NFS, and reports a selected path that is not on the share. |
-| `sas/sources/__init__.py` | Picks the source for a storage type. |
+| `sas/config.py` | `ServiceConfig` (ours, read once) against `StorageDownloadArchiveConfig` (the platform's, read every round). Separate types so the reload boundary is visible. |
+| `sas/api.py` | The layer over `pipeline.PipelineAPI`, the platform's own client: two error kinds (a refusal that must not be retried against a failure that may be), this service's model instead of dictionaries, and a second client with one attempt for claiming. |
+| `sas/worker/__init__.py` | The registry: which worker runs which task type, and `worker_for`, the only name the orchestrator knows. |
+| `sas/worker/base.py` | What a worker has to be: `run()`, and the type it serves. |
+| `sas/worker/task_stop_watcher.py` | How any worker learns that it must give up - a cancellation, or its own deadline. |
+| `sas/cloud/aws.py` | Where every S3 client comes from: the role resolved from the storage and its region, the assumed session botocore re-assumes by itself, and the region each client signs for. |
+| `sas/datastorage_providers/base.py` | What a file source has to be able to do: list and download. |
+| `sas/datastorage_providers/s3.py` | Object storages. Paginated listing, the Glacier check that decides a file is unreadable rather than letting the download fail, and the report for a selected path that holds nothing. Takes its client as given. |
+| `sas/datastorage_providers/nfs.py` | Mounted shares. Mounts read-only, with a timeout, refuses anything that is not NFS, and reports a selected path that is not on the share. |
+| `sas/datastorage_providers/__init__.py` | Picks the source for a storage type. |
 | `sas/archive_bucket.py` | Uploading and deleting the archive object. Multipart by hand, so that a failed upload can be aborted instead of leaving billable parts behind. |
-| `sas/worker.py` | One task from start to finish. The table at the top of `run` is the whole contract: every way a task can end, and what is reported for it. |
-| `sas/janitor.py` | The four sweeps that end tasks whose workers are gone, and delete archives past their lifetime. |
-| `sas/orchestrator.py` | The loop: read the preference, sweep, claim while a slot is free, sleep. Owns the thread pool and the shutdown flag. |
+| `sas/worker/archive_preparation_worker.py` | One `DOWNLOAD_ARCHIVE` task from start to finish. The table at the top of `run` is the whole contract: every way a task can end, and what is reported for it. |
+| `sas/worker/cleaner.py` | The four cleanups that end tasks whose workers are gone, and delete archives past their lifetime. Not a worker: nobody claims a task for it. |
+| `sas/orchestrator.py` | The loop: read the preference, cleanup, claim while a slot is free, sleep. Owns the thread pool and the shutdown flag. |
 | `sas/app.py` | Arguments, logging, signal handlers. |
 
 ## How to read this Python
@@ -400,7 +429,7 @@ a typo in an assignment raises instead of quietly creating a new field.
 JSON encoder serialises it with no help. That is why statuses pass in and out of the API with no
 conversion layer.
 
-**`match`** (in `sources/__init__.py`) is a switch. The `case _:` at the end is the default, and here it
+**`match`** (in `datastorage_providers/__init__.py`) is a switch. The `case _:` at the end is the default, and here it
 raises - a storage type nobody has implemented must fail loudly rather than fall through to a wrong
 source.
 
@@ -428,7 +457,7 @@ a lambda written in a loop sees the variable's last value. The orchestrator's
 `lambda _, task_id=task.id: ...` sidesteps it by making the value a default argument, which is
 evaluated once, at definition.
 
-**Exceptions are used as control flow** on purpose. `StopWatcher.check()` raises `StopRequested` the
+**Exceptions are used as control flow** on purpose. `TaskStopWatcher.check()` raises `StopRequested` the
 moment the task was cancelled or the deadline passed; every loop that copies or uploads calls it
 between blocks. That is how stopping works at all: **a Python thread cannot be killed from the
 outside**, so a worker has to agree to stop, and this is where it agrees.
@@ -448,7 +477,7 @@ wrong tool for arithmetic.
 
 **`pathlib`**: `Path('/tmp') / 'sas' / 'archive.zip'` builds a path with `/`, and `Path` carries
 `exists()`, `mkdir()`, `read_bytes()`, `rglob()` with it. `is_relative_to` is the one that matters for
-safety - in `sources/nfs.py` it is how a listing refuses a path that resolves outside the storage's own
+safety - in `datastorage_providers/nfs.py` it is how a listing refuses a path that resolves outside the storage's own
 folder, a symbolic link being the usual way that happens.
 
 **`subprocess.run(..., timeout=...)`** runs an external command. The timeout is not decoration: a

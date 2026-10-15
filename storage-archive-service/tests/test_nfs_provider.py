@@ -24,7 +24,7 @@ archive's note is the only place a user learns that something they ticked is mis
 from pathlib import Path
 
 from sas.model import FileShare, MountType, Storage, StorageType
-from sas.sources.nfs import NfsSource
+from sas.datastorage_providers.nfs import NfsSource
 
 SHARE_ROOT = '10.0.0.1:/export'
 

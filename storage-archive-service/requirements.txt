@@ -1,11 +1,16 @@
 # Runtime dependencies, pinned. Keep in step with `install_requires` in setup.py - that file is what
 # the gradle build and `pip install .` read, this one is for a plain `pip install -r`.
 #
-# requests  - the HTTP client used to talk to the platform API
-# urllib3   - requests' own transport; pinned because the warning suppression in api.py imports it
 # boto3     - the AWS SDK: listing, downloading and the multipart upload
 # botocore  - boto3's core; pinned together with it, as the two are released as a pair
-requests==2.32.3
-urllib3==2.2.3
+#
+# `urllib3` is deliberately not pinned here any more: botocore accepts a range, and pipe-common pins
+# its own version, so a pin of ours would conflict with the install step the README describes.
+#
+# **pipe-common is not here, and is required.** The platform API client this service uses lives in
+# `workflows/pipe-common` and is not published to an index: a container installs it from the API
+# distribution, exactly as `deploy/docker/cp-storage-lifecycle-service/Dockerfile` does, and a
+# developer installs it from the checkout - see the README. It brings its own pinned `requests`,
+# which is why this file no longer pins one.
 boto3==1.35.49
 botocore==1.35.49

@@ -19,11 +19,11 @@ The destination is the platform data storage named by `destinationStorageId` in
 `storage.download.archive.config`, and this class works on the bucket behind it. A storage rather than a
 bare bucket, so that the API can sign the download link through the machinery it already has for every
 other storage - and so that this service reaches it the same way it reaches the storage being archived:
-through the cloud region recorded against it and the role that region names. `sas/aws.py` holds that
+through the cloud region recorded against it and the role that region names. `sas/cloud/aws.py` holds that
 part; here the client simply arrives built.
 
 The object key is `archives/<task id>.zip`, derived from the task and not chosen here. That is what
-lets anything - the janitor, an operator, the API signing a link - find or delete the archive of a task
+lets anything - the cleaner, an operator, the API signing a link - find or delete the archive of a task
 knowing only the task. `DataStorageDownloadArchiveManager.archiveKey` is the Java side of the same
 rule, and the two have to agree.
 
@@ -43,7 +43,7 @@ import math
 from pathlib import Path
 
 from .log import get_logger
-from .sources.base import Heartbeat
+from .datastorage_providers.base import Heartbeat
 
 LOG = get_logger(__name__)
 
@@ -88,7 +88,7 @@ class ArchiveBucket:
 
     The client is a required argument, as it is for `S3Source` and for the same reason: fetching
     credentials is an API call, and a constructor that makes one cannot be read or tested. Its callers
-    are `worker._resolve_destination` and the janitor's bucket factory.
+    are `ArchivePreparationWorker._resolve_destination` and the cleaner's bucket factory.
     """
 
     def __init__(self, bucket: str, part_size_bytes: int, client):

@@ -16,7 +16,8 @@
 What every file source has to provide, and nothing more.
 
 The worker knows only this interface. Adding a storage type means adding a module next to `s3.py` and
-a branch in `open_source`; nothing in `worker.py` has to change, which is the point of the
+a branch in `open_source`; nothing in `worker/archive_preparation_worker.py` has to change, which is
+the point of the
 abstraction - the packing, the thresholds, the cancellation handling and the cleanup are identical
 whatever the files were read from.
 """

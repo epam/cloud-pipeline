@@ -22,7 +22,7 @@ from sas.version import __version__
 setup(
     name='sas',
     version=__version__,
-    # Finds `sas` and `sas.sources` by looking for directories holding an `__init__.py`. Listing them
+    # Finds `sas` and its subpackages by looking for directories holding an `__init__.py`. Listing them
     # by hand is the alternative and goes stale the first time a package is added.
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
@@ -33,8 +33,11 @@ setup(
     install_requires=[
         # Exact pins, as elsewhere in this repository: a service that builds an archive from a user's
         # data should not change behaviour because a transitive release happened overnight.
-        'requests==2.32.3',
-        'urllib3==2.2.3',
+        #
+        # `pipeline`, the platform's own API client from `workflows/pipe-common`, is deliberately not
+        # listed: it is not on any index, a container installs it from the API distribution, and
+        # naming it here would make `pip install .` fail everywhere. `requirements.txt` says the same
+        # at more length.
         'boto3==1.35.49',
         'botocore==1.35.49',
     ],

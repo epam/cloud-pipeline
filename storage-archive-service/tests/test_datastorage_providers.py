@@ -26,8 +26,8 @@ import pytest
 from sas.config import ServiceConfig
 from sas.errors import UnsupportedSource
 from sas.model import ArchiveTask, Storage, StorageType, TaskStatus
-from sas.sources import open_source
-from sas.sources.s3 import S3Source
+from sas.datastorage_providers import open_source
+from sas.datastorage_providers.s3 import S3Source
 
 from .fakes import FakeApi
 

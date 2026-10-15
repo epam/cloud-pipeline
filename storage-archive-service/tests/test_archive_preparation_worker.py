@@ -28,9 +28,9 @@ module-level function safe to do in a test suite.
 import zipfile
 
 from sas.archive_bucket import archive_key
-from sas.config import PlatformConfig, ServiceConfig
+from sas.config import StorageDownloadArchiveConfig, ServiceConfig
 from sas.model import ArchiveTask, Storage, StorageType, TaskStatus
-from sas.worker import ArchiveWorker
+from sas.worker.archive_preparation_worker import ArchivePreparationWorker
 
 from .fakes import FakeApi, FakeBucket, FakeSource
 
@@ -56,8 +56,8 @@ def _service_config(tmp_path, status_poll_seconds=0):
     )
 
 
-def _platform(max_files=None, max_size=None, worker_minutes=10, prefix='archives/', storage=9):
-    return PlatformConfig(
+def _archive_config(max_files=None, max_size=None, worker_minutes=10, prefix='archives/', storage=9):
+    return StorageDownloadArchiveConfig(
         destination_storage_id=storage,
         destination_prefix=prefix,
         max_size_bytes=max_size,
@@ -73,7 +73,7 @@ def _task(status=TaskStatus.RUNNING):
     return ArchiveTask(id=TASK_ID, status=status, owner='USER', storage_id=1, paths=('data/',))
 
 
-def _run(tmp_path, monkeypatch, source, api=None, platform=None, bucket=None,
+def _run(tmp_path, monkeypatch, source, api=None, archive_config=None, bucket=None,
          service_config=None):
     """
     Runs one worker against the fakes and hands back everything a test might assert on.
@@ -84,11 +84,11 @@ def _run(tmp_path, monkeypatch, source, api=None, platform=None, bucket=None,
     restored when the test ends.
     """
     api = api or FakeApi(_task())
-    platform = platform or _platform()
+    archive_config = archive_config or _archive_config()
     bucket = bucket or FakeBucket()
     config = service_config or _service_config(tmp_path)
-    monkeypatch.setattr('sas.worker.open_source', lambda *_args: source)
-    ArchiveWorker(api, config, platform, api.task, bucket=bucket).run()
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
+    ArchivePreparationWorker(api, config, archive_config, api.task, bucket=bucket).run()
     return api, bucket
 
 
@@ -103,7 +103,7 @@ def test_packs_the_selection_and_reports_success(tmp_path, monkeypatch):
     assert sorted(bucket.uploaded) == ['a.txt', 'nested/b.txt']
     status, result, error = api.reports[0]
     # The recorded location is part of the contract, not an extra: the API signs the link from it, and
-    # the expiry sweep deletes by it. Asserted as a whole dictionary so that a field going missing from
+    # the expiry cleanup deletes by it. Asserted as a whole dictionary so that a field going missing from
     # the report fails here rather than much later, in a bucket nobody cleans.
     assert result == {'type': 'DOWNLOAD_ARCHIVE',
                       'storageId': 9,
@@ -148,7 +148,7 @@ def test_the_archive_note_says_why_each_file_is_missing(tmp_path, monkeypatch):
 
     api = FakeApi(_task())
     bucket = FakeBucket()
-    monkeypatch.setattr('sas.worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
 
     # This one needs the archive itself rather than its listing, so the upload is captured by hand.
     captured = {}
@@ -159,7 +159,7 @@ def test_the_archive_note_says_why_each_file_is_missing(tmp_path, monkeypatch):
         return path.stat().st_size
 
     bucket.upload = capture
-    ArchiveWorker(api, _service_config(tmp_path), _platform(), api.task, bucket=bucket).run()
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task, bucket=bucket).run()
 
     assert 'cold.bin: stored in GLACIER' in captured['note']
 
@@ -167,7 +167,7 @@ def test_the_archive_note_says_why_each_file_is_missing(tmp_path, monkeypatch):
 def test_refuses_a_selection_with_too_many_files(tmp_path, monkeypatch):
     source = FakeSource({'a.txt': b'1', 'b.txt': b'2', 'c.txt': b'3'})
 
-    api, bucket = _run(tmp_path, monkeypatch, source, platform=_platform(max_files=2))
+    api, bucket = _run(tmp_path, monkeypatch, source, archive_config=_archive_config(max_files=2))
 
     assert api.statuses == [TaskStatus.FAILED]
     _, result, error = api.reports[0]
@@ -181,7 +181,7 @@ def test_refuses_a_selection_with_too_many_files(tmp_path, monkeypatch):
 def test_refuses_a_selection_that_is_too_large(tmp_path, monkeypatch):
     source = FakeSource({'big.bin': b'0' * 100})
 
-    api, bucket = _run(tmp_path, monkeypatch, source, platform=_platform(max_size=50))
+    api, bucket = _run(tmp_path, monkeypatch, source, archive_config=_archive_config(max_size=50))
 
     assert api.statuses == [TaskStatus.FAILED]
     assert 'larger than' in api.reports[0][2]
@@ -193,7 +193,7 @@ def test_an_unlimited_threshold_lets_everything_through(tmp_path, monkeypatch):
     source = FakeSource({'a.txt': b'1', 'b.txt': b'2'})
 
     api, _ = _run(tmp_path, monkeypatch, source,
-                  platform=_platform(max_files=None, max_size=None))
+                  archive_config=_archive_config(max_files=None, max_size=None))
 
     assert api.statuses == [TaskStatus.SUCCESS]
 
@@ -206,7 +206,7 @@ def test_stops_and_cancels_when_the_task_was_cancelled(tmp_path, monkeypatch):
 
     # STOPPING first, then CANCELLED. The intermediate status is not required by the task model, and it
     # is reported anyway: it tells the user that the service is cleaning up, and it restarts the
-    # janitor's stuck-task window so a long cleanup is not mistaken for a dead worker.
+    # cleaner's stuck-task window so a long cleanup is not mistaken for a dead worker.
     assert api.statuses == [TaskStatus.STOPPING, TaskStatus.CANCELLED]
     assert bucket.uploaded is None
     assert not (tmp_path / TASK_ID).exists()
@@ -216,14 +216,14 @@ def test_fails_itself_when_it_runs_out_of_time(tmp_path, monkeypatch):
     # A zero minute limit means the deadline has already passed when the first check happens.
     source = FakeSource({'a.txt': b'hello'})
 
-    api, _ = _run(tmp_path, monkeypatch, source, platform=_platform(worker_minutes=0))
+    api, _ = _run(tmp_path, monkeypatch, source, archive_config=_archive_config(worker_minutes=0))
 
     assert api.statuses == [TaskStatus.STOPPING, TaskStatus.FAILED]
     assert 'was not finished within 0 minutes' in api.reports[-1][2]
 
 
 def test_reports_nothing_for_a_task_that_is_already_finished(tmp_path, monkeypatch):
-    # The janitor failed the task as stuck while this worker was still working. Every transition would
+    # The cleaner failed the task as stuck while this worker was still working. Every transition would
     # be refused, so the only thing left to do is to not leave an archive behind.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task(status=TaskStatus.FAILED))
@@ -236,7 +236,7 @@ def test_reports_nothing_for_a_task_that_is_already_finished(tmp_path, monkeypat
 
 def test_deletes_the_archive_when_the_success_report_is_refused(tmp_path, monkeypatch):
     # The archive is uploaded and then nothing points at it. Leaving it would be a file no user can
-    # reach and no sweep will remove, because expiry only looks at tasks that did succeed.
+    # reach and no cleanup will remove, because expiry only looks at tasks that did succeed.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.reject_reports = True
@@ -270,7 +270,7 @@ def test_keeps_the_users_own_readme_and_renames_the_note(tmp_path, monkeypatch):
 
     api = FakeApi(_task())
     bucket = FakeBucket()
-    monkeypatch.setattr('sas.worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
     captured = {}
 
     def capture(path, key, heartbeat):
@@ -280,7 +280,7 @@ def test_keeps_the_users_own_readme_and_renames_the_note(tmp_path, monkeypatch):
         return path.stat().st_size
 
     bucket.upload = capture
-    ArchiveWorker(api, _service_config(tmp_path), _platform(), api.task, bucket=bucket).run()
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task, bucket=bucket).run()
 
     assert api.statuses == [TaskStatus.SUCCESS]
     assert captured['readme'] == 'the user wrote this'
@@ -293,7 +293,7 @@ def test_fails_the_task_when_the_storage_is_gone(tmp_path, monkeypatch):
     # The user deletes the storage right after asking for the archive. The API refuses the load, and the
     # refusal must end the task with a message the user can act on - not be mistaken for "the API will
     # not accept anything about this task any more", which reports nothing and leaves it RUNNING until
-    # the janitor fails it hours later.
+    # the cleaner fails it hours later.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.storage_missing = True
@@ -320,7 +320,7 @@ def test_writes_under_the_configured_prefix_and_reports_where(tmp_path, monkeypa
     # prefix change safe is that the worker reports the key it actually used.
     source = FakeSource({'a.txt': b'hello'})
 
-    api, bucket = _run(tmp_path, monkeypatch, source, platform=_platform(prefix='team/archives/'))
+    api, bucket = _run(tmp_path, monkeypatch, source, archive_config=_archive_config(prefix='team/archives/'))
 
     assert bucket.uploaded_key == f'team/archives/{TASK_ID}.zip'
     _, result, _ = api.reports[0]
@@ -331,7 +331,7 @@ def test_writes_under_the_configured_prefix_and_reports_where(tmp_path, monkeypa
 def test_writes_at_the_bucket_root_when_the_prefix_is_empty(tmp_path, monkeypatch):
     source = FakeSource({'a.txt': b'hello'})
 
-    api, bucket = _run(tmp_path, monkeypatch, source, platform=_platform(prefix=''))
+    api, bucket = _run(tmp_path, monkeypatch, source, archive_config=_archive_config(prefix=''))
 
     assert bucket.uploaded_key == f'{TASK_ID}.zip'
 
@@ -341,14 +341,14 @@ def test_builds_the_destination_client_from_the_destination_storages_region(tmp_
     # which returns before this happens.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
-    monkeypatch.setattr('sas.worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
     # The real `build_s3_client` runs - that is what is under test, and it reaches nothing but the fake
     # API - while the bucket around it is replaced, so no upload is attempted. The arguments of a call
     # are evaluated before the call, so replacing the class does not skip the client it is given.
-    monkeypatch.setattr('sas.worker.ArchiveBucket',
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.ArchiveBucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 
-    ArchiveWorker(api, _service_config(tmp_path), _platform(), api.task).run()
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 
     # The region of the storage `load_storage` answered with, and the source is faked out entirely -
     # so this one region read is the destination's own.
@@ -362,9 +362,9 @@ def test_fails_the_task_when_the_destination_is_not_an_object_storage(tmp_path, 
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.storage = Storage(id=9, name='shared-fs', type=StorageType.NFS, path='10.0.0.1:/export')
-    monkeypatch.setattr('sas.worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
 
-    ArchiveWorker(api, _service_config(tmp_path), _platform(), api.task).run()
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 
     assert api.statuses == [TaskStatus.FAILED]
     assert 'is of type NFS' in api.reports[0][2]
@@ -374,9 +374,9 @@ def test_fails_the_task_when_the_destinations_region_cannot_be_read(tmp_path, mo
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.region_missing = True
-    monkeypatch.setattr('sas.worker.open_source', lambda *_args: source)
+    monkeypatch.setattr('sas.worker.archive_preparation_worker.open_source', lambda *_args: source)
 
-    ArchiveWorker(api, _service_config(tmp_path), _platform(), api.task).run()
+    ArchivePreparationWorker(api, _service_config(tmp_path), _archive_config(), api.task).run()
 
     # Reported as the task's own failure with the reason in it, not as an internal error: an
     # administrator reading it should see which storage and what the API said.
