@@ -17,6 +17,9 @@ STUBS=$WORK/stubs
 SANDBOX=$WORK/state/dev-api
 export STUB_CALLS=$WORK/calls STUB_KEYSTORES=$WORK/keystores HANDED=$WORK/handed
 OUTPUT=$WORK/output
+# Where the copy of the sandbox's SSH key goes: a directory that is not there yet.
+NODE_KEY=$WORK/ssh/node-key.pem
+NODE_KEY_BODY=ZmFrZSBub2RlIGtleQ
 TOKEN=abcdef.0123456789abcdef
 FAILURES=0
 STATUS=
@@ -51,7 +54,7 @@ run() {
   if PATH=$STUBS:$PATH TOOLS_ENTRYPOINT=$STUBS/handed-to JAVA_HOME=$WORK/java ROUTE_CHECK_SECONDS=0 \
     SANDBOX_DIR=$SANDBOX SANDBOX_VPC_CIDRS="10.0.0.0/16 10.1.0.0/16" \
     SANDBOX_SOCKS_PROXY=cp-sandbox-dev-api-master:1080 SANDBOX_MASTER_IP=10.0.0.7 \
-    bash "$ENTRYPOINT" "$@" >"$OUTPUT" 2>&1; then
+    SANDBOX_NODE_SSH_KEY=$NODE_KEY bash "$ENTRYPOINT" "$@" >"$OUTPUT" 2>&1; then
     STATUS=0
   else
     STATUS=$?
@@ -96,6 +99,10 @@ EOF
   openssl pkey -in "$SANDBOX/jwt-private-key.pem" -pubout -out "$SANDBOX/jwt-public-key.pem"
   printf '%s\n' "$TOKEN" >"$SANDBOX/kube-join-token.secret"
   printf 'kind: Config\n' >"$SANDBOX/kubeconfig.secret"
+  # As a mounted file may look: readable by others.
+  printf '%s\n' '-----BEGIN OPENSSH PRIVATE KEY-----' "$NODE_KEY_BODY" '-----END OPENSSH PRIVATE KEY-----' \
+    >"$SANDBOX/ssh-key.pem"
+  chmod 0644 "$SANDBOX/ssh-key.pem"
 }
 
 test_entrypoint() {
@@ -130,8 +137,10 @@ test_entrypoint() {
   check "the kubeconfig is where the node scripts read it, for root only, and KUBECONFIG names it" \
     "$(handed KUBECONFIG) $(cmp -s "$HOME/.kube/config" "$SANDBOX/kubeconfig.secret" && echo copied) $(stat -c %a "$HOME/.kube/config")" \
     "$HOME/.kube/config copied 600"
+  check "the sandbox's SSH key is where SANDBOX_NODE_SSH_KEY says, for root only, for the API to log in to the nodes with" \
+    "$(cmp -s "$NODE_KEY" "$SANDBOX/ssh-key.pem" && echo copied) $(stat -c '%a %u' "$NODE_KEY")" 'copied 600 0'
   check "it prints no secret" \
-    "$(grep -c -e "$TOKEN" -e "$(sed -n 2p "$SANDBOX/jwt-private-key.pem")" "$OUTPUT" || true)" 0
+    "$(grep -c -e "$TOKEN" -e "$(sed -n 2p "$SANDBOX/jwt-private-key.pem")" -e "$NODE_KEY_BODY" "$OUTPUT" || true)" 0
 
   run java -jar api.jar
   check "it runs again in the same container, as after docker start: the tun device is kept, the certificate trusted again" \
@@ -147,6 +156,13 @@ test_entrypoint() {
     >"$OUTPUT" 2>&1; then STATUS=0; else STATUS=$?; fi
   check "it refuses to start without the sandbox's settings, before it changes anything" \
     "$STATUS $(grep -c 'SANDBOX_VPC_CIDRS' "$OUTPUT") $(wc -l <"$STUB_CALLS")" '1 1 0'
+
+  : >"$STUB_CALLS"
+  if PATH=$STUBS:$PATH TOOLS_ENTRYPOINT=$STUBS/handed-to SANDBOX_DIR=$SANDBOX SANDBOX_VPC_CIDRS=10.0.0.0/16 \
+    SANDBOX_SOCKS_PROXY=cp-sandbox-dev-api-master:1080 SANDBOX_MASTER_IP=10.0.0.7 bash "$ENTRYPOINT" true \
+    >"$OUTPUT" 2>&1; then STATUS=0; else STATUS=$?; fi
+  check "and without where to copy the SSH key to" \
+    "$STATUS $(grep -c 'SANDBOX_NODE_SSH_KEY' "$OUTPUT") $(wc -l <"$STUB_CALLS")" '1 1 0'
 }
 
 # docker/service-entrypoint.sh, which the optional services' containers start with, in the same
