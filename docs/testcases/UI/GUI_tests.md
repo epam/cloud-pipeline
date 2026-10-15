@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (141 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -254,6 +254,10 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-2603**](Data_storages/NFS_mount/EPMCMBIBPC-2603.md) | Validation of NFS storage creation with spaces in path | :white_check_mark: |
 | [**EPMCMBIBPC-2604**](Data_storages/NFS_mount/EPMCMBIBPC-2604.md) | Create files and folders with spaces in name | :white_check_mark: |
 | [**EPMCMBIBPC-2605**](Data_storages/NFS_mount/EPMCMBIBPC-2605.md) | Remove files and folders with spaces in name | :white_check_mark: |
+| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md) | Exclude NFS storage from file indexing by metadata attribute |  |
+| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md) | Resume NFS storage file indexing after removing the exclusion attribute |  |
+| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md) | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report |  |
+| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md) | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing |  |
 | [**EPMCMBIBPC-2401**](Data_storages/Shared_storages/EPMCMBIBPC-2401.md) | [MANUAL] Validation of shared bucket creation |  |
 | [**EPMCMBIBPC-2402**](Data_storages/Shared_storages/EPMCMBIBPC-2402.md) | [MANUAL] Check access to shared bucket |  |
 | [**EPMCMBIBPC-2403**](Data_storages/Shared_storages/EPMCMBIBPC-2403.md) | [MANUAL] Upload files on shared bucket |  |
