@@ -26,7 +26,8 @@ import {
   buildPoolPayload,
   buildSchedulePayload,
   buildRunOwnerFilter,
-  getReservationDisplayInstanceCount
+  getReservationDisplayInstanceCount,
+  getCapacityReservationStatus
 } from './helpers';
 import {mapFilters} from '../filters-control';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
@@ -56,6 +57,7 @@ class EditHotNodePool extends React.Component {
     reservationRequestedEndDate: undefined,
     reservationCommitmentDurationDays: undefined,
     reservationInstanceCount: undefined,
+    reservationStatus: undefined,
     modified: false,
     valid: true,
     disk: undefined,
@@ -257,6 +259,11 @@ class EditHotNodePool extends React.Component {
           ? Math.round(matchedReservation.commitmentDuration / SECONDS_PER_DAY)
           : undefined,
         reservationInstanceCount: getReservationDisplayInstanceCount(matchedReservation),
+        // The reservation record is the source of truth for its own lifecycle, so the
+        // control's notice is driven by this rather than assuming the pool is still
+        // waiting - the record may equally be cancelled, failed, finished or already
+        // scheduled.
+        reservationStatus: getCapacityReservationStatus(pool, matchedReservation),
         disk,
         initialDisk: disk,
         instanceType,
@@ -345,6 +352,7 @@ class EditHotNodePool extends React.Component {
         reservationRequestedEndDate: undefined,
         reservationCommitmentDurationDays: undefined,
         reservationInstanceCount: undefined,
+        reservationStatus: undefined,
         disk: undefined,
         initialDisk: undefined,
         instanceType: undefined,
@@ -731,6 +739,7 @@ class EditHotNodePool extends React.Component {
       reservationRequestedEndDate,
       reservationCommitmentDurationDays,
       reservationInstanceCount,
+      reservationStatus,
       validation,
       touched,
       allowedInstanceTypes,
@@ -755,6 +764,7 @@ class EditHotNodePool extends React.Component {
             </Button>
             <Button
               disabled={disabled}
+              loading={disabled}
               onClick={this.onSave}
               type="primary"
             >
@@ -799,6 +809,7 @@ class EditHotNodePool extends React.Component {
           reservationRequestedEndDate={reservationRequestedEndDate}
           reservationCommitmentDurationDays={reservationCommitmentDurationDays}
           reservationInstanceCount={reservationInstanceCount}
+          reservationStatus={reservationStatus}
           regions={this.regions}
           instanceTypes={this.instanceTypes}
           allowedInstanceTypes={allowedInstanceTypes}

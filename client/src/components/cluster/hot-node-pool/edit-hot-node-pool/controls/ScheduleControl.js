@@ -211,7 +211,7 @@ class ScheduleControl extends React.Component {
   };
 
   render () {
-    const {className, onRemove, invalid} = this.props;
+    const {className, onRemove, invalid, disabled} = this.props;
     const {
       from,
       fromTime,
@@ -230,6 +230,7 @@ class ScheduleControl extends React.Component {
             className={classNames({'cp-error': invalid})}
             style={{width: 200}}
             value={from}
+            disabled={disabled}
             onChange={this.onChangeFrom}
             filterOption={(input, option) =>
               option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -251,6 +252,7 @@ class ScheduleControl extends React.Component {
             style={{marginLeft: 5}}
             value={fromTime}
             format="HH:mm"
+            disabled={disabled}
             onChange={this.onChangeFromTime}
           />
           <span
@@ -264,6 +266,7 @@ class ScheduleControl extends React.Component {
             showSearch
             style={{width: 200}}
             value={to}
+            disabled={disabled}
             onChange={this.onChangeTo}
             filterOption={(input, option) =>
               option.props.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -285,12 +288,14 @@ class ScheduleControl extends React.Component {
             style={{marginLeft: 5}}
             value={toTime}
             format="HH:mm"
+            disabled={disabled}
             onChange={this.onChangeToTime}
           />
         </div>
         <Button
           size="small"
           type="danger"
+          disabled={disabled}
           onClick={onRemove}
         >
           <Icon type="delete" />
@@ -305,7 +310,8 @@ ScheduleControl.propTypes = {
   onChange: PropTypes.func,
   onRemove: PropTypes.func,
   className: PropTypes.string,
-  invalid: PropTypes.bool
+  invalid: PropTypes.bool,
+  disabled: PropTypes.bool
 };
 
 export {compareSchedulesArray, scheduleIsValid, parseDay};

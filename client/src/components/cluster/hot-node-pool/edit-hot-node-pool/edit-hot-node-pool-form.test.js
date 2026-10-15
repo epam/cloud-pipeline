@@ -426,13 +426,15 @@ test('readOnly disables Region/Price/Instance Type/AMI/Disk, not Pool name/Nodes
   expect(screen.queryByText('Add docker image')).not.toBeInTheDocument();
 });
 
-test('disabled disables every field; docker and labels Add buttons, but not schedule Add', () => {
+// `disabled` is the parent's "a save is in flight" flag, so it blocks the whole form -
+// the Add buttons of every section included, the weekly schedule's among them.
+test('disabled disables every field and the docker, labels and schedule Add buttons', () => {
   renderForm({disabled: true});
   expect(within(row('Pool name:')).getByRole('textbox')).toBeDisabled();
   expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
   expect(selectIsDisabled('Region:')).toBe(true);
   expect(screen.getByText('Add node label').closest('button')).toBeDisabled();
-  expect(screen.getByText('Add schedule').closest('button')).not.toBeDisabled();
+  expect(screen.getByText('Add schedule').closest('button')).toBeDisabled();
 });
 
 test('allowedInstanceTypesPending disables Instance Type and Price type but not Region', () => {

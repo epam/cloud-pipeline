@@ -16,34 +16,88 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {DatePicker} from 'antd';
+import {Alert, DatePicker} from 'antd';
 import classNames from 'classnames';
 import moment from 'moment-timezone';
 import StringInput from './StringInput';
 import HintControl from './HintControl';
+import {humanizeReservationStatus} from '../helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
-  SECONDS_PER_DAY,
-  MIN_COMMITMENT_DURATION_DAYS
+  MIN_COMMITMENT_DURATION_DAYS,
+  RESERVATION_STATUS_PENDING,
+  RESERVATION_STATUS_REQUIRED_APPROVE,
+  RESERVATION_STATUS_APPROVED,
+  RESERVATION_STATUS_ASSESSING,
+  RESERVATION_STATUS_SCHEDULED,
+  RESERVATION_STATUS_ACTIVE,
+  RESERVATION_STATUS_FINALIZING,
+  RESERVATION_STATUS_FINISHED,
+  RESERVATION_STATUS_PURCHASE_FAILED,
+  RESERVATION_STATUS_FAILED,
+  RESERVATION_STATUS_CANCELLED
 } from '../constants';
 import styles from '../../edit-hot-node-pool.css';
 
-// undefined when any input is missing/unparseable (no hint is shown then);
-// true/false when all three are usable.
-export function windowCoversDuration (start, end, durationDays) {
-  const duration = Number(durationDays);
-  if (
-    durationDays === undefined || durationDays === null || durationDays === '' ||
-    Number.isNaN(duration) || duration <= 0
-  ) {
-    return undefined;
+// Keyed by `getCapacityReservationStatus`'s return value, exactly as `pool-card.js` keys
+// its own presentation map - the reservation record is the source of truth for its own
+// lifecycle, so the notice tells the user what is actually happening instead of always
+// assuming a brand new pool still waiting on the capacity reservation service.
+const RESERVATION_STATUS_NOTICE = {
+  [RESERVATION_STATUS_REQUIRED_APPROVE]: {
+    type: 'info',
+    message: 'This reservation is waiting for an administrator\'s approval.'
+  },
+  [RESERVATION_STATUS_PENDING]: {
+    type: 'info',
+    message: 'This pool is waiting to be scheduled by the capacity reservation service.'
+  },
+  [RESERVATION_STATUS_APPROVED]: {
+    type: 'info',
+    message: 'This reservation is approved and waiting to be placed with the cloud provider.'
+  },
+  [RESERVATION_STATUS_ASSESSING]: {
+    type: 'info',
+    message: 'The cloud provider is looking for capacity inside this window.'
+  },
+  [RESERVATION_STATUS_SCHEDULED]: {
+    type: 'info',
+    message: 'This reservation is scheduled. Its granted window is not available here yet.'
+  },
+  [RESERVATION_STATUS_ACTIVE]: {
+    type: 'info',
+    message: 'This reservation is active.'
+  },
+  [RESERVATION_STATUS_FINALIZING]: {
+    type: 'info',
+    message: 'This reservation is finishing.'
+  },
+  [RESERVATION_STATUS_FINISHED]: {
+    type: 'warning',
+    message: 'This reservation has ended.'
+  },
+  [RESERVATION_STATUS_PURCHASE_FAILED]: {
+    type: 'error',
+    message: 'The cloud provider could not place this reservation.'
+  },
+  [RESERVATION_STATUS_FAILED]: {
+    type: 'error',
+    message: 'This reservation failed.'
+  },
+  [RESERVATION_STATUS_CANCELLED]: {
+    type: 'warning',
+    message: 'This reservation was cancelled.'
   }
-  const startMoment = moment(start, COMMITMENT_DATE_TIME_FORMAT, true);
-  const endMoment = moment(end, COMMITMENT_DATE_TIME_FORMAT, true);
-  if (!startMoment.isValid() || !endMoment.isValid()) {
-    return undefined;
-  }
-  return endMoment.diff(startMoment, 'seconds') >= duration * SECONDS_PER_DAY;
+};
+
+// A status this map does not know (an older client against a newer backend release) must
+// not blank the section or throw: fall back to a neutral notice with a label humanised
+// from the raw value.
+function getReservationStatusNotice (status) {
+  return RESERVATION_STATUS_NOTICE[status] || {
+    type: 'info',
+    message: `Reservation status: ${humanizeReservationStatus(status)}.`
+  };
 }
 
 // A future-dated pool reserves capacity for a single one-time absolute window, unlike Default
@@ -67,11 +121,12 @@ function ReservationScheduleControl ({
   startHint,
   endHint,
   durationHint,
+  reservationStatus,
   onChangeStart,
   onChangeEnd,
   onChangeDuration
 }) {
-  const covers = windowCoversDuration(start, end, durationDays);
+  const notice = reservationStatus ? getReservationStatusNotice(reservationStatus) : undefined;
   return (
     <div>
       <div className={styles.formRow}>
@@ -130,16 +185,9 @@ function ReservationScheduleControl ({
         onChange={onChangeDuration}
       />
       {
-        covers === true && (
+        notice && (
           <div className={styles.formRow}>
-            <span>Reservation window covers this duration</span>
-          </div>
-        )
-      }
-      {
-        covers === false && (
-          <div className={styles.formRow}>
-            <span>This duration does not fit in the selected window</span>
+            <Alert type={notice.type} showIcon message={notice.message} />
           </div>
         )
       }
@@ -159,6 +207,7 @@ ReservationScheduleControl.propTypes = {
   startHint: PropTypes.node,
   endHint: PropTypes.node,
   durationHint: PropTypes.node,
+  reservationStatus: PropTypes.string,
   onChangeStart: PropTypes.func,
   onChangeEnd: PropTypes.func,
   onChangeDuration: PropTypes.func

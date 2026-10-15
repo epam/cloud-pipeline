@@ -24,7 +24,8 @@ import {
   buildCapacityReservationRequest,
   buildRunOwnerFilter,
   getCapacityReservationStatus,
-  getReservationDisplayInstanceCount
+  getReservationDisplayInstanceCount,
+  humanizeReservationStatus
 } from './helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
@@ -829,6 +830,21 @@ describe('getCapacityReservationStatus', () => {
       {isCapacityReservation: false},
       {status: 'SCHEDULED'}
     )).toBeUndefined();
+  });
+});
+
+describe('humanizeReservationStatus', () => {
+  it('humanises a multi-word status', () => {
+    expect(humanizeReservationStatus('ASSESSING_BY_CLOUD_PROVIDER'))
+      .toBe('Assessing by cloud provider');
+  });
+
+  it('humanises a single-word status', () => {
+    expect(humanizeReservationStatus('CANCELLED')).toBe('Cancelled');
+  });
+
+  it('returns an empty string unchanged rather than throwing', () => {
+    expect(humanizeReservationStatus('')).toBe('');
   });
 });
 

@@ -617,6 +617,54 @@ test(
   }
 );
 
+// The reservation record is the source of truth for its own status, so a record that is
+// not simply "not yet scheduled" must show its own sentence rather than the generic
+// "waiting to be scheduled" one.
+test(
+  'an unscheduled reservation whose record is CANCELLED shows the cancelled sentence, ' +
+  'not the "waiting to be scheduled" one',
+  async () => {
+    await renderPool({
+      pool: reservationPool({startDate: undefined, endDate: undefined}),
+      reservations: [{
+        nodePoolId: reservationPool().id,
+        requestedStartDate: '2026-12-27 12:49:19.968',
+        requestedEndDate: '2027-01-10 12:49:23.291',
+        commitmentDuration: 1209600,
+        status: 'CANCELLED'
+      }]
+    });
+
+    expect(screen.getByText('This reservation was cancelled.')).toBeInTheDocument();
+    expect(screen.queryByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'an unscheduled reservation whose record is REQUIRED_APPROVE shows the approval sentence',
+  async () => {
+    await renderPool({
+      pool: reservationPool({startDate: undefined, endDate: undefined}),
+      reservations: [{
+        nodePoolId: reservationPool().id,
+        requestedStartDate: '2026-12-27 12:49:19.968',
+        requestedEndDate: '2027-01-10 12:49:23.291',
+        commitmentDuration: 1209600,
+        status: 'REQUIRED_APPROVE'
+      }]
+    });
+
+    expect(
+      screen.getByText('This reservation is waiting for an administrator\'s approval.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).not.toBeInTheDocument();
+  }
+);
+
 test('a reservation pool disables Count and Price type; a Default pool does not', async () => {
   await renderPool({pool: reservationPool()});
   expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
@@ -970,4 +1018,59 @@ test('a visible false->true transition re-reads the pool prop and fetches roles'
     expect(api.calls.some(c => c.path === '/role/loadAll')).toBe(true);
   });
   await flushPromises();
+});
+
+// While the parent operation is in flight the modal is blocked: the submit button
+// carries antd's own loading state, and nothing in the form can be changed - which for
+// a Default pool includes the weekly Schedule section, the one part of the form that
+// used to stay editable mid-save.
+test('while saving, the submit button is disabled and shows its loading state', async () => {
+  await renderPool({pool: fullPool(), disabled: true});
+
+  const saveButton = screen.getByRole('button', {name: 'SAVE'});
+  expect(saveButton).toBeDisabled();
+  // antd 2's Button renders its spinner as an icon and marks itself with this class;
+  // there is no accessible attribute for the loading state at this version.
+  expect(saveButton).toHaveClass('ant-btn-loading');
+});
+
+test('while creating, the CREATE button is disabled and shows its loading state', async () => {
+  await renderPool({disabled: true});
+
+  const createButton = screen.getByRole('button', {name: 'CREATE'});
+  expect(createButton).toBeDisabled();
+  expect(createButton).toHaveClass('ant-btn-loading');
+});
+
+test('the submit button carries no loading state when no operation is running', async () => {
+  await renderPool({pool: fullPool()});
+
+  const saveButton = screen.getByRole('button', {name: 'SAVE'});
+  expect(saveButton).not.toBeDisabled();
+  expect(saveButton).not.toHaveClass('ant-btn-loading');
+});
+
+test('while saving, the Schedule section of a Default pool is blocked', async () => {
+  await renderPool({pool: fullPool(), disabled: true});
+
+  expect(screen.getByRole('button', {name: 'Add schedule'})).toBeDisabled();
+  // The schedule entry's own controls: its two day Selects and its two time inputs.
+  within(row('Starts on:')).getAllByRole('combobox').forEach(combobox => {
+    expect(combobox.closest('.ant-select')).toHaveClass('ant-select-disabled');
+  });
+  within(row('Starts on:')).getAllByRole('textbox').forEach(input => {
+    expect(input).toBeDisabled();
+  });
+});
+
+test('the Schedule section of a Default pool is editable when nothing is saving', async () => {
+  await renderPool({pool: fullPool()});
+
+  expect(screen.getByRole('button', {name: 'Add schedule'})).not.toBeDisabled();
+  within(row('Starts on:')).getAllByRole('combobox').forEach(combobox => {
+    expect(combobox.closest('.ant-select')).not.toHaveClass('ant-select-disabled');
+  });
+  within(row('Starts on:')).getAllByRole('textbox').forEach(input => {
+    expect(input).not.toBeDisabled();
+  });
 });

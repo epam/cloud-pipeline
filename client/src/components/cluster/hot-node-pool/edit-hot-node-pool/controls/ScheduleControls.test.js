@@ -32,7 +32,7 @@ test('renders one entry per schedule item', () => {
   expect(screen.getAllByText('Starts on:')).toHaveLength(2);
 });
 
-test('Add schedule calls onAdd and is never disabled', async () => {
+test('Add schedule calls onAdd and is enabled while nothing disables the form', async () => {
   const onAdd = fn();
   render(
     <ScheduleControls schedule={[]} onAdd={onAdd} onChange={() => fn()} onRemove={() => fn()} />
@@ -82,4 +82,29 @@ test('the error row shows only when both error and touched are truthy', () => {
     />
   );
   expect(screen.getByText('Invalid schedule')).toBeInTheDocument();
+});
+
+// `disabled` is how the form blocks itself while a save is in flight, so every control
+// here has to honour it - including each entry's own selects, time pickers and remove
+// button, which are rendered by `ScheduleControl` rather than by this component.
+test('disabled blocks Add schedule and every control of each entry', () => {
+  render(
+    <ScheduleControls
+      schedule={[entry]}
+      disabled
+      onAdd={fn()}
+      onChange={() => fn()}
+      onRemove={() => fn()}
+    />
+  );
+
+  expect(screen.getByRole('button', {name: 'Add schedule'})).toBeDisabled();
+  // The entry's remove button carries an icon and no text.
+  expect(screen.getAllByRole('button').find(b => !b.textContent)).toBeDisabled();
+  screen.getAllByRole('textbox').forEach(input => expect(input).toBeDisabled());
+  // antd's Select combobox carries no native `disabled` attribute at this version; the
+  // state is a class on the `.ant-select` ancestor instead.
+  screen.getAllByRole('combobox').forEach(combobox => {
+    expect(combobox.closest('.ant-select')).toHaveClass('ant-select-disabled');
+  });
 });

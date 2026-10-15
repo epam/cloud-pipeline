@@ -27,7 +27,8 @@ import DockerImageDetails from './docker-image-details';
 import {parseDay} from './edit-hot-node-pool/controls/ScheduleControl';
 import {
   getCapacityReservationStatus,
-  getReservationDisplayInstanceCount
+  getReservationDisplayInstanceCount,
+  humanizeReservationStatus
 } from './edit-hot-node-pool/helpers';
 import {
   RESERVATION_STATUS_PENDING,
@@ -141,18 +142,6 @@ const RESERVATION_STATUS_PRESENTATION = {
   [RESERVATION_STATUS_FAILED]: {tag: 'critical', label: 'Failed'},
   [RESERVATION_STATUS_CANCELLED]: {tag: undefined, label: 'Cancelled'}
 };
-
-// A status this map does not know (an older client against a newer backend release) must
-// not blank the card or throw: fall back to a neutral tag and a label humanised from the
-// raw value, e.g. `SOME_NEW_STATUS` -> "Some new status".
-function humanizeReservationStatus (status) {
-  const words = `${status}`.toLowerCase().split('_').filter(Boolean);
-  if (!words.length) {
-    return status;
-  }
-  return `${words[0][0].toUpperCase()}${words[0].substring(1)} ${words.slice(1).join(' ')}`
-    .trim();
-}
 
 function getReservationStatusPresentation (status) {
   return RESERVATION_STATUS_PRESENTATION[status] || {

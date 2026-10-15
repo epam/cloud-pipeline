@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Alert, Select} from 'antd';
+import {Select} from 'antd';
 import classNames from 'classnames';
 import StringInput from './controls/StringInput';
 import SelectInput from './controls/SelectInput';
@@ -180,6 +180,7 @@ function EditHotNodePoolForm ({
   reservationRequestedEndDate,
   reservationCommitmentDurationDays,
   reservationInstanceCount,
+  reservationStatus,
   regions,
   instanceTypes,
   allowedInstanceTypes,
@@ -259,28 +260,18 @@ function EditHotNodePoolForm ({
               />
             ) : (
               // Not yet scheduled: show the originally-requested window read-only so the
-              // user can see what was requested, plus an informational disclaimer.
-              <div>
-                <ReservationScheduleControl
-                  start={reservationRequestedStartDate}
-                  end={reservationRequestedEndDate}
-                  durationDays={reservationCommitmentDurationDays}
-                  disabled
-                  onChangeStart={() => {}}
-                  onChangeEnd={() => {}}
-                  onChangeDuration={() => {}}
-                />
-                <div className={styles.formRow}>
-                  <Alert
-                    type="info"
-                    showIcon
-                    message={
-                      'This pool is waiting to be scheduled by the capacity ' +
-                      'reservation service.'
-                    }
-                  />
-                </div>
-              </div>
+              // user can see what was requested; the control itself carries the notice
+              // for the reservation's current status.
+              <ReservationScheduleControl
+                start={reservationRequestedStartDate}
+                end={reservationRequestedEndDate}
+                durationDays={reservationCommitmentDurationDays}
+                disabled
+                reservationStatus={reservationStatus}
+                onChangeStart={() => {}}
+                onChangeEnd={() => {}}
+                onChangeDuration={() => {}}
+              />
             )
           ) : (
             // New pool: editable controls.
@@ -309,6 +300,7 @@ function EditHotNodePoolForm ({
             schedule={schedule}
             error={validation.schedule}
             touched={touched.schedule}
+            disabled={disabled}
             onAdd={() => onChange('schedule', {action: 'add'})}
             onChange={id => payload => onChange('schedule', {action: 'update', id, payload})}
             onRemove={id => () => onChange('schedule', {action: 'remove', id})}
@@ -550,6 +542,7 @@ EditHotNodePoolForm.propTypes = {
   reservationRequestedEndDate: PropTypes.string,
   reservationCommitmentDurationDays: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   reservationInstanceCount: PropTypes.number,
+  reservationStatus: PropTypes.string,
   regions: PropTypes.array,
   instanceTypes: PropTypes.array,
   // MobX wraps a Remote's resolved value in an ObservableArray, which fails a

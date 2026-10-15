@@ -25,6 +25,7 @@ function ScheduleControls ({
   schedule,
   error,
   touched,
+  disabled,
   onAdd,
   onChange,
   onRemove
@@ -39,6 +40,7 @@ function ScheduleControls ({
             onChange={onChange(s.id)}
             onRemove={onRemove(s.id)}
             invalid={!scheduleIsValid(s) && touched}
+            disabled={disabled}
           />
         </div>
       ))}
@@ -46,6 +48,7 @@ function ScheduleControls ({
         <Button
           onClick={onAdd}
           type="dashed"
+          disabled={disabled}
         >
           <Icon type="plus" />
           Add schedule
@@ -74,6 +77,7 @@ ScheduleControls.propTypes = {
   schedule: PropTypes.array,
   error: PropTypes.string,
   touched: PropTypes.bool,
+  disabled: PropTypes.bool,
   onAdd: PropTypes.func,
   onChange: PropTypes.func,
   onRemove: PropTypes.func

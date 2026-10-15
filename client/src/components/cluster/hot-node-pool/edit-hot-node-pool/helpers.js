@@ -470,6 +470,19 @@ export function getCapacityReservationStatus (pool, reservation) {
     : RESERVATION_STATUS_PENDING;
 }
 
+// A status none of the presentation maps keyed off `getCapacityReservationStatus` knows
+// (an older client against a newer backend release) must still read as something rather
+// than blank out or throw, so they fall back to the raw enum value humanised here:
+// `SOME_NEW_STATUS` -> "Some new status".
+export function humanizeReservationStatus (status) {
+  const words = `${status}`.toLowerCase().split('_').filter(Boolean);
+  if (!words.length) {
+    return status;
+  }
+  return `${words[0][0].toUpperCase()}${words[0].substring(1)} ${words.slice(1).join(' ')}`
+    .trim();
+}
+
 // The reserved count a matched reservation record carries is only real while that
 // reservation still holds, or may still hold, capacity - a terminal status (see
 // `RESERVATION_TERMINAL_STATUSES`) means it never will again, so neither the pool card

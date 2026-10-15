@@ -16,81 +16,13 @@
 
 import React from 'react';
 import {render, screen, within, change, hover, fn} from '@test';
-import ReservationScheduleControl, {windowCoversDuration} from './ReservationScheduleControl';
+import ReservationScheduleControl from './ReservationScheduleControl';
 
 // Mirrors the `row` helper in `../index.test.js`: the label span's closest `div` is the
 // `formRow` div holding both the label and its control.
 function row (labelText) {
   return screen.getByText(labelText).closest('div');
 }
-
-describe('windowCoversDuration', () => {
-  test('a window well longer than the duration (in days) covers it', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-02-01 10:00:00.000', 14)
-    ).toBe(true);
-  });
-
-  test('an exact fit at 14 days covers the duration', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', 14)
-    ).toBe(true);
-  });
-
-  test('15 days in a 14-day window does not cover the duration', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', 15)
-    ).toBe(false);
-  });
-
-  test('undefined with no start', () => {
-    expect(
-      windowCoversDuration(undefined, '2026-01-15 10:00:00.000', 14)
-    ).toBeUndefined();
-  });
-
-  test('undefined with no end', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', undefined, 14)
-    ).toBeUndefined();
-  });
-
-  test('undefined with no duration', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', undefined)
-    ).toBeUndefined();
-  });
-
-  test('undefined with a zero duration', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', 0)
-    ).toBeUndefined();
-  });
-
-  test('undefined with a negative duration', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', '2026-01-15 10:00:00.000', -5)
-    ).toBeUndefined();
-  });
-
-  test('undefined with an unparseable start', () => {
-    expect(
-      windowCoversDuration('not-a-date', '2026-01-15 10:00:00.000', 14)
-    ).toBeUndefined();
-  });
-
-  test('undefined with an unparseable end', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00.000', 'not-a-date', 14)
-    ).toBeUndefined();
-  });
-
-  test('undefined with a start that is missing milliseconds (strict parsing)', () => {
-    expect(
-      windowCoversDuration('2026-01-01 10:00:00', '2026-01-15 10:00:00.000', 14)
-    ).toBeUndefined();
-  });
-});
 
 test('renders the three date/duration labels', () => {
   render(
@@ -222,53 +154,124 @@ test('changing Duration calls onChangeDuration', async () => {
 // show only when touched, independently") carry the proof instead: the end date is a real
 // input of its own, not a value derived from the other two fields.
 
-test('the fit hint reflects the window', () => {
-  const {rerender} = render(
-    <ReservationScheduleControl
-      start="2026-01-01 10:00:00.000"
-      end="2026-01-31 10:00:00.000"
-      durationDays={14}
-      onChangeStart={fn()}
-      onChangeEnd={fn()}
-      onChangeDuration={fn()}
-    />
-  );
-  expect(screen.getByText('Reservation window covers this duration')).toBeInTheDocument();
-  expect(
-    screen.queryByText('This duration does not fit in the selected window')
-  ).not.toBeInTheDocument();
+describe('the reservation status notice', () => {
+  test('no reservationStatus renders no alert at all', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(document.querySelector('.ant-alert')).not.toBeInTheDocument();
+  });
 
-  rerender(
-    <ReservationScheduleControl
-      start="2026-01-01 10:00:00.000"
-      end="2026-01-05 10:00:00.000"
-      durationDays={14}
-      onChangeStart={fn()}
-      onChangeEnd={fn()}
-      onChangeDuration={fn()}
-    />
-  );
-  expect(
-    screen.getByText('This duration does not fit in the selected window')
-  ).toBeInTheDocument();
-  expect(
-    screen.queryByText('Reservation window covers this duration')
-  ).not.toBeInTheDocument();
+  test('REQUIRED_APPROVE shows the approval sentence', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        reservationStatus="REQUIRED_APPROVE"
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(
+      screen.getByText('This reservation is waiting for an administrator\'s approval.')
+    ).toBeInTheDocument();
+  });
 
-  rerender(
-    <ReservationScheduleControl
-      start="2026-01-01 10:00:00.000"
-      end={undefined}
-      durationDays={14}
-      onChangeStart={fn()}
-      onChangeEnd={fn()}
-      onChangeDuration={fn()}
-    />
-  );
-  expect(screen.queryByText('Reservation window covers this duration')).not.toBeInTheDocument();
-  expect(
-    screen.queryByText('This duration does not fit in the selected window')
-  ).not.toBeInTheDocument();
+  test('the client-only PENDING fallback shows the "waiting to be scheduled" sentence', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        reservationStatus="PENDING"
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(screen.getByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).toBeInTheDocument();
+  });
+
+  test('SCHEDULED shows its own sentence, not the "waiting to be scheduled" one', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        reservationStatus="SCHEDULED"
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(screen.getByText(
+      'This reservation is scheduled. Its granted window is not available here yet.'
+    )).toBeInTheDocument();
+    expect(screen.queryByText(
+      'This pool is waiting to be scheduled by the capacity reservation service.'
+    )).not.toBeInTheDocument();
+  });
+
+  // antd 2 carries the alert's severity as a class, with no accessible attribute at this
+  // version - same gap `index.test.js`'s `selectIsDisabled` helper documents for `Select`.
+  test('CANCELLED shows the cancelled sentence at warning severity', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        reservationStatus="CANCELLED"
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(screen.getByText('This reservation was cancelled.')).toBeInTheDocument();
+    expect(document.querySelector('.ant-alert-warning')).toBeInTheDocument();
+  });
+
+  // Same antd-2 gap as above: severity is a class, not an accessible attribute.
+  test('FAILED shows the failed sentence at error severity', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        reservationStatus="FAILED"
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(screen.getByText('This reservation failed.')).toBeInTheDocument();
+    expect(document.querySelector('.ant-alert-error')).toBeInTheDocument();
+  });
+
+  test('an unknown status falls back to the humanised sentence', () => {
+    render(
+      <ReservationScheduleControl
+        start={undefined}
+        end={undefined}
+        durationDays={undefined}
+        reservationStatus="SOME_NEW_STATUS"
+        onChangeStart={fn()}
+        onChangeEnd={fn()}
+        onChangeDuration={fn()}
+      />
+    );
+    expect(screen.getByText('Reservation status: Some new status.')).toBeInTheDocument();
+  });
 });
 
 test('each of the three rows renders a hint trigger', () => {
