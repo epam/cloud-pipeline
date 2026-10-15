@@ -75,6 +75,8 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
 import DockerImageLink from './DockerImageLink';
+import RunDockerImageDigest
+from '../run-details/sections/parameters/instance-parameters/run-docker-image-digest';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
 import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
@@ -1092,6 +1094,9 @@ class Logs extends localization.LocalizedReactComponent {
       }
       if (run.dockerImage) {
         details.push({key: 'Docker image', value: (<DockerImageLink path={run.dockerImage} />)});
+      }
+      if (RunDockerImageDigest.available(run)) {
+        details.push({key: 'Docker image digest', value: (<RunDockerImageDigest run={run} />)});
       }
       if (instance.nodeImage) {
         details.push({key: 'Node image', value: `${instance.nodeImage}`});

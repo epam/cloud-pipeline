@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.docker.DockerImageDigestResolver;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
@@ -61,6 +62,7 @@ import org.mockito.Mock;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
@@ -101,6 +103,7 @@ import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -125,6 +128,8 @@ public class PipelineRunManagerLaunchTest {
     private static final String TEST_USER = "user";
     private static final String TEST_USER_2 = "user2";
     private static final String IMAGE = "testImage";
+    private static final String DIGEST = "sha256:digest";
+    private static final String ANOTHER_DIGEST = "sha256:another";
     private static final String STRING_TYPE = "string";
     private static final String RESOLVED_VALUE = "resolved";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
@@ -201,6 +206,9 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private RestartRunManager restartRunManager;
 
+    @Mock
+    private DockerImageDigestResolver dockerImageDigestResolver;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -248,6 +256,29 @@ public class PipelineRunManagerLaunchTest {
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
         doReturn(Optional.empty()).when(pipelineVersionManager).resolvePipelineVersion(any(), any());
+        doReturn(Optional.empty()).when(dockerImageDigestResolver).findDigestToPin(any());
+    }
+
+    @Test
+    public void launchPipelineShouldPinDockerImageDigestBeforePodLaunch() {
+        doReturn(Optional.of(DIGEST)).when(dockerImageDigestResolver).findDigestToPin(tool.getImage());
+        final AtomicReference<String> launchedDigest = new AtomicReference<>();
+        doAnswer(invocation -> {
+            launchedDigest.set(((PipelineRun) invocation.getArguments()[0]).getActualDockerImageDigest());
+            return DEFAULT_COMMAND;
+        }).when(pipelineLauncher).launch(any(), any(), any(), any());
+
+        final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
+
+        assertEquals(DIGEST, launchedDigest.get());
+        assertEquals(DIGEST, run.getActualDockerImageDigest());
+    }
+
+    @Test
+    public void launchPipelineShouldNotPinDockerImageDigestIfItIsNotResolved() {
+        final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
+
+        assertNull(run.getActualDockerImageDigest());
     }
 
     @Test
@@ -561,6 +592,29 @@ public class PipelineRunManagerLaunchTest {
         assertThat(restartedRun.getPipelineRunParameters().size(), is(1));
         assertEquals(TEST_NAME, restartedRun.getPipelineRunParameters().get(0).getName());
         assertEquals(TEST_STRING, restartedRun.getPipelineRunParameters().get(0).getValue());
+    }
+
+    @Test
+    public void restartRunShouldResolveDockerImageDigestAgain() {
+        final PipelineRun run = getRunToRestart();
+        run.setActualDockerImageDigest(DIGEST);
+        mockRestart();
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(dockerImageDigestResolver).findDigestToPin(IMAGE);
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertEquals(ANOTHER_DIGEST, restartedRun.getActualDockerImageDigest());
+    }
+
+    @Test
+    public void restartRunShouldNotCopyDockerImageDigestIfItIsNotResolved() {
+        final PipelineRun run = getRunToRestart();
+        run.setActualDockerImageDigest(DIGEST);
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNull(restartedRun.getActualDockerImageDigest());
     }
 
     private PipelineRun getRunToRestart() {
