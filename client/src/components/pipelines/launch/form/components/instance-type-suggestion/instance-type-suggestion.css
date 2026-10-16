@@ -53,10 +53,7 @@
   margin-right: 5px;
 }
 
-.count {
-  margin-left: 5px;
-}
-
+/* The count carries its own leading comma, so it abuts the region tag. */
 .region {
   margin-right: 0;
 }

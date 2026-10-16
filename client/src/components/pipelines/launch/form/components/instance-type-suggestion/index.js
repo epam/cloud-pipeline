@@ -144,11 +144,13 @@ class InstanceTypeSuggestion extends React.Component {
             displayName
             showProvider={false}
             displayFlag={false}
-          />,
+          />
           {
+            // The comma belongs to the count, not to the region: a pool whose
+            // reserved count is unknown must not render a trailing one.
             count !== undefined && (
               <span className={classNames(styles.count, 'cp-text-not-important')}>
-                {`${count} node${count === 1 ? '' : 's'} reserved`}
+                {`, ${count} node${count === 1 ? '' : 's'} reserved`}
               </span>
             )
           }

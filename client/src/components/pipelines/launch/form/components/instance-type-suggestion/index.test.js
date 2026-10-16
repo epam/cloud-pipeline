@@ -82,6 +82,27 @@ describe('InstanceTypeSuggestion', () => {
     expect(screen.getByText(/available until 1 Jun 2024/)).toBeInTheDocument();
   });
 
+  // The comma between the region and the count is the count's own, so a pool
+  // with no known count must not leave one dangling after the region.
+  it('separates the reserved count from the region with a comma', () => {
+    const {container} = renderSuggestion({
+      pools: [pool()],
+      instanceTypes: [instanceType('m5.large')]
+    });
+    expect(container.querySelector('[class*="infoMain"]').textContent)
+      .toBe('m5.largeeu-central-1, 2 nodes reserved');
+  });
+
+  it('renders no trailing comma when the reserved count is unknown', () => {
+    const {container} = renderSuggestion({
+      pools: [pool({count: undefined})],
+      reservations: [],
+      instanceTypes: [instanceType('m5.large')]
+    });
+    expect(container.querySelector('[class*="infoMain"]').textContent)
+      .toBe('m5.largeeu-central-1');
+  });
+
   it('filters out a pool outside the selected region', () => {
     renderSuggestion({
       pools: [pool({regionId: 2})],
