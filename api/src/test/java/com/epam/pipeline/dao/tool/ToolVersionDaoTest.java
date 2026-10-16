@@ -319,7 +319,7 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
         final List<ToolVersion> versions = Arrays.asList(toolVersion1, toolVersion2);
         versions.forEach(toolVersionDao::createToolVersionWithSettings);
 
-        final List<ToolVersion> actualVersions = toolVersionDao.loadAllLatestToolVersions();
+        final List<ToolVersion> actualVersions = toolVersionDao.loadAllDefaultToolVersions();
 
         final ToolVersion symlinkVersion = ToolVersion
                 .builder()
@@ -333,6 +333,27 @@ public class ToolVersionDaoTest extends AbstractJdbcTest {
                 .settings(Collections.singletonList(configurationEntry))
                 .build();
         final List<ToolVersion> expected = Arrays.asList(toolVersion1, symlinkVersion);
+
+        assertVersionsWithSettings(actualVersions, expected);
+    }
+
+    @Test
+    @Transactional
+    public void testLoadAllDefaultToolVersionsUsesToolDefaultVersion() {
+        final List<ToolVersion> versions = Arrays.asList(toolVersion1, toolVersion2);
+        versions.forEach(toolVersionDao::createToolVersionWithSettings);
+        toolDao.updateDefaultVersion(tool.getId(), TEST_VERSION_2);
+
+        final List<ToolVersion> actualVersions = toolVersionDao.loadAllDefaultToolVersions();
+
+        final ToolVersion symlinkVersion = ToolVersion
+                .builder()
+                .id(toolVersion2.getId())
+                .version(TEST_VERSION_2)
+                .toolId(symlink.getId())
+                .settings(Collections.singletonList(configurationEntry))
+                .build();
+        final List<ToolVersion> expected = Arrays.asList(toolVersion2, symlinkVersion);
 
         assertVersionsWithSettings(actualVersions, expected);
     }

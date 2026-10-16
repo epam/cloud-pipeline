@@ -60,6 +60,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     private String createToolQuery;
     private String updateToolQuery;
     private String updateOwnerQuery;
+    private String updateDefaultVersionQuery;
     private String loadToolQuery;
     private String loadAllToolsQuery;
     private String loadToolsByGroupQuery;
@@ -104,6 +105,19 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void updateOwner(Tool tool) {
         getNamedParameterJdbcTemplate().update(updateOwnerQuery, getParameters(tool, getConnection()));
+    }
+
+    /**
+     * Sets a tool's default version, it is the only query writing it, so that a tool update cannot clear it
+     * @param toolId tool's id
+     * @param defaultVersion a version to be used in place of the "latest" one, or null to use the "latest" one
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateDefaultVersion(final Long toolId, final String defaultVersion) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(ToolParameters.ID.name(), toolId);
+        params.addValue(ToolParameters.DEFAULT_VERSION.name(), defaultVersion);
+        getNamedParameterJdbcTemplate().update(updateDefaultVersionQuery, params);
     }
 
     public List<Tool> loadAllTools(Long registryId) {
@@ -244,6 +258,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         SHORT_DESCRIPTION,
         PLATFORM,
         DEFAULT_COMMAND,
+        DEFAULT_VERSION,
         LABELS_TO_SEARCH,
         OWNER,
         DISK,
@@ -327,6 +342,7 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
         tool.setShortDescription(rs.getString(ToolParameters.SHORT_DESCRIPTION.name()));
         tool.setPlatform(rs.getString(ToolParameters.PLATFORM.name()));
         tool.setDefaultCommand(rs.getString(ToolParameters.DEFAULT_COMMAND.name()));
+        tool.setDefaultVersion(rs.getString(ToolParameters.DEFAULT_VERSION.name()));
         tool.setOwner(rs.getString(ToolParameters.OWNER.name()));
         tool.setDisk(rs.getInt(ToolParameters.DISK.name()));
         tool.setInstanceType(rs.getString(ToolParameters.INSTANCE_TYPE.name()));
@@ -400,6 +416,11 @@ public class ToolDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateOwnerQuery(String updateOwnerQuery) {
         this.updateOwnerQuery = updateOwnerQuery;
+    }
+
+    @Required
+    public void setUpdateDefaultVersionQuery(final String updateDefaultVersionQuery) {
+        this.updateDefaultVersionQuery = updateDefaultVersionQuery;
     }
 
     @Required

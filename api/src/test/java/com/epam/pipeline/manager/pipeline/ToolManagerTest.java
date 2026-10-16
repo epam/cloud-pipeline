@@ -52,6 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -83,7 +84,9 @@ public class ToolManagerTest extends AbstractManagerTest {
     private static final String TAG = "tag";
     private static final String LAYER_REF = "layerRef";
     private static final String DIGEST = "layerDigest";
+    private static final String PREV_DIGEST = "prevDigest";
     private static final Long DOCKER_SIZE = 123456L;
+    private static final Long PREV_DOCKER_SIZE = 654321L;
     private static final String REGION_NAME = "region";
     private static final String REGION_CODE = "us-east-1";
     public static final String CENTOS = "centos";
@@ -633,10 +636,200 @@ public class ToolManagerTest extends AbstractManagerTest {
         String repoImage = "repo/image";
         String imageTag = "image:tag";
         String image = "image";
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(repoImageTag));
-        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(repoImage));
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(imageTag));
-        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(image));
+        Tool tool = new Tool();
+        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, repoImageTag));
+        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(tool, repoImage));
+        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, imageTag));
+        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(tool, image));
+    }
+
+    @Test
+    @Transactional
+    public void getTagFromImageNameShouldUseDefaultVersionForImageWithoutTag() {
+        final Tool tool = new Tool();
+        tool.setDefaultVersion(PREV_TAG);
+
+        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, "repo/image:tag"));
+        Assert.assertEquals(PREV_TAG, toolManager.getTagFromImageName(tool, "repo/image"));
+        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, "image:tag"));
+        Assert.assertEquals(PREV_TAG, toolManager.getTagFromImageName(tool, "image"));
+    }
+
+    @Test
+    @Transactional
+    public void updateToolDefaultVersionShouldSetExistingVersion() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+
+        final Tool updated = toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        assertThat(updated.getDefaultVersion(), is(PREV_TAG));
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), is(PREV_TAG));
+    }
+
+    @Test
+    @Transactional
+    public void updateToolDefaultVersionShouldFailForMissingVersion() {
+        mockImageTags(LATEST_TAG);
+        final Tool tool = createTool();
+
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG));
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.updateToolDefaultVersion(tool.getId(), null));
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), nullValue());
+    }
+
+    @Test
+    @Transactional
+    public void deleteToolDefaultVersionShouldRestoreLatestVersion() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        final Tool updated = toolManager.deleteToolDefaultVersion(tool.getId());
+
+        assertThat(updated.getDefaultVersion(), nullValue());
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), nullValue());
+        assertThat(toolManager.resolveSymlinks(TEST_REPO + "/" + TEST_IMAGE).getImage(),
+                is(TEST_REPO + "/" + TEST_IMAGE + ":" + LATEST_TAG));
+    }
+
+    @Test
+    @Transactional
+    public void updateToolShouldKeepDefaultVersion() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        tool.setDefaultVersion(null);
+        toolManager.updateTool(tool);
+
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), is(PREV_TAG));
+    }
+
+    @Test
+    @Transactional
+    public void deleteToolVersionShouldRemoveItAsDefaultVersion() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        final Tool updated = toolManager.deleteToolVersion(firstRegistry.getPath(), TEST_IMAGE, PREV_TAG);
+
+        assertThat(updated.getDefaultVersion(), nullValue());
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), nullValue());
+    }
+
+    @Test
+    @Transactional
+    public void deleteToolVersionShouldKeepAnotherDefaultVersion() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        mockVersionDigest(LATEST_TAG, DIGEST);
+        mockVersionDigest(PREV_TAG, PREV_DIGEST);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        toolManager.deleteToolVersion(firstRegistry.getPath(), TEST_IMAGE, LATEST_TAG);
+
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), is(PREV_TAG));
+    }
+
+    @Test
+    @Transactional
+    public void deleteToolVersionShouldRemoveDefaultVersionOfTheSameImage() {
+        // both versions refer to the same manifest, so a registry deletes them both
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        mockVersionDigest(LATEST_TAG, DIGEST);
+        mockVersionDigest(PREV_TAG, DIGEST);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        final Tool updated = toolManager.deleteToolVersion(firstRegistry.getPath(), TEST_IMAGE, LATEST_TAG);
+
+        assertThat(updated.getDefaultVersion(), nullValue());
+        assertThat(toolManager.load(tool.getId()).getDefaultVersion(), nullValue());
+    }
+
+    @Test
+    @Transactional
+    public void resolveSymlinksShouldUseDefaultVersionForImageWithoutTag() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        assertThat(toolManager.resolveSymlinks(TEST_REPO + "/" + TEST_IMAGE).getImage(),
+                is(TEST_REPO + "/" + TEST_IMAGE + ":" + PREV_TAG));
+        assertThat(toolManager.resolveSymlinks(TEST_REPO + "/" + TEST_IMAGE + ":" + LATEST_TAG).getImage(),
+                is(TEST_REPO + "/" + TEST_IMAGE + ":" + LATEST_TAG));
+    }
+
+    @Test
+    @Transactional
+    public void symlinkShouldUseDefaultVersionOfItsTool() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        final Tool symlink = toolManager.symlink(new ToolSymlinkRequest(tool.getId(), secondToolGroup.getId()));
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+
+        assertThat(toolManager.load(symlink.getId()).getDefaultVersion(), is(PREV_TAG));
+        assertThat(toolManager.resolveSymlinks(TEST_REPO_2 + "/" + TEST_SYMLINK_IMAGE).getImage(),
+                is(TEST_REPO + "/" + TEST_SOURCE_IMAGE + ":" + PREV_TAG));
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.updateToolDefaultVersion(symlink.getId(), LATEST_TAG));
+        assertThrows(IllegalArgumentException.class,
+            () -> toolManager.deleteToolDefaultVersion(symlink.getId()));
+    }
+
+    @Test
+    @Transactional
+    public void getCurrentImageSizeShouldUseDefaultVersionForImageWithoutTag() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+        final ToolVersion prevVersion = new ToolVersion();
+        prevVersion.setSize(PREV_DOCKER_SIZE);
+        Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.eq(PREV_TAG)))
+                .thenReturn(prevVersion);
+
+        assertThat(toolManager.getCurrentImageSize(TEST_REPO + "/" + TEST_IMAGE), is(PREV_DOCKER_SIZE));
+        assertThat(toolManager.getCurrentImageSize(TEST_REPO + "/" + TEST_IMAGE + ":" + LATEST_TAG),
+                is(DOCKER_SIZE));
+    }
+
+    @Test
+    @Transactional
+    public void validateCommitOperationAllowedShouldCheckDefaultVersionForImageWithoutTag() {
+        mockImageTags(LATEST_TAG, PREV_TAG);
+        final Tool tool = createTool();
+        toolManager.updateToolDefaultVersion(tool.getId(), PREV_TAG);
+        Mockito.doReturn(Optional.of(ToolVersion.builder().allowCommit(true).build()))
+            .when(toolVersionManager).findToolVersion(tool.getId(), LATEST_TAG);
+        Mockito.doReturn(Optional.of(ToolVersion.builder().allowCommit(false).build()))
+            .when(toolVersionManager).findToolVersion(tool.getId(), PREV_TAG);
+
+        toolValidationIsExceptional(tool);
+    }
+
+    private Tool createTool() {
+        final Tool tool = generateTool(TEST_GROUP_ID1);
+        tool.setToolGroupId(firstToolGroup.getId());
+        toolManager.create(tool, true);
+        return tool;
+    }
+
+    private void mockImageTags(final String... tags) {
+        Mockito.doReturn(Arrays.asList(tags)).when(dockerClient).getImageTags(any(), anyString());
+    }
+
+    private void mockVersionDigest(final String version, final String digest) {
+        final ToolVersion toolVersion = new ToolVersion();
+        toolVersion.setDigest(digest);
+        toolVersion.setSize(DOCKER_SIZE);
+        toolVersion.setVersion(version);
+        toolVersion.setPlatform("linux");
+        Mockito.when(dockerClient.getVersionAttributes(Mockito.any(), Mockito.any(), Mockito.eq(version)))
+                .thenReturn(toolVersion);
     }
 
     @Test

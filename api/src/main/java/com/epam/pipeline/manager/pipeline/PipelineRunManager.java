@@ -2335,7 +2335,7 @@ public class PipelineRunManager {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         // tool version setting has single default configuration
         final ConfigurationEntry toolConfiguration = configurationManager
-                .getConfigurationForToolVersion(tool.getId(), dockerImage, null);
+                .getConfigurationForToolVersion(tool, dockerImage, null);
         if (Objects.isNull(toolConfiguration)) {
             return;
         }

@@ -17,13 +17,17 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -65,6 +69,7 @@ public class PipelineConfigurationManagerTest {
     private static final Long NFS_ID_2 = 3L;
     private static final Long S3_ID_2 = 4L;
     private static final String TEST_DOCKER_IMAGE = TEST_REPO + "/" + TEST_IMAGE;
+    private static final String DEFAULT_VERSION = "1.0";
     private static final Map<String, PipeConfValueVO> TEST_PARAMS = Collections.singletonMap("testParam",
             new PipeConfValueVO("testParamValue", "int", true));
     private static final String TEST_MOUNT_POINT = "/some/path";
@@ -101,6 +106,12 @@ public class PipelineConfigurationManagerTest {
 
     @Mock
     private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
+
+    @Mock
+    private ToolManager toolManager;
+
+    @Mock
+    private ToolVersionManager toolVersionManager;
 
     @InjectMocks
     private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
@@ -139,6 +150,22 @@ public class PipelineConfigurationManagerTest {
         assertThat(config.getNotifications()).isNotNull();
 
         verify(pipelineVersionManager).getValidDockerImage(eq(TEST_IMAGE));
+    }
+
+    @Test
+    public void shouldGetConfigurationOfVersionResolvedForToolIfImageHasNoTag() {
+        final Tool tool = new Tool();
+        tool.setId(TEST_LONG);
+        final ConfigurationEntry entry = new ConfigurationEntry();
+        entry.setName(TEST_STRING);
+        entry.setDefaultConfiguration(true);
+        entry.setConfiguration(new PipelineConfiguration());
+        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(tool, TEST_DOCKER_IMAGE);
+        doReturn(Collections.singletonList(ToolVersion.builder().settings(Collections.singletonList(entry)).build()))
+                .when(toolVersionManager).loadToolVersionSettings(TEST_LONG, DEFAULT_VERSION);
+
+        assertThat(pipelineConfigurationManager.getConfigurationForToolVersion(tool, TEST_DOCKER_IMAGE, null))
+                .isEqualTo(entry);
     }
 
     @Test

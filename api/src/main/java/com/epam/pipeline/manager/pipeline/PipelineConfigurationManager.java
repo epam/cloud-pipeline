@@ -398,7 +398,7 @@ public class PipelineConfigurationManager {
     }
 
     public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
-        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
+        return Optional.ofNullable(getConfigurationForToolVersion(tool, configuration.getDockerImage(), null))
                 .map(ConfigurationEntry::getConfiguration)
                 .orElseGet(PipelineConfiguration::new);
     }
@@ -515,11 +515,11 @@ public class PipelineConfigurationManager {
         }
     }
 
-    public ConfigurationEntry getConfigurationForToolVersion(final Long toolId, final String dockerImage,
+    public ConfigurationEntry getConfigurationForToolVersion(final Tool tool, final String dockerImage,
                                                              final String configurationName) {
-        String tag = toolManager.getTagFromImageName(dockerImage);
+        String tag = toolManager.getTagFromImageName(tool, dockerImage);
         List<ConfigurationEntry> configurationEntries =
-                toolVersionManager.loadToolVersionSettings(toolId, tag)
+                toolVersionManager.loadToolVersionSettings(tool.getId(), tag)
                         .stream()
                         .findFirst()
                         .map(ToolVersion::getSettings)
@@ -549,7 +549,7 @@ public class PipelineConfigurationManager {
         PipelineConfiguration defaultConfiguration;
         ConfigurationEntry entry;
         if (toolRun) {
-            entry = getConfigurationForToolVersion(tool.getId(), runVO.getDockerImage(),
+            entry = getConfigurationForToolVersion(tool, runVO.getDockerImage(),
                     runVO.getConfigurationName());
         } else {
             entry = initRegisteredPipelineConfiguration(runVO.getPipelineId(), runVO.getVersion(),
