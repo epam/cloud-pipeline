@@ -507,7 +507,7 @@
     "object-curly-spacing": 2
   },
   "src/components/tools/Tool.js": {
-    "max-len": 14
+    "max-len": 12
   },
   "src/components/tools/elements/ToolEndpointsFormItem.js": {
     "max-len": 1,
@@ -552,7 +552,7 @@
     "react/no-did-update-set-state": 1
   },
   "src/components/tools/utils/constants.js": {
-    "max-len": 5
+    "max-len": 4
   },
   "src/components/tools/utils/getVersionInfo.js": {
     "no-unneeded-ternary": 1,

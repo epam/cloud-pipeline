@@ -52,6 +52,7 @@ import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunE
 import FolderProject from '../../../../models/folders/FolderProject';
 import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEntityFields';
 import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
+import {getTaglessImageVersion} from '../../../../utils/tool-default-version';
 import configurationsRequest from '../../../../models/configuration/Configurations';
 
 import roleModel from '../../../../utils/roleModel';
@@ -3237,7 +3238,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.rescheduleRunInitialValue = undefined;
             }
 
-            const defaultCmdRequest = new ToolDefaultCommand(im.id, version);
+            const defaultCmdRequest = new ToolDefaultCommand(
+              im.id,
+              version || getTaglessImageVersion(im)
+            );
             await defaultCmdRequest.fetch();
             if (defaultCmdRequest.loaded) {
               this.toolDefaultCmd = defaultCmdRequest.value;

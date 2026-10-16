@@ -50,6 +50,7 @@ import CWLProperties from './components/properties';
 import CWLCommandLineTool from './components/command-line-tool';
 import CWLToolsRepository from './components/tools-repository';
 import {base64toString} from '../../../../../../utils/base64';
+import {getTaglessImageVersion} from '../../../../../../utils/tool-default-version';
 import styles from '../Graph.css';
 import 'cwl-svg/src/assets/styles/theme.scss';
 import 'cwl-svg/src/plugins/selection/theme.scss';
@@ -272,7 +273,7 @@ export default class CwlGraph extends Graph {
     } = this.props;
     try {
       const [registryName = '', groupName = '', toolNameAndVersion = ''] = docker.split('/');
-      const [toolName = '', version = 'latest'] = toolNameAndVersion.toLowerCase().split(':');
+      const [toolName = '', imageVersion] = toolNameAndVersion.toLowerCase().split(':');
       const image = `${groupName}/${toolName}`.toLowerCase();
       await dockerRegistries.fetchIfNeededOrWait();
       if (dockerRegistries.error) {
@@ -305,7 +306,10 @@ export default class CwlGraph extends Graph {
       const versions = settings.value || [];
       const getToolVersion = (versionName = '') => versions
         .find((aVersion) => (aVersion.version || '').toLowerCase() === versionName.toLowerCase());
-      const toolVersion = getToolVersion(version) || getToolVersion('latest') || versions[0];
+      const defaultVersion = getTaglessImageVersion(tool);
+      const toolVersion = getToolVersion(imageVersion || defaultVersion) ||
+        getToolVersion(defaultVersion) ||
+        versions[0];
       if (!toolVersion) {
         throw new Error('Tool version not found');
       }

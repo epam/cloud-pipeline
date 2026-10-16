@@ -30,6 +30,7 @@ import roleModel from '../../../../../utils/roleModel';
 import highlightText from '../../../../special/highlightText';
 import ToolImage from '../../../../../models/tools/ToolImage';
 import LoadToolTags from '../../../../../models/tools/LoadToolTags';
+import {getToolDefaultVersion} from '../../../../../utils/tool-default-version';
 import styles from './launch-vs-form.css';
 
 const findGroupByNameSelector = (name) => (group) => {
@@ -177,7 +178,7 @@ class LaunchVSForm extends React.Component {
             } else if (!request.value.length) {
               throw new Error('No versions found');
             } else {
-              const defaultTag = request.value.find(t => t === 'latest');
+              const defaultTag = getToolDefaultVersion(tool, request.value);
               this.setState({
                 tags: request.value,
                 tagsError: undefined,
@@ -305,7 +306,7 @@ class LaunchVSForm extends React.Component {
                           key={tag}
                           value={tag}
                         >
-                          {tag}
+                          {tag === getToolDefaultVersion(tool, tags) ? `${tag} (default)` : tag}
                         </Select.Option>
                       ))
                     }

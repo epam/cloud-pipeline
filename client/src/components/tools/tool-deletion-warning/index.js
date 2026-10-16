@@ -45,7 +45,7 @@ class ToolDeletionWarning extends React.Component {
     if (this.displayPromise) {
       return this.displayPromise;
     }
-    const {showGroupAlert, error, name, total, onNavigateToRuns} = opts;
+    const {showGroupAlert, error, name, total, onNavigateToRuns, isDefaultVersion} = opts;
     this.displayPromise = new Promise((resolve) => {
       const resolveFn = async (...opts) => {
         this.displayPromise = null;
@@ -58,7 +58,8 @@ class ToolDeletionWarning extends React.Component {
           total: 0,
           error: undefined,
           resolve: undefined,
-          onNavigateToRuns: undefined
+          onNavigateToRuns: undefined,
+          isDefaultVersion: false
         });
       };
       this.setState({
@@ -71,7 +72,8 @@ class ToolDeletionWarning extends React.Component {
         runs,
         error,
         resolve: resolveFn,
-        onNavigateToRuns
+        onNavigateToRuns,
+        isDefaultVersion
       });
     });
     return this.displayPromise;
@@ -148,6 +150,22 @@ class ToolDeletionWarning extends React.Component {
     return null;
   };
 
+  renderDefaultVersionWarning = () => {
+    const {isDefaultVersion} = this.state;
+    if (isDefaultVersion) {
+      return (
+        <Row style={{marginTop: 5, marginBottom: 5}}>
+          <b>You are going to delete the default version of the tool.</b>
+          <span style={{marginLeft: 5}}>
+            Once it is deleted, the tool has no default version,
+            and the <i>latest</i> version is used instead.
+          </span>
+        </Row>
+      );
+    }
+    return null;
+  };
+
   render () {
     const {visible, title, resolve, showGroupAlert, groupAlertConfirmed} = this.state;
     return (
@@ -186,6 +204,7 @@ class ToolDeletionWarning extends React.Component {
           {title}
         </h2>
         {showGroupAlert && this.renderGroupAlert()}
+        {this.renderDefaultVersionWarning()}
         {this.renderActiveRunsWarning()}
         <Row>
           This operation cannot be undone.
@@ -253,12 +272,14 @@ function deleteToolConfirm ({registry, group, tool: toolId, version, link}, rout
     const dockerImages = [];
     const hide = message.loading('Fetching active jobs info...', 0);
     let showGroupAlert = false;
+    let isDefaultVersion = false;
     let advancedSearchString;
     if (toolId) {
       const toolInfo = new LoadTool(toolId);
       await toolInfo.fetch();
       if (toolInfo.loaded) {
-        const {registry: toolRegistry, image} = toolInfo.value;
+        const {registry: toolRegistry, image, defaultVersion} = toolInfo.value;
+        isDefaultVersion = !!version && version === defaultVersion;
         dockerImages.push(`${toolRegistry}/${image}${version ? `:${version}` : ''}`);
         advancedSearchString = `docker.image="${toolRegistry}/${image}${version ? `:${version}` : '*'}"`;
       }
@@ -324,7 +345,7 @@ function deleteToolConfirm ({registry, group, tool: toolId, version, link}, rout
     const success = await toolDeletionWarningDialog.display(
       title,
       runs,
-      {error, showGroupAlert, name, total, onNavigateToRuns: navigate}
+      {error, showGroupAlert, name, total, onNavigateToRuns: navigate, isDefaultVersion}
     );
     resolve(success);
   });
