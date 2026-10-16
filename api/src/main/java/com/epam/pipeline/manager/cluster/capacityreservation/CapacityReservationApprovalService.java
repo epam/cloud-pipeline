@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicyAction;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
-import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -45,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -158,7 +159,7 @@ public class CapacityReservationApprovalService {
     }
 
     private boolean matches(final CapacityReservationPolicy policy, final CapacityReservation reservation) {
-        final java.time.LocalDateTime now = DateUtils.nowUTC();
+        final LocalDateTime now = DateUtils.nowUTC();
         if (!evaluator.evaluate(policy.getStatement(), reservation, now)) {
             return false;
         }
@@ -174,7 +175,7 @@ public class CapacityReservationApprovalService {
     }
 
     private static Map<String, EntityConditionEvaluationStrategy<CapacityReservation>> buildRegistry(
-            final java.util.function.Function<String, Collection<String>> authoritiesResolver) {
+            final Function<String, Collection<String>> authoritiesResolver) {
         final Map<String, EntityConditionEvaluationStrategy<CapacityReservation>> registry = new HashMap<>();
         for (final CapacityReservationField field : CapacityReservationField.values()) {
             final EntityConditionEvaluationStrategy<CapacityReservation> strategy =
@@ -186,7 +187,7 @@ public class CapacityReservationApprovalService {
 
     private static EntityConditionEvaluationStrategy<CapacityReservation> strategyFor(
             final CapacityReservationField field,
-            final java.util.function.Function<String, Collection<String>> authoritiesResolver) {
+            final Function<String, Collection<String>> authoritiesResolver) {
         final FieldType type = field.getType();
         switch (type) {
             case STRING:
@@ -202,20 +203,5 @@ public class CapacityReservationApprovalService {
             default:
                 throw new IllegalStateException("Unsupported capacity reservation field type " + type);
         }
-    }
-
-    CapacityReservationApprovalService(final MessageHelper messageHelper,
-                                       final PreferenceManager preferenceManager,
-                                       final AuthManager authManager,
-                                       final Map<String, EntityConditionEvaluationStrategy<CapacityReservation>>
-                                               registry) {
-        this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
-        this.authManager = authManager;
-        this.evaluator = new ConditionExpressionEvaluator<>(registry);
-    }
-
-    static Map<String, EntityConditionEvaluationStrategy<CapacityReservation>> defaultRegistry() {
-        return buildRegistry(username -> Collections.singletonList(DefaultRoles.ROLE_USER.getName()));
     }
 }

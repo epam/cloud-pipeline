@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationS
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodeSchedule;
@@ -815,7 +816,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     public void shouldRefuseSwitchingAReservationPoolToSpot() {
         final NodePool created = poolManager.create(reservationPoolVO());
         final NodePoolVO edit = editOf(created.getId());
-        edit.setPriceType(com.epam.pipeline.entity.cluster.PriceType.SPOT);
+        edit.setPriceType(PriceType.SPOT);
 
         assertThatThrownBy(() -> poolManager.update(created.getId(), edit))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -973,7 +974,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         vo.setRegionId(REGION_ID);
         vo.setInstanceType(INSTANCE_TYPE);
         vo.setInstanceDisk(INSTANCE_DISK);
-        vo.setPriceType(com.epam.pipeline.entity.cluster.PriceType.ON_DEMAND);
+        vo.setPriceType(PriceType.ON_DEMAND);
         vo.setCount(INSTANCE_COUNT);
         return vo;
     }
