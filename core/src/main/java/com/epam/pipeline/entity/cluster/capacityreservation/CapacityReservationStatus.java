@@ -16,10 +16,6 @@
 
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Set;
-
 public enum CapacityReservationStatus {
 
     REQUIRED_APPROVE(false),
@@ -42,9 +38,6 @@ public enum CapacityReservationStatus {
 
     CANCELLED(true);
 
-    private static final Set<CapacityReservationStatus> TERMINAL = Collections.unmodifiableSet(
-            EnumSet.of(PURCHASE_FAILED, FINISHED, FAILED, CANCELLED));
-
     private final boolean terminal;
 
     CapacityReservationStatus(final boolean terminal) {
@@ -53,9 +46,5 @@ public enum CapacityReservationStatus {
 
     public boolean isTerminal() {
         return terminal;
-    }
-
-    public static Set<CapacityReservationStatus> terminalStatuses() {
-        return TERMINAL;
     }
 }
