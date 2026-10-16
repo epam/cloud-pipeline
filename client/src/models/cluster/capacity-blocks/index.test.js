@@ -1,0 +1,99 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import {stubApi} from '@test';
+import capacityBlocks from './index';
+
+// The store is a module-level singleton, so every test starts it off the same
+// way: as if nothing had been fetched yet.
+beforeEach(() => {
+  capacityBlocks.invalidateCache();
+});
+
+test('reading .pools is lazy: it schedules a load, not firing one synchronously', async () => {
+  const api = stubApi({
+    '/cluster/pool/filter': [{id: 1, name: 'pool-1', instanceType: 'm5.large'}]
+  });
+
+  void capacityBlocks.pools;
+  expect(api.calls).toHaveLength(0);
+
+  // `.pools` schedules the load through a `setTimeout(fn, 0)`, mirroring
+  // `Remote`'s own `value` getter - a real macrotask has to elapse, so a
+  // microtask-only wait is not enough here.
+  await new Promise((resolve) => setTimeout(resolve, 30));
+
+  expect(api.calls).toHaveLength(1);
+  expect(capacityBlocks.pools).toEqual([
+    {id: 1, name: 'pool-1', instanceType: 'm5.large'}
+  ]);
+});
+
+test('sends the fixed capacity-block filter', async () => {
+  const api = stubApi({'/cluster/pool/filter': []});
+
+  await capacityBlocks.load();
+
+  expect(api.calls).toHaveLength(1);
+  expect(JSON.parse(api.calls[0].body)).toEqual({
+    isCapacityReservation: true,
+    active: true
+  });
+});
+
+test('one request serves two readers calling load() at once', async () => {
+  const api = stubApi({
+    '/cluster/pool/filter': [{id: 1, name: 'pool-1'}]
+  });
+
+  await Promise.all([capacityBlocks.load(), capacityBlocks.load()]);
+
+  expect(api.calls).toHaveLength(1);
+  expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
+});
+
+test('invalidateCache() makes the next load() refetch', async () => {
+  stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+  await capacityBlocks.load();
+  expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
+
+  const api = stubApi({'/cluster/pool/filter': [{id: 2, name: 'pool-2'}]});
+  capacityBlocks.invalidateCache();
+  await capacityBlocks.load();
+
+  expect(api.calls).toHaveLength(1);
+  expect(capacityBlocks.pools).toEqual([{id: 2, name: 'pool-2'}]);
+});
+
+test('without invalidateCache(), load() does not fetch again once loaded', async () => {
+  const first = stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+  await capacityBlocks.load();
+  expect(first.calls).toHaveLength(1);
+
+  const second = stubApi({'/cluster/pool/filter': [{id: 2, name: 'pool-2'}]});
+  await capacityBlocks.load();
+
+  expect(second.calls).toHaveLength(0);
+  expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
+});
+
+test('a failed request leaves pools empty rather than throwing', async () => {
+  stubApi().fail('/cluster/pool/filter', 'Something went wrong');
+
+  await capacityBlocks.load();
+
+  expect(capacityBlocks.pools).toEqual([]);
+});
