@@ -1168,10 +1168,17 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Tools</b> (50 tests, 30 automated)</summary>
+<summary><b>Tools</b> (57 tests, 30 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
+| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is the default one until a default version is set |  |
+| [**4664_2**](Tools/4664_default_version/4664_2.md) | Set a version as the default one |  |
+| [**4664_3**](Tools/4664_default_version/4664_3.md) | Remove the default version |  |
+| [**4664_4**](Tools/4664_default_version/4664_4.md) | Delete the default version |  |
+| [**4664_5**](Tools/4664_default_version/4664_5.md) | The default version in the version pickers |  |
+| [**4664_6**](Tools/4664_default_version/4664_6.md) | The default version controls depend on the permissions |  |
+| [**4664_7**](Tools/4664_default_version/4664_7.md) | A docker image without a tag is launched with the default version |  |
 | [**EPMCMBIBPC-1296**](Tools/EPMCMBIBPC-1296.md) | Run tool with custom settings validation (EXECUTION DEFAULTS aren't filled) | :white_check_mark: |
 | [**EPMCMBIBPC-1404**](Tools/EPMCMBIBPC-1404.md) | Delete tool validation | :white_check_mark: |
 | [**EPMCMBIBPC-1407**](Tools/EPMCMBIBPC-1407.md) | Enable tool validation | :white_check_mark: |
