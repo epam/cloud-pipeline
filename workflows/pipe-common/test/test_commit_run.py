@@ -88,6 +88,17 @@ def test_latest_tag_is_used_if_image_has_no_tag_and_no_default_tag():
     assert commit_run.get_image_name_and_tag('library/centos') == ('library/centos', 'latest')
 
 
+@pytest.mark.parametrize('image,default_tag,tag', [
+    (REGISTRY + '/library/centos:v3', 'v2', 'v3'),
+    (REGISTRY + '/library/centos', 'v2', 'v2'),
+    (REGISTRY + '/library/centos', None, 'latest'),
+    ('library/centos:v3', None, 'v3'),
+    (REGISTRY + '/library/centos:v3@sha256:0123', 'v2', 'v3'),
+])
+def test_image_tag_of_image_with_registry(image, default_tag, tag):
+    assert commit_run.get_image_tag(image, default_tag) == tag
+
+
 def test_idvs_command_prints_whether_default_version_is_set(capsys):
     api = MagicMock()
     api.load_tool.return_value = tool(NEW_TOOL_ID, default_version='v2')
@@ -124,15 +135,49 @@ def test_evs_command_skips_commit_into_default_version_of_same_tool():
     api.create_setting_for_tool_version.assert_not_called()
 
 
-def commit_api(initial_default_version, new_tool_id=NEW_TOOL_ID):
+def test_evs_command_skips_commit_into_run_version_of_same_tool():
+    api = commit_api(initial_default_version='v2', new_tool_id=INITIAL_TOOL_ID,
+                     run_image=REGISTRY + '/library/centos:latest')
+
+    run_main(api, 'evs', RUN_ID, REGISTRY, 'library/centos:latest')
+
+    api.load_tool_version_settings.assert_not_called()
+    api.create_setting_for_tool_version.assert_not_called()
+
+
+@pytest.mark.parametrize('default_version,new_image', [
+    (None, 'library/centos:latest'),
+    ('v2', 'library/centos:v2'),
+])
+def test_evs_command_skips_commit_into_version_settings_come_from(default_version, new_image):
+    api = commit_api(initial_default_version=default_version, new_tool_id=INITIAL_TOOL_ID,
+                     run_image=REGISTRY + '/library/centos:v3')
+
+    run_main(api, 'evs', RUN_ID, REGISTRY, new_image)
+
+    api.load_tool_version_settings.assert_not_called()
+    api.create_setting_for_tool_version.assert_not_called()
+
+
+def test_evs_command_copies_settings_of_default_version_into_another_version_of_same_tool():
+    api = commit_api(initial_default_version='v2', new_tool_id=INITIAL_TOOL_ID,
+                     run_image=REGISTRY + '/library/centos:latest')
+
+    run_main(api, 'evs', RUN_ID, REGISTRY, 'library/centos:v3')
+
+    api.load_tool_version_settings.assert_called_once_with(INITIAL_TOOL_ID, 'v2')
+    api.create_setting_for_tool_version.assert_called_once_with(INITIAL_TOOL_ID, 'v3', SETTINGS)
+
+
+def commit_api(initial_default_version, new_tool_id=NEW_TOOL_ID, run_image=REGISTRY + '/library/centos'):
     initial_tool = tool(INITIAL_TOOL_ID, default_version=initial_default_version)
     new_tool = tool(new_tool_id, image='library/centos-new')
 
     def load_tool(image, registry):
-        return initial_tool if image == REGISTRY + '/library/centos' else new_tool
+        return initial_tool if image == run_image else new_tool
 
     api = MagicMock()
-    api.load_run.return_value = {'dockerImage': REGISTRY + '/library/centos'}
+    api.load_run.return_value = {'dockerImage': run_image}
     api.load_tool.side_effect = load_tool
     api.load_tool_version_settings.return_value = [{'settings': SETTINGS}]
     return api

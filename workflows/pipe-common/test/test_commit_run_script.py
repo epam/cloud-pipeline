@@ -99,6 +99,13 @@ def test_commit_does_not_create_latest_version_of_tool_with_default_version(comm
     assert 'commit_run.py ups 1 SUCCESS' in calls
 
 
+def test_commit_reads_default_version_check_after_retries(commit):
+    calls = commit(latest_exists='False',
+                   default_version_set='There is exception with message:timeout \n Retry: (1/10)\nTrue')
+
+    assert not [call for call in calls if call.startswith('docker tag')]
+
+
 def test_commit_creates_latest_version_of_tool_without_default_version(commit):
     calls = commit(latest_exists='False', default_version_set='False')
 

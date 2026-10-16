@@ -32,7 +32,7 @@ TOOL_PAYLOAD = {
 def load_tool(payload):
     response = MagicMock()
     response.json.return_value = {'status': 'OK', 'payload': payload}
-    with patch('pipeline.api.api.requests.get', return_value=response):
+    with patch('requests.get', return_value=response):
         return PipelineAPI(api_url='https://api/', log_dir='logs', token=MagicMock()) \
             .load_tool('library/centos', '')
 
