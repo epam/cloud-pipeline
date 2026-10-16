@@ -20,5 +20,5 @@ public enum NodePoolType {
 
     STANDARD,
 
-    SHARABLE_NODE
+    SHAREABLE_NODE
 }

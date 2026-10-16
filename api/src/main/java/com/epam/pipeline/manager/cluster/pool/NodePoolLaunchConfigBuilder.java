@@ -38,7 +38,7 @@ import java.util.Optional;
  *
  * <p>A configuration the caller supplied is kept as it is, apart from the selector below. A pool that comes without
  * one is given the platform's defaults - CPU and memory requests enabled, GPU requests only for an instance type
- * that has a GPU, and one CPU, no GPU and {@value #DEFAULT_RAM_RESERVED} of memory reserved. Only a sharable pool
+ * that has a GPU, and one CPU, no GPU and {@value #DEFAULT_RAM_RESERVED} of memory reserved. Only a shareable pool
  * is built a configuration at all; any other kind of pool keeps whatever it was given, including nothing.
  *
  * <p>Either way the pod assign policy is given the pool's own node selector unless the caller already pinned one,
