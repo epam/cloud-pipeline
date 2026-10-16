@@ -170,8 +170,8 @@ public class ToolVersionManager {
         return toolVersionDao.loadToolWithSettings(toolId);
     }
 
-    public List<ToolVersion> loadAllLatestToolVersionSettings() {
-        return toolVersionDao.loadAllLatestToolVersions();
+    public List<ToolVersion> loadAllDefaultToolVersionSettings() {
+        return toolVersionDao.loadAllDefaultToolVersions();
     }
 
     private void validateToolExistsAndCanBeModified(final Long toolId) {

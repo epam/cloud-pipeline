@@ -17,6 +17,7 @@
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
 import AllowedInstanceTypes from '../../../../models/utils/AllowedInstanceTypes';
 import {modifyPayloadForAllowedInstanceTypes} from '../../../runs/actions';
+import {getTaglessImageVersion} from '../../../../utils/tool-default-version';
 
 function prepareParameters (parameters) {
   const result = {};
@@ -58,8 +59,10 @@ function chooseDefaultValue (
 export default function getToolLaunchingOptions (
   stores,
   tool,
-  toolVersion = 'latest'
+  version
 ) {
+  const defaultVersion = getTaglessImageVersion(tool);
+  const toolVersion = version || defaultVersion;
   return new Promise((resolve, reject) => {
     const {
       awsRegions,
@@ -113,15 +116,17 @@ export default function getToolLaunchingOptions (
               {}
             ).configuration;
           };
-          const latestVersion = extractSettings(options.find(o => o.version === 'latest'));
+          const defaultVersionSettings = extractSettings(
+            options.find(o => o.version === defaultVersion)
+          );
           const currentVersion = extractSettings(options.find(o => o.version === toolVersion));
 
           const versionSettingValue = (settingName) => {
             if (currentVersion) {
               return currentVersion[settingName];
             }
-            if (latestVersion) {
-              return latestVersion[settingName];
+            if (defaultVersionSettings) {
+              return defaultVersionSettings[settingName];
             }
             return null;
           };

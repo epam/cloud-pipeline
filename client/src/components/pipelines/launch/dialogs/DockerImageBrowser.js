@@ -20,6 +20,7 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Modal, Row, Button, Dropdown, Icon, Table, Input, Select} from 'antd';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
+import {getToolDefaultVersion} from '../../../../utils/tool-default-version';
 import styles from './Browser.css';
 import registryName from '../../../tools/registryName';
 
@@ -304,13 +305,8 @@ export default class DockerImageBrowser extends React.Component {
                 : tool.image;
               let version;
               if (options.length > 0) {
-                if (options.find(tag => tag === 'latest')) {
-                  version = 'latest';
-                  selectedTool = `${selectedTool}:latest`;
-                } else {
-                  version = options[0];
-                  selectedTool = `${selectedTool}:${options[0]}`;
-                }
+                version = getToolDefaultVersion(tool, options) || options[0];
+                selectedTool = `${selectedTool}:${version}`;
               }
               this.setState({
                 selectedTool,
@@ -407,6 +403,7 @@ export default class DockerImageBrowser extends React.Component {
             if (tagsError) {
               return <i>Error loading tags</i>;
             }
+            const defaultTag = getToolDefaultVersion(tool, tags);
             return (
               <Select
                 onSelect={onSelectTag(tool)}
@@ -416,7 +413,9 @@ export default class DockerImageBrowser extends React.Component {
                 {
                   tags.map(tag => {
                     return (
-                      <Select.Option key={tag} data={tag}>{tag}</Select.Option>
+                      <Select.Option key={tag} data={tag}>
+                        {tag === defaultTag ? `${tag} (default)` : tag}
+                      </Select.Option>
                     );
                   })
                 }

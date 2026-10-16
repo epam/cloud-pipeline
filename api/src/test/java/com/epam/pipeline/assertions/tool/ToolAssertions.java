@@ -96,6 +96,7 @@ public final class ToolAssertions {
         assertThat(actualTool.getCpu(), is(expectedTool.getCpu()));
         assertThat(actualTool.getRam(), is(expectedTool.getRam()));
         assertThat(actualTool.getDefaultCommand(), is(expectedTool.getDefaultCommand()));
+        assertThat(actualTool.getDefaultVersion(), is(expectedTool.getDefaultVersion()));
         assertThat(actualTool.getLabels(), is(expectedTool.getLabels()));
         assertThat(actualTool.getEndpoints(), is(expectedTool.getEndpoints()));
         assertThat(actualTool.getShortDescription(), is(expectedTool.getShortDescription()));

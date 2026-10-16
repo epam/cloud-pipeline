@@ -1,4 +1,5 @@
 import preferences from '../../../../models/preferences/PreferencesLoad';
+import {getTaglessImageVersion} from '../../../../utils/tool-default-version';
 
 /**
  * @typedef {Object} ToolLaunchPayloadOptions
@@ -13,14 +14,16 @@ export function getToolLaunchPayload (options) {
   const {
     tool,
     settings = [],
-    toolVersion: tv = 'latest'
+    toolVersion: tv
   } = options;
   if (!tool) {
     throw new Error('Tool configuration not found');
   }
-  const toolVersion = tv.toLowerCase();
+  const defaultVersion = getTaglessImageVersion(tool).toLowerCase();
+  const toolVersion = tv ? tv.toLowerCase() : defaultVersion;
   const versionSettings = settings.find(v => (v.version || '').toLowerCase() === toolVersion);
-  const defaultVersionSettings = settings.find(v => (v.version || '').toLowerCase() === 'latest');
+  const defaultVersionSettings = settings
+    .find(v => (v.version || '').toLowerCase() === defaultVersion);
   const versionSettingValue = (settingName) => {
     if (versionSettings &&
       versionSettings.settings &&

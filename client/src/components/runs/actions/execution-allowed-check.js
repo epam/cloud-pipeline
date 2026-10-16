@@ -26,6 +26,7 @@ import {
 } from 'antd';
 import roleModel from '../../../utils/roleModel';
 import preferences from '../../../models/preferences/PreferencesLoad';
+import {getTaglessImageVersion} from '../../../utils/tool-default-version';
 
 const SCHEMAS = /^(gs:\/\/|s3:\/\/|az:\/\/|cp:\/\/)/i;
 
@@ -144,7 +145,7 @@ async function checkDockerImage (props) {
         if (!tool || !roleModel.executeAllowed(tool)) {
           return reportExecutionDenied();
         } else {
-          version = version || 'latest';
+          version = version || getTaglessImageVersion(tool);
           const tags = dockerRegistries.toolTags.getToolTags(tool.id);
           await tags.fetchIfNeededOrWait();
           if (tags.error) {

@@ -228,6 +228,40 @@ public class ToolManager implements SecuredEntityManager {
         return loadedTool;
     }
 
+    /**
+     * Sets a tool's default version: it is used in place of the "latest" one, f.i. it is launched,
+     * if a tool's image is specified without a tag
+     * @param id tool's id
+     * @param version an existing tool's version
+     * @return the updated tool
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool updateToolDefaultVersion(final Long id, final String version) {
+        final Tool tool = loadExisting(id);
+        validateToolCanBeModified(tool);
+        Assert.isTrue(StringUtils.hasText(version), messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_REQUIRED, "version", Tool.class.getSimpleName()));
+        Assert.isTrue(loadTags(tool).contains(version), messageHelper.getMessage(
+                MessageConstants.ERROR_TOOL_DEFAULT_VERSION_NOT_FOUND, version, tool.getImage()));
+        toolDao.updateDefaultVersion(tool.getId(), version);
+        tool.setDefaultVersion(version);
+        return tool;
+    }
+
+    /**
+     * Removes a tool's default version, so that the "latest" one is used again
+     * @param id tool's id
+     * @return the updated tool
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool deleteToolDefaultVersion(final Long id) {
+        final Tool tool = loadExisting(id);
+        validateToolCanBeModified(tool);
+        toolDao.updateDefaultVersion(tool.getId(), null);
+        tool.setDefaultVersion(null);
+        return tool;
+    }
+
 
     /**
      * Loads all tools for the specified registry and labels.
@@ -372,7 +406,7 @@ public class ToolManager implements SecuredEntityManager {
                 + TOOL_DELIMETER
                 + getImageWithoutTag(tool.getImage())
                 + TAG_DELIMITER
-                + getTagFromImageName(image);
+                + getTagFromImageName(tool, image);
     }
 
     @Override
@@ -502,10 +536,37 @@ public class ToolManager implements SecuredEntityManager {
         Tool tool = loadTool(registry, image);
         validateToolNotNull(tool, image);
         validateToolCanBeModified(tool);
+        final boolean deletesDefaultVersion = isDefaultVersionDeletedWith(tool, version);
         deleteToolVersionFromRegistry(tool, version);
         deleteToolVersionScan(tool.getId(), version);
         toolVersionManager.deleteToolVersion(tool.getId(), version);
+        if (deletesDefaultVersion) {
+            toolDao.updateDefaultVersion(tool.getId(), null);
+            tool.setDefaultVersion(null);
+        }
         return tool;
+    }
+
+    /**
+     * A registry deletes a version by its manifest, so the default version is deleted along with any version,
+     * which refers to the same manifest
+     */
+    private boolean isDefaultVersionDeletedWith(final Tool tool, final String version) {
+        final String defaultVersion = tool.getDefaultVersion();
+        if (!StringUtils.hasText(defaultVersion)) {
+            return false;
+        }
+        if (defaultVersion.equals(version)) {
+            return true;
+        }
+        final Optional<String> digest = findVersionDigest(tool, version);
+        return digest.isPresent() && digest.equals(findVersionDigest(tool, defaultVersion));
+    }
+
+    private Optional<String> findVersionDigest(final Tool tool, final String version) {
+        return toolVersionManager.findToolVersion(tool.getId(), version)
+                .map(ToolVersion::getDigest)
+                .filter(StringUtils::hasText);
     }
 
     /**
@@ -790,18 +851,28 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Cuts tag value from a image string. f.i. : repo/image:tag, image:tag
-     * @return a docker tag for a tool
+     * @param tool the tool, which the image belongs to
+     * @param image the image, with or without a tag
+     * @return a docker tag for a tool: an image without a tag stands for the tool's default version
      */
-    public String getTagFromImageName(String image) {
+    public String getTagFromImageName(final Tool tool, final String image) {
         Matcher matcher = REPOSITORY_AND_IMAGE.matcher(image);
         String imageWithTag;
 
         if (matcher.find()) {
             imageWithTag = matcher.group(2);
-            return getImageTag(imageWithTag);
         } else {
-            return getImageTag(image);
+            imageWithTag = image;
         }
+        return findImageTag(imageWithTag).orElseGet(() -> resolveDefaultVersion(tool));
+    }
+
+    /**
+     * @return a tool's version, which is used, if a tool's image is specified without a tag: the tool's
+     * default version, or the "latest" one, if a default version is not set
+     */
+    public String resolveDefaultVersion(final Tool tool) {
+        return StringUtils.hasText(tool.getDefaultVersion()) ? tool.getDefaultVersion() : LATEST_TAG;
     }
 
     public boolean isToolScanningEnabled() {
@@ -919,7 +990,7 @@ public class ToolManager implements SecuredEntityManager {
     private long getCurrentImageSize(final Tool tool) {
         DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
         String imageWithoutTag = getImageWithoutTag(tool.getImage());
-        String tag = getTagFromImageName(tool.getImage());
+        String tag = getTagFromImageName(tool, tool.getImage());
         DockerClient dockerClient = dockerRegistryManager.getDockerClient(dockerRegistry,
                 imageWithoutTag);
         try {
@@ -1023,12 +1094,12 @@ public class ToolManager implements SecuredEntityManager {
         return tool;
     }
 
-    private String getImageTag(String imageWithTag) {
+    private Optional<String> findImageTag(String imageWithTag) {
         String[] nameAndTag = imageWithTag.split(TAG_DELIMITER);
         if (nameAndTag.length == 2) {
-            return nameAndTag[1];
+            return Optional.of(nameAndTag[1]);
         } else {
-            return LATEST_TAG;
+            return Optional.empty();
         }
     }
 
@@ -1099,7 +1170,7 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public Optional<ToolVersion> findToolVersion(final Tool tool) {
-        return toolVersionManager.findToolVersion(tool.getId(), getTagFromImageName(tool.getImage()));
+        return toolVersionManager.findToolVersion(tool.getId(), getTagFromImageName(tool, tool.getImage()));
     }
 
     private Optional<ToolVersionScanResult> prepareToolVersionScanForUpdate(final Tool tool, final Long toolId,

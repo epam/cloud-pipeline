@@ -75,6 +75,18 @@ public class ToolApiService {
         return toolManager.updateTool(tool);
     }
 
+    @PreAuthorize(TOOL_WRITE)
+    @AclMask
+    public Tool updateToolDefaultVersion(final Long id, final String version) {
+        return toolManager.updateToolDefaultVersion(id, version);
+    }
+
+    @PreAuthorize(TOOL_WRITE)
+    @AclMask
+    public Tool deleteToolDefaultVersion(final Long id) {
+        return toolManager.deleteToolDefaultVersion(id);
+    }
+
     @PreAuthorize(ADMIN_ONLY + OR + TOOL_ADMIN_ONLY)
     @AclMask
     public ToolVersionScanResult updateWhiteListWithToolVersion(final long toolId, final String version,

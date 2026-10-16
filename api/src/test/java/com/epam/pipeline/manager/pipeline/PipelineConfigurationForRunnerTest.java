@@ -110,7 +110,7 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         configurationEntry.setConfiguration(pipelineConfiguration);
         configurationEntry.setDefaultConfiguration(true);
 
-        when(toolManagerMock.getTagFromImageName(anyString())).thenReturn("latest");
+        when(toolManagerMock.getTagFromImageName(any(), anyString())).thenReturn("latest");
         when(gitManagerMock.getGitCredentials(anyLong())).thenReturn(null);
         when(pipelineVersionManagerMock.loadConfigurationEntry(anyLong(), anyString(), anyString()))
                 .thenReturn(configurationEntry);

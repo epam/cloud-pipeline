@@ -1168,10 +1168,22 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Tools</b> (50 tests, 30 automated)</summary>
+<summary><b>Tools</b> (62 tests, 30 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
+| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is the default one until a default version is set |  |
+| [**4664_10**](Tools/4664_default_version/4664_10.md) | Deleting a version of the same image removes the default version |  |
+| [**4664_11**](Tools/4664_default_version/4664_11.md) | A default version removed outside the platform |  |
+| [**4664_12**](Tools/4664_default_version/4664_12.md) | A commit into a tool with a default version doesn't create the latest version |  |
+| [**4664_2**](Tools/4664_default_version/4664_2.md) | Set a version as the default one |  |
+| [**4664_3**](Tools/4664_default_version/4664_3.md) | Remove the default version |  |
+| [**4664_4**](Tools/4664_default_version/4664_4.md) | Delete the default version |  |
+| [**4664_5**](Tools/4664_default_version/4664_5.md) | The default version in the version pickers |  |
+| [**4664_6**](Tools/4664_default_version/4664_6.md) | The default version controls depend on the permissions |  |
+| [**4664_7**](Tools/4664_default_version/4664_7.md) | A docker image without a tag is launched with the default version |  |
+| [**4664_8**](Tools/4664_default_version/4664_8.md) | A version without own settings is launched with the settings of the default version |  |
+| [**4664_9**](Tools/4664_default_version/4664_9.md) | The security messages name the default version |  |
 | [**EPMCMBIBPC-1296**](Tools/EPMCMBIBPC-1296.md) | Run tool with custom settings validation (EXECUTION DEFAULTS aren't filled) | :white_check_mark: |
 | [**EPMCMBIBPC-1404**](Tools/EPMCMBIBPC-1404.md) | Delete tool validation | :white_check_mark: |
 | [**EPMCMBIBPC-1407**](Tools/EPMCMBIBPC-1407.md) | Enable tool validation | :white_check_mark: |

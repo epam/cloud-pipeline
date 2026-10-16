@@ -65,6 +65,12 @@ import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import displayDate from '../../utils/displayDate';
 import displaySize from '../../utils/displaySize';
+import {
+  getToolDefaultVersion,
+  isCustomDefaultVersion,
+  LATEST_VERSION
+} from '../../utils/tool-default-version';
+import {DefaultVersionButton, DefaultVersionLabel} from './default-version';
 import LoadToolAttributes from '../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../models/tools/LoadToolScanPolicy';
 import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhiteList';
@@ -333,9 +339,9 @@ export default class Tool extends localization.LocalizedReactComponent {
       });
   };
 
-  deleteToolVersionConfirm = (version) => {
+  deleteToolVersionConfirm = (version, aliases) => {
     const deleteToolVersion = this.deleteToolVersion;
-    deleteToolConfirmModal({tool: this.props.toolId, version}, this.props.router)
+    deleteToolConfirmModal({tool: this.props.toolId, version, aliases}, this.props.router)
       .then((confirm) => {
         if (confirm) {
           return deleteToolVersion(version);
@@ -360,6 +366,8 @@ export default class Tool extends localization.LocalizedReactComponent {
       if (!version) {
         this.navigateBack();
       } else {
+        // a deleted version is no longer the default one
+        await this.onDefaultVersionChanged();
         await this.fetchVersions();
       }
     }
@@ -1097,6 +1105,11 @@ export default class Tool extends localization.LocalizedReactComponent {
               <tr>
                 <th className={styles.versionName}>
                   {name}
+                  <DefaultVersionLabel
+                    tool={this.props.tool.loaded ? this.props.tool.value : undefined}
+                    version={name}
+                    versions={this.versionNames}
+                  />
                 </th>
                 <td className={styles.versionScanningInfoGraph}>
                   {
@@ -1213,6 +1226,17 @@ export default class Tool extends localization.LocalizedReactComponent {
             {
               roleModel.writeAllowed(this.props.tool.value) && !this.link &&
               (
+                <DefaultVersionButton
+                  tool={this.props.tool.value}
+                  version={version.name}
+                  versions={this.versionNames}
+                  onChange={this.onDefaultVersionChanged}
+                />
+              )
+            }
+            {
+              roleModel.writeAllowed(this.props.tool.value) && !this.link &&
+              (
                 <Button
                   size="small"
                   type="danger"
@@ -1220,7 +1244,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    this.deleteToolVersionConfirm(version.name);
+                    this.deleteToolVersionConfirm(version.name, version.digestAliases);
                   }}
                   style={{lineHeight: 1}}
                 >
@@ -1342,26 +1366,34 @@ export default class Tool extends localization.LocalizedReactComponent {
             message={
               <div>
                 <Row>
-                  <b>{image}</b> has no default <b><i>latest</i></b> version.
+                  <b>{image}</b> has no default version.
                 </Row>
                 <Row>
-                  To edit instance configuration, default parameters and cluster configuration, please create <b><i>latest</i></b> version or modify specific version settings.
+                  To edit instance configuration, default parameters and cluster configuration,
+                  please set a default version, create the <b><i>latest</i></b> version
+                  or modify specific version settings.
                 </Row>
               </div>
             } />
         }
         {
-          this.defaultTag && this.defaultTag !== 'latest' &&
+          this.defaultTag && (this.hasCustomDefaultVersion || this.defaultTag !== LATEST_VERSION) &&
           <Alert
             style={{marginBottom: 10, marginTop: 5}}
             type="info"
             message={
               <div>
+                {
+                  !this.hasCustomDefaultVersion && (
+                    <Row>
+                      <b>{image}</b> has no default version and no <b><i>latest</i></b> version.
+                    </Row>
+                  )
+                }
                 <Row>
-                  <b>{image}</b> has no (<b><i>latest</i></b>) version.
-                </Row>
-                <Row>
-                  Execution environment settings will be applied to version <b>{this.defaultTag}</b>.
+                  Execution environment settings will be applied
+                  to {this.hasCustomDefaultVersion ? 'the default' : 'the only'} version{' '}
+                  <b>{this.defaultTag}</b>.
                 </Row>
               </div>
             } />
@@ -1765,15 +1797,35 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   @computed
+  get versionNames () {
+    if (this.props.versions.loaded &&
+      this.props.versions.value && this.props.versions.value.versions) {
+      return Object.keys(this.versionsScanResObject);
+    }
+    return [];
+  }
+
+  @computed
+  get hasCustomDefaultVersion () {
+    return isCustomDefaultVersion(
+      this.props.tool.loaded ? this.props.tool.value : undefined,
+      this.versionNames
+    );
+  }
+
+  onDefaultVersionChanged = async () => {
+    // the registries tree, which other pages pick tools from, holds the default version as well
+    await Promise.all([this.props.tool.fetch(), this.props.docker.fetch()]);
+  };
+
+  @computed
   get defaultTag () {
     if (this.props.versions.loaded &&
       this.props.versions.value && this.props.versions.value.versions) {
-      const versions = this.versionsScanResObject;
-      if (versions['latest']) {
-        return 'latest';
-      } else if (Object.keys(versions).length === 1) {
-        return Object.keys(versions)[0];
-      }
+      return getToolDefaultVersion(
+        this.props.tool.loaded ? this.props.tool.value : undefined,
+        this.versionNames
+      ) || null;
     }
     return null;
   }
@@ -1798,7 +1850,8 @@ export default class Tool extends localization.LocalizedReactComponent {
       this.props.scanPolicy.loaded ? this.props.scanPolicy.value : null,
       this.isAdmin(),
       this.props.preferences,
-      this.dockerRegistry
+      this.dockerRegistry,
+      this.props.tool.loaded ? this.props.tool.value : undefined
     );
   };
 
@@ -2318,7 +2371,12 @@ export default class Tool extends localization.LocalizedReactComponent {
     } else if (!this.hasPendingScanning && this.props.versions.isUpdating) {
       this.props.versions.clearInterval();
     }
-    if (!this.defaultVersionSettings && this.defaultTag) {
+    if (
+      this.defaultTag &&
+      (!this.defaultVersionSettings || this.defaultVersionSettingsTag !== this.defaultTag)
+    ) {
+      // the default version changes, once it is set, removed or deleted
+      this.defaultVersionSettingsTag = this.defaultTag;
       this.defaultVersionSettings = new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag);
       this.defaultVersionSettings.fetch();
     }

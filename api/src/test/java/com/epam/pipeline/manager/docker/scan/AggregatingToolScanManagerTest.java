@@ -283,7 +283,7 @@ public class AggregatingToolScanManagerTest {
         old.setDigest(DIGEST_2);
         when(toolVersionManager.loadToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(old);
 
-        when(toolManager.getTagFromImageName(Mockito.anyString())).thenReturn(LATEST_VERSION);
+        when(toolManager.getTagFromImageName(Mockito.any(), Mockito.anyString())).thenReturn(LATEST_VERSION);
         when(toolVersionManager.findToolVersion(Mockito.anyLong(), Mockito.anyString())).thenReturn(Optional.empty());
 
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION))

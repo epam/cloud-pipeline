@@ -71,7 +71,9 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
     private static final String REGISTRY_CERT = "cert";
     private static final String TEST_OS = "ubuntu";
     private static final String TEST_OS_VERSION = "20.04";
+    private static final String ANOTHER_TEST_OS_VERSION = "22.04";
     private static final String LATEST_VERSION = "latest";
+    private static final String DEFAULT_VERSION = "1.0";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -215,12 +217,21 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         final ToolOSVersion expectedOsVersion = ToolOSVersion.builder()
                 .version(TEST_OS_VERSION)
                 .distribution(TEST_OS).build();
+        final ToolOSVersion latestOsVersion = ToolOSVersion.builder()
+                .version(ANOTHER_TEST_OS_VERSION)
+                .distribution(TEST_OS).build();
         expectedRegistries.stream()
                 .flatMap(registry -> registry.getGroups().stream())
                 .flatMap(group -> group.getTools().stream())
-                .forEach(tool -> toolVulnerabilityDao.insertToolVersionScan(tool.getId(), LATEST_VERSION,
-                        expectedOsVersion, TEST_USER, TEST_USER, ToolScanStatus.COMPLETED, new Date(),
-                        Collections.emptyMap(), TEST_USER, 1, false));
+                .forEach(tool -> {
+                    // a tool's OS is taken from the scan of its default version, a symlink has no own one
+                    final boolean hasDefaultVersion = tool.isNotSymlink() && tool.getDefaultVersion() != null;
+                    insertToolVersionScan(tool, LATEST_VERSION, hasDefaultVersion ? latestOsVersion
+                            : expectedOsVersion);
+                    if (hasDefaultVersion) {
+                        insertToolVersionScan(tool, tool.getDefaultVersion(), expectedOsVersion);
+                    }
+                });
 
         final List<DockerRegistry> loadedRegistries = registryDao.loadAllRegistriesContent();
 
@@ -358,6 +369,8 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
 
         Tool tool = createTool(TOOL_IMAGE, createdRegistry.getId(), library);
         toolDao.createTool(tool);
+        toolDao.updateDefaultVersion(tool.getId(), DEFAULT_VERSION);
+        tool.setDefaultVersion(DEFAULT_VERSION);
         library.setTools(Collections.singletonList(tool));
         createdRegistry.setTools(Collections.singletonList(tool));
 
@@ -369,6 +382,8 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         Tool symlink = createTool(TOOL_IMAGE, createdRegistry2.getId(), library2);
         symlink.setLink(tool.getId());
         toolDao.createTool(symlink);
+        // a symlink has the default version of the tool it refers to
+        symlink.setDefaultVersion(DEFAULT_VERSION);
         library2.setTools(Arrays.asList(tool2, symlink));
         createdRegistry2.setTools(Arrays.asList(tool2, symlink));
 
@@ -391,6 +406,11 @@ public class DockerRegistryDaoTest extends AbstractJdbcTest {
         tool.setDisk(DISK);
         tool.setInstanceType(INSTANCE_TYPE);
         return tool;
+    }
+
+    private void insertToolVersionScan(final Tool tool, final String version, final ToolOSVersion osVersion) {
+        toolVulnerabilityDao.insertToolVersionScan(tool.getId(), version, osVersion, TEST_USER, TEST_USER,
+                ToolScanStatus.COMPLETED, new Date(), Collections.emptyMap(), TEST_USER, 1, false);
     }
 
     private void assertToolOsVersions(final List<DockerRegistry> actualRegistries,

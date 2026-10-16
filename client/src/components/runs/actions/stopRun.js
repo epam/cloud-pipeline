@@ -29,6 +29,7 @@ import getCommitAllowedForTool from './get-commit-allowed-for-tool';
 import {diskSizeAllowsPause} from './warnings/disk-size-warning';
 import {checkRunActionAvailable, runActions} from './actions-availability';
 import runNodeIsUnavailable from './node-availability';
+import {getTaglessImageVersion} from '../../../utils/tool-default-version';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -76,7 +77,10 @@ export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
       })
       .then((tool) => {
         if (tool) {
-          const [, version = 'latest'] = (dockerImage || '').split('/').pop().split(':');
+          const [, version = getTaglessImageVersion(tool)] = (dockerImage || '')
+            .split('/')
+            .pop()
+            .split(':');
           return getCommitAllowedForTool(tool.id, version);
         }
         return Promise.resolve(false);

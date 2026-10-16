@@ -393,17 +393,8 @@ class PipelineRunOperations(object):
             status = cls.pipeline_run_get(identifier).status
         return status
 
-    @staticmethod
-    def parse_image(docker_image):
-        splitted_image = docker_image.split(':')
-        image_name = splitted_image[0]
-        image_tag = 'latest' if len(splitted_image) == 1 else splitted_image[1]
-        return image_name, image_tag
-
     @classmethod
     def load_missing_args(cls, docker_image, instance_disk, instance_type, cmd_template, print_service=None):
-        image_name, image_tag = cls.parse_image(docker_image)
-
         tool = Tool().find_tool_by_name(docker_image)
         if tool and 'id' in tool:
             tool_id = tool['id']
@@ -411,7 +402,7 @@ class PipelineRunOperations(object):
             print_service.error("Failed to find tool by name %s" % docker_image, err=True)
             sys.exit(1)
 
-        tool_settings = Tool().load_settings(tool_id, image_tag)
+        tool_settings = Tool().load_settings(tool_id, cls._get_image_tag(docker_image, tool))
         if tool_settings and 'settings' in tool_settings[0] and 'configuration' in tool_settings[0]['settings'][0]:
             configuration = tool_settings[0]['settings'][0]['configuration']
             if not instance_disk and 'instance_disk' in configuration:
@@ -431,17 +422,21 @@ class PipelineRunOperations(object):
         return instance_disk, instance_type, cmd_template
 
     @staticmethod
-    def _get_image_tag(docker_image):
+    def _find_image_tag(docker_image):
         # a tag can only follow the last '/', otherwise ':' belongs to a registry port
         image_with_tag = docker_image.split('/')[-1]
         parts = image_with_tag.split(':')
-        return parts[1] if len(parts) == 2 else DEFAULT_IMAGE_TAG
+        return parts[1] if len(parts) == 2 else None
+
+    @classmethod
+    def _get_image_tag(cls, docker_image, tool=None):
+        # an image without a tag stands for the tool's default version, the same one the API launches
+        return cls._find_image_tag(docker_image) or (tool or {}).get('defaultVersion') or DEFAULT_IMAGE_TAG
 
     @classmethod
     def _check_docker_image_tag(cls, docker_image, quiet, print_service):
         # the check is a convenience only: the API decides whether the image can be run,
         # so whenever tags can't be loaded the launch proceeds
-        image_tag = cls._get_image_tag(docker_image)
         try:
             tool = Tool().find_tool_by_name(docker_image)
             if not tool or 'id' not in tool:
@@ -451,6 +446,7 @@ class PipelineRunOperations(object):
             if not quiet:
                 click.echo(DOCKER_IMAGE_TAG_CHECK_WARN_MSG.format(docker_image, str(e)), err=True)
             return
+        image_tag = cls._get_image_tag(docker_image, tool)
         if tags and image_tag not in tags:
             print_service.error('Docker image {} has no tag "{}". Available tags: {}'
                                 .format(docker_image, image_tag, ', '.join(sorted(tags))), err=True)
@@ -515,20 +511,21 @@ class PipelineRunOperations(object):
                         sys.exit(1)
 
     @classmethod
-    def _trim_docker_registry_path(cls, docker_image):
-        parts = docker_image.split('/')
-        if len(parts) == 3:
-            return parts[1] + '/' + parts[2]
-        return docker_image
-
-    @classmethod
     def _is_cuda_available_for_tool(cls, docker_image):
         if not docker_image:
             return False
-        image_name, image_tag = cls.parse_image(cls._trim_docker_registry_path(docker_image))
+        image_tag = cls._find_image_tag(docker_image) or cls._get_default_image_tag(docker_image)
         tool_scan = Tool().load_tool_scan(docker_image)
         tool_version_scan = tool_scan.results.get(image_tag)
         return False if not tool_version_scan else tool_version_scan.cuda_available
+
+    @classmethod
+    def _get_default_image_tag(cls, docker_image):
+        try:
+            return cls._get_image_tag(docker_image, Tool().find_tool_by_name(docker_image))
+        except RuntimeError:
+            # the check, which needs the tag, only warns, so it shall not fail a launch
+            return DEFAULT_IMAGE_TAG
 
     @classmethod
     def _is_cuda_available_for_pipeline(cls, pipeline_run_parameters):

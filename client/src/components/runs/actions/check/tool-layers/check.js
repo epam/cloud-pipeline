@@ -17,6 +17,7 @@
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import LoadToolInfo from '../../../../../models/tools/LoadToolInfo';
 import LoadTool from '../../../../../models/tools/LoadTool';
+import {getTaglessImageVersion} from '../../../../../utils/tool-default-version';
 
 async function getToolIdentifierAndVersion (toolId) {
   if (!toolId) {
@@ -45,7 +46,7 @@ async function getToolIdentifierAndVersion (toolId) {
       if (request.loaded && request.value) {
         return {
           id: Number(request.value.id),
-          version
+          version: version || getTaglessImageVersion(request.value)
         };
       }
     } catch (_) {

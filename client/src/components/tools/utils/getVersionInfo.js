@@ -17,6 +17,7 @@
 import {LaunchMessages, ScanStatuses, ScanStatusDescriptionsFn} from './constants';
 import moment from 'moment-timezone';
 import displayDate from '../../../utils/displayDate';
+import {getToolDefaultVersion, isCustomDefaultVersion} from '../../../utils/tool-default-version';
 
 export default function getVersionRunningInfo (
   version,
@@ -24,7 +25,8 @@ export default function getVersionRunningInfo (
   scanPolicy,
   isAdmin,
   preferences,
-  registry) {
+  registry,
+  tool) {
   if (!preferences.toolScanningEnabledForRegistry(registry)) {
     return {
       allowedToExecute: true,
@@ -72,19 +74,18 @@ export default function getVersionRunningInfo (
       isAllowed = true
     } = (versionScanResult ? versionScanResult.toolOSVersion : undefined) || {};
     let tooltip, launchTooltip;
-    let defaultTag;
-    if (versions['latest']) {
-      defaultTag = 'latest';
-    } else if (Object.keys(versions).length === 1) {
-      defaultTag = Object.keys(versions)[0];
-    }
+    const versionNames = Object.keys(versions);
+    const defaultTag = getToolDefaultVersion(tool, versionNames);
     const isGrace = isGracePeriod(versionScanResult);
     let gracePeriodEnd = isGrace && !isAdmin
       ? displayDate(versionScanResult.gracePeriod, 'D MMMM YYYY')
       : null;
-    const isLatest = version === defaultTag;
+    let versionLabel;
+    if (version === defaultTag) {
+      versionLabel = isCustomDefaultVersion(tool, versionNames) ? 'default' : 'latest';
+    }
     if (versionScanResult && versionScanResult.fromBlackList) {
-      tooltip = ScanStatusDescriptionsFn(isLatest, false).blackListed;
+      tooltip = ScanStatusDescriptionsFn(versionLabel, false).blackListed;
       launchTooltip = LaunchMessages(gracePeriodEnd).blackListed;
       return {
         allowedToExecute: isAdmin ? true :false,
@@ -101,13 +102,14 @@ export default function getVersionRunningInfo (
       tooltip = `This distribution${distributionDescription} is not supported.`;
       launchTooltip = `This distribution${distributionDescription} is not supported. Run anyway?`;
     } else if (versionScanResult && checkVulnerabilitiesNumber(versionScanResult)) {
-      tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).vulnerabilitiesNumberExceeds;
+      tooltip = ScanStatusDescriptionsFn(versionLabel, isGrace || isAdmin)
+        .vulnerabilitiesNumberExceeds;
       launchTooltip = LaunchMessages(gracePeriodEnd).vulnerabilitiesNumberExceeds;
     } else if (versionScanResult && versionScanResult.status === ScanStatuses.notScanned) {
-      tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).notScanned;
+      tooltip = ScanStatusDescriptionsFn(versionLabel, isGrace || isAdmin).notScanned;
       launchTooltip = LaunchMessages(gracePeriodEnd).launchNotScanned;
     } else if (!allowedToExecuteFlag) {
-      tooltip = ScanStatusDescriptionsFn(isLatest, isGrace || isAdmin).againstSecurityPolicy;
+      tooltip = ScanStatusDescriptionsFn(versionLabel, isGrace || isAdmin).againstSecurityPolicy;
       launchTooltip = LaunchMessages(gracePeriodEnd).againstSecurityPolicy;
     }
     return {

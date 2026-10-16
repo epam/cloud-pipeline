@@ -51,6 +51,10 @@ public class Tool extends AbstractSecuredEntity {
     private List<String> labels;
     private List<String> endpoints;
     private String defaultCommand;
+    /**
+     * A version, which is used in place of the "latest" one, if it is set
+     */
+    private String defaultVersion;
     private boolean hasIcon;
     private Long iconId;
     private boolean allowSensitive = false;

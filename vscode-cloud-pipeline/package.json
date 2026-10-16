@@ -223,6 +223,7 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
+    "test": "npm run compile && node --test out/test/",
     "watch": "tsc -watch -p ./",
     "package": "vsce package --allow-missing-repository"
   },

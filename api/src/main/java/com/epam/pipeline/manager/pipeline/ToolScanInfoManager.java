@@ -62,8 +62,8 @@ public class ToolScanInfoManager {
     }
 
     public Optional<ToolVersionScanResult> loadToolVersionScanInfoByImageName(final String image) {
-        final String version = toolManager.getTagFromImageName(image);
         Tool tool = toolManager.loadByNameOrId(image);
+        final String version = toolManager.getTagFromImageName(tool, image);
         return tool.isSymlink() ? loadToolVersionScanInfo(tool.getLink(), version) :
                 loadToolVersionScanInfo(tool, version);
     }
