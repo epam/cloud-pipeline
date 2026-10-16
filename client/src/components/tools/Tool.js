@@ -339,9 +339,9 @@ export default class Tool extends localization.LocalizedReactComponent {
       });
   };
 
-  deleteToolVersionConfirm = (version) => {
+  deleteToolVersionConfirm = (version, aliases) => {
     const deleteToolVersion = this.deleteToolVersion;
-    deleteToolConfirmModal({tool: this.props.toolId, version}, this.props.router)
+    deleteToolConfirmModal({tool: this.props.toolId, version, aliases}, this.props.router)
       .then((confirm) => {
         if (confirm) {
           return deleteToolVersion(version);
@@ -1244,7 +1244,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    this.deleteToolVersionConfirm(version.name);
+                    this.deleteToolVersionConfirm(version.name, version.digestAliases);
                   }}
                   style={{lineHeight: 1}}
                 >

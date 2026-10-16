@@ -22,6 +22,7 @@ import LoadTool from '../../../models/tools/LoadTool';
 import dockerRegistries from '../../../models/tools/DockerRegistriesTree';
 import PipelineRunSingleFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 import registryName from '../registryName';
+import {LATEST_VERSION} from '../../../utils/tool-default-version';
 
 class ToolDeletionWarning extends React.Component {
   constructor (props) {
@@ -45,7 +46,15 @@ class ToolDeletionWarning extends React.Component {
     if (this.displayPromise) {
       return this.displayPromise;
     }
-    const {showGroupAlert, error, name, total, onNavigateToRuns, isDefaultVersion} = opts;
+    const {
+      showGroupAlert,
+      error,
+      name,
+      total,
+      onNavigateToRuns,
+      deletedDefaultVersion,
+      latestDeleted
+    } = opts;
     this.displayPromise = new Promise((resolve) => {
       const resolveFn = async (...opts) => {
         this.displayPromise = null;
@@ -59,7 +68,8 @@ class ToolDeletionWarning extends React.Component {
           error: undefined,
           resolve: undefined,
           onNavigateToRuns: undefined,
-          isDefaultVersion: false
+          deletedDefaultVersion: undefined,
+          latestDeleted: false
         });
       };
       this.setState({
@@ -73,7 +83,8 @@ class ToolDeletionWarning extends React.Component {
         error,
         resolve: resolveFn,
         onNavigateToRuns,
-        isDefaultVersion
+        deletedDefaultVersion,
+        latestDeleted
       });
     });
     return this.displayPromise;
@@ -151,16 +162,36 @@ class ToolDeletionWarning extends React.Component {
   };
 
   renderDefaultVersionWarning = () => {
-    const {isDefaultVersion} = this.state;
-    if (isDefaultVersion) {
+    const {name, deletedDefaultVersion, latestDeleted} = this.state;
+    if (deletedDefaultVersion) {
       return (
         <Row style={{marginTop: 5, marginBottom: 5}}>
           <b>You are going to delete the default version of the tool.</b>
           {' '}
-          <span>
-            Once it is deleted, the tool has no default version,
-            and the <i>latest</i> version (or the only one) is used instead.
-          </span>
+          {
+            deletedDefaultVersion !== name && (
+              <span>
+                The default version <i>{deletedDefaultVersion}</i> refers to the same image,
+                so the registry deletes it as well.
+                {' '}
+              </span>
+            )
+          }
+          {
+            latestDeleted
+              ? (
+                <span>
+                  Once it is deleted, the tool has no default version,
+                  and no <i>latest</i> version either.
+                </span>
+              )
+              : (
+                <span>
+                  Once it is deleted, the tool has no default version,
+                  and the <i>latest</i> version (or the only one) is used instead.
+                </span>
+              )
+          }
         </Row>
       );
     }
@@ -268,19 +299,25 @@ async function fetchActiveRuns (dockerImages = []) {
 const STATUSES_SEARCH_STRING =
   'run.status=RUNNING or run.status=PAUSING or run.status=PAUSED or run.status=RESUMING';
 
-function deleteToolConfirm ({registry, group, tool: toolId, version, link}, router) {
+function deleteToolConfirm ({registry, group, tool: toolId, version, aliases = [], link}, router) {
   return new Promise(async (resolve) => {
     const dockerImages = [];
     const hide = message.loading('Fetching active jobs info...', 0);
     let showGroupAlert = false;
-    let isDefaultVersion = false;
+    let deletedDefaultVersion;
+    let latestDeleted = false;
     let advancedSearchString;
     if (toolId) {
       const toolInfo = new LoadTool(toolId);
       await toolInfo.fetch();
       if (toolInfo.loaded) {
         const {registry: toolRegistry, image, defaultVersion} = toolInfo.value;
-        isDefaultVersion = !!version && version === defaultVersion;
+        // A registry deletes a version by its image, so the versions of the same image go too
+        const deletedVersions = version ? [version, ...aliases] : [];
+        if (defaultVersion && deletedVersions.includes(defaultVersion)) {
+          deletedDefaultVersion = defaultVersion;
+          latestDeleted = deletedVersions.includes(LATEST_VERSION);
+        }
         dockerImages.push(`${toolRegistry}/${image}${version ? `:${version}` : ''}`);
         advancedSearchString = `docker.image="${toolRegistry}/${image}${version ? `:${version}` : '*'}"`;
       }
@@ -346,7 +383,15 @@ function deleteToolConfirm ({registry, group, tool: toolId, version, link}, rout
     const success = await toolDeletionWarningDialog.display(
       title,
       runs,
-      {error, showGroupAlert, name, total, onNavigateToRuns: navigate, isDefaultVersion}
+      {
+        error,
+        showGroupAlert,
+        name,
+        total,
+        onNavigateToRuns: navigate,
+        deletedDefaultVersion,
+        latestDeleted
+      }
     );
     resolve(success);
   });
