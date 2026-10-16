@@ -58,6 +58,7 @@
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
+- [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
 
 ***
 
@@ -1837,6 +1838,16 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 ## Python 3 support for backend services
 
 `pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (`boto3`/`botocore`, `azure-mgmt-*`, `google-api-python-client`, and `pipe-common` itself), so they run under either interpreter.
+
+***
+
+## Capacity blocks sourced from node pools
+
+Previously, the GUI learned about capacity blocks - reserved compute capacity that a node type can draw on at launch - from the `launch.reservation.parameters` system preference, a map keyed by an instance-type pattern. That preference is no longer read by the GUI.
+
+In the current version, the GUI reads capacity blocks directly off the node pools that back them. Every existing behavior is kept: a node type served by a capacity block is still tagged on the launch form - now with the backing pool's name instead of a preference-defined tag - still hides the price estimate, and, where the pool carries a launch configuration, still applies its reservation requests and additional run parameters to the launch payload. On top of that, the launch form now shows a notice listing the reserved capacity available right now for the selected **Cloud Region**; clicking an entry there sets the node type to it.
+
+For more details see [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#future-dated-node-pools).
 
 ***
 
