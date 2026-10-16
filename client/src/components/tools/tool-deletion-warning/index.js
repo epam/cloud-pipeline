@@ -156,9 +156,10 @@ class ToolDeletionWarning extends React.Component {
       return (
         <Row style={{marginTop: 5, marginBottom: 5}}>
           <b>You are going to delete the default version of the tool.</b>
-          <span style={{marginLeft: 5}}>
+          {' '}
+          <span>
             Once it is deleted, the tool has no default version,
-            and the <i>latest</i> version is used instead.
+            and the <i>latest</i> version (or the only one) is used instead.
           </span>
         </Row>
       );

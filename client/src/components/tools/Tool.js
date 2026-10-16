@@ -1392,8 +1392,8 @@ export default class Tool extends localization.LocalizedReactComponent {
                 }
                 <Row>
                   Execution environment settings will be applied
-                  to {this.hasCustomDefaultVersion ? 'the default' : 'the only'} version
-                  <b style={{marginLeft: 3}}>{this.defaultTag}</b>.
+                  to {this.hasCustomDefaultVersion ? 'the default' : 'the only'} version{' '}
+                  <b>{this.defaultTag}</b>.
                 </Row>
               </div>
             } />
