@@ -120,7 +120,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
     public void shouldRoundTripReservationColumns() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
         pool.setOwner(OWNER);
-        pool.setPoolType(NodePoolType.SHARABLE_NODE);
+        pool.setPoolType(NodePoolType.SHAREABLE_NODE);
         pool.setCapacityReservation(true);
         pool.setStartDate(START_DATE);
         pool.setEndDate(END_DATE);
@@ -129,7 +129,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
         final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
 
         assertThat(loaded.getOwner()).isEqualTo(OWNER);
-        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHARABLE_NODE);
+        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHAREABLE_NODE);
         assertThat(loaded.isCapacityReservation()).isTrue();
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
@@ -238,7 +238,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
     @Test
     public void shouldNotClearLifecycleColumnsOnUpdate() {
         final NodePool pool = NodePoolCreatorUtils.getPoolWithoutSchedule();
-        pool.setPoolType(NodePoolType.SHARABLE_NODE);
+        pool.setPoolType(NodePoolType.SHAREABLE_NODE);
         pool.setStartDate(START_DATE);
         pool.setEndDate(END_DATE);
         final NodePool created = poolDao.create(pool);
@@ -252,7 +252,7 @@ public class NodePoolDaoTest extends AbstractJdbcTest {
 
         final NodePool loaded = poolDao.find(created.getId()).orElseThrow(AssertionError::new);
         assertThat(loaded.getName()).isEqualTo(NEW_VALUE);
-        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHARABLE_NODE);
+        assertThat(loaded.getPoolType()).isEqualTo(NodePoolType.SHAREABLE_NODE);
         assertThat(loaded.getStartDate()).isEqualTo(START_DATE);
         assertThat(loaded.getEndDate()).isEqualTo(END_DATE);
     }

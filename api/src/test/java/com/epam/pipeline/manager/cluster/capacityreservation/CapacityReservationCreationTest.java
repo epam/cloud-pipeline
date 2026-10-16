@@ -295,9 +295,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldGenerateLaunchConfigForSharablePool() {
+    public void shouldGenerateLaunchConfigForShareablePool() {
         final NodePoolVO vo = reservationPoolVO();
-        vo.setPoolType(NodePoolType.SHARABLE_NODE);
+        vo.setPoolType(NodePoolType.SHAREABLE_NODE);
 
         final NodePool created = poolManager.create(vo);
 
@@ -323,7 +323,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         requested.setCpuRequestsEnabled(true);
         requested.setCpuRequestsReserved(CALLER_CPU_RESERVED);
         final NodePoolVO vo = reservationPoolVO();
-        vo.setPoolType(NodePoolType.SHARABLE_NODE);
+        vo.setPoolType(NodePoolType.SHAREABLE_NODE);
         vo.setLaunchConfig(requested);
 
         final NodePool created = poolManager.create(vo);
@@ -340,9 +340,9 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldGenerateLaunchConfigForASharablePoolWithoutAReservation() {
+    public void shouldGenerateLaunchConfigForAShareablePoolWithoutAReservation() {
         final NodePoolVO vo = basePoolVO();
-        vo.setPoolType(NodePoolType.SHARABLE_NODE);
+        vo.setPoolType(NodePoolType.SHAREABLE_NODE);
 
         final NodePool created = poolManager.create(vo);
 
@@ -358,7 +358,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     @WithMockUser(username = OWNER)
     public void shouldReplaceTheLaunchConfigOnlyWhenAnEditSendsOne() {
         final NodePoolVO vo = reservationPoolVO();
-        vo.setPoolType(NodePoolType.SHARABLE_NODE);
+        vo.setPoolType(NodePoolType.SHAREABLE_NODE);
         final NodePool created = poolManager.create(vo);
         final NodePoolLaunchConfig generated = poolDao.find(created.getId())
                 .orElseThrow(AssertionError::new)

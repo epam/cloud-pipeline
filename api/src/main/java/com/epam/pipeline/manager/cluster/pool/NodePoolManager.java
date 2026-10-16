@@ -239,13 +239,13 @@ public class NodePoolManager implements SecuredEntityManager {
     }
 
     /**
-     * How runs divide a node of a sharable pool: the config the request sends; otherwise the pool's current one, or
+     * How runs divide a node of a shareable pool: the config the request sends; otherwise the pool's current one, or
      * one derived from its instance type. Other pools have none.
      */
     private NodePoolLaunchConfig resolveLaunchConfig(final NodePoolVO vo,
                                                      final NodePoolType poolType,
                                                      final NodePoolLaunchConfig current) {
-        if (NodePoolType.SHARABLE_NODE != poolType) {
+        if (NodePoolType.SHAREABLE_NODE != poolType) {
             return current;
         }
         if (vo.getLaunchConfig() == null && current != null) {
