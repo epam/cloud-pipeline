@@ -959,15 +959,20 @@ export default class EditToolForm extends React.Component {
       .filter(v => availableMasterNodeTypes.indexOf(v.isSpot) >= 0);
   }
 
-  get isInstanceTypeWithReservation () {
-    const instanceTypeValue = this.props.form.getFieldValue('instanceType');
+  get capacityBlockRegionId () {
     const regionIdValue = this.props.form.getFieldValue('cloudRegionId');
-    const regionId = regionIdValue !== undefined &&
+    return regionIdValue !== undefined &&
       regionIdValue !== null &&
       regionIdValue !== regionNotConfiguredValue
       ? +regionIdValue
       : undefined;
-    return isCapacityBlockInstanceType(instanceTypeValue, {regionId});
+  }
+
+  get isInstanceTypeWithReservation () {
+    return isCapacityBlockInstanceType(
+      this.props.form.getFieldValue('instanceType'),
+      {regionId: this.capacityBlockRegionId}
+    );
   }
 
   @computed
@@ -1634,7 +1639,7 @@ export default class EditToolForm extends React.Component {
                     {getSelectOptions(
                       this.allowedInstanceTypes, {
                         showReservationTag: true,
-                        preferences: this.props.preferences
+                        regionId: this.capacityBlockRegionId
                       }
                     )}
                   </Select>
@@ -1661,6 +1666,7 @@ export default class EditToolForm extends React.Component {
                         )}
                       instanceTypes={this.allowedInstanceTypes}
                       showReservationTag
+                      regionId={this.capacityBlockRegionId}
                     />
                   )}
                 </Form.Item>

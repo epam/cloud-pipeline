@@ -355,7 +355,6 @@ function ConfirmResumeModal (props) {
                   {
                     hyperThreadingDisabled,
                     displayRegion: allowedInstanceTypes && allowedInstanceTypes.regionsMerged,
-                    preferences: prefs,
                     showReservationTag: true,
                     regionId
                   }
