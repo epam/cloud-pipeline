@@ -16,6 +16,16 @@
 
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
+/**
+ * The kind of capacity a reservation request asks a cloud provider for.
+ *
+ * <ul>
+ *   <li>{@link #FUTURE_DATED} - capacity held for a window that starts in the future, committed to for a duration.
+ *       The only type the platform submits today.</li>
+ *   <li>{@link #CAPACITY_BLOCK} - a provider's pre-sold block of accelerated capacity, bought whole. A request of
+ *       this type is refused rather than sent to the provider.</li>
+ * </ul>
+ */
 public enum CapacityReservationType {
 
     FUTURE_DATED,

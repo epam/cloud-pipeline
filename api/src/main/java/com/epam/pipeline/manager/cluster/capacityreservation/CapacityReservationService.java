@@ -50,6 +50,30 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Business-logic layer for capacity reservations: the reservation's own record, and the node pool it drives.
+ *
+ * <p>A reservation is created only as part of the pool it backs, in that pool's transaction, and
+ * {@link CapacityReservationApprovalService} decides the status it starts in. From then on the reservation drives
+ * the pool, which is what the three pool methods are for:
+ * <ul>
+ *   <li>{@link #schedulePool} - gives the pool the window it is usable in and the reservation's target, zone and
+ *       subnet, and leaves its size alone, which at that point is still no nodes.</li>
+ *   <li>{@link #activatePool} - sizes the pool to the reserved instance count, once the capacity is live.</li>
+ *   <li>{@link #deactivatePool} - takes all of that back off the pool, leaving a pool of no nodes, which
+ *       {@link NodePool#isActive} reports as inactive whatever its dates say.</li>
+ * </ul>
+ *
+ * <p>The pool's window ends before the reservation's own does, by the monitor's finalizing lead time, so a run is
+ * not started on capacity that is about to go away; runs already on its nodes keep going until the reservation
+ * ends.
+ *
+ * <p>The human decisions live here too. {@link #approve(Long)} succeeds only while the request is waiting for one -
+ * the monitor re-approves a sliding request itself, and a second human approval would drop the provider's last
+ * answer from it. {@link #cancel(Long)} gives the capacity back and empties the pool. {@link #onPoolDeletion} is
+ * the opposite direction: deleting a pool deletes its reservation, and a reservation that has not ended yet is
+ * given up first - which it refuses to do unless the request is still waiting for approval or the caller insists.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

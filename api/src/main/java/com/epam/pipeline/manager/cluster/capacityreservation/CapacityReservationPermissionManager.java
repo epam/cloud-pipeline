@@ -26,6 +26,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
+/**
+ * The permission checks capacity reservations need, called by bean name from the {@code @PreAuthorize} expressions
+ * in {@code AclExpressions}.
+ *
+ * <p>A reservation is not a secured entity of its own: it is secured by the node pool it backs. Both checks
+ * therefore resolve that pool first and ask about it - {@link #reservationPermission} for a named permission on it,
+ * {@link #reservationOwner} for its owner.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

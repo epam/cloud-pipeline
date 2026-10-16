@@ -16,6 +16,14 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation.cloud;
 
+/**
+ * Raised when a call to a cloud provider leaves it unknown whether capacity was reserved.
+ *
+ * <p>Throttling, a server-side error or a reply that never arrived all mean the reservation may or may not exist.
+ * The request is therefore left in the status it was in and retried with the same client token on a later cycle:
+ * failing it would abandon capacity the platform may already be paying for, and retrying under a new token would
+ * buy that capacity twice.
+ */
 public class CapacityReservationSubmissionUncertainException extends RuntimeException {
 
     public CapacityReservationSubmissionUncertainException(final String message, final Throwable cause) {

@@ -27,6 +27,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Evaluates a {@link ConditionExpression} tree against a subject of type {@code T} by recursively
+ * walking AND/OR nodes and delegating each LOGICAL leaf to the registered
+ * {@link EntityConditionEvaluationStrategy}.
+ *
+ * <p>Strategies are registered at construction time via a field-name → strategy map.
+ * Unknown fields and unsupported operators are caught and logged; the offending node
+ * evaluates to {@code false}.
+ *
+ * @param <T> the subject type to evaluate conditions against
+ */
 @Slf4j
 public class ConditionExpressionEvaluator<T> {
 
@@ -37,6 +48,10 @@ public class ConditionExpressionEvaluator<T> {
         this.conditionEvaluationStrategies = Collections.unmodifiableMap(new HashMap<>(conditionEvaluationStrategies));
     }
 
+    /**
+     * Evaluates the expression tree against {@code subject}. Returns {@code false} when
+     * {@code expression} is {@code null}.
+     */
     public boolean evaluate(final ConditionExpression expression, final T subject, final LocalDateTime now) {
         if (Objects.isNull(expression)) {
             return false;

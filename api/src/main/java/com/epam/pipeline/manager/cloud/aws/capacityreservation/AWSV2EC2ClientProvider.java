@@ -32,6 +32,16 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 
+/**
+ * Builds the AWS SDK v2 {@link Ec2Client} that the capacity reservation calls need.
+ *
+ * <p>The rest of the platform talks to EC2 through SDK v1; future-dated capacity reservations exist only in v2, so
+ * this provider keeps that second SDK in one place. Credentials are resolved from the region's own configuration,
+ * in the order v1 resolves them: an assumed IAM role first, then a named profile, then the default chain.
+ *
+ * <p>A role is assumed through the v1 {@link AWSUtils} provider and the result handed to v2 as static credentials,
+ * so the session token obtained for the role is preserved rather than dropped.
+ */
 @Service
 public class AWSV2EC2ClientProvider {
 

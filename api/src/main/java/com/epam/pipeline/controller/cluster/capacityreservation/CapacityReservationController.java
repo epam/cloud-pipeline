@@ -34,6 +34,15 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 
+/**
+ * REST layer for capacity reservations, under {@code /cluster/capacity-reservation}.
+ *
+ * <p>Reading is a list and a single reservation; writing is the two decisions a human makes about a request -
+ * approving one that waits for it, and cancelling one that is no longer wanted. Creation belongs to the node pool
+ * endpoint, since a reservation only ever exists for a pool.
+ *
+ * <p>Every method delegates to {@link CapacityReservationApiService}, which is where the authorization is.
+ */
 @Controller
 @Tag(name = "capacity-reservation-controller", description = "Capacity Reservation Management")
 @RequiredArgsConstructor
