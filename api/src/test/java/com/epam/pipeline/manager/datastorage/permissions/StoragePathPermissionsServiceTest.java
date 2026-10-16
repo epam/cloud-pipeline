@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.util.CustomAssertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Arrays;

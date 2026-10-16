@@ -19,6 +19,7 @@ package com.epam.pipeline.eventsourcing;
 import lombok.Builder;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import java.util.Map;
 @Value
 @Builder
 @ToString
+@Jacksonized
 public class Event {
 
     public static final String EVENT_TYPE_FIELD = "eventType";

@@ -22,7 +22,6 @@ import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -38,6 +37,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
 
@@ -196,63 +197,66 @@ public class ToolVersionDao extends NamedParameterJdbcDaoSupport {
             return JsonMapper.parseData(data, new TypeReference<List<ConfigurationEntry>>() {});
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(toolVersionSequenceQuery, "Required query toolVersionSequenceQuery is not set");
+        Assert.notNull(createToolVersionQuery, "Required query createToolVersionQuery is not set");
+        Assert.notNull(updateToolVersionQuery, "Required query updateToolVersionQuery is not set");
+        Assert.notNull(deleteToolVersionsQuery, "Required query deleteToolVersionsQuery is not set");
+        Assert.notNull(deleteToolVersionQuery, "Required query deleteToolVersionQuery is not set");
+        Assert.notNull(loadToolVersionQuery, "Required query loadToolVersionQuery is not set");
+        Assert.notNull(loadToolVersionSettingsQuery, "Required query loadToolVersionSettingsQuery is not set");
+        Assert.notNull(createToolVersionWithSettingsQuery,
+                "Required query createToolVersionWithSettingsQuery is not set");
+        Assert.notNull(updateToolVersionWithSettingsQuery,
+                "Required query updateToolVersionWithSettingsQuery is not set");
+    }
 
-    @Required
+
     public void setToolVersionSequenceQuery(String toolVersionSequenceQuery) {
         this.toolVersionSequenceQuery = toolVersionSequenceQuery;
     }
 
-    @Required
     public void setCreateToolVersionQuery(String createToolVersionQuery) {
         this.createToolVersionQuery = createToolVersionQuery;
     }
 
-    @Required
     public void setUpdateToolVersionQuery(String updateToolVersionQuery) {
         this.updateToolVersionQuery = updateToolVersionQuery;
     }
 
-    @Required
     public void setDeleteToolVersionsQuery(String deleteToolVersionsQuery) {
         this.deleteToolVersionsQuery = deleteToolVersionsQuery;
     }
 
-    @Required
     public void setDeleteToolVersionQuery(String deleteToolVersionQuery) {
         this.deleteToolVersionQuery = deleteToolVersionQuery;
     }
 
-    @Required
     public void setLoadToolVersionQuery(String loadToolVersionQuery) {
         this.loadToolVersionQuery = loadToolVersionQuery;
     }
 
-    @Required
     public void setLoadToolVersionSettingsQuery(String loadToolVersionSettingsQuery) {
         this.loadToolVersionSettingsQuery = loadToolVersionSettingsQuery;
     }
 
-    @Required
     public void setCreateToolVersionWithSettingsQuery(String createToolVersionWithSettingsQuery) {
         this.createToolVersionWithSettingsQuery = createToolVersionWithSettingsQuery;
     }
 
-    @Required
     public void setUpdateToolVersionWithSettingsQuery(String updateToolVersionWithSettingsQuery) {
         this.updateToolVersionWithSettingsQuery = updateToolVersionWithSettingsQuery;
     }
 
-    @Required
     public void setLoadToolSettingsQuery(final String loadToolSettingsQuery) {
         this.loadToolSettingsQuery = loadToolSettingsQuery;
     }
 
-    @Required
     public void setLoadToolVersionListSettingsQuery(final String loadToolVersionListSettingsQuery) {
         this.loadToolVersionListSettingsQuery = loadToolVersionListSettingsQuery;
     }
 
-    @Required
     public void setLoadAllLatestToolVersionsQuery(final String loadAllLatestToolVersionsQuery) {
         this.loadAllLatestToolVersionsQuery = loadAllLatestToolVersionsQuery;
     }

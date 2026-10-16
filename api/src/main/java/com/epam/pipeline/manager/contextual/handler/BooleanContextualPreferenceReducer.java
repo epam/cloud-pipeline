@@ -17,7 +17,7 @@ public class BooleanContextualPreferenceReducer implements ContextualPreferenceR
             return Optional.empty();
         }
         final boolean value = preferences.stream()
-                .map(ContextualPreference::getValue)
+                .map(ContextualPreference::value)
                 .map(BooleanUtils::toBoolean)
                 .reduce(false, reducer);
         return Optional.of(preferences.get(0)

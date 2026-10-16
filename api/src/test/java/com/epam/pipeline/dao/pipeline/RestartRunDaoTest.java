@@ -23,16 +23,16 @@ import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Transactional
 public class RestartRunDaoTest extends AbstractJdbcTest {
@@ -67,7 +67,7 @@ public class RestartRunDaoTest extends AbstractJdbcTest {
     private RestartRun restartRun3;
     private RestartRun restartRun4;
 
-    @Before
+    @BeforeEach
     public void setup() {
         cloudRegion = ObjectCreatorUtils.getDefaultAwsRegion();
         regionDao.create(cloudRegion);

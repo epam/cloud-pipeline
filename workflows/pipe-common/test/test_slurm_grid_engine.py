@@ -28,7 +28,7 @@ HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
 
 executor = Mock()
-grid_engine = SlurmGridEngine(cmd_executor=executor)
+grid_engine = SlurmGridEngine(cmd_executor=executor, queue_name=QUEUE)
 
 
 def setup_function():

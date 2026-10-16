@@ -27,8 +27,8 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,8 +61,7 @@ public class RunServiceUrlDaoTest extends AbstractJdbcTest {
     private PipelineRunServiceUrl pipelineRunServiceUrl1;
     private PipelineRunServiceUrl pipelineRunServiceUrl2;
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         final Pipeline testPipeline = new Pipeline();
         testPipeline.setName(TEST_PIPELINE_NAME);
         testPipeline.setRepository(TEST_REPO);

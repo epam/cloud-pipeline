@@ -55,14 +55,14 @@ public class RoleContextualPreferenceHandler extends AbstractDaoContextualPrefer
 
     @Override
     boolean externalEntityExists(final ContextualPreference preference) {
-        return roleDao.loadRole(Long.valueOf(preference.getResource().getResourceId())).isPresent();
+        return roleDao.loadRole(Long.valueOf(preference.resource().resourceId())).isPresent();
     }
 
     @Override
     public Optional<ContextualPreference> search(final List<String> preferences,
                                                  final List<ContextualPreferenceExternalResource> resources) {
         final List<ContextualPreferenceExternalResource> roleResources = resources.stream()
-                .filter(res -> res.getLevel() == level)
+                .filter(res -> res.level() == level)
                 .collect(Collectors.toList());
         final Optional<ContextualPreference> reducedPreference = preferences.stream()
                 .map(pref -> roleResources.stream()

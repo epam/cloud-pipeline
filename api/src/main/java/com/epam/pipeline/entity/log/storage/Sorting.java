@@ -19,9 +19,11 @@ package com.epam.pipeline.entity.log.storage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.elasticsearch.search.sort.SortOrder;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class Sorting {
     private String field;

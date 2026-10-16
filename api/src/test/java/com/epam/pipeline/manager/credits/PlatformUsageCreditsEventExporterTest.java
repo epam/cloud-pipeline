@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.credits;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateAction;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUpdateEvent;
 import com.epam.pipeline.vo.SecuredEntityVO;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;

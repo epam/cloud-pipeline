@@ -15,30 +15,16 @@
  */
 
 package com.epam.pipeline.utils;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.*;
 
-@RunWith(Parameterized.class)
+import static org.junit.jupiter.api.Assertions.*;
+
 public class PosixPermissionUtilsTest {
 
-    private final String inputMask;
-    private final List<PosixFilePermission> expectedPermissions;
-    private final boolean shouldThrow;
-
-    public PosixPermissionUtilsTest(String inputMask, List<PosixFilePermission> expectedPermissions,
-                                    boolean shouldThrow) {
-        this.inputMask = inputMask;
-        this.expectedPermissions = expectedPermissions;
-        this.shouldThrow = shouldThrow;
-    }
-
-    @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
             {
@@ -95,17 +81,19 @@ public class PosixPermissionUtilsTest {
         });
     }
 
-    @Test
-    public void getAllowedPermissionsFromUMask() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void getAllowedPermissionsFromUMask(String inputMask, List<PosixFilePermission> expectedPermissions,
+                                               boolean shouldThrow) {
         if (shouldThrow) {
             try {
                 PosixPermissionUtils.getAllowedPermissionsFromUMask(inputMask);
             } catch (IllegalArgumentException e) {
-                Assert.assertTrue(true);
+                assertTrue(true);
             }
         } else {
             final Set<PosixFilePermission> result = PosixPermissionUtils.getAllowedPermissionsFromUMask(inputMask);
-            Assert.assertTrue(result.containsAll(expectedPermissions));
+            assertTrue(result.containsAll(expectedPermissions));
         }
     }
 }

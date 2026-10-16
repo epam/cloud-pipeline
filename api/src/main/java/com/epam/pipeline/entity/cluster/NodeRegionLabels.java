@@ -17,14 +17,10 @@
 package com.epam.pipeline.entity.cluster;
 
 import com.epam.pipeline.entity.region.CloudProvider;
-import lombok.Data;
 
 /**
  * Represents Kubernetes labels that are describing region where instance is located.
  * Expected to be set for any node in the cluster.
  */
-@Data
-public class NodeRegionLabels {
-    private final CloudProvider cloudProvider;
-    private final String regionCode;
+public record NodeRegionLabels(CloudProvider cloudProvider, String regionCode) {
 }

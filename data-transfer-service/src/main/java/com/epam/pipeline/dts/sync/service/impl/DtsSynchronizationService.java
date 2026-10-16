@@ -42,7 +42,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.scheduling.support.CronSequenceGenerator;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -107,7 +107,7 @@ public class DtsSynchronizationService {
         this.illuminaValidator = illuminaValidator;
         this.syncToken = syncToken;
         this.defaultCronExpression = Optional.of(defaultCronExpression)
-            .filter(CronSequenceGenerator::isValidExpression)
+            .filter(CronExpression::isValidExpression)
             .orElseThrow(() -> new IllegalStateException("Default FS sync cron is invalid!"));
     }
 
@@ -159,7 +159,7 @@ public class DtsSynchronizationService {
 
     private String getCronOrDefault(final AutonomousSyncRule newRule) {
         return Optional.ofNullable(newRule.getCron())
-            .filter(CronSequenceGenerator::isValidExpression)
+            .filter(CronExpression::isValidExpression)
             .orElse(defaultCronExpression);
     }
 
@@ -229,7 +229,14 @@ public class DtsSynchronizationService {
         log.info("Checking if transfer should be triggered from `{}` to `{}`", rule.getSource(), rule.getDestination());
         final AutonomousSyncCronDetails cronDetails = entry.getValue();
         final Date lastExecution = cronDetails.getLastExecution();
-        final Date next = cronDetails.getGenerator().next(lastExecution);
+        final LocalDateTime nextExecution = cronDetails.getGenerator()
+                .next(lastExecution.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        if (nextExecution == null) {
+            log.info("Transfer was last triggered {}, no next trigger is scheduled by cron `{}`",
+                     lastExecution, cronDetails.getExpression());
+            return false;
+        }
+        final Date next = Date.from(nextExecution.atZone(ZoneId.systemDefault()).toInstant());
         log.info("Transfer was last triggered {}, next trigger {}", lastExecution, next);
         final boolean shouldBeTriggered = next.before(now);
         if (shouldBeTriggered) {

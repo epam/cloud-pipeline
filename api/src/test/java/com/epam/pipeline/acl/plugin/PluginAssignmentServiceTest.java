@@ -24,21 +24,24 @@ import com.epam.pipeline.entity.plugin.UIPluginAssignmentEntity;
 import com.epam.pipeline.entity.plugin.UIPluginEntity;
 import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.mapper.plugin.UIPluginAssignmentMapper;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PluginAssignmentServiceTest {
 
     private static final Long PLUGIN_ID = 1L;
@@ -46,6 +49,8 @@ public class PluginAssignmentServiceTest {
     private static final Long TOOL_ID = 2L;
     private static final Long PIPELINE_ID = 3L;
     private static final String VERSION = "v1.0";
+    private static final String DUPLICATE_ERROR_MESSAGE_FORMAT = "Duplicate plugin assignment for pluginId - %s, " +
+            "toolId - %s, pipelineId - %s, and version - %s";
 
     @Mock
     private UIPluginAssignmentRepository assignmentRepository;
@@ -64,7 +69,7 @@ public class PluginAssignmentServiceTest {
     private UIPluginAssignment assignmentDto;
     private UIPluginAssignmentEntity assignmentEntity;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         pluginDto = new UIPlugin();
         pluginDto.setId(PLUGIN_ID);
@@ -100,7 +105,7 @@ public class PluginAssignmentServiceTest {
         verify(assignmentRepository).findByToolIdAndVersion(TOOL_ID, VERSION);
         verify(mapper).toDtoList(Collections.singletonList(assignmentEntity));
         verifyNoMoreInteractions(assignmentRepository);
-        verifyZeroInteractions(pluginRepository);
+        verifyNoInteractions(pluginRepository);
     }
 
     @Test
@@ -119,7 +124,7 @@ public class PluginAssignmentServiceTest {
         verify(mapper).toDtoList(Collections.singletonList(assignmentEntity));
         verifyNoMoreInteractions(assignmentRepository);
         verifyNoMoreInteractions(mapper);
-        verifyZeroInteractions(pluginRepository);
+        verifyNoInteractions(pluginRepository);
     }
 
     @Test
@@ -137,36 +142,39 @@ public class PluginAssignmentServiceTest {
         verify(mapper).toDtoList(Collections.singletonList(assignmentEntity));
         verifyNoMoreInteractions(assignmentRepository);
         verifyNoMoreInteractions(mapper);
-        verifyZeroInteractions(pluginRepository);
+        verifyNoInteractions(pluginRepository);
     }
 
     @Test
     public void shouldGetAssignmentByIdSuccess() {
-        when(assignmentRepository.findOne(ASSIGNMENT_ID)).thenReturn(assignmentEntity);
+        when(assignmentRepository.findById(ASSIGNMENT_ID)).thenReturn(Optional.of(assignmentEntity));
         when(mapper.toDto(assignmentEntity)).thenReturn(assignmentDto);
 
         UIPluginAssignment result = pluginAssignmentService.getAssignment(ASSIGNMENT_ID);
 
         // Assert
         assertThat(result, is(assignmentDto));
-        verify(assignmentRepository).findOne(ASSIGNMENT_ID);
+        verify(assignmentRepository).findById(ASSIGNMENT_ID);
         verify(mapper).toDto(assignmentEntity);
         verifyNoMoreInteractions(assignmentRepository);
         verifyNoMoreInteractions(mapper);
-        verifyZeroInteractions(pluginRepository);
+        verifyNoInteractions(pluginRepository);
     }
 
-    @Test(expected = ObjectNotFoundException.class)
-    public void shouldGetAssignmentNotFound() {
-        when(assignmentRepository.findOne(ASSIGNMENT_ID)).thenReturn(null);
+    @Test
+    public void shouldNotGetAssignmentNotFound() {
+        when(assignmentRepository.findById(ASSIGNMENT_ID)).thenReturn(Optional.empty());
 
-        pluginAssignmentService.getAssignment(ASSIGNMENT_ID);
+        ObjectNotFoundException ex = assertThrows(ObjectNotFoundException.class,
+            () -> pluginAssignmentService.getAssignment(ASSIGNMENT_ID),
+            "Expected to throw ObjectNotFoundException, bud didn't");
+        assertEquals("Plugin assignment not found: " + ASSIGNMENT_ID, ex.getMessage());
     }
 
     @Test
     public void shouldSaveAssignmentNew() {
         assignmentDto.setId(null);
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(pluginEntity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(pluginEntity));
         when(mapper.toEntity(assignmentDto)).thenReturn(assignmentEntity);
         when(assignmentRepository.save(assignmentEntity)).thenReturn(assignmentEntity);
         when(mapper.toDto(assignmentEntity)).thenReturn(assignmentDto);
@@ -179,7 +187,7 @@ public class PluginAssignmentServiceTest {
         assertThat(result, is(assignmentDto));
         verify(assignmentRepository).findByToolIdAndVersion(TOOL_ID, VERSION);
         verify(mapper).toEntity(assignmentDto);
-        verify(pluginRepository).findOne(PLUGIN_ID);
+        verify(pluginRepository).findById(PLUGIN_ID);
         verify(assignmentRepository).save(assignmentEntity);
         verify(mapper).toDto(assignmentEntity);
         verify(mapper).toDtoList(Collections.emptyList());
@@ -190,7 +198,7 @@ public class PluginAssignmentServiceTest {
 
     @Test
     public void shouldSaveAssignmentUpdate() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(pluginEntity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(pluginEntity));
         when(mapper.toEntity(assignmentDto)).thenReturn(assignmentEntity);
         when(assignmentRepository.save(assignmentEntity)).thenReturn(assignmentEntity);
         when(assignmentRepository.findByToolIdAndVersion(TOOL_ID, VERSION))
@@ -201,7 +209,7 @@ public class PluginAssignmentServiceTest {
 
         // Assert
         assertThat(result, is(assignmentDto));
-        verify(pluginRepository).findOne(PLUGIN_ID);
+        verify(pluginRepository).findById(PLUGIN_ID);
         verify(assignmentRepository).findByToolIdAndVersion(TOOL_ID, VERSION);
         verify(mapper).toEntity(assignmentDto);
         verify(assignmentRepository).save(assignmentEntity);
@@ -212,8 +220,8 @@ public class PluginAssignmentServiceTest {
         verifyNoMoreInteractions(pluginRepository);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldSaveAssignmentDuplicate() {
+    @Test
+    public void shouldNotSaveAssignmentDuplicate() {
         UIPluginAssignmentEntity existingEntity = new UIPluginAssignmentEntity();
         existingEntity.setId(2L); // Different ID
         existingEntity.setPlugin(pluginEntity);
@@ -226,60 +234,80 @@ public class PluginAssignmentServiceTest {
         existingDto.setToolId(TOOL_ID);
         existingDto.setVersion(VERSION);
 
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(pluginEntity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(pluginEntity));
         when(assignmentRepository.findByToolIdAndVersion(TOOL_ID, VERSION))
                 .thenReturn(Collections.singletonList(existingEntity));
         when(mapper.toDtoList(Collections.singletonList(existingEntity))).
                 thenReturn(Collections.singletonList(existingDto));
 
-        pluginAssignmentService.saveAssignment(assignmentDto);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> pluginAssignmentService.saveAssignment(assignmentDto),
+            "Expected to throw IllegalArgumentException, bud didn't");
+
+        assertEquals(String.format(DUPLICATE_ERROR_MESSAGE_FORMAT, PLUGIN_ID, TOOL_ID, null, VERSION), ex.getMessage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldSaveAssignmentInvalidPluginId() {
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(null);
+    @Test
+    public void shouldNotSaveAssignmentInvalidPluginId() {
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.empty());
 
-        pluginAssignmentService.saveAssignment(assignmentDto);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> pluginAssignmentService.saveAssignment(assignmentDto),
+            "Expected to throw IllegalArgumentException, bud didn't");
+
+        assertEquals("Valid plugin ID is required", ex.getMessage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldSaveAssignmentMissingToolAndPipelineId() {
         assignmentDto.setToolId(null);
         assignmentDto.setPipelineId(null);
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(pluginEntity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(pluginEntity));
 
-        pluginAssignmentService.saveAssignment(assignmentDto);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> pluginAssignmentService.saveAssignment(assignmentDto),
+                "Expected to throw IllegalArgumentException, bud didn't");
+
+        assertEquals("Either toolId or pipelineId must be specified", ex.getMessage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldSaveAssignmentBothToolAndPipelineId() {
+    @Test
+    public void shouldNotSaveAssignmentBothToolAndPipelineId() {
         assignmentDto.setToolId(TOOL_ID);
         assignmentDto.setPipelineId(PIPELINE_ID);
-        when(pluginRepository.findOne(PLUGIN_ID)).thenReturn(pluginEntity);
+        when(pluginRepository.findById(PLUGIN_ID)).thenReturn(Optional.of(pluginEntity));
 
-        pluginAssignmentService.saveAssignment(assignmentDto);
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            () -> pluginAssignmentService.saveAssignment(assignmentDto),
+            "Expected to throw IllegalArgumentException, bud didn't");
+
+        assertEquals("Either toolId or pipelineId must be specified", ex.getMessage());
     }
 
     @Test
     public void shouldDeleteAssignmentSuccess() {
-        when(assignmentRepository.findOne(ASSIGNMENT_ID)).thenReturn(assignmentEntity);
+        when(assignmentRepository.findById(ASSIGNMENT_ID)).thenReturn(Optional.of(assignmentEntity));
         when(mapper.toDto(assignmentEntity)).thenReturn(assignmentDto);
 
         pluginAssignmentService.deleteAssignment(ASSIGNMENT_ID);
 
         // Assert
-        verify(assignmentRepository).findOne(ASSIGNMENT_ID);
+        verify(assignmentRepository).findById(ASSIGNMENT_ID);
         verify(mapper).toDto(assignmentEntity);
-        verify(assignmentRepository).delete(ASSIGNMENT_ID);
+        verify(assignmentRepository).deleteById(ASSIGNMENT_ID);
         verifyNoMoreInteractions(assignmentRepository);
         verifyNoMoreInteractions(mapper);
-        verifyZeroInteractions(pluginRepository);
+        verifyNoInteractions(pluginRepository);
     }
 
-    @Test(expected = ObjectNotFoundException.class)
-    public void shouldDeleteAssignmentNotFound() {
-        when(assignmentRepository.findOne(ASSIGNMENT_ID)).thenReturn(null);
+    @Test
+    public void shouldNotDeleteAssignmentNotFound() {
+        when(assignmentRepository.findById(ASSIGNMENT_ID)).thenReturn(Optional.empty());
 
-        pluginAssignmentService.deleteAssignment(ASSIGNMENT_ID);
+        ObjectNotFoundException ex = assertThrows(ObjectNotFoundException.class,
+            () -> pluginAssignmentService.deleteAssignment(ASSIGNMENT_ID),
+            "Expected to throw ObjectNotFoundException, bud didn't");
+
+        assertEquals("Plugin assignment not found: " + ASSIGNMENT_ID, ex.getMessage());
     }
 }

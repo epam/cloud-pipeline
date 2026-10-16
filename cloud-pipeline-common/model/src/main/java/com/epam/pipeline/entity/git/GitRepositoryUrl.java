@@ -86,11 +86,11 @@ public final class GitRepositoryUrl {
         final StringBuffer builder = new StringBuffer();
         builder.append(protocol);
         Optional.ofNullable(username).map(builder::append);
-        Optional.ofNullable(password).map(p -> builder.append(":").append(p));
-        Optional.ofNullable(username).map(u -> builder.append("@"));
+        Optional.ofNullable(password).map(p -> builder.append(':').append(p));
+        Optional.ofNullable(username).map(u -> builder.append('@'));
         builder.append(host);
-        Optional.ofNullable(namespace).map(n -> builder.append("/").append(n));
-        Optional.ofNullable(project).map(p -> builder.append("/").append(p).append(".git"));
+        Optional.ofNullable(namespace).map(n -> builder.append('/').append(n));
+        Optional.ofNullable(project).map(p -> builder.append('/').append(p).append(".git"));
         return builder.toString();
     }
 

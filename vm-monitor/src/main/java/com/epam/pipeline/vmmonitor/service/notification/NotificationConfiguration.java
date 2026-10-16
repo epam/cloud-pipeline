@@ -18,12 +18,14 @@
 package com.epam.pipeline.vmmonitor.service.notification;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
-@ConfigurationProperties(prefix = "notification")
 @Data
+@Configuration
+@NoArgsConstructor
+@ConfigurationProperties(prefix = "notification")
 public class NotificationConfiguration {
 
     private String missingNodeSubject;

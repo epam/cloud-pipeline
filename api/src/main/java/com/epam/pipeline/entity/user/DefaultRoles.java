@@ -55,7 +55,8 @@ public enum DefaultRoles {
             null, null, null, null)),
     ROLE_CLUSTER_READER(new Role(null, "ROLE_CLUSTER_READER", true, false, null, null, null, null)),
     ROLE_USER_METADATA_READER(new Role(null, "ROLE_USER_METADATA_READER", true, false, null, null, null, null)),
-    ROLE_USER_READER(new Role(null, "ROLE_USER_READER", true, false, null, null, null, null));
+    ROLE_USER_READER(new Role(null, "ROLE_USER_READER", true, false, null, null, null, null)),
+    ROLE_NODE_POOL_MANAGER(new Role(null, "ROLE_NODE_POOL_MANAGER", true, false, null, null, null, null));
 
     private Role role;
 

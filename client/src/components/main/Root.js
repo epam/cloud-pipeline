@@ -18,14 +18,12 @@ import React from 'react';
 import {hashHistory} from 'react-router';
 import {Provider} from 'mobx-react';
 import {RouterStore, syncHistoryWithStore} from 'mobx-react-router';
-import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
 import userNotifications from '../../models/notifications/CurrentUserNotifications';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
-import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
 import runDefaultParameters from '../../models/pipelines/PipelineRunDefaultParameters';
 import configurations from '../../models/configuration/Configurations';
 import AllConfigurations from '../../models/configuration/ConfigurationsLoadAll';
@@ -76,8 +74,6 @@ const counter = new RunCount({usePreferenceValue: true, autoUpdate: true});
 const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();
-const googleApi = new GoogleApi(preferences);
-const fireCloudMethods = new FireCloudMethods(googleApi);
 const users = new Users();
 const usersInfo = new UsersInfo();
 const allowedInstanceTypes = new AllowedInstanceTypes();
@@ -123,8 +119,6 @@ const Root = () =>
   <Provider
     {...{
       routing,
-      googleApi,
-      fireCloudMethods,
       localization,
       history,
       preferences,

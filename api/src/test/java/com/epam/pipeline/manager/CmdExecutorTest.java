@@ -17,7 +17,9 @@
 package com.epam.pipeline.manager;
 
 import com.epam.pipeline.exception.CmdExecutionException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CmdExecutorTest {
 
@@ -48,12 +50,13 @@ public class CmdExecutorTest {
 
     }
 
-    @Test(expected = CmdExecutionException.class)
+    @Test
     public void executeCommandWithTimeoutShouldBeInterruptedIfReachedTimeout() {
         CmdExecutor cmdExecutor = new CmdExecutor();
 
         // bash sleep measured in sec but timeout in mills
         double timeToSleep = (double) (TIMEOUT + TIMEOUT) / MILLS_IN_SEC;
-        cmdExecutor.executeCommand(String.format(COMMAND_WITH_SLEEP, timeToSleep), TIMEOUT);
+        assertThrows(CmdExecutionException.class,
+            () -> cmdExecutor.executeCommand(String.format(COMMAND_WITH_SLEEP, timeToSleep), TIMEOUT));
     }
 }

@@ -19,12 +19,14 @@ package com.epam.pipeline.entity.region;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @EqualsAndHashCode
+@NoArgsConstructor
 public class GCPCustomInstanceType {
     private int cpu;
     private double ram;

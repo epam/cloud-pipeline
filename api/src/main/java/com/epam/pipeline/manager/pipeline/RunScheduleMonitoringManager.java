@@ -12,24 +12,24 @@ import com.nimbusds.jose.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+
 import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class RunScheduleMonitoringManager extends AbstractSchedulingManager {
+public class RunScheduleMonitoringManager extends AbstractSchedulingManager implements InitializingBean {
 
     private final RunScheduleMonitoringManager.RunScheduleMonitoringManagerCore core;
     private final RunScheduler scheduler;
     private final RunScheduleManager runScheduleManager;
 
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         log.debug("Initiating schedules...");
         scheduler.init();
         runScheduleManager.loadAllSchedules().forEach(scheduler::scheduleRunScheduleIfPossible);
@@ -39,7 +39,7 @@ public class RunScheduleMonitoringManager extends AbstractSchedulingManager {
     }
 
     @Service
-    @RequiredArgsConstructor(onConstructor_ = {@Autowired})
+    @RequiredArgsConstructor(/*onConstructor_ = {@Autowired}*/)
     public static class RunScheduleMonitoringManagerCore {
 
         private final RunScheduleManager runScheduleManager;

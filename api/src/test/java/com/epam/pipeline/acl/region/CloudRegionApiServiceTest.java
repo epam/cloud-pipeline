@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -36,8 +36,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -59,8 +60,7 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
 
     private List<CloudRegionInfo> cloudRegionInfoList;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         region = new AwsRegion();
         region.setId(1L);
         region.setName("OWNER");
@@ -88,12 +88,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         assertThat(cloudRegionApiService.loadAllRegionsInfo()).isEqualTo(cloudRegionInfoList);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDenyLoadRegionsInfoForNotAdminOrGeneralUser() {
         doReturn(cloudRegionInfoList).when(mockCloudRegionManager).loadAllRegionsInfo();
-
-        cloudRegionApiService.loadAllRegionsInfo();
+        assertThrows(AccessDeniedException.class, () -> cloudRegionApiService.loadAllRegionsInfo());
     }
 
     @Test
@@ -104,12 +103,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         assertThat(cloudRegionApiService.create(cloudRegionDTO)).isEqualTo(region);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldNotCreateAbstractCloudRegionForNotAdmin() {
         doReturn(region).when(mockCloudRegionManager).create(cloudRegionDTO);
-
-        cloudRegionApiService.create(cloudRegionDTO);
+        assertThrows(AccessDeniedException.class, () -> cloudRegionApiService.create(cloudRegionDTO));
     }
 
     @Test
@@ -120,12 +118,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         assertThat(cloudRegionApiService.update(region.getId(), cloudRegionDTO)).isEqualTo(region);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldNotUpdateAbstractCloudRegionForNotAdmin() {
         doReturn(region).when(mockCloudRegionManager).update(region.getId(), cloudRegionDTO);
-
-        cloudRegionApiService.update(region.getId(), cloudRegionDTO);
+        assertThrows(AccessDeniedException.class, () -> cloudRegionApiService.update(region.getId(), cloudRegionDTO));
     }
 
     @Test
@@ -136,12 +133,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         assertThat(cloudRegionApiService.delete(region.getId())).isEqualTo(region);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldDeleteAbstractCloudRegionForNotAdmin() {
         doReturn(region).when(mockCloudRegionManager).delete(region.getId());
-
-        cloudRegionApiService.delete(region.getId());
+        assertThrows(AccessDeniedException.class, () -> cloudRegionApiService.delete(region.getId()));
     }
 
     @Test
@@ -152,12 +148,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         assertThat(cloudRegionApiService.loadAllAvailable(CloudProvider.AWS)).isEqualTo(availableCloudsList);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(roles = SIMPLE_USER_ROLE)
     public void shouldNotLoadAllAvailableCloudsForNotAdmin() {
         doReturn(availableCloudsList).when(mockCloudRegionManager).loadAllAvailable(CloudProvider.AWS);
-
-        cloudRegionApiService.loadAllAvailable(CloudProvider.AWS);
+        assertThrows(AccessDeniedException.class, () -> cloudRegionApiService.loadAllAvailable(CloudProvider.AWS));
     }
 
     @Test
@@ -241,12 +236,11 @@ public class CloudRegionApiServiceTest extends AbstractAclTest {
         assertThat(result).isEqualTo(region);
     }
 
-    @Test(expected = AccessDeniedException.class)
+    @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldFailReturningCloudRegionWithoutPermission() {
         initAclEntity(region);
         doReturn(region).when(mockCloudRegionManager).load(region.getId());
-
-        cloudRegionApiService.load(region.getId());
+        assertThrows(AccessDeniedException.class, () -> cloudRegionApiService.load(region.getId()));
     }
 }

@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.git.bitbucket;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class BitbucketBranch {
     private String id;
     private String displayId;
