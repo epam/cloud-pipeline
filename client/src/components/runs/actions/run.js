@@ -82,9 +82,9 @@ import {
 } from '../run-tags/utilities';
 import {applyRunNameAliasTag} from '../run-tags/alias';
 import {
-  ensureValidReservationParametersForLaunchPayloads,
-  findReservationParameterConfig
+  ensureValidReservationParametersForLaunchPayloads
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -824,11 +824,12 @@ export class RunConfirmation extends React.Component {
   }
 
   get isInstanceTypeWithReservation () {
-    const {
-      preferences
-    } = this.props;
+    const {cloudRegionId} = this.props;
     const {name} = this.currentInstanceType || {};
-    return Boolean(findReservationParameterConfig(name, preferences));
+    const regionId = cloudRegionId !== undefined && cloudRegionId !== null
+      ? +cloudRegionId
+      : undefined;
+    return isCapacityBlockInstanceType(name, {regionId});
   }
 
   setOnDemand = (onDemand) => {

@@ -16,6 +16,7 @@
 
 import {computed} from 'mobx';
 import HotNodePoolsFilter from '../HotNodePoolsFilter';
+import {findCapacityBlockPool} from './utilities';
 
 // The one filter the client sends: every pool backing an active capacity
 // reservation. Region is left out on purpose - the launch form's region
@@ -81,6 +82,36 @@ class CapacityBlocks {
 }
 
 const capacityBlocks = new CapacityBlocks();
+
+/**
+ * True when a pool backs `instanceType` - with or without a `launchConfig`.
+ * Drives the pool-name tag, the suggestion block and hiding the price
+ * estimate: a capacity block changes those even when it injects nothing into
+ * the launch payload.
+ *
+ * @param {string} instanceType
+ * @param {Object} [options]
+ * @param {number} [options.regionId]
+ * @returns {boolean}
+ */
+export function isCapacityBlockInstanceType (instanceType, options) {
+  return !!findCapacityBlockPool(capacityBlocks.pools, instanceType, options);
+}
+
+/**
+ * The pool's `launchConfig` for `instanceType`, camelCase, as the backend
+ * sends it - or `undefined` when no matching pool carries one. Drives the
+ * reservation-requests panel, the launch payload and `podAssignPolicy`.
+ *
+ * @param {string} instanceType
+ * @param {Object} [options]
+ * @param {number} [options.regionId]
+ * @returns {Object|undefined}
+ */
+export function findCapacityBlockConfig (instanceType, options) {
+  const pool = findCapacityBlockPool(capacityBlocks.pools, instanceType, options);
+  return pool && pool.launchConfig ? pool.launchConfig : undefined;
+}
 
 export {CapacityBlocks, CAPACITY_BLOCKS_FILTER};
 export default capacityBlocks;

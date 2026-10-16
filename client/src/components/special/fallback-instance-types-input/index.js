@@ -49,6 +49,7 @@ export class FallbackInstanceTypesInput extends React.Component {
     hyperThreadingDisabled: PropTypes.bool,
     displayRegion: PropTypes.bool,
     showReservationTag: PropTypes.bool,
+    regionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     maximumCount: PropTypes.number,
     size: PropTypes.oneOf(['small', 'default', 'large']),
     placeholder: PropTypes.string
@@ -249,7 +250,8 @@ export class FallbackInstanceTypesInput extends React.Component {
     const {
       hyperThreadingDisabled,
       displayRegion,
-      showReservationTag
+      showReservationTag,
+      regionId
     } = this.props;
     const selected = this.isSelected(instance);
     const disabled = this.optionDisabled(instance);
@@ -284,6 +286,7 @@ export class FallbackInstanceTypesInput extends React.Component {
                 hyperThreadingDisabled,
                 displayRegion,
                 showReservationTag,
+                regionId,
                 plainText: false
               }
             )

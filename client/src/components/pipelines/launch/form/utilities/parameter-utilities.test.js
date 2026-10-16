@@ -17,11 +17,14 @@
 import {stubApi} from '@test';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
+import capacityBlocks from '../../../../../models/cluster/capacity-blocks';
 import {CP_NODEUP_RETRY_COUNT} from './parameters';
 import {
   getNodeUpRetryCountParameter,
   getParameterConfig,
   getVisibleParameters,
+  getReservationRequestParameters,
+  isReservationRequestParameter,
   parametersToPayloadParams,
   parametersToConfigurationParams,
   setNodeUpRetryCountValue,
@@ -232,5 +235,44 @@ describe('validateParameters', () => {
     it('requires a value when the configuration marks it required, as any other parameter', () => {
       expect(requiredErrorOf()).toBe('Required');
     });
+  });
+});
+
+describe('isReservationRequestParameter', () => {
+  beforeEach(() => {
+    capacityBlocks.invalidateCache();
+  });
+
+  it('is empty before the store has loaded, as it used to be before the preference loaded', () => {
+    stubApi({
+      '/cluster/pool/filter': [{
+        id: 1,
+        name: 'reserved-pool',
+        instanceType: 'm5.large',
+        launchConfig: {additionalParameters: {CP_CAP_CUSTOM_PARAM: 'true'}}
+      }]
+    });
+
+    expect(getReservationRequestParameters()).toEqual([]);
+    expect(isReservationRequestParameter('CP_CAP_CUSTOM_PARAM')).toBe(false);
+  });
+
+  it('is off the capacity-block store rather than the preference', async () => {
+    stubApi({
+      '/cluster/pool/filter': [{
+        id: 1,
+        name: 'reserved-pool',
+        instanceType: 'm5.large',
+        launchConfig: {
+          additionalParameters: {CP_CAP_CUSTOM_PARAM: 'true'}
+        }
+      }]
+    });
+    await capacityBlocks.load();
+
+    expect(getReservationRequestParameters()).toEqual(['CP_CAP_CUSTOM_PARAM']);
+    expect(isReservationRequestParameter('CP_CAP_CUSTOM_PARAM')).toBe(true);
+    expect(isReservationRequestParameter('cp_cap_custom_param')).toBe(true);
+    expect(isReservationRequestParameter('CP_CAP_UNRELATED')).toBe(false);
   });
 });

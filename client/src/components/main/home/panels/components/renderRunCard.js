@@ -28,9 +28,7 @@ import RunName from '../../../../runs/run-name';
 import PlatformIcon from '../../../../tools/platform-icon';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
-import {
-  findReservationParameterConfig
-} from '../../../../pipelines/launch/form/components/reservation-parameters/utilities';
+import {isCapacityBlockInstanceType} from '../../../../../models/cluster/capacity-blocks';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -145,8 +143,8 @@ function renderCommitStatus (run) {
 function renderEstimatedPrice (run) {
   const price = evaluateRunPrice(run);
   const {instance} = run || {};
-  const {nodeType} = instance || {};
-  if (findReservationParameterConfig(nodeType)) {
+  const {nodeType, cloudRegionId} = instance || {};
+  if (isCapacityBlockInstanceType(nodeType, {regionId: cloudRegionId})) {
     return null;
   }
   return (

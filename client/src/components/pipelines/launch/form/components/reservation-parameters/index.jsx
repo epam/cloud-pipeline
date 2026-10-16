@@ -42,11 +42,13 @@ class ReservationParameters extends React.PureComponent {
   componentDidUpdate (prevProps, prevState, snapshot) {
     const {
       parameters: prev = {},
-      instanceType: prevInstanceType = {}
+      instanceType: prevInstanceType = {},
+      region: prevRegion
     } = prevProps;
     const {
       parameters: curr = {},
-      instanceType: currInstanceType = {}
+      instanceType: currInstanceType = {},
+      region: currRegion
     } = this.props;
     const {
       gpu: prevGpu,
@@ -71,8 +73,11 @@ class ReservationParameters extends React.PureComponent {
     const {
       name: currInstanceTypeName
     } = currInstanceType;
+    const prevRegionId = prevRegion ? prevRegion.id : undefined;
+    const currRegionId = currRegion ? currRegion.id : undefined;
     if (
-      prevInstanceTypeName !== currInstanceTypeName
+      prevInstanceTypeName !== currInstanceTypeName ||
+      prevRegionId !== currRegionId
     ) {
       this.updateConfig();
     }
@@ -85,11 +90,13 @@ class ReservationParameters extends React.PureComponent {
 
   updateConfig = () => {
     const {
-      instanceType: instanceTypeObj = {}
+      instanceType: instanceTypeObj = {},
+      region
     } = this.props;
     const {
       name: instanceType
     } = instanceTypeObj;
+    const regionId = region ? region.id : undefined;
     const token = this.token = {};
     this.refreshResourcesToken = {};
     (async () => {
@@ -103,7 +110,7 @@ class ReservationParameters extends React.PureComponent {
           resourcesDetailsVisible: false,
           expandedResourceNodes: {}
         });
-        const config = await getReservationParametersConfig(instanceType);
+        const config = await getReservationParametersConfig(instanceType, {regionId});
         if (this.token === token) {
           const {
             parameters = {}
@@ -225,7 +232,7 @@ class ReservationParameters extends React.PureComponent {
       return null;
     }
     const {
-      enabledKey = `${key}_requests_enabled`,
+      enabledKey = `${key}RequestsEnabled`,
       step = 1,
       formatter = o => String(o),
       title = `${key.toUpperCase()} request`,
@@ -357,10 +364,12 @@ class ReservationParameters extends React.PureComponent {
       return null;
     }
     const {
-      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT,
-      ram_requests_step: ramRequestsStep = DEFAULT_RAM_REQUESTS_STEP
+      ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
     } = config;
-    const step = parseRAMRequest(ramRequestsStep, ramRequestsUnit);
+    // The pool's `launchConfig` carries no step - only the enabled/reserved/unit
+    // fields the backend's `NodePoolLaunchConfig` defines - so this always uses
+    // the default rather than reading a field that no longer exists.
+    const step = parseRAMRequest(DEFAULT_RAM_REQUESTS_STEP, ramRequestsUnit);
     const decimal = !ramRequestsUnit.includes('i');
     return this.renderRequestsSelector(
       'ram',
@@ -565,10 +574,10 @@ class ReservationParameters extends React.PureComponent {
       best
     } = getInstanceResourcesAvailability(resources, parameters, config);
     const {
-      cpu_requests_enabled: cpuRequestsEnabled = false,
-      gpu_requests_enabled: gpuRequestsEnabled = false,
-      ram_requests_enabled: ramRequestsEnabled = false,
-      ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
+      cpuRequestsEnabled = false,
+      gpuRequestsEnabled = false,
+      ramRequestsEnabled = false,
+      ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
     } = config || {};
     const fit = nodes.length > 0 ? nodes[0].best : undefined;
     const onSelectNode = (node) => {
@@ -793,6 +802,7 @@ ReservationParameters.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   instanceType: PropTypes.object,
+  region: PropTypes.object,
   parameters: PropTypes.object,
   onChange: PropTypes.func
 };

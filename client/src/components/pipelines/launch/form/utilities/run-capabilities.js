@@ -204,8 +204,7 @@ export function isEnabledByReservationConfig (capability, reservationConfig) {
     return true;
   }
   const {
-    kube_assign_policy: _kubeAssignPolicy = {},
-    kubeAssignPolicy = _kubeAssignPolicy
+    kubeAssignPolicy
   } = reservationConfig || {};
   // If kube assign policy is not overridden, allow
   if (!kubeAssignPolicy) {
@@ -272,7 +271,12 @@ class RunCapabilities extends React.Component {
     if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
     }
-    if (prevProps.instanceType !== this.props.instanceType) {
+    const prevRegionId = prevProps.region ? prevProps.region.id : undefined;
+    const currRegionId = this.props.region ? this.props.region.id : undefined;
+    if (
+      prevProps.instanceType !== this.props.instanceType ||
+      prevRegionId !== currRegionId
+    ) {
       this.setReservationConfig();
     }
     if (prevState.reservationConfig !== this.state.reservationConfig) {
@@ -303,13 +307,14 @@ class RunCapabilities extends React.Component {
   };
 
   setReservationConfig = async () => {
-    const {instanceType} = this.props;
+    const {instanceType, region} = this.props;
     if (!instanceType || typeof instanceType !== 'string') {
       this.setState({reservationConfig: undefined});
       return;
     }
     try {
-      const config = await getReservationParametersConfig(instanceType);
+      const regionId = region ? region.id : undefined;
+      const config = await getReservationParametersConfig(instanceType, {regionId});
       this.setState({reservationConfig: config});
     } catch (error) {
       console.error('Error retrieving reservation config:', error);

@@ -124,10 +124,11 @@ import {
   nodeUpRetryCountValuesDiffer
 } from '../../pipelines/launch/form/utilities/node-up-retry-count';
 import {
-  buildLaunchParametersFromReservationParameters, findReservationParameterConfig,
+  buildLaunchParametersFromReservationParameters,
   readReservationParameters,
   reservationParametersDiffer
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
 import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
 import roleModel from '../../../utils/roleModel';
 import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
@@ -492,7 +493,8 @@ export default class EditToolForm extends React.Component {
           configuration.instance_size,
           configuration.parameters,
           {
-            applyAdditionalParameters: false
+            applyAdditionalParameters: false,
+            regionId: configuration.cloudRegionId
           }
         );
         configuration.parameters = appliedReservationParameters;
@@ -958,11 +960,14 @@ export default class EditToolForm extends React.Component {
   }
 
   get isInstanceTypeWithReservation () {
-    const {
-      preferences
-    } = this.props;
     const instanceTypeValue = this.props.form.getFieldValue('instanceType');
-    return Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+    const regionIdValue = this.props.form.getFieldValue('cloudRegionId');
+    const regionId = regionIdValue !== undefined &&
+      regionIdValue !== null &&
+      regionIdValue !== regionNotConfiguredValue
+      ? +regionIdValue
+      : undefined;
+    return isCapacityBlockInstanceType(instanceTypeValue, {regionId});
   }
 
   @computed
@@ -1684,6 +1689,7 @@ export default class EditToolForm extends React.Component {
                 <Col xs={24} sm={12}>
                   <ReservationParameters
                     instanceType={this.getInstanceTypeValue()}
+                    region={this.getCloudRegion()}
                     parameters={this.state.reservationParameters}
                     onChange={this.onChangeReservationParameters}
                     style={{paddingBottom: 10}}

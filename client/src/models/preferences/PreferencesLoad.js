@@ -1159,19 +1159,6 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
-  get launchReservationParameters () {
-    const value = this.getPreferenceValue('launch.reservation.parameters');
-    if (value) {
-      try {
-        return JSON.parse(value);
-      } catch (e) {
-        console.warn('Error parsing "launch.reservation.parameters" preference:', e.message);
-      }
-    }
-    return undefined;
-  }
-
-  @computed
   get launchJWTTokenExpirationUserLimit () {
     const value = this.getPreferenceValue('launch.jwt.token.expiration.user.limit');
     if (value && !Number.isNaN(Number(value)) && Number(value) > 0) {

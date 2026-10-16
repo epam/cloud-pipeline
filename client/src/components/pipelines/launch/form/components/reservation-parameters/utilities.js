@@ -7,8 +7,9 @@ import {
   CP_CAP_REQUESTS_GPU,
   CP_CAP_REQUESTS_RAM
 } from '../../utilities/parameters';
-import preferences from '../../../../../../models/preferences/PreferencesLoad';
-import escapeRegExp from '../../../../../../utils/escape-reg-exp';
+import capacityBlocks, {
+  findCapacityBlockConfig
+} from '../../../../../../models/cluster/capacity-blocks';
 import InstanceTypes from '../../../../../../models/utils/InstanceTypes';
 import {ClusterNodeResources} from '../../../../../../models/cluster/NodeResources';
 
@@ -48,31 +49,27 @@ export function reservationParametersDiffer (a, b) {
   return aCpu !== bCpu || aGpu !== bGpu || aRam !== bRam;
 }
 
-export function findReservationParameterConfig (instanceType, prefs = preferences) {
-  const {launchReservationParameters = {}} = prefs;
-  if (instanceType && launchReservationParameters) {
-    for (const [key, cfg] of Object.entries(launchReservationParameters || {})) {
-      let l = key.replace(/\*/g, '____STAR____');
-      l = escapeRegExp(l);
-      l = l.replace(/____STAR____/g, '.*');
-      const reg = new RegExp(`^${l}$`, 'i');
-      if (reg.test(instanceType)) {
-        return cfg;
-      }
-    }
-  }
-  return undefined;
+/**
+ * Region-blind delegate kept only for the two call sites that have not moved
+ * off it yet - `instance-type-info/index.js` and `LaunchPipelineForm.js`
+ * (issue 4591, phase 3 deletes both the delegate and its last callers).
+ * Nothing else in the tree may use this export; a region-aware call site uses
+ * `findCapacityBlockConfig` from `models/cluster/capacity-blocks` directly.
+ * @deprecated
+ */
+export function findReservationParameterConfig (instanceType) {
+  return findCapacityBlockConfig(instanceType);
 }
 
-export async function getReservationParametersConfig (instanceType) {
-  await preferences.fetchIfNeededOrWait();
-  return findReservationParameterConfig(instanceType, preferences);
+export async function getReservationParametersConfig (instanceType, options = {}) {
+  const {regionId} = options || {};
+  await capacityBlocks.load();
+  return findCapacityBlockConfig(instanceType, {regionId});
 }
 
 export async function getInstanceResources (config) {
   const {
-    kube_assign_policy: _kubeAssignPolicy = {},
-    kubeAssignPolicy = _kubeAssignPolicy
+    kubeAssignPolicy
   } = config || {};
   const {
     selector
@@ -128,10 +125,10 @@ export function getInstanceResourcesRestrictions (
     vcpu: maxCpu = Infinity
   } = instanceTypeObj || {};
   let {
-    cpu_requests_reserved: cpuReserved = 1,
-    gpu_requests_reserved: gpuReserved = 0,
-    ram_requests_reserved: ramReservedRaw = 1,
-    ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
+    cpuRequestsReserved: cpuReserved = 1,
+    gpuRequestsReserved: gpuReserved = 0,
+    ramRequestsReserved: ramReservedRaw = 1,
+    ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
   } = config;
   const ramReserved = parseRAMRequest(ramReservedRaw, ramRequestsUnit);
   let maxRam = Number.isFinite(maxRamRaw)
@@ -165,9 +162,9 @@ export function correctReservationParameters (
     };
   }
   let {
-    cpu_requests_enabled: cpuEnabled = false,
-    gpu_requests_enabled: gpuEnabled = false,
-    ram_requests_enabled: ramEnabled = false
+    cpuRequestsEnabled: cpuEnabled = false,
+    gpuRequestsEnabled: gpuEnabled = false,
+    ramRequestsEnabled: ramEnabled = false
   } = config;
   let {
     cpu = 1,
@@ -202,14 +199,15 @@ export async function buildLaunchParametersFromReservationParameters (
   options = {}
 ) {
   const {
-    applyAdditionalParameters = true
+    applyAdditionalParameters = true,
+    regionId
   } = options || {};
   const [
     instanceTypeObj = {},
     cfg
   ] = await Promise.all([
     getInstanceType(instanceType),
-    getReservationParametersConfig(instanceType)
+    getReservationParametersConfig(instanceType, {regionId})
   ]);
   const result = {...(parameters || {})};
   for (const key of Object.keys(result || {})) {
@@ -229,11 +227,11 @@ export async function buildLaunchParametersFromReservationParameters (
     };
   }
   let {
-    cpu_requests_enabled: cpuEnabled = false,
-    gpu_requests_enabled: gpuEnabled = false,
-    ram_requests_enabled: ramEnabled = false,
-    parameters: additionalParameters = {},
-    kube_assign_policy: podAssignPolicy
+    cpuRequestsEnabled: cpuEnabled = false,
+    gpuRequestsEnabled: gpuEnabled = false,
+    ramRequestsEnabled: ramEnabled = false,
+    additionalParameters = {},
+    kubeAssignPolicy: podAssignPolicy
   } = cfg;
   const {
     cpu = 1,
@@ -270,7 +268,8 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
     payloads.map((p) => buildLaunchParametersFromReservationParameters(
       readReservationParameters(p.params),
       p.instanceType,
-      p.params
+      p.params,
+      {regionId: p.cloudRegionId}
     ))
   );
   for (let i = 0; i < reservationRequests.length; i++) {
@@ -538,9 +537,9 @@ export function getNodeAvailability (nodeResources) {
 export function getInstanceResourcesAvailability (resources, requests, config) {
   const nodesAvailability = (resources || []).map(getNodeAvailability);
   const {
-    cpu_requests_enabled: cpuRequestsEnabled = false,
-    gpu_requests_enabled: gpuRequestsEnabled = false,
-    ram_requests_enabled: ramRequestsEnabled = false
+    cpuRequestsEnabled = false,
+    gpuRequestsEnabled = false,
+    ramRequestsEnabled = false
   } = config || {};
   const {
     cpu: cpuRequest = 0,
