@@ -60,6 +60,7 @@
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
+- [Default version of a tool](#default-version-of-a-tool)
 
 ***
 
@@ -1872,6 +1873,23 @@ The preference applies when a run is launched or restarted. The runs launched be
 > **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
 
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
+
+***
+
+## Default version of a tool
+
+Previously, the version of a tool, which was used if a version was not specified, was always the `latest` one. To make another version the default one, it had to be pushed again with the `latest` tag, and when a version was deleted, `latest` could still point to an old image.
+
+In **`v0.17`**, any version of a tool can be set as its default version. The default version is used in place of the `latest` one:
+
+- the **Run** button at the top of the tool page launches it, and the **Settings** tab of the tool shows and saves its settings
+- a version, which has no own settings, is launched from the GUI with the settings of the default version
+- a tool image specified without a version - via `pipe run -di`, in a pipeline configuration or in an API request - is launched with the default version
+- the version pickers of the launch form and of the versioned storage launch mark it as **default**
+
+Users with the **WRITE** permission for a tool set and remove the default version at the **Versions** tab of the tool. Until a default version is set, and once it is removed or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
+
+For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
 
 ***
 
