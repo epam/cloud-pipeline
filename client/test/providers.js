@@ -32,7 +32,14 @@ import {render} from './render';
  * under that constant, computed at the call site.
  */
 export function renderWithStores (element, stores = {}, options = {}) {
-  return render(<Provider {...stores}>{element}</Provider>, options);
+  const result = render(<Provider {...stores}>{element}</Provider>, options);
+  return {
+    ...result,
+    // render()'s own `rerender` replaces the root with whatever it's given;
+    // re-wrapping in the same <Provider> here is what lets a rerendered
+    // element keep injecting from `stores`.
+    rerender: (next) => result.rerender(<Provider {...stores}>{next}</Provider>)
+  };
 }
 
 /**

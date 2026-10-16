@@ -1,0 +1,591 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import React from 'react';
+import {observable} from 'mobx';
+import {renderWithStores, screen, within, click, change, fn} from '@test';
+import EditHotNodePoolForm from './edit-hot-node-pool-form';
+import {MODE_DEFAULT} from './constants';
+
+const loaded = (value) => observable({loaded: true, pending: false, value});
+
+// AWSRegionTag reads awsRegions.getRegion(id)/getRegionByUID(id), not just
+// .loaded/.value — mirrors src/models/cloudRegions/CloudRegions.js.
+function awsRegionsStore (regionsList) {
+  return observable({
+    loaded: true,
+    pending: false,
+    value: regionsList,
+    getRegion: (id) => regionsList.find(r => r.id === id),
+    getRegionByUID: (id) => regionsList.find(r => r.regionId === id)
+  });
+}
+
+const regions = [
+  {id: 1, name: 'eu-central-1', provider: 'aws'},
+  {id: 2, name: 'westeurope', provider: 'azure'}
+];
+
+const instanceTypesList = [
+  {sku: 's1', name: 'm5.xlarge', instanceFamily: 'General purpose', vcpu: 4, memory: 16},
+  {sku: 's2', name: 'c5.xlarge', instanceFamily: 'Compute optimized', vcpu: 4, memory: 8}
+];
+
+function groupedInstanceTypes () {
+  const families = [...new Set(instanceTypesList.map(i => i.instanceFamily))];
+  return families.map(family => ({
+    family,
+    instances: instanceTypesList.filter(i => i.instanceFamily === family)
+  }));
+}
+
+function noopOnChange () {
+  return fn();
+}
+
+function baseValues (overrides = {}) {
+  return {
+    mode: MODE_DEFAULT,
+    poolType: 'STANDARD',
+    name: 'my-pool',
+    autoscaled: false,
+    count: 1,
+    minSize: undefined,
+    maxSize: undefined,
+    scaleUpThreshold: undefined,
+    scaleDownThreshold: undefined,
+    scaleStep: undefined,
+    region: 1,
+    spot: 'SPOT',
+    instanceType: 'm5.xlarge',
+    instanceImage: undefined,
+    disk: 50,
+    dockerImages: [],
+    labels: [],
+    schedule: [],
+    filters: undefined,
+    commitmentEnd: undefined,
+    ...overrides
+  };
+}
+
+const emptyValidation = {};
+const emptyTouched = {};
+
+const stores = () => ({
+  awsRegions: awsRegionsStore(regions),
+  allInstanceTypes: loaded(instanceTypesList),
+  dockerRegistries: observable({
+    loaded: true,
+    pending: false,
+    value: {registries: []},
+    fetchIfNeededOrWait: () => Promise.resolve()
+  }),
+  users: loaded([{userName: 'USER1'}]),
+  pipelines: loaded([]),
+  allConfigurations: loaded([])
+});
+
+function renderForm (props = {}) {
+  return renderWithStores(
+    <EditHotNodePoolForm
+      values={baseValues()}
+      validation={emptyValidation}
+      touched={emptyTouched}
+      disabled={false}
+      readOnly={false}
+      regions={regions}
+      instanceTypes={groupedInstanceTypes()}
+      allowedInstanceTypes={instanceTypesList}
+      allowedInstanceTypesPending={false}
+      priceTypes={[true, false]}
+      currentProvider="aws"
+      roles={{loaded: true, value: []}}
+      onChange={noopOnChange()}
+      {...props}
+    />,
+    stores()
+  );
+}
+
+function row (labelText) {
+  // The label's immediate ancestor div is the formRow div, which also holds
+  // the control itself.
+  return screen.getByText(labelText).closest('div');
+}
+
+// antd's Select combobox carries no native `disabled` attribute; the state is
+// a class on the `.ant-select` ancestor instead.
+function selectIsDisabled (labelText) {
+  const combobox = within(row(labelText)).getByRole('combobox');
+  return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
+}
+
+// The form renders Pool name, then Pool type, then Mode. This assertion used to pin the
+// opposite order, which an earlier reorder of the two rows had already made wrong.
+test('the Mode row renders and follows Pool name', () => {
+  renderForm();
+  const text = document.body.textContent;
+  expect(text.indexOf('Pool name:')).toBeLessThan(text.indexOf('Mode:'));
+});
+
+test('readOnly disables the Mode select; readOnly=false does not', () => {
+  renderForm({readOnly: true});
+  expect(selectIsDisabled('Mode:')).toBe(true);
+});
+
+test('readOnly=false leaves the Mode select enabled', () => {
+  renderForm({readOnly: false});
+  expect(selectIsDisabled('Mode:')).toBe(false);
+});
+
+test(
+  'allowedModes={["FUTURE_DATED"]} hides the Mode row, future-dated-only rows still render, ' +
+  'and Pool type is not disabled by a single mode (regression)',
+  () => {
+    renderForm({
+      allowedModes: ['FUTURE_DATED'],
+      values: baseValues({mode: 'FUTURE_DATED'})
+    });
+    expect(screen.queryByText('Mode:')).not.toBeInTheDocument();
+    expect(screen.getByText('Pool type:')).toBeInTheDocument();
+    // A single-mode caller (a ROLE_NODE_POOL_MANAGER's Create) chooses its Pool type
+    // like anyone else - the dropped `modes.length <= 1` lock no longer applies.
+    expect(selectIsDisabled('Pool type:')).toBe(false);
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+  }
+);
+
+test('allowedModes={["DEFAULT", "FUTURE_DATED"]} renders the Mode row', () => {
+  renderForm({allowedModes: ['DEFAULT', 'FUTURE_DATED']});
+  expect(screen.getByText('Mode:')).toBeInTheDocument();
+});
+
+test('choosing Future dated calls onChange with (\'mode\', \'FUTURE_DATED\')', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(within(row('Mode:')).getByRole('combobox'));
+  await click(screen.getByText('Future dated'));
+
+  expect(onChange).toHaveBeenCalledWith('mode', 'FUTURE_DATED');
+});
+
+test('Pool type row is present in Default mode too, and precedes Mode', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'})});
+  const text = document.body.textContent;
+  expect(screen.getByText('Pool type:')).toBeInTheDocument();
+  expect(text.indexOf('Pool type:')).toBeLessThan(text.indexOf('Mode:'));
+});
+
+test('Pool type row is present in future-dated mode, and precedes Mode', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+  const text = document.body.textContent;
+  expect(screen.getByText('Pool type:')).toBeInTheDocument();
+  expect(text.indexOf('Pool type:')).toBeLessThan(text.indexOf('Mode:'));
+});
+
+test('Pool type is enabled with readOnly=false in Default mode', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'}), readOnly: false});
+  expect(selectIsDisabled('Pool type:')).toBe(false);
+});
+
+test('Pool type is disabled with readOnly=true in Default mode', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'}), readOnly: true});
+  expect(selectIsDisabled('Pool type:')).toBe(true);
+});
+
+test('Pool type is enabled with readOnly=false in future-dated mode', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'}), readOnly: false});
+  expect(selectIsDisabled('Pool type:')).toBe(false);
+});
+
+test('Pool type is disabled with readOnly=true in future-dated mode', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'}), readOnly: true});
+  expect(selectIsDisabled('Pool type:')).toBe(true);
+});
+
+test('future-dated + Standard leaves the Filters section enabled', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'STANDARD'})});
+  expect(selectIsDisabled('Condition:')).toBe(false);
+  expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+});
+
+test('future-dated + Shareable leaves the Filters section enabled', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'SHARABLE_NODE'})});
+  expect(selectIsDisabled('Condition:')).toBe(false);
+  expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+});
+
+test('DEFAULT mode regression: the Filters section stays enabled', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'})});
+  expect(selectIsDisabled('Condition:')).toBe(false);
+  expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
+});
+
+test('DEFAULT mode shows the weekly schedule UI, not the future-dated commitment window', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT'})});
+  expect(screen.getByText('Add schedule')).toBeInTheDocument();
+  expect(screen.queryByText('Duration (days):')).not.toBeInTheDocument();
+});
+
+test('future-dated mode shows the one-time commitment window, not the weekly schedule UI',
+  () => {
+    renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+    expect(screen.getByText('Search until:')).toBeInTheDocument();
+    expect(screen.queryByText('Add schedule')).not.toBeInTheDocument();
+  });
+
+test('future-dated mode renders Search from, Search until and Duration as three editable rows',
+  () => {
+    renderForm({
+      values: baseValues({
+        mode: 'FUTURE_DATED',
+        commitmentStart: '2026-01-01 10:00:00.000',
+        commitmentEnd: '2026-02-01 10:00:00.000',
+        commitmentDurationDays: 14
+      })
+    });
+    expect(screen.getByText('Search from:')).toBeInTheDocument();
+    expect(screen.getByText('Search until:')).toBeInTheDocument();
+    expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+    expect(
+      within(row('Search until:')).getByRole('textbox').value
+    ).toBe('2026-02-01 10:00:00.000');
+  });
+
+test('future-dated mode shows the commitment start error once touched', () => {
+  renderForm({
+    values: baseValues({mode: 'FUTURE_DATED'}),
+    validation: {commitmentStart: 'Search from date is required'},
+    touched: {commitmentStart: true}
+  });
+  expect(screen.getByText('Search from date is required')).toBeInTheDocument();
+});
+
+test('future-dated mode shows the commitment end error once touched', () => {
+  renderForm({
+    values: baseValues({mode: 'FUTURE_DATED'}),
+    validation: {commitmentEnd: 'Search until date is required'},
+    touched: {commitmentEnd: true}
+  });
+  expect(screen.getByText('Search until date is required')).toBeInTheDocument();
+});
+
+test('an existing reservation pool shows the window read-only instead of the editable controls',
+  () => {
+    renderForm({
+      values: baseValues({mode: 'FUTURE_DATED'}),
+      readOnly: true,
+      isExistingReservation: true,
+      reservationStartDate: '2026-03-01 10:00:00.000',
+      reservationEndDate: '2026-04-01 10:00:00.000'
+    });
+    expect(screen.getByText('Reservation window:')).toBeInTheDocument();
+    expect(screen.getByText('2026-03-01 10:00:00 – 2026-04-01 10:00:00')).toBeInTheDocument();
+    expect(screen.queryByText('Search from:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Search until:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Duration (days):')).not.toBeInTheDocument();
+  });
+
+test('an existing reservation pool disables Nodes count and Price type', () => {
+  renderForm({
+    values: baseValues({mode: 'FUTURE_DATED'}),
+    readOnly: true,
+    isExistingReservation: true,
+    reservationStartDate: '2026-03-01 10:00:00.000',
+    reservationEndDate: '2026-04-01 10:00:00.000'
+  });
+  expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+  expect(selectIsDisabled('Price type:')).toBe(true);
+});
+
+test('a Default-mode edit leaves Nodes count editable (regression)', () => {
+  renderForm({
+    values: baseValues({mode: 'DEFAULT'}),
+    readOnly: true,
+    isExistingReservation: false
+  });
+  expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();
+});
+
+test('a Default-mode edit leaves Price type editable (regression)', () => {
+  renderForm({
+    values: baseValues({mode: 'DEFAULT'}),
+    readOnly: false,
+    isExistingReservation: false
+  });
+  expect(selectIsDisabled('Price type:')).toBe(false);
+});
+
+test('a new future-dated pool still renders the editable window', () => {
+  renderForm({
+    values: baseValues({mode: 'FUTURE_DATED'}),
+    isExistingReservation: false
+  });
+  expect(screen.getByText('Search from:')).toBeInTheDocument();
+  expect(screen.getByText('Search until:')).toBeInTheDocument();
+  expect(screen.getByText('Duration (days):')).toBeInTheDocument();
+  expect(screen.queryByText('Reservation window:')).not.toBeInTheDocument();
+});
+
+test('renders all three section headers', () => {
+  renderForm();
+  expect(screen.getByText('Schedule')).toBeInTheDocument();
+  expect(screen.getByText('Configuration')).toBeInTheDocument();
+  expect(screen.getByText('Filters')).toBeInTheDocument();
+});
+
+test('when not autoscaled, Nodes count shows and the autoscale-only rows are absent', () => {
+  renderForm({values: baseValues({autoscaled: false})});
+  expect(screen.getByText('Nodes count:')).toBeInTheDocument();
+  expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Max Size:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Scale Up Threshold:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Scale Down Threshold:')).not.toBeInTheDocument();
+  expect(screen.queryByText('Scale Step:')).not.toBeInTheDocument();
+});
+
+test('when autoscaled, the autoscale rows show, indented, in Min/Max/Up/Down/Step order', () => {
+  renderForm({
+    values: baseValues({
+      autoscaled: true,
+      minSize: 1,
+      maxSize: 5,
+      scaleUpThreshold: 80,
+      scaleDownThreshold: 20,
+      scaleStep: 2
+    })
+  });
+  expect(screen.queryByText('Nodes count:')).not.toBeInTheDocument();
+
+  const labels = [
+    'Min Size:', 'Max Size:', 'Scale Up Threshold:', 'Scale Down Threshold:', 'Scale Step:'
+  ];
+  const positions = labels.map(l => Array.from(document.querySelectorAll('span'))
+    .findIndex(span => span.textContent === l));
+  expect(positions).toEqual([...positions].sort((a, b) => a - b));
+
+  labels.forEach((label) => {
+    const wrapper = screen.getByText(label).closest('div[style]');
+    expect(wrapper).toHaveStyle({paddingLeft: '10px'});
+  });
+});
+
+test('future-dated mode hides Autoscaled and keeps Nodes count', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED'})});
+  expect(screen.queryByText('Autoscaled:')).not.toBeInTheDocument();
+  expect(screen.getByText('Nodes count:')).toBeInTheDocument();
+});
+
+test('future-dated mode with an inconsistent autoscaled=true still hides every scaling row',
+  () => {
+    renderForm({values: baseValues({mode: 'FUTURE_DATED', autoscaled: true})});
+    expect(screen.queryByText('Min Size:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Max Size:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Up Threshold:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Down Threshold:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Scale Step:')).not.toBeInTheDocument();
+  });
+
+test('DEFAULT mode regression: autoscaled=true still shows the checkbox and all five rows', () => {
+  renderForm({values: baseValues({mode: 'DEFAULT', autoscaled: true})});
+  expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
+  expect(screen.getByText('Min Size:')).toBeInTheDocument();
+  expect(screen.getByText('Max Size:')).toBeInTheDocument();
+  expect(screen.getByText('Scale Up Threshold:')).toBeInTheDocument();
+  expect(screen.getByText('Scale Down Threshold:')).toBeInTheDocument();
+  expect(screen.getByText('Scale Step:')).toBeInTheDocument();
+  expect(screen.queryByText('Nodes count:')).not.toBeInTheDocument();
+});
+
+test('readOnly disables Region/Price/Instance Type/AMI/Disk, not Pool name/Nodes count', () => {
+  renderForm({readOnly: true});
+  expect(selectIsDisabled('Region:')).toBe(true);
+  expect(selectIsDisabled('Price type:')).toBe(true);
+  expect(selectIsDisabled('Instance Type:')).toBe(true);
+  expect(within(row('AMI:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Disk:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Pool name:')).getByRole('textbox')).not.toBeDisabled();
+  expect(within(row('Nodes count:')).getByRole('textbox')).not.toBeDisabled();
+  expect(screen.queryByText('Add docker image')).not.toBeInTheDocument();
+});
+
+// `disabled` is the parent's "a save is in flight" flag, so it blocks the whole form -
+// the Add buttons of every section included, the weekly schedule's among them.
+test('disabled disables every field and the docker, labels and schedule Add buttons', () => {
+  renderForm({disabled: true});
+  expect(within(row('Pool name:')).getByRole('textbox')).toBeDisabled();
+  expect(within(row('Nodes count:')).getByRole('textbox')).toBeDisabled();
+  expect(selectIsDisabled('Region:')).toBe(true);
+  expect(screen.getByText('Add node label').closest('button')).toBeDisabled();
+  expect(screen.getByText('Add schedule').closest('button')).toBeDisabled();
+});
+
+test('allowedInstanceTypesPending disables Instance Type and Price type but not Region', () => {
+  renderForm({allowedInstanceTypesPending: true});
+  expect(selectIsDisabled('Instance Type:')).toBe(true);
+  expect(selectIsDisabled('Price type:')).toBe(true);
+  expect(selectIsDisabled('Region:')).toBe(false);
+});
+
+test('builds grouped region/instance options and provider-specific price type name', async () => {
+  renderForm({
+    values: baseValues({region: 2, spot: 'SPOT'}),
+    currentProvider: 'azure'
+  });
+
+  await click(within(row('Region:')).getByRole('combobox'));
+  expect(screen.getByText('eu-central-1')).toBeInTheDocument();
+  expect(screen.getAllByText('westeurope').length).toBeGreaterThan(0);
+
+  await click(within(row('Instance Type:')).getByRole('combobox'));
+  expect(screen.getByText('General purpose')).toBeInTheDocument();
+  expect(screen.getByText('Compute optimized')).toBeInTheDocument();
+
+  await click(within(row('Price type:')).getByRole('combobox'));
+  expect(screen.getAllByText('Low priority').length).toBeGreaterThan(0);
+});
+
+test('future-dated mode locks Price type to On-demand and disables the control', () => {
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', spot: 'ON_DEMAND'})});
+
+  expect(selectIsDisabled('Price type:')).toBe(true);
+  // On-demand is the only legal value for a capacity reservation (`NodePoolValidator`
+  // rejects SPOT outright), so there is nothing to pick between - the control is
+  // disabled rather than merely filtered, and Spot never appears at all.
+  expect(screen.getByText('On-demand')).toBeInTheDocument();
+  expect(screen.queryByText('Spot')).not.toBeInTheDocument();
+});
+
+test('DEFAULT mode still offers both price types', async () => {
+  renderForm({values: baseValues({mode: 'DEFAULT', spot: 'ON_DEMAND'})});
+
+  await click(within(row('Price type:')).getByRole('combobox'));
+
+  expect(screen.getByText('Spot')).toBeInTheDocument();
+  expect(screen.getAllByText('On-demand').length).toBeGreaterThan(0);
+});
+
+test('wires Pool name and Disk to onChange, keyed by field name', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await change(within(row('Pool name:')).getByRole('textbox'), 'renamed');
+  expect(onChange).toHaveBeenLastCalledWith('name', 'renamed');
+
+  await change(within(row('Disk:')).getByRole('textbox'), '60');
+  expect(onChange).toHaveBeenLastCalledWith('disk', 60);
+});
+
+test('clicking Autoscaled calls onChange with the plain boolean', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(within(row('Autoscaled:')).getByRole('checkbox'));
+
+  expect(onChange).toHaveBeenLastCalledWith('autoscaled', true);
+});
+
+test('Add docker image calls onChange with an add action', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(screen.getByRole('button', {name: 'Add docker image'}));
+
+  expect(onChange).toHaveBeenLastCalledWith('dockerImages', {action: 'add'});
+});
+
+test('removing a docker image calls onChange with a remove action and its id', async () => {
+  const onChange = fn();
+  renderForm({
+    onChange,
+    values: baseValues({
+      dockerImages: [{id: 7, image: 'registry.com/group/image:1', removed: false}]
+    })
+  });
+
+  await click(screen.getAllByRole('button', {name: ''})[0]);
+
+  expect(onChange).toHaveBeenLastCalledWith('dockerImages', {action: 'remove', id: 7});
+});
+
+test('Add schedule calls onChange with an add action', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(screen.getByRole('button', {name: 'Add schedule'}));
+
+  expect(onChange).toHaveBeenLastCalledWith('schedule', {action: 'add'});
+});
+
+test('removing a schedule entry calls onChange with a remove action and its id', async () => {
+  const onChange = fn();
+  const entry = {id: 3, from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'};
+  renderForm({onChange, values: baseValues({schedule: [entry]})});
+
+  await click(screen.getAllByRole('button', {name: ''})[0]);
+
+  expect(onChange).toHaveBeenLastCalledWith('schedule', {action: 'remove', id: 3});
+});
+
+test('Add node label calls onChange with an add action', async () => {
+  const onChange = fn();
+  renderForm({onChange});
+
+  await click(screen.getByText('Add node label'));
+
+  expect(onChange).toHaveBeenLastCalledWith('labels', {action: 'add'});
+});
+
+test('removing a label calls onChange with a remove action and its key', async () => {
+  const onChange = fn();
+  const label = {key: 'a', name: 'env', value: 'prod', monitored: true};
+  renderForm({onChange, values: baseValues({labels: [label]})});
+
+  await click(screen.getAllByRole('button', {name: ''})[0]);
+
+  expect(onChange).toHaveBeenLastCalledWith('labels', {action: 'remove', key: 'a'});
+});
+
+test('editing a label name calls onChange with an update action for the name field', async () => {
+  const onChange = fn();
+  const label = {key: 'a', name: 'env', value: 'prod', monitored: true};
+  renderForm({onChange, values: baseValues({labels: [label]})});
+
+  const nameInput = screen.getAllByRole('textbox').find(i => i.value === 'env');
+  await change(nameInput, 'renamed');
+
+  expect(onChange).toHaveBeenLastCalledWith(
+    'labels',
+    {action: 'update', key: 'a', field: 'name', value: 'renamed'}
+  );
+});
+
+test('toggling a label\'s Monitored checkbox calls onChange with an update action', async () => {
+  const onChange = fn();
+  const label = {key: 'a', name: 'env', value: 'prod', monitored: true};
+  renderForm({onChange, values: baseValues({labels: [label]})});
+
+  await click(screen.getByLabelText('Monitored'));
+
+  expect(onChange).toHaveBeenLastCalledWith(
+    'labels',
+    {action: 'update', key: 'a', field: 'monitored', value: false}
+  );
+});
