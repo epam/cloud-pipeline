@@ -15,64 +15,9 @@
  */
 
 import {
-  normalizeCapacityBlockConfig,
   findCapacityBlockPool,
   getCapacityBlockAdditionalParameterNames
 } from './utilities';
-
-describe('normalizeCapacityBlockConfig', () => {
-  it('maps a pool with a launchConfig to its camelCase config', () => {
-    const launchConfig = {
-      cpuRequestsEnabled: true,
-      gpuRequestsEnabled: false,
-      ramRequestsEnabled: true,
-      cpuRequestsReserved: 1,
-      gpuRequestsReserved: 0,
-      ramRequestsReserved: '1',
-      ramRequestsUnit: 'GiB',
-      kubeAssignPolicy: {podAssignPolicy: {}},
-      additionalParameters: {CP_CAP_CUSTOM: 'true'}
-    };
-    const pool = {
-      id: 11,
-      name: 'reserved-pool',
-      instanceType: 'm5.large',
-      regionId: 3,
-      launchConfig
-    };
-
-    expect(normalizeCapacityBlockConfig(pool)).toEqual({
-      poolId: 11,
-      poolName: 'reserved-pool',
-      tag: 'reserved-pool',
-      instanceType: 'm5.large',
-      regionId: 3,
-      config: launchConfig
-    });
-  });
-
-  it('returns an undefined config for a pool with no launchConfig', () => {
-    const pool = {
-      id: 12,
-      name: 'bare-pool',
-      instanceType: 'm5.large',
-      regionId: 3
-    };
-
-    expect(normalizeCapacityBlockConfig(pool)).toEqual({
-      poolId: 12,
-      poolName: 'bare-pool',
-      tag: 'bare-pool',
-      instanceType: 'm5.large',
-      regionId: 3,
-      config: undefined
-    });
-  });
-
-  it('returns undefined for a missing pool', () => {
-    expect(normalizeCapacityBlockConfig(undefined)).toBeUndefined();
-  });
-});
 
 describe('findCapacityBlockPool', () => {
   it('matches the instance type exactly and case-insensitively', () => {

@@ -113,5 +113,5 @@ export function findCapacityBlockConfig (instanceType, options) {
   return pool && pool.launchConfig ? pool.launchConfig : undefined;
 }
 
-export {CapacityBlocks, CAPACITY_BLOCKS_FILTER};
+export {CapacityBlocks};
 export default capacityBlocks;

@@ -18,44 +18,6 @@
 // network, no mobx, which is why the tests for this file do their work.
 
 /**
- * @typedef {Object} CapacityBlockConfig
- * @property {number} poolId
- * @property {string} poolName
- * @property {string} tag
- * @property {string} instanceType
- * @property {number} regionId
- * @property {Object} [config] the pool's `launchConfig`, camelCase, as the
- * backend sends it - or `undefined` when the pool carries none. A pool with no
- * `launchConfig` is still a capacity block; it just contributes nothing to a
- * run's payload.
- */
-
-/**
- * @param {Object} pool a `NodePool`, as returned by `POST /cluster/pool/filter`
- * @returns {CapacityBlockConfig|undefined}
- */
-export function normalizeCapacityBlockConfig (pool) {
-  if (!pool) {
-    return undefined;
-  }
-  const {
-    id: poolId,
-    name: poolName,
-    instanceType,
-    regionId,
-    launchConfig
-  } = pool;
-  return {
-    poolId,
-    poolName,
-    tag: poolName,
-    instanceType,
-    regionId,
-    config: launchConfig || undefined
-  };
-}
-
-/**
  * Finds the pool backing `instanceType`, matched exactly and case-insensitively.
  * `regionId`, when given, must match too; when it is not given, a pool is not
  * filtered by region at all. Several pools can match one instance type (and
