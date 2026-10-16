@@ -78,6 +78,8 @@ public abstract class AbstractAclTest {
     protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
     protected static final String STORAGE_MANAGER_ROLE = "STORAGE_MANAGER";
     protected static final String STORAGE_READER_ROLE = "STORAGE_READER";
+    protected static final String PIPELINE_READER_ROLE = "PIPELINE_READER";
+    protected static final String PIPELINE_EXECUTOR_ROLE = "PIPELINE_EXECUTOR";
     protected static final String SIMPLE_USER = "SIMPLE_USER";
     protected static final String ANOTHER_SIMPLE_USER = "ANOTHER_SIMPLE_USER";
     protected static final String TEST_NAME = "TEST_NAME";

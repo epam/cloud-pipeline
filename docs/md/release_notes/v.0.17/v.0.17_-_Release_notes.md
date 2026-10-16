@@ -59,6 +59,7 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
 
 ***
 
@@ -1852,6 +1853,20 @@ Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VER
 
 In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+***
+
+## Read and launch access to all pipelines
+
+Previously, access to all pipelines of the Platform could be given only by the permission settings of the pipelines (or of their parent folders) - or by the **ROLE\_ADMIN**/**ROLE\_PIPELINE\_ADMIN** roles, which also give write and owner access.  
+In the current version, two new roles were introduced. Both cover every pipeline in the Platform, versioned storages included:
+
+- **ROLE\_PIPELINE\_READER** gives the user **READ** permission to every pipeline, regardless of the pipeline permission settings: the user is able to see all pipelines, their versions, code, documents, attributes and permission settings. The user is also able to view all runs of all pipelines, regardless of the run visibility policy
+- **ROLE\_PIPELINE\_EXECUTOR** gives the user **EXECUTE** permission to every pipeline, regardless of the pipeline permission settings. This permission is not passed on to the runs: changes of the runs of other users still require the permissions the user would need without the role
+
+A user with both roles is able to see and launch every pipeline. As a launch also requires **READ** permission to the pipeline, **ROLE\_PIPELINE\_EXECUTOR** alone allows to launch only the pipelines the user is able to see. Any write access still has to be granted explicitly.
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-reader-and-executor-roles).
 
 ***
 
