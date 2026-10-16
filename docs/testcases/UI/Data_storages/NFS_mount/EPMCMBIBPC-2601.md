@@ -17,5 +17,5 @@ Test verifies removing several selected files and folders from an NFS mount.
 | 8 | Select a file and confirm the upload in the appeared window |  |
 | 9 | Repeat steps 7-8 for another file |  |
 | 10 | Set the checkboxes opposite the created files and folders |  |
-| 11 | Click **Remove all selected** button |  |
+| 11 | Click the **{N} items selected** dropdown button and click **Remove** in the appeared menu |  |
 | 12 | Click **OK** button in the appeared window | All selected files and folders successfully deleted |

@@ -16,7 +16,7 @@ Test verifies canceling and confirming the deletion of a single file, a single f
 | 7 | Click the delete icon opposite a folder |  |
 | 8 | Click **OK** button in the appeared dialog | The folder opposite which the user clicked the delete icon is deleted |
 | 9 | Click **Select page** button | The checkboxes opposite all objects switch to the checked state |
-| 10 | Click **Remove all selected** button |  |
+| 10 | Click **Remove** button (or the **Remove** item in the **N items selected** dropdown, if other selection actions are available) |  |
 | 11 | Click **Cancel** button in the appeared dialog | The objects are not deleted, the checkboxes stay checked |
-| 12 | Click **Remove all selected** button |  |
+| 12 | Click **Remove** button (or the **Remove** item in the **N items selected** dropdown, if other selection actions are available) |  |
 | 13 | Click **OK** button in the appeared dialog | All objects displayed on the page are deleted, the objects from the next page are displayed, the checkboxes switch to the unchecked state |

@@ -1,10 +1,10 @@
 # Validation of "Clear selection" button
 
-Test verifies that **Clear selection** unchecks all selected items and reverts the button back to **Select page**.
+Test verifies that **Clear selection** unchecks all selected items.
 
 **Prerequisites**:
-- Perform [EPMCMBIBPC-467](EPMCMBIBPC-467.md); the **Select page** button changes to **Clear selection**
+- Perform [EPMCMBIBPC-467](EPMCMBIBPC-467.md); once items are selected, a separate **Selection actions** button (showing the number of selected items) appears next to **Select page**, which becomes disabled
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Click **Clear selection** button | <li> the checkboxes in front of all files and folders become unchecked <li> the **Remove all selected** button doesn't display <li> the **Clear selection** button changes back to **Select page** |
+| 1 | Click the **Selection actions** button, then click **Clear selection** | <li> the checkboxes in front of all files and folders become unchecked <li> the **Selection actions** button doesn't display <li> the **Select page** button becomes enabled again |

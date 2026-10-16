@@ -1,11 +1,17 @@
-# Edit bucket LTS duration
+# Edit bucket backup duration (re-opening the dialog)
 
-Test verifies editing the bucket's Long-Term Storage duration.
+Test verifies that an edited backup duration persists after re-opening the storage's edit dialog.
+(This case and [EPMCMBIBPC-473](EPMCMBIBPC-473.md) used to cover two separate fields - STS and LTS
+duration - that have since been merged into the single **Backup duration** field; the two cases
+are now functionally close, with this one specifically checking the value survives a dialog
+re-open.)
 
 **Prerequisites**:
 - Perform [EPMCMBIBPC-470](EPMCMBIBPC-470.md)
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Specify a natural number into the **LTS duration** field |  |
-| 2 | Click **Save** button | The value specified at step 1, with the ending `days`, is displayed in the **Long-Term Storage duration** field in the upper left corner of the storage page |
+| 1 | Check the **Enable versioning** checkbox (if not already checked) | The **Backup duration** field appears |
+| 2 | Specify a natural number into the **Backup duration** field |  |
+| 3 | Click **Save** button | The pop-up closes and the storage is updated with the value specified at step 2 as its backup duration |
+| 4 | Click on the edit icon in the upper right corner again | The value specified at step 2 is displayed in the **Backup duration** field |

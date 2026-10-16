@@ -2,6 +2,8 @@
 
 Test verifies the **Next page**/**Previous page**/**Select page** navigation buttons behavior when a storage folder holds more items than fit on one page.
 
+*Note: the Next/Previous (and First) page controls are icon-only buttons (no "Next page"/"Previous page" text) below the file list; **Select page** is a separate, unrelated button above the file list, not part of the pagination widget.*
+
 **Prerequisites**:
 - The storage created in [EPMCMBIBPC-448](EPMCMBIBPC-448.md) is selected
 
