@@ -32,6 +32,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Builds the launch configuration of a node pool: how a run's container is placed on the pool's nodes, and how much
+ * of each node is kept for the system.
+ *
+ * <p>A configuration the caller supplied is kept as it is, apart from the selector below. A pool that comes without
+ * one is given the platform's defaults - CPU and memory requests enabled, GPU requests only for an instance type
+ * that has a GPU, and one CPU, no GPU and {@value #DEFAULT_RAM_RESERVED} of memory reserved. Only a sharable pool
+ * is built a configuration at all; any other kind of pool keeps whatever it was given, including nothing.
+ *
+ * <p>Either way the pod assign policy is given the pool's own node selector unless the caller already pinned one,
+ * so a run scheduled onto the pool lands on that pool's nodes and not on another's.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

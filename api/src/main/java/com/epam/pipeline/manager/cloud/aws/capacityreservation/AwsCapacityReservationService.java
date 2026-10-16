@@ -72,6 +72,37 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+/**
+ * AWS implementation of {@link CapacityReservationCloudService}, over the EC2 future-dated capacity reservation
+ * API.
+ *
+ * <p>What it asks of AWS, and what it makes of the answers:
+ * <ul>
+ *   <li><b>Submits</b> a request as a future-dated reservation - {@code InstanceMatchCriteria=targeted},
+ *       {@code DeliveryPreference=incremental}, committed for the duration the request names - under a client token
+ *       that makes the call idempotent, and tags it with that token and its own id.</li>
+ *   <li><b>Offers zones</b>: those of the region's configured networks that actually offer the instance type - or
+ *       every zone that offers it, where the region configures no networks - so a request is only ever made where
+ *       AWS could deliver it.</li>
+ *   <li><b>Describes</b> a reservation, mapping the EC2 state onto a {@link CloudCapacityReservationState} the
+ *       monitor understands and reading back the commitment AWS granted. A reservation created moments ago may not
+ *       be visible yet, so while the request is still being assessed a lookup that cannot find it is retried for a
+ *       short grace period before it is believed.</li>
+ *   <li><b>Cancels</b>: plainly once nothing is committed any more, and through a cancellation quote while the
+ *       reservation is scheduled or still inside its commitment. A reservation AWS no longer knows, or an id it
+ *       cannot parse, is nothing to cancel.</li>
+ * </ul>
+ *
+ * <p>The three calls that can lead to capacity being paid for - the zone lookup, the submission itself and the
+ * lookup by client token - raise {@link CapacityReservationSubmissionUncertainException} instead of reporting a
+ * refusal whenever an error leaves the outcome genuinely unknown: throttling, a server-side failure, a reply that
+ * never arrived. The caller then retries the same client token rather than paying for a second reservation. A
+ * definitive refusal is passed on as it is, including insufficient capacity, which AWS reports with a server-side
+ * status but which refuses this configuration rather than failing the call.
+ *
+ * <p>AWS will not assess a future-dated request made less than {@link #MINIMUM_LEAD_DAYS} days ahead, which is what
+ * {@link #getMinimumLead()} reports to the monitor.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

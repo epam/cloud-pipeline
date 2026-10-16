@@ -34,6 +34,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * Routes each reservation's provider calls to the {@link CapacityReservationCloudService} of its cloud provider,
+ * and owns the idempotency the providers cannot own for us.
+ *
+ * <p>Every attempt to buy capacity carries a client token derived from the reservation and its attempt number
+ * ({@code cp-capacity-reservation-<id>-<attempt>}). That token is what makes a lost reply harmless:
+ * <ul>
+ *   <li>{@link #findSubmitted} asks the provider what this attempt already holds before anything is created, so a
+ *       repeated submission adopts that reservation instead of paying for a second one;</li>
+ *   <li>{@link #cancel} releases what an unconfirmed submission bought, even though the platform never learned its
+ *       id.</li>
+ * </ul>
+ *
+ * <p>{@link #isSupported(CloudProvider)} answers whether a provider can reserve capacity at all, which is what
+ * keeps a reservation-backed pool from being created where it could never be delivered.
+ */
 @Service
 @Slf4j
 public class CapacityReservationCloudFacade {

@@ -20,6 +20,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * The {@code cluster.capacity.reservation.monitor.settings} preference.
+ *
+ * <p>{@code finalizingLeadHours} is how long before a reservation's end its pool stops taking new runs: the pool's
+ * window is shortened by that much, so a run is never started on capacity that is about to go away. Runs already on
+ * the pool's nodes keep going until the reservation itself ends.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
