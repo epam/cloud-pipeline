@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * How the nodes of a node pool launch runs: where a run's container is placed, and what it may ask of the node.
  *
- * <p>Stored as JSON on the pool itself, and built by {@code NodePoolLaunchConfigBuilder} for a sharable pool that
+ * <p>Stored as JSON on the pool itself, and built by {@code NodePoolLaunchConfigBuilder} for a shareable pool that
  * is created without one. The {@code *RequestsEnabled} flags say which of CPU, GPU and memory are requested for a
  * container at all; the {@code *RequestsReserved} values say how much of the node is kept for the system instead of
  * being offered to a run - {@code ramRequestsReserved} either as a quantity that names its own unit
