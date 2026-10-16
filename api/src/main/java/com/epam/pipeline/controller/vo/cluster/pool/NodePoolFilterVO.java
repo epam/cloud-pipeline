@@ -20,6 +20,14 @@ import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.pool.NodePoolType;
 import lombok.Data;
 
+/**
+ * Filter for listing node pools: each field that is set narrows the result, and one left {@code null} does not.
+ *
+ * <p>{@code isCapacityReservation} tells reservation-backed pools from ordinary ones. {@code active} is matched
+ * against the pool's state at the moment of the request, so {@code true} keeps the pools that are active then and
+ * {@code false} the ones that are not: a pool is active when it has nodes, the request falls inside its window, and
+ * its schedule, if it has one, says so too.
+ */
 @Data
 public class NodePoolFilterVO {
 

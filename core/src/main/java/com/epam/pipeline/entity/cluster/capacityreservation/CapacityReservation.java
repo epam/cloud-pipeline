@@ -24,6 +24,24 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * A request to reserve cloud capacity for a node pool, and what the provider has made of it.
+ *
+ * <p>One reservation belongs to exactly one node pool, and its fields fall into three groups:
+ * <ul>
+ *   <li><b>what was asked for</b> - {@code instanceType}, {@code instanceCount} and {@code instancePlatform}, the
+ *       window ({@code requestedStartDate}, {@code requestedEndDate}) and the {@code commitmentDuration}, in
+ *       seconds, the capacity is to be held for;</li>
+ *   <li><b>what the platform decided</b> - {@code status} with the {@code statusReason} behind it, the
+ *       {@code attempt} the request is on, and the {@code originId} of the reservation this one replaces;</li>
+ *   <li><b>what the provider answered</b> - {@code cloudReservationId}, the {@code availabilityZone} and the
+ *       {@code startDate}/{@code endDate} it actually holds, the {@code grantedCommitmentDuration}, and the
+ *       {@code clientToken} the current attempt was submitted under.</li>
+ * </ul>
+ *
+ * <p>{@link #copy()} takes the reservation exactly as it stands, which is how a step that moves a request on keeps
+ * hold of the attempt it is abandoning - long enough to release the capacity that attempt had bought.
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

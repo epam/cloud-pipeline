@@ -41,6 +41,26 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+/**
+ * Persistence layer for {@link CapacityReservation} - one row per reservation, and at most one per node pool, which
+ * the table itself enforces.
+ *
+ * <p>The statements live in {@code dao/capacity-reservation-dao.xml} and are injected as strings, as every other
+ * JDBC DAO here does. Writes come in two shapes:
+ * <ul>
+ *   <li>{@link #update(CapacityReservation)} - writes every column that can change, from the caller's copy.</li>
+ *   <li>{@link #updateRetry(CapacityReservation)} - writes only what another attempt chooses, its reason, its
+ *       dates and its zone, and only while the row still carries the status the caller's copy showed, so those
+ *       fields never land on a reservation another transaction has already moved on. It answers whether it
+ *       wrote.</li>
+ * </ul>
+ *
+ * <p>The requested window a request was created with is never written again: it is the envelope every later
+ * attempt is measured against.
+ *
+ * <p>Every write requires a transaction to already exist ({@link Propagation#MANDATORY}), and every caller takes
+ * the lock on the node pool row before it writes.
+ */
 @RequiredArgsConstructor
 public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
 

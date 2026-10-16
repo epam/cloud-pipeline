@@ -25,6 +25,19 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * The capacity reservation part of a {@link NodePoolVO}: what the caller asks a cloud provider to hold for the pool
+ * being created.
+ *
+ * <p>Only the fields a caller may choose are read from the request body - the type of reservation, the window it is
+ * wanted for, the commitment to hold it, the instance platform and the origin below. The rest are
+ * {@link JsonIgnore}d and filled in from the pool itself, so a reservation can never describe capacity different
+ * from the pool it backs.
+ *
+ * <p>{@code originId} names an earlier reservation this one replaces. A request that asks for the same capacity as
+ * an origin which failed inherits that origin's approval, so a failed reservation can be asked for again without a
+ * second human decision.
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

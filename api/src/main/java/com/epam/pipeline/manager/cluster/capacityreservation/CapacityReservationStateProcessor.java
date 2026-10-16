@@ -38,10 +38,29 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * One step of the capacity reservation monitor, for one reservation, in a transaction of its own. Every step takes
- * the reservation's pool lock first, and does nothing when the reservation left the status it was listed in before
- * its turn came. A step that throws takes its whole transaction down, leaving the reservation as it was for the next
- * cycle - which is why the provider is asked to release a reservation only after the database agrees.
+ * One step of the capacity reservation monitor, for one reservation, in a transaction of its own.
+ *
+ * <p>There is a step per status the monitor visits:
+ * <ul>
+ *   <li>{@link #submit(Long, CapacityReservationStatus)} - buys the capacity, adopting what an earlier attempt
+ *       already bought under the same client token rather than paying twice.</li>
+ *   <li>{@link #poll} - asks the provider what became of the request, and moves the reservation and its pool on
+ *       accordingly.</li>
+ *   <li>{@link #finalizeIfEnding(Long, CapacityReservationStatus)} - stops the pool taking new runs as the window
+ *       closes.</li>
+ *   <li>{@link #finishIfEnded(Long, CapacityReservationStatus)} - gives the capacity back once the window has
+ *       passed.</li>
+ * </ul>
+ *
+ * <p>Every step takes the reservation's pool lock first, and does nothing when the reservation left the status it
+ * was listed in before its turn came. A step that throws takes its whole transaction down, leaving the reservation
+ * as it was for the next cycle - which is why a reservation the request abandons is released only once the database
+ * has accepted the move away from it.
+ *
+ * <p>A refusal is not the end of a request: what a provider refuses is a date and a zone, not the reservation. The
+ * request moves to the next candidate zone, then slides its start by {@value #SLIDE_WINDOW_STEP_DAYS} day and
+ * starts over, releasing whatever the abandoned attempt had bought. It fails once no zone can take it, once its
+ * window has no room left for the commitment, or when the provider cannot be paid.
  */
 @Service
 @Slf4j

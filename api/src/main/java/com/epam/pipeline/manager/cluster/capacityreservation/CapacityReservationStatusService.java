@@ -40,6 +40,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * The state machine of a capacity reservation - the only place its status changes.
+ *
+ * <p>A transition is refused unless the matrix allows it; one that is allowed writes the status, its reason and the
+ * notification as a single step, so a reservation never ends up in a status nobody was told about. A transition to
+ * the status the reservation already holds - a refused request moving to another date or zone - is persisted but
+ * not notified, so sliding through a window does not notify on every attempt.
+ *
+ * <p>{@link #recordRetry} is the other write: the reason, dates and zone of the next attempt, persisted only while
+ * the reservation still carries the status the caller's copy showed. {@link #notifyCreated} covers the status a
+ * reservation is created in, the one status it reaches without a transition - approved outright, or waiting for an
+ * approval.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor

@@ -16,6 +16,17 @@
 
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
+/**
+ * What a matching {@link CapacityReservationPolicy} does to a capacity reservation request.
+ *
+ * <ul>
+ *   <li>{@link #AUTO_APPROVE} - the request proceeds without a human, straight to
+ *       {@link CapacityReservationStatus#APPROVED}.</li>
+ *   <li>{@link #DENY} - the request is refused, and the node pool it would have backed is not created.</li>
+ * </ul>
+ *
+ * <p>{@code DENY} is decided first, so a request both actions match is denied.
+ */
 public enum CapacityReservationPolicyAction {
 
     AUTO_APPROVE,

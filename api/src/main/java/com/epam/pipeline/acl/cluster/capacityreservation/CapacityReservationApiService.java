@@ -26,6 +26,23 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Authorization layer for capacity reservations.
+ *
+ * <p>Every call a user can make about a reservation passes through here, which is where the permission checks live
+ * rather than in {@link CapacityReservationService} behind it:
+ * <ul>
+ *   <li>{@link #loadAll()} - an administrator sees every reservation, anyone else only the ones they own.</li>
+ *   <li>{@link #load(Long)} - readable by whoever may read the node pool the reservation backs.</li>
+ *   <li>{@link #approve(Long)} - administrators only: an approval commits the platform to paying for capacity.</li>
+ *   <li>{@link #cancel(Long)} - the owner of that node pool, or an administrator.</li>
+ * </ul>
+ *
+ * <p>A reservation is not created here. One exists only as part of the node pool it backs, so it is created with
+ * that pool and this service exposes what happens to it afterwards.
+ *
+ * @see AclExpressions
+ */
 @Service
 @RequiredArgsConstructor
 public class CapacityReservationApiService {

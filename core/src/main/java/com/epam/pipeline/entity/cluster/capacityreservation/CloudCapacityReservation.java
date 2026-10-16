@@ -23,6 +23,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * What a cloud provider says about one reservation, in the platform's own terms.
+ *
+ * <p>Every provider call that asks a question answers with this, so nothing above the provider layer has to read a
+ * provider's own model: the id and zone it assigned, the window it holds, the
+ * {@link CloudCapacityReservationState} it is in together with the provider's reason for that state, and the
+ * commitment it actually granted, which may be shorter than the one that was asked for.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -32,6 +32,27 @@ import static com.epam.pipeline.utils.condition.FieldType.ENUM;
 import static com.epam.pipeline.utils.condition.FieldType.NUMERIC;
 import static com.epam.pipeline.utils.condition.FieldType.STRING;
 
+/**
+ * The fields of a {@link CapacityReservation} that a capacity reservation policy can be written against.
+ *
+ * <p>Each constant ties together three things: the {@link FieldType} that decides which operators the field accepts
+ * and which strategy evaluates it, the display name a policy expression uses, and an extractor that reads the value
+ * off a request as a string. Nothing here supports a duration gate, so no policy field is time-based.
+ *
+ * <p><b>Look a field up by the name an expression used (for instance to validate a policy):</b>
+ * <pre>{@code
+ * Optional<CapacityReservationField> field = CapacityReservationField.findByDisplayName("commitment.duration");
+ * }</pre>
+ *
+ * <p>The same lookup, strategy-agnostic, goes through {@link SubjectEntityField}, which resolves these constants
+ * for {@code CapacityReservation.class}:
+ * <pre>{@code
+ * Map<String, SubjectEntityField<CapacityReservation>> index =
+ *         SubjectEntityField.byDisplayNames(CapacityReservation.class);
+ * }</pre>
+ *
+ * @see com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy
+ */
 @Getter
 public enum CapacityReservationField implements SubjectEntityField<CapacityReservation> {
 
