@@ -11,8 +11,8 @@ Test verifies tool access for a user granted read+write permissions on a tool gr
 | 2 | Open the **Tools** page |  |
 | 3 | Select the **Default** registry |  |
 | 4 | Select a group |  |
-| 5 | Hover over the **Settings** button (gear icon) |  |
-| 6 | In the list that appears, select **Group** -> click the **Edit** item |  |
+| 5 | Click the **Settings** button (gear icon) |  |
+| 6 | In the list that appears, hover over **Group** -> click the **Edit** item |  |
 | 7 | Click the **Permissions** tab |  |
 | 8 | Click the **Add user** icon |  |
 | 9 | In the pop-up that appears, enter an existing user name from the prerequisites |  |

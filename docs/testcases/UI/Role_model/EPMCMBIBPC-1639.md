@@ -12,7 +12,7 @@ Test verifies that a folder-level read permission is inherited, except for a sub
 | :---: | --- | --- |
 | 1 | Login as the administrator |  |
 | 2 | Click the folder |  |
-| 3 | On the opened page, click the edit icon in the top-right corner |  |
+| 3 | On the opened page, click the gear icon in the top-right corner and select **Edit folder** from the menu |  |
 | 4 | Click the **Permissions** tab |  |
 | 5 | Click the add-user icon |  |
 | 6 | Enter an existing user name in the form that appears |  |

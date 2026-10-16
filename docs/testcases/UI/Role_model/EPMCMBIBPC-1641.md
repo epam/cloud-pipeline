@@ -15,4 +15,4 @@ Test verifies the detached configuration UI for a user granted read-only permiss
 | 6 | Log out |  |
 | 7 | Login as the user from the prerequisites |  |
 | 8 | Open the configuration |  |
-| 9 | Expand the **Advanced** tab | <li>In the tree on the left panel, only the path to the configuration for which the permission was granted is displayed <li>On the configuration tab, the buttons **Run**, **Save**, the gear icon (settings) in the top-right corner, and **+ ADD** are not displayed <li>The **Launch cluster** and **Start idle** checkboxes, the **Add parameter** button and the input fields are inactive |
+| 9 | Expand the **Advanced** tab | <li>In the tree on the left panel, only the path to the configuration for which the permission was granted is displayed <li>On the configuration tab, the buttons **Run**, **Save** and **+ ADD** are not displayed; the gear icon (settings) in the top-right corner is still displayed, but the "Edit configuration info" pop-up it opens only shows read-only fields <li>The **Configure cluster** control, the **Start idle** checkbox, the **Add parameter** button and the input fields are inactive |
