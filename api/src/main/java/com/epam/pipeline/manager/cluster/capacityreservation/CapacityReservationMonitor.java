@@ -30,6 +30,25 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.util.function.BiConsumer;
 
+/**
+ * Drives every capacity reservation through its life cycle, once per
+ * {@code cluster.capacity.reservation.monitor.cron} tick.
+ *
+ * <p>One cycle visits the statuses that have work waiting, in order, and each has exactly one step:
+ * <ul>
+ *   <li>{@link CapacityReservationStatus#APPROVED} - submit the request to the cloud provider.</li>
+ *   <li>{@link CapacityReservationStatus#ASSESSING_BY_CLOUD_PROVIDER},
+ *       {@link CapacityReservationStatus#SCHEDULED} - ask the provider what became of it.</li>
+ *   <li>{@link CapacityReservationStatus#ACTIVE} - start finalizing once the end of the window is within the
+ *       monitor's lead time.</li>
+ *   <li>{@link CapacityReservationStatus#FINALIZING} - finish the reservation once that window has passed.</li>
+ * </ul>
+ *
+ * <p>The cycle holds a ShedLock, so only one API replica runs it, and it does no work of its own: every step runs
+ * in {@link CapacityReservationStateProcessor}, in a transaction of its own.
+ *
+ * @see CapacityReservationStateProcessor
+ */
 @Service
 @RequiredArgsConstructor
 public class CapacityReservationMonitor extends AbstractSchedulingManager {

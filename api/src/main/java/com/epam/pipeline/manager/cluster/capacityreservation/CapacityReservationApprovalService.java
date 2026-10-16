@@ -56,6 +56,29 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Decides whether a capacity reservation request may proceed without a human.
+ *
+ * <p>Two requests need no policy at all: one that inherits the approval of the reservation it replaces
+ * ({@code originId}), and one an administrator makes. Every other request is put to the policies in the
+ * {@code cluster.capacity.reservation.policies} preference, each a condition over the request's
+ * {@link com.epam.pipeline.utils.condition.field.CapacityReservationField}s:
+ * <ul>
+ *   <li>{@link CapacityReservationPolicyAction#DENY} matches - the request is refused, and the node pool it would
+ *       have backed is not created. A {@code DENY} match wins whatever order the policies are listed in.</li>
+ *   <li>{@link CapacityReservationPolicyAction#AUTO_APPROVE} matches and no {@code DENY} does - the request goes
+ *       straight to {@link CapacityReservationStatus#APPROVED}.</li>
+ *   <li>nothing matches - the request waits for an administrator at
+ *       {@link CapacityReservationStatus#REQUIRED_APPROVE}.</li>
+ * </ul>
+ *
+ * <p>A policy's {@code exclude} expression is evaluated after its {@code statement} and takes a request back out of
+ * the policy, so "every long commitment, except the ones this group asks for" is one policy rather than two.
+ *
+ * <p>An approval records why on the reservation - inherited, an administrator's own request, or the policy that
+ * granted it - so the notification and the GUI can say what it rests on. A denial records nothing at all: it throws,
+ * and neither the reservation nor its pool is created.
+ */
 @Service
 @Slf4j
 public class CapacityReservationApprovalService {

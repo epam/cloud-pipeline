@@ -16,6 +16,25 @@
 
 package com.epam.pipeline.entity.cluster.capacityreservation;
 
+/**
+ * The state of a reservation at its cloud provider, as the platform reads it.
+ *
+ * <p>Each provider's own vocabulary is mapped onto these, so one monitor serves them all:
+ * <ul>
+ *   <li>{@link #PENDING} - the provider has not decided yet.</li>
+ *   <li>{@link #DELAYED} - the provider cannot deliver the capacity when it was asked for.</li>
+ *   <li>{@link #SCHEDULED} - the provider will deliver it in the window it reports.</li>
+ *   <li>{@link #ACTIVE} - the capacity is held and can be launched into.</li>
+ *   <li>{@link #UNSUPPORTED} - the provider will not reserve this configuration at all.</li>
+ *   <li>{@link #FAILED} - the provider gave the request up.</li>
+ *   <li>{@link #PAYMENT_FAILED} - the provider could not be paid for it.</li>
+ *   <li>{@link #CANCELLED} - the reservation was given up, by the platform or by the provider.</li>
+ *   <li>{@link #EXPIRED} - its window has passed.</li>
+ * </ul>
+ *
+ * <p>A state the platform does not recognise is read as {@link #PENDING}, so a provider's new vocabulary delays a
+ * decision rather than failing a request.
+ */
 public enum CloudCapacityReservationState {
 
     PENDING,
