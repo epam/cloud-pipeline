@@ -178,7 +178,7 @@
   },
   "src/components/pipelines/launch/form/LaunchPipelineForm.js": {
     "comma-dangle": 3,
-    "max-len": 4,
+    "max-len": 3,
     "no-unused-vars": 2,
     "semi": 1,
     "standard/no-callback-literal": 1

@@ -49,18 +49,6 @@ export function reservationParametersDiffer (a, b) {
   return aCpu !== bCpu || aGpu !== bGpu || aRam !== bRam;
 }
 
-/**
- * Region-blind delegate kept only for the two call sites that have not moved
- * off it yet - `instance-type-info/index.js` and `LaunchPipelineForm.js`
- * (issue 4591, phase 3 deletes both the delegate and its last callers).
- * Nothing else in the tree may use this export; a region-aware call site uses
- * `findCapacityBlockConfig` from `models/cluster/capacity-blocks` directly.
- * @deprecated
- */
-export function findReservationParameterConfig (instanceType) {
-  return findCapacityBlockConfig(instanceType);
-}
-
 export async function getReservationParametersConfig (instanceType, options = {}) {
   const {regionId} = options || {};
   await capacityBlocks.load();

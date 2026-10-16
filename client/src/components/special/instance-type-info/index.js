@@ -18,10 +18,8 @@ import {AutoComplete, Select, Tag} from 'antd';
 import classNames from 'classnames';
 import styles from './instance-type-info.css';
 import AWSRegionTag from '../AWSRegionTag';
-import preferences from '../../../models/preferences/PreferencesLoad';
-import {
-  findReservationParameterConfig
-} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
+import capacityBlocks from '../../../models/cluster/capacity-blocks';
+import {findCapacityBlockPool} from '../../../models/cluster/capacity-blocks/utilities';
 
 const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
   return hyperThreadingDisabled && !Number.isNaN(Number(cpu))
@@ -55,8 +53,9 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * @property {boolean} [plainText=true]
  * @property {'Select'|'AutoComplete'} [selectFamily=Select]
  * @property {function} [valueFn]
- * @property {PreferencesLoad} [preferences]
  * @property {boolean} [showReservationTag]
+ * @property {number} [regionId] - narrows the capacity-block pool lookup to
+ * one region, for `showReservationTag`
  */
 
 /**
@@ -101,7 +100,7 @@ export function instanceInfoString (instance, options = {}) {
     displayRegion = false,
     plainText = true,
     showReservationTag = false,
-    preferences: prefs = preferences,
+    regionId: optionsRegionId,
     className,
     style
   } = options;
@@ -114,10 +113,10 @@ export function instanceInfoString (instance, options = {}) {
     regionId,
     regionIds = [regionId]
   } = instance;
-  const {
-    tag
-  } = showReservationTag ? (findReservationParameterConfig(name, prefs) || {}) : {};
-  const tagValue = tag ? String(tag) : undefined;
+  const pool = showReservationTag
+    ? findCapacityBlockPool(capacityBlocks.pools, name, {regionId: optionsRegionId})
+    : undefined;
+  const tagValue = pool ? String(pool.name) : undefined;
   if (vcpu) {
     infoParts.push(plainText
       ? `CPU: ${cpuMapper(vcpu, hyperThreadingDisabled)}`
@@ -227,11 +226,18 @@ export function getSelectOptionForInstance (instance, options = {}) {
   } = instance;
   const {
     showReservationTag = false,
-    preferences: prefs = preferences
+    regionId
   } = options;
-  const {tag} = showReservationTag
-    ? (findReservationParameterConfig(name, prefs) || {})
-    : {};
+  const pool = showReservationTag
+    ? findCapacityBlockPool(capacityBlocks.pools, name, {regionId})
+    : undefined;
+  const tag = pool ? pool.name : undefined;
+  // The pool name tag is searchable, so a user who knows the pool name can type
+  // it into the select instead of the instance type.
+  const searchValue = [name, tag]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
   const {
     valueFn = (o) => o.name
   } = options || {};
@@ -240,7 +246,7 @@ export function getSelectOptionForInstance (instance, options = {}) {
       <AutoComplete.Option
         key={sku || name}
         value={valueFn(instance)}
-        searchValue={[name, tag].filter(Boolean).join(' ').toLowerCase()}
+        searchValue={searchValue}
         title={
           instanceInfoString(
             instance,
@@ -267,7 +273,7 @@ export function getSelectOptionForInstance (instance, options = {}) {
     <Select.Option
       key={sku || name}
       value={valueFn(instance)}
-      searchValue={[name, tag].filter(Boolean).join(' ').toLowerCase()}
+      searchValue={searchValue}
       title={
         instanceInfoString(
           instance,

@@ -1,0 +1,92 @@
+.container {
+  margin: 0 0 5px;
+  margin-top: 5px;
+}
+
+.header {
+  margin-bottom: 3px;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 3px 0;
+  cursor: pointer;
+}
+
+.suggestion.disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.suggestion.selected {
+  cursor: default;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.info-main {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.info-details {
+  line-height: 1.4;
+}
+
+.instance-type {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.count {
+  margin-left: 5px;
+}
+
+.region {
+  margin-right: 0;
+}
+
+.action {
+  margin-left: auto;
+  padding-left: 10px;
+  white-space: nowrap;
+}
+
+.show-more {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 3px;
+}
+
+.show-more-icon {
+  margin-left: 3px;
+  font-size: 10px;
+}
+
+.pools-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* antd's menu item is a single 30px line; these rows are two lines tall. */
+.pools-list-item {
+  height: auto;
+  line-height: 1.4;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}

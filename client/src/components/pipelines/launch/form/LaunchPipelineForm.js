@@ -164,6 +164,7 @@ import {getParameterKeyClassName} from './parameters/utilities';
 import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
 import NodeUpRetryCountFormItem from './components/node-up-retry-count';
+import InstanceTypeSuggestion from './components/instance-type-suggestion';
 import {
   applyNodeUpRetryCountDefault,
   getDefaultNodeUpRetryCount,
@@ -171,9 +172,12 @@ import {
 } from './utilities/node-up-retry-count';
 import {
   buildLaunchParametersFromReservationParameters,
-  findReservationParameterConfig,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
+import capacityBlocks, {
+  isCapacityBlockInstanceType
+} from '../../../../models/cluster/capacity-blocks';
+import capacityReservations from '../../../../models/cluster/CapacityReservations';
 import Markdown from '../../../special/markdown';
 import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
 import VersionFile from '../../../../models/pipelines/VersionFile';
@@ -933,13 +937,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   getIsInstanceTypeWithReservation () {
     const {
-      detached,
-      preferences
+      detached
     } = this.props;
     const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
     return detached
       ? false
-      : Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+      : isCapacityBlockInstanceType(instanceTypeValue, {regionId: this.currentCloudRegionId});
   }
 
   getDefaultRootEntityId () {
@@ -1523,7 +1526,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         instanceType,
         payload.parameters,
         {
-          applyAdditionalParameters: applyAdditionalReservationParameters
+          applyAdditionalParameters: applyAdditionalReservationParameters,
+          regionId: payload.cloudRegionId
         }
       );
       payload.parameters = appliedReservationParameters;
@@ -1778,7 +1782,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } = await buildLaunchParametersFromReservationParameters(
       this.state.reservationParameters,
       instanceType,
-      payload.params
+      payload.params,
+      {regionId: payload.cloudRegionId}
     );
     payload.params = appliedReservationParameters;
     payload.params = parameterUtilities
@@ -3027,59 +3032,85 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ? (cpu / 2.0)
     : cpu;
 
+  instanceTypeSuggestionSelected = (instanceType) => {
+    this.props.form.setFieldsValue({
+      [`${EXEC_ENVIRONMENT}.type`]: instanceType
+    });
+    this.instanceTypeChanged(instanceType);
+  };
+
   renderInstanceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    const instanceTypeDisabled = !!this.state.fireCloudMethodName ||
+      (this.props.readOnly && !this.props.canExecute) ||
+      (
+        this.props.allowedInstanceTypes &&
+        (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
+      );
     return (
-      <FormItem
-        className={getFormItemClassName(styles.formItem, 'type')}
-        {...this.formItemLayout}
-        required={!this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile}
-        label="Node type"
-        hasFeedback>
-        {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('type',
-          {
-            rules: [
-              {
-                required: !this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile,
-                message: 'Node type is required'
-              }
-            ],
-            initialValue: this.correctInstanceTypeValue(this.getDefaultValue('instance_size'))
+      <div className={styles.instanceTypeSelection}>
+        <FormItem
+          className={getFormItemClassName(styles.formItem, 'type')}
+          {...this.formItemLayout}
+          required={
+            !this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile
           }
-        )(
-          <Select
-            disabled={
-              !!this.state.fireCloudMethodName ||
-              (this.props.readOnly && !this.props.canExecute) ||
-              (
-                this.props.allowedInstanceTypes &&
-                (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
-              )}
-            showSearch
-            allowClear={!!this.props.launchProfile}
-            placeholder="Node type"
-            optionFilterProp="children"
-            onChange={this.instanceTypeChanged}
-            filterOption={
-              (input, option) =>
-                (option.props.searchValue || option.props.value)
-                  .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+          label="Node type"
+          hasFeedback>
+          {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('type',
             {
-              getSelectOptions(
-                this.instanceTypes,
+              rules: [
                 {
-                  hyperThreadingDisabled: this.hyperThreadingDisabled,
-                  displayRegion: this.instanceTypesMergedForRegions,
-                  preferences: this.props.preferences,
-                  showReservationTag: !this.props.detached
+                  required: !this.state.fireCloudMethodName &&
+                    !this.state.isDts &&
+                    !this.props.launchProfile,
+                  message: 'Node type is required'
                 }
-              )
+              ],
+              initialValue: this.correctInstanceTypeValue(this.getDefaultValue('instance_size'))
             }
-          </Select>
-        )}
-      </FormItem>
+          )(
+            <Select
+              disabled={instanceTypeDisabled}
+              showSearch
+              allowClear={!!this.props.launchProfile}
+              placeholder="Node type"
+              optionFilterProp="children"
+              onChange={this.instanceTypeChanged}
+              filterOption={
+                (input, option) =>
+                  (option.props.searchValue || option.props.value)
+                    .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+              {
+                getSelectOptions(
+                  this.instanceTypes,
+                  {
+                    hyperThreadingDisabled: this.hyperThreadingDisabled,
+                    displayRegion: this.instanceTypesMergedForRegions,
+                    showReservationTag: !this.props.detached,
+                    regionId: this.currentCloudRegionId
+                  }
+                )
+              }
+            </Select>
+          )}
+        </FormItem>
+        {
+          !this.props.detached && (
+            <InstanceTypeSuggestion
+              currentInstanceType={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+              instanceTypes={this.instanceTypes}
+              pools={capacityBlocks.pools}
+              reservations={capacityReservations.value}
+              regionId={this.currentCloudRegionId}
+              disabled={instanceTypeDisabled}
+              onSelect={this.instanceTypeSuggestionSelected}
+            />
+          )
+        }
+      </div>
     );
   };
 
@@ -3113,6 +3144,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             hyperThreadingDisabled={this.hyperThreadingDisabled}
             displayRegion={this.instanceTypesMergedForRegions}
             showReservationTag={!this.props.detached}
+            regionId={this.currentCloudRegionId}
           />
         )}
       </FormItem>
@@ -3168,6 +3200,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <ReservationParameters
         className={styles.reservationParameters}
         instanceType={instanceType}
+        region={this.currentCloudRegion}
         parameters={reservationParameters}
         onChange={onChange}
       />
