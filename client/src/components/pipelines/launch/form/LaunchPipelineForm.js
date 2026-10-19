@@ -1137,6 +1137,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               onSave
             } = launchProfile;
             if (onSave) {
+              // `capacityBlockPoolId` only tells `run()`'s
+              // `ensureValidReservationParametersForLaunchPayloads` which
+              // pool to read - a step this save path never reaches, since it
+              // hands `payload` to `onSave` instead of `onLaunch`. It is not
+              // a field a saved profile keeps, and nothing reads it back out:
+              // `payloadToFormParameters` in `launch-profile-form.js` reopens
+              // a profile from `instanceType` and `cloudRegionId` alone, the
+              // same way a saved configuration re-derives its pool. Strip it
+              // before the profile is persisted.
+              delete payload.capacityBlockPoolId;
               await onSave(payload);
             }
           }
