@@ -1,6 +1,6 @@
 # Validation of tools instance types restrictions (hierarchy)
 
-Test verifies that a per-tool instance-types mask applied via Instance management takes precedence over the user's own tool-instance-types mask.
+Test verifies that a per-user tool-instance-types mask takes precedence over a per-tool mask applied via Instance management.
 
 **Prerequisites**:
 - Perform the [EPMCMBIBPC-2646](EPMCMBIBPC-2646.md) case
