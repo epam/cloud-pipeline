@@ -60,6 +60,14 @@ class PodProvider(ABC):
     def get_pod_conditions(self, pod: Pod) -> Iterator[Condition]:
         pass
 
+    @abstractmethod
+    def get_non_terminated_pods_number(self, nodes: [Node]) -> int:
+        """
+        Iterates over all pods belonging to the specified nodes and returns non-terminated pods count.
+        Collects pods from all namespaces
+        """
+        pass
+
 
 class DeploymentProvider(ABC):
 

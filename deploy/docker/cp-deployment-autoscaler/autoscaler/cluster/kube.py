@@ -72,6 +72,10 @@ class KubeProvider(NodeProvider, PodProvider, DeploymentProvider):
         for node in nodes:
             yield self._get_node(node, used_node_names, reserved_node_names)
 
+    @staticmethod
+    def _is_pod_terminated(kube_pod: pykube.Pod) -> bool:
+        return kube_pod.obj.get('status', {}).get('phase', '') in ['Succeeded', 'Failed']
+
     def _is_owned_by_daemon_set(self, child):
         for child_owner in child.metadata.get('ownerReferences', []):
             if child_owner.get('kind', '') == 'DaemonSet':
@@ -85,10 +89,15 @@ class KubeProvider(NodeProvider, PodProvider, DeploymentProvider):
             name=kube_node.name,
             persistence=Persistence.TRANSIENT if self._is_transient(kube_node) else Persistence.PERSISTENT,
             reserved=kube_node.name in reserved_node_names,
-            used=kube_node.name in used_node_names)
+            used=kube_node.name in used_node_names,
+            allocatable_pods=self._get_allocatable_pods_number(kube_node))
 
     def _is_transient(self, kube_node):
         return any(kube_node.labels.get(key) == value for key, value in self._configuration.target.transient_labels.items())
+
+    def _get_allocatable_pods_number(self, kube_node):
+        pods_count = kube_node.obj.get('status', {}).get('allocatable', {}).get('pods')
+        return int(pods_count) if pods_count else 0
 
     def get_node_conditions(self, node: Node) -> Iterator[Condition]:
         yield from self._get_conditions(pykube.Node, node.name)
@@ -178,10 +187,28 @@ class KubeProvider(NodeProvider, PodProvider, DeploymentProvider):
             name=kube_pod.name,
             namespace=kube_pod.namespace,
             node_name=kube_pod.obj.get('spec', {}).get('nodeName', ''),
-            reserved=kube_pod.name in reserved_pod_names)
+            reserved=kube_pod.name in reserved_pod_names,
+            state=kube_pod.obj.get('status', {}).get('phase', '')
+        )
 
     def get_pod_conditions(self, pod: Pod) -> Iterator[Condition]:
         yield from self._get_conditions(pykube.Pod, pod.name, pod.namespace)
+
+    def get_non_terminated_pods_number(self, node_names: [str]) -> int:
+        system_pods = pykube.Pod.objects(self._kube, namespace='kube-system')
+        default_pods = pykube.Pod.objects(self._kube)
+        return (self._find_non_terminated_pods_by_node_count(system_pods, node_names)
+                + self._find_non_terminated_pods_by_node_count(default_pods, node_names))
+
+    def _find_non_terminated_pods_by_node_count(self, pods: pykube.query.Query, node_names: [str]):
+        pods_count = 0
+        for kube_pod in pods:
+            if kube_pod.obj.get('spec', {}).get('nodeName', '') not in node_names:
+                continue
+            if self._is_pod_terminated(kube_pod):
+                continue
+            pods_count = pods_count + 1
+        return pods_count
 
     def _get_conditions(self, entity_type, entity_name, entity_namespace=None):
         kube_entity = entity_type.objects(self._kube, namespace=entity_namespace).get_by_name(entity_name)
