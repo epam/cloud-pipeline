@@ -34,6 +34,11 @@ import preferences from '../../../models/preferences/PreferencesLoad';
 import RunDisplayName from './run-display-name';
 import {getSelectOptions} from '../../special/instance-type-info';
 import {FallbackInstanceTypesInput} from '../../special/fallback-instance-types-input';
+import capacityBlocks from '../../../models/cluster/capacity-blocks';
+import {
+  decodeInstanceTypeValue,
+  getCapacityBlockOptions
+} from '../../../models/cluster/capacity-blocks/utilities';
 import {
   RUN_CAPABILITIES,
   RUN_CAPABILITIES_PARAMETERS
@@ -217,8 +222,17 @@ class ConfirmResumeContainer extends React.Component {
     }
     const fallbackDisabled = (preferences.maximumFallbackInstanceTypes || 0) <= 0;
     const payload = {};
-    if (instanceType) {
-      payload.instanceType = instanceType;
+    // `instanceType` is the Select's own raw value and may be a capacity-block
+    // pool encoded as `pool:<id>` - decode it here, the one place this payload's
+    // `instanceType` is built, so the encoded form never reaches the resume API.
+    // Nothing persists the chosen pool: a resumed run has no field for it, so
+    // resuming again later re-derives the pool from the type and region.
+    const {instanceType: decodedInstanceType} = decodeInstanceTypeValue(
+      instanceType,
+      capacityBlocks.pools
+    );
+    if (decodedInstanceType) {
+      payload.instanceType = decodedInstanceType;
     }
     if (!fallbackDisabled) {
       payload.fallbackInstanceTypes = toPlainArray(fallbackInstanceTypes) || [];
@@ -309,6 +323,11 @@ function ConfirmResumeModal (props) {
   const fallbackDisabled = !prefs || (prefs.maximumFallbackInstanceTypes || 0) <= 0;
   const {instance: runInstance} = run || {};
   const {cloudRegionId: regionId} = runInstance || {};
+  const capacityBlockPools = getCapacityBlockOptions(
+    capacityBlocks.pools,
+    instanceTypesList,
+    {regionId}
+  );
   return (
     <Modal
       title={false}
@@ -356,7 +375,8 @@ function ConfirmResumeModal (props) {
                     hyperThreadingDisabled,
                     displayRegion: allowedInstanceTypes && allowedInstanceTypes.regionsMerged,
                     showReservationTag: true,
-                    regionId
+                    regionId,
+                    capacityBlockPools
                   }
                 )
               }

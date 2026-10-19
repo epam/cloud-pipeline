@@ -84,7 +84,11 @@ import {applyRunNameAliasTag} from '../run-tags/alias';
 import {
   ensureValidReservationParametersForLaunchPayloads
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
-import {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
+import capacityBlocks, {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
+import {
+  decodeInstanceTypeValue,
+  getCapacityBlockOptions
+} from '../../../models/cluster/capacity-blocks/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -550,7 +554,17 @@ function runFn (
                 return Promise.reject(new Error(error));
               }
               singlePayload.isSpot = component.state.isSpot;
-              singlePayload.instanceType = component.state.instanceType;
+              // `component.state.instanceType` is the dialog's own raw node-type
+              // value, which may be a capacity-block pool encoded as `pool:<id>`
+              // (see `RunConfirmation#setInstanceType`) - decode it here, the one
+              // place this payload's `instanceType` is set, so the encoded form
+              // never reaches the run API. The pool itself still has to reach
+              // `ensureValidReservationParametersForLaunchPayloads` below, which is
+              // why it goes onto `capacityBlockPoolId` rather than being dropped.
+              singlePayload.instanceType = component.selectedInstanceTypeName;
+              singlePayload.capacityBlockPoolId = component.selectedCapacityBlockPool
+                ? component.selectedCapacityBlockPool.id
+                : undefined;
               singlePayload.hddSize = component.state.hddSize;
               singlePayload.tags = filterVisibleTagsSync(
                 component.state.tags,
@@ -594,6 +608,10 @@ function runFn (
                 );
               applyRunNameAliasTag(singlePayload, runNameAlias);
               await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
+              // `capacityBlockPoolId` is this handler's own way of telling the
+              // call above which pool to use - not a run API field, so it must
+              // not ride along in the request body it builds next.
+              delete singlePayload.capacityBlockPoolId;
               try {
                 await PipelineRunner.send({...singlePayload, force: true});
                 if (PipelineRunner.error) {
@@ -722,10 +740,35 @@ export class RunConfirmation extends React.Component {
     return currentProvider ? currentProvider.provider : null;
   }
 
+  get capacityBlockRegionId () {
+    const {cloudRegionId} = this.props;
+    return cloudRegionId !== undefined && cloudRegionId !== null
+      ? +cloudRegionId
+      : undefined;
+  }
+
+  // `state.instanceType` is the Select's own raw value - a plain instance type
+  // name, or a capacity-block pool encoded by `encodeCapacityBlockValue`
+  // (`pool:<id>`, see `setInstanceType` below). These two getters are the
+  // single place this class reads "what is selected" for display and payload
+  // purposes; the raw, possibly-encoded value itself stays touched only by the
+  // `Select` and by `setInstanceType`.
+  get selectedInstanceTypeName () {
+    return decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools).instanceType;
+  }
+
+  get selectedCapacityBlockPool () {
+    const {poolId} = decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools);
+    if (poolId === undefined) {
+      return undefined;
+    }
+    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+  }
+
   @computed
   get gpuEnabled () {
     const [currentInstanceType] = (this.props.instanceTypes || [])
-      .filter(i => i.name === this.state.instanceType);
+      .filter(i => i.name === this.selectedInstanceTypeName);
     return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') &&
       +currentInstanceType.gpu > 0;
   }
@@ -807,10 +850,11 @@ export class RunConfirmation extends React.Component {
   };
 
   get currentInstanceType () {
-    if (!this.props.instanceTypes || !this.state.instanceType) {
+    const name = this.selectedInstanceTypeName;
+    if (!this.props.instanceTypes || !name) {
       return undefined;
     }
-    return this.getInstanceTypes().find(t => t.name === this.state.instanceType);
+    return this.getInstanceTypes().find(t => t.name === name);
   }
 
   get runCapabilitiesErrorSolved () {
@@ -824,12 +868,8 @@ export class RunConfirmation extends React.Component {
   }
 
   get isInstanceTypeWithReservation () {
-    const {cloudRegionId} = this.props;
     const {name} = this.currentInstanceType || {};
-    const regionId = cloudRegionId !== undefined && cloudRegionId !== null
-      ? +cloudRegionId
-      : undefined;
-    return isCapacityBlockInstanceType(name, {regionId});
+    return isCapacityBlockInstanceType(name, {regionId: this.capacityBlockRegionId});
   }
 
   setOnDemand = (onDemand) => {
@@ -1127,7 +1167,7 @@ export class RunConfirmation extends React.Component {
               <Row>
                 <Row style={{marginBottom: 5}}>
                   {/* eslint-disable-next-line max-len */}
-                  <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.state.instanceType}.</b>
+                  <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.selectedInstanceTypeName}.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
                   {/* eslint-disable-next-line max-len */}
@@ -1161,12 +1201,25 @@ export class RunConfirmation extends React.Component {
                   optionFilterProp="children"
                   notFoundContent="Instance types not found"
                   onChange={this.setInstanceType}
-                  filterOption={(input, option) => option.props.value
+                  filterOption={(input, option) => (option.props.searchValue || option.props.value)
                     .toLowerCase()
                     .indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {getSelectOptions(this.getInstanceTypes())}
+                  {
+                    getSelectOptions(
+                      this.getInstanceTypes(),
+                      {
+                        showReservationTag: true,
+                        regionId: this.capacityBlockRegionId,
+                        capacityBlockPools: getCapacityBlockOptions(
+                          capacityBlocks.pools,
+                          this.getInstanceTypes(),
+                          {regionId: this.capacityBlockRegionId}
+                        )
+                      }
+                    )
+                  }
                 </Select>
               </div>
             } />
@@ -1272,7 +1325,7 @@ export class RunConfirmation extends React.Component {
             showIcon
             docker={this.props.dockerImage}
             gpuEnabledRun={this.gpuEnabled}
-            instanceType={this.state.instanceType}
+            instanceType={this.selectedInstanceTypeName}
           />
         </Provider>
         {
@@ -1338,7 +1391,7 @@ export class RunConfirmation extends React.Component {
               pipelineId={this.props.pipelineId}
               pipelineVersion={this.props.pipelineVersion}
               pipelineConfiguration={this.props.pipelineConfiguration}
-              instanceType={this.state.instanceType}
+              instanceType={this.selectedInstanceTypeName}
               instanceDisk={this.props.hddSize}
               spot={this.state.isSpot}
               regionId={this.props.cloudRegionId}
@@ -1474,18 +1527,30 @@ class RunSpotConfirmationWithPrice extends React.Component {
     return false;
   }
 
+  // Mirrors `RunConfirmation`'s own pair: `state.instanceType` here is that
+  // inner dialog's raw value, forwarded as-is through `onChangeInstanceType`,
+  // so it may be a capacity-block pool encoded as `pool:<id>` too.
+  get selectedInstanceTypeName () {
+    return decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools).instanceType;
+  }
+
+  get selectedCapacityBlockPool () {
+    const {poolId} = decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools);
+    if (poolId === undefined) {
+      return undefined;
+    }
+    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+  }
+
   getUserTagsLaunchPayload () {
     const {
       parameters,
       dockerImage,
       nodeCount
     } = this.props;
-    const {
-      instanceType
-    } = this.state;
     return {
       dockerImage,
-      instanceType,
+      instanceType: this.selectedInstanceTypeName,
       nodeCount,
       params: parameters
     };

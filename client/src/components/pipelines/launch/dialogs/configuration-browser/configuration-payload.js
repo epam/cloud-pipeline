@@ -42,6 +42,11 @@ import JobNotifications from '../job-notifications';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import {mapObservableNotification} from '../job-notifications/job-notification';
 import {getSelectOptions} from '../../../../special/instance-type-info';
+import capacityBlocks from '../../../../../models/cluster/capacity-blocks';
+import {
+  decodeInstanceTypeValue,
+  getCapacityBlockOptions
+} from '../../../../../models/cluster/capacity-blocks/utilities';
 
 function getConfigurationPayload (entry) {
   if (!entry) {
@@ -405,10 +410,18 @@ class ConfigurationPayload extends React.Component {
       modifiedParameters,
       instance_disk: instanceDisk,
       timeout,
-      instance_size: instanceType,
+      instance_size: instanceTypeRaw,
       startIdle,
       ...rest
     } = payload;
+    // `instance_size` is this component's own raw node-type value, kept as-is
+    // in state so the Select can redisplay a chosen capacity-block pool - it
+    // may be encoded as `pool:<id>`. Decode once here, the one place this
+    // entry's outgoing `instance_size` is built, so the encoded form never
+    // reaches the saved configuration. Nothing persists the chosen pool: a
+    // saved configuration has no field for it, so reopening one re-derives
+    // the pool from the type and region instead.
+    const {instanceType} = decodeInstanceTypeValue(instanceTypeRaw, capacityBlocks.pools);
     let valid;
     try {
       valid = !!instanceType &&
@@ -546,8 +559,14 @@ class ConfigurationPayload extends React.Component {
       );
     }
     const {
-      instance_size: instanceType
+      instance_size: instanceType,
+      cloudRegionId
     } = payload;
+    const capacityBlockPools = getCapacityBlockOptions(
+      capacityBlocks.pools,
+      instanceTypes,
+      {regionId: cloudRegionId}
+    );
     const onChange = newInstanceType => this.setState({
       payload: {
         ...payload,
@@ -573,7 +592,10 @@ class ConfigurationPayload extends React.Component {
           disabled={disabled || (instanceTypesPending && instanceTypes.length === 0)}
           onChange={onChange}
         >
-          {getSelectOptions(instanceTypes)}
+          {getSelectOptions(
+            instanceTypes,
+            {showReservationTag: true, regionId: cloudRegionId, capacityBlockPools}
+          )}
         </Select>
       </div>
     );
@@ -905,8 +927,9 @@ class ConfigurationPayload extends React.Component {
     }
     const {
       docker_image: dockerImage,
-      instance_size: instanceType
+      instance_size: instanceTypeRaw
     } = payload;
+    const {instanceType} = decodeInstanceTypeValue(instanceTypeRaw, capacityBlocks.pools);
     return (
       <div
         className={styles.row}
