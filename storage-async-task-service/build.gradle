@@ -1,0 +1,63 @@
+// Builds the source distribution, as storage-lifecycle-service does: stamp the root build's version
+// into sats/util/version.py, run `setup.py sdist`, copy the result to a fixed name.
+//
+// version.py is tracked, so `finalizedBy` puts the original text back even when the build fails.
+
+ext.savedVersionText = null
+
+task restoreVersionFile {
+    doLast {
+        restoreVersion()
+    }
+}
+
+task build(type: Exec) {
+    group = 'build'
+    finalizedBy restoreVersionFile
+    doFirst {
+        saveVersion()
+        // `project.version`, not a bare `version`: inside a task action the delegate is the task,
+        // and an `Exec` has no `version` property.
+        setVersion(project.version.toString())
+    }
+    commandLine 'python', "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
+    doLast {
+        copy {
+            from "$project.rootDir/storage-async-task-service/dist/sats-${project.version}.tar.gz"
+            into "$project.rootDir/storage-async-task-service/dist/"
+            rename { String fileName ->
+                fileName.replace("sats-${project.version}", "sats")
+            }
+        }
+    }
+}
+
+def versionFile() {
+    return file('sats/util/version.py')
+}
+
+def saveVersion() {
+    project.ext.savedVersionText = versionFile().getText('UTF-8')
+}
+
+def setVersion(String value) {
+    def target = versionFile()
+    def text = target.getText('UTF-8')
+    text = text.replaceAll(/(__version__ = '.+')/, "__version__ = \'$value\'")
+    target.write(text, 'UTF-8')
+}
+
+def restoreVersion() {
+    if (project.ext.savedVersionText != null) {
+        versionFile().write(project.ext.savedVersionText, 'UTF-8')
+        project.ext.savedVersionText = null
+    }
+}
+
+task clean(type: Delete) {
+    group = 'build'
+    doLast {
+        delete("$project.rootDir/storage-async-task-service/sats.egg-info")
+        delete("$project.rootDir/storage-async-task-service/dist")
+    }
+}

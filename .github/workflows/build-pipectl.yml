@@ -220,6 +220,11 @@ jobs:
             needs_dist_url: true
             tag: storage-lifecycle-service-$DOCKERS_VERSION
 
+          - service: cp-storage-async-task-service
+            context: cp-storage-async-task-service
+            needs_dist_url: true
+            tag: storage-async-task-service-$DOCKERS_VERSION
+
           - service: cp-mlflow-server
             context: cp-mlflow-server
             tag: mlflow-server-$DOCKERS_VERSION

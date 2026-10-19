@@ -1,0 +1,4 @@
+# What the tests and the checks need, on top of requirements.txt. flake8 is configured in setup.cfg.
+-r requirements.txt
+pytest==8.3.3
+flake8==7.1.1
