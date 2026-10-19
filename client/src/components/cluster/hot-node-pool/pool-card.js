@@ -24,7 +24,25 @@ import {
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import DockerImageDetails from './docker-image-details';
-import {parseDay} from './schedule-control';
+import {parseDay} from './edit-hot-node-pool/controls/ScheduleControl';
+import {
+  getCapacityReservationStatus,
+  getReservationDisplayInstanceCount,
+  humanizeReservationStatus
+} from './edit-hot-node-pool/helpers';
+import {
+  RESERVATION_STATUS_PENDING,
+  RESERVATION_STATUS_REQUIRED_APPROVE,
+  RESERVATION_STATUS_APPROVED,
+  RESERVATION_STATUS_ASSESSING,
+  RESERVATION_STATUS_SCHEDULED,
+  RESERVATION_STATUS_ACTIVE,
+  RESERVATION_STATUS_FINALIZING,
+  RESERVATION_STATUS_FINISHED,
+  RESERVATION_STATUS_PURCHASE_FAILED,
+  RESERVATION_STATUS_FAILED,
+  RESERVATION_STATUS_CANCELLED
+} from './edit-hot-node-pool/constants';
 import PoolShortDescription from './pool-short-description';
 import styles from './pool-card.css';
 
@@ -107,15 +125,42 @@ function Schedule ({schedule}) {
 
 const CP_USE_NODES_COUNT_INFORMATION = 'CP_USE_NODES_COUNT_INFORMATION';
 
+// Keyed by `getCapacityReservationStatus`'s return value, so a status's color and label
+// stay in lockstep instead of being picked by two separate expressions. Every key but
+// `PENDING` (the client-only fallback used before any reservation record exists) is a
+// verbatim backend `CapacityReservationStatus` value.
+const RESERVATION_STATUS_PRESENTATION = {
+  [RESERVATION_STATUS_REQUIRED_APPROVE]: {tag: 'warning', label: 'Requires approval'},
+  [RESERVATION_STATUS_PENDING]: {tag: 'warning', label: 'Pending approval'},
+  [RESERVATION_STATUS_APPROVED]: {tag: 'primary', label: 'Approved'},
+  [RESERVATION_STATUS_ASSESSING]: {tag: 'primary', label: 'Assessing by cloud provider'},
+  [RESERVATION_STATUS_SCHEDULED]: {tag: 'success', label: 'Scheduled'},
+  [RESERVATION_STATUS_ACTIVE]: {tag: 'success', label: 'Active'},
+  [RESERVATION_STATUS_FINALIZING]: {tag: 'primary', label: 'Finalizing'},
+  [RESERVATION_STATUS_FINISHED]: {tag: undefined, label: 'Finished'},
+  [RESERVATION_STATUS_PURCHASE_FAILED]: {tag: 'critical', label: 'Purchase failed'},
+  [RESERVATION_STATUS_FAILED]: {tag: 'critical', label: 'Failed'},
+  [RESERVATION_STATUS_CANCELLED]: {tag: undefined, label: 'Cancelled'}
+};
+
+function getReservationStatusPresentation (status) {
+  return RESERVATION_STATUS_PRESENTATION[status] || {
+    tag: undefined,
+    label: humanizeReservationStatus(status)
+  };
+}
+
 function PoolCard ({
   awsRegions,
   disabled,
-  readOnly = false,
+  canEdit = false,
+  canDelete = false,
   pool,
   onEdit,
   onRemove,
   onClick,
   nodes,
+  reservations,
   router
 }) {
   if (!pool) {
@@ -130,6 +175,15 @@ function PoolCard ({
     usage = 0,
     kubeLabels = {}
   } = pool;
+  const reservation = (reservations || []).find(r => r.nodePoolId === pool.id);
+  const reservationStatus = getCapacityReservationStatus(pool, reservation);
+  const reservationStatusPresentation = reservationStatus
+    ? getReservationStatusPresentation(reservationStatus)
+    : undefined;
+  // A future-dated pool legitimately has no nodes until its reservation is activated,
+  // so the "disabled" treatment would read as a fault. Its reservation badge carries
+  // the real state instead.
+  const showAsDisabled = nodeCount === 0 && !reservationStatus;
   const {
     [CP_USE_NODES_COUNT_INFORMATION]: cpUseNodesCountInformationLabelValue
   } = kubeLabels;
@@ -144,10 +198,15 @@ function PoolCard ({
       `${node.labels.pool_id}` === `${pool.id}`
     );
   const runs = usage;
-  const total = Math.max(usage, poolNodes.length);
+  const reservationInstanceCount = nodeCount === 0
+    ? getReservationDisplayInstanceCount(reservation)
+    : undefined;
+  const effectiveTotal = reservationInstanceCount !== undefined
+    ? reservationInstanceCount
+    : Math.max(usage, poolNodes.length);
   const runsCountLabel = displayCount(runs);
-  const totalLabel = displayCount(total);
-  const fontSize = total >= 100 ? 10 : 12;
+  const totalLabel = displayCount(effectiveTotal);
+  const fontSize = effectiveTotal >= 100 ? 10 : 12;
   const navigate = (path) => {
     if (!router) {
       return;
@@ -164,8 +223,8 @@ function PoolCard ({
           'cp-panel-card',
           'cp-hot-node-pool',
           {
-            [styles.poolDisabled]: nodeCount === 0,
-            'cp-disabled': nodeCount === 0
+            [styles.poolDisabled]: showAsDisabled,
+            'cp-disabled': showAsDisabled
           }
         )
       }
@@ -188,7 +247,7 @@ function PoolCard ({
             <Progress
               type="circle"
               status={runs > 0 ? 'success' : 'active'}
-              percent={(runs / (total || 1)) * 100.0}
+              percent={(runs / (effectiveTotal || 1)) * 100.0}
               width={55}
               strokeWidth={8}
               showInfo={false}
@@ -213,13 +272,28 @@ function PoolCard ({
             <div className={styles.title}>
               <span className={styles.main}>{name}</span>
               {
-                nodeCount === 0 && (
+                reservationStatusPresentation && (
+                  <span
+                    className={
+                      classNames(
+                        styles.reservationStatus,
+                        'cp-tag',
+                        reservationStatusPresentation.tag
+                      )
+                    }
+                  >
+                    {reservationStatusPresentation.label}
+                  </span>
+                )
+              }
+              {
+                showAsDisabled && (
                   <span className={styles.disabledLabel}>(disabled)</span>
                 )
               }
             </div>
             <div className={styles.actions}>
-              {!readOnly && (
+              {canEdit && (
                 <Button
                   disabled={disabled}
                   size="small"
@@ -238,7 +312,7 @@ function PoolCard ({
               >
                 <Icon type="area-chart" />
               </Button>
-              {!readOnly && (
+              {canDelete && (
                 <Button
                   disabled={disabled}
                   size="small"
