@@ -18,6 +18,8 @@ SCRIPTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 . "$SCRIPTS_DIR/lib/tunnel.sh"
 # shellcheck source=lib/services.sh
 . "$SCRIPTS_DIR/lib/services.sh"
+# shellcheck source=lib/ui.sh
+. "$SCRIPTS_DIR/lib/ui.sh"
 
 usage() {
   cat <<'EOF'
@@ -41,20 +43,27 @@ Commands:
                                and the VPC through the SOCKS proxy at
                                cp-sandbox-<name>-master:1080; the master's <private IP>:9999
                                reaches api:9999 there. --stop closes it.
-  services [--name <name>] [--with <services>] [--build] [--stop]
+  services [--name <name>] [--with <services>] [--pipe-common-from-checkout] [--build] [--stop]
            [--log [<container>] [--tail <lines>]]
                                Run the platform's API here, built from this checkout, with its
                                database, on the sandbox's network, and configure it for the
                                sandbox: region, preferences, the master's registry and a tool.
                                Needs the tunnel. --with billing,search,monitoring, or all, runs
-                               those services too, with an Elasticsearch. --build builds the jars
-                               again; --stop removes the containers and keeps the volumes; --log
-                               shows the log of the API, or of db, elasticsearch, billing, search
-                               or monitoring, its tokens and credentials blanked out.
+                               those services too, with an Elasticsearch.
+                               --pipe-common-from-checkout serves the runs this checkout's
+                               workflows/pipe-common in place of the published build's; without
+                               it, the build's is served again. --build builds the jars again;
+                               --stop removes the containers and keeps the volumes; --log shows
+                               the log of the API, or of db, elasticsearch, billing, search or
+                               monitoring, its tokens and credentials blanked out.
   api [--name <name>] [--jq <filter>] <GET|POST|PUT|DELETE> <path> [<json body>]
                                One call to the REST API of the API services runs, as its admin, at
                                <path> under https://api:9999/pipeline/restapi/. Writes the payload,
                                its secrets blanked out, through the jq filter.
+  ui [--name <name>] [--stop]  Run the GUI of this checkout's client/ (npm start, in Node's image)
+                               on the sandbox's network, against the API services runs, as its
+                               admin, and wait for it to compile: http://localhost:3100/, on
+                               127.0.0.1 only. --stop removes its container.
   status                       Local sandboxes, their containers and networks on Docker, and the
                                instances tagged with this owner.
   extend --hours <n> [--name <name>]
@@ -109,7 +118,7 @@ main() {
   done
 
   case $command in
-    check | ami | up | connect | services | api | status | extend | down)
+    check | ami | up | connect | services | api | ui | status | extend | down)
       require_docker
       host_paths
       require_config "$dry_run"
@@ -121,6 +130,7 @@ main() {
         connect) cmd_connect "$@" ;;
         services) cmd_services "$@" ;;
         api) cmd_api "$@" ;;
+        ui) cmd_ui "$@" ;;
         down) host_down "$@" ;;
         status)
           TOOLS_DOCKER_OBJECTS=$(docker_objects)

@@ -3,8 +3,8 @@
 A throw-away AWS sandbox for live testing: a Kubernetes 1.15.4 master on EC2, in a shared AWS
 account, tagged with the developer it belongs to and the time it expires. `scripts/sandbox.sh`
 checks the account, builds the host image the master starts from, creates the master, opens a
-tunnel between it and the containers on your workstation, runs the platform's API there against
-it, shows it, extends it and removes it.
+tunnel between it and the containers on your workstation, runs the platform's API and its GUI
+there against it, shows it, extends it and removes it.
 
 The expiry is a tag, and nothing in `sandbox.sh` acts on it. The reaper in `lambda/`, which a
 person deploys once per account and region, terminates the instances that have expired ("The
@@ -61,6 +61,8 @@ reaper", below). Without it, an expired sandbox runs, and costs, until `down` re
   and the JDK the jar is built with, besides Gradle's cache. `services --with` needs about 1.3 GB
   more, for Elasticsearch's image, and, on an arm64 workstation, Docker that runs amd64 images:
   `docker run --rm --platform linux/amd64 alpine uname -m` prints `x86_64`.
+- **For `ui`**, room for Node's image, about 1.3 GB, and for `client/node_modules`, about 800 MB,
+  in each checkout it runs from.
 - **The reaper**, in the account and region, unless someone has deployed it already: it
   terminates what has expired ("The reaper", below).
 
@@ -91,11 +93,15 @@ $S connect               # open the tunnel to the master, for the containers on 
 $S connect --stop        # close it
 $S services              # run the API from this checkout, here, against the sandbox, and configure it
 $S services --with all   # and the billing, search and monitoring services, with an Elasticsearch
+$S services --pipe-common-from-checkout
+                         # and serve the runs this checkout's pipe-common, not the published build's
 $S services --build      # build the jars again first
 $S services --stop       # remove the containers services runs
 $S services --log        # the API's log, its tokens and credentials blanked out
 $S services --log search # the log of another of them: db, elasticsearch, billing, search, monitoring
 $S api GET whoami        # one call to the API's REST API, as its admin ("A run", below)
+$S ui                    # run this checkout's GUI against the API, at http://localhost:3100/
+$S ui --stop             # remove its container
 $S status                # local sandboxes, their containers and networks, and your instances
 $S extend --hours 24     # move the expiry 24 hours later
 $S down                  # list what would be removed
@@ -210,17 +216,7 @@ In order, `services`:
    - looks up the VPC's address ranges, and refuses a sandbox network that overlaps them;
    - imports the sandbox's SSH key as the EC2 key pair `cp-sandbox-<name>`, tagged as the
      sandbox's, which the platform starts its nodes with;
-   - runs `scripts/host/install-services.sh` on the master with Run Command: a Docker registry,
-     `registry:2.8.3` on port 5000, with a self-signed certificate for the master's private
-     address; the tool `library/centos:7` in it, built from `scripts/host/tool.Dockerfile`, and
-     built again when that file changes; and
-     the files a run's `launch.sh` downloads (pipe-common, `pipe`, gpustat, fsbrowser), taken
-     from a published build of the platform and served at `http://<private IP>:8090/`. The build
-     is the newest `cloud-pipeline.<version>.tgz` under
-     `https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/develop/`, unless
-     `CP_SANDBOX_DISTRIBUTION_URL` names another; so pipe-common and `pipe` need no local build;
-   - fetches the registry's certificate, makes the API's TLS key and its JWT key pair, and picks
-     the sandbox's block of run IDs;
+   - makes the API's TLS key and its JWT key pair, and picks the sandbox's block of run IDs;
    - writes `api.properties`: `api/profiles/dev/application.properties` with the database, the
      node scripts of the checkout (`scripts/autoscaling/aws/`), the master
      (`kube.master.ip`, the join token, the CA cert hash), `kube.cluster.name`
@@ -228,17 +224,34 @@ In order, `services`:
      the API's address on the master for `api.host`, the launch and init script URLs, and the
      URLs of the scripts the API runs on a run's node, under `commit-run-scripts/`, which the jar
      holds;
-4. mints a token for the platform's admin, `pipe_admin`, with jwt-generator, valid 30 days;
-5. starts the database, and then the API, which takes three to four minutes to start, Flyway
+4. mints two tokens for the platform's admin, `pipe_admin`, with jwt-generator: the one the
+   scripts and the services use, valid 30 days, and the one the master's registry notifies the API
+   with ("The registry", below);
+5. in the tools image, `services-master`: runs `scripts/host/install-services.sh` on the master
+   with Run Command:
+   - a Docker registry, `registry:2.8.3` on port 5000, with a self-signed certificate for the
+     master's private address, a login, and notifications to the API ("The registry", below);
+   - the tool `library/centos:7` in it, built from `scripts/host/tool.Dockerfile`, and built
+     again when that file changes;
+   - the files a run's `launch.sh` downloads (pipe-common, `pipe`, gpustat, fsbrowser), taken
+     from a published build of the platform and served at `http://<private IP>:8090/`. The build
+     is the newest `cloud-pipeline.<version>.tgz` under
+     `https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/develop/`, unless
+     `CP_SANDBOX_DISTRIBUTION_URL` names another; so pipe-common and `pipe` need no local build.
+     With `--pipe-common-from-checkout`, pipe-common is this checkout's ("pipe-common from the
+     checkout", below).
+
+   Then it fetches the registry's certificate and its user's password over SSH;
+6. starts the database, and then the API, which takes three to four minutes to start, Flyway
    creating the schema the first time;
-6. moves the sequences of run IDs and pool node IDs (`pipeline.s_pipeline_run`,
+7. moves the sequences of run IDs and pool node IDs (`pipeline.s_pipeline_run`,
    `pipeline.s_free_nodes`) to the sandbox's block: the node scripts find a node's instance by its
    `Name` tag, the run ID, across the whole region, so each sandbox takes 100000 IDs of its own,
    at random, from 100000000 up;
-7. through the API's REST API, as the admin, `services-configure`: the region from the config,
+8. through the API's REST API, as the admin, `services-configure`: the region from the config,
    as the default one, with the key pair; the preferences below; the master's registry, with its
-   certificate and without the platform's own registry authentication, its tool group `library`
-   and the tool. It prints what the API reads back.
+   certificate and its user's login, without the platform's own registry authentication, its tool
+   group `library` and the tool. It prints what the API reads back.
 
 | Preference | Value |
 |---|---|
@@ -267,8 +280,9 @@ In order, `services`:
   node passes as soon as the node runs. What `nodeup.py` waits for next, the node joining the
   cluster and turning `Ready`, holds.
 - The API's REST API takes the admin token in `admin-token.secret`; there is no identity
-  provider, so no sign-in, and no UI. From a container on the network:
-  `https://api:9999/pipeline/restapi/`, with the API's certificate, `api-tls.crt`.
+  provider, so no sign-in, and the API serves no UI: `sandbox.sh ui` runs the GUI ("The GUI",
+  below). From a container on the network: `https://api:9999/pipeline/restapi/`, with the API's
+  certificate, `api-tls.crt`.
 - The API's container gets the config as its environment, and `~/.aws` read-only, as the tools
   containers do: never `docker inspect` it. Its log holds secrets once it starts nodes and runs:
   the join token, on the node scripts' command lines, the tokens it issues them, and the spec of
@@ -280,13 +294,77 @@ In order, `services`:
 - The API keeps the credentials it started with: the config's values, and a copy of `~/.aws` as it
   was then. `services` starts it again when the config file has changed since; after renewing
   credentials in `~/.aws`, run `services --stop`, then `services`.
-- The registry on the master takes pushes from anyone, and the distribution files are served to
-  anyone, that the security groups let in: in a shared account, other developers' instances in the
-  same groups too.
+- The distribution files are served to anyone that the security groups let in: in a shared
+  account, other developers' instances in the same groups too. The registry takes the login of
+  its user only ("The registry", below).
 - `services --stop` removes the containers it runs, the optional services' among them; the
   volumes and the network stay, and `down --yes` removes them, the API's container first, so that
   it starts no node while the instances go. The API's container runs a copy of the jar, so
   building again while it runs leaves it alone; run `services` again to start the new jar.
+
+### The registry
+
+The master's registry, `cp-sandbox-registry`, runs on the master's network with the settings
+`install-services.sh` writes into `/etc/cp-sandbox/registry/config.yml`, which only root can read:
+the settings of a deployment's registry (`deploy/docker/cp-docker-registry/*/update_config.sh`)
+that apply here.
+
+- **Deletes are enabled**, as on a deployment: deleting a tool version through the platform deletes
+  its manifest.
+- **It takes a login**: one user, `pipe_admin`, with a password of 40 hex digits that
+  `install-services.sh` makes once, and the bcrypt hash of it in the registry's htpasswd file.
+  The API logs in to it with that user, as it does to an external registry: `services-configure`
+  registers the registry with the login, or sets it again on one registered already. The API keeps
+  a Kubernetes pull secret of it, which every run's pod gets, and hands it to a commit, which logs
+  in on the run's node before it pushes. Docker on the master is logged in as root, so a push by
+  hand there works; anywhere else, `docker login` first.
+- **It notifies the API** of every push and delete, as a deployment's registry does: at
+  `https://<private IP>:9999/pipeline/restapi/dockerRegistry/notify`, the master's forward to the
+  API, with the `Registry-Path` header and the same media types ignored, and a timeout of 10
+  seconds, for the tunnel. The API records each version it hears of, with its digest, so digest
+  aliases, digest pinning and the version attributes behave as on a deployment. It keeps an event
+  only when it names the user who pushed, which is why the registry takes a login; without the
+  tunnel, the registry queues its events and sends them later. An event from before
+  `services-configure` has registered the registry, as that of the tool's own push on the first
+  `services`, the API refuses, and logs `Registry with name '<private IP>:5000' not found`; the
+  tool's registration records that version with its digest all the same. The registry trusts the
+  API's certificate, and that one alone, for it.
+- **The token it notifies with is one of its own**, the admin's, as a deployment's: minted for
+  the rest of the sandbox's life and an hour more, at least an hour, and minted again once
+  `extend` has moved the sandbox's expiry past it, on the next `services`. It goes to the master
+  over SSH, never through Run Command, into `/etc/cp-sandbox/registry/notify-token.secret`, and
+  from there into `config.yml`, both root's alone, and into the registry's log, which prints its
+  settings as it starts.
+- The registry is started again when its image, its options, its settings, its certificate or its
+  login change: its container carries a hash of them, `cp-sandbox-config`. A sandbox made before
+  any of these gets them on its next `services`. A push or a pull that is under way when it starts
+  again fails.
+- Where the login and the token are: the password in `/etc/cp-sandbox/registry/password.secret`
+  and root's Docker config on the master, in `registry-password.secret` in the local state, and in
+  the API's database and its Kubernetes secret; the token in `registry-token.secret` in the local
+  state, and in `notify-token.secret`, the registry's settings and its log on the master. The
+  hash of the password is made with the `crypt` of the system's `/usr/bin/python3`, as the
+  platform's Python 3.12 on the master has no `libcrypt.so.1` to load it. A commit hands the password to the
+  run's node on the command line it runs there, as it would a deployment's external registry's;
+  the API's log is read with it blanked out (`services --log`), as a word of 40 base64
+  characters.
+
+### pipe-common from the checkout
+
+`services --pipe-common-from-checkout` serves the runs this checkout's `workflows/pipe-common` in
+place of the published build's, so that a change to it, or to `scripts/commit-run-scripts/` that
+needs one to it, can be tried live.
+
+- `services-master` packs the directory as the root build's `buildPipe` does, its contents at the
+  archive's root, without the caches Python and pytest leave there, and copies it to the master
+  over SSH. `install-services.sh` serves it as `pipe-common.tar.gz`, and keeps the build's beside
+  it, `pipe-common.tar.gz.published`. `services` without the option serves the build's again.
+- Every run that downloads pipe-common gets it: `launch.sh`, which installs it in every job
+  container, and the commit and pause scripts on a run's node. A run started before keeps what it
+  installed.
+- `services` prints which one the runs get, with the archive's SHA-256, and `state.json` records it
+  (`distribution_pipe_common`). The API's container takes the checkout's pipe-common for the node
+  scripts it runs either way.
 
 ### Billing, search and monitoring
 
@@ -338,6 +416,45 @@ sandbox's network, labelled `cp-sandbox=<name>`:
 - Nothing of them is published on the workstation. Reach them from a container on the network:
   `tools.sh --sandbox <name> curl -s http://elasticsearch:9200/_cat/indices`.
 
+## The GUI
+
+`sandbox.sh ui` runs the GUI of the checkout you run it from, `client/`, against the API that
+`services` runs: `npm start` in Node's image of the version `client/.nvmrc` names, in the container
+`cp-sandbox-<name>-ui` on the sandbox's network, labelled `cp-sandbox=<name>`. It waits for the
+first compile, which takes several minutes, and prints where the GUI is: `http://localhost:3100/`.
+`ui --stop` removes the container; `down --yes` does too.
+
+- The GUI's requests go to its dev proxy, `client/scripts/dev-proxy.js`, at
+  `http://localhost:9199/pipeline/`, which forwards them to the API at
+  `https://api:9999/pipeline/` on the network, with its certificate unchecked, and the admin's
+  token on each (`client/scripts/dev-proxy.md`). There is no sign-in: **everyone who reaches
+  the proxy acts as the platform's admin.** Both ports are published on `127.0.0.1` only, the
+  ports of the `verify-client-live` skill, so a developer's own `npm start` keeps its own, and the
+  proxy answers the GUI's origin alone, `http://localhost:3100` (`PROXY_CORS_ORIGIN`), so that a
+  page of another site in your browser cannot read what it answers. It does not check the `Host`
+  a request names, so a site whose name it makes resolve to `127.0.0.1` could still reach it from
+  your browser: stop the GUI (`ui --stop`) once you are done with it.
+- `ui` sets every setting of the proxy, an empty one where unset (`PROXY_TARGET`, `PROXY_PORT`,
+  `PROXY_DISABLED` among them): `client/.env` and the other `.env` files of the checkout, which
+  the client reads too, set only what the environment does not, so none of them sends the token
+  anywhere else. The rest of what they set takes effect, as in a developer's own `npm start`.
+- The dev server and the proxy listen on every address in the container, so that the ports
+  published reach them, and watch the mounted checkout by polling: a change to a file of
+  `client/` compiles again, within seconds. `ui` waits for the first compile, and fails, with the
+  end of the log, when it fails, the dev server running on to compile again once the file is
+  fixed.
+- It runs as you, with `client/` of the checkout mounted read and write: webpack keeps its cache
+  in `client/node_modules/.cache`. When `client/node_modules` is missing, as in a new worktree, it
+  installs it first with `npm ci`, in the same image, with npm's cache in `.npm-cache` in the local
+  state root. A `node_modules` installed by a Node on macOS may not run there; remove it, and `ui`
+  installs it again.
+- It gets the admin's token alone, `admin-token.secret`, mounted read-only;
+  `docker/ui-entrypoint.sh` reads it into the proxy's environment as it starts. The container's
+  settings hold no secret, and its log neither: `docker logs cp-sandbox-<name>-ui` is safe.
+- `ui` leaves a GUI that runs on the same checkout and settings, and starts one that does not
+  again, as one started from another worktree. Like the tunnel, it runs what the checkout holds:
+  removing the checkout breaks it.
+
 ## A run
 
 `sandbox.sh api <method> <path> [<json body>]` makes one call to the API's REST API, as its
@@ -368,8 +485,9 @@ log says `Inserted <count> instance offers` once it is done (`services --log`).
 
 The API starts a node for the run with `nodeup.py`: an instance from the host image, tagged
 `Name=<run ID>` and with the sandbox's four tags, `cp-sandbox-role=worker`, which joins the master.
-Its pod pulls the tool from the master's registry, and the tool's `launch.sh`, downloaded from the
-API through the tunnel, reaches the API there too. On a `t3.medium`, the node was
+Its pod pulls the tool from the master's registry, with the API's pull secret of the registry's
+login, and the tool's `launch.sh`, downloaded from the API through the tunnel, reaches the API
+there too. On a `t3.medium`, the node was
 `Ready` 3 minutes after the launch, and the run `SUCCESS` 6 minutes after it. Once the node has
 been idle 5 minutes, the API runs `nodedown.py`, which terminates the instance tagged with the
 run's ID.
@@ -383,12 +501,14 @@ starts with as its key pair, and runs a script it serves from
 `https://<private IP>:9999/pipeline/commit-run-scripts/`, as root, in a login shell. The commit
 and pause scripts install pipe-common there, for the host image's Python 3.12 ("The host image",
 below), so on a sandbox whose master started from an image without it, they fail: make the
-sandbox again. A commit pushes the image to the master's registry, with the AWS credentials of
-the run's environment blanked out (`commit.additional.envs.to.clean`, above). Its files keep
-`/etc/cp_env.sh` all the same, which `launch.sh` writes with every variable of the run but the
-AWS key ID and secret key, and which a commit does not clean: the run's `API_TOKEN`, an admin's
-token here, among them, and the session token of temporary credentials. Anyone who can pull from
-the master's registry can read them, so commit only what you would hand them. A pause commits the
+sandbox again. A commit logs in to the master's registry on the node and pushes the image there,
+with the AWS credentials of the run's environment blanked out (`commit.additional.envs.to.clean`,
+above); the registry notifies the API of the push, and the API records the new version with its
+digest ("The registry", above). Its files keep `/etc/cp_env.sh` all the same, which `launch.sh`
+writes with every variable of the run but the AWS key ID and secret key, and which a commit does
+not clean: the run's `API_TOKEN`, an admin's token here, among them, and the session token of
+temporary credentials. Anyone who can pull from the master's registry can read them, so commit
+only what you would hand them. A pause commits the
 container on the node, and stops the instance; a resume starts it again, and the run goes on in
 that image. For a run long enough to do it, give it a longer `cmdTemplate`, such as `sleep 1800`.
 The registry's ID is the one `services` prints:
@@ -526,11 +646,12 @@ with the config's credentials. It needs:
 
 `.agents/sandboxes.local/<name>/` in the main checkout, gitignored, so it outlives any worktree.
 `CP_SANDBOX_STATE_DIR` points the scripts at another directory. Beside the sandboxes, `.gradle-home`
-holds Gradle's home and cache for the builds of `services`.
+holds Gradle's home and cache for the builds of `services`, and `.npm-cache` npm's cache for the
+`npm ci` of `ui`.
 
 | File | Holds |
 |---|---|
-| `state.json` | the instance, region, AMI, private IP, created, expires; the Kubernetes API port, the hash of the cluster CA's public key, and the name the API server's certificate carries for the tunnel; while the tunnel works, its container and network, the Kubernetes API's address on the network, the API port's address on the master and where it leads, and the SOCKS proxy: `connect` writes these once its checks pass, and they go when a check fails, when the tunnel gives up, and on `connect --stop`; once `services` has run, the VPC's ranges, the subnet's zone, the key pair, the registry's path, the distribution's address and source, the API's address and the block of run IDs |
+| `state.json` | the instance, region, AMI, private IP, created, expires; the Kubernetes API port, the hash of the cluster CA's public key, and the name the API server's certificate carries for the tunnel; while the tunnel works, its container and network, the Kubernetes API's address on the network, the API port's address on the master and where it leads, and the SOCKS proxy: `connect` writes these once its checks pass, and they go when a check fails, when the tunnel gives up, and on `connect --stop`; once `services` has run, the VPC's ranges, the subnet's zone, the key pair, the registry's path, the distribution's address and source, which pipe-common it serves, the API's address and the block of run IDs |
 | `ssh-key.pem`, `ssh-key.pem.pub` | the sandbox's SSH key; the public half reaches the master through its user data, and the platform's nodes as the key pair `services` imports; the API's container keeps a copy, which the API logs in to the nodes with |
 | `known_hosts` | the master's SSH host key, recorded the first time |
 | `kubeconfig.secret` | the master's `admin.conf`: cluster-admin, for `https://cp-sandbox-<name>-master:6443`, through the tunnel |
@@ -539,7 +660,9 @@ holds Gradle's home and cache for the builds of `services`.
 | `api-tls-key.pem`, `api-tls.crt` | the API's TLS key and certificate, for `api` and the master's private address |
 | `jwt-private-key.pem`, `jwt-public-key.pem` | the key pair the API signs and checks its tokens with |
 | `admin-token.secret` | a token for the platform's admin, `pipe_admin` |
+| `registry-token.secret`, `registry-token.until` | the admin's token the master's registry notifies the API with, and when it expires, in seconds |
 | `registry-ca.crt` | the certificate of the registry on the master |
+| `registry-password.secret` | the password of the registry's user, `pipe_admin`, which the API logs in to the registry with |
 | `api.jar` | the copy of the jar the API's container runs |
 | `<service>.properties`, `<service>.jar` | for `services --with`: the settings of the billing, search or monitoring service, which `services` writes again on every run that names the service in `--with`, and the copy of the jar its container runs; no secret |
 
@@ -558,7 +681,7 @@ docker run --rm -v "$PWD/.agents/skills/dev-sandbox:/mnt:ro" -w /mnt koalaman/sh
 ```
 
 `sandbox-test.sh` runs every command under `--dry-run` against a made-up config, and the Docker
-steps of `connect`, `services` and `down` with `docker` stubbed. Then, in the tools image, it runs
+steps of `connect`, `services`, `ui` and `down` with `docker` stubbed. Then, in the tools image, it runs
 `in-tools-test.sh`, `check-test.sh`, `ami-test.sh`, `connect-test.sh` and `services-test.sh`: the
 libraries and the commands, with AWS, Run Command, SSH, kubectl and the API's REST API replaced
 by the stubs in `stubs.sh` and the tests; `services-test.sh` reads the search preferences from the
@@ -566,14 +689,18 @@ checkout's own installer, the billing schedule from its billing image's settings
 credential variables and the default that a commit blanks from the API's `SystemParams` and
 `SystemPreferences`, and checks the scripts the API's settings name against
 `scripts/commit-run-scripts/` and `api/build.gradle`.
-`api-entrypoint-test.sh` runs the entrypoints of the API's image, with
+`api-entrypoint-test.sh` runs the entrypoints of the API's image, and the GUI's, with
 what they call stubbed. Last, `host-test.sh` runs the host scripts twice each,
 as root in a container of their own, with every command that would change the host or reach the
 network replaced by a stub, checks which `python3` a login shell as root finds once
 `prepare-host.sh` has run, with the `PATH` a node's root gets, and runs `install-master.sh` on
 `deploy/`'s `canal.yaml` too, to
 check which flannel image it looks for; and `services-host-test.sh` does the same for
-`install-services.sh`, in `python:3.12`, since it needs Python 3, as the master has. Then it runs
+`install-services.sh`, in `python:3.12`, since it needs Python 3, as the master has, and compares
+the media types the registry's notifications ignore with those of the deployment's registry.
+The registry's settings it leaves are then tried with the registry's own image, for real, on a
+Docker network of its own: it answers its user and no one else, takes a delete, and configures
+its notifications to the API. Then it runs
 the reaper's tests, `lambda/test/`, with pytest and EC2 replaced by botocore's `Stubber`, and
 `cfn-lint` over `lambda/template.yaml`, both in an image built from
 `docker/lambda-test.Dockerfile`, again when that file changes.

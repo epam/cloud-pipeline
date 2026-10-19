@@ -25,6 +25,8 @@ API_JAVA_OPTIONS="-Xmx2g -Djava.security.egd=file:/dev/./urandom"
 API_LOG_LINES=40
 API_LOG_DEFAULT_LINES=200
 ADMIN_TOKEN_SECONDS=2592000
+# The registry's token outlives the sandbox by this much, and is never minted for less.
+REGISTRY_TOKEN_MARGIN_SECONDS=3600
 LABEL_CONFIG=cp-sandbox-config
 # The Elasticsearch the platform's search runs: the image its Dockerfile starts FROM, in this file
 # of the checkout. It is built for amd64 only, which Docker on an arm64 workstation emulates.
@@ -130,20 +132,19 @@ container_label() {
     --format "{{.Label \"$3\"}}"
 }
 
-# mint_admin_token <name>: a token for the platform's default admin, signed with the sandbox's JWT
-# key by jwt-generator, straight into its file in the local state.
-mint_admin_token() {
-  local dir=$STATE_ROOT/$1 file part
-  file=$dir/admin-token.secret
+# mint_token <name> <file> <seconds>: a token for the platform's default admin, valid that long,
+# signed with the sandbox's JWT key by jwt-generator, straight into the file in the local state.
+mint_token() {
+  local dir=$STATE_ROOT/$1 file=$2 seconds=$3 part
   if [ "$HOST_DRY_RUN" = 1 ]; then
-    log "[dry-run] java -jar $JWT_GENERATOR_JAR --private $dir/jwt-private-key.pem ... >$file"
+    log "[dry-run] java -jar $JWT_GENERATOR_JAR --private $dir/jwt-private-key.pem --expires $seconds ... >$file"
     return 0
   fi
   # The name a secret's has, so that a copy left by a run that stopped half-way is one too.
-  part=$dir/admin-token.part.secret
+  part=${file%.secret}.part.secret
   if ! (umask 077 && docker run --rm --entrypoint java --volume "$REPO_ROOT:$REPO_ROOT:ro" \
     --volume "$dir:$dir:ro" "$API_IMAGE" -jar "$REPO_ROOT/$JWT_GENERATOR_JAR" \
-    --private "$dir/jwt-private-key.pem" --expires "$ADMIN_TOKEN_SECONDS" \
+    --private "$dir/jwt-private-key.pem" --expires "$seconds" \
     --claim user_id=1 --claim user_name=pipe_admin --claim role=ROLE_ADMIN \
     --claim group=ADMIN >"$part") || ! grep -qE '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$' "$part"
   then
@@ -151,6 +152,42 @@ mint_admin_token() {
     die "jwt-generator gave no token"
   fi
   mv -f "$part" "$file"
+}
+
+mint_admin_token() {
+  mint_token "$1" "$STATE_ROOT/$1/admin-token.secret" "$ADMIN_TOKEN_SECONDS"
+}
+
+# expiry_epoch <name>: when the sandbox expires, as up recorded it in state.json, in seconds,
+# read without jq, which the host may not have, and parsed on macOS and Linux alike.
+expiry_epoch() {
+  local expires
+  expires=$(sed -n 's/.*"expires": *"\([^"]*\)".*/\1/p' "$STATE_ROOT/$1/state.json" 2>/dev/null | head -n 1)
+  [ -n "$expires" ] || die "the local state of sandbox $1 has no expiry: run up"
+  date -u -d "$expires" +%s 2>/dev/null || date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$expires" +%s 2>/dev/null ||
+    die "the local state of sandbox $1 has an expiry that is not a time: $expires"
+}
+
+# mint_registry_token <name>: the token the master's registry notifies the API with, a token of its
+# own, as the registry's settings on the master keep it: valid until an hour after the sandbox
+# expires, or for an hour at least, and minted again once the sandbox's expiry has moved past it.
+# registry-token.until holds when it expires, in seconds.
+mint_registry_token() {
+  local name=$1 file=$STATE_ROOT/$1/registry-token.secret until_file=$STATE_ROOT/$1/registry-token.until
+  local now expires until held
+  now=$(date +%s)
+  # An assignment of its own, which errexit sees fail; within the arithmetic, it would not.
+  expires=$(expiry_epoch "$name")
+  until=$((expires + REGISTRY_TOKEN_MARGIN_SECONDS))
+  [ "$until" -ge "$((now + REGISTRY_TOKEN_MARGIN_SECONDS))" ] || until=$((now + REGISTRY_TOKEN_MARGIN_SECONDS))
+  held=$(cat "$until_file" 2>/dev/null || true)
+  if [ -s "$file" ] && is_positive_int "$held" && [ "$held" -ge "$until" ]; then
+    return 0
+  fi
+  mint_token "$name" "$file" "$((until - now))"
+  if [ "$HOST_DRY_RUN" = 0 ]; then
+    printf '%s\n' "$until" >"$until_file"
+  fi
 }
 
 # start_db <name>: the sandbox's PostgreSQL, on its network as db, its data in a volume of its own.
@@ -510,13 +547,13 @@ start_optional_services() {
   done
 }
 
-# cmd_services [--name <name>] [--with <services>] [--build] [--stop] [--log [<service>]
-# [--tail <lines>]] [--dry-run]: runs the platform's API here, against the sandbox, and the
-# optional services named, stops them, or shows the log of one.
+# cmd_services [--name <name>] [--with <services>] [--pipe-common-from-checkout] [--build] [--stop]
+# [--log [<service>] [--tail <lines>]] [--dry-run]: runs the platform's API here, against the
+# sandbox, and the optional services named, stops them, or shows the log of one.
 cmd_services() {
   local name='' stop=0 build=0 show_log=0 log_service=api lines=$API_LOG_DEFAULT_LINES network subnets
   local services='' service
-  local -a dry=() with=()
+  local -a dry=() with=() pipe_common=()
   while [ $# -gt 0 ]; do
     case $1 in
       --name) name=$(option_value "$1" "${2-}"); shift 2 ;;
@@ -525,6 +562,7 @@ cmd_services() {
         [ -n "$services" ] || die "--with names no service; the services are $OPTIONAL_SERVICES, or all"
         shift 2
         ;;
+      --pipe-common-from-checkout) pipe_common=(--pipe-common-from-checkout); shift ;;
       --build) build=1; shift ;;
       --stop) stop=1; shift ;;
       --log)
@@ -574,6 +612,9 @@ cmd_services() {
   run_in_tools bash "$SCRIPTS_DIR/in-tools.sh" services-prepare --name "$name" \
     --docker-subnets "$subnets" ${with[@]+"${with[@]}"} ${dry[@]+"${dry[@]}"}
   mint_admin_token "$name"
+  mint_registry_token "$name"
+  run_in_tools bash "$SCRIPTS_DIR/in-tools.sh" services-master --name "$name" \
+    ${pipe_common[@]+"${pipe_common[@]}"} ${dry[@]+"${dry[@]}"}
   start_db "$name"
   # Started early, as it starts slowly, and waited for once the API is configured.
   if [ -n "$services" ]; then

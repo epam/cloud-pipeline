@@ -1,16 +1,20 @@
 # shellcheck shell=bash
 # services: the platform's API on the developer's workstation, against the sandbox. sandbox.sh
 # runs the Docker side on the host (lib/services.sh); these are its steps in the tools image:
-#   services-prepare    what the API needs of AWS, of the master and of the local state: the VPC's
-#                       address ranges, an EC2 key pair for the nodes, the registry with its tool
-#                       and the distribution files on the master (host/install-services.sh), the
-#                       API's TLS and JWT keys, and its settings, api.properties and api.env
+#   services-prepare    what the API needs of AWS and of the local state: the VPC's address ranges,
+#                       an EC2 key pair for the nodes, the API's TLS and JWT keys, and its
+#                       settings, api.properties and api.env
+#   services-master     once the host has minted the tokens: the registry with its tool, its login
+#                       and its notifications to the API, and the distribution files, on the master
+#                       (host/install-services.sh); the registry's certificate and password
 #   services-sequences  the SQL that moves the run and pool node IDs to the sandbox's own block
 #   services-wait       waits for the API to answer, on the sandbox's Docker network
-#   services-configure  the cloud region, the preferences, the registry and the tool, through the
-#                       API's REST API, and what the API reads back of them
+#   services-configure  the cloud region, the preferences, the registry, with its login, and the
+#                       tool, through the API's REST API, and what the API reads back of them
 # With --with, services-prepare also writes the settings of the optional services, and
-# services-configure points the API's search at their Elasticsearch.
+# services-configure points the API's search at their Elasticsearch. With
+# --pipe-common-from-checkout, services-master has the master serve the runs the checkout's
+# pipe-common.
 #
 # Nothing in api.properties, api.env, the services' settings or state.json is secret: the API's
 # container reads the keys and the join token from their own files (docker/api-entrypoint.sh), and
@@ -21,6 +25,12 @@ SERVICES_API_PORT=$TUNNEL_API_PORT
 # As install-services.sh sets them on the master.
 REGISTRY_PORT=5000
 REGISTRY_CERT_REMOTE=/etc/cp-sandbox/registry/registry.crt
+REGISTRY_TOKEN_REMOTE=/etc/cp-sandbox/registry/notify-token.secret
+REGISTRY_PASSWORD_REMOTE=/etc/cp-sandbox/registry/password.secret
+REGISTRY_USER=pipe_admin
+DRY_RUN_REGISTRY_PASSWORD=0000000000000000000000000000000000000000
+# Where the API takes the registry's notifications, under its REST root.
+REGISTRY_NOTIFY_PATH=dockerRegistry/notify
 TOOL_REPOSITORY=library/centos
 TOOL_TAG=7
 TOOL_GROUP=library
@@ -49,6 +59,8 @@ NODE_SSH_KEY_IN_API=/root/.ssh/cp-sandbox-node-key.pem
 COMMIT_ENVS_TO_CLEAN_DEFAULT=CP_EXEC_TIMEOUT
 COMMIT_CREDENTIAL_ENV_PREFIXES=(CP_ACCOUNT_ID_ CP_ACCOUNT_KEY_ CP_ACCOUNT_TOKEN_)
 PIPE_COMMON_DIR=workflows/pipe-common
+# What launch.sh downloads pipe-common as, and what services --pipe-common-from-checkout packs.
+PIPE_COMMON_ARCHIVE=pipe-common.tar.gz
 DB_URL=jdbc:postgresql://db:5432/pipeline
 TLS_DAYS=3650
 JWT_KEY_BITS=2048
@@ -85,17 +97,21 @@ SERVICE_SETTINGS=src/main/resources/application.properties
 # bills the days that have ended, of the runs active since the sync before it.
 BILLING_DEPLOY_SETTINGS=deploy/docker/cp-billing-srv/config/application.properties
 
-# services_options --name <name> [--docker-subnets <subnets>] [--with <services>]: sets
-# SERVICES_NAME, SERVICES_DOCKER_SUBNETS and SERVICES_WITH, the optional services as words.
+# services_options --name <name> [--docker-subnets <subnets>] [--with <services>]
+# [--pipe-common-from-checkout]: sets SERVICES_NAME, SERVICES_DOCKER_SUBNETS, SERVICES_WITH, the
+# optional services as words, and SERVICES_PIPE_COMMON, 1 when the runs get the checkout's
+# pipe-common.
 services_options() {
   SERVICES_NAME=''
   SERVICES_DOCKER_SUBNETS=''
   SERVICES_WITH=''
+  SERVICES_PIPE_COMMON=0
   while (($#)); do
     case $1 in
       --name) SERVICES_NAME=$(option_value "$1" "${2-}"); shift 2 ;;
       --docker-subnets) SERVICES_DOCKER_SUBNETS=${2-}; shift 2 ;;
       --with) SERVICES_WITH=$(optional_services "$(option_value "$1" "${2-}")"); shift 2 ;;
+      --pipe-common-from-checkout) SERVICES_PIPE_COMMON=1; shift ;;
       *) die "unknown option $1" ;;
     esac
   done
@@ -119,6 +135,9 @@ jwt_private_key_file() { printf '%s/jwt-private-key.pem\n' "$(state_dir "$1")"; 
 jwt_public_key_file() { printf '%s/jwt-public-key.pem\n' "$(state_dir "$1")"; }
 admin_token_file() { printf '%s/admin-token.secret\n' "$(state_dir "$1")"; }
 registry_cert_file() { printf '%s/registry-ca.crt\n' "$(state_dir "$1")"; }
+registry_password_file() { printf '%s/registry-password.secret\n' "$(state_dir "$1")"; }
+# The token the registry notifies the API with, which the host mints (lib/services.sh).
+registry_token_file() { printf '%s/registry-token.secret\n' "$(state_dir "$1")"; }
 api_properties_file() { printf '%s/api.properties\n' "$(state_dir "$1")"; }
 api_env_file() { printf '%s/api.env\n' "$(state_dir "$1")"; }
 # service_properties_file <name> <service>: the settings of an optional service.
@@ -265,14 +284,85 @@ newest_distribution() {
   printf '%s/%s\n' "$DISTRIBUTION_BUCKET_URL" "$newest"
 }
 
-# install_master_services <name> <instance-id> <private-ip> <distribution-source>
+# pack_pipe_common <archive>: the checkout's workflows/pipe-common, as the root build's buildPipe
+# packs it: what the directory holds, at the archive's root, without the caches Python and pytest
+# leave there. The entries go in name order, owned by root, and gzip writes no time, so that the
+# same files make the same archive.
+pack_pipe_common() {
+  local dir=$SANDBOX_REPO_ROOT/$PIPE_COMMON_DIR
+  local -a entries
+  [[ -f $dir/setup.py ]] || die "$PIPE_COMMON_DIR in $SANDBOX_REPO_ROOT has no setup.py"
+  mapfile -t entries < <(find "$dir" -mindepth 1 -maxdepth 1 ! -name __pycache__ ! -name .pytest_cache \
+    -printf '%f\n' | sort)
+  tar --create --sort=name --owner=0 --group=0 --numeric-owner --exclude=__pycache__ \
+    --exclude='*.pyc' --exclude=.pytest_cache -C "$dir" "${entries[@]}" | gzip -n >"$1"
+}
+
+# install_master_services <name> <instance-id> <private-ip> <distribution-source>: the registry
+# notifies the API, at its address on the master, with the token the host minted, which goes to the
+# master over SSH, never through Run Command; and trusts the API's certificate for it, which goes
+# with the scripts. With SERVICES_PIPE_COMMON, the checkout's pipe-common goes to the master over
+# SSH too, to be served in place of the build's. Sets PIPE_COMMON_SERVED to what the runs get:
+# "checkout <SHA-256>" or "published".
 install_master_services() {
-  local name=$1 id=$2 ip=$3 source=$4
-  ssm_send_files "$id" "$SCRIPTS_DIR/host/install-services.sh" "$SCRIPTS_DIR/host/tool.Dockerfile"
+  local name=$1 id=$2 ip=$3 source=$4 work token cert
+  local -a options=()
+  PIPE_COMMON_SERVED=published
+  token=$(registry_token_file "$name")
+  cert=$(api_tls_cert_file "$name")
+  if ! dry_run; then
+    [[ -s $token ]] || die "sandbox $name has no $(basename "$token"): run sandbox.sh services"
+    [[ -s $cert ]] || die "sandbox $name has no $(basename "$cert"): run sandbox.sh services"
+  fi
+  log "Copying the token the registry notifies the API with to $id over SSH."
+  instance_ssh_file "$name" "$id" "$token" "$REGISTRY_TOKEN_REMOTE"
+  ssm_send_files "$id" "$SCRIPTS_DIR/host/install-services.sh" "$SCRIPTS_DIR/host/tool.Dockerfile" "$cert"
+  options=(--notify-url "$(services_api_url "$ip")$REGISTRY_NOTIFY_PATH" --api-cert "$REMOTE_DIR/$(basename "$cert")")
+  if ((SERVICES_PIPE_COMMON)); then
+    if dry_run; then
+      dry_run_note "pack $PIPE_COMMON_DIR of $SANDBOX_REPO_ROOT into $PIPE_COMMON_ARCHIVE"
+      PIPE_COMMON_SERVED='checkout <SHA-256>'
+      instance_ssh_file "$name" "$id" /dev/null "$REMOTE_DIR/$PIPE_COMMON_ARCHIVE"
+    else
+      work=$(mktemp -d)
+      pack_pipe_common "$work/$PIPE_COMMON_ARCHIVE"
+      PIPE_COMMON_SERVED="checkout $(sha256sum "$work/$PIPE_COMMON_ARCHIVE" | cut -d' ' -f1)"
+      log "Copying the checkout's pipe-common, $(du -k "$work/$PIPE_COMMON_ARCHIVE" | cut -f1) KB, to $id over SSH."
+      instance_ssh_file "$name" "$id" "$work/$PIPE_COMMON_ARCHIVE" "$REMOTE_DIR/$PIPE_COMMON_ARCHIVE"
+      rm -rf "$work"
+    fi
+    options+=(--pipe-common "$REMOTE_DIR/$PIPE_COMMON_ARCHIVE")
+  fi
   log "Installing the registry, its tool and the distribution files on $id, up to \
 $((SERVICES_INSTALL_TIMEOUT_SECONDS / 60)) minutes."
   ssm_run_script "$id" "$SERVICES_INSTALL_TIMEOUT_SECONDS" "install the sandbox's services on the master" \
-    install-services.sh "$ip" "$REMOTE_DIR/tool.Dockerfile" "$source" >&2
+    install-services.sh "$ip" "$REMOTE_DIR/tool.Dockerfile" "$source" "${options[@]}" >&2
+}
+
+# fetch_registry_password <name> <instance-id>: the password of the registry's user, which
+# install-services.sh made on the master, over SSH, into the local state, for the API to log in to
+# the registry with.
+fetch_registry_password() {
+  local name=$1 id=$2 file password
+  file=$(registry_password_file "$name")
+  password=$(instance_ssh "$DRY_RUN_REGISTRY_PASSWORD" "$name" "$id" "sudo cat $REGISTRY_PASSWORD_REMOTE")
+  [[ $password =~ ^[0-9a-f]{40}$ ]] || die "$REGISTRY_PASSWORD_REMOTE on $id holds no password"
+  if dry_run; then
+    dry_run_note "write the registry's password to $file"
+    return 0
+  fi
+  (umask 077 && printf '%s\n' "$password" >"$file")
+}
+
+# pipe_common_served <name>: which pipe-common the sandbox's runs get, as services-master recorded it.
+pipe_common_served() {
+  local served
+  served=$(recorded "$1" distribution_pipe_common)
+  case $served in
+    'checkout '*) printf "the checkout's, %s, in place of the build's\n" "${served#checkout }" ;;
+    published) printf "the build's\n" ;;
+    *) printf '%s\n' "$served" ;;
+  esac
 }
 
 # fetch_registry_certificate <name> <instance-id>: the registry's certificate, which is no secret,
@@ -486,9 +576,6 @@ cmd_services_prepare() {
   zone=$(subnet_zone)
   ensure_key_pair "$name"
   source=$(distribution_source)
-  log "Sandbox $name: the runs download pipe-common and pipe from $source."
-  install_master_services "$name" "$MASTER_ID" "$MASTER_IP" "$source"
-  fetch_registry_certificate "$name" "$MASTER_ID"
   ensure_api_tls "$name" "$MASTER_IP"
   ensure_jwt_keys "$name"
   base=$(ensure_run_id_base "$name")
@@ -501,6 +588,29 @@ cmd_services_prepare() {
     write_service_settings "$name" "$service"
     log "Sandbox $name: wrote the settings of the $service service, $(service_properties_file "$name" "$service")."
   done
+}
+
+# services-master: the master's side, once services-prepare has made the API's keys and the host
+# has minted the registry's token with them: the registry, its tool and the distribution files
+# (host/install-services.sh), and what the API needs of them, the registry's certificate and its
+# user's password.
+cmd_services_master() {
+  local name source
+  services_options "$@"
+  name=$SERVICES_NAME
+  services_master "$name"
+  source=$(state_get "$name" distribution_source)
+  # Under --dry-run, services-prepare recorded nothing.
+  [[ -n $source ]] || source=$(distribution_source)
+  if ((SERVICES_PIPE_COMMON)); then
+    log "Sandbox $name: the runs download pipe from $source, and pipe-common from this checkout."
+  else
+    log "Sandbox $name: the runs download pipe-common and pipe from $source."
+  fi
+  install_master_services "$name" "$MASTER_ID" "$MASTER_IP" "$source"
+  fetch_registry_certificate "$name" "$MASTER_ID"
+  fetch_registry_password "$name" "$MASTER_ID"
+  state_set "$name" distribution_pipe_common "$PIPE_COMMON_SERVED"
 }
 
 # services-sequences: the SQL that moves the sequences of run and pool node IDs into the sandbox's
@@ -534,23 +644,25 @@ api_headers() {
 }
 
 # api_call <dry-run output> <method> <path> [<json body>]: a call to the API's REST API, on the
-# sandbox's Docker network, as the admin; writes the payload of the result. Fails, with the API's
+# sandbox's Docker network, as the admin; writes the payload of the result. The body goes to curl
+# on its input, as the token goes in a file: neither is on its command line. Fails, with the API's
 # message, unless the API answers 200 with the status OK. Under --dry-run, prints the call, with
 # no token, and writes <dry-run output>.
 api_call() {
   local output=$1 method=$2 path=$3 body=${4-} url response code
   local -a data=()
   url=$(services_api_url "$SERVICES_API_HOST")$path
-  [[ -z $body ]] || data=(--data "$body")
   if dry_run; then
+    [[ -z $body ]] || data=(--data "$body")
     dry_run_note "$(print_command curl --request "$method" "$url" ${data[@]+"${data[@]}"})"
     printf '%s\n' "$output"
     return 0
   fi
-  response=$(curl --silent --show-error --max-time 60 --cacert "$(api_tls_cert_file "$SERVICES_NAME")" \
-    --header "@$(api_headers "$SERVICES_NAME")" --header 'Content-Type: application/json' \
-    --request "$method" ${data[@]+"${data[@]}"} --write-out '\n%{http_code}' "$url") ||
-    die "$method $url: the API did not answer"
+  [[ -z $body ]] || data=(--data-binary @-)
+  response=$(printf '%s' "$body" | curl --silent --show-error --max-time 60 \
+    --cacert "$(api_tls_cert_file "$SERVICES_NAME")" --header "@$(api_headers "$SERVICES_NAME")" \
+    --header 'Content-Type: application/json' --request "$method" ${data[@]+"${data[@]}"} \
+    --write-out '\n%{http_code}' "$url") || die "$method $url: the API did not answer"
   code=${response##*$'\n'}
   response=${response%$'\n'*}
   if [[ $code != 200 ]] || ! jq -e '.status == "OK"' <<<"$response" >/dev/null 2>&1; then
@@ -730,26 +842,40 @@ registry_tree() {
   api_call '{"registries": []}' GET dockerRegistry/loadTree
 }
 
-# ensure_registry <name>: the master's registry, its tool group and its tool, each registered once.
+# local_file <name> <file>: what the sandbox's file holds, or under --dry-run, which may run
+# before it is there, its name; a secret's name always, so that no call printed holds the secret.
+local_file() {
+  if dry_run && { [[ $2 == *.secret ]] || [[ ! -f $2 ]]; }; then
+    printf '<%s>\n' "$(basename "$2")"
+  elif [[ -f $2 ]]; then
+    cat "$2"
+  else
+    die "sandbox $1 has no $(basename "$2"): run services"
+  fi
+}
+
+# ensure_registry <name>: the master's registry, with its certificate and the login of its user,
+# which the API makes a pull secret for the runs' pods of, and a commit logs in with; then its tool
+# group and its tool, each registered once. A registry registered already gets the login again:
+# its password may be new, and the API does not tell whether it holds one.
 ensure_registry() {
-  local name=$1 path tree registry group tool cert
+  local name=$1 path tree registry group tool cert password registration
   path=$(recorded "$name" registry_path)
   tree=$(registry_tree)
   registry=$(jq -r --arg path "$path" '[.registries[]? | select(.path == $path)][0].id // empty' <<<"$tree")
+  cert=$(local_file "$name" "$(registry_cert_file "$name")")
+  password=$(local_file "$name" "$(registry_password_file "$name")")
+  # The password goes to jq on its input, not on its command line.
+  registration=$(jq -cR --arg path "$path" --arg cert "$cert" --arg user "$REGISTRY_USER" \
+    --arg description "The registry on the master of the dev sandbox $name" \
+    '{path: $path, description: $description, caCert: $cert, userName: $user, password: .,
+      pipelineAuth: false, securityScanEnabled: false}' <<<"$password")
   if [[ -z $registry ]]; then
-    cert=$(registry_cert_file "$name")
-    if [[ -f $cert ]]; then
-      cert=$(<"$cert")
-    elif dry_run; then
-      cert="<$(basename "$cert")>"
-    else
-      die "sandbox $name has no $(basename "$cert"): run services"
-    fi
-    registry=$(api_call '{"id": 1}' POST dockerRegistry/register "$(jq -cn --arg path "$path" \
-      --arg cert "$cert" --arg description "The registry on the master of the dev sandbox $name" \
-      '{path: $path, description: $description, caCert: $cert, pipelineAuth: false,
-        securityScanEnabled: false}')" | jq -r '.id')
-    log "Registered the registry $path, ID $registry."
+    registry=$(api_call '{"id": 1}' POST dockerRegistry/register "$registration" | jq -r '.id')
+    log "Registered the registry $path, ID $registry, with the login of $REGISTRY_USER."
+  else
+    api_call '{"id": 1}' POST dockerRegistry/updateCredentials \
+      "$(jq -c --argjson id "$registry" '{id: $id} + .' <<<"$registration")" >/dev/null
   fi
   group=$(jq -r --arg path "$path" --arg group "$TOOL_GROUP" \
     '[.registries[]? | select(.path == $path) | .groups[]? | select(.name == $group)][0].id // empty' <<<"$tree")
@@ -800,8 +926,11 @@ Sandbox $name: the API runs here, in the container $(service_container "$name" a
   settings      $(api_properties_file "$name")
   region        $SANDBOX_REGION, ID $region
   registry      $(recorded "$name" registry_path), with $TOOL_REPOSITORY:$TOOL_TAG
+                its login: $REGISTRY_USER, $(registry_password_file "$name")
+                it notifies $(recorded "$name" api_url)$REGISTRY_NOTIFY_PATH
   run IDs       from $(recorded "$name" run_id_base)
   distribution  $(recorded "$name" distribution_url), from $(recorded "$name" distribution_source)
+  pipe-common   $(pipe_common_served "$name")
   log           sandbox.sh services --log
 EOF
   if [[ -n $SERVICES_WITH ]]; then
