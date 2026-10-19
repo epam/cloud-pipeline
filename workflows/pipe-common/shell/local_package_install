@@ -79,7 +79,7 @@ _BIN_DIR=${_ARCH_NAME%.*}
 mkdir -p $_PATH_TO_PACKAGES
 _DISTR_DOWNLOAD_RESULT=1
 if check_installed "wget"; then
-    wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
+    wget --no-verbose --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
     _DISTR_DOWNLOAD_RESULT=$?
 elif check_installed "curl"; then
     cd $_PATH_TO_PACKAGES
