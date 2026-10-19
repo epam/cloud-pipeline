@@ -15,8 +15,11 @@
  */
 
 import {
+  decodeInstanceTypeValue,
+  encodeCapacityBlockValue,
   findCapacityBlockPool,
-  getCapacityBlockAdditionalParameterNames
+  getCapacityBlockAdditionalParameterNames,
+  getCapacityBlockOptions
 } from './utilities';
 
 describe('findCapacityBlockPool', () => {
@@ -108,5 +111,151 @@ describe('getCapacityBlockAdditionalParameterNames', () => {
 
   it('returns an empty array for a missing pool list', () => {
     expect(getCapacityBlockAdditionalParameterNames(undefined)).toEqual([]);
+  });
+});
+
+describe('encodeCapacityBlockValue', () => {
+  it('encodes the pool id as "pool:<id>"', () => {
+    expect(encodeCapacityBlockValue({id: 351, name: 'pool-351'})).toBe('pool:351');
+  });
+
+  it('returns undefined for a pool with no usable id', () => {
+    expect(encodeCapacityBlockValue({name: 'no-id'})).toBeUndefined();
+    expect(encodeCapacityBlockValue(undefined)).toBeUndefined();
+    expect(encodeCapacityBlockValue(null)).toBeUndefined();
+  });
+});
+
+describe('decodeInstanceTypeValue', () => {
+  const pools = [
+    {id: 351, instanceType: 'm5.4xlarge', name: 'pool-351'},
+    {id: 2, instanceType: 'm5.large', name: 'pool-2'}
+  ];
+
+  it('round-trips a pool through encode then decode', () => {
+    const pool = pools[0];
+    const value = encodeCapacityBlockValue(pool);
+
+    expect(decodeInstanceTypeValue(value, pools)).toEqual({
+      instanceType: 'm5.4xlarge',
+      poolId: 351
+    });
+  });
+
+  it('decodes a plain instance type name to itself, with no poolId', () => {
+    expect(decodeInstanceTypeValue('m5.large', pools)).toEqual({
+      instanceType: 'm5.large',
+      poolId: undefined
+    });
+  });
+
+  it('tolerates a missing pools argument for a plain instance type', () => {
+    expect(decodeInstanceTypeValue('m5.large')).toEqual({
+      instanceType: 'm5.large',
+      poolId: undefined
+    });
+  });
+
+  it('rejects an encoded value whose pool is not in the list', () => {
+    expect(decodeInstanceTypeValue('pool:999', pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+  });
+
+  it('rejects a non-numeric or empty encoded id', () => {
+    expect(decodeInstanceTypeValue('pool:abc', pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+    expect(decodeInstanceTypeValue('pool:', pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+  });
+
+  it('rejects nonsense input rather than throwing', () => {
+    expect(decodeInstanceTypeValue(undefined, pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+    expect(decodeInstanceTypeValue(null, pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+    expect(decodeInstanceTypeValue('', pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+    expect(decodeInstanceTypeValue(42, pools)).toEqual({
+      instanceType: undefined,
+      poolId: undefined
+    });
+  });
+});
+
+describe('getCapacityBlockOptions', () => {
+  const instanceTypes = [
+    {name: 'm5.4xlarge', instanceFamily: 'General purpose'},
+    {name: 'm5.large', instanceFamily: 'General purpose'}
+  ];
+
+  it('keeps a pool whose region and instance type both match', () => {
+    const pool = {id: 1, instanceType: 'M5.4XLarge', regionId: 1, name: 'pool-1'};
+
+    expect(getCapacityBlockOptions([pool], instanceTypes, {regionId: 1})).toEqual([
+      {pool, instanceType: instanceTypes[0]}
+    ]);
+  });
+
+  it('drops a pool outside the requested region', () => {
+    const pool = {id: 1, instanceType: 'm5.4xlarge', regionId: 2, name: 'pool-1'};
+
+    expect(getCapacityBlockOptions([pool], instanceTypes, {regionId: 1})).toEqual([]);
+  });
+
+  it('drops a pool whose instance type is not allowed', () => {
+    const pool = {id: 1, instanceType: 'm5.8xlarge', regionId: 1, name: 'pool-1'};
+
+    expect(getCapacityBlockOptions([pool], instanceTypes, {regionId: 1})).toEqual([]);
+  });
+
+  it('keeps two pools backing the same instance type, one option each', () => {
+    const poolA = {id: 5, instanceType: 'm5.large', regionId: 1, name: 'pool-a'};
+    const poolB = {id: 2, instanceType: 'm5.large', regionId: 1, name: 'pool-b'};
+
+    expect(getCapacityBlockOptions([poolA, poolB], instanceTypes, {regionId: 1})).toEqual([
+      {pool: poolB, instanceType: instanceTypes[1]},
+      {pool: poolA, instanceType: instanceTypes[1]}
+    ]);
+  });
+
+  it('orders by the lowest pool id so the dropdown does not reshuffle', () => {
+    const higherId = {id: 9, instanceType: 'm5.large', regionId: 1, name: 'pool-9'};
+    const lowerId = {id: 3, instanceType: 'm5.4xlarge', regionId: 1, name: 'pool-3'};
+
+    const result = getCapacityBlockOptions([higherId, lowerId], instanceTypes, {regionId: 1});
+
+    expect(result.map((o) => o.pool.id)).toEqual([3, 9]);
+  });
+
+  it('does not filter by region when none is given', () => {
+    const pool = {id: 1, instanceType: 'm5.large', regionId: 1, name: 'pool-1'};
+
+    expect(getCapacityBlockOptions([pool], instanceTypes)).toEqual([
+      {pool, instanceType: instanceTypes[1]}
+    ]);
+  });
+
+  it('returns an empty array for a missing or empty pool list', () => {
+    expect(getCapacityBlockOptions([], instanceTypes)).toEqual([]);
+    expect(getCapacityBlockOptions(undefined, instanceTypes)).toEqual([]);
+  });
+
+  it('returns an empty array for a missing or empty instance type list', () => {
+    const pool = {id: 1, instanceType: 'm5.large', regionId: 1, name: 'pool-1'};
+
+    expect(getCapacityBlockOptions([pool], [])).toEqual([]);
+    expect(getCapacityBlockOptions([pool], undefined)).toEqual([]);
   });
 });

@@ -19,7 +19,12 @@ import classNames from 'classnames';
 import styles from './instance-type-info.css';
 import AWSRegionTag from '../AWSRegionTag';
 import capacityBlocks from '../../../models/cluster/capacity-blocks';
-import {findCapacityBlockPool} from '../../../models/cluster/capacity-blocks/utilities';
+import {
+  encodeCapacityBlockValue,
+  findCapacityBlockPool
+} from '../../../models/cluster/capacity-blocks/utilities';
+
+const CAPACITY_BLOCKS_GROUP_LABEL = 'Reserved capacity blocks';
 
 const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
   return hyperThreadingDisabled && !Number.isNaN(Number(cpu))
@@ -56,6 +61,18 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * @property {boolean} [showReservationTag]
  * @property {number} [regionId] - narrows the capacity-block pool lookup to
  * one region, for `showReservationTag`
+ * @property {string} [tagValue] - an explicit tag, used instead of the
+ * `showReservationTag` lookup; `getSelectOptions` sets this itself for a
+ * capacity-block option, where the pool is already known rather than looked
+ * up
+ * @property {{pool: Object, instanceType: InstanceInfo}[]} [capacityBlockPools]
+ * - `getCapacityBlockOptions`'s output. When non-empty **and `selectFamily`
+ * is `Select`** (the group renders for `Select` only - the one
+ * `AutoComplete` caller is out of scope), `getSelectOptions` prepends a
+ * "Reserved capacity blocks" group built from it, one option per pool, and
+ * suppresses `showReservationTag` on the plain options below it - picking
+ * one of those means *not* a capacity block, so it must not carry a pool tag
+ * too.
  */
 
 /**
@@ -100,6 +117,7 @@ export function instanceInfoString (instance, options = {}) {
     displayRegion = false,
     plainText = true,
     showReservationTag = false,
+    tagValue: explicitTagValue,
     regionId: optionsRegionId,
     className,
     style
@@ -113,10 +131,10 @@ export function instanceInfoString (instance, options = {}) {
     regionId,
     regionIds = [regionId]
   } = instance;
-  const pool = showReservationTag
+  const pool = !explicitTagValue && showReservationTag
     ? findCapacityBlockPool(capacityBlocks.pools, name, {regionId: optionsRegionId})
     : undefined;
-  const tagValue = pool ? String(pool.name) : undefined;
+  const tagValue = explicitTagValue || (pool ? String(pool.name) : undefined);
   if (vcpu) {
     infoParts.push(plainText
       ? `CPU: ${cpuMapper(vcpu, hyperThreadingDisabled)}`
@@ -298,17 +316,76 @@ export function getSelectOptionForInstance (instance, options = {}) {
 }
 
 /**
+ * One `Select.Option` for a capacity-block pool: the backing instance type's
+ * usual CPU/RAM/GPU presentation, tagged with the pool's own name - given
+ * directly, not looked up, since the caller already knows which pool this
+ * option is for - and valued with `encodeCapacityBlockValue`, so picking it
+ * means *this pool*, not just the instance type it backs.
+ *
+ * @param {{pool: Object, instanceType: InstanceInfo}} capacityBlockOption
+ * @param {InstanceInfoOptions} [options]
+ * @returns {JSX.Element|null}
+ */
+function getCapacityBlockSelectOption (capacityBlockOption, options = {}) {
+  const {pool, instanceType} = capacityBlockOption || {};
+  if (!pool || !instanceType) {
+    return null;
+  }
+  const value = encodeCapacityBlockValue(pool);
+  if (!value) {
+    return null;
+  }
+  const tagValue = pool.name;
+  // The pool name tag is searchable, so a user who knows the pool name can
+  // type it into the select instead of the instance type.
+  const searchValue = [instanceType.name, tagValue]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  const presentationOptions = {
+    ...(options || {}),
+    showReservationTag: false,
+    tagValue
+  };
+  return (
+    <Select.Option
+      key={`capacity-block-${pool.id}`}
+      value={value}
+      searchValue={searchValue}
+      title={
+        instanceInfoString(instanceType, {...presentationOptions, plainText: true})
+      }
+    >
+      {
+        instanceInfoString(instanceType, {...presentationOptions, plainText: false})
+      }
+    </Select.Option>
+  );
+}
+
+/**
  * @param {InstanceInfo[]} instanceTypes
  * @param {InstanceInfoOptions} options
- * @returns {JSX.Element}
+ * @returns {JSX.Element[]}
  */
 export function getSelectOptions (instanceTypes = [], options = {}) {
+  const {capacityBlockPools} = options || {};
+  const selectFamily = options && options.selectFamily
+    ? options.selectFamily
+    : 'Select';
+  const hasCapacityBlockGroup = selectFamily === 'Select' &&
+    Array.isArray(capacityBlockPools) &&
+    capacityBlockPools.length > 0;
+  // Where the capacity-block group is rendered, the plain options below it
+  // must not also carry the pool tag - picking a plain instance type means
+  // *not* a capacity block, and showing both would be a lie about what
+  // selecting the plain entry does.
+  const plainOptions = hasCapacityBlockGroup
+    ? {...options, showReservationTag: false}
+    : options;
   const instanceFamilies = [...new Set(instanceTypes.map((i) => i.instanceFamily))];
-  return instanceFamilies
+  const familyGroups = instanceFamilies
     .map((instanceFamily) => {
-      const selectFamily = options && options.selectFamily
-        ? options.selectFamily
-        : 'Select';
       switch (selectFamily) {
         case 'AutoComplete':
           return (
@@ -319,7 +396,7 @@ export function getSelectOptions (instanceTypes = [], options = {}) {
               {
                 instanceTypes
                   .filter(t => t.instanceFamily === instanceFamily)
-                  .map(t => getSelectOptionForInstance(t, options))
+                  .map(t => getSelectOptionForInstance(t, plainOptions))
               }
             </AutoComplete.OptGroup>
           );
@@ -332,10 +409,26 @@ export function getSelectOptions (instanceTypes = [], options = {}) {
               {
                 instanceTypes
                   .filter(t => t.instanceFamily === instanceFamily)
-                  .map(t => getSelectOptionForInstance(t, options))
+                  .map(t => getSelectOptionForInstance(t, plainOptions))
               }
             </Select.OptGroup>
           );
       }
     });
+  if (!hasCapacityBlockGroup) {
+    return familyGroups;
+  }
+  const capacityBlockGroup = (
+    <Select.OptGroup
+      key="capacity-blocks"
+      label={CAPACITY_BLOCKS_GROUP_LABEL}
+    >
+      {
+        capacityBlockPools.map(
+          (capacityBlockOption) => getCapacityBlockSelectOption(capacityBlockOption, plainOptions)
+        )
+      }
+    </Select.OptGroup>
+  );
+  return [capacityBlockGroup, ...familyGroups];
 }
