@@ -17,7 +17,11 @@
 import RemotePost from '../basic/RemotePost';
 
 class HotNodePoolDelete extends RemotePost {
-  constructor (id) {
+  // `force`: a capacity-reservation pool whose reservation has not reached a terminal
+  // status (or `REQUIRED_APPROVE`) is given up on delete, which the backend refuses
+  // unless the caller insists - see `needsForceToDeletePool` in
+  // `components/cluster/hot-node-pool/edit-hot-node-pool/helpers.js`.
+  constructor (id, force = false) {
     super();
     this.constructor.fetchOptions = {
       headers: {
@@ -27,7 +31,7 @@ class HotNodePoolDelete extends RemotePost {
       credentials: 'include',
       method: 'DELETE'
     };
-    this.url = `/cluster/pool/${id}`;
+    this.url = `/cluster/pool/${id}?force=${force ? 'true' : 'false'}`;
   }
 }
 

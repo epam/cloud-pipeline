@@ -155,6 +155,7 @@ function PoolCard ({
   disabled,
   canEdit = false,
   canDelete = false,
+  canViewUsage = false,
   pool,
   onEdit,
   onRemove,
@@ -302,16 +303,18 @@ function PoolCard ({
                   <Icon type="edit" />
                 </Button>
               )}
-              <Button
-                disabled={disabled}
-                size="small"
-                onClick={(e) => {
-                  e && e.stopPropagation();
-                  navigate(`/cluster/usage?pool=${id}`);
-                }}
-              >
-                <Icon type="area-chart" />
-              </Button>
+              {canViewUsage && (
+                <Button
+                  disabled={disabled}
+                  size="small"
+                  onClick={(e) => {
+                    e && e.stopPropagation();
+                    navigate(`/cluster/usage?pool=${id}`);
+                  }}
+                >
+                  <Icon type="area-chart" />
+                </Button>
+              )}
               {canDelete && (
                 <Button
                   disabled={disabled}

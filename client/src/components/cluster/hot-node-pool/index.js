@@ -20,8 +20,7 @@ import {
   Alert,
   Button,
   Icon,
-  message,
-  Modal
+  message
 } from 'antd';
 import {computed} from 'mobx';
 import LoadingView from '../../special/LoadingView';
@@ -34,9 +33,15 @@ import HotNodePoolDelete from '../../../models/cluster/HotNodePoolDelete';
 import HotNodePoolScheduleUpdate from '../../../models/cluster/HotNodePoolScheduleUpdate';
 import HotNodePoolScheduleDelete from '../../../models/cluster/HotNodePoolScheduleDelete';
 import PoolCard from './pool-card';
+import DeletePoolModal from './delete-pool-modal';
 import styles from './hot-node-pool.css';
 import roleModel from '../../../utils/roleModel';
-import {getPoolPermissions, canEditPool, canDeletePool} from './permissions';
+import {
+  getPoolPermissions,
+  canEditPool,
+  canDeletePool,
+  canViewPoolUsage
+} from './permissions';
 import {MODE_DEFAULT, MODE_FUTURE_DATED} from './edit-hot-node-pool/constants';
 
 async function updateSchedule (payload, scheduleId) {
@@ -68,6 +73,7 @@ class HotCluster extends React.Component {
   state = {
     createNewPool: false,
     editablePool: undefined,
+    poolToRemove: undefined,
     pending: false
   };
 
@@ -132,43 +138,41 @@ class HotCluster extends React.Component {
       e.preventDefault();
     }
     if (pool && canDeletePool(pool, this.props.authenticatedUserInfo)) {
-      const {pools, clusterNodes: nodes} = this.props;
-      const onConfirm = async () => {
-        const hide = message.loading('Removing pool...', -1);
-        const request = new HotNodePoolDelete(pool.id);
-        await request.fetch();
-        if (request.error) {
-          hide();
-          message.error(request.error, 5);
-        } else if (pool.schedule && pool.schedule.id) {
-          const scheduleRequest = new HotNodePoolScheduleDelete(pool.schedule.id);
-          await scheduleRequest.fetch();
-          if (scheduleRequest.error) {
-            hide();
-            message.error(request.error, 5);
-          } else {
-            await pools.fetch();
-            await nodes.fetch();
-            hide();
-          }
-        } else {
-          await pools.fetch();
-          await nodes.fetch();
-          hide();
-        }
-      };
-      Modal.confirm({
-        title: `Are you sure you want to delete "${pool.name}" pool?`,
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk () {
-          return onConfirm();
-        },
-        okText: 'Yes',
-        cancelText: 'No'
-      });
+      this.setState({poolToRemove: pool});
     }
+  };
+
+  closeRemovePoolModal = () => {
+    this.setState({poolToRemove: undefined});
+  };
+
+  removePool = async (force) => {
+    const {poolToRemove} = this.state;
+    if (!poolToRemove) {
+      return;
+    }
+    const {pools, clusterNodes: nodes} = this.props;
+    const hide = message.loading('Removing pool...', -1);
+    const request = new HotNodePoolDelete(poolToRemove.id, force);
+    await request.fetch();
+    if (request.error) {
+      hide();
+      message.error(request.error, 5);
+      return;
+    }
+    if (poolToRemove.schedule && poolToRemove.schedule.id) {
+      const scheduleRequest = new HotNodePoolScheduleDelete(poolToRemove.schedule.id);
+      await scheduleRequest.fetch();
+      if (scheduleRequest.error) {
+        hide();
+        message.error(scheduleRequest.error, 5);
+        return;
+      }
+    }
+    await pools.fetch();
+    await nodes.fetch();
+    hide();
+    this.closeRemovePoolModal();
   };
 
   closeEditPoolModal = () => {
@@ -271,8 +275,12 @@ class HotCluster extends React.Component {
     const {
       createNewPool,
       editablePool,
+      poolToRemove,
       pending
     } = this.state;
+    const reservationToRemove = poolToRemove
+      ? reservationsList.find(r => r.nodePoolId === poolToRemove.id)
+      : undefined;
     const {authenticatedUserInfo} = this.props;
     const {canCreate, canCreateAnyMode} = this.permissions;
     return (
@@ -313,6 +321,7 @@ class HotCluster extends React.Component {
                   disabled={pending}
                   canEdit={canEdit}
                   canDelete={canDeletePool(pool, authenticatedUserInfo)}
+                  canViewUsage={canViewPoolUsage(authenticatedUserInfo)}
                   key={pool.id}
                   pool={pool}
                   onEdit={this.openEditPoolModal({pool})}
@@ -335,6 +344,14 @@ class HotCluster extends React.Component {
           reservations={reservationsList}
           onCancel={this.closeEditPoolModal}
           onSave={this.operationWrapper(this.onSaveEditablePool)}
+        />
+        <DeletePoolModal
+          disabled={pending}
+          visible={!!poolToRemove}
+          pool={poolToRemove}
+          reservation={reservationToRemove}
+          onCancel={this.closeRemovePoolModal}
+          onConfirm={this.operationWrapper(this.removePool)}
         />
       </div>
     );

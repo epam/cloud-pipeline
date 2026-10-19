@@ -16,6 +16,7 @@
 
 import {
   isAdmin,
+  isClusterReader,
   isRunAdmin,
   isNodePoolManager
 } from '../utilities/access-permissinos';
@@ -37,8 +38,9 @@ function canCreatePools (user) {
 }
 
 // Two distinct capabilities, deliberately not one boolean: an admin or a RUN_ADMIN
-// manages every pool outright; a NODE_POOL_MANAGER may only create a reservation pool
-// and cannot reach any existing one; an unloaded user may do nothing.
+// manages every pool outright; a NODE_POOL_MANAGER may create a reservation pool, and open,
+// edit or remove an existing one only where it owns it (`canEditPool`/`canDeletePool`
+// below); an unloaded user may do nothing.
 //
 // `NodePool` is ACL-securable on the backend (`NODE_POOL_ID_WRITE`/`NODE_POOL_ID_OWNER`
 // also accept a per-pool WRITE/OWNER grant, not just ADMIN/RUN_ADMIN), but `GET
@@ -71,16 +73,49 @@ export function getPoolPermissions (authenticatedUserInfo) {
   };
 }
 
-// `NODE_POOL_ID_WRITE`: ADMIN or RUN_ADMIN - see the note on `getPoolPermissions` above
-// for why a per-pool WRITE grant is not checked here yet.
-export function canEditPool (pool, authenticatedUserInfo) {
-  const user = authenticatedUserInfo && authenticatedUserInfo.value;
-  return hasBlanketManageRights(user);
+function isPoolOwner (pool, user) {
+  const {owner} = pool || {};
+  const {userName} = user || {};
+  if (!owner || !userName) {
+    return false;
+  }
+  return `${owner}`.toLowerCase() === `${userName}`.toLowerCase();
 }
 
-// `NODE_POOL_ID_OWNER`: ADMIN or RUN_ADMIN - see the note on `getPoolPermissions` above
-// for why a per-pool OWNER grant is not checked here yet.
+// `NODE_POOL_ID_WRITE`: ADMIN or RUN_ADMIN outright, or a per-pool WRITE grant. The
+// NODE_POOL_MANAGER role carries no write of its own, so it is the ownership that decides:
+// a manager owns the future-dated pools it created, and an owner holds every permission on
+// them, while any other pool stays untouchable and would 403 on save.
+//
+// `owner` is what this reads rather than `mask` - see the note on `getPoolPermissions`
+// above for why the mask this endpoint sends cannot be trusted.
+export function canEditPool (pool, authenticatedUserInfo) {
+  const user = authenticatedUserInfo && authenticatedUserInfo.value;
+  if (hasBlanketManageRights(user)) {
+    return true;
+  }
+  return isNodePoolManager(user) && isPoolOwner(pool, user);
+}
+
+// The pool card's chart button opens `/cluster/usage`, which reads `POST /report/pools` -
+// `ADMIN_OR_CLUSTER_READER`, i.e. ADMIN, RUN_ADMIN or ROLE_CLUSTER_READER, with no
+// node-pool-manager exception. (The "Pools Usage" tab's own `available` check in
+// `cluster/index.js` reads `isClusterReader` alone, missing the RUN_ADMIN case this
+// reads correctly - a pre-existing gap there, not one to repeat here.)
+export function canViewPoolUsage (authenticatedUserInfo) {
+  const user = authenticatedUserInfo && authenticatedUserInfo.value;
+  return isClusterReader(user) || isRunAdmin(user);
+}
+
+// `NODE_POOL_ID_OWNER`: ADMIN or RUN_ADMIN outright, or a per-pool OWNER grant - the same
+// ownership `canEditPool` above reads, since the backend has no separate OWNER flag for
+// the client to read instead. This decides only whether the button is offered; the
+// disclaimer the delete modal shows for an open capacity reservation is
+// `needsForceToDeletePool`'s question, not this one's.
 export function canDeletePool (pool, authenticatedUserInfo) {
   const user = authenticatedUserInfo && authenticatedUserInfo.value;
-  return hasBlanketManageRights(user);
+  if (hasBlanketManageRights(user)) {
+    return true;
+  }
+  return isNodePoolManager(user) && isPoolOwner(pool, user);
 }

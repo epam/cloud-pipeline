@@ -25,7 +25,8 @@ import {
   buildRunOwnerFilter,
   getCapacityReservationStatus,
   getReservationDisplayInstanceCount,
-  humanizeReservationStatus
+  humanizeReservationStatus,
+  needsForceToDeletePool
 } from './helpers';
 import {
   COMMITMENT_DATE_TIME_FORMAT,
@@ -880,4 +881,39 @@ describe('getReservationDisplayInstanceCount', () => {
         .toBeUndefined();
     }
   );
+});
+
+describe('needsForceToDeletePool', () => {
+  const futureDatedPool = {isCapacityReservation: true};
+
+  it('is false for a Default pool, whatever its reservation says', () => {
+    expect(needsForceToDeletePool(
+      {isCapacityReservation: false},
+      {status: 'ACTIVE'}
+    )).toBe(false);
+  });
+
+  it('is false when there is no reservation record to give up', () => {
+    expect(needsForceToDeletePool(futureDatedPool, undefined)).toBe(false);
+  });
+
+  it.each([
+    'PURCHASE_FAILED',
+    'FINISHED',
+    'FAILED',
+    'CANCELLED',
+    'REQUIRED_APPROVE'
+  ])('is false once the reservation reaches a safe-to-delete status (%s)', (status) => {
+    expect(needsForceToDeletePool(futureDatedPool, {status})).toBe(false);
+  });
+
+  it.each([
+    'APPROVED',
+    'ASSESSING_BY_CLOUD_PROVIDER',
+    'SCHEDULED',
+    'ACTIVE',
+    'FINALIZING'
+  ])('is true while the reservation still holds, or may hold, capacity (%s)', (status) => {
+    expect(needsForceToDeletePool(futureDatedPool, {status})).toBe(true);
+  });
 });

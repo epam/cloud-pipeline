@@ -32,6 +32,7 @@ import {
   RESERVATION_TYPE_FUTURE_DATED,
   RESERVATION_STATUS_PENDING,
   RESERVATION_STATUS_APPROVED,
+  RESERVATION_STATUS_REQUIRED_APPROVE,
   RESERVATION_TERMINAL_STATUSES
 } from './constants';
 
@@ -493,6 +494,32 @@ export function getReservationDisplayInstanceCount (reservation) {
   }
   const {instanceCount} = reservation;
   return instanceCount === null || instanceCount === undefined ? undefined : instanceCount;
+}
+
+// Mirrors the backend's `CapacityReservationService#onPoolDeletion`: deleting a pool gives
+// its reservation up too, and the backend refuses that implicit cancellation - unless the
+// caller forces it - while the reservation is still open to anything but these two
+// outcomes: a terminal status (see `RESERVATION_TERMINAL_STATUSES`), where there is
+// nothing left to give up, or `REQUIRED_APPROVE`, where there is nothing yet committed
+// with the cloud provider. Anywhere else (including `ACTIVE`) the capacity is still held,
+// and giving it up may still cost money, which is why the client asks for the same consent
+// the backend requires - from an admin exactly as much as from the pool's own owner.
+//
+// A pool that is not a capacity reservation at all (a `Default` pool) never needs this -
+// the backend's own check short-circuits there too. Nor does one with no reservation
+// record to find: the backend's own check finds nothing to cancel and returns early, so
+// there is nothing for the client to hold the caller to either.
+const RESERVATION_SAFE_TO_DELETE_STATUSES = [
+  ...RESERVATION_TERMINAL_STATUSES,
+  RESERVATION_STATUS_REQUIRED_APPROVE
+];
+
+export function needsForceToDeletePool (pool, reservation) {
+  const {isCapacityReservation} = pool || {};
+  if (!isCapacityReservation || !reservation) {
+    return false;
+  }
+  return !RESERVATION_SAFE_TO_DELETE_STATUSES.includes(reservation.status);
 }
 
 export function buildSchedulePayload (values) {

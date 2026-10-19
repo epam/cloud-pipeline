@@ -121,9 +121,9 @@ function selectIsDisabled (labelText) {
   return combobox.closest('.ant-select').classList.contains('ant-select-disabled');
 }
 
-async function renderCluster (authenticatedUserInfo, props = {}) {
+async function renderCluster (authenticatedUserInfo, props = {}, poolsList = myPool) {
   const api = stubApi();
-  api.reply(/^\/cluster\/pool\?/, [myPool]);
+  api.reply(/^\/cluster\/pool\?/, [poolsList]);
   api.reply(/^\/cluster\/node\/loadAll\?/, []);
   api.reply(/^\/cluster\/capacity-reservation/, []);
   api.handle(/\/cluster\/instance\/allowed/, () => ({
@@ -158,8 +158,10 @@ test(
     // must not be offered to them at all.
     expect(screen.queryByText('Create')).not.toBeInTheDocument();
     const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
-    // Only the "usage" (area-chart) button remains when canEdit/canDelete are both false.
-    expect(card.querySelectorAll('button').length).toBe(1);
+    // No action at all: edit and remove need ADMIN/RUN_ADMIN or a grant on the pool, and
+    // the "usage" (area-chart) button needs ADMIN_OR_CLUSTER_READER, which the usage page
+    // behind it is gated on.
+    expect(card.querySelectorAll('button').length).toBe(0);
 
     await click(card);
 
@@ -172,21 +174,50 @@ test('unloaded: no Create button', async () => {
   expect(screen.queryByText('Create')).not.toBeInTheDocument();
 });
 
-test('NODE_POOL_MANAGER: Create is present, no edit/remove on the card, click does nothing',
+test('NODE_POOL_MANAGER: Create is present, no action on a pool it does not own',
   async () => {
     const router = {push: fn()};
     await renderCluster(nodePoolManager, {router});
 
     expect(screen.getByText('Create')).toBeInTheDocument();
     const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
-    // Only the "usage" (area-chart) button remains: a NODE_POOL_MANAGER may create a
-    // reservation pool, but holds no WRITE/OWNER grant on this pre-existing one.
-    expect(card.querySelectorAll('button').length).toBe(1);
+    // `myPool` carries no owner, so this manager holds nothing on it: `NODE_POOL_ID_WRITE`
+    // grants the role itself no write. The usage button is gone too - that page is
+    // ADMIN_OR_CLUSTER_READER, with no node-pool-manager exception.
+    expect(card.querySelectorAll('button').length).toBe(0);
 
     await click(card);
 
     expect(router.push).not.toHaveBeenCalled();
   });
+
+test('NODE_POOL_MANAGER: a pool it owns is editable from the card', async () => {
+  const router = {push: fn()};
+  await renderCluster(nodePoolManager, {router}, {...myPool, owner: 'USER1'});
+
+  const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
+  expect(card.querySelectorAll('.anticon-edit').length).toBe(1);
+  // `NODE_POOL_ID_OWNER` grants the same ownership `NODE_POOL_ID_WRITE` does, so remove
+  // is offered too; the usage button stays gone - that page is ADMIN_OR_CLUSTER_READER,
+  // with no owner exception.
+  expect(card.querySelectorAll('.anticon-area-chart').length).toBe(0);
+  expect(card.querySelectorAll('.anticon-delete').length).toBe(1);
+
+  // The card itself is clickable only where editing is allowed, so an owned pool now
+  // opens its state view for a manager, where it did nothing before.
+  await click(card);
+
+  expect(router.push).toHaveBeenCalledWith('/cluster?pool_id=1');
+});
+
+test('NODE_POOL_MANAGER: the edit button on an owned pool opens the pool form', async () => {
+  await renderCluster(nodePoolManager, {}, {...myPool, owner: 'USER1'});
+
+  const card = screen.getByText('my-pool').closest('.cp-hot-node-pool');
+  await click(card.querySelector('.anticon-edit').closest('button'));
+
+  await waitFor(() => expect(screen.getByText('Pool type:')).toBeInTheDocument());
+});
 
 test(
   'NODE_POOL_MANAGER: Create opens the modal forced into future-dated mode end to end - ' +
@@ -240,7 +271,7 @@ test('a Default-mode pool shows no reservation badge', async () => {
   expect(screen.queryByText('Approved')).not.toBeInTheDocument();
 });
 
-async function renderClusterWithPool (pool, reservationsList = []) {
+async function renderClusterWithPool (pool, reservationsList = [], authenticatedUserInfo = admin) {
   const api = stubApi();
   api.reply(/^\/cluster\/pool\?/, [pool]);
   api.reply(/^\/cluster\/node\/loadAll\?/, []);
@@ -249,12 +280,17 @@ async function renderClusterWithPool (pool, reservationsList = []) {
     status: 'OK',
     payload: instanceAllowedPayload
   }));
+  // No route for DELETE is registered here: the delete flow's own tests register
+  // whichever response - success or failure - the specific test needs, since a route
+  // baked in here would always win over one a test tries to add afterward (`stubApi`'s
+  // `handlers.find` returns the first match, in registration order).
   renderWithStores(
     <HotCluster router={{push: fn()}} />,
-    stores(admin)
+    stores(authenticatedUserInfo)
   );
   await waitFor(() => expect(screen.getByText(pool.name)).toBeInTheDocument());
   await flushPromises();
+  return {api};
 }
 
 test('a future-dated reservation pool with no granted window yet shows Pending approval',
@@ -435,5 +471,150 @@ test(
     ]);
 
     expect(screen.getByText('Some new status')).toBeInTheDocument();
+  }
+);
+
+function deleteCallOf (api) {
+  return api.calls.find(c => c.method === 'DELETE');
+}
+
+test('admin: deleting a Default pool needs no force', async () => {
+  const pool = {...myPool, id: 20, name: 'to-delete-default'};
+  const {api} = await renderClusterWithPool(pool);
+  api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
+
+  const card = screen.getByText('to-delete-default').closest('.cp-hot-node-pool');
+  await click(card.querySelector('.anticon-delete').closest('button'));
+
+  expect(screen.getByText('Are you sure you want to delete "to-delete-default" pool?'))
+    .toBeInTheDocument();
+  expect(screen.queryByText('Force deletion')).toBeNull();
+
+  await click(screen.getByText('DELETE').closest('button'));
+  await flushPromises();
+
+  expect(deleteCallOf(api).url).toContain(`/cluster/pool/${pool.id}?force=false`);
+  await waitFor(() => expect(
+    screen.queryByText('Are you sure you want to delete "to-delete-default" pool?')
+  ).not.toBeInTheDocument());
+});
+
+test(
+  'admin: deleting a pool whose reservation is still open needs "Force deletion" checked',
+  async () => {
+    const pool = {
+      ...myPool,
+      id: 21,
+      name: 'to-delete-active',
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    };
+    const {api} = await renderClusterWithPool(pool, [
+      {nodePoolId: 21, instanceCount: 2, status: 'ACTIVE'}
+    ]);
+    api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
+
+    const card = screen.getByText('to-delete-active').closest('.cp-hot-node-pool');
+    await click(card.querySelector('.anticon-delete').closest('button'));
+
+    expect(screen.getByText(/active and has not been given up yet/)).toBeInTheDocument();
+    const okButton = screen.getByText('DELETE').closest('button');
+    expect(okButton).toBeDisabled();
+
+    await click(screen.getByText('Force deletion'));
+    expect(okButton).not.toBeDisabled();
+
+    await click(okButton);
+    await flushPromises();
+
+    expect(deleteCallOf(api).url).toContain(`/cluster/pool/${pool.id}?force=true`);
+  }
+);
+
+test(
+  'admin: deleting a pool whose reservation is REQUIRED_APPROVE needs no force',
+  async () => {
+    const pool = {
+      ...myPool,
+      id: 22,
+      name: 'to-delete-required-approve',
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    };
+    const {api} = await renderClusterWithPool(pool, [
+      {nodePoolId: 22, instanceCount: 2, status: 'REQUIRED_APPROVE'}
+    ]);
+    api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
+
+    const card = screen.getByText('to-delete-required-approve').closest('.cp-hot-node-pool');
+    await click(card.querySelector('.anticon-delete').closest('button'));
+
+    expect(screen.queryByText('Force deletion')).toBeNull();
+    const okButton = screen.getByText('DELETE').closest('button');
+    expect(okButton).not.toBeDisabled();
+
+    await click(okButton);
+    await flushPromises();
+
+    expect(deleteCallOf(api).url).toContain(`/cluster/pool/${pool.id}?force=false`);
+  }
+);
+
+test(
+  'NODE_POOL_MANAGER: the disclaimer applies to a pool it owns too, not just to admins',
+  async () => {
+    const pool = {
+      ...myPool,
+      id: 23,
+      name: 'manager-owned-active',
+      owner: 'USER1',
+      isCapacityReservation: true,
+      startDate: undefined,
+      endDate: undefined
+    };
+    await renderClusterWithPool(
+      pool,
+      [{nodePoolId: 23, instanceCount: 2, status: 'ACTIVE'}],
+      nodePoolManager
+    );
+
+    const card = screen.getByText('manager-owned-active').closest('.cp-hot-node-pool');
+    expect(card.querySelectorAll('.anticon-delete').length).toBe(1);
+    await click(card.querySelector('.anticon-delete').closest('button'));
+
+    expect(screen.getByText(/active and has not been given up yet/)).toBeInTheDocument();
+    expect(screen.getByText('DELETE').closest('button')).toBeDisabled();
+
+    // Closes the modal before the test ends - see the identical note on the edit modal
+    // above: left open, antd's Dialog leaks its portal node into whatever test runs next.
+    await click(screen.getByText('CANCEL').closest('button'));
+  }
+);
+
+test(
+  'admin: a failed delete leaves the modal open, re-enables its controls, and reports the error',
+  async () => {
+    const pool = {...myPool, id: 24, name: 'to-delete-failing'};
+    const {api} = await renderClusterWithPool(pool);
+    api.fail(/^\/cluster\/pool\/\d+\?force=/, 'Pool is in use');
+
+    const card = screen.getByText('to-delete-failing').closest('.cp-hot-node-pool');
+    await click(card.querySelector('.anticon-delete').closest('button'));
+
+    const okButton = screen.getByText('DELETE').closest('button');
+    await click(okButton);
+    await flushPromises();
+
+    // `closeRemovePoolModal()` is only reached on the success path, so `poolToRemove`
+    // is still set: the confirmation stays on screen rather than silently vanishing
+    // alongside the error, and `operationWrapper`'s `finally` still resets `pending`,
+    // so the button is clickable again rather than stuck mid-request.
+    expect(screen.getByText('Are you sure you want to delete "to-delete-failing" pool?'))
+      .toBeInTheDocument();
+    expect(okButton).not.toBeDisabled();
+
+    await click(screen.getByText('CANCEL').closest('button'));
   }
 );

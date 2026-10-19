@@ -59,6 +59,7 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
+- [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
 
 ***
 
@@ -1848,6 +1849,16 @@ Previously, the GUI learned about capacity blocks - reserved compute capacity th
 In the current version, the GUI reads capacity blocks directly off the node pools that back them. Every existing behavior is kept: a node type served by a capacity block is still tagged on the launch form - now with the backing pool's name instead of a preference-defined tag - still hides the price estimate, and, where the pool carries a launch configuration, still applies its reservation requests and additional run parameters to the launch payload. On top of that, the launch form now shows a notice listing the reserved capacity available right now for the selected **Cloud Region**; clicking an entry there sets the node type to it.
 
 For more details see [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#future-dated-node-pools).
+
+## Node pool managers can edit and delete the pools they own
+
+Previously, a **ROLE_NODE_POOL_MANAGER** could create a **Future dated** node pool but never reach it again - viewing, editing and removing an existing pool was restricted to administrators and **ROLE_RUN_ADMIN**.
+
+In the current version, such a user may also open, edit and remove a pool it owns - the one it created. A pool owned by somebody else, or managed only by an administrator, stays out of reach.
+
+Deleting a **Future dated** pool whose capacity reservation is still open - any status but _Requires approval_, _Finished_, _Purchase failed_, _Failed_ or _Cancelled_ - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The **DELETE** button stays disabled until a **Force deletion** checkbox is ticked, for an administrator exactly as much as for the pool's owner.
+
+For more details see [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#delete-existing-pool).
 
 ***
 
