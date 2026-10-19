@@ -22,8 +22,8 @@ export const COUNT_MIN_SIZE = 0;
 export const MODE_DEFAULT = 'DEFAULT';
 export const MODE_FUTURE_DATED = 'FUTURE_DATED';
 export const POOL_TYPE_STANDARD = 'STANDARD';
-// The literal is the backend `NodePoolType` enum value, deliberately spelled without a second "e".
-export const POOL_TYPE_SHAREABLE = 'SHARABLE_NODE';
+// The literal is the backend `NodePoolType` enum value.
+export const POOL_TYPE_SHAREABLE = 'SHAREABLE_NODE';
 // The backend's `LocalDateTime` pattern (`JsonMapper`/`Constants`): milliseconds required,
 // no `T`, no timezone.
 export const COMMITMENT_DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';

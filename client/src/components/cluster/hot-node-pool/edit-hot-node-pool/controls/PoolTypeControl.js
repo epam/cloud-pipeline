@@ -26,8 +26,8 @@ const POOL_TYPE_NAMES = {
 };
 
 // `poolType` is a real backend field (`NodePoolVO.poolType`, enum `STANDARD`/
-// `SHARABLE_NODE`) that applies to a pool in either mode, not just a future-dated one:
-// a `SHARABLE_NODE` pool's node is shared between several runs, and the backend derives
+// `SHAREABLE_NODE`) that applies to a pool in either mode, not just a future-dated one:
+// a `SHAREABLE_NODE` pool's node is shared between several runs, and the backend derives
 // its launch config from that. The backend's UPDATE statement does not carry
 // `pool_type`, so the value can only be chosen at create time - which is why the form
 // disables this control when editing.

@@ -33,7 +33,7 @@ test('opening the combobox shows both Standard and Shareable node options', asyn
   expect(screen.getByText('Shareable node')).toBeInTheDocument();
 });
 
-test('clicking Shareable node calls onChange once with SHARABLE_NODE', async () => {
+test('clicking Shareable node calls onChange once with SHAREABLE_NODE', async () => {
   const onChange = fn();
   render(<PoolTypeControl value="STANDARD" onChange={onChange} />);
 
@@ -41,7 +41,7 @@ test('clicking Shareable node calls onChange once with SHARABLE_NODE', async () 
   await click(screen.getByText('Shareable node'));
 
   expect(onChange).toHaveBeenCalledTimes(1);
-  expect(onChange).toHaveBeenCalledWith('SHARABLE_NODE');
+  expect(onChange).toHaveBeenCalledWith('SHAREABLE_NODE');
 });
 
 test('disabled disables the combobox', () => {

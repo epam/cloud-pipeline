@@ -165,7 +165,7 @@ describe('payload shape is closed (Default mode)', () => {
  'now sent in Default mode too', () => {
     const payload = buildPoolPayload(baseValues({
       mode: 'DEFAULT',
-      poolType: 'SHARABLE_NODE',
+      poolType: 'SHAREABLE_NODE',
       commitmentStart: '2026-01-01 10:00:00.000',
       commitmentDurationDays: 14
     }));
@@ -193,7 +193,7 @@ describe('payload shape is closed (Default mode)', () => {
   it('buildPoolPayload adds exactly two keys in future-dated mode', () => {
     const payload = buildPoolPayload(baseValues({
       mode: 'FUTURE_DATED',
-      poolType: 'SHARABLE_NODE',
+      poolType: 'SHAREABLE_NODE',
       count: 1,
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
@@ -270,7 +270,7 @@ describe('payload shape is closed (Default mode)', () => {
     const payload = buildSchedulePayload(baseValues({
       schedule: [{from: 'MONDAY', fromTime: '09:00:00', to: 'FRIDAY', toTime: '18:00:00'}],
       mode: 'DEFAULT',
-      poolType: 'SHARABLE_NODE',
+      poolType: 'SHAREABLE_NODE',
       commitmentStart: '2026-01-01 10:00:00.000',
       commitmentDurationDays: 14
     }));

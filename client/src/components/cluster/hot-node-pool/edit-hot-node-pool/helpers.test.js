@@ -649,8 +649,8 @@ describe('buildPoolPayload', () => {
 
     it('sends poolType as given', () => {
       expect(buildPoolPayload(futureDatedPayloadValues()).poolType).toBe('STANDARD');
-      expect(buildPoolPayload(futureDatedPayloadValues({poolType: 'SHARABLE_NODE'})).poolType)
-        .toBe('SHARABLE_NODE');
+      expect(buildPoolPayload(futureDatedPayloadValues({poolType: 'SHAREABLE_NODE'})).poolType)
+        .toBe('SHAREABLE_NODE');
     });
 
     it('sends capacityReservationRequest matching buildCapacityReservationRequest', () => {
@@ -675,7 +675,7 @@ describe('buildPoolPayload', () => {
       });
   });
 
-  it('Default mode sends poolType too (STANDARD by default, SHARABLE_NODE when chosen), ' +
+  it('Default mode sends poolType too (STANDARD by default, SHAREABLE_NODE when chosen), ' +
     'but no capacityReservationRequest even with every commitment field populated', () => {
     const standardPayload = buildPoolPayload(values({mode: 'DEFAULT', poolType: 'STANDARD'}));
     expect(standardPayload.poolType).toBe('STANDARD');
@@ -683,12 +683,12 @@ describe('buildPoolPayload', () => {
 
     const shareablePayload = buildPoolPayload(values({
       mode: 'DEFAULT',
-      poolType: 'SHARABLE_NODE',
+      poolType: 'SHAREABLE_NODE',
       commitmentStart: inDays(30),
       commitmentEnd: inDays(90),
       commitmentDurationDays: 14
     }));
-    expect(shareablePayload.poolType).toBe('SHARABLE_NODE');
+    expect(shareablePayload.poolType).toBe('SHAREABLE_NODE');
     expect(Object.keys(shareablePayload)).not.toContain('capacityReservationRequest');
   });
 });

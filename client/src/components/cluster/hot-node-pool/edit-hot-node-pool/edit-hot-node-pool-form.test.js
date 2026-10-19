@@ -225,7 +225,7 @@ test('future-dated + Standard leaves the Filters section enabled', () => {
 });
 
 test('future-dated + Shareable leaves the Filters section enabled', () => {
-  renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'SHARABLE_NODE'})});
+  renderForm({values: baseValues({mode: 'FUTURE_DATED', poolType: 'SHAREABLE_NODE'})});
   expect(selectIsDisabled('Condition:')).toBe(false);
   expect(screen.getByRole('button', {name: 'Add filter'})).not.toBeDisabled();
 });

@@ -236,7 +236,7 @@ test('currentUserName omitted: entering future-dated mode seeds no filter, panel
     expect(screen.queryByText('Some conditions are invalid')).not.toBeInTheDocument();
   });
 
-test('Default mode: selecting Shareable node and clicking CREATE sends poolType SHARABLE_NODE',
+test('Default mode: selecting Shareable node and clicking CREATE sends poolType SHAREABLE_NODE',
   async () => {
     const onSave = fn();
     const {api} = await renderPool({onSave});
@@ -271,7 +271,7 @@ test('Default mode: selecting Shareable node and clicking CREATE sends poolType 
 
     expect(onSave).toHaveBeenCalledTimes(1);
     const [payload] = onSave.mock.calls[0];
-    expect(payload.poolType).toBe('SHARABLE_NODE');
+    expect(payload.poolType).toBe('SHAREABLE_NODE');
   });
 
 test(
@@ -527,8 +527,8 @@ test(
   }
 );
 
-test('a SHARABLE_NODE reservation pool opens showing Shareable node, disabled', async () => {
-  await renderPool({pool: reservationPool({poolType: 'SHARABLE_NODE'})});
+test('a SHAREABLE_NODE reservation pool opens showing Shareable node, disabled', async () => {
+  await renderPool({pool: reservationPool({poolType: 'SHAREABLE_NODE'})});
 
   expect(within(row('Pool type:')).getByText('Shareable node')).toBeInTheDocument();
   expect(selectIsDisabled('Pool type:')).toBe(true);
@@ -544,9 +544,9 @@ test('editing a Default pool still opens in Default mode (regression)', async ()
   expect(screen.getByText('Autoscaled:')).toBeInTheDocument();
 });
 
-test('editing a Default pool loaded with poolType SHARABLE_NODE shows Shareable node, disabled',
+test('editing a Default pool loaded with poolType SHAREABLE_NODE shows Shareable node, disabled',
   async () => {
-    await renderPool({pool: fullPool({poolType: 'SHARABLE_NODE'})});
+    await renderPool({pool: fullPool({poolType: 'SHAREABLE_NODE'})});
 
     expect(within(row('Mode:')).getByText('Default')).toBeInTheDocument();
     expect(within(row('Pool type:')).getByText('Shareable node')).toBeInTheDocument();
