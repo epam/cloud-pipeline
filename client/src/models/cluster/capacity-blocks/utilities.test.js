@@ -15,6 +15,7 @@
  */
 
 import {
+  correctCapacityBlockValue,
   decodeInstanceTypeValue,
   encodeCapacityBlockValue,
   findCapacityBlockPool,
@@ -142,6 +143,16 @@ describe('decodeInstanceTypeValue', () => {
     });
   });
 
+  it('never decodes an encoded value to the pool: form itself - the tripwire ' +
+    'a launch payload\'s instance_size/instanceType relies on', () => {
+    for (const pool of pools) {
+      const {instanceType} = decodeInstanceTypeValue(encodeCapacityBlockValue(pool), pools);
+
+      expect(instanceType).toBe(pool.instanceType);
+      expect(instanceType).not.toMatch(/^pool:/);
+    }
+  });
+
   it('decodes a plain instance type name to itself, with no poolId', () => {
     expect(decodeInstanceTypeValue('m5.large', pools)).toEqual({
       instanceType: 'm5.large',
@@ -257,5 +268,54 @@ describe('getCapacityBlockOptions', () => {
 
     expect(getCapacityBlockOptions([pool], [])).toEqual([]);
     expect(getCapacityBlockOptions([pool], undefined)).toEqual([]);
+  });
+});
+
+describe('correctCapacityBlockValue', () => {
+  const instanceTypes = [
+    {name: 'm5.4xlarge', instanceFamily: 'General purpose'},
+    {name: 'm5.large', instanceFamily: 'General purpose'}
+  ];
+  const pool = {id: 351, instanceType: 'm5.4xlarge', regionId: 1, name: 'pool-351'};
+
+  it('returns undefined for a plain value - the caller decides its own fallback', () => {
+    expect(correctCapacityBlockValue('m5.large', [pool], instanceTypes, {regionId: 1}))
+      .toBeUndefined();
+  });
+
+  it('returns undefined for nonsense that does not name a pool either', () => {
+    expect(correctCapacityBlockValue('not-a-value', [pool], instanceTypes, {regionId: 1}))
+      .toBeUndefined();
+  });
+
+  it('keeps an encoded value unchanged while its pool is still offered', () => {
+    const value = encodeCapacityBlockValue(pool);
+
+    expect(correctCapacityBlockValue(value, [pool], instanceTypes, {regionId: 1})).toBe(value);
+  });
+
+  it('falls back to the plain instance type once a region switch drops the pool - ' +
+    'never back to the pool: form', () => {
+    const value = encodeCapacityBlockValue(pool);
+
+    const corrected = correctCapacityBlockValue(value, [pool], instanceTypes, {regionId: 2});
+
+    expect(corrected).toBe('m5.4xlarge');
+    expect(corrected).not.toMatch(/^pool:/);
+  });
+
+  it('clears the field when the region switch drops the pool and its instance ' +
+    'type is not allowed either', () => {
+    const narrowedInstanceTypes = [{name: 'm5.large', instanceFamily: 'General purpose'}];
+    const value = encodeCapacityBlockValue(pool);
+
+    expect(correctCapacityBlockValue(value, [pool], narrowedInstanceTypes, {regionId: 2}))
+      .toBeNull();
+  });
+
+  it('defers to the caller\'s own fallback when the pool it names is not in the ' +
+    'list at all - decodeInstanceTypeValue already could not resolve it either', () => {
+    expect(correctCapacityBlockValue('pool:999', [pool], instanceTypes, {regionId: 1}))
+      .toBeUndefined();
   });
 });

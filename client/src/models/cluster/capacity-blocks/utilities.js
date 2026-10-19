@@ -178,3 +178,42 @@ export function getCapacityBlockOptions (pools, instanceTypes, options = {}) {
       instanceType: instanceTypeByName.get(pool.instanceType.toLowerCase())
     }));
 }
+
+/**
+ * The pool-aware half of a node-type selector's own `correctInstanceTypeValue`:
+ * given a raw field value that names a pool (`pool:<id>`), decides whether it
+ * is still valid. `undefined` when `value` does not name a pool at all - a
+ * plain instance type, or nonsense - which tells the caller to fall back to
+ * its own plain-value correction (checked against whichever allowed-types
+ * list that caller holds; callers differ on that, which is why this helper
+ * does not do it itself).
+ *
+ * A pool's value is valid only while it is still among `getCapacityBlockOptions`
+ * for the current allowed types and region - the same two conditions that put
+ * it in the dropdown in the first place. When it is not (typically a region
+ * switch dropping it), this falls back exactly the way a plain instance type
+ * does when it leaves the allowed list: the plain instance type the pool
+ * backed, if that is still allowed, otherwise `null` to clear the field. The
+ * result is never the encoded `pool:<id>` form unless `value` already was -
+ * this never promotes a plain value into one.
+ *
+ * @param {string} value
+ * @param {Object[]} pools
+ * @param {Object[]} instanceTypes
+ * @param {Object} [options]
+ * @param {number} [options.regionId]
+ * @returns {string|null|undefined}
+ */
+export function correctCapacityBlockValue (value, pools, instanceTypes, options = {}) {
+  const {instanceType: decodedType, poolId} = decodeInstanceTypeValue(value, pools);
+  if (poolId === undefined) {
+    return undefined;
+  }
+  const stillOffered = getCapacityBlockOptions(pools, instanceTypes, options)
+    .some(({pool}) => pool && pool.id === poolId);
+  if (stillOffered) {
+    return value;
+  }
+  const plain = (instanceTypes || []).find((t) => t && t.name === decodedType);
+  return plain ? plain.name : null;
+}

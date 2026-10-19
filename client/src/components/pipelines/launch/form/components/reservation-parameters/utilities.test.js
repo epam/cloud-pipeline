@@ -18,6 +18,7 @@ import {stubApi} from '@test';
 import capacityBlocks from '../../../../../../models/cluster/capacity-blocks';
 import {
   buildLaunchParametersFromReservationParameters,
+  ensureValidReservationParametersForLaunchPayloads,
   readReservationParameters
 } from './utilities';
 
@@ -129,5 +130,102 @@ describe('buildLaunchParametersFromReservationParameters', () => {
     expect(parameters.CP_CAP_CUSTOM).toBeUndefined();
     expect(parameters.SOME_OTHER_PARAMETER).toEqual({value: 'kept'});
     expect(podAssignPolicy).toBeUndefined();
+  });
+});
+
+describe('buildLaunchParametersFromReservationParameters with an explicit poolId', () => {
+  // Two pools backing the same instance type and region - the composite-value
+  // scenario phase 1 built the dropdown for: the user chose one specific pool,
+  // not "an m5.2xlarge with whichever pool happens to match first".
+  const lowerIdPool = {
+    id: 10,
+    name: 'lower-id-pool',
+    instanceType: 'm5.2xlarge',
+    regionId: 1,
+    launchConfig: {
+      cpuRequestsEnabled: true,
+      cpuRequestsReserved: 1,
+      additionalParameters: {CP_CAP_LOWER: 'true'}
+    }
+  };
+  const higherIdPool = {
+    id: 20,
+    name: 'higher-id-pool',
+    instanceType: 'm5.2xlarge',
+    regionId: 1,
+    launchConfig: {
+      gpuRequestsEnabled: true,
+      gpuRequestsReserved: 0,
+      additionalParameters: {CP_CAP_HIGHER: 'true'}
+    }
+  };
+
+  it('uses the explicitly chosen pool\'s own config, not the lowest id ' +
+    'sharing its type', async () => {
+    stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
+
+    const {parameters} = await buildLaunchParametersFromReservationParameters(
+      readReservationParameters({}),
+      'm5.2xlarge',
+      {},
+      {regionId: 1, poolId: higherIdPool.id}
+    );
+
+    expect(parameters.CP_CAP_HIGHER).toEqual({value: 'true'});
+    expect(parameters.CP_CAP_LOWER).toBeUndefined();
+    expect(parameters.CP_CAP_REQUESTS_GPU).toEqual({value: '1'});
+    expect(parameters.CP_CAP_REQUESTS_CPU).toBeUndefined();
+  });
+
+  it('falls back to the lowest-id pool when no poolId is given, as before', async () => {
+    stubApi({'/cluster/pool/filter': [higherIdPool, lowerIdPool]});
+
+    const {parameters} = await buildLaunchParametersFromReservationParameters(
+      readReservationParameters({}),
+      'm5.2xlarge',
+      {},
+      {regionId: 1}
+    );
+
+    expect(parameters.CP_CAP_LOWER).toEqual({value: 'true'});
+    expect(parameters.CP_CAP_HIGHER).toBeUndefined();
+    expect(parameters.CP_CAP_REQUESTS_CPU).toEqual({value: '1'});
+    expect(parameters.CP_CAP_REQUESTS_GPU).toBeUndefined();
+  });
+
+  it('yields no CP_CAP_REQUESTS_* and no podAssignPolicy for an explicitly ' +
+    'chosen pool with no launchConfig', async () => {
+    stubApi({'/cluster/pool/filter': [barePool]});
+
+    const {parameters, podAssignPolicy} = await buildLaunchParametersFromReservationParameters(
+      readReservationParameters({}),
+      'm5.xlarge',
+      {},
+      {regionId: 1, poolId: barePool.id}
+    );
+
+    expect(parameters.CP_CAP_REQUESTS_CPU).toBeUndefined();
+    expect(parameters.CP_CAP_REQUESTS_GPU).toBeUndefined();
+    expect(parameters.CP_CAP_REQUESTS_RAM).toBeUndefined();
+    expect(podAssignPolicy).toBeUndefined();
+  });
+
+  it('threads a payload\'s own capacityBlockPoolId through ' +
+    'ensureValidReservationParametersForLaunchPayloads', async () => {
+    stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
+
+    const payloads = [
+      {
+        instanceType: 'm5.2xlarge',
+        params: {},
+        cloudRegionId: 1,
+        capacityBlockPoolId: higherIdPool.id
+      }
+    ];
+
+    await ensureValidReservationParametersForLaunchPayloads(payloads);
+
+    expect(payloads[0].params.CP_CAP_HIGHER).toEqual({value: 'true'});
+    expect(payloads[0].params.CP_CAP_LOWER).toBeUndefined();
   });
 });

@@ -177,6 +177,12 @@ import {
 import capacityBlocks, {
   isCapacityBlockInstanceType
 } from '../../../../models/cluster/capacity-blocks';
+import {
+  correctCapacityBlockValue,
+  decodeInstanceTypeValue,
+  encodeCapacityBlockValue,
+  getCapacityBlockOptions
+} from '../../../../models/cluster/capacity-blocks/utilities';
 import capacityReservations from '../../../../models/cluster/CapacityReservations';
 import Markdown from '../../../special/markdown';
 import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
@@ -602,7 +608,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      const instanceTypeValue = this.selectedInstanceTypeName;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -935,14 +941,44 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return detachedConfigurations.find((d) => d.name === currentConfigurationName);
   }
 
+  // The node-type field's raw value is either a plain instance type name or a
+  // capacity-block pool encoded by `encodeCapacityBlockValue` (`pool:<id>`).
+  // These two getters are the single place that reads the field's *current*
+  // value for "what is selected" purposes - every such read elsewhere in this
+  // file goes through `selectedInstanceTypeName` rather than re-deriving the
+  // decode. A handler that already holds the value as its own argument
+  // (`instanceTypeChanged`'s `newType`, or a submitted `values[...].type`
+  // inside the two payload builders) decodes it directly instead - decoding
+  // *that* value is exactly as safe, and re-reading the field through this
+  // getter would risk a stale value depending on when it runs. Either way the
+  // raw, possibly-encoded string itself stays touched only by what *sets* it
+  // - the `Select`, and `instanceTypeSuggestionSelected` encoding a specific
+  // pool the same way - and by those few direct decodes plus
+  // `correctInstanceTypeValue` (which must see it raw to validate it).
+  get selectedInstanceTypeName () {
+    const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return decodeInstanceTypeValue(value, capacityBlocks.pools).instanceType;
+  }
+
+  get selectedCapacityBlockPool () {
+    const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    const {poolId} = decodeInstanceTypeValue(value, capacityBlocks.pools);
+    if (poolId === undefined) {
+      return undefined;
+    }
+    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+  }
+
   getIsInstanceTypeWithReservation () {
     const {
       detached
     } = this.props;
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
     return detached
       ? false
-      : isCapacityBlockInstanceType(instanceTypeValue, {regionId: this.currentCloudRegionId});
+      : isCapacityBlockInstanceType(
+        this.selectedInstanceTypeName,
+        {regionId: this.currentCloudRegionId}
+      );
   }
 
   getDefaultRootEntityId () {
@@ -1384,11 +1420,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters,
       conditionalParameters
     } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    // The field's own value may be a capacity-block pool encoded as `pool:<id>`
+    // (see `selectedInstanceTypeName`/`selectedCapacityBlockPool`) - decode it
+    // once here rather than anywhere downstream.
+    const {
+      instanceType,
+      poolId: capacityBlockPoolId
+    } = decodeInstanceTypeValue(values[EXEC_ENVIRONMENT].type, capacityBlocks.pools);
     const fallbackInstanceTypes = this.fallbackInstanceTypesDisabled
       ? []
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     let payload = {
+      // Always the plain instance type: nothing persists the chosen pool's id,
+      // so a saved configuration has no field for it, and reopening one
+      // re-derives the pool from the type and region instead. Do not "fix"
+      // this to carry the encoded value.
       instance_size: instanceType,
       fallback_instance_types: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
@@ -1527,7 +1573,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         payload.parameters,
         {
           applyAdditionalParameters: applyAdditionalReservationParameters,
-          regionId: payload.cloudRegionId
+          regionId: payload.cloudRegionId,
+          poolId: capacityBlockPoolId
         }
       );
       payload.parameters = appliedReservationParameters;
@@ -1579,7 +1626,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    // See the matching comment in `generateConfigurationPayload`: decode once,
+    // and never let the encoded `pool:<id>` form reach the payload below.
+    const {
+      instanceType,
+      poolId: capacityBlockPoolId
+    } = decodeInstanceTypeValue(values[EXEC_ENVIRONMENT].type, capacityBlocks.pools);
     const tags = filterVisibleTagsSync(
       this.state.userTags,
       this.state.userTagsVisibleTags
@@ -1783,7 +1835,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.state.reservationParameters,
       instanceType,
       payload.params,
-      {regionId: payload.cloudRegionId}
+      {regionId: payload.cloudRegionId, poolId: capacityBlockPoolId}
     );
     payload.params = appliedReservationParameters;
     payload.params = parameterUtilities
@@ -2053,7 +2105,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!type) {
       this.props.allowedInstanceTypes &&
       await this.props.allowedInstanceTypes.fetchIfNeededOrWait();
-      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+      type = this.selectedInstanceTypeName ||
         this.correctInstanceTypeValue(this.getDefaultValue('instance_size'));
     }
     if (!isSpot) {
@@ -2104,7 +2156,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   instanceTypeChanged = (newType) => {
-    const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
+    // `newType` is the Select's own just-picked value, so it is decoded here
+    // directly rather than through `selectedInstanceTypeName` - that getter
+    // reads the field's committed value, which this very handler is what
+    // commits. A pool is region-scoped by construction (`getCapacityBlockOptions`
+    // only offers one already matching the current region), so resolving an
+    // encoded value's instance type here cannot itself trigger the region
+    // switch below - it is already in the right region.
+    const {instanceType: newInstanceTypeName} = decodeInstanceTypeValue(
+      newType,
+      capacityBlocks.pools
+    );
+    const [instanceType] = this.instanceTypes.filter(t => t.name === newInstanceTypeName);
     if (instanceType) {
       try {
         const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
@@ -3032,11 +3095,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ? (cpu / 2.0)
     : cpu;
 
-  instanceTypeSuggestionSelected = (instanceType) => {
+  instanceTypeSuggestionSelected = (instanceType, pool) => {
+    // `InstanceTypeSuggestion` already knows which specific pool a suggestion
+    // row belongs to and passes it here - encode it, the same way the Select's
+    // own "Reserved capacity blocks" option for that pool would. Skipping this
+    // would set the field to the plain type, and two pools can back it in the
+    // same region: the field would then resolve to whichever of them the
+    // payload builders derive first, not the one the user actually clicked.
+    const value = (pool && encodeCapacityBlockValue(pool)) || instanceType;
     this.props.form.setFieldsValue({
-      [`${EXEC_ENVIRONMENT}.type`]: instanceType
+      [`${EXEC_ENVIRONMENT}.type`]: value
     });
-    this.instanceTypeChanged(instanceType);
+    this.instanceTypeChanged(value);
   };
 
   get instanceTypeSelectionDisabled () {
@@ -3052,6 +3122,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    // Suppressed for a detached configuration for the same reason the pool
+    // tag (`showReservationTag` below) and the suggestion block are: a
+    // configuration is a template, not a live reservation commitment, so
+    // there is no specific pool to offer yet.
+    const capacityBlockPools = this.props.detached
+      ? []
+      : getCapacityBlockOptions(
+        capacityBlocks.pools,
+        this.instanceTypes,
+        {regionId: this.currentCloudRegionId}
+      );
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3092,7 +3173,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   hyperThreadingDisabled: this.hyperThreadingDisabled,
                   displayRegion: this.instanceTypesMergedForRegions,
                   showReservationTag: !this.props.detached,
-                  regionId: this.currentCloudRegionId
+                  regionId: this.currentCloudRegionId,
+                  capacityBlockPools
                 }
               )
             }
@@ -3111,7 +3193,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     return (
       <InstanceTypeSuggestion
-        currentInstanceType={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+        currentInstanceType={this.selectedInstanceTypeName}
         instanceTypes={this.instanceTypes}
         pools={capacityBlocks.pools}
         reservations={capacityReservations.value}
@@ -3194,8 +3276,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (detached) {
       return null;
     }
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+    const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
+    // An explicitly chosen pool (`selectedCapacityBlockPool`) drives the
+    // preview the same way it drives the payload - two pools can back
+    // `instanceType` with different launch configs, and this must show the
+    // one the payload will actually use, not whichever one is matched first.
+    const pool = this.selectedCapacityBlockPool;
     const {
       reservationParameters
     } = this.state;
@@ -3208,6 +3294,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <ReservationParameters
         className={styles.reservationParameters}
         instanceType={instanceType}
+        poolId={pool ? pool.id : undefined}
         region={this.currentCloudRegion}
         parameters={reservationParameters}
         onChange={onChange}
@@ -3514,8 +3601,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderExecutionEnvironmentSummary = () => {
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const [instanceType] = this.instanceTypes.filter(t => t.name === instanceTypeValue);
+    const [instanceType] = this.instanceTypes.filter(t => t.name === this.selectedInstanceTypeName);
     let cpu = 0;
     let ram = 0;
     let gpu = 0;
@@ -3665,14 +3751,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value !== undefined && value !== null && this.instanceTypesLoaded) {
-      const v = this.instanceTypes.find(v => v.name === value);
-      if (v !== undefined) {
-        return v.name;
-      }
-      return null;
+    if (value === undefined || value === null || !this.instanceTypesLoaded) {
+      return value;
     }
-    return value;
+    // `correctCapacityBlockValue` is the pool-aware half, tested on its own -
+    // `undefined` means `value` does not name a pool at all (plain, or
+    // nonsense), which falls through to the plain-value correction below,
+    // exactly as before this field could ever carry a pool.
+    const corrected = correctCapacityBlockValue(
+      value,
+      capacityBlocks.pools,
+      this.instanceTypes,
+      {regionId: this.currentCloudRegionId}
+    );
+    if (corrected !== undefined) {
+      return corrected;
+    }
+    const v = this.instanceTypes.find(v => v.name === value);
+    if (v !== undefined) {
+      return v.name;
+    }
+    return null;
   };
 
   correctPriceTypeValue = (value) => {
@@ -3984,7 +4083,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         currentValue = defaultValue;
       }
       const noStoragesSelected = /^none$/i.test(currentValue);
-      const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+      const instanceType = this.selectedInstanceTypeName ||
         this.getDefaultValue('instance_size');
       const instance = this.instanceTypes.find(t => t.name === instanceType);
       const toggleDoNotMountStorages = (e) => {
@@ -4532,13 +4631,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           )
         );
         if (this.state.launchCluster) {
-          const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+          const instanceType = this.selectedInstanceTypeName ||
             this.getDefaultValue('instance_size');
           descriptions.push(
             `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this, true)}`
           );
         } else {
-          descriptions.push(this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+          descriptions.push(this.selectedInstanceTypeName ||
             this.getDefaultValue('instance_size'));
         }
         descriptions.push(`${this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk') ||
@@ -5550,7 +5649,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       </Row>
                     )}
                     <ConfigureClusterDialog
-                      instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+                      instanceName={this.selectedInstanceTypeName}
                       launchCluster={this.state.launchCluster}
                       cloudRegionProvider={this.currentCloudRegionProvider}
                       autoScaledPriceType={this.state.autoScaledPriceType}
@@ -6222,8 +6321,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const payloads = this.getParametersPayloads();
     const validationFn = async (payload) => {
       const {parameters} = payload;
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+      const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
       const opts = {
         form: this.props.form,
         payload,

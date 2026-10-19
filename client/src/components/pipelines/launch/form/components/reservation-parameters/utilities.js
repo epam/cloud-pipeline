@@ -50,8 +50,16 @@ export function reservationParametersDiffer (a, b) {
 }
 
 export async function getReservationParametersConfig (instanceType, options = {}) {
-  const {regionId} = options || {};
+  const {regionId, poolId} = options || {};
   await capacityBlocks.load();
+  // A caller that already knows which pool was chosen (an encoded `pool:<id>`
+  // node-type selection) gets that pool's own config - never the first one
+  // that happens to match the type and region, which is what the plain-type
+  // fallback below derives for a caller that does not know a pool at all.
+  if (poolId !== undefined && poolId !== null) {
+    const pool = (capacityBlocks.pools || []).find((aPool) => aPool && aPool.id === poolId);
+    return pool && pool.launchConfig ? pool.launchConfig : undefined;
+  }
   return findCapacityBlockConfig(instanceType, {regionId});
 }
 
@@ -188,14 +196,15 @@ export async function buildLaunchParametersFromReservationParameters (
 ) {
   const {
     applyAdditionalParameters = true,
-    regionId
+    regionId,
+    poolId
   } = options || {};
   const [
     instanceTypeObj = {},
     cfg
   ] = await Promise.all([
     getInstanceType(instanceType),
-    getReservationParametersConfig(instanceType, {regionId})
+    getReservationParametersConfig(instanceType, {regionId, poolId})
   ]);
   const result = {...(parameters || {})};
   for (const key of Object.keys(result || {})) {
@@ -257,7 +266,10 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
       readReservationParameters(p.params),
       p.instanceType,
       p.params,
-      {regionId: p.cloudRegionId}
+      // `poolId` is `undefined` for every caller today, which keeps this the
+      // same first-matching-pool derivation it has always been; a caller
+      // that knows which pool the user picked passes it through here instead.
+      {regionId: p.cloudRegionId, poolId: p.capacityBlockPoolId}
     ))
   );
   for (let i = 0; i < reservationRequests.length; i++) {

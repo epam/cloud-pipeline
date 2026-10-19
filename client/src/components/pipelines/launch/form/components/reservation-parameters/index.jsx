@@ -77,7 +77,8 @@ class ReservationParameters extends React.PureComponent {
     const currRegionId = currRegion ? currRegion.id : undefined;
     if (
       prevInstanceTypeName !== currInstanceTypeName ||
-      prevRegionId !== currRegionId
+      prevRegionId !== currRegionId ||
+      prevProps.poolId !== this.props.poolId
     ) {
       this.updateConfig();
     }
@@ -91,7 +92,8 @@ class ReservationParameters extends React.PureComponent {
   updateConfig = () => {
     const {
       instanceType: instanceTypeObj = {},
-      region
+      region,
+      poolId
     } = this.props;
     const {
       name: instanceType
@@ -110,7 +112,11 @@ class ReservationParameters extends React.PureComponent {
           resourcesDetailsVisible: false,
           expandedResourceNodes: {}
         });
-        const config = await getReservationParametersConfig(instanceType, {regionId});
+        // `poolId` names the pool the caller already knows was explicitly
+        // chosen - its own config, not the first pool that happens to match
+        // `instanceType` and `regionId`, which is what a caller with no
+        // specific pool to name keeps getting.
+        const config = await getReservationParametersConfig(instanceType, {regionId, poolId});
         if (this.token === token) {
           const {
             parameters = {}
@@ -802,6 +808,7 @@ ReservationParameters.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   instanceType: PropTypes.object,
+  poolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   region: PropTypes.object,
   parameters: PropTypes.object,
   onChange: PropTypes.func
