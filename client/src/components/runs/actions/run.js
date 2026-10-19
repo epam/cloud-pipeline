@@ -87,7 +87,8 @@ import {
 import capacityBlocks, {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
 import {
   decodeInstanceTypeValue,
-  getCapacityBlockOptions
+  getCapacityBlockOptions,
+  seedInstanceTypeValue
 } from '../../../models/cluster/capacity-blocks/utilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
@@ -407,6 +408,11 @@ function runFn (
     for (const p of payloadsArray) {
       p.params = applyCustomCapabilitiesParameters(p.params, stores.preferences);
     }
+    // Captured before the call below, which deletes `capacityBlockPoolId`
+    // from every payload it touches (it is not a run API field) - the
+    // confirmation dialog still needs it, to seed its own notion of the
+    // chosen pool further down, for a launch that asks to confirm first.
+    const capacityBlockPoolId = payload.capacityBlockPoolId;
     await ensureValidReservationParametersForLaunchPayloads(payloadsArray);
     const launchFn = async () => {
       const messageVersion = payload.runNameAlias
@@ -482,6 +488,7 @@ function runFn (
             warning={warning}
             versionErrors={versionErrors}
             instanceType={payload.instanceType}
+            capacityBlockPoolId={capacityBlockPoolId}
             hddSize={payload.hddSize}
             isSpot={payload.isSpot}
             isCluster={payload.nodeCount > 0 || autoScaledClusterEnabled(payload.params)}
@@ -555,12 +562,16 @@ function runFn (
               }
               singlePayload.isSpot = component.state.isSpot;
               // `component.state.instanceType` is the dialog's own raw node-type
-              // value, which may be a capacity-block pool encoded as `pool:<id>`
-              // (see `RunConfirmation#setInstanceType`) - decode it here, the one
-              // place this payload's `instanceType` is set, so the encoded form
-              // never reaches the run API. The pool itself still has to reach
-              // `ensureValidReservationParametersForLaunchPayloads` below, which is
-              // why it goes onto `capacityBlockPoolId` rather than being dropped.
+              // value, which may be a capacity-block pool encoded as `pool:<id>` -
+              // either because the user changed it in `RunConfirmation`'s own
+              // Select (`RunConfirmation#setInstanceType`), or because
+              // `RunSpotConfirmationWithPrice#seededInstanceTypeValue` encoded it
+              // that way from the pool the launch form itself chose. Decode it
+              // here, the one place this payload's `instanceType` is set, so the
+              // encoded form never reaches the run API. The pool itself still has
+              // to reach `ensureValidReservationParametersForLaunchPayloads`
+              // below, which is why it goes onto `capacityBlockPoolId` rather
+              // than being dropped.
               singlePayload.instanceType = component.selectedInstanceTypeName;
               singlePayload.capacityBlockPoolId = component.selectedCapacityBlockPool
                 ? component.selectedCapacityBlockPool.id
@@ -607,11 +618,11 @@ function runFn (
                   0
                 );
               applyRunNameAliasTag(singlePayload, runNameAlias);
+              // `capacityBlockPoolId`, set just above, is this handler's own
+              // way of telling the call below which pool to use; that call
+              // deletes it before it can ride along in the request body
+              // `PipelineRunner.send` builds next.
               await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
-              // `capacityBlockPoolId` is this handler's own way of telling the
-              // call above which pool to use - not a run API field, so it must
-              // not ride along in the request body it builds next.
-              delete singlePayload.capacityBlockPoolId;
               try {
                 await PipelineRunner.send({...singlePayload, force: true});
                 if (PipelineRunner.error) {
@@ -1473,6 +1484,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
     pipelineVersion: PropTypes.string,
     pipelineConfiguration: PropTypes.string,
     instanceType: PropTypes.string,
+    capacityBlockPoolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     availableInstanceTypes: PropTypes.array,
     hddSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     nodeCount: PropTypes.number,
@@ -1529,7 +1541,9 @@ class RunSpotConfirmationWithPrice extends React.Component {
 
   // Mirrors `RunConfirmation`'s own pair: `state.instanceType` here is that
   // inner dialog's raw value, forwarded as-is through `onChangeInstanceType`,
-  // so it may be a capacity-block pool encoded as `pool:<id>` too.
+  // so it may be a capacity-block pool encoded as `pool:<id>` too - either
+  // because the user changed it there, or because `updateFromProps` seeded
+  // it that way below (`seededInstanceTypeValue`).
   get selectedInstanceTypeName () {
     return decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools).instanceType;
   }
@@ -1540,6 +1554,20 @@ class RunSpotConfirmationWithPrice extends React.Component {
       return undefined;
     }
     return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+  }
+
+  // `props.instanceType` is always the plain name: the launch form never
+  // puts the encoded `pool:<id>` form into a payload (see its own
+  // `generateLaunchPayload`). `props.capacityBlockPoolId` is how that form
+  // tells this dialog which pool backed the choice anyway, the same way
+  // `onOk` (in `runFn`, above) later reads the pool back off
+  // `selectedCapacityBlockPool`. Seeding `updateFromProps`'s `state.instanceType`
+  // with this is what makes that getter resolve to the chosen pool before the
+  // user has touched anything in this dialog - rather than silently reporting
+  // "no pool chosen" merely because nothing here decoded one.
+  get seededInstanceTypeValue () {
+    const {instanceType, capacityBlockPoolId} = this.props;
+    return seedInstanceTypeValue(instanceType, capacityBlockPoolId, capacityBlocks.pools);
   }
 
   getUserTagsLaunchPayload () {
@@ -1743,6 +1771,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
       prevProps.runInfo !== this.props.runInfo ||
       prevProps.isSpot !== this.props.isSpot ||
       prevProps.instanceType !== this.props.instanceType ||
+      prevProps.capacityBlockPoolId !== this.props.capacityBlockPoolId ||
       prevProps.hddSize !== this.props.hddSize ||
       prevProps.limitMounts !== this.props.limitMounts ||
       prevProps.parameters !== this.props.parameters ||
@@ -1756,7 +1785,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
     this.setState({
       runNameAlias: (this.props.runInfo || {}).alias,
       isSpot: this.props.isSpot,
-      instanceType: this.props.instanceType,
+      instanceType: this.seededInstanceTypeValue,
       hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts,
       runCapabilities: getEnabledCapabilities(this.props.parameters),

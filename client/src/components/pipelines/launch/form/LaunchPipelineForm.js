@@ -1650,6 +1650,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     const payload = {
       instanceType,
+      // The pool backing `instanceType`, if the user picked one explicitly -
+      // not a run API field. `run()` (`ensureValidReservationParametersForLaunchPayloads`)
+      // reads this to apply that pool's own launch config rather than
+      // falling back to the first pool sharing this instance type and
+      // region, and deletes it before the payload becomes a request body.
+      capacityBlockPoolId,
       fallbackInstanceTypes: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
         : undefined,

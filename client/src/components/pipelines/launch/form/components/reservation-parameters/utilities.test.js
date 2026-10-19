@@ -228,4 +228,22 @@ describe('buildLaunchParametersFromReservationParameters with an explicit poolId
     expect(payloads[0].params.CP_CAP_HIGHER).toEqual({value: 'true'});
     expect(payloads[0].params.CP_CAP_LOWER).toBeUndefined();
   });
+
+  it('deletes capacityBlockPoolId from the payload once consumed - it is not ' +
+    'a run API field and must never reach the request body a payload becomes', async () => {
+    stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
+
+    const payloads = [
+      {
+        instanceType: 'm5.2xlarge',
+        params: {},
+        cloudRegionId: 1,
+        capacityBlockPoolId: higherIdPool.id
+      }
+    ];
+
+    await ensureValidReservationParametersForLaunchPayloads(payloads);
+
+    expect('capacityBlockPoolId' in payloads[0]).toBe(false);
+  });
 });

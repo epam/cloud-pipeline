@@ -20,7 +20,8 @@ import {
   encodeCapacityBlockValue,
   findCapacityBlockPool,
   getCapacityBlockAdditionalParameterNames,
-  getCapacityBlockOptions
+  getCapacityBlockOptions,
+  seedInstanceTypeValue
 } from './utilities';
 
 describe('findCapacityBlockPool', () => {
@@ -317,5 +318,32 @@ describe('correctCapacityBlockValue', () => {
     'list at all - decodeInstanceTypeValue already could not resolve it either', () => {
     expect(correctCapacityBlockValue('pool:999', [pool], instanceTypes, {regionId: 1}))
       .toBeUndefined();
+  });
+});
+
+describe('seedInstanceTypeValue', () => {
+  const pool = {id: 351, instanceType: 'm5.4xlarge', regionId: 1, name: 'pool-351'};
+
+  it('encodes the pool over the instance type when the pool resolves', () => {
+    expect(seedInstanceTypeValue('m5.4xlarge', 351, [pool])).toBe('pool:351');
+  });
+
+  it('returns the plain instance type when no poolId is given - the same as a ' +
+    'selector that never knew about a pool at all', () => {
+    expect(seedInstanceTypeValue('m5.4xlarge', undefined, [pool])).toBe('m5.4xlarge');
+    expect(seedInstanceTypeValue('m5.4xlarge', null, [pool])).toBe('m5.4xlarge');
+  });
+
+  it('falls back to the plain instance type, never clearing it, when the pool ' +
+    'is not in the list - not loaded yet, or gone', () => {
+    expect(seedInstanceTypeValue('m5.4xlarge', 351, [])).toBe('m5.4xlarge');
+    expect(seedInstanceTypeValue('m5.4xlarge', 999, [pool])).toBe('m5.4xlarge');
+  });
+
+  it('never returns the pool: form unresolved - the same tripwire ' +
+    'decodeInstanceTypeValue guards', () => {
+    const seeded = seedInstanceTypeValue('m5.4xlarge', 999, [pool]);
+
+    expect(seeded).not.toMatch(/^pool:/);
   });
 });

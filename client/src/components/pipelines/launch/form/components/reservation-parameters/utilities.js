@@ -266,9 +266,12 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
       readReservationParameters(p.params),
       p.instanceType,
       p.params,
-      // `poolId` is `undefined` for every caller today, which keeps this the
-      // same first-matching-pool derivation it has always been; a caller
-      // that knows which pool the user picked passes it through here instead.
+      // A caller that knows which pool the user picked - the launch form's
+      // `generateLaunchPayload`, or the launch confirmation dialog's own
+      // selector state - sets `capacityBlockPoolId` on the payload itself;
+      // this is the one place that reads it. A caller that omits it gets the
+      // same first-matching-pool derivation this had before any caller knew
+      // about pools at all.
       {regionId: p.cloudRegionId, poolId: p.capacityBlockPoolId}
     ))
   );
@@ -279,6 +282,11 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
     } = reservationRequests[i];
     payloads[i].params = appliedReservationParameters;
     payloads[i].podAssignPolicy = podAssignPolicy;
+    // `capacityBlockPoolId` is how a caller tells this function which pool to
+    // use - it is not a run API field, so it must never reach the request
+    // body a payload becomes. Deleting it here, rather than in every caller,
+    // keeps that one contract in one place.
+    delete payloads[i].capacityBlockPoolId;
   }
 }
 

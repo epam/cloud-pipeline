@@ -217,3 +217,33 @@ export function correctCapacityBlockValue (value, pools, instanceTypes, options 
   const plain = (instanceTypes || []).find((t) => t && t.name === decodedType);
   return plain ? plain.name : null;
 }
+
+/**
+ * The raw value a node-type selector should be seeded with when the pool
+ * behind it was already chosen elsewhere - the launch confirmation dialog's
+ * own case, seeded from the payload the launch form built rather than from
+ * any interaction with its own `Select`. Encodes `poolId` over `instanceType`
+ * exactly as `encodeCapacityBlockValue` would, but only once that pool is
+ * confirmed to still be in `pools` - the same check `decodeInstanceTypeValue`
+ * already makes of an encoded value.
+ *
+ * Unlike `correctCapacityBlockValue`, this never clears the field: with no
+ * `poolId`, or a pool no longer in `pools` (not loaded yet, or gone), the
+ * result is `instanceType` itself, unchanged - exactly as if no pool were
+ * known at all. A caller seeding a dialog from an instance type the user
+ * already chose should never lose it merely because the pool behind it
+ * could not be confirmed.
+ *
+ * @param {string} instanceType
+ * @param {number|string} [poolId]
+ * @param {Object[]} pools
+ * @returns {string|undefined}
+ */
+export function seedInstanceTypeValue (instanceType, poolId, pools) {
+  if (poolId === undefined || poolId === null) {
+    return instanceType;
+  }
+  const encoded = encodeCapacityBlockValue({id: poolId});
+  const {instanceType: resolved} = decodeInstanceTypeValue(encoded, pools);
+  return resolved ? encoded : instanceType;
+}
