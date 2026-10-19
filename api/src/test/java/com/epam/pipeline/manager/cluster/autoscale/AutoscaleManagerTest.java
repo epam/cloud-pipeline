@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -56,7 +56,9 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -82,6 +84,8 @@ public class AutoscaleManagerTest {
     private static final int PREFERENCE_RETRY_COUNT = 2;
     private static final int PARAMETER_RETRY_COUNT = 4;
     private static final int NODEUP_GENERIC_FAILURE_EXIT_CODE = 1;
+    private static final String READY_FREE_NODE_ID = "222";
+    private static final String NOT_READY_FREE_NODE_ID = "333";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -393,6 +397,41 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling();
 
         verify(runRegionShiftHandler).restartRunInAnotherRegion(eq(TEST_RUN_ID));
+    }
+
+    @Test
+    public void testOnlyReadyFreeNodesOfferedForReassign() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
+                .thenReturn(new HashSet<>(Arrays.asList(READY_FREE_NODE_ID, NOT_READY_FREE_NODE_ID)));
+        when(kubernetesManager.isNodeReady(kubernetesClient, READY_FREE_NODE_ID)).thenReturn(true);
+        when(kubernetesManager.isNodeReady(kubernetesClient, NOT_READY_FREE_NODE_ID)).thenReturn(false);
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(reassignHandler).tryReassignNode(eq(kubernetesClient), any(), any(), eq(TEST_RUN_ID.toString()),
+                eq(TEST_RUN_ID), any(), eq(Collections.singletonList(READY_FREE_NODE_ID)));
+    }
+
+    @Test
+    public void testNotReadyFreeNodeScaledDownWhenClusterIsFull() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_KILL_NOT_MATCHING_NODES)).thenReturn(true);
+        when(kubernetesManager.getSchedulableNodesIds(kubernetesClient))
+                .thenReturn(Collections.singleton(NOT_READY_FREE_NODE_ID));
+        when(kubernetesManager.isNodeReady(kubernetesClient, NOT_READY_FREE_NODE_ID)).thenReturn(false);
+        when(kubernetesManager.isNodeAvailable(kubernetesClient, NOT_READY_FREE_NODE_ID)).thenReturn(true);
+        // the free node takes the only place in the cluster
+        doReturn(new NodeList("", Collections.singletonList(new Node()), "", null))
+                .when(kubernetesManager).getAvailableNodes(any());
+        when(cloudFacade.scaleUpNode(any(), any(), any(), any())).thenReturn(new RunInstance());
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(reassignHandler).tryReassignNode(eq(kubernetesClient), any(), any(), eq(TEST_RUN_ID.toString()),
+                eq(TEST_RUN_ID), any(), eq(Collections.emptyList()));
+        verify(cloudFacade).scaleDownNode(Long.valueOf(NOT_READY_FREE_NODE_ID));
     }
 
     @Test
