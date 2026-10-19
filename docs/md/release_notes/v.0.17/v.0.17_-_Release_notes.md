@@ -62,6 +62,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
     - [Unable to view pipeline sources for previous draft versions](#unable-to-view-pipeline-sources-for-previous-draft-versions)
@@ -1818,6 +1819,10 @@ If the tool versions can't be loaded, `pipe` prints a warning and continues the 
 
 For more details see [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#run-a-tool).
 
+## Python 3 support for the EDGE service
+
+The `cp-edge` service (the sync-routes and maintenance jobs) now has Python 3.12 installed alongside Python 2, and can run either one. The active interpreter is selected by the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility; set it to `3` to run under Python 3.12).
+
 ## Node start retries for a specific run
 
 Previously, the number of tries to start a node for a run could only be set globally, by the system preference `cluster.nodeup.retry.count`. It applied to all runs.
@@ -1833,11 +1838,20 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 
 `pipe-common` and the job container launch script now support running under either Python 2 or Python 3.12, selected via the `CP_PYTHON_VERSION` environment variable (`2` by default, for backward compatibility). The same support was added to the API service pod (`cp-api-srv`) and its git synchronization sidecar (`cp-git-sync`): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (`boto3`/`botocore`, `azure-mgmt-*`, `google-api-python-client`, and `pipe-common` itself), so they run under either interpreter.
 
+The `data_loader` system pipeline and the `Python` pipeline template now resolve their interpreter via `CP_PYTHON_PATH` as well, instead of a hardcoded `python`, so they also run under either Python version. The `pipe-demo` NGS demo pipelines and the `Luigi` pipeline template, which still only ran under Python 2, were removed.
+
 The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got the same `CP_PYTHON_VERSION`/Python 3.12 support, covering its NFS-synchronization scripts and the storage `chown`/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.
 
 ***
 
 ## Notable Bug fixes
+
+### Launch: a run name alias replaces the run's custom and required tags
+
+[#4626](https://github.com/epam/cloud-pipeline/issues/4626)
+
+Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
+Now, the alias is added to the run's tags alongside the tags set in the launch form.
 
 ### Restarted runs lose parameters and get an API token of another user
 
