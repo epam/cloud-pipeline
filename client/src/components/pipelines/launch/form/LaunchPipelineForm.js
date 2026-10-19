@@ -3039,78 +3039,86 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.instanceTypeChanged(instanceType);
   };
 
-  renderInstanceTypeSelection = () => {
-    if (this.state.isDts && this.props.detached) {
-      return undefined;
-    }
-    const instanceTypeDisabled = !!this.state.fireCloudMethodName ||
+  get instanceTypeSelectionDisabled () {
+    return !!this.state.fireCloudMethodName ||
       (this.props.readOnly && !this.props.canExecute) ||
       (
         this.props.allowedInstanceTypes &&
         (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
       );
+  }
+
+  renderInstanceTypeSelection = () => {
+    if (this.state.isDts && this.props.detached) {
+      return undefined;
+    }
     return (
-      <div className={styles.instanceTypeSelection}>
-        <FormItem
-          className={getFormItemClassName(styles.formItem, 'type')}
-          {...this.formItemLayout}
-          required={
-            !this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile
-          }
-          label="Node type"
-          hasFeedback>
-          {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('type',
-            {
-              rules: [
-                {
-                  required: !this.state.fireCloudMethodName &&
-                    !this.state.isDts &&
-                    !this.props.launchProfile,
-                  message: 'Node type is required'
-                }
-              ],
-              initialValue: this.correctInstanceTypeValue(this.getDefaultValue('instance_size'))
-            }
-          )(
-            <Select
-              disabled={instanceTypeDisabled}
-              showSearch
-              allowClear={!!this.props.launchProfile}
-              placeholder="Node type"
-              optionFilterProp="children"
-              onChange={this.instanceTypeChanged}
-              filterOption={
-                (input, option) =>
-                  (option.props.searchValue || option.props.value)
-                    .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-              {
-                getSelectOptions(
-                  this.instanceTypes,
-                  {
-                    hyperThreadingDisabled: this.hyperThreadingDisabled,
-                    displayRegion: this.instanceTypesMergedForRegions,
-                    showReservationTag: !this.props.detached,
-                    regionId: this.currentCloudRegionId
-                  }
-                )
-              }
-            </Select>
-          )}
-        </FormItem>
-        {
-          !this.props.detached && (
-            <InstanceTypeSuggestion
-              currentInstanceType={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
-              instanceTypes={this.instanceTypes}
-              pools={capacityBlocks.pools}
-              reservations={capacityReservations.value}
-              regionId={this.currentCloudRegionId}
-              disabled={instanceTypeDisabled}
-              onSelect={this.instanceTypeSuggestionSelected}
-            />
-          )
+      <FormItem
+        className={getFormItemClassName(styles.formItem, 'type')}
+        {...this.formItemLayout}
+        required={
+          !this.state.fireCloudMethodName && !this.state.isDts && !this.props.launchProfile
         }
-      </div>
+        label="Node type"
+        hasFeedback>
+        {this.getSectionFieldDecorator(EXEC_ENVIRONMENT)('type',
+          {
+            rules: [
+              {
+                required: !this.state.fireCloudMethodName &&
+                  !this.state.isDts &&
+                  !this.props.launchProfile,
+                message: 'Node type is required'
+              }
+            ],
+            initialValue: this.correctInstanceTypeValue(this.getDefaultValue('instance_size'))
+          }
+        )(
+          <Select
+            disabled={this.instanceTypeSelectionDisabled}
+            showSearch
+            allowClear={!!this.props.launchProfile}
+            placeholder="Node type"
+            optionFilterProp="children"
+            onChange={this.instanceTypeChanged}
+            filterOption={
+              (input, option) =>
+                (option.props.searchValue || option.props.value)
+                  .toLowerCase().indexOf(input.toLowerCase()) >= 0}>
+            {
+              getSelectOptions(
+                this.instanceTypes,
+                {
+                  hyperThreadingDisabled: this.hyperThreadingDisabled,
+                  displayRegion: this.instanceTypesMergedForRegions,
+                  showReservationTag: !this.props.detached,
+                  regionId: this.currentCloudRegionId
+                }
+              )
+            }
+          </Select>
+        )}
+      </FormItem>
+    );
+  };
+
+  // Rendered in the summary column, under the CPU/RAM/GPU figures, rather than
+  // beside the node type selector: it is wide, and it is about what the run
+  // could use rather than about the field it would set.
+  renderInstanceTypeSuggestion = () => {
+    if (this.props.detached) {
+      return undefined;
+    }
+    return (
+      <InstanceTypeSuggestion
+        currentInstanceType={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+        instanceTypes={this.instanceTypes}
+        pools={capacityBlocks.pools}
+        reservations={capacityReservations.value}
+        regionId={this.currentCloudRegionId}
+        disabled={this.instanceTypeSelectionDisabled}
+        onSelect={this.instanceTypeSuggestionSelected}
+      />
     );
   };
 
@@ -5598,6 +5606,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         this.renderExecutionEnvironmentSummary()
                       }
                     </Row>
+                    {this.renderInstanceTypeSuggestion()}
                   </div>
                 </div>
               </Row>
