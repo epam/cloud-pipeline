@@ -17,23 +17,17 @@ The loop. Reads the preference, runs the cleaner, claims what it has room for, a
 
 One round:
 
-    1. read `storage.download.archive.config`      so an administrator's change applies without a
-                                                   restart, and a task never runs under settings older
-                                                   than the round it started in
-    2. run the four cleaner cleanups                 before claiming, so a stuck task is out of the way
-    3. claim tasks while slots are free            one call per task, see below
+    1. read `storage.download.archive.config`      so a change applies without a restart
+    2. run the four cleaner cleanups               before claiming, so a stuck task is out of the way
+    3. claim tasks while slots are free            one call per task
     4. sleep until the next round                  interruptibly
 
-**One task per claim, and a slot taken before the claim.** `POST /async-task/next` marks a task
-`RUNNING` and hands it over. Between that moment and the moment a worker actually starts on it, nobody
-is working on the task and a crash leaves it hanging until the cleaner times it out. Claiming into a
-slot we already hold keeps exactly one task in that window, instead of a batch of them.
+**One task per claim, and the slot taken before the claim.** `/async-task/next` marks a task `RUNNING`
+and hands it over; between that and a worker starting on it, nobody is working on the task. Claiming
+into a slot we already hold keeps exactly one task in that window instead of a batch.
 
-**Threads, not processes.** Every slow part of a task - listing a bucket, downloading, uploading - is
-waiting on a socket, and Python releases its global lock while waiting. The global interpreter lock
-only serialises the execution of bytecode, so the one genuinely CPU-bound part, deflate, is the one
-thing that does not scale with slots. That is also why the compression level is low: at level 1 the
-CPU barely matters, and at level 9 the slots would be competing for one core.
+**Threads, not processes.** Every slow part of a task waits on a socket, and Python releases its lock
+while waiting. Deflate is the one CPU-bound part, which is also why the compression level is low.
 """
 
 from __future__ import annotations
@@ -44,8 +38,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 from .api import CloudPipelineApi
 from .config import PREFERENCE_KEY, ServiceConfig, StorageDownloadArchiveConfig
-from .errors import ApiError, ApiRejected
-from .log import get_logger
+from .util.errors import ApiError, ApiRejected
+from .util.log import get_logger
 from .model import ArchiveTask, AsyncTaskType
 from .worker import SUPPORTED_TASK_TYPES, Cleaner, worker_for
 
@@ -56,8 +50,8 @@ class Orchestrator:
     """
     Owns the loop, the worker pool and the slots.
 
-    It runs on the main thread and does no work itself: its whole job is to decide what gets started
-    and to keep the number of running workers at or below `slots`.
+    It runs on the main thread and does no work itself: it decides what gets started and keeps the
+    number of running workers at or below `slots`.
     """
 
     def __init__(self, api: CloudPipelineApi, config: ServiceConfig,
@@ -65,48 +59,37 @@ class Orchestrator:
         self._api = api
         self._config = config
         self._cleaner = cleaner if cleaner is not None else Cleaner(api, config)
-        # `Event` is a flag threads can wait on. Setting it both tells the loop to finish and wakes it
-        # up out of its sleep immediately - which is why the sleep below is `wait(timeout)` and not
-        # `time.sleep`. With `time.sleep` a container asked to stop would sit there for the rest of the
-        # poll interval before noticing.
+        # An event rather than a flag, because the sleep below waits on it: a container asked to stop
+        # wakes up at once instead of sitting out the poll interval.
         self._shutdown = threading.Event()
-        # A counting semaphore with `slots` permits. Taken before a task is claimed and released when
-        # its worker is done, so it *is* the count of free slots. `BoundedSemaphore` rather than
-        # `Semaphore` because it raises on a release that would push the count above the maximum - a
-        # released-twice bug otherwise silently grants an extra slot, and that is a very hard bug to
-        # find later.
+        # The count of free slots. `BoundedSemaphore` raises on a release above the maximum, which
+        # turns a released-twice bug into a crash rather than an extra slot.
         self._slots = threading.BoundedSemaphore(config.slots)
-        # Task ids workers of this process are busy with. Read by the cleaner, written from the done
-        # callback, which runs on a worker thread - so both go through the lock.
+        # Tasks workers of this process are busy with. Written from a worker thread, read by the
+        # cleaner, so both go through the lock.
         self._active: set[str] = set()
         self._active_lock = threading.Lock()
-        # Remembered so that the warnings of the preference are logged when they appear or change,
-        # rather than once per round for as long as the misconfiguration lasts.
+        # So the preference's warnings are logged when they change, not once per round.
         self._reported_warnings: tuple[str, ...] = ()
-        # When the cleanups may run again, on the monotonic clock. `None` means "never run yet", which
-        # is what makes the first round do them: a restart is exactly when there is most to clean up.
+        # Monotonic time of the next cleanup. `None` makes the first round clean up, which is when
+        # there is most to clean.
         self._next_cleanup: float | None = None
 
     def run(self) -> None:
         """
         Runs rounds until asked to stop.
 
-        The pool is created in a `with`, and leaving it waits for every running worker to finish. That
-        is what makes a shutdown orderly: the loop stops claiming, each worker notices the deadline or
-        finishes its task, reports, and only then does the process exit. A container stopped with the
-        usual grace period may not have long enough for a large task, and that task is left to the
-        cleaner - which is the design, not a gap.
+        Leaving the pool's `with` waits for every running worker, which is what makes a shutdown
+        orderly. A task too large to finish inside the container's grace period is left to the cleaner.
 
-        `max_workers` equals the number of slots, so the pool never queues: a submit only happens with
-        a slot in hand, and there is always a thread free for it.
+        `max_workers` equals the slots, so the pool never queues.
         """
         LOG.info('Starting with %s slot(s), polling every %s s, work directory %s',
                  self._config.slots, self._config.poll_interval_seconds, self._config.work_dir)
         if self._config.cleanup_interval_seconds:
             LOG.info('Cleanups run every %s s', self._config.cleanup_interval_seconds)
         else:
-            # Loud, because the consequence is silent: a task whose worker died stays RUNNING for
-            # ever, counts against its owner's quota, and its archive is never deleted.
+            # Loud, because the consequence is silent.
             LOG.warning('Cleanups are turned off (--cleanup-interval-seconds 0). Nothing in this '
                         'process will finish a task whose worker is gone, delete an expired archive '
                         'or remove an abandoned scratch directory')
@@ -117,9 +100,8 @@ class Orchestrator:
                 try:
                     self._round(pool)
                 except Exception as error:
-                    # The loop outlives any single round. A round that fails - the API down, a
-                    # preference that will not parse - must not end the service, or a platform
-                    # restarting would take this service with it.
+                    # The loop outlives any single round, so a platform restarting does not take this
+                    # service with it.
                     LOG.exception('A round failed (%s), continuing', error)
                 if self._config.run_once:
                     LOG.info('Single round requested, waiting for the workers to finish')
@@ -131,11 +113,9 @@ class Orchestrator:
 
     def stop(self) -> None:
         """
-        Asks the loop to finish the round it is in and stop.
+        Asks the loop to finish its round and stop.
 
-        Called from a signal handler, which runs on the main thread between two bytecodes - so it must
-        do as little as possible. Setting an event is as little as it gets; everything else happens on
-        the loop's own thread.
+        Called from a signal handler, so it does as little as possible.
         """
         self._shutdown.set()
 
@@ -150,9 +130,8 @@ class Orchestrator:
         if self._shutdown.is_set():
             return
         if not archive_config.is_usable:
-            # Already said by the warnings above. Tasks stay pending, which is the right place for
-            # them: an administrator filling the preference in makes the backlog run, and failing them
-            # here would lose work for a mistake that is about to be corrected.
+            # Tasks stay pending, which is the right place for them: filling the preference in makes
+            # the backlog run, while failing them here would lose work over a fixable mistake.
             return
         self._claim_while_free(pool, archive_config)
 
@@ -160,18 +139,8 @@ class Orchestrator:
         """
         Whether this round runs the cleanups, and books the next one if it does.
 
-        They are throttled apart from the loop because the loop is also what claims new tasks and so
-        has to stay fast, while nothing the cleanups look for appears in seconds - the thresholds they
-        act on are hours. At the default settings this turns 540 `async-task/filter` calls an hour into
-        fifteen.
-
-        The clock is `time.monotonic()`, never the wall clock: a monotonic clock only moves forward at
-        a steady rate, while the wall clock can jump - NTP correcting a drift, a container resuming -
-        and a schedule measured against it can skip an interval or repeat one.
-
-        `None` as the initial value is what makes the first round clean up. That is deliberate rather
-        than incidental: a process that has just started is the one case where something certainly
-        needs cleaning - the tasks of the worker that was killed with the previous process.
+        Throttled apart from the loop, which has to stay fast because it also claims tasks, while the
+        cleanups act on thresholds measured in hours. The clock is monotonic, never the wall clock.
         """
         interval = self._config.cleanup_interval_seconds
         if not interval:
@@ -179,18 +148,15 @@ class Orchestrator:
         now = time.monotonic()
         if self._next_cleanup is not None and now < self._next_cleanup:
             return False
-        # Booked from now rather than from the previous slot, so a long round does not make the next
-        # cleanup immediate.
+        # Booked from now, so a long round does not make the next cleanup immediate.
         self._next_cleanup = now + interval
         return True
 
     def _load_archive_config(self) -> StorageDownloadArchiveConfig | None:
         """
-        Reads and parses the preference. Returns `None` when it cannot be read.
+        Reads and parses the preference. `None` when it cannot be read.
 
         `None` and not a default: running tasks under invented settings is worse than not running them.
-        A preference that cannot be read is almost always the API being unreachable, and the next round
-        is twenty seconds away.
         """
         try:
             raw = self._api.get_preference(PREFERENCE_KEY)
@@ -200,20 +166,14 @@ class Orchestrator:
         try:
             archive_config = StorageDownloadArchiveConfig.from_preference(raw)
         except ValueError as error:
-            # `json.loads` raises `JSONDecodeError`, which is a `ValueError`. An administrator has
-            # saved something that is not JSON, and the only useful thing to do is to say so.
+            # `JSONDecodeError` is a `ValueError`: somebody saved something that is not JSON.
             LOG.error('Preference %s does not parse (%s), skipping this round', PREFERENCE_KEY, error)
             return None
         self._report_warnings(archive_config)
         return archive_config
 
     def _report_warnings(self, archive_config: StorageDownloadArchiveConfig) -> None:
-        """
-        Logs what is wrong with the preference, once per change rather than once per round.
-
-        A misconfiguration lasts until someone fixes it, which may be days. Repeating the same two
-        lines every twenty seconds is how a log stops being read.
-        """
+        """Logs what is wrong with the preference, once per change rather than once per round."""
         warnings = tuple(archive_config.warnings())
         if warnings == self._reported_warnings:
             return
@@ -224,17 +184,12 @@ class Orchestrator:
     def _claim_while_free(self, pool: ThreadPoolExecutor,
                           archive_config: StorageDownloadArchiveConfig) -> None:
         """
-        Claims tasks one at a time for as long as there is a slot and the queue is not empty.
+        Claims tasks one at a time while there is a slot and the queue is not empty.
 
-        The slot is taken first, with `blocking=False` - we are asking "is there room?", and waiting
-        for room is the loop's job, not this method's. An empty queue releases the slot again and ends
-        the round.
-
-        Everything between the acquire and the hand-over is in a `try/finally`, and the flag decides
-        who owns the slot when it ends. A slot lost here is lost for the life of the process - the
-        failure would be a service that logs "all slots are busy" for ever while nothing is running -
-        and `_claim` cannot promise to raise nothing: a mangled response from a proxy in front of the
-        API reaches it as an `AttributeError`, which no `except` of its own would catch.
+        The slot is taken first and with `blocking=False`: this asks "is there room?", and waiting for
+        room is the loop's job. The `finally` is what keeps a slot from being lost for the life of the
+        process - `_claim` cannot promise to raise nothing, since a mangled response reaches it as an
+        `AttributeError`.
         """
         while not self._shutdown.is_set():
             if not self._slots.acquire(blocking=False):
@@ -254,10 +209,8 @@ class Orchestrator:
         """
         Takes the next task of any type this service runs, or `None` if there is none.
 
-        One call per type, because `/async-task/next` takes a single type - there is no "give me
-        anything" form of it. The types are asked for in the order `SUPPORTED_TASK_TYPES` declares,
-        which with one type is no order at all; when there are two, the first in that tuple is the one
-        that gets a free slot first, and that is the place to change if it ever has to be fairer.
+        One call per type: `/async-task/next` has no "give me anything" form. With more than one type,
+        the first in `SUPPORTED_TASK_TYPES` gets a free slot first.
         """
         for task_type in SUPPORTED_TASK_TYPES:
             task = self._claim_type(task_type)
@@ -273,9 +226,8 @@ class Orchestrator:
             LOG.warning('Cannot claim a task (%s), skipping the rest of this round', error)
             return None
         except ValueError as error:
-            # The task was claimed but does not parse - a params shape we do not understand. It is
-            # already RUNNING on the API side, and the cleaner will fail it as stuck. Nothing better is
-            # available: we cannot report a status for a task we could not read the id of.
+            # Claimed but unreadable, and already RUNNING on the API side. We cannot report a status
+            # for a task whose id we could not read, so the cleaner has to fail it.
             LOG.error('Claimed a task that cannot be read (%s); the cleaner will clean it up', error)
             return None
 
@@ -284,27 +236,18 @@ class Orchestrator:
         """
         Hands a claimed task to the pool. Returns whether the pool has taken it.
 
-        The return value is about one thing only: who gives the slot back. `True` means the future's
-        callback will, `False` means the caller must - see `_claim_while_free`, where the slot was
-        taken.
+        The return value says who gives the slot back: `True` the future's callback, `False` the
+        caller. `add_done_callback` runs on success, exception and cancellation, so the slot cannot be
+        missed; releasing it inside the worker would leak one per way a worker can end early.
 
-        The callback is where the slot goes back, and it has to be set up so that it cannot be missed:
-        `add_done_callback` runs it on success, on exception and on cancellation. Releasing the slot in
-        the worker instead would leak one for every way a worker can end without reaching that line.
-
-        `task_id=task.id` in the lambda's parameters is not an argument anybody passes - it is how a
-        value is captured by a closure in Python. A closure captures the *variable*, not its value, so
-        a plain `lambda f: self._release(task.id)` created in a loop would see whatever `task` holds at
-        the moment the callback runs, which is the last task of the loop. A default value is evaluated
-        when the lambda is defined, which pins it. This is the single most common bug in Python code
-        that makes callbacks in a loop.
+        `task_id=task.id` pins the value: a closure captures the variable, so a plain
+        `lambda f: self._release(task.id)` in a loop would see the last task.
         """
         self._track(task.id)
         try:
             future = pool.submit(self._run_worker, archive_config, task)
         except RuntimeError as error:
-            # The pool is shutting down. The task is RUNNING on the API side and nothing will work on
-            # it; the cleaner's business again.
+            # The pool is shutting down and the task is already RUNNING: the cleaner's business.
             LOG.error('Cannot start task %s (%s); the cleaner will clean it up', task.id, error)
             self._forget(task.id)
             return False
@@ -313,14 +256,10 @@ class Orchestrator:
 
     def _run_worker(self, archive_config: StorageDownloadArchiveConfig, task: ArchiveTask) -> None:
         """
-        The body of a pool thread: the worker for whatever type of task was claimed.
+        The body of a pool thread: the worker for whatever type was claimed.
 
-        This class never names a worker. `worker_for` holds the mapping from task type to class, so a
-        second kind of task - unarchiving an archive back into a storage - needs nothing here.
-
-        `AsyncTaskWorker.run` is written never to raise, and this is wrapped anyway. An exception here
-        would otherwise be stored in a future nobody reads and vanish without a line in the log - the
-        failure mode where a task quietly stays RUNNING and nobody can say why.
+        `run` is written never to raise, and this is wrapped anyway - otherwise an exception would sit
+        in a future nobody reads and vanish without a line in the log.
         """
         try:
             worker_for(self._api, self._config, archive_config, task).run()
@@ -340,21 +279,15 @@ class Orchestrator:
 
     def _release(self, task_id: str) -> None:
         """
-        Gives a slot back and forgets the task.
+        Forgets the task and gives its slot back, in that order.
 
-        Runs on the worker's own thread, as the callback of its future. The order matters a little: the
-        task is forgotten before the slot is released, so that the moment a slot is free, no cleaner
-        cleanup can still believe that task is being worked on.
+        Runs on the worker's thread. Forgetting first means no cleanup can believe a task is being
+        worked on once its slot is free.
         """
         self._forget(task_id)
         self._slots.release()
 
     def _active_ids(self) -> set[str]:
-        """
-        A copy of the active set, for the cleaner.
-
-        A copy and not the set itself: the cleaner iterates it while workers finish and remove
-        themselves, and changing a set during iteration raises `RuntimeError`.
-        """
+        """A copy of the active set: the cleaner iterates it while workers remove themselves."""
         with self._active_lock:
             return set(self._active)

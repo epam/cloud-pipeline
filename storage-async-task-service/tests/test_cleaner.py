@@ -13,10 +13,7 @@
 # limitations under the License.
 
 """
-Tests of the four cleanups.
-
-The cleanups exist for the case nobody can test in production: a worker that was killed outright. So
-these tests are the only place that behaviour is exercised at all.
+Tests of the four cleanups - the only place a killed worker is exercised at all.
 """
 
 import datetime
@@ -51,9 +48,8 @@ def _cleaner(tmp_path, api, bucket):
     return Cleaner(api, _service_config(tmp_path), bucket_factory=lambda _storage: bucket)
 
 
-# Directory names in the cleanup tests have to be real task ids, because the cleanup leaves a directory
-# whose name is not one alone. The API assigns `UUID.randomUUID().toString()`, so these are fixed
-# UUIDs rather than readable names - `_uuid` keeps them legible by their last digit.
+# Directory names have to be real task ids: the cleanup leaves anything else alone. The API
+# assigns a UUID, so these are fixed ones, legible by their last digit.
 def _uuid(last: int) -> str:
     return f'00000000-0000-4000-8000-00000000000{last}'
 
@@ -73,9 +69,8 @@ def test_fails_a_task_whose_worker_vanished(tmp_path):
 
 
 def test_keeps_the_archive_of_a_task_that_refused_to_fail(tmp_path):
-    # The race this ordering exists for: the task was selected as stale, and by the time its turn came
-    # a slow worker had reported SUCCESS. The FAILED move is refused - and because the status goes
-    # first, the archive the user can now download is still there.
+    # The race this ordering exists for: a slow worker reported SUCCESS between the filter and the
+    # move. The FAILED move is refused, and the archive the user can download is still there.
     api = FakeApi(_task('stuck-2', TaskStatus.RUNNING))
     api.filtered = {TaskStatus.RUNNING: [_task('stuck-2', TaskStatus.RUNNING)]}
     api.reject_reports = True
@@ -111,10 +106,8 @@ def test_expires_an_archive_past_its_lifetime(tmp_path):
 
 
 def test_expires_an_archive_from_the_location_its_worker_recorded(tmp_path):
-    # The reason the task carries its location at all. The destination has been changed since this
-    # archive was written, so the derived key names an object that was never there - and deleting an
-    # absent key *succeeds*, so deriving here would mark the task EXPIRED and leave the real object in
-    # the old bucket with nothing left pointing at it.
+    # Why the task carries its location at all. The destination has changed since, so a derived key
+    # names an object that was never there - and deleting an absent key succeeds.
     old = ArchiveTask(id='old-3', status=TaskStatus.SUCCESS, owner='USER', storage_id=1,
                       paths=('data/',), result_storage_id=9,
                       result_path='previous-prefix/old-3.zip')
@@ -143,9 +136,8 @@ def test_derives_the_location_for_a_task_that_recorded_none(tmp_path):
 
 
 def test_does_not_expire_a_task_whose_archive_could_not_be_deleted(tmp_path):
-    # The object goes first and the status second. If the status went first and the delete then failed,
-    # the task would say the archive is gone while the object stayed in the bucket with nothing left to
-    # find it by.
+    # The object goes first: with the status first, a failed delete would leave the task saying the
+    # archive is gone while the object stayed.
     api = FakeApi(_task('old-2', TaskStatus.SUCCESS))
     api.filtered = {TaskStatus.SUCCESS: [_task('old-2', TaskStatus.SUCCESS)]}
     bucket = FakeBucket()
@@ -221,9 +213,8 @@ def test_removes_the_directory_of_a_task_the_api_has_forgotten(tmp_path):
 
 
 def test_leaves_a_directory_that_is_not_a_task_alone(tmp_path):
-    # `--work-dir` may be a volume shared with something else. Asking the API about `lost+found` gets a
-    # refusal, which the cleanup reads as "no such task" - so without the name check, somebody else's
-    # directory would be deleted.
+    # `--work-dir` may be shared. Asking the API about `lost+found` gets a refusal, which reads as
+    # "no such task", so without the name check somebody else's directory would go.
     api = FakeApi(_task(_uuid(6), TaskStatus.FAILED))
     api.task_missing = True
     for name in ('lost+found', 'logs', 'archive-tmp'):
@@ -261,9 +252,8 @@ def test_one_failing_cleanup_does_not_cost_the_others(tmp_path):
 
 
 def test_builds_one_bucket_per_storage_and_keeps_it(tmp_path):
-    # The bucket holds a client and its assumed session, so building one per archive would mean a
-    # region read and an assume-role per archive - two hundred of each in a full expiry cleanup. Keeping
-    # it is safe because the session re-assumes itself; this test pins the "once per storage" part.
+    # The bucket holds a client and its assumed session, so one per archive would mean a region read
+    # and an assume-role per archive. This pins the "once per storage" part.
     expired = [_task(_uuid(n), TaskStatus.SUCCESS) for n in (1, 2, 3)]
     api = FakeApi(expired[0])
     api.filtered = {TaskStatus.SUCCESS: expired}
@@ -298,13 +288,7 @@ def test_builds_its_client_from_the_destination_storages_region(tmp_path, monkey
 
 
 def _age(directory):
-    """
-    Backdates a directory past the orphan grace period.
-
-    `os.utime` sets the two timestamps of a file: the access time and the modification time, in seconds
-    since the epoch. Only the second one is read by the cleanup. Without this, every directory a test
-    creates is new and the grace period would keep all of them.
-    """
+    """A timestamp that many minutes in the past."""
     past = (datetime.datetime.now(datetime.UTC)
             - datetime.timedelta(minutes=ORPHAN_GRACE_MINUTES + 10)).timestamp()
     os.utime(directory, (past, past))

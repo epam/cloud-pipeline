@@ -15,19 +15,13 @@
 """
 Tests of a worker's run, one end state per test.
 
-What is being checked in almost every case is the *sequence of statuses* the worker reported, because
-that sequence is the only thing anybody outside this service can observe about a task, and whether an
-archive was left in the bucket.
-
-`tmp_path` and `monkeypatch` are pytest fixtures: a test gets them by naming them as parameters, and
-pytest provides them. `tmp_path` is a fresh directory per test, deleted afterwards; `monkeypatch`
-replaces something for the duration of one test and puts it back, which is what makes replacing a
-module-level function safe to do in a test suite.
+What is checked is the sequence of statuses reported, which is all anybody outside this service can
+observe, and whether an archive was left in the bucket.
 """
 
 import zipfile
 
-from sats.archive_bucket import archive_key
+from sats.datastorage_providers.s3 import archive_key
 from sats.config import StorageDownloadArchiveConfig, ServiceConfig
 from sats.model import ArchiveTask, Storage, StorageType, TaskStatus
 from sats.worker.archive_preparation_worker import ArchivePreparationWorker
@@ -38,12 +32,7 @@ TASK_ID = 'c0ffee-1'
 
 
 def _service_config(tmp_path, status_poll_seconds=0):
-    """
-    Settings for one test.
-
-    `status_poll_seconds=0` by default, so that the first stop check really asks the API. With the
-    production value of fifteen seconds a test would have to sleep to see a cancellation noticed.
-    """
+    """Settings with one slot and a real scratch directory."""
     return ServiceConfig(
         api_url='https://api.example.com/pipeline/restapi',
         api_token='token',
@@ -75,14 +64,7 @@ def _task(status=TaskStatus.RUNNING):
 
 def _run(tmp_path, monkeypatch, source, api=None, archive_config=None, bucket=None,
          service_config=None):
-    """
-    Runs one worker against the fakes and hands back everything a test might assert on.
-
-    The `open_source` function is replaced rather than injected through the constructor. It is a
-    module-level function the worker calls by name, and `monkeypatch.setattr` with a dotted string
-    rebinds that name inside `sats.worker` only - the real factory is untouched everywhere else, and is
-    restored when the test ends.
-    """
+    """Runs a worker over the given files and returns it, so a test can read what it recorded."""
     api = api or FakeApi(_task())
     archive_config = archive_config or _archive_config()
     bucket = bucket or FakeBucket()
@@ -102,9 +84,8 @@ def test_packs_the_selection_and_reports_success(tmp_path, monkeypatch):
     # something a test should depend on.
     assert sorted(bucket.uploaded) == ['a.txt', 'nested/b.txt']
     status, result, error = api.reports[0]
-    # The recorded location is part of the contract, not an extra: the API signs the link from it, and
-    # the expiry cleanup deletes by it. Asserted as a whole dictionary so that a field going missing from
-    # the report fails here rather than much later, in a bucket nobody cleans.
+    # The recorded location is part of the contract: the API signs the link from it and the expiry
+    # cleanup deletes by it. Asserted whole, so a missing field fails here.
     assert result == {'type': 'DOWNLOAD_ARCHIVE',
                       'storageId': 9,
                       'path': archive_key('archives/', TASK_ID),
@@ -204,9 +185,8 @@ def test_stops_and_cancels_when_the_task_was_cancelled(tmp_path, monkeypatch):
 
     api, bucket = _run(tmp_path, monkeypatch, source, api=api)
 
-    # STOPPING first, then CANCELLED. The intermediate status is not required by the task model, and it
-    # is reported anyway: it tells the user that the service is cleaning up, and it restarts the
-    # cleaner's stuck-task window so a long cleanup is not mistaken for a dead worker.
+    # STOPPING first, then CANCELLED. Not required by the task model, and reported anyway: it tells
+    # the user we are cleaning up and restarts the cleaner's stuck window.
     assert api.statuses == [TaskStatus.STOPPING, TaskStatus.CANCELLED]
     assert bucket.uploaded is None
     assert not (tmp_path / TASK_ID).exists()
@@ -262,9 +242,8 @@ def test_an_unexpected_failure_still_ends_the_task(tmp_path, monkeypatch):
 
 
 def test_keeps_the_users_own_readme_and_renames_the_note(tmp_path, monkeypatch):
-    # The selection contains a file called exactly like the note. `zipfile` would write a second entry
-    # under that name and most extraction tools keep the last one, so the user's own README would be
-    # replaced by ours - silently, with the task still reporting success.
+    # The selection holds a file named like the note. Most tools keep the last entry, so the user's
+    # own README would be replaced by ours.
     source = FakeSource({'README.txt': b'the user wrote this'},
                         unreadable={'cold.bin': 'stored in GLACIER'})
 
@@ -290,10 +269,8 @@ def test_keeps_the_users_own_readme_and_renames_the_note(tmp_path, monkeypatch):
 
 
 def test_fails_the_task_when_the_storage_is_gone(tmp_path, monkeypatch):
-    # The user deletes the storage right after asking for the archive. The API refuses the load, and the
-    # refusal must end the task with a message the user can act on - not be mistaken for "the API will
-    # not accept anything about this task any more", which reports nothing and leaves it RUNNING until
-    # the cleaner fails it hours later.
+    # The storage is deleted right after the archive was asked for. The refusal must end the task
+    # with a message the user can act on, not leave it RUNNING until the cleaner.
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     api.storage_missing = True
@@ -342,9 +319,8 @@ def test_builds_the_destination_client_from_the_destination_storages_region(tmp_
     source = FakeSource({'a.txt': b'hello'})
     api = FakeApi(_task())
     monkeypatch.setattr('sats.worker.archive_preparation_worker.open_source', lambda *_args: source)
-    # The real `build_s3_client` runs - that is what is under test, and it reaches nothing but the fake
-    # API - while the bucket around it is replaced, so no upload is attempted. The arguments of a call
-    # are evaluated before the call, so replacing the class does not skip the client it is given.
+    # The real `build_s3_client` runs - that is what is under test - while the bucket around it is
+    # replaced, so nothing is uploaded.
     monkeypatch.setattr('sats.worker.archive_preparation_worker.ArchiveBucket',
                         lambda _bucket, _part_size, _client: FakeBucket())
 

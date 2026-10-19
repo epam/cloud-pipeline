@@ -13,18 +13,11 @@
 # limitations under the License.
 
 """
-What every worker has to be, so that the orchestrator does not have to know what it is running.
+What every worker has to be, so the orchestrator need not know what it is running.
 
-The orchestrator claims a task, looks at its type and runs *a* worker. Which class that is belongs to
-this package and to nothing else - `worker_for` in `__init__.py` is the whole mapping. Adding the next
-kind of task, unarchiving one of these archives back into a storage, is then a module here and a line
-there.
-
-`run()` taking no arguments and returning nothing is the entire contract, and the second half of it is
-the harder half: **it must never raise.** A worker is the body of a thread-pool task, and an exception
-escaping it would be stored in a future nobody reads - the task would stay `RUNNING` with nobody
-working on it until the cleaner noticed hours later, and the log would say nothing. So every worker
-catches everything and ends its own task, in whatever status fits.
+`run()` takes nothing, returns nothing and **must never raise**: it is the body of a thread-pool task,
+and an exception escaping it would sit in a future nobody reads while the task stayed `RUNNING` until
+the cleaner noticed. So every worker catches everything and ends its own task.
 """
 
 from __future__ import annotations
@@ -39,13 +32,8 @@ class AsyncTaskWorker(abc.ABC):
     """
     One claimed task, run to one of its end states.
 
-    `ClassVar` says `TASK_TYPE` belongs to the class rather than to an instance - the type a worker
-    serves is a property of the kind of worker, not of the task it happens to hold. `worker_for` reads
-    it to build the registry, so a new worker class is registered by declaring it.
-
-    `abc.ABC` plus `@abc.abstractmethod` is Python's abstract class: a subclass that left `run`
-    unimplemented raises on construction rather than at the call. It is a convention with teeth, but a
-    late one - nothing checks it when the module is imported.
+    `TASK_TYPE` is a class variable because the type a worker serves belongs to the kind of worker.
+    `worker_for` reads it to build the registry, so declaring a class registers it.
     """
 
     TASK_TYPE: ClassVar[AsyncTaskType]

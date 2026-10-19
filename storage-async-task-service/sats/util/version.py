@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# A module-level name is the Python way of declaring a constant: there is no `final`, the name is
-# simply never reassigned. The leading and trailing double underscores mark it as a name the language
-# itself knows about - `pip` and `setup.py` read `__version__` from here.
-#
-# The gradle build rewrites this line on every assembly, exactly as it does for the lifecycle service,
-# so do not expect the committed value to match a built artefact.
+# The gradle build rewrites this line on every assembly, so the committed value is not what a built
+# artefact carries.
 __version__ = '0.1.0'

@@ -14,10 +14,6 @@
 
 """
 Tests of the parsing layer.
-
-A pytest test is a function whose name starts with `test_`, and `assert` is the whole framework - no
-`assertEquals`, no base class. When an assertion fails, pytest rewrites it to show both sides, so a
-plain `assert a == b` reports what each side actually was.
 """
 
 import datetime
@@ -99,9 +95,8 @@ def test_an_unknown_status_is_refused():
         ArchiveTask.from_api({'id': 'x', 'status': 'CANCELED'})
 
 
-# `parametrize` runs the same test once per row, as separate tests with separate results. The spelling
-# `CANCELED` above is in this file twice on purpose: it is the misspelling the specification carried,
-# and the API refuses it.
+# `CANCELED` appears twice on purpose: it is the misspelling the specification carried, and the
+# API refuses it.
 @pytest.mark.parametrize('status, terminal', [
     (TaskStatus.PENDING, False),
     (TaskStatus.RUNNING, False),
@@ -179,9 +174,8 @@ def test_reads_the_type_the_task_carries():
 
 
 def test_a_task_without_a_type_falls_back_to_the_only_one_there_is():
-    # The platform always sends it; the fallback is what keeps a task built by hand - in a test, or by
-    # an older API - dispatchable. It is also what will hide a mistake when a second type arrives, which
-    # is why `worker_for` names the type it could not run.
+    # The platform always sends it; the fallback keeps a task built by hand dispatchable. It is also
+    # what will hide a mistake when a second type arrives.
     task = ArchiveTask.from_api({'id': 'task-1', 'status': 'RUNNING'})
 
     assert task.type is AsyncTaskType.DOWNLOAD_ARCHIVE
@@ -211,9 +205,8 @@ def test_reads_a_storages_own_credentials_role():
 
 
 def test_reads_a_region_keeping_its_two_ids_apart():
-    # `regionId` in the JSON is the cloud's own name for the region, while `id` is the platform's
-    # numeric one. The Java side swaps them with a `@JsonProperty`, and confusing the two produces a
-    # client pointed at a region called "1".
+    # `regionId` in the JSON is the cloud's own region name, while `id` is the platform's numeric
+    # one. The Java side swaps them, and confusing the two points a client at a region called "1".
     region = CloudRegion.from_api({
         'id': 2,
         'regionId': 'eu-central-1',

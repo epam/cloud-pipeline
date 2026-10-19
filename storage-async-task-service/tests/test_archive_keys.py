@@ -13,17 +13,12 @@
 # limitations under the License.
 
 """
-Tests of how an archive's object key is built.
-
-Two prefixes meet here and it is easy to drop one: the destination storage may be a folder inside a
-bucket rather than a whole bucket, and the preference adds a folder of its own inside that. The API
-signs storage-relative paths and lets the storage provider prepend the first prefix; this service
-writes with boto3 and has to prepend it itself, so the two must agree on the result.
+Tests of how an archive's object key is built: the storage's own folder plus the preference prefix.
 """
 
 import pytest
 
-from sats.archive_bucket import absolute_key, archive_key
+from sats.datastorage_providers.s3 import absolute_key, archive_key
 
 TASK_ID = '4f1a2c90-0000-4000-8000-000000000001'
 

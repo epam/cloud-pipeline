@@ -13,19 +13,8 @@
 # limitations under the License.
 
 """
-Tests of the layer over the platform's own API client.
-
-The HTTP, the retries and the envelope belong to `pipeline.PipelineAPI` and are not tested here. What is
-tested is everything this service adds on top, because that is where its own behaviour lives:
-
-  * a refusal is told apart from a failure to answer - the task queue breaks without that;
-  * claiming goes through the client that does not retry;
-  * the request bodies match what the API expects;
-  * every answer comes back as this service's own model.
-
-Neither pipe-common nor a network is needed: the clients are injected. `APIError` is declared here with
-exactly that name on purpose - `api._refused` recognises it by name rather than by import, so a stub
-named the same way exercises the real code path.
+Tests of the layer over the platform API client: refusal against failure, the no-retry claim
+client, the request bodies, and the parsing. The clients are injected, so no pipe-common is needed.
 """
 
 import datetime
@@ -33,7 +22,7 @@ import datetime
 import pytest
 
 from sats.api import CloudPipelineApi
-from sats.errors import ApiError, ApiRejected
+from sats.util.errors import ApiError, ApiRejected
 from sats.model import AsyncTaskType, MountType, TaskStatus
 
 

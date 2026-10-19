@@ -15,13 +15,7 @@
 """
 Stand-ins for everything outside the process: the API, the archive bucket, the file source.
 
-Python has no interfaces to implement, so these classes simply have the methods the code under test
-calls. Anything that walks like the real thing can be passed where the real thing goes, and that is why
-every collaborator in this service arrives as a constructor argument.
-
-They are hand-written rather than built with `unittest.mock`. A mock records calls and answers
-anything, which makes a test pass against a method that no longer exists; a fake has to be changed when
-the thing it stands for changes, which is the point.
+Hand-written rather than mocks: a fake has to be changed when the thing it stands for changes.
 """
 
 from __future__ import annotations
@@ -31,18 +25,13 @@ from pathlib import Path
 
 from botocore.exceptions import ClientError
 
-from sats.errors import ApiRejected
+from sats.util.errors import ApiRejected
 from sats.model import ArchiveTask, CloudRegion, FileShare, Storage, StorageType, TaskStatus
 from sats.datastorage_providers.base import FileSource, SourceFile
 
 
 class FakeApi:
-    """
-    The platform API, as far as a worker or the cleaner can tell.
-
-    `reports` is the list of every status report, in order. Most assertions in the worker tests are
-    about that list: the sequence of statuses *is* the observable behaviour of a worker.
-    """
+    """The API, with the answers a test sets up and a record of every status reported."""
 
     def __init__(self, task: ArchiveTask, storage: Storage | None = None,
                  preference: str | None = None):
@@ -53,9 +42,8 @@ class FakeApi:
                                           path='some-bucket', region_id=1)
         self.preference = preference
         self.reports: list[tuple[TaskStatus, dict | None, str | None]] = []
-        # What `filter_tasks` answers, per status asked about. The cleaner runs three filters in one
-        # cleanup and each asks about different statuses, so a single list would be returned to all three
-        # and every cleanup would act on every task.
+        # What `filter_tasks` answers, per status asked about: one cleanup runs three filters, each
+        # asking about different statuses.
         self.filtered: dict[TaskStatus, list[ArchiveTask]] = {}
         # Set to make `report_status` refuse, as the real API does for a transition that is no longer
         # allowed.
@@ -87,9 +75,8 @@ class FakeApi:
         return self.task
 
     def filter_tasks(self, statuses: list[TaskStatus] | None = None, **_kwargs) -> list[ArchiveTask]:
-        # `**_kwargs` accepts the remaining keyword arguments and ignores them. The real method has
-        # six, and a fake that listed them all would have to be edited every time one is added without
-        # any test caring. The statuses are the exception: the cleaner's cleanups are told apart by them.
+        # `**_kwargs` ignores the rest: the real method has six arguments and no test cares. The
+        # statuses are the exception - the cleaner's cleanups are told apart by them.
         found = []
         for status in statuses or []:
             found += self.filtered.get(status, [])
@@ -128,13 +115,7 @@ class FakeApi:
 
 
 class FakeBucket:
-    """
-    The archive bucket.
-
-    `uploaded` holds the names inside the ZIP that was uploaded, which lets a test assert on the
-    archive's contents without an S3 anywhere - the worker really does build a real ZIP file, and this
-    opens it.
-    """
+    """The archive bucket: records uploads and deletes, and can be told to fail."""
 
     def __init__(self):
         self.uploaded: list[str] | None = None
@@ -159,16 +140,7 @@ class FakeBucket:
 
 
 class FakeS3Client:
-    """
-    An S3 client, as far as `S3Source` can tell.
-
-    `objects` maps an object key to its size, and `denied` holds keys that answer a HEAD with 403 -
-    present but forbidden, which is a different thing from absent and is reported differently.
-
-    The method arguments are capitalised because botocore's are: `head_object(Bucket=..., Key=...)` is
-    the call being stood in for, and a fake with different argument names would not be called the same
-    way as the real client.
-    """
+    """The boto3 S3 client, with only the calls this service makes."""
 
     def __init__(self, objects: dict[str, int] | None = None, denied: set[str] | None = None,
                  storage_classes: dict[str, str] | None = None):
@@ -217,13 +189,7 @@ class _FakePaginator:
 
 
 class FakeSource(FileSource):
-    """
-    A source over a dictionary of name to contents.
-
-    Deriving from the real `FileSource` on purpose: it is the one place where inheriting from the
-    abstract class buys something, because forgetting to implement a method that gets added to it
-    should break the tests.
-    """
+    """A file source over a list of `SourceFile`, writing their content on download."""
 
     def __init__(self, files: dict[str, bytes], unreadable: dict[str, str] | None = None,
                  failing: set[str] | None = None):

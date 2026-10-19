@@ -13,53 +13,57 @@
 # limitations under the License.
 
 """
-Reading the selection out of an S3 storage.
+S3: reading the files of a storage, and writing the finished archive.
 
-Who the client is and which region it talks to is `sats/cloud/aws.py`'s subject, not this module's:
-both follow from the storage's cloud region, and the same rules apply to the bucket the finished
-archive is uploaded to. Everything here takes a client as given and is about listing and reading
-objects. The region a download link is signed for is the destination storage's own, settled on the API
-side, and has nothing to do with these calls.
+Both clients are built in `sats/cloud/aws.py` and passed in here.
 """
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterator
 from pathlib import Path
 
 from botocore.exceptions import ClientError
 
 from .base import ARCHIVED_STORAGE_CLASSES, DOWNLOAD_BLOCK_BYTES, FileSource, Heartbeat, SourceFile
-from ..log import get_logger
+from ..util.log import get_logger
 from ..model import Storage
-
-# Two dots mean "one package up": `..log` is `sats/log.py`, read from `sats/datastorage_providers/s3.py`.
 
 LOG = get_logger(__name__)
 
-# How many keys one listing call returns. 1000 is the maximum S3 allows and also its default; naming it
-# makes the paging below readable rather than magic.
+# Keys per listing call. 1000 is the S3 maximum.
 LIST_PAGE_SIZE = 1000
 
-# A restored copy of an archived object carries this header. `ongoing-request="true"` means the restore
-# is still running and the object is not readable yet; `ongoing-request="false"` means a temporary copy
-# exists and `get_object` will work.
+# Restore header of an archived object. "true" means the restore is still running and the object
+# cannot be read yet.
 RESTORE_IN_PROGRESS = 'ongoing-request="true"'
+
+ARCHIVE_EXTENSION = '.zip'
+
+# S3 limits: at most 10000 parts per multipart upload, at least 5 MiB per part except the last.
+MAX_PARTS = 10000
+MIN_PART_SIZE_BYTES = 5 * 1024 * 1024
+
+
+def absolute_key(storage_prefix: str, relative_key: str) -> str:
+    """The key inside the bucket: the storage's own folder, then the storage-relative key."""
+    return f'{storage_prefix}/{relative_key}' if storage_prefix else relative_key
+
+
+def archive_key(prefix: str, task_id: str) -> str:
+    """The object key of a task's archive. Mirrors `DataStorageDownloadArchiveManager.archiveKey`."""
+    return f'{prefix}{task_id}{ARCHIVE_EXTENSION}'
 
 
 class S3Source(FileSource):
     """
     Lists and downloads the objects of an S3 storage.
 
-    A platform S3 storage may be a whole bucket or a prefix inside one - `bucket/team/project`. The two
-    are not distinguished anywhere below: `Storage.prefix` is prepended on the way into S3 and stripped
-    on the way back out, so a path in a task and a path in the archive are both relative to the storage
-    root, which is what the user saw in the GUI.
+    A storage may be a whole bucket or a prefix inside one. The prefix is prepended on the way into S3
+    and stripped on the way out, so every path here is relative to the storage root.
 
-    The client is a required argument and there is no default for it. It could as easily be built here
-    from the storage, and deliberately is not: credentials are fetched from the API, and a constructor
-    that quietly makes an authenticated call is one that a test cannot run and a reader cannot see.
-    `open_source` builds it, and a test passes a stub.
+    The client is required: fetching credentials is an API call, so it is not made in a constructor.
     """
 
     def __init__(self, storage: Storage, client):
@@ -70,31 +74,12 @@ class S3Source(FileSource):
     # ------------------------------------------------------------------ listing
 
     def list_files(self, paths: tuple[str, ...]) -> Iterator[SourceFile]:
-        """
-        Expands every path of the selection in turn.
-
-        `yield from` delegates to another generator: the files of each path are yielded one by one as
-        the caller consumes them, and nothing is collected in between.
-
-        Duplicates are not filtered. A selection that names both a folder and a file inside it would
-        put that file in the archive twice, under the same name - but the API builds the selection from
-        what the user ticked in the GUI, which cannot produce that overlap, and de-duplicating would
-        mean holding every key of the listing in memory, which is exactly what the laziness above
-        exists to avoid.
-        """
+        """Expands every path of the selection in turn. Duplicates are not filtered."""
         for path in paths:
             yield from self._list_path(path)
 
     def _list_path(self, path: str) -> Iterator[SourceFile]:
-        """
-        A single entry of the selection: a folder if it ends in a slash, otherwise a file.
-
-        **A path that yields nothing is reported rather than dropped.** The user ticked it, so its
-        absence from the archive is something they have to be told about: it comes back as a
-        `SourceFile` with a `skip_reason`, which puts it in the archive's note beside the files that
-        could not be read. Before this, a selection naming a file that is not in the bucket produced an
-        archive quietly missing it.
-        """
+        """A folder if the path ends in a slash, otherwise a file."""
         if path.endswith('/'):
             yield from self._expand_folder(path, path)
             return
@@ -102,55 +87,39 @@ class S3Source(FileSource):
         if single is not None:
             yield single
             return
-        # Not an object. Most likely a folder written without its trailing slash - the API normalises
-        # this, but a task created through the REST API directly may not have. Listing it as a folder
-        # costs one call and settles which of the two it is.
+        # Not an object, so most likely a folder written without its trailing slash.
         LOG.debug('%s is not an object, listing it as a folder', path)
         yield from self._expand_folder(path + '/', path, unreadable)
 
     def _expand_folder(self, prefix: str, path: str,
                        unreadable: str | None = None) -> Iterator[SourceFile]:
         """
-        Lists a prefix, and says so when it holds nothing.
+        Lists a prefix. A prefix holding nothing yields one skipped file, so the user is told.
 
-        A missing prefix and an empty one are the same thing in S3 - there are no directories, only
-        keys - so one wording covers both, and it names the place that was looked at because that is
-        what the person reading the note needs in order to go and check.
-
-        `unreadable` is passed in when a HEAD of the same path was refused rather than answered: that
-        is a better reason than "nothing found", and it is the honest one.
+        `unreadable` carries the reason when a HEAD of the same path was refused.
         """
         found = False
         for source_file in self._list_folder(prefix):
             found = True
             yield source_file
         if not found:
-            # The place named is `path` and not `prefix`: the two differ for a path that was tried as
-            # an object first, and a message about `notes.txt/` would name a location that was never
-            # asked for.
+            # `path`, not `prefix`: the two differ for a path that was tried as an object first.
             location = f's3://{self._bucket}/{self._absolute(path)}'
             LOG.warning('Nothing was found at %s', location)
             yield SourceFile(path=path.rstrip('/'), size=0, locator=self._absolute(path),
                              skip_reason=unreadable or f'nothing found at {location}')
 
     def _list_folder(self, path: str) -> Iterator[SourceFile]:
-        """
-        Yields every object under a prefix, recursively, paging through the listing.
-
-        `get_paginator` wraps the continuation-token loop S3 requires for a listing of more than a
-        thousand keys. Each page is a dictionary; `page.get('Contents', [])` matters because an empty
-        result omits the key altogether rather than sending an empty list.
-        """
+        """Yields every object under a prefix, recursively, paging through the listing."""
         prefix = self._absolute(path)
         paginator = self._client.get_paginator('list_objects_v2')
         for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix,
                                        PaginationConfig={'PageSize': LIST_PAGE_SIZE}):
+            # An empty result omits `Contents` rather than sending an empty list.
             for item in page.get('Contents', []):
                 key = item['Key']
                 if key.endswith('/'):
-                    # A folder marker: a zero-byte object a console creates so that an empty folder
-                    # shows up. It is not a file, and adding it to the archive would create an entry
-                    # with an empty name.
+                    # A folder marker, not a file.
                     continue
                 yield self._to_source_file(key, item['Size'], item.get('StorageClass'))
 
@@ -158,16 +127,8 @@ class S3Source(FileSource):
         """
         Reads one object's metadata, as `(the file, why it could not be read)`.
 
-        Both halves are `None` when there is simply no such object, which is an answer rather than a
-        failure: the caller then tries the path as a folder. A tuple rather than one value because the
-        two refusals mean different things to the person who asked for the archive, and saying "not
-        found" for a file that is there but forbidden would send them looking in the wrong place.
-
-        `except ClientError` and then a look at the error code: botocore reports every S3 refusal as
-        the same exception type and puts the detail in `error.response`. `404` is "no such key". `403`
-        is "no permission for this key" - with the role this service assumes, listing is granted
-        alongside reading, so a 403 here really is a denial rather than S3 hiding a missing key from a
-        client that may not list. Anything else is a real failure and is left to propagate.
+        Both halves are `None` when there is no such object; the caller then tries the path as a
+        folder. 403 is kept apart from 404 because the two mean different things to the user.
         """
         key = self._absolute(path)
         try:
@@ -185,13 +146,10 @@ class S3Source(FileSource):
     def _to_source_file(self, key: str, size: int, storage_class: str | None,
                         restore: str | None = None) -> SourceFile:
         """
-        Turns one listing entry into a `SourceFile`, deciding whether it can be read at all.
+        Turns one listing entry into a `SourceFile`, with a skip reason where it cannot be read.
 
-        An object in Glacier or Deep Archive cannot be downloaded directly. It may still have a
-        temporary restored copy, though, and a user who asked for a restore and then for an archive
-        expects that copy to be used - so a listing entry in an archived class is checked once more with
-        a HEAD, which is the only call that reports the restore state. The extra call happens per
-        archived object and not per object, which keeps a normal selection at one call per page.
+        An object in an archived class needs one extra HEAD, the only call that reports whether a
+        restored copy exists.
         """
         relative = self._relative(key)
         if storage_class not in ARCHIVED_STORAGE_CLASSES:
@@ -209,7 +167,7 @@ class S3Source(FileSource):
         return SourceFile(path=relative, size=size, locator=key)
 
     def _safe_head(self, key: str) -> dict | None:
-        """A HEAD that answers `None` instead of raising. Used where a failure only costs us detail."""
+        """A HEAD that answers `None` instead of raising."""
         try:
             return self._client.head_object(Bucket=self._bucket, Key=key)
         except ClientError as error:
@@ -222,18 +180,8 @@ class S3Source(FileSource):
         """
         Streams one object into a local file.
 
-        Written against `get_object` rather than `download_file`, which would be shorter, because
-        `download_file` runs its own thread pool and offers no way into its copy loop - so a cancelled
-        task would go on downloading until the file ended. Here the loop is ours and a heartbeat sits
-        inside it.
-
-        `while chunk := body.read(n):` is an assignment expression, the "walrus". It reads the next
-        block, binds it to `chunk`, and uses its truth value as the loop condition - an empty block
-        means end of stream and is falsy. Without it the same loop needs a read before the loop and
-        another at its end.
-
-        `with` on both the response body and the output file closes them on the way out, including when
-        the heartbeat raises - which leaves a partial file behind, deleted by the worker.
+        `get_object` and our own loop, not `download_file`: that one has no place for the heartbeat,
+        so a cancelled task would keep downloading to the end of the file.
         """
         response = self._client.get_object(Bucket=self._bucket, Key=source_file.locator)
         with response['Body'] as body, destination.open('wb') as out:
@@ -244,20 +192,103 @@ class S3Source(FileSource):
     # ------------------------------------------------------------------ paths
 
     def _absolute(self, path: str) -> str:
-        """Storage-relative path to object key: prepend the storage's own prefix, if it has one."""
+        """Storage-relative path to object key."""
         cleaned = path.lstrip('/')
         if not self._prefix:
             return cleaned
         return f'{self._prefix}/{cleaned}'
 
     def _relative(self, key: str) -> str:
-        """
-        Object key back to storage-relative path, which is also the name inside the archive.
-
-        `removeprefix` (Python 3.9 and later) returns the string unchanged when the prefix is not there,
-        so a key that somehow fell outside the storage prefix keeps its full name rather than losing a
-        few characters to a `[len(p):]` slice.
-        """
+        """Object key to storage-relative path, which is also the name inside the archive."""
         if not self._prefix:
             return key
         return key.removeprefix(f'{self._prefix}/')
+
+
+class ArchiveBucket:
+    """
+    Uploads and deletes finished archives in the destination storage's bucket.
+
+    One instance and one client per worker: boto3 clients are thread-safe, sessions are not. The
+    client is required, for the same reason as in `S3Source`.
+    """
+
+    def __init__(self, bucket: str, part_size_bytes: int, client):
+        self._bucket = bucket
+        self._part_size = max(part_size_bytes, MIN_PART_SIZE_BYTES)
+        self._client = client
+
+    def upload(self, path: Path, key: str, heartbeat: Heartbeat) -> int:
+        """
+        Uploads a local file and returns its size in bytes, which goes into the task's result.
+
+        A file that fits in one part is sent with a single `put_object`.
+        """
+        size = path.stat().st_size
+        LOG.info('Uploading %s bytes to s3://%s/%s', size, self._bucket, key)
+        if size <= self._part_size:
+            with path.open('rb') as body:
+                self._client.put_object(Bucket=self._bucket, Key=key, Body=body)
+            return size
+        self._upload_multipart(path, key, size, heartbeat)
+        return size
+
+    def delete(self, key: str) -> None:
+        """Removes an archive. S3 answers a delete of a missing object with success."""
+        LOG.info('Deleting s3://%s/%s', self._bucket, key)
+        self._client.delete_object(Bucket=self._bucket, Key=key)
+
+    def _upload_multipart(self, path: Path, key: str, size: int, heartbeat: Heartbeat) -> None:
+        """
+        Sends the file part by part, aborting the upload if anything goes wrong.
+
+        The part size is raised when the configured one would need more than `MAX_PARTS`.
+
+        `BaseException` so that a `KeyboardInterrupt` or `SystemExit` mid-upload also aborts: an
+        upload that is neither completed nor aborted leaves chargeable parts in the bucket.
+        """
+        part_size = max(self._part_size, math.ceil(size / MAX_PARTS))
+        if part_size != self._part_size:
+            LOG.info('Raising the part size to %s bytes to keep %s bytes within %s parts', part_size,
+                     size, MAX_PARTS)
+        created = self._client.create_multipart_upload(Bucket=self._bucket, Key=key)
+        upload_id = created['UploadId']
+        LOG.debug('Started multipart upload %s for %s', upload_id, key)
+        try:
+            parts = self._send_parts(path, key, upload_id, part_size, heartbeat)
+            self._client.complete_multipart_upload(
+                Bucket=self._bucket, Key=key, UploadId=upload_id,
+                MultipartUpload={'Parts': parts})
+            LOG.debug('Completed multipart upload %s with %s parts', upload_id, len(parts))
+        except BaseException:
+            self._abort(key, upload_id)
+            raise
+
+    def _send_parts(self, path: Path, key: str, upload_id: str, part_size: int,
+                    heartbeat: Heartbeat) -> list[dict]:
+        """Reads the file block by block and sends each as a part. Part numbers start at 1."""
+        parts: list[dict] = []
+        number = 1
+        with path.open('rb') as body:
+            while chunk := body.read(part_size):
+                heartbeat()
+                response = self._client.upload_part(
+                    Bucket=self._bucket, Key=key, UploadId=upload_id, PartNumber=number,
+                    Body=chunk)
+                parts.append({'ETag': response['ETag'], 'PartNumber': number})
+                number += 1
+        return parts
+
+    def _abort(self, key: str, upload_id: str) -> None:
+        """
+        Abandons a multipart upload and removes its parts.
+
+        Failures are logged and swallowed: this runs while another exception is on its way up.
+        """
+        try:
+            self._client.abort_multipart_upload(Bucket=self._bucket, Key=key, UploadId=upload_id)
+            LOG.info('Aborted multipart upload %s for %s', upload_id, key)
+        except Exception as error:
+            LOG.warning('Could not abort multipart upload %s for %s: %s. Its parts stay in the '
+                        'bucket until a lifecycle rule removes incomplete uploads', upload_id, key,
+                        error)

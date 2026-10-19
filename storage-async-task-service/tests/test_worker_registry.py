@@ -15,9 +15,8 @@
 """
 Tests of the dispatch: which worker runs which kind of task.
 
-The orchestrator names no worker class - it asks the API for the types in `SUPPORTED_TASK_TYPES` and
-hands whatever it claimed to `worker_for`. These tests are what keeps those two halves in step, which
-matters most on the day the second task type arrives.
+The orchestrator names no worker class, so these tests keep `SUPPORTED_TASK_TYPES` and `worker_for`
+in step.
 """
 
 import pytest

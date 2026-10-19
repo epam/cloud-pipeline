@@ -15,8 +15,8 @@
 """
 Picking the right source for a storage.
 
-The one place in the service that knows which storage types can be archived. Everything else works
-against `FileSource`.
+The one place that knows which storage types can be archived. Everything else works against
+`FileSource`.
 """
 
 from __future__ import annotations
@@ -28,25 +28,16 @@ from .nfs import NfsSource
 from .s3 import S3Source
 from ..cloud.aws import build_s3_client
 from ..config import ServiceConfig
-from ..errors import UnsupportedSource
-from ..log import get_logger
+from ..util.errors import UnsupportedSource
+from ..util.log import get_logger
 from ..model import Storage, StorageType
 
 if TYPE_CHECKING:
-    # Imports inside `if TYPE_CHECKING` run only for a type checker, never at runtime. The block is how
-    # Python breaks an import cycle while keeping the annotation: a type checker reads it, the
-    # interpreter skips it, and the annotations below stay strings because of `from __future__ import
-    # annotations` at the top. There is no cycle to break here today - `api.py` imports nothing from
-    # this package - and the import is in the block anyway, because a factory importing the client it
-    # only names is exactly how one gets created later.
+    # Read only by a type checker, so the annotation costs no import at runtime.
     from ..api import CloudPipelineApi
 
 LOG = get_logger(__name__)
 
-# `__all__` lists what `from sats.datastorage_providers import *` would bring in. Nobody should write
-# that import, but
-# the list doubles as a statement of what this package means to export - and the re-exports above are
-# otherwise flagged as unused by linters.
 __all__ = ['FileSource', 'SourceFile', 'open_source']
 
 
@@ -54,14 +45,7 @@ def open_source(api: CloudPipelineApi, storage: Storage, config: ServiceConfig) 
     """
     Opens a reader for the storage a task points at.
 
-    `match` (Python 3.10 and later) is structural pattern matching. On a plain value it reads like a
-    switch, `case _` is the default, and - unlike a switch - there is no fall-through to forget.
-
-    The caller is expected to use the result in a `with` block, so that whatever the source holds is
-    released on the way out:
-
-        with open_source(api, storage, config) as source:
-            ...
+    The caller uses the result in a `with` block, so whatever it holds is released on the way out.
     """
     match storage.type:
         case StorageType.S3:
@@ -77,8 +61,6 @@ def open_source(api: CloudPipelineApi, storage: Storage, config: ServiceConfig) 
             return NfsSource(storage, share, config.nfs_mount_root,
                              config.nfs_mount_timeout_seconds)
         case _:
-            # Azure and GCP storages reach this. Supporting them means a module next to `s3.py` using
-            # that cloud's own SDK; until then the task fails with a message naming the type, which is
-            # the one thing the user needs to be told.
+            # Azure and GCP storages reach this. Supporting one means a module next to `s3.py`.
             raise UnsupportedSource(f'Storage {storage.name} is of type {storage.type}, which this '
                                     f'service cannot read')

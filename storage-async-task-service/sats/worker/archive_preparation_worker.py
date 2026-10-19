@@ -15,18 +15,15 @@
 """
 One task, from the moment it was claimed to the status it ends in.
 
-A worker runs in its own thread and owns one task. It walks the selection, checks it against the
-thresholds, downloads the files one at a time, packs them into a ZIP, uploads the ZIP and reports the
-result. Then it deletes everything it created locally, whichever way it ended.
+A worker runs in its own thread and owns one task: it walks the selection, checks the thresholds,
+downloads the files one at a time, packs them into a ZIP, uploads it and reports the result. Then it
+deletes everything it created locally, whichever way it ended.
 
-The shape of this module is set by one constraint: **a Python thread cannot be stopped from outside.**
-There is no `Thread.stop()`, no interrupt, nothing an orchestrator can do to a worker that must give up
-a task. So a worker stops itself: it calls `TaskStopWatcher.check()` at every point where abandoning the
-work is safe, and that method raises when it is time to go. Everything between two checks is short - a
-block of a file, a part of an upload - so the delay between a user pressing cancel and the task
-actually stopping is bounded by the poll interval, not by the size of the data.
+Stopping is cooperative, because a Python thread cannot be stopped from outside: the worker calls
+`TaskStopWatcher.check()` wherever abandoning the work is safe. Everything between two checks is
+short, so the delay between a cancel and the task stopping does not depend on the size of the data.
 
-`run` is the single place that decides what each kind of failure means for the task's status:
+`run` decides what each kind of failure means for the status:
 
     cancel noticed on a poll   STOPPING, clean up, CANCELLED
     own deadline passed        STOPPING, clean up, FAILED
@@ -36,9 +33,8 @@ actually stopping is bounded by the poll interval, not by the size of the data.
     credentials refused        FAILED, with the storage and the refusal named
     anything else              FAILED, as an internal error
 
-The archive is deleted on every path except success, including when the API refuses the success report -
-an archive no task points at is unreachable for the user and would sit in the bucket until someone
-noticed it.
+The archive is deleted on every path except success, including when the API refuses the success
+report: an archive no task points at is unreachable for the user.
 """
 
 from __future__ import annotations
@@ -51,39 +47,31 @@ import zipfile
 from pathlib import Path
 
 from ..api import CloudPipelineApi
-from ..archive_bucket import ArchiveBucket, absolute_key, archive_key
+from ..datastorage_providers.s3 import ArchiveBucket, absolute_key, archive_key
 from ..cloud.aws import build_s3_client
 from ..config import ServiceConfig, StorageDownloadArchiveConfig
-from ..errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
+from ..util.errors import ApiError, ApiRejected, CredentialsUnavailable, InvalidTask, StopReason, \
     StopRequested, ThresholdExceeded, UnsupportedSource
-from ..log import get_logger
+from ..util.log import get_logger
 from ..model import ArchiveTask, AsyncTaskType, StorageType, TaskStatus
 from ..datastorage_providers import FileSource, SourceFile, open_source
 from .base import AsyncTaskWorker
 from .task_stop_watcher import TaskStopWatcher
 
-# A backslash continues a statement onto the next line. Parentheses are the usual way to wrap an
-# expression, but an `import ... from` list cannot take them around the whole clause, so this is the
-# form the style guide allows here.
-
 LOG = get_logger(__name__)
 
-# The local name of the archive while it is being built. The name the user's browser offers is decided
-# by the API when it signs the download link, so this one never reaches anybody.
+# The local name of the archive while it is built. What the browser offers is decided by the API.
 LOCAL_ARCHIVE_NAME = 'archive.zip'
-# The file every download lands in before it goes into the ZIP. One name, reused: only one file is ever
-# in flight per worker, and a fixed name means a crash cannot leave a growing pile of them.
+# Where every download lands before it goes into the ZIP. One file per worker is ever in flight, and
+# a fixed name means a crash cannot leave a pile of them.
 DOWNLOAD_TEMP_NAME = 'current.part'
-# The note added to an archive that is missing something, so the user does not have to compare what
-# they asked for against what they got. A selection may hold a file of the same name, so the name is
-# only the first choice - see `_note_name`.
+# The note added to an archive that is missing something. A selection may hold a file of this name,
+# so it is only the first choice - see `_note_name`.
 SKIPPED_NOTE_NAME = 'README.txt'
-# Used instead when the selection itself contains the name above. Deliberately not a name anybody would
-# have in a data storage.
 SKIPPED_NOTE_FALLBACK = 'CLOUD-PIPELINE-SKIPPED-FILES.txt'
 
-# Error messages go into a database column and into the GUI. A traceback-sized message helps nobody
-# there, so the text is cut - the full one is in this service's log.
+# Error messages go into a database column and into the GUI, so the text is cut. The full one is in
+# this service's log.
 MAX_ERROR_MESSAGE = 1000
 
 
@@ -91,13 +79,10 @@ class ArchivePreparationWorker(AsyncTaskWorker):
     """
     Builds the archive for one task.
 
-    Everything it touches is derived from the task: the scratch directory is named after the task id,
-    and so is the object key. Nothing is shared with another worker except the API client and the
-    mounted shares.
+    Everything it touches is derived from the task: the scratch directory and the object key are both
+    named after the task id. Only the API client and the mounted shares are shared with others.
     """
 
-    # The kind of task this worker runs. `worker/__init__` builds its registry from this, so a worker
-    # cannot be registered under a type it does not serve.
     TASK_TYPE = AsyncTaskType.DOWNLOAD_ARCHIVE
 
     def __init__(self, api: CloudPipelineApi, service_config: ServiceConfig,
@@ -107,34 +92,25 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         self._config = service_config
         self._archive_config = archive_config
         self._task = task
-        # Resolved in `_resolve_destination`, because the bucket behind the destination storage is
-        # behind an API call. Injected whole by a test, which then needs no storage at all.
+        # Resolved in `_resolve_destination`, which needs an API call. A test injects it whole.
         self._bucket = bucket
-        # Two keys, and the difference matters. The relative one is storage-relative and is what gets
-        # reported: that is the vocabulary the API signs in. The absolute one carries the storage's own
-        # folder in front and is what boto3 is given. They are equal for a storage that is a whole
-        # bucket, which is why a test with an injected bucket needs no storage.
+        # Two keys: the relative one is what gets reported, because that is the vocabulary the API
+        # signs in; the absolute one carries the storage's own folder and is what boto3 is given.
         self._relative_key = archive_key(archive_config.destination_prefix, task.id)
         self._key = self._relative_key
         self._task_dir = service_config.work_dir / task.id
         self._watcher = TaskStopWatcher(api, task.id,
                                         archive_config.worker_max_running_minutes * 60,
                                         service_config.status_poll_seconds)
-        # Set once the archive is in the bucket. Everything that cleans up consults it, so that a
-        # delete is only issued for an object that can exist.
+        # Set once the archive is in the bucket, so a delete is only issued for an object that exists.
         self._uploaded = False
 
     def run(self) -> None:
         """
         Runs the task to one of its end states. Never raises.
 
-        It must never raise: it is the body of a thread-pool task, and an exception escaping here would
-        be stored in a future nobody reads - the task would stay RUNNING until the cleaner noticed, and
-        the log would say nothing. So every path ends in a status report or an explained decision not
-        to report one.
-
-        `finally` runs whatever happened, including on a `return` from inside the `try`. It is where the
-        scratch directory goes, because that has to happen on every path and there are six of them.
+        Every path ends in a status report or an explained decision not to report one. The `finally`
+        removes the scratch directory, which has to happen on all six paths.
         """
         threading.current_thread().name = f'task-{self._task.id[:8]}'
         started = time.monotonic()
@@ -145,22 +121,20 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         except StopRequested as stop:
             self._finish_stopped(stop.reason)
         except ThresholdExceeded as exceeded:
-            # Expected, and the user's to act on - they asked for too much. Logged as a warning, not an
-            # error, and the message goes to them unchanged.
+            # The user asked for too much, so a warning rather than an error, and the message goes to
+            # them unchanged.
             LOG.warning('Task %s rejected: %s', self._task.id, exceeded)
             self._finish_failed(str(exceeded))
         except (UnsupportedSource, InvalidTask, CredentialsUnavailable) as unsupported:
             LOG.warning('Task %s cannot be executed: %s', self._task.id, unsupported)
             self._finish_failed(str(unsupported))
         except ApiRejected as rejected:
-            # The API refused something mid-flight, which in practice means the task is no longer ours.
-            # Reporting a failure would be refused for the same reason, so clean up and say why.
+            # The task is no longer ours, so reporting a failure would be refused too.
             LOG.warning('Task %s was refused by the API (%s), dropping the work', self._task.id,
                         rejected)
             self._discard_archive()
         except Exception as error:
-            # The catch-all. `LOG.exception` writes the message together with the traceback, which is
-            # the one thing that makes an unexpected failure diagnosable; the user gets the short form.
+            # `LOG.exception` adds the traceback; the user gets the short form.
             LOG.exception('Task %s failed unexpectedly', self._task.id)
             self._finish_failed(f'Internal error of the archive service: {error}')
         finally:
@@ -186,10 +160,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Works out which bucket the archive goes to and under which key.
 
-        Done before a byte is downloaded: a destination that cannot be read is cheap to fail on now and
-        expensive to fail on after the packing. A refusal means the archive storage was deleted or is
-        not visible to this service, which is a configuration problem and not this task's fault - so it
-        is reported as one, with `InvalidTask`, rather than as an internal error.
+        Done before a byte is downloaded. A refused destination is a configuration problem rather
+        than this task's fault, so it is reported as `InvalidTask`.
         """
         if self._bucket is not None:
             return
@@ -199,16 +171,13 @@ class ArchivePreparationWorker(AsyncTaskWorker):
             raise InvalidTask(f'The archive storage this service is configured with is not available: '
                               f'{rejected}') from rejected
         if storage.type is not StorageType.S3:
-            # Checked here because the failure otherwise arrives from the client builder as "belongs to
-            # no cloud region", which names the wrong problem. `open_source` makes the same check for
-            # the storage being read; this is the destination's half of it.
+            # Without this the failure arrives from the client builder as "belongs to no cloud
+            # region", which names the wrong problem.
             raise InvalidTask(f'The archive storage this service is configured with, {storage.name}, '
                               f'is of type {storage.type}, which this service cannot write an archive '
                               f'to')
-        # A client for the destination storage, in the destination's own region and through the
-        # destination's own role - which may be neither the source's region nor its role. A region that
-        # cannot be read arrives as `CredentialsUnavailable` and ends the task with the reason named,
-        # the same treatment the source storage gets in `_open_source`.
+        # The destination's own region and role, which may be neither the source's region nor its
+        # role. A region that cannot be read ends the task as `CredentialsUnavailable`.
         self._bucket = ArchiveBucket(storage.root, self._config.part_size_bytes,
                                      build_s3_client(self._api, storage))
         self._key = absolute_key(storage.prefix, self._relative_key)
@@ -217,22 +186,14 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Loads the storage behind the task and opens a source over it.
 
-        The two calls are here together for one reason: both go to the API, and both can be *refused*
-        rather than merely fail - the storage was deleted after the task was created, or the file share
-        it lives on was. A refusal is turned into `InvalidTask`, so the task ends as `FAILED` with a
-        message naming what is missing.
-
-        Without this, `run`'s `except ApiRejected` arm would take it. That arm means "the API will not
-        let us report anything about this task any more", and it reports nothing at all - so the task
-        would stay `RUNNING` until the cleaner failed it hours later with a message about a worker that
-        vanished, which is both wrong and useless to the user.
+        A refusal here means the storage or its file share was deleted after the task was created,
+        and becomes `InvalidTask` so the task fails with the reason named. Left to `run`'s
+        `ApiRejected` arm it would report nothing and the task would hang until the cleaner.
         """
         try:
             storage = self._api.load_storage(self._task.storage_id)
             return open_source(self._api, storage, self._config)
         except ApiRejected as rejected:
-            # `raise ... from rejected` keeps the original exception as the cause, so the log shows both
-            # the refusal and the decision made about it.
             raise InvalidTask(f'The storage this archive was requested from is not available any '
                               f'more: {rejected}') from rejected
 
@@ -240,23 +201,13 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Walks the selection once, measuring it, and splits it into what can be read and what cannot.
 
-        One pass for both thresholds, and the pass stops at the first one breached. That is why the
-        thresholds are the executor's to enforce and not the API's: the API accepts the request without
-        measuring it, because measuring means this walk, which takes minutes on a large selection and
-        would hold an HTTP request open for all of it.
+        One pass for both thresholds, stopping at the first one breached. Measuring means this walk,
+        which is why the thresholds are the executor's to enforce and not the API's.
 
-        Only readable files are counted. A file in Glacier is neither downloaded nor packed, so
-        counting it against a limit on what gets packed would reject a selection for work nobody does.
+        Only readable files are counted: a file in Glacier is never packed.
 
-        The stop check is per file, not per batch of files. It looks wasteful and is not: `check` is a
-        comparison of two numbers unless `status_poll_seconds` has elapsed, and the cost of the
-        alternative is a cancellation nobody notices. A selection of four hundred Glacier objects needs
-        a `HEAD` each, takes minutes, and would otherwise be checked exactly once - so the promise that
-        a cancellation is noticed within `status_poll_seconds` would hold only for large selections.
-
-        `tuple[list[...], list[...]]` as a return type is a pair. Returning several values is ordinary
-        in Python - `return a, b` builds a tuple and `x, y = f()` takes it apart - and it is preferred
-        over a holder class for a result that is consumed immediately, by one caller.
+        The stop check is per file, not per batch. `check` is a comparison of two numbers unless the
+        poll interval has elapsed, and a selection of four hundred Glacier objects needs a HEAD each.
         """
         files: list[SourceFile] = []
         unreadable: list[SourceFile] = []
@@ -278,16 +229,12 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Checks the selection against the preference, naming whichever threshold was breached.
 
-        The message is written for the user who asked for the archive: it says what they asked for,
-        what the limit is, and therefore what to do about it. `None` means the administrator removed
-        that limit, and `is not None` rather than a truth test is what makes a configured zero mean
-        zero.
+        `None` means the administrator removed that limit; `is not None` rather than a truth test, so
+        a configured zero means zero.
 
-        Both limits exist because each misses what the other catches. A selection of two hundred
-        thousand one-kilobyte files is two hundred megabytes - nothing by size, nowhere near the
-        default hundred gigabytes - but it is two hundred thousand separate downloads, which at a few
-        files per second runs past any sane time limit. Conversely one ten-terabyte file is a single
-        download that no file count would stop.
+        Both limits exist because each misses what the other catches: two hundred thousand small
+        files are nothing by size and still two hundred thousand downloads, while one huge file is a
+        single download no file count would stop.
         """
         limit_files = self._archive_config.max_files_count
         if limit_files is not None and count > limit_files:
@@ -304,12 +251,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Checks that the scratch directory can hold the archive before a byte is downloaded.
 
-        Without this the task fails somewhere in the middle of packing, with whatever message the
-        operating system gives for a full disk, after having spent however long it took to get there.
-
-        The estimate is the sum of the selection plus its largest single file: the archive may compress
-        well or not at all, and one file sits next to it, downloaded, on its way in. `default=0` keeps
-        `max` from raising on an empty selection, which is a thing a user can ask for.
+        The estimate is the selection plus its largest single file, which sits next to the archive on
+        its way in.
         """
         needed = total + max((found.size for found in files), default=0)
         free = shutil.disk_usage(self._config.work_dir).free
@@ -324,18 +267,11 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Downloads the files one at a time and writes each into the ZIP.
 
-        One at a time, and through a local file rather than straight into the ZIP stream, because a
-        download that fails halfway must not leave half a file in the archive. The cost is a write and
-        a read of every byte on local disk; the gain is that one unreadable file costs that file and
-        not the whole task.
+        Through a local file rather than straight into the ZIP stream, so a download that fails
+        halfway does not leave half a file in the archive. A file that fails is noted and skipped:
+        a user whose nine hundred and ninety-ninth file has a permission problem wants the rest.
 
-        A file that fails to download is noted and skipped, exactly like one that was archived in
-        Glacier. A user who asked for a thousand files and whose nine hundred and ninety-ninth has a
-        permission problem wants the other nine hundred and ninety-nine.
-
-        `zipfile` writes a ZIP64 archive by itself when it needs to, so neither a single file above 4
-        GiB nor an archive above it is a special case. Deflate at a low level is a deliberate choice -
-        see `ServiceConfig.compress_level`.
+        `zipfile` writes ZIP64 by itself when it needs to, so a file above 4 GiB is not a special case.
         """
         archive_path = self._task_dir / LOCAL_ARCHIVE_NAME
         temp_path = self._task_dir / DOWNLOAD_TEMP_NAME
@@ -347,8 +283,7 @@ class ArchivePreparationWorker(AsyncTaskWorker):
                 try:
                     source.download(found, temp_path, self._watcher.check)
                 except StopRequested:
-                    # Not a failure of this file - the whole task is being abandoned. Let it through;
-                    # the `with` closes the half-written archive and `run` deletes the directory.
+                    # Not a failure of this file - the whole task is being abandoned.
                     raise
                 except Exception as error:
                     LOG.warning('Task %s: cannot read %s (%s), skipping it', self._task.id,
@@ -356,15 +291,12 @@ class ArchivePreparationWorker(AsyncTaskWorker):
                     failed.append((found.path, str(error)))
                     temp_path.unlink(missing_ok=True)
                     continue
-                # `arcname` is the name inside the archive. Without it the entry would carry the local
-                # temporary path, and every file in the archive would be called `current.part`.
+                # Without `arcname` every entry would be called `current.part`.
                 archive.write(temp_path, arcname=found.path)
                 temp_path.unlink(missing_ok=True)
             if unreadable or failed:
-                # `writestr` adds an entry from a string, with no file behind it. The name is chosen
-                # against what is already in the archive: `zipfile` would happily write a second entry
-                # under a name that is already there, and most extraction tools keep the last one - so
-                # a selection containing its own `README.txt` would have it replaced by our note.
+                # The name is chosen against what is already in the archive: `zipfile` would happily
+                # write a second entry under a name that is taken, and most tools keep the last one.
                 archive.writestr(_note_name(archive.namelist()),
                                  _skipped_note(unreadable, failed))
         LOG.info('Task %s packed %s file(s), %s skipped', self._task.id,
@@ -375,10 +307,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Puts the archive in the bucket and returns its size.
 
-        `_uploaded` is set only after the upload returned, and it is what every cleanup path consults.
-        An upload interrupted halfway leaves no object - `ArchiveBucket` aborts its multipart upload on
-        the way out - so a delete issued for it would be pointless, and the flag keeps us from issuing
-        one.
+        `_uploaded` is set only after the upload returned: an interrupted upload leaves no object, so
+        a delete issued for it would be pointless.
         """
         self._watcher.check()
         size = self._bucket.upload(archive_path, self._key, self._watcher.check)
@@ -391,24 +321,16 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Reports success, and deletes the archive if the report is refused.
 
-        The refusal is the interesting case. It means the task is not RUNNING any more - the cleaner
-        failed it as stuck while we were working, most likely - so nothing will ever point at the
-        archive we have just uploaded. Leaving it would be a file nobody can reach and nobody will
-        clean up, since the cleaner only expires archives of tasks that *did* succeed.
+        A refusal means the task is not RUNNING any more, so nothing will ever point at the archive -
+        and the cleaner only expires archives of tasks that did succeed.
         """
         result = {
-            # The discriminator of the polymorphic result. Jackson selects `DownloadArchiveResult` by
-            # it, and refuses the whole report if it is missing or names another type.
+            # Jackson selects `DownloadArchiveResult` by this, and refuses the report without it.
             'type': AsyncTaskType.DOWNLOAD_ARCHIVE,
-            # Where the archive actually went. Reported rather than left to be derived later, because
-            # the destination is a preference an administrator may change: after a change, a derived
-            # location points at a key that was never written, the signed link gives the user a 404,
-            # and - since deleting an absent key succeeds - the expiry cleanup reports a clean delete
-            # while the real object stays where it was for ever.
-            # A snapshot of the destination as it was when this archive was written, and only of the
-            # parts that are settings: the key's own tail is `<taskId>.zip` and the API derives it, so
-            # reporting the whole key would store a second copy of something already known and let it
-            # disagree with the task it belongs to.
+            # Where the archive went, reported rather than derived later: the destination is a
+            # preference an administrator may change, and after a change a derived location points at
+            # a key that was never written. Only the settings half is stored - the API derives the
+            # `<taskId>.zip` tail.
             'storageId': self._archive_config.destination_storage_id,
             'path': self._relative_key,
             'archiveSizeBytes': size,
@@ -422,10 +344,9 @@ class ArchivePreparationWorker(AsyncTaskWorker):
                         self._task.id, rejected)
             self._discard_archive()
         except ApiError as error:
-            # The report could not be delivered at all, after retries. The archive stays: the cleaner
-            # will fail the task as stuck and delete the object, which is the right outcome, and
-            # deleting it here would only make a window where the task is SUCCESS with nothing behind
-            # it if the report did in fact arrive.
+            # Not delivered at all. The archive stays: the cleaner will fail the task as stuck and
+            # delete the object, and deleting it here would leave SUCCESS with nothing behind it if
+            # the report did arrive.
             LOG.error('Task %s succeeded but its report could not be delivered (%s); the cleaner '
                       'will clean it up', self._task.id, error)
 
@@ -433,14 +354,11 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Ends a task that was going fine until it was asked to stop, or ran out of time.
 
-        `ABANDONED` is the one case that reports nothing. The task is already in a terminal status, so
-        every transition would be refused, and the only thing left to do is to not leave an archive
-        behind.
+        `ABANDONED` reports nothing: the task is already terminal, so every transition is refused.
 
-        For the other two the task is moved to `STOPPING` first. It is not required - `RUNNING` may go
-        straight to `FAILED` - and it is worth the extra call: cleaning up a large archive takes time,
-        a user watching the task sees why it is not finished yet, and the cleaner's stuck-task window
-        starts again from the moment the status changed rather than running out mid-cleanup.
+        The other two go through `STOPPING` first. Not required, and worth the extra call: a user
+        watching the task sees why it is not finished, and the cleaner's stuck window starts again
+        rather than running out mid-cleanup.
         """
         if reason == StopReason.ABANDONED:
             LOG.warning('Task %s is already finished on the API side, dropping its archive',
@@ -468,10 +386,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Reports a status and swallows whatever comes back.
 
-        Called only from paths that are already ending the task, where there is nothing left to do
-        about a failure and raising would replace the real reason with a reporting error. A task left
-        in a non-terminal status by a failure here is the cleaner's to finish, which is exactly what the
-        cleaner is for.
+        Called only from paths that are already ending the task. A task left in a non-terminal status
+        by a failure here is the cleaner's to finish.
         """
         try:
             self._api.report_status(self._task.id, status, error_message=error_message)
@@ -488,8 +404,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
             self._bucket.delete(self._key)
             self._uploaded = False
         except Exception as error:
-            # Logged as an error and not raised: the task is ending either way, and an operator needs
-            # to know about an object that is now unreferenced.
+            # Not raised: the task is ending either way, and an operator needs to know about an
+            # object that is now unreferenced.
             LOG.error('Task %s: cannot delete its archive %s (%s). It stays in the bucket',
                       self._task.id, self._key, error)
 
@@ -497,9 +413,8 @@ class ArchivePreparationWorker(AsyncTaskWorker):
         """
         Removes the scratch directory with everything in it.
 
-        `ignore_errors=True` because this is the last thing a worker does: a file that cannot be deleted
-        is worth a log line, not an exception at the end of a task that otherwise went well. The
-        cleaner cleanups directories left behind by workers that never got here at all.
+        `ignore_errors=True` because this is the last thing a worker does. Directories left by
+        workers that never got here are the cleaner's.
         """
         if not self._task_dir.exists():
             return
@@ -513,10 +428,7 @@ def _note_name(taken: list[str]) -> str:
     """
     Picks a name for the note that no file in the archive already uses.
 
-    `README.txt` first, because that is where a person looks. A selection that contains one of its own
-    gets the fallback, and in the case nobody will ever see - a selection containing both - a number is
-    appended until the name is free. `itertools.count()` counts from 2 upwards with no end, which is
-    safe here only because the loop always leaves on the first free name.
+    `README.txt` first, because that is where a person looks; then the fallback; then a number.
     """
     for candidate in (SKIPPED_NOTE_NAME, SKIPPED_NOTE_FALLBACK):
         if candidate not in taken:
@@ -532,12 +444,8 @@ def _skipped_note(unreadable: list[SourceFile], failed: list[tuple[str, str]]) -
     """
     The text of the note added to an archive that is missing something.
 
-    Written as a text file inside the archive rather than only reported in the task, because the
-    archive outlives the task - it is downloaded, moved, shared - and the question "is this everything
-    I asked for?" is asked while looking at the unpacked folder.
-
-    `'\\n'.join(lines)` is how a multi-line string is built: a list of lines, joined once. Repeated
-    `text += line` would work and would copy the whole string every time.
+    Inside the archive and not only in the task, because the archive outlives the task and the
+    question is asked while looking at the unpacked folder.
     """
     lines = ['Some of the files you asked for are not in this archive.', '']
     for found in unreadable:
@@ -550,13 +458,7 @@ def _skipped_note(unreadable: list[SourceFile], failed: list[tuple[str, str]]) -
 
 
 def _human(size: int) -> str:
-    """
-    Formats a byte count for a message a user reads: `1.5 GiB` rather than `1610612736`.
-
-    The loop divides by 1024 until the number is small, which is the whole of it. `:.1f` keeps one
-    decimal; the unit list ends at TiB because nothing here is bigger, and the loop leaves the number
-    in TiB if it ever is.
-    """
+    """Formats a byte count for a user: `1.5 GiB` rather than `1610612736`."""
     value = float(size)
     for unit in ('B', 'KiB', 'MiB', 'GiB'):
         if abs(value) < 1024:

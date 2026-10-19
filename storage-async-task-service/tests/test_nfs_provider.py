@@ -15,10 +15,8 @@
 """
 Tests of how a selection on a mounted share is expanded.
 
-The mounting itself is not exercised - it needs `mount`, a server and root - so `_ensure_mounted` is
-replaced and the "mount point" is a directory pytest made. What is exercised is the walk over it, and
-above all what it reports for a path that is not there: the same promise the S3 source keeps, since the
-archive's note is the only place a user learns that something they ticked is missing.
+Mounting needs `mount`, a server and root, so `_ensure_mounted` is replaced and the mount point is a
+pytest directory. What a missing path reports is the point: it has to reach the archive's note.
 """
 
 from pathlib import Path

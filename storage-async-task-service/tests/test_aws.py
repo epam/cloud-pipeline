@@ -15,22 +15,15 @@
 """
 Tests of how an S3 client is built: which role it assumes, and which region it talks to.
 
-Nothing here reaches AWS or STS. Building a boto3 client makes no call, and the credentials installed
-for an assumed role are *deferred* - botocore calls STS the first time a request needs signing, which no
-test does. So what is asserted is the configuration: the role in the fetcher, the region on the client,
-and the endpoint.
-
-Two private attributes are read, and both are the only way to the thing under test:
-`client._request_signer._credentials` is where the installed credentials end up, and the fetcher's own
-`_role_arn` is the only record of which role would be assumed. Signing a real request would need a
-network.
+Nothing reaches AWS: assumed credentials are deferred until a request needs signing, so what is
+asserted is the configuration. Two private attributes are read because they are the only record of it.
 """
 
 import pytest
 from botocore.credentials import DeferredRefreshableCredentials
 
 from sats.cloud.aws import ROLE_SESSION_NAME, build_s3_client, resolve_role_arn
-from sats.errors import CredentialsUnavailable
+from sats.util.errors import CredentialsUnavailable
 from sats.model import ArchiveTask, CloudRegion, Storage, StorageType, TaskStatus
 
 from .fakes import FakeApi
@@ -86,11 +79,9 @@ def test_falls_back_to_the_regions_temp_role_for_a_storage_that_names_none():
 
 
 def test_an_ordinary_storage_is_reached_through_the_regions_iam_role():
-    # The case that matters most, because it is the ordinary one: `useAssumedCredentials` is off by
-    # default. `iamRole` was added in issue 2235 exactly so the platform could assume a role to reach a
-    # storage, while `tempCredentialsRole` is what it assumes to hand a *user* narrowed credentials.
-    # Preferring the latter here would read every normal storage through the wrong role - and silently,
-    # since `AwsRegion.tempCredentialsRole` is marked "Not empty" and is therefore always set.
+    # The ordinary case, since `useAssumedCredentials` is off by default. `iamRole` is what the
+    # platform assumes to reach a storage, while `tempCredentialsRole` is what it narrows for a
+    # user - and it is always set, so preferring it would silently use the wrong role.
     role = resolve_role_arn(_storage(role='arn:aws:iam::111:role/storage'),
                             _region(temp_credentials_role='arn:aws:iam::222:role/temp',
                                     iam_role='arn:aws:iam::222:role/iam'))
@@ -99,10 +90,8 @@ def test_an_ordinary_storage_is_reached_through_the_regions_iam_role():
 
 
 def test_falls_back_to_the_regions_storage_role_when_it_has_no_iam_role():
-    # This service's own last step, and the one that makes a deployment work where only
-    # `tempCredentialsRole` is filled in - which is the usual state, since that field is the older of
-    # the two. The platform falls back to the host's own S3 access here; this service assumes the role
-    # the deployment recorded for its storages instead, from the node's instance profile.
+    # This service's own last step, and what makes a deployment work where only
+    # `tempCredentialsRole` is filled in. The platform falls back to the host there instead.
     role = resolve_role_arn(_storage(), _region(temp_credentials_role='arn:aws:iam::222:role/temp'))
 
     assert role == 'arn:aws:iam::222:role/temp'

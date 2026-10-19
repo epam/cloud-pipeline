@@ -1,12 +1,7 @@
-// Packages the service as a source distribution, the same way storage-lifecycle-service does: the
-// version from the root build is written into sats/version.py, `setup.py sdist` builds the tarball, and
-// the result is copied to a name without the version in it, so whatever installs it can refer to one
-// fixed name.
+// Builds the source distribution, as storage-lifecycle-service does: stamp the root build's version
+// into sats/util/version.py, run `setup.py sdist`, copy the result to a fixed name.
 //
-// sats/version.py is a tracked file, and rewriting a tracked file during a build is a thing to undo
-// properly. The original text is kept in memory and put back by a `finalizedBy` task, which Gradle runs
-// even when the task it finalizes fails - so an sdist that breaks halfway does not leave a generated
-// version string in the working tree.
+// version.py is tracked, so `finalizedBy` puts the original text back even when the build fails.
 
 ext.savedVersionText = null
 
@@ -21,22 +16,24 @@ task build(type: Exec) {
     finalizedBy restoreVersionFile
     doFirst {
         saveVersion()
-        setVersion(version)
+        // `project.version`, not a bare `version`: inside a task action the delegate is the task,
+        // and an `Exec` has no `version` property.
+        setVersion(project.version.toString())
     }
     commandLine 'python', "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
     doLast {
         copy {
-            from "$project.rootDir/storage-async-task-service/dist/sats-${version}.tar.gz"
+            from "$project.rootDir/storage-async-task-service/dist/sats-${project.version}.tar.gz"
             into "$project.rootDir/storage-async-task-service/dist/"
             rename { String fileName ->
-                fileName.replace("sats-${version}", "sats")
+                fileName.replace("sats-${project.version}", "sats")
             }
         }
     }
 }
 
 def versionFile() {
-    return file('sats/version.py')
+    return file('sats/util/version.py')
 }
 
 def saveVersion() {

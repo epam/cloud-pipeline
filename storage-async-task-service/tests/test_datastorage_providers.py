@@ -13,18 +13,14 @@
 # limitations under the License.
 
 """
-Tests of the factory that picks a source for a storage.
-
-The S3 branch is the one with something to get wrong: it builds the client before the source, from the
-storage's own cloud region, so the source it returns already talks to the right region through the right
-role. The unsupported branch is here because a storage type nobody implemented has to fail with its type
-named, rather than reach a source class that cannot read it.
+Tests of the factory that picks a source for a storage: the S3 branch builds its client from the
+storage's own region, and an unsupported type fails with its type named.
 """
 
 import pytest
 
 from sats.config import ServiceConfig
-from sats.errors import UnsupportedSource
+from sats.util.errors import UnsupportedSource
 from sats.model import ArchiveTask, Storage, StorageType, TaskStatus
 from sats.datastorage_providers import open_source
 from sats.datastorage_providers.s3 import S3Source

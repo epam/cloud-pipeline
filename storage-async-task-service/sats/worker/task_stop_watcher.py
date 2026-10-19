@@ -15,13 +15,11 @@
 """
 The one thing that lets a worker be stopped at all.
 
-**A Python thread cannot be stopped from outside.** There is no `Thread.stop()`, no interrupt, nothing
-an orchestrator can do to a worker that must give up its task. So a worker stops itself: it asks this
-class at every point where abandoning the work is safe, and the class raises when the answer is no.
+A Python thread cannot be stopped from outside, so a worker stops itself: it asks this class wherever
+abandoning the work is safe, and the class raises when the answer is no.
 
-It lives in its own module because every kind of worker needs it, not only the one that prepares
-archives: the reasons to stop - the user cancelled, we ran too long, somebody else finished the task -
-belong to the task, not to what is being done with it.
+It is in its own module because the reasons to stop belong to the task rather than to what is being
+done with it.
 """
 
 from __future__ import annotations
@@ -29,8 +27,8 @@ from __future__ import annotations
 import time
 
 from ..api import CloudPipelineApi
-from ..errors import ApiError, ApiRejected, StopReason, StopRequested
-from ..log import get_logger
+from ..util.errors import ApiError, ApiRejected, StopReason, StopRequested
+from ..util.log import get_logger
 from ..model import TaskStatus
 
 LOG = get_logger(__name__)
@@ -40,17 +38,11 @@ class TaskStopWatcher:
     """
     Answers one question - may this worker carry on? - and raises when the answer is no.
 
-    Two independent reasons to stop, with deliberately different costs:
+    Two reasons to stop, with different costs: the deadline is local arithmetic and is checked on
+    every call, while a cancellation has to be read from the API and so is checked at most once per
+    `status_poll_seconds`. That throttle is what keeps the load at one call per worker per interval.
 
-      * **the deadline** is local arithmetic, so it is checked on every call;
-      * **a cancellation** has to be read from the API, so it is checked at most once per
-        `status_poll_seconds`. With one poll per worker per interval, the load this puts on the API is
-        the number of slots divided by the interval, and that is the whole reason the throttle exists.
-
-    Time is measured with `time.monotonic()`, never with the clock. A monotonic clock only ever moves
-    forward at a steady rate; the wall clock can jump - NTP correcting a drift, a container resuming,
-    a daylight-saving change - and a deadline measured against it can jump an hour into the past or
-    the future.
+    Time is measured with `time.monotonic()`, never with the clock, which can jump.
     """
 
     def __init__(self, api: CloudPipelineApi, task_id: str, deadline_seconds: float,
@@ -59,17 +51,16 @@ class TaskStopWatcher:
         self._task_id = task_id
         self._deadline = time.monotonic() + deadline_seconds
         self._poll_seconds = poll_seconds
-        # The first poll is due one interval from now: the task was handed to us as RUNNING a moment
-        # ago, so asking again immediately would learn nothing.
+        # The first poll is due one interval from now: the task was handed over as RUNNING a moment
+        # ago, so asking again at once would learn nothing.
         self._next_poll = time.monotonic() + poll_seconds
 
     def check(self) -> None:
         """
         Raises `StopRequested` if the task should be abandoned. Returns nothing otherwise.
 
-        A method called for its exceptions rather than its value reads oddly at first, and it is the
-        right shape here: the alternative is a boolean every caller has to remember to act on, in a
-        loop that copies a file, where forgetting is both easy and invisible.
+        Raising rather than returning a boolean: the alternative is a flag every caller has to
+        remember to act on, inside a loop that copies a file.
         """
         now = time.monotonic()
         if now >= self._deadline:
@@ -80,13 +71,13 @@ class TaskStopWatcher:
         try:
             status = self._api.load_task(self._task_id).status
         except (ApiError, ApiRejected) as error:
-            # The API being briefly unreachable is not a reason to throw away work in progress. The
-            # next check tries again; if the API stays down, the deadline eventually stops us anyway.
+            # An API that is briefly unreachable is no reason to throw away work in progress. If it
+            # stays down, the deadline stops us anyway.
             LOG.warning('Cannot read the status of task %s (%s), carrying on', self._task_id, error)
             return
         if status == TaskStatus.CANCEL_REQUESTED:
             raise StopRequested(StopReason.CANCELLED)
         if status.is_terminal:
-            # Somebody else ended this task - the cleaner failing it as stuck, in practice. Nothing we
-            # report will be accepted, and the archive we are building belongs to nobody.
+            # Somebody else ended this task - the cleaner failing it as stuck, in practice. Nothing
+            # we report would be accepted, and the archive belongs to nobody.
             raise StopRequested(StopReason.ABANDONED)

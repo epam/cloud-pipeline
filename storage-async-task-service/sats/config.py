@@ -15,19 +15,12 @@
 """
 The two kinds of settings this service has, kept apart on purpose.
 
-`ServiceConfig` is ours: how many workers, where the scratch directory is, how often to poll. It comes
-from the command line and the environment, it is read once at startup, and changing it means restarting
-the container. Nobody but an operator of this service cares about any of it.
+`ServiceConfig` is ours: slots, scratch directory, poll intervals. Read once at startup from the
+command line and the environment.
 
-`StorageDownloadArchiveConfig` is the platform's: the bucket, the thresholds, the time limits. It
-comes from the
-`storage.download.archive.config` preference, it is read anew on every round of the loop, and an
-administrator changing it in the UI takes effect without a restart. The field names mirror
-`DownloadArchiveConfig` on the Java side one for one.
-
-Keeping them in separate types makes the reload boundary visible: anything in
-`StorageDownloadArchiveConfig` may
-differ from one task to the next, anything in `ServiceConfig` cannot.
+`StorageDownloadArchiveConfig` is the platform's: the bucket, the thresholds, the time limits. Read
+from the `storage.download.archive.config` preference on every round, so a change in the UI applies
+without a restart. Its field names mirror `DownloadArchiveConfig` on the Java side.
 """
 
 from __future__ import annotations
@@ -37,14 +30,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# The preference that holds everything tunable about archive downloads. Keep in step with
-# `SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG`.
+# Keep in step with `SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG`.
 PREFERENCE_KEY = 'storage.download.archive.config'
 
-# Fallbacks used when the preference exists but leaves a field out. They repeat the defaults declared
-# in `SystemPreferences`, so that a half-filled preference behaves like an untouched one rather than
-# like an unlimited one. A field present and set to `null`, on the other hand, is honoured as written -
-# see `from_preference`.
+# Used when the preference leaves a field out. They repeat the defaults in `SystemPreferences`, so a
+# half-filled preference behaves like an untouched one. A field present as `null` is honoured as
+# written - see `from_preference`.
 DEFAULT_DESTINATION_PREFIX = 'archives/'
 DEFAULT_MAX_SIZE_BYTES = 107374182400  # 100 GiB
 DEFAULT_MAX_FILES_COUNT = 100000
@@ -56,11 +47,10 @@ DEFAULT_STUCK_TASKS_THRESHOLD_MINUTES = 360
 
 def normalise_prefix(configured: str | None) -> str:
     """
-    The destination prefix with exactly one trailing slash and no leading one.
+    The destination prefix with one trailing slash and no leading one.
 
-    Mirrors `DataStorageDownloadArchiveManager.archivePrefix`, and the two have to agree: the API
-    derives the same key when it signs a link for a task whose executor never reported one. Blank means
-    `archives/`; a lone slash means the archives sit at the root of the bucket.
+    Mirrors `DataStorageDownloadArchiveManager.archivePrefix`, and the two must agree: the API derives
+    the same key for a task whose executor never reported one. A lone slash means the bucket root.
     """
     if not configured or not configured.strip():
         configured = DEFAULT_DESTINATION_PREFIX
@@ -70,50 +60,40 @@ def normalise_prefix(configured: str | None) -> str:
 
 @dataclass(frozen=True, slots=True)
 class ServiceConfig:
-    """Settings of this process. See `app.py` for the flag and environment variable behind each one."""
+    """Settings of this process. See `app.py` for the flag and variable behind each one."""
 
-    # Base url of the platform API, including the `/restapi` part, e.g.
-    # `https://cp.example.com/pipeline/restapi`.
+    # Base url of the platform API, including `/restapi`.
     api_url: str
-    # A system administrator's JWT. Never logged - see `api.py`, which keeps it out of its own
-    # debug output.
+    # A system administrator's JWT. Never logged.
     api_token: str
-    # Scratch space. One subdirectory per task, deleted when the task ends. Must be large enough for
-    # the biggest archive the thresholds allow, times the number of slots, plus the one file being
-    # downloaded at that moment.
+    # Scratch space, one subdirectory per task. Must hold the biggest allowed archive times `slots`,
+    # plus the file being downloaded.
     work_dir: Path
     # How many tasks may run at once. One slot is one thread.
     slots: int = 2
     # How long the loop sleeps when it found nothing to claim.
     poll_interval_seconds: int = 20
-    # How often the cleanups run. They cost three `async-task/filter` calls and a walk of the work
-    # directory, and nothing they look for appears in seconds: the thresholds they act on are
-    # `stuckTasksThresholdMinutes` and `ttlDays`. So they are throttled separately from the loop, which
-    # has to stay fast because it is also what claims new tasks. `0` turns them off entirely, for a
-    # deployment that runs the cleanups elsewhere - the service says so loudly at startup, because
-    # without them a task whose worker died stays `RUNNING` for ever and counts against its owner's
-    # quota.
+    # How often the cleanups run. Separate from the loop, which has to stay fast because it also
+    # claims tasks, while the cleanups act on thresholds measured in minutes and days. `0` turns them
+    # off for a deployment that runs them elsewhere; the service warns about it at startup, because
+    # without them a task whose worker died stays `RUNNING` for ever.
     cleanup_interval_seconds: int = 300
-    # How often a running worker asks the API whether its task is still wanted. The lower bound on how
-    # fast a cancellation is noticed; also, with as many workers as slots, the load this puts on the
-    # API.
+    # How often a running worker asks whether its task is still wanted. The lower bound on how fast a
+    # cancellation is noticed, and the load this puts on the API.
     status_poll_seconds: int = 15
-    # Part size for the multipart upload of the finished archive, and the read block size everywhere
-    # else. 8 MiB is a compromise: S3 allows at most 10000 parts, so this caps one archive at 80 GiB,
-    # and parts this size keep a single stream reasonably fast.
+    # Part size of the archive upload, and the read block size elsewhere. S3 allows 10000 parts, so
+    # 8 MiB caps one archive at 80 GiB before the part size is raised.
     part_size_bytes: int = 8 * 1024 * 1024
-    # ZIP deflate level, 0 (store only) to 9. 1 is deliberate: the input is usually already compressed
-    # research data, and level 6 would spend minutes of CPU per gigabyte to gain a few percent.
+    # ZIP deflate level, 0 to 9. 1 on purpose: the input is usually already compressed research data.
     compress_level: int = 1
     # Where NFS shares get mounted. One subdirectory per share.
     nfs_mount_root: Path = Path('/mnt/sats-shares')
-    # Hard limit on a `mount` call and on the liveness check of an existing mount point. A dead NFS
-    # server makes both hang forever by default, and a hung mount in a worker thread is unkillable.
+    # Hard limit on a `mount` call and on the liveness check of a mount point. A dead NFS server makes
+    # both hang for ever by default, and a hung mount in a worker thread cannot be killed.
     nfs_mount_timeout_seconds: int = 30
-    # Verify the API's TLS certificate. Off by default because a platform deployment normally signs its
-    # own, which is also what `pipe-common` does.
+    # Verify the API's TLS certificate. Off because a deployment normally signs its own.
     verify_ssl: bool = False
-    # Run one round of the loop and exit. For local runs and for a cron-style deployment.
+    # Run one round of the loop and exit.
     run_once: bool = False
 
 
@@ -122,13 +102,12 @@ class StorageDownloadArchiveConfig:
     """
     Mirror of `com.epam.pipeline.entity.datastorage.DownloadArchiveConfig`.
 
-    `None` in either threshold means "no limit". That is the platform's meaning, not an accident of
-    parsing: an administrator removing the value is removing the limit.
+    `None` in either threshold means "no limit", which is the platform's meaning: an administrator
+    removing the value is removing the limit.
     """
 
-    # Named after the Java fields, in snake case, rather than shortened. The mirror claim above is the
-    # whole safety of this class, and a shortened name is how it was broken once already: the
-    # preference parsed, the field stayed `None`, and the service quietly claimed nothing at all.
+    # Named after the Java fields rather than shortened. A shortened name broke this once: the
+    # preference parsed, the field stayed `None`, and the service claimed nothing.
     destination_storage_id: int | None
     destination_prefix: str
     max_size_bytes: int | None
@@ -141,25 +120,19 @@ class StorageDownloadArchiveConfig:
     @classmethod
     def from_preference(cls, raw: str | dict[str, Any] | None) -> StorageDownloadArchiveConfig:
         """
-        Parses the preference.
+        Parses the preference, which arrives as a JSON string in `payload.value`.
 
-        The preference arrives as a JSON *string* inside the API's answer - `payload.value` - because
-        the platform stores every preference as text. So it is parsed twice: once by the HTTP client to
-        get the envelope, once here to get the object. `isinstance` lets a caller pass either, which
-        keeps tests from having to serialise a dictionary just to have it parsed back.
+        Two ways of reading a field, and the difference is intentional:
 
-        Note the two ways a field is read, and that the difference is intentional:
-
-          * `raw.get('maxFilesCount', DEFAULT)` - the default applies only when the key is *absent*. A
-            key present as `null` yields `None`, which means unlimited;
-          * `raw.get('ttlDays') or DEFAULT` - `None` falls back to the default, because "no limit" is
-            not a meaning these fields have, and a missing TTL must not mean "keep archives forever".
+          * `raw.get('maxFilesCount', DEFAULT)` - the default applies only when the key is absent, so
+            a key present as `null` means unlimited;
+          * `raw.get('ttlDays') or DEFAULT` - "no limit" is not a meaning these fields have, and a
+            missing TTL must not mean "keep archives for ever".
         """
         if raw is None:
             raw = {}
         if isinstance(raw, str):
-            # An empty or whitespace-only preference value is not valid JSON and would raise. Treat it
-            # as an unset preference, which is what an administrator who cleared the field meant.
+            # A blank preference value is not valid JSON. Treat it as unset.
             raw = json.loads(raw) if raw.strip() else {}
         return cls(
             destination_storage_id=raw.get('destinationStorageId'),
@@ -179,30 +152,20 @@ class StorageDownloadArchiveConfig:
         """
         Whether a task can be executed at all.
 
-        Without a destination storage there is nowhere to put an archive, and a worker would do all the
-        reading and packing only to fail at the last step. The orchestrator checks this before claiming
-        anything and skips the round instead, leaving tasks pending until an administrator fills the
-        preference in - which they can do while the service runs.
+        Without a destination storage there is nowhere to put an archive. The orchestrator skips the
+        round instead of claiming, so tasks stay pending until an administrator fills it in.
         """
         return bool(self.destination_storage_id)
 
     def warnings(self) -> list[str]:
-        """
-        Settings that are valid but will misbehave, as a list of sentences to log.
-
-        Returned rather than logged so that the caller decides how often to repeat them; the
-        orchestrator logs them once per change, not once per round.
-        """
+        """Settings that are valid but will misbehave. Returned so the caller decides how often to log."""
         found = []
         if not self.destination_storage_id:
             found.append(f'Preference {PREFERENCE_KEY} has no destinationStorageId, no task can be '
                          f'executed')
         if self.stuck_tasks_threshold_minutes <= self.worker_max_running_minutes:
-            # The cleaner fails a task whose status has not changed within the stuck threshold. If that
-            # threshold is not strictly larger than the worker's own limit, plus the worker's poll
-            # interval and the time it needs to clean up and report, then the cleaner fails tasks whose
-            # workers are alive and about to stop by themselves. That worker then deletes the archive
-            # it has just uploaded, and the user sees a task that failed for no visible reason.
+            # Otherwise the cleaner fails tasks whose workers are alive and about to stop by
+            # themselves, and that worker then deletes the archive it has just uploaded.
             found.append(
                 f'Preference {PREFERENCE_KEY}: stuckTasksThresholdMinutes '
                 f'({self.stuck_tasks_threshold_minutes}) should exceed workerMaxRunningMinutes '

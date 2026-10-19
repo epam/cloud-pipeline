@@ -12,37 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The packaging description. `pip install -e .` and the gradle `sdist` task both read this file; it is
-# the Python equivalent of a `build.gradle` dependencies block plus a jar manifest.
+# Read by `pip install -e .` and by the gradle `sdist` task.
 
 from setuptools import find_packages, setup
 
-from sats.version import __version__
+from sats.util.version import __version__
 
 setup(
     name='sats',
     version=__version__,
-    # Finds `sats` and its subpackages by looking for directories holding an `__init__.py`. Listing them
-    # by hand is the alternative and goes stale the first time a package is added.
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
-    # Enforced by pip, not by the code: the service uses `StrEnum`, `match`, `datetime.UTC` and
-    # `Path.is_relative_to`, so an older interpreter fails at import with a syntax error rather than
-    # with anything helpful.
+    # The service uses `StrEnum`, `match` and `datetime.UTC`, so an older interpreter fails at
+    # import.
     python_requires='>=3.12',
     install_requires=[
-        # Exact pins, as elsewhere in this repository: a service that builds an archive from a user's
-        # data should not change behaviour because a transitive release happened overnight.
-        #
-        # `pipeline`, the platform's own API client from `workflows/pipe-common`, is deliberately not
-        # listed: it is not on any index, a container installs it from the API distribution, and
-        # naming it here would make `pip install .` fail everywhere. `requirements.txt` says the same
-        # at more length.
+        # Exact pins, as elsewhere in this repository. `pipeline` (pipe-common) is deliberately not
+        # listed: it is on no index, and naming it would make `pip install .` fail everywhere.
         'boto3==1.35.49',
         'botocore==1.35.49',
     ],
-    # Installs a `sats` command on the PATH that calls `sats.app.main`. The same string shape the
-    # lifecycle service uses for its own entry point.
+    # Installs a `sats` command that calls `sats.app.main`.
     entry_points='''
         [console_scripts]
         sats=sats.app:main

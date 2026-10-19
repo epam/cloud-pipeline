@@ -15,12 +15,8 @@
 """
 Tests of the loop: what gets claimed, and whether the slots come back.
 
-A lost slot is the worst failure this service has, because it is invisible: the process keeps running,
-keeps logging that all slots are busy, and never works on anything again until somebody restarts it.
-That is what most of this file is about.
-
-Every test runs with `run_once=True`, so `run()` does exactly one round and then waits for whatever it
-started - which makes the loop testable without a thread that has to be stopped.
+A lost slot is invisible - the process keeps running and never works on anything again - which is what
+most of this file is about. Every test runs with `run_once=True`, so `run()` does one round.
 """
 
 import json
@@ -28,7 +24,7 @@ import threading
 import time
 
 from sats.config import ServiceConfig
-from sats.errors import ApiError
+from sats.util.errors import ApiError
 from sats.model import ArchiveTask, TaskStatus
 from sats.orchestrator import Orchestrator
 
@@ -56,12 +52,7 @@ def _task(task_id):
 
 
 def _free_slots(orchestrator, limit):
-    """
-    How many slots can be taken right now.
-
-    Reaching into `_slots` is the point of the test: the count is the state that gets corrupted, and
-    there is no public way to ask for it.
-    """
+    """How many slots are free, read from the semaphore."""
     taken = 0
     while taken < limit and orchestrator._slots.acquire(blocking=False):
         taken += 1
@@ -69,15 +60,7 @@ def _free_slots(orchestrator, limit):
 
 
 class _RecordingWorker:
-    """
-    Stands in for whatever worker the registry would return, so that a round can be driven without a
-    storage behind it. `worker_for` is replaced rather than a worker class, because that is the only
-    name the orchestrator knows - which is the point of the registry.
-
-    `*args` accepts whatever the factory is called with; the task is the fourth argument. A fake that
-    listed the real constructor's parameters would have to be edited whenever one is added, and this
-    one only cares which task it was given.
-    """
+    """A worker that records the task it was given and returns at once."""
 
     started: list[str] = []
 
@@ -89,14 +72,7 @@ class _RecordingWorker:
 
 
 class _CountingWorker:
-    """
-    Stands in for the worker the registry returns, and records how many ran at the same time.
-
-    The counters are class attributes - shared by every instance, like a Java static field - because
-    the test needs one number across all the workers of a round. They are guarded by a lock: the
-    workers really do run on different threads, and `running += 1` is a read and a write that another
-    thread can land in the middle of.
-    """
+    """A worker that counts how many ran at the same time, and the peak."""
 
     lock = threading.Lock()
     running = 0
@@ -140,9 +116,8 @@ def test_claims_tasks_until_the_queue_is_empty(tmp_path, monkeypatch):
 
 
 def test_never_runs_more_workers_than_there_are_slots(tmp_path, monkeypatch):
-    # The invariant the slots exist for. Asserted on the peak rather than on how many tasks were
-    # claimed, because a worker finishing quickly frees its slot and the round claims again - which is
-    # correct, and would make a count flaky.
+    # Asserted on the peak rather than on how many tasks were claimed: a worker finishing quickly
+    # frees its slot and the round claims again, which would make a count flaky.
     api = _api()
     queue = [_task('a'), _task('b'), _task('c'), _task('d')]
     api.claim_next = lambda _type: queue.pop(0) if queue else None
@@ -158,9 +133,8 @@ def test_never_runs_more_workers_than_there_are_slots(tmp_path, monkeypatch):
 
 
 def test_a_claim_that_fails_unexpectedly_does_not_lose_a_slot(tmp_path):
-    # The failure the `try/finally` around the claim exists for. `_claim` handles the API's own
-    # exceptions; an `AttributeError` out of a mangled response is not one of them, and before the
-    # `finally` it would take the slot it was holding with it - permanently.
+    # The failure the `try/finally` around the claim exists for: an `AttributeError` out of a mangled
+    # response is not one `_claim` handles, and would take the slot with it permanently.
     api = _api()
 
     def explode(_task_type):
@@ -190,9 +164,8 @@ def test_claims_nothing_without_a_bucket(tmp_path, monkeypatch):
 
 
 def test_cleans_up_even_when_there_is_no_bucket(tmp_path):
-    # The cleanups have to run anyway: three of the four need nothing from the preference but the bucket
-    # name, and if clearing the preference stopped them, nothing would ever finish a cancellation or
-    # expire an archive again.
+    # The cleanups have to run anyway: three of the four need nothing from the preference, and
+    # stopping them would mean no cancellation is ever finished and no archive ever expires.
     api = _api(preference=json.dumps({'maxSizeBytes': 1024}))
     cleaned = []
 
@@ -208,10 +181,8 @@ def test_cleans_up_even_when_there_is_no_bucket(tmp_path):
 
 
 def test_cleans_up_on_the_first_round_and_then_waits_out_the_interval(tmp_path, monkeypatch):
-    # The cleanups cost three `async-task/filter` calls and a walk of the work directory, and nothing
-    # they look for appears in seconds, so they are throttled apart from the loop. The first round is
-    # the exception: a process that has just started is the one that has a dead worker's tasks to
-    # finish.
+    # Throttled apart from the loop, because nothing the cleanups look for appears in seconds. The
+    # first round is the exception: a process that just started has a dead worker's tasks to finish.
     clock = [1000.0]
     monkeypatch.setattr('sats.orchestrator.time.monotonic', lambda: clock[0])
     orchestrator = Orchestrator(_api(), _config(tmp_path, cleanup_interval=300))

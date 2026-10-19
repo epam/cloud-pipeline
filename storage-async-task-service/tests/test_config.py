@@ -15,10 +15,8 @@
 """
 Tests of reading `storage.download.archive.config`.
 
-The distinction worth testing here is between a field that is absent and a field that is present and
-`null`: the first falls back to the platform's default, the second means "no limit". Getting it wrong
-in either direction is bad - an unlimited archive, or a limit an administrator thought they had
-removed.
+The distinction that matters: an absent field falls back to the default, a field present as `null`
+means no limit.
 """
 
 import json

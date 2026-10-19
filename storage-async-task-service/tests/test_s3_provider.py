@@ -13,16 +13,11 @@
 # limitations under the License.
 
 """
-Tests of how a selection is expanded into objects.
+Tests of how a selection is expanded into objects, including what is reported for a path that
+produced nothing - it has to reach the archive's note.
 
-The subject is what the listing *reports*, including what it reports about a path that produced nothing.
-A path the user ticked and did not get has to end up in the archive's note, because the alternative -
-and what this service did until now - is an archive quietly missing a file with nothing anywhere saying
-so.
-
-The storage in these tests is `bucket/team`, a storage that is a folder inside a bucket rather than a
-whole one, because that is where the prefix handling can go wrong: a path in a task is relative to the
-storage, while a key in S3 is not.
+The storage is `bucket/team`, a folder inside a bucket, because that is where the prefix handling can
+go wrong.
 """
 
 from sats.model import Storage, StorageType
@@ -70,9 +65,8 @@ def test_reports_a_folder_that_holds_nothing():
 
 
 def test_reports_a_file_that_is_there_but_forbidden():
-    # Not the same as absent, and saying "nothing found" would send the user looking in the wrong
-    # place. With the role this service assumes, listing is granted alongside reading, so a 403 on a
-    # HEAD really is a denial.
+    # Not the same as absent, and "nothing found" would send the user looking in the wrong place.
+    # Listing is granted alongside reading here, so a 403 really is a denial.
     client = FakeS3Client({'team/secret.txt': 5}, denied={'team/secret.txt'})
 
     listed = _listed(client, 'secret.txt')

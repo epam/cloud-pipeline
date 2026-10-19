@@ -12,6 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Present so that the tests form a package and can share `fakes.py` through a relative import
-# (`from .fakes import FakeApi`). Without it, pytest would still find the tests, but the import would
-# fail.
+# Makes the tests a package, so they can share `fakes.py` through a relative import.
