@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-import {isAdmin} from '../utilities/access-permissinos';
-import roleModel from '../../../utils/roleModel';
+import {
+  isAdmin,
+  isRunAdmin,
+  isNodePoolManager
+} from '../utilities/access-permissinos';
 
-const {ROLE_RUN_ADMIN, ROLE_NODE_POOL_MANAGER} = roleModel.ROLES;
-
-// `userHasRole` resolves through `Array.find`, which returns the matching role object
-// rather than a strict boolean - coerced here so every capability below is a real
-// boolean, not a role object that happens to be truthy.
+// `isAdmin` hands back the user's own `admin` field rather than a strict boolean, so this
+// is coerced to keep every capability below a real boolean.
 function hasBlanketManageRights (user) {
-  return Boolean(isAdmin(user) || roleModel.userHasRole(user, ROLE_RUN_ADMIN));
+  return Boolean(isAdmin(user) || isRunAdmin(user));
 }
 
-// `NODE_POOL_CREATE`: ADMIN, RUN_ADMIN or NODE_POOL_MANAGER - never "every authenticated
-// user", which is what this used to assume. A user with none of the three gets a 403
-// from the backend on create, so the "+ Create" button must not be shown to them.
+// `NODE_POOL_CREATE`: ADMIN, RUN_ADMIN, or a NODE_POOL_MANAGER whose request carries a
+// capacity reservation (`#vo.capacityReservationRequest != null`) - never "every
+// authenticated user", which is what this used to assume. A user with none of the three
+// gets a 403 from the backend on create, so the "+ Create" button must not be shown to
+// them; the reservation conjunct is what `canCreateAnyMode` below honours, by forcing
+// that caller's Create into future dated mode.
 function canCreatePools (user) {
-  return hasBlanketManageRights(user) ||
-    Boolean(roleModel.userHasRole(user, ROLE_NODE_POOL_MANAGER));
+  return hasBlanketManageRights(user) || isNodePoolManager(user);
 }
 
 // Two distinct capabilities, deliberately not one boolean: an admin or a RUN_ADMIN
