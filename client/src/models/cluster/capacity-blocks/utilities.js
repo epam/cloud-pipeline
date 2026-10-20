@@ -40,7 +40,10 @@ export function findCapacityBlockPool (pools, instanceType, options = {}) {
   const matched = pools.filter((pool) => pool &&
     typeof pool.instanceType === 'string' &&
     pool.instanceType.toLowerCase() === type &&
-    (regionId === undefined || regionId === null || pool.regionId === regionId)
+    // Coerced, not `===`: callers hold `regionId` as a number in some places
+    // (`+this.capacityBlockRegionId`) and pass it straight through from a
+    // run/payload object (a string, over the wire) in others.
+    (regionId === undefined || regionId === null || `${pool.regionId}` === `${regionId}`)
   );
   if (!matched.length) {
     return undefined;
@@ -168,7 +171,7 @@ export function getCapacityBlockOptions (pools, instanceTypes, options = {}) {
   return pools
     .filter((pool) => pool &&
       typeof pool.instanceType === 'string' &&
-      (regionId === undefined || regionId === null || pool.regionId === regionId) &&
+      (regionId === undefined || regionId === null || `${pool.regionId}` === `${regionId}`) &&
       instanceTypeByName.has(pool.instanceType.toLowerCase())
     )
     .slice()
@@ -214,7 +217,9 @@ export function correctCapacityBlockValue (value, pools, instanceTypes, options 
   if (stillOffered) {
     return value;
   }
-  const plain = (instanceTypes || []).find((t) => t && t.name === decodedType);
+  const lowerType = (decodedType || '').toLowerCase();
+  const plain = (instanceTypes || [])
+    .find((t) => t && typeof t.name === 'string' && t.name.toLowerCase() === lowerType);
   return plain ? plain.name : null;
 }
 
