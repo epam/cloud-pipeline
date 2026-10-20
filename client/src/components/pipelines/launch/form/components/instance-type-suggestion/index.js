@@ -105,14 +105,29 @@ class InstanceTypeSuggestion extends React.Component {
       .filter((suggestion) => available.has(suggestion.instanceType.toLowerCase()));
   }
 
+  // Two pools can back the same instance type, so "is this suggestion the one
+  // currently chosen" cannot be answered from the type name alone - that is
+  // exactly the ambiguity the `pool:<id>` encoding exists to remove. Compare
+  // by pool identity whenever the caller can supply one (it can once a pool
+  // has actually been chosen); fall back to the type name only when nothing
+  // pool-specific is selected, which keeps a plain-type selection matching the
+  // one pool that happens to serve it.
+  isCurrentSuggestion = (suggestion) => {
+    const {currentInstanceType, currentPoolId} = this.props;
+    if (currentPoolId !== undefined && currentPoolId !== null) {
+      return !!suggestion.pool && `${suggestion.pool.id}` === `${currentPoolId}`;
+    }
+    return suggestion.instanceType === currentInstanceType;
+  };
+
   selectSuggestion = (suggestion) => {
-    const {disabled, onSelect, currentInstanceType} = this.props;
+    const {disabled, onSelect} = this.props;
     if (!suggestion || disabled) {
       return;
     }
     const {instanceType, pool} = suggestion;
     this.setState({poolsListVisible: false});
-    if (onSelect && instanceType !== currentInstanceType) {
+    if (onSelect && !this.isCurrentSuggestion(suggestion)) {
       onSelect(instanceType, pool);
     }
   };
@@ -164,9 +179,9 @@ class InstanceTypeSuggestion extends React.Component {
   };
 
   renderSuggestion = (suggestion, index) => {
-    const {currentInstanceType, disabled} = this.props;
-    const {pool, instanceType} = suggestion;
-    const selected = currentInstanceType === instanceType;
+    const {disabled} = this.props;
+    const {pool} = suggestion;
+    const selected = this.isCurrentSuggestion(suggestion);
     return (
       <div
         key={pool.id}
@@ -203,9 +218,9 @@ class InstanceTypeSuggestion extends React.Component {
   };
 
   renderPoolsList = (suggestions) => {
-    const {currentInstanceType, disabled} = this.props;
+    const {disabled} = this.props;
     const selectedKeys = suggestions
-      .filter((suggestion) => suggestion.instanceType === currentInstanceType)
+      .filter((suggestion) => this.isCurrentSuggestion(suggestion))
       .map((suggestion) => `${suggestion.pool.id}`);
     return (
       <Menu
@@ -286,6 +301,7 @@ class InstanceTypeSuggestion extends React.Component {
 InstanceTypeSuggestion.propTypes = {
   className: PropTypes.string,
   currentInstanceType: PropTypes.string,
+  currentPoolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   disabled: PropTypes.bool,
   instanceTypes: PropTypes.array,
   onSelect: PropTypes.func,

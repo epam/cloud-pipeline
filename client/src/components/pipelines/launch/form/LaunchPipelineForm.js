@@ -3216,9 +3216,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return (
       <InstanceTypeSuggestion
         currentInstanceType={this.selectedInstanceTypeName}
+        currentPoolId={
+          this.selectedCapacityBlockPool ? this.selectedCapacityBlockPool.id : undefined
+        }
         instanceTypes={this.instanceTypes}
         pools={capacityBlocks.pools}
-        reservations={capacityReservations.value}
+        reservations={(capacityReservations.value || []).slice()}
         regionId={this.currentCloudRegionId}
         disabled={this.instanceTypeSelectionDisabled}
         onSelect={this.instanceTypeSuggestionSelected}

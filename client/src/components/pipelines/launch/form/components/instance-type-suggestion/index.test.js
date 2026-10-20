@@ -185,6 +185,37 @@ describe('InstanceTypeSuggestion', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  // Two pools backing one instance type is exactly the case a composite
+  // `pool:<id>` value exists to disambiguate - `currentPoolId` is how this
+  // component sees which one, not the shared type name.
+  it('marks only the pool matching currentPoolId as selected when two pools share a type', () => {
+    const poolA = pool({id: 10, name: 'pool-a'});
+    const poolB = pool({id: 20, name: 'pool-b'});
+    renderSuggestion({
+      pools: [poolA, poolB],
+      instanceTypes: [instanceType('m5.large')],
+      currentInstanceType: 'm5.large',
+      currentPoolId: 20
+    });
+    expect(screen.getByText('selected')).toBeInTheDocument();
+    expect(screen.getAllByText('use this type')).toHaveLength(1);
+  });
+
+  it('calls onSelect for a different pool sharing the current instance type', async () => {
+    const onSelect = fn();
+    const poolA = pool({id: 10, name: 'pool-a'});
+    const poolB = pool({id: 20, name: 'pool-b'});
+    renderSuggestion({
+      pools: [poolA, poolB],
+      instanceTypes: [instanceType('m5.large')],
+      currentInstanceType: 'm5.large',
+      currentPoolId: 10,
+      onSelect
+    });
+    await click(screen.getByText('use this type'));
+    expect(onSelect).toHaveBeenCalledWith('m5.large', poolB);
+  });
+
   it('lists at most MAX_VISIBLE_SUGGESTIONS rows and offers the rest behind "show more"', () => {
     const pools = [1, 2, 3, 4, 5].map((id) => pool({
       id,
