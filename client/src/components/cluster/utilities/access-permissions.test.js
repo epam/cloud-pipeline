@@ -19,7 +19,7 @@ import {
   isRunAdmin,
   isNodePoolManager,
   canReadNodePools
-} from './access-permissinos';
+} from './access-permissions';
 
 const plainUser = {admin: false, roles: []};
 const clusterReader = {admin: false, roles: [{name: 'ROLE_CLUSTER_READER'}]};

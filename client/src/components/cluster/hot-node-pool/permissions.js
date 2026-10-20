@@ -19,7 +19,7 @@ import {
   isClusterReader,
   isRunAdmin,
   isNodePoolManager
-} from '../utilities/access-permissinos';
+} from '../utilities/access-permissions';
 
 // `isAdmin` hands back the user's own `admin` field rather than a strict boolean, so this
 // is coerced to keep every capability below a real boolean.

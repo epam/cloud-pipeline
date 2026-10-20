@@ -22,7 +22,7 @@ import AdaptedLink from '../special/AdaptedLink';
 import styles from './Cluster.css';
 import roleModel from '../../utils/roleModel';
 import 'highlight.js/styles/github.css';
-import {isAdmin, isClusterReader, canReadNodePools} from './utilities/access-permissinos';
+import {isAdmin, isClusterReader, canReadNodePools} from './utilities/access-permissions';
 
 const Tabs = [
   {
