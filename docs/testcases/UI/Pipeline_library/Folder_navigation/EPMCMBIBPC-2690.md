@@ -12,7 +12,7 @@ Test verifies locking a nested folder structure, then unlocking an inner folder 
 | 6 | Repeat steps 2-3 |  |
 | 7 | Hover over the gear icon -> click **Edit folder** in the appeared list |  |
 | 8 | Click **Permissions** tab |  |
-| 9 | Click **Add group** button |  |
+| 9 | Click the **Add group** icon |  |
 | 10 | In the appeared pop-up input `ROLE_USER`, click **OK** button |  |
 | 11 | In the **Groups and users** table click on `ROLE_USER` |  |
 | 12 | Set the **Allow** checkboxes for **Read**, **Write** and **Execute** permissions |  |
@@ -32,5 +32,5 @@ Test verifies locking a nested folder structure, then unlocking an inner folder 
 | 26 | Open the folder created at step 6 | **Upload metadata**, **+ Create v** buttons don't display |
 | 27 | Click the gear icon in the right upper corner | The following items appear in the appeared list: **Edit folder**, **Lock** |
 | 28 | Click **Edit folder** in the appeared list | In the appeared pop-up, at the **Info** tab, the **Name** field is enabled |
-| 29 | Click **Permissions** tab | <li> **Add user**, **Add group** buttons are disabled <li> only the `ROLE_USER` role is displayed in the permissions table <li> the **Delete** button next to `ROLE_USER` is disabled |
+| 29 | Click **Permissions** tab | <li> **Add user**, **Add group** icons are disabled <li> only the `ROLE_USER` role is displayed in the permissions table <li> the **Delete** button next to `ROLE_USER` is disabled |
 | 30 | Click on the `ROLE_USER` item | All permission checkboxes are disabled for clicking |

@@ -6,7 +6,7 @@ Test verifies launching a Slurm cluster: the master/worker setup tasks and that 
 | :---: | --- | --- |
 | 1 | Repeat steps 1-8 of the [EPMCMBIBPC-975](EPMCMBIBPC-975.md) case |  |
 | 2 | Set the **Enable Slurm** checkbox |  |
-| 3 | Click **OK** button | The name of the **Configure cluster** control becomes **Slurm Cluster (1 child node)** |
+| 3 | Click **OK** button | The name of the **Configure cluster** control becomes **Slurm Cluster (1 child node), LFS** |
 | 4 | Expand the **Advanced** section |  |
 | 5 | Set the **Start idle** checkbox |  |
 | 6 | Click **Launch** button |  |

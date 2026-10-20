@@ -7,7 +7,7 @@ Test verifies that custom key/value attributes added to a folder are shown under
 | 1 | Create a folder |  |
 | 2 | Go into the folder |  |
 | 3 | Click the **display-attributes** button |  |
-| 4 | Click **Show attributes** |  |
+| 4 | Click **Attributes** |  |
 | 5 | Click the **+ Add** button |  |
 | 6 | Enter values into the **Key** and **Value** fields |  |
 | 7 | Click the **Add** button |  |

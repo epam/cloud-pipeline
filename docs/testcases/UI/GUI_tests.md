@@ -607,8 +607,6 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1629**](Pipeline_library/Pipeline_details/EPMCMBIBPC-1629.md) | Validation of view all draft versions history of a pipeline | :white_check_mark: |
 | [**EPMCMBIBPC-339**](Pipeline_library/Pipeline_details/EPMCMBIBPC-339.md) | Create folder in pipeline | :white_check_mark: |
 | [**EPMCMBIBPC-340**](Pipeline_library/Pipeline_details/EPMCMBIBPC-340.md) | File creation in pipeline subfolder | :white_check_mark: |
-| [**EPMCMBIBPC-343**](Pipeline_library/Pipeline_details/EPMCMBIBPC-343.md) | Validation tabs for Luigi pipeline | :white_check_mark: |
-| [**EPMCMBIBPC-344**](Pipeline_library/Pipeline_details/EPMCMBIBPC-344.md) | Validation graph for luigi pipeline | :white_check_mark: |
 | [**EPMCMBIBPC-345**](Pipeline_library/Pipeline_details/EPMCMBIBPC-345.md) | Validation of DOCUMENTS tab | :white_check_mark: |
 | [**EPMCMBIBPC-346**](Pipeline_library/Pipeline_details/EPMCMBIBPC-346.md) | Rename files on DOCUMENTS tab | :white_check_mark: |
 | [**EPMCMBIBPC-347**](Pipeline_library/Pipeline_details/EPMCMBIBPC-347.md) | Download file on page DOCUMENTS | :white_check_mark: |
@@ -704,7 +702,6 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-312**](Pipeline_library/Pipeline_run/EPMCMBIBPC-312.md) | Wait for pipeline finished | :white_check_mark: |
 | [**EPMCMBIBPC-228**](Pipeline_library/Templates/EPMCMBIBPC-228.md) | Validate WDL scripts for pipeline running | :white_check_mark: |
 | [**EPMCMBIBPC-541**](Pipeline_library/Templates/EPMCMBIBPC-541.md) | Validate PYTHON scripts for pipeline running | :white_check_mark: |
-| [**EPMCMBIBPC-542**](Pipeline_library/Templates/EPMCMBIBPC-542.md) | Validate LUIGI scripts for pipeline running | :white_check_mark: |
 | [**EPMCMBIBPC-97**](Pipeline_library/Templates/EPMCMBIBPC-97.md) | Validate SHELL scripts for pipeline running | :white_check_mark: |
 
 </details>

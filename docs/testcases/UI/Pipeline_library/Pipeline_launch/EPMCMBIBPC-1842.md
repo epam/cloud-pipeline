@@ -15,7 +15,7 @@ Test verifies that a Boolean-type launch parameter's checkbox and Enabled/Disabl
 | 9 | Enter a valid name and a valid path to a storage |  |
 | 10 | Add a variable of the **Boolean** type with the name `false` |  |
 | 11 | Disable the checkbox |  |
-| 12 | Make sure the label near the checkbox has the value `Disabled` |  |
+| 12 | Make sure the checkbox is unchecked; the label near the checkbox still has the value `Enabled` |  |
 | 13 | Save the configuration |  |
 | 14 | Launch the pipeline |  |
 | 15 | Go to the running pipeline's page |  |

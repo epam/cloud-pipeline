@@ -13,7 +13,7 @@ Test verifies navigating the storage tree in the path-parameter browse pop-up on
 | 4 | On the pipeline page select **CODE** tab |  |
 | 5 | Add a script for saving files into the code file (replace the code file with the attached one) |  |
 | 6 | Click **RUN** button |  |
-| 7 | Hover over the **v** element to the right of the **Add parameters** button |  |
+| 7 | Hover over the **v** element to the right of the **Add parameter** button |  |
 | 8 | Select **Output path parameter** item |  |
 | 9 | Specify the parameter name in the left field of the appeared row |  |
 | 10 | Click the grey button of the right field |  |
