@@ -609,6 +609,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
       const instanceTypeValue = this.selectedInstanceTypeName;
+      // An explicitly chosen pool must gate a capability on its own launch
+      // config - two pools can back `instanceTypeValue` with different
+      // configs, and omitting it would gate on whichever one is matched
+      // first instead of the one the run will actually use.
+      const pool = this.selectedCapacityBlockPool;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -626,6 +631,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
             instanceType={instanceTypeValue}
+            poolId={pool ? pool.id : undefined}
           />
         </FormItem>
       );

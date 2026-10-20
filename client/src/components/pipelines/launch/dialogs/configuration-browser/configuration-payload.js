@@ -929,7 +929,10 @@ class ConfigurationPayload extends React.Component {
       docker_image: dockerImage,
       instance_size: instanceTypeRaw
     } = payload;
-    const {instanceType} = decodeInstanceTypeValue(instanceTypeRaw, capacityBlocks.pools);
+    // An explicitly chosen pool must gate a capability on its own launch
+    // config, not whichever pool happens to match `instanceType` and the
+    // region first - `poolId` carries that through to `RunCapabilities`.
+    const {instanceType, poolId} = decodeInstanceTypeValue(instanceTypeRaw, capacityBlocks.pools);
     return (
       <div
         className={styles.row}
@@ -945,6 +948,7 @@ class ConfigurationPayload extends React.Component {
           provider={this.currentProvider}
           region={this.currentCloudRegion}
           instanceType={instanceType}
+          poolId={poolId}
         />
       </div>
     );

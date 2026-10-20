@@ -2103,6 +2103,11 @@ export default class EditToolForm extends React.Component {
                       region={this.getCloudRegion()}
                       mode={RUN_CAPABILITIES_MODE.edit}
                       instanceType={instanceTypeValue?.name}
+                      poolId={
+                        this.selectedCapacityBlockPool
+                          ? this.selectedCapacityBlockPool.id
+                          : undefined
+                      }
                     />
                   </Form.Item>
                 )
