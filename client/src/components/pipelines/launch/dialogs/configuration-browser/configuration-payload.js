@@ -383,7 +383,12 @@ class ConfigurationPayload extends React.Component {
           [names.allowedInstanceTypes]: instanceTypes = [],
           [names.allowedPriceTypes]: priceTypes = []
         } = instanceTypesRequest.value || {};
-        newState.instanceTypes = instanceTypes;
+        // `instanceTypesRequest.value` is MobX-observable, so a raw assignment here would
+        // store an ObservableArray - and `getCapacityBlockOptions`'s `Array.isArray` guard
+        // (below, via `instanceTypes` in state) silently rejects that, dropping the
+        // "Reserved capacity blocks" group for this editor alone. `.slice()` yields a plain
+        // array, matching every other instance-types getter in the launch form family.
+        newState.instanceTypes = instanceTypes.slice();
         newState.priceTypes = priceTypes;
         newState.tool = tool;
       } catch (e) {
