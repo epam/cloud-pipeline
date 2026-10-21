@@ -23,6 +23,7 @@ import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
 import whoAmI from '../../../models/user/WhoAmI';
 import {ASYNC_TASK_TYPES} from '../../../models/asyncTask/statuses';
 import AsyncTasksList from './async-tasks-list';
+import downloadArchiveTask from './download-archive-task';
 import styles from './DownloadsManager.css';
 
 function taskSorter (a, b) {
@@ -113,12 +114,7 @@ export default class DownloadsManager extends React.Component {
     const {asyncTasks} = this.props;
     this.setState({actionPending: true});
     try {
-      const url = await asyncTasks.consumeTask(task.id);
-      if (url) {
-        window.open(url, '_blank');
-      }
-    } catch (error) {
-      message.error(error.message, 5);
+      await downloadArchiveTask(asyncTasks, task);
     } finally {
       this.setState({actionPending: false});
     }
