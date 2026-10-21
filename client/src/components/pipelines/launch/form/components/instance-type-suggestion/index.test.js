@@ -173,16 +173,44 @@ describe('InstanceTypeSuggestion', () => {
     expect(onSelect).toHaveBeenCalledWith('m5.large', matchedPool);
   });
 
-  it('does not call onSelect for the already selected instance type', async () => {
+  it('does not call onSelect for the already selected pool', async () => {
     const onSelect = fn();
+    const matchedPool = pool();
     renderSuggestion({
-      pools: [pool()],
+      pools: [matchedPool],
       instanceTypes: [instanceType('m5.large')],
-      currentInstanceType: 'm5.large',
+      currentPoolId: matchedPool.id,
       onSelect
     });
     expect(screen.getByText('selected')).toBeInTheDocument();
     expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  // The node type selector's plain option for a type a pool also backs is
+  // explicitly "not a capacity block" (`getSelectOptions` in
+  // `instance-type-info`) - a different launch from picking that pool, even
+  // where only one pool backs the type. Matching by instance type name
+  // instead of `currentPoolId` would conflate the two.
+  it('marks no suggestion selected when a plain type is chosen, even with a matching pool', () => {
+    const matchedPool = pool();
+    renderSuggestion({
+      pools: [matchedPool],
+      instanceTypes: [instanceType('m5.large')]
+    });
+    expect(screen.queryByText('selected')).toBeNull();
+    expect(screen.getByText('use this type')).toBeInTheDocument();
+  });
+
+  it('calls onSelect for the matching pool when the plain instance type is chosen', async () => {
+    const onSelect = fn();
+    const matchedPool = pool();
+    renderSuggestion({
+      pools: [matchedPool],
+      instanceTypes: [instanceType('m5.large')],
+      onSelect
+    });
+    await click(screen.getByText('use this type'));
+    expect(onSelect).toHaveBeenCalledWith('m5.large', matchedPool);
   });
 
   // Two pools backing one instance type is exactly the case a composite
@@ -194,11 +222,37 @@ describe('InstanceTypeSuggestion', () => {
     renderSuggestion({
       pools: [poolA, poolB],
       instanceTypes: [instanceType('m5.large')],
-      currentInstanceType: 'm5.large',
       currentPoolId: 20
     });
     expect(screen.getByText('selected')).toBeInTheDocument();
     expect(screen.getAllByText('use this type')).toHaveLength(1);
+  });
+
+  // A plain-type selection (no `currentPoolId`) cannot name either pool when
+  // two of them back the same type.
+  it('marks no suggestion as selected when two pools share a type and no pool is chosen', () => {
+    const poolA = pool({id: 10, name: 'pool-a'});
+    const poolB = pool({id: 20, name: 'pool-b'});
+    renderSuggestion({
+      pools: [poolA, poolB],
+      instanceTypes: [instanceType('m5.large')]
+    });
+    expect(screen.queryByText('selected')).toBeNull();
+    expect(screen.getAllByText('use this type')).toHaveLength(2);
+  });
+
+  it('calls onSelect for either pool when two share a type and no pool is chosen', async () => {
+    const onSelect = fn();
+    const poolA = pool({id: 10, name: 'pool-a'});
+    const poolB = pool({id: 20, name: 'pool-b'});
+    renderSuggestion({
+      pools: [poolA, poolB],
+      instanceTypes: [instanceType('m5.large')],
+      onSelect
+    });
+    const [, second] = screen.getAllByText('use this type');
+    await click(second);
+    expect(onSelect).toHaveBeenCalledWith('m5.large', poolB);
   });
 
   it('calls onSelect for a different pool sharing the current instance type', async () => {
@@ -208,7 +262,6 @@ describe('InstanceTypeSuggestion', () => {
     renderSuggestion({
       pools: [poolA, poolB],
       instanceTypes: [instanceType('m5.large')],
-      currentInstanceType: 'm5.large',
       currentPoolId: 10,
       onSelect
     });

@@ -105,19 +105,22 @@ class InstanceTypeSuggestion extends React.Component {
       .filter((suggestion) => available.has(suggestion.instanceType.toLowerCase()));
   }
 
-  // Two pools can back the same instance type, so "is this suggestion the one
-  // currently chosen" cannot be answered from the type name alone - that is
-  // exactly the ambiguity the `pool:<id>` encoding exists to remove. Compare
-  // by pool identity whenever the caller can supply one (it can once a pool
-  // has actually been chosen); fall back to the type name only when nothing
-  // pool-specific is selected, which keeps a plain-type selection matching the
-  // one pool that happens to serve it.
+  // "Is this suggestion the one currently chosen" can only be answered by pool
+  // identity, never by instance type: the node type selector's plain option
+  // for a type a pool also backs is explicitly "not a capacity block" (see
+  // `getSelectOptions` in `instance-type-info`) - a different launch, with a
+  // different payload, from picking that pool. Matching by type name as a
+  // fallback would mark a pool "selected" while the field actually holds the
+  // plain type, and - worse - mark every pool sharing a type "selected" at
+  // once when the plain type is selected and more than one does. So this
+  // component knows only one thing a selection can be: a specific pool, by
+  // id, or nothing.
   isCurrentSuggestion = (suggestion) => {
-    const {currentInstanceType, currentPoolId} = this.props;
-    if (currentPoolId !== undefined && currentPoolId !== null) {
-      return !!suggestion.pool && `${suggestion.pool.id}` === `${currentPoolId}`;
+    const {currentPoolId} = this.props;
+    if (currentPoolId === undefined || currentPoolId === null) {
+      return false;
     }
-    return suggestion.instanceType === currentInstanceType;
+    return !!suggestion.pool && `${suggestion.pool.id}` === `${currentPoolId}`;
   };
 
   selectSuggestion = (suggestion) => {
@@ -300,7 +303,6 @@ class InstanceTypeSuggestion extends React.Component {
 
 InstanceTypeSuggestion.propTypes = {
   className: PropTypes.string,
-  currentInstanceType: PropTypes.string,
   currentPoolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   disabled: PropTypes.bool,
   instanceTypes: PropTypes.array,
