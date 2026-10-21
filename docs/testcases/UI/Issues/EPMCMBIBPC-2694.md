@@ -9,7 +9,7 @@ Test verifies that clearing an issue's title or description in place is rejected
 | 3 | Click on the issue title |  |
 | 4 | Remove the issue title |  |
 | 5 | Click on an empty area | The error notification "Field should not be empty" appears |
-| 6 | Click **Return** | In the **Issues** panel, the record for the issue with the title specified at step 8 of the [EPMCMBIBPC-2691](EPMCMBIBPC-2691.md) case is displayed |
+| 6 | Click **Return** (the button with an arrow) | In the **Issues** panel, the record for the issue with the title specified at step 8 of the [EPMCMBIBPC-2691](EPMCMBIBPC-2691.md) case is displayed |
 | 7 | Repeat step 2 |  |
 | 8 | Click **Edit** in the issue description section |  |
 | 9 | Remove the description of the issue |  |
