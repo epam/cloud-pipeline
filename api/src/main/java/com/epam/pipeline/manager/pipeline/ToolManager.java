@@ -660,20 +660,8 @@ public class ToolManager implements SecuredEntityManager {
         final Tool tool = load(toolId);
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
-        Optional<ToolVersionScanResult> prev = loadToolVersionScan(tool, version);
-        if (prev.isPresent()) {
-            ToolVersionScanResult scanResult = prev.get();
-            boolean whiteList = scanResult.isFromWhiteList();
-            if (scanResult.getDigest() == null || !scanResult.getDigest().equals(digest)) {
-                log.debug("Digests are not match! If version was from white list, it will be deleted!");
-                whiteList = false;
-            }
-            toolVulnerabilityDao.updateToolVersionScan(toolId, version, toolOSVersion, layerRef, digest, newStatus,
-                    scanDate, whiteList, vulnerabilityCount, defaultCmd, layersCount, cudaAvailable);
-        } else {
-            toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
-                    digest, newStatus, scanDate, vulnerabilityCount, defaultCmd, layersCount, cudaAvailable);
-        }
+        toolVulnerabilityDao.insertToolVersionScan(toolId, version, toolOSVersion, layerRef,
+                digest, newStatus, scanDate, vulnerabilityCount, defaultCmd, layersCount, cudaAvailable);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -700,7 +688,7 @@ public class ToolManager implements SecuredEntityManager {
                 fromBlackList);
         return loadToolVersionScan(tool, version).orElse(null);
     }
-    
+
     @Transactional(propagation = Propagation.REQUIRED)
     public ToolVersionScanResult updateBlackListWithToolVersionStatus(final long toolId, final String version,
                                                                       final boolean fromBlackList) {
@@ -1093,11 +1081,8 @@ public class ToolManager implements SecuredEntityManager {
                                                                             final String version) {
         validateToolNotNull(tool, toolId);
         validateToolCanBeModified(tool);
-        final Optional<ToolVersionScanResult> toolVersionScanResult = loadToolVersionScan(tool, version);
-        if (!toolVersionScanResult.isPresent()) {
-            toolVulnerabilityDao.insertToolVersionScan(toolId, version, null, null, null, ToolScanStatus.NOT_SCANNED,
-                    DateUtils.now(), new HashMap<>(), null, null, false);
-        }
-        return toolVersionScanResult;
+        toolVulnerabilityDao.insertToolVersionScanIfAbsent(toolId, version, null, null, null,
+                ToolScanStatus.NOT_SCANNED, DateUtils.now(), new HashMap<>(), null, null, false);
+        return loadToolVersionScan(tool, version);
     }
 }
