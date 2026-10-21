@@ -23,6 +23,7 @@ import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
 import userNotifications from '../../models/notifications/CurrentUserNotifications';
+import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
 import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
@@ -148,6 +149,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       userNotifications,
+      asyncTasks,
       authenticatedUserInfo,
       [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,
