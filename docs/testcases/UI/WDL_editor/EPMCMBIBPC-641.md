@@ -10,4 +10,4 @@ Test verifies the Properties panel content for a task that already has a saved i
 | 4 | Click **CODE** tab |  |
 | 5 | Click **GRAPH** tab |  |
 | 6 | Click on the task added at step 1 |  |
-| 7 | Click **Properties** button | The **Properties** panel for the selected task appears, containing: <li> **Alias** field with the task name added at step 1 <li> **ADD** button in the **Inputs** section <li> the **Inputs** section has the header value **Inputs (1)** <li> **ADD** button in the **Outputs** section <li> **Use another docker image**, **Use another compute node** checkboxes <li> a field for command input <li> a **DELETE <task_name>** button |
+| 7 | Click **Properties** button | The **Properties** panel for the selected task appears, containing: <li> **Alias** field with the task name added at step 1 <li> **ADD** button in the **Inputs** section <li> the **Inputs** section has the header value **Inputs (1)** <li> **ADD** button in the **Outputs** section <li> a **Runtime** collapsed header with **add docker configuration** / **add compute node configuration** links <li> a field for command input <li> a **Remove** button |
