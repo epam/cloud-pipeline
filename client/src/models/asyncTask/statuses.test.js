@@ -20,7 +20,9 @@ import {
   taskIsActive,
   taskIsFinished,
   taskCanBeCancelled,
-  taskArchiveIsAvailable
+  taskArchiveIsAvailable,
+  normalizeStatus,
+  archiveNameOf
 } from './statuses';
 
 describe('taskIsActive', () => {
@@ -89,6 +91,36 @@ describe('taskArchiveIsAvailable', () => {
   });
   test('false for a task with no status', () => {
     expect(taskArchiveIsAvailable({id: 1})).toBe(false);
+  });
+});
+
+describe('normalizeStatus', () => {
+  test('upper-cases a lowercase status', () => {
+    expect(normalizeStatus('success')).toBe('SUCCESS');
+  });
+  test('upper-cases a mixed-case status', () => {
+    expect(normalizeStatus('Failed')).toBe('FAILED');
+  });
+  test('leaves an already-uppercase status as-is', () => {
+    expect(normalizeStatus('RUNNING')).toBe('RUNNING');
+  });
+  test('returns undefined for undefined', () => {
+    expect(normalizeStatus(undefined)).toBeUndefined();
+  });
+  test('returns undefined for an empty string', () => {
+    expect(normalizeStatus('')).toBeUndefined();
+  });
+});
+
+describe('archiveNameOf', () => {
+  test('returns params.archiveName when present', () => {
+    expect(archiveNameOf({id: 1, params: {archiveName: 'my-archive'}})).toBe('my-archive');
+  });
+  test('falls back to the task id when archiveName is absent', () => {
+    expect(archiveNameOf({id: 2, params: {}})).toBe(2);
+  });
+  test('falls back to the task id when params is missing entirely', () => {
+    expect(archiveNameOf({id: 3})).toBe(3);
   });
 });
 

@@ -22,7 +22,9 @@ import displayDate from '../../../utils/displayDate';
 import {
   ASYNC_TASK_STATUSES,
   taskCanBeCancelled,
-  taskArchiveIsAvailable
+  taskArchiveIsAvailable,
+  normalizeStatus,
+  archiveNameOf
 } from '../../../models/asyncTask/statuses';
 
 // Purely presentational: no @inject, no model import, no store. Everything it
@@ -30,7 +32,7 @@ import {
 // and reusable from a future modal that renders it directly.
 
 function statusClassName (status) {
-  switch (status) {
+  switch (normalizeStatus(status)) {
     case ASYNC_TASK_STATUSES.FAILED:
       return 'cp-danger';
     case ASYNC_TASK_STATUSES.CANCELLED:
@@ -50,7 +52,7 @@ class AsyncTasksList extends React.Component {
       {
         title: 'Archive',
         key: 'archive',
-        render: (task) => (task.params && task.params.archiveName) || task.id
+        render: (task) => archiveNameOf(task)
       },
       {
         title: 'Storage',
@@ -72,7 +74,7 @@ class AsyncTasksList extends React.Component {
               {status}
             </span>
           );
-          if (status === ASYNC_TASK_STATUSES.FAILED && errorMessage) {
+          if (normalizeStatus(status) === ASYNC_TASK_STATUSES.FAILED && errorMessage) {
             return (
               <Tooltip title={errorMessage}>
                 {content}

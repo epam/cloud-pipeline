@@ -24,7 +24,13 @@ import whoAmI from '../../../models/user/WhoAmI';
 import {ASYNC_TASK_TYPES} from '../../../models/asyncTask/statuses';
 import AsyncTasksList from './async-tasks-list';
 import downloadArchiveTask from './download-archive-task';
+import continuousFetch from '../../../utils/continuous-fetch';
 import styles from './DownloadsManager.css';
+
+// Matches CurrentUserAsyncTasks's own POLL_INTERVAL_MS: there is no shared
+// behaviour to factor out, just two independent pollers that happen to agree
+// on a cadence.
+const POLL_INTERVAL_MS = 5000;
 
 function taskSorter (a, b) {
   const dateA = moment.utc(a.created).valueOf();
@@ -45,13 +51,18 @@ function taskSorter (a, b) {
 // or EXPIRED task; the complete history, those two included, is exactly what
 // this page exists to show. The injected store still backs `cancelTask`,
 // `consumeTask` and the active-task cap - only the read path moves.
-@inject('asyncTasks', 'preferences')
+@inject('asyncTasks')
 @observer
 export default class DownloadsManager extends React.Component {
   state = {
     // Guards against a double-click firing a second cancel/consume request
     // before the first one's `await` has resolved.
-    actionPending: false
+    actionPending: false,
+    // Flips once and stays true: the loading spinner is for the first load
+    // only. Without it, `request.pending` (set by every `send()`, success or
+    // failure - see RemotePost) would flash it on every 5-second background
+    // poll for as long as the page stays open.
+    hasLoadedOnce: false
   };
 
   constructor (props) {
@@ -60,9 +71,46 @@ export default class DownloadsManager extends React.Component {
   }
 
   componentDidMount () {
-    this.loadTasks();
+    // Polls this page's own request continuously while it is mounted, so a
+    // task that finishes while the page is open updates its row instead of
+    // sitting at PENDING until a reload. A distinct identifier from
+    // CurrentUserAsyncTasks's own poller ('current-user-async-tasks') keeps
+    // the two from colliding in continuousFetch's registry. `fetchImmediate`
+    // (continuousFetch's default) covers the initial mount fetch, so there is
+    // no separate `loadTasks()` call here.
+    this.poller = continuousFetch({
+      call: this.loadTasks,
+      intervalMS: POLL_INTERVAL_MS,
+      identifier: 'downloads-page-async-tasks'
+    });
   }
 
+  componentWillUnmount () {
+    if (this.poller) {
+      this.poller.stop();
+    }
+  }
+
+  // Not observable, and deliberately not reset between polls on success alone
+  // (see `reportError`): plain bookkeeping for de-duplicating the toast below.
+  lastErrorMessage = undefined;
+
+  // De-dupes against a poll repeating the exact same failure every 5 seconds.
+  // A genuinely new error (a different message, or the first one) still gets
+  // its own toast.
+  reportError = (text) => {
+    if (text && text !== this.lastErrorMessage) {
+      this.lastErrorMessage = text;
+      message.error(text, 5);
+    }
+  };
+
+  // Deliberately never rejects and never resolves to `{failed: true}`: doing
+  // either would hand this to continuousFetch's own backoff (increaseInterval
+  // in src/utils/continuous-fetch), which is the `request:`-shaped form's
+  // behaviour, not this one's. A persistently failing endpoint is still
+  // retried at the fixed interval instead of backing off - a known, accepted
+  // tradeoff here, not an oversight.
   loadTasks = async () => {
     try {
       await whoAmI.fetchIfNeededOrWait();
@@ -77,10 +125,16 @@ export default class DownloadsManager extends React.Component {
       }
       await this.request.send(body);
       if (this.request.error) {
-        message.error(this.request.error, 5);
+        this.reportError(this.request.error);
+      } else {
+        this.lastErrorMessage = undefined;
       }
     } catch (error) {
-      message.error(error.message, 5);
+      this.reportError(error.message);
+    } finally {
+      if (!this.state.hasLoadedOnce) {
+        this.setState({hasLoadedOnce: true});
+      }
     }
   };
 
@@ -137,7 +191,7 @@ export default class DownloadsManager extends React.Component {
         }
         <AsyncTasksList
           tasks={this.tasks}
-          pending={this.request && this.request.pending}
+          pending={!this.state.hasLoadedOnce && !!(this.request && this.request.pending)}
           onCancel={this.handleCancel}
           onDownload={this.handleDownload}
           disabled={this.state.actionPending}

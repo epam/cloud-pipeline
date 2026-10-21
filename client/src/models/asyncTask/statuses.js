@@ -52,8 +52,16 @@ export const ASYNC_TASK_TYPES = {
   DOWNLOAD_ARCHIVE: 'DOWNLOAD_ARCHIVE'
 };
 
+// The single place that upper-cases a task's status before comparing it
+// against ASYNC_TASK_STATUSES. Exported so nothing outside this module
+// re-derives its own case-insensitive comparison, or skips normalizing
+// entirely, against the same strings.
+export function normalizeStatus (status) {
+  return status ? String(status).toUpperCase() : undefined;
+}
+
 function statusOf (task) {
-  return task && task.status ? String(task.status).toUpperCase() : undefined;
+  return normalizeStatus(task && task.status);
 }
 
 export function taskIsActive (task) {
@@ -78,4 +86,11 @@ export function taskCanBeCancelled (task) {
 
 export function taskArchiveIsAvailable (task) {
   return statusOf(task) === ASYNC_TASK_STATUSES.SUCCESS;
+}
+
+// The archive-name display fallback shared by the /downloads page's list and
+// its completion toast: the name the user chose, or the task id when it
+// (or `params` itself) is missing.
+export function archiveNameOf (task) {
+  return (task && task.params && task.params.archiveName) || (task && task.id);
 }

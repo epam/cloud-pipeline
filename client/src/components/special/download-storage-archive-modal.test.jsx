@@ -61,6 +61,8 @@ test('OK with the default untouched calls onSubmit with that default', async () 
   const onSubmit = fn();
   renderModal({defaultName: 'archive-20261021-131302', onSubmit});
 
+  expect(screen.getByRole('button', {name: 'OK'})).not.toBeDisabled();
+
   await click(screen.getByRole('button', {name: 'OK'}));
 
   expect(onSubmit).toHaveBeenCalledWith('archive-20261021-131302');
@@ -78,13 +80,19 @@ test('typing a different name and pressing OK calls onSubmit with the edited val
   expect(onSubmit).toHaveBeenCalledWith('my custom name');
 });
 
-test('an empty or whitespace-only name does not call onSubmit', async () => {
+test('an empty or whitespace-only name disables OK and does not call onSubmit', async () => {
   const onSubmit = fn();
   renderModal({defaultName: 'archive-20261021-131302', onSubmit});
   const input = screen.getByLabelText('Archive name');
 
   await clear(input);
   await type(input, '   ');
+
+  // Disabled, not merely a no-op on click: the button must not look clickable
+  // when it cannot submit — antd 2.13.14's Modal does not support
+  // `okButtonProps`, so this depends on the modal's own explicit footer.
+  expect(screen.getByRole('button', {name: 'OK'})).toBeDisabled();
+
   await click(screen.getByRole('button', {name: 'OK'}));
 
   expect(onSubmit).not.toHaveBeenCalled();

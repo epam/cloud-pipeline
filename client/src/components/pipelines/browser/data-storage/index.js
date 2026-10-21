@@ -2530,17 +2530,24 @@ export default class DataStorage extends React.Component {
     };
     if (actions.length === 1) {
       const action = actions[0];
+      // `title` sits on this wrapping span, not the Button itself: a disabled
+      // native <button> does not raise its own `title` tooltip in Chrome or
+      // Safari (Firefox is the odd one out), so the reason would be invisible
+      // for exactly the disabled case it exists to explain. An always-enabled
+      // ancestor shows it regardless.
       return (
-        <Button
-          size="small"
-          id={`selection-action-${action.key}`}
-          onClick={(event) => doAction(action, event)}
-          disabled={action.disabled}
-          style={{lineHeight: 1}}
-        >
-          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
-          {action.title}
-        </Button>
+        <span title={action.description}>
+          <Button
+            size="small"
+            id={`selection-action-${action.key}`}
+            onClick={(event) => doAction(action, event)}
+            disabled={action.disabled}
+            style={{lineHeight: 1}}
+          >
+            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+            {action.title}
+          </Button>
+        </span>
       );
     }
     const title = selectedItems && selectedItems.length > 0

@@ -16,7 +16,7 @@
 
 import {message} from 'antd';
 import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
-import {ASYNC_TASK_STATUSES} from '../../models/asyncTask/statuses';
+import {ASYNC_TASK_STATUSES, normalizeStatus, archiveNameOf} from '../../models/asyncTask/statuses';
 
 // Announces, with an antd `message`, that one of the current user's
 // archive-download tasks has finished - whatever page the user is on. This is
@@ -33,14 +33,8 @@ import {ASYNC_TASK_STATUSES} from '../../models/asyncTask/statuses';
 let started = false;
 let teardown = () => {};
 
-function archiveNameOf (task) {
-  return (task && task.params && task.params.archiveName) || (task && task.id);
-}
-
 function notify (task, messageApi) {
-  const status = task && task.status
-    ? String(task.status).toUpperCase()
-    : undefined;
+  const status = normalizeStatus(task && task.status);
   const archiveName = archiveNameOf(task);
   if (status === ASYNC_TASK_STATUSES.SUCCESS) {
     messageApi.success(

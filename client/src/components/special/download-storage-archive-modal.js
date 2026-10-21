@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Modal, Input} from 'antd';
+import {Modal, Input, Button} from 'antd';
 
 // A small controlled "name this archive" modal. Not EditItemForm: that
 // component's nameShouldNotBeTheSameValidator rejects a submitted value equal
@@ -29,15 +29,13 @@ export default class DownloadArchiveModal extends React.Component {
   static propTypes = {
     visible: PropTypes.bool,
     defaultName: PropTypes.string,
-    pending: PropTypes.bool,
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func
   };
 
   static defaultProps = {
     visible: false,
-    defaultName: '',
-    pending: false
+    defaultName: ''
   };
 
   state = {
@@ -63,7 +61,7 @@ export default class DownloadArchiveModal extends React.Component {
 
   handleSubmit = () => {
     const name = (this.state.name || '').trim();
-    if (!name || this.props.pending) {
+    if (!name) {
       return;
     }
     if (this.props.onSubmit) {
@@ -72,25 +70,37 @@ export default class DownloadArchiveModal extends React.Component {
   };
 
   render () {
-    const {visible, pending, onCancel} = this.props;
+    const {visible, onCancel} = this.props;
     const {name} = this.state;
     const trimmed = (name || '').trim();
     return (
       <Modal
         visible={visible}
         title="Download archive"
-        okText="OK"
-        cancelText="Cancel"
         onCancel={onCancel}
-        onOk={this.handleSubmit}
-        confirmLoading={pending}
-        okButtonProps={{disabled: !trimmed}}
+        // antd 2.13.14's Modal builds its default footer from hardcoded Button
+        // props and never reads `okButtonProps`/`cancelButtonProps` (those are
+        // antd 3.x+ only - see node_modules/antd/lib/modal/Modal.js), so the OK
+        // button's disabled state is driven through an explicit footer instead.
+        // `size="large"` matches that same default footer (Modal.js), so this
+        // modal's buttons look the same size as every other modal's.
+        footer={[
+          <Button key="cancel" size="large" onClick={onCancel}>Cancel</Button>,
+          <Button
+            key="ok"
+            size="large"
+            type="primary"
+            disabled={!trimmed}
+            onClick={this.handleSubmit}
+          >
+            OK
+          </Button>
+        ]}
       >
         <label htmlFor="download-archive-name">Archive name</label>
         <Input
           id="download-archive-name"
           value={name}
-          disabled={pending}
           onChange={this.handleChange}
           onPressEnter={this.handleSubmit}
         />

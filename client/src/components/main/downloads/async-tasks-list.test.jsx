@@ -99,6 +99,23 @@ test('exposes a FAILED task\'s errorMessage through its tooltip', async () => {
   expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
 });
 
+test('a lowercase status still gets the FAILED CSS class and tooltip', async () => {
+  const lowercaseFailedTask = {
+    ...FAILED_TASK,
+    id: 4,
+    status: 'failed',
+    params: {...FAILED_TASK.params, archiveName: 'archive-lowercase-failed'}
+  };
+  render(<AsyncTasksList tasks={[lowercaseFailedTask]} />);
+
+  const statusText = screen.getByText('failed');
+  expect(statusText).toHaveClass('cp-danger');
+
+  await hover(statusText);
+
+  expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+});
+
 test('renders both API timestamp shapes through displayDate', () => {
   render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
 
