@@ -41,7 +41,7 @@ Test verifies the ACTIVE RUNS widget's record and controls for a launched pipeli
 | 15 | Repeat step 5 |  |
 | 16 | Hover over the record that contains the pipeline name specified at preparation step 4, and click **TERMINATE** | A pop-up with the question "Terminate {run ID}?" appears, where {run ID} is the one saved at preparation step 14 |
 | 17 | Click **CANCEL** in the pop-up |  |
-| 18 | Hover over the record that contains the pipeline name specified at preparation step 4, and click **RESUME** | A pop-up with the question "Are you sure you want to resume run {run ID}?" appears, where {run ID} is the one saved at preparation step 14 |
+| 18 | Hover over the record that contains the pipeline name specified at preparation step 4, and click **RESUME** | A pop-up with the question "Are you sure you want to resume run {run ID}?" appears, where {run ID} is the one saved at preparation step 14. The pop-up also contains a **Node type** drop-down list |
 | 19 | Click **RESUME** in the pop-up, then repeat step 5 | <li>The **RESUME**, **TERMINATE** buttons disappear <li>The **LINKS** button is displayed <li>A "Resuming" icon appears in front of the pipeline name |
 | 20 | Repeat step 6 |  |
 | 21 | Wait until the **PAUSE** link appears in the upper-right corner |  |
