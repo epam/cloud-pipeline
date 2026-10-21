@@ -9,8 +9,8 @@ Test verifies that the add-key form opens with focus already on the Key field, f
 | :---: | --- | --- |
 | 1 | Open a pipeline |  |
 | 2 | Click the display-attributes button |  |
-| 3 | Click **Show attributes** in the upper-right part of the page | The **Create new rule** form appears with focus on the **Key** field (the cursor is already there, the field edges are highlighted blue) |
-| 4 | Click **+ Add key** |  |
+| 3 | Click **Attributes** in the list that appears |  |
+| 4 | Click **+ Add** | The add-key form appears with focus already on the **Key** field (the cursor is already there, the field edges are highlighted blue) |
 | 5 | Enter a valid key and value |  |
 | 6 | Press **Enter** |  |
 | 7 | Press **Enter** when finished | A new key-value pair appears in the list |
