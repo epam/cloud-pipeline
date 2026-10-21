@@ -81,12 +81,15 @@ const executeDenied = (item, extendedMask = false) => {
   return !bitEnabled(4, item.mask);
 };
 
-const isOwner = (item, extendedMask = false) => {
+/**
+ * Unlike the read/write/execute predicates above, this one takes no
+ * `extendedMask` flag: the extended 6-bit mask is an allow/deny pair per
+ * permission and carries no ownership bit at all, so there is nothing for an
+ * extended form of this check to read.
+ */
+const isOwner = (item) => {
   if (!item || item.mask === undefined || item.mask === null) {
     return false;
-  }
-  if (extendedMask) {
-    return bitEnabled(8, collapseMask(item.mask));
   }
   return bitEnabled(8, item.mask);
 };
@@ -107,14 +110,6 @@ const collapseMask = (mask) => {
   let writeAllowed = (mask & 4) === 4;
   let executeAllowed = (mask & 16) === 16;
   return readAllowed | writeAllowed << 1 | executeAllowed << 2;
-};
-
-const buildMask = (read, write, execute, extendedMask = false) => {
-  const mask = (read ? 1 : 0) | ((write ? 1 : 0) << 1) | ((execute ? 1 : 0) << 2);
-  if (extendedMask) {
-    return extendedMask(mask);
-  }
-  return mask;
 };
 
 const buildPermissionsMask = (ra, rd, wa, wd, ea, ed) => {
@@ -301,8 +296,20 @@ const checkObjectPermissionsConflict = (mask, sid, sidRoles, objectOwner, object
   };
 };
 
+/**
+ * Whether a permission is mentioned at all by an extended mask, i.e. whether
+ * either bit of its allow/deny pair is set.
+ *
+ * The parentheses around the `&` are required: `>` binds tighter than `&`, so
+ * `mask & 0b11 > 0` would evaluate as `mask & (0b11 > 0)`, i.e. `mask & 1` —
+ * reading the "allow" bit alone and dropping the "deny" one.
+ *
+ * @param extendedMask {number} permissions mask (6-bit format)
+ * @param shift {number} 0 for read, 2 for write, 4 for execute
+ * @returns {boolean}
+ */
 const permissionEnabled = (extendedMask, shift = 0) => {
-  return (extendedMask >> shift) & 0b11 > 0;
+  return ((extendedMask >> shift) & 0b11) > 0;
 };
 
 const readPermissionEnabled = (extendedMask) => {
@@ -382,7 +389,8 @@ const ROLES = {
   ROLE_TOOL_ADMIN: 'ROLE_TOOL_ADMIN',
   ROLE_USER_ADMIN: 'ROLE_USER_ADMIN',
   ROLE_PIPELINE_ADMIN: 'ROLE_PIPELINE_ADMIN',
-  ROLE_USER_READER: 'ROLE_USER_READER'
+  ROLE_USER_READER: 'ROLE_USER_READER',
+  ROLE_RUN_ADMIN: 'ROLE_RUN_ADMIN'
 };
 
 const userIs = {
@@ -401,7 +409,8 @@ const userIs = {
   billing: wrapUserIs(ROLES.ROLE_BILLING_MANAGER),
   toolAdmin: wrapUserIs(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: wrapUserIs(ROLES.ROLE_USER_ADMIN),
-  pipelineAdmin: wrapUserIs(ROLES.ROLE_PIPELINE_ADMIN)
+  pipelineAdmin: wrapUserIs(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: wrapUserIs(ROLES.ROLE_RUN_ADMIN)
 };
 
 const manager = {
@@ -420,7 +429,8 @@ const manager = {
   billing: management(ROLES.ROLE_BILLING_MANAGER),
   toolAdmin: management(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: management(ROLES.ROLE_USER_ADMIN),
-  pipelineAdmin: management(ROLES.ROLE_PIPELINE_ADMIN)
+  pipelineAdmin: management(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: management(ROLES.ROLE_RUN_ADMIN)
 };
 
 const isManager = {
@@ -439,7 +449,8 @@ const isManager = {
   billing: hasRole(ROLES.ROLE_BILLING_MANAGER),
   toolAdmin: hasRole(ROLES.ROLE_TOOL_ADMIN),
   userAdmin: hasRole(ROLES.ROLE_USER_ADMIN),
-  pipelineAdmin: hasRole(ROLES.ROLE_PIPELINE_ADMIN)
+  pipelineAdmin: hasRole(ROLES.ROLE_PIPELINE_ADMIN),
+  runAdmin: hasRole(ROLES.ROLE_RUN_ADMIN)
 };
 
 export default {
@@ -459,7 +470,6 @@ export default {
   userHasRole,
   authenticationInfo,
   refreshAuthenticationInfo,
-  buildMask,
   buildPermissionsMask,
   checkPermissionsSetConflicting,
   checkObjectPermissionsConflict,

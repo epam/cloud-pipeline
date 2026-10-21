@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
-import com.epam.pipeline.entity.docker.RawImageDescription;
+import com.epam.pipeline.entity.docker.HistoryEntryV2;
+import com.epam.pipeline.entity.docker.RawImageDescriptionV2;
 import com.epam.pipeline.entity.docker.RegistryListing;
 import com.epam.pipeline.entity.docker.TagsListing;
 import com.epam.pipeline.entity.docker.ToolVersion;
@@ -31,11 +32,21 @@ import com.epam.pipeline.exception.docker.DockerCredentialsException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.ProtocolException;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultRedirectStrategy;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -53,31 +64,33 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.xml.ws.http.HTTPException;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * Provides methods to operate Docker Registry API
@@ -90,9 +103,35 @@ public class DockerClient {
     // TODO use docker registry paging API to list images
     private static final String LIST_REGISTRY_URL = "https://%s/v2/_catalog?n=1000";
     private static final String IMAGE_DESCRIPTION_URL = "https://%s/v2/%s/manifests/%s";
-    private static final String LAYER_DELETE_URL = "https://%s/v2/%s/blobs/%s";
+    private static final String BLOBS_URL = "https://%s/v2/%s/blobs/%s";
 
     private static final String V2_MANIFEST_FORMAT = "application/vnd.docker.distribution.manifest.v2+json";
+    private static final String MANIFEST_LIST_FORMAT =
+            "application/vnd.docker.distribution.manifest.list.v2+json";
+    private static final String OCI_MANIFEST_FORMAT = "application/vnd.oci.image.manifest.v1+json";
+    private static final String OCI_INDEX_FORMAT = "application/vnd.oci.image.index.v1+json";
+    /**
+     * All the manifest formats, that may be requested from a registry. A manifest of a format, that is not accepted,
+     * is reported by a registry as a missing one, therefore all the formats, an image may be pushed in,
+     * shall be listed here.
+     */
+    private static final List<String> ACCEPTED_MANIFEST_FORMATS =
+            Arrays.asList(V2_MANIFEST_FORMAT, MANIFEST_LIST_FORMAT, OCI_MANIFEST_FORMAT, OCI_INDEX_FORMAT);
+    private static final String DEFAULT_OS = "linux";
+    private static final String DEFAULT_ARCHITECTURE = "amd64";
+    /**
+     * A platform of the manifests, that do not describe an image, e.g. build attestations
+     */
+    private static final String UNKNOWN_PLATFORM = "unknown";
+    private static final int MANIFEST_RESOLUTION_DEPTH = 3;
+    /**
+     * A manifest list, that does not reference any image manifests, therefore may be pushed to a registry
+     * without uploading any blobs. It is used to get rid of dangling tags, see {@link #untagImage}.
+     */
+    private static final String EMPTY_MANIFEST_LIST = "{\"schemaVersion\":2,\"mediaType\":\""
+            + MANIFEST_LIST_FORMAT + "\",\"manifests\":[]}";
+    private static final String DOCKER_CONTENT_DIGEST_HEADER = "docker-content-digest";
+    private static final String SHA_256_PREFIX = "sha256:";
     // in ms
     private static final int REQUEST_TIMEOUT = 30 * 1000;
 
@@ -111,7 +150,6 @@ public class DockerClient {
         this.token = token;
         initRestTemplate(mapper);
     }
-
 
     public DockerClient(DockerRegistry registry, ObjectMapper mapper) {
         this(registry, mapper, null);
@@ -179,9 +217,40 @@ public class DockerClient {
         }
     }
 
+    /**
+     * Lists tags of a specified image. Unlike {@link #getImageTags(String, String)} an empty list is returned
+     * if an image is not found in a registry instead of failing.
+     * @param registryPath a registry to list tags from
+     * @param image an image (repository) name
+     */
+    public List<String> findImageTags(final String registryPath, final String image) {
+        final String url = String.format(TAGS_LIST, registryPath, image);
+        try {
+            final URI uri = new URI(url);
+            final ResponseEntity<TagsListing> response = getRestTemplate().exchange(uri, HttpMethod.GET,
+                    getAuthHeaders(), new ParameterizedTypeReference<TagsListing>() {});
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new UnexpectedResponseStatusException(response.getStatusCode());
+            }
+            return Optional.ofNullable(response.getBody())
+                    .map(TagsListing::getTags)
+                    .orElseGet(Collections::emptyList);
+        } catch (HttpClientErrorException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                LOGGER.debug("Image {} is not found in registry {}", image, registryPath);
+                return Collections.emptyList();
+            }
+            LOGGER.error(e.getMessage(), e);
+            throw new DockerConnectionException(url, e.getMessage());
+        } catch (URISyntaxException | UnexpectedResponseStatusException | RestClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new DockerConnectionException(url, e.getMessage());
+        }
+    }
 
-    public ImageDescription getImageDescription(DockerRegistry registry, String imageName, String tag) {
-        RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+    public ImageDescription getImageDescription(final DockerRegistry registry,
+                                                final String imageName, final String tag) {
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(registry, imageName, tag);
         rawImage.setRegistry(registry.getId());
         return rawImage.getImageDescription();
     }
@@ -194,39 +263,47 @@ public class DockerClient {
      */
     public List<ImageHistoryLayer> getImageHistory(final DockerRegistry registry, final String imageName,
                                                    final String tag) {
-        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
-        final List<String> buildHistory = DockerParsingUtils.getBuildHistory(rawImage);
-        final Map<String, Long> layersSize = getLayersSize(registry, imageName, tag);
-        final List<String> layersDigest = getLayersDigestDirectCreationOrder(rawImage);
-        return IntStream.range(0, buildHistory.size())
-            .mapToObj(i -> {
-                final ImageHistoryLayer layer = new ImageHistoryLayer();
-                layer.setCommand(buildHistory.get(i));
+        final ManifestV2 manifestV2 = getManifestV2(registry, imageName, tag);
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(manifestV2, registry, imageName);
+        final List<HistoryEntryV2> history = rawImage.getHistory();
+        final Map<String, Long> layersSize = getLayersSize(manifestV2);
+        final List<String> layersDigest = getLayersDigestDirectCreationOrder(manifestV2);
+        int i = 0;
+        final List<ImageHistoryLayer> result = new ArrayList<>();
+        for (HistoryEntryV2 h: history) {
+            final ImageHistoryLayer layer = new ImageHistoryLayer();
+            layer.setCommand(DockerParsingUtils.getBuildHistory(h));
+            if (h.isEmptyLayer()) {
+                layer.setSize(0L);
+            } else {
                 layer.setSize(layersSize.getOrDefault(layersDigest.get(i), 0L));
-                return layer;
-            }).collect(Collectors.toList());
+                i++;
+            }
+            result.add(layer);
+        }
+        return result;
     }
 
     public Map<String, String> getImageLabels(final DockerRegistry registry, final String imageName, final String tag) {
-        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(registry, imageName, tag);
         return DockerParsingUtils.getLabels(rawImage);
     }
 
-    private Map<String, Long> getLayersSize(final DockerRegistry registry, final String imageName, final String tag) {
-        return getManifest(registry, imageName, tag)
-            .map(ManifestV2::getLayers)
-            .map(Collection::stream)
-            .orElse(Stream.empty())
+    private ManifestV2 getManifestV2(final DockerRegistry registry, final String imageName, final String tag) {
+        return resolveImageManifest(registry, imageName, tag)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+    }
+
+    private Map<String, Long> getLayersSize(final ManifestV2 manifestV2) {
+        return ListUtils.emptyIfNull(manifestV2.getLayers()).stream()
             .collect(Collectors.toMap(ManifestV2.Config::getDigest, ManifestV2.Config::getSize, (s1, s2) -> s1));
     }
 
-    private List<String> getLayersDigestDirectCreationOrder(final RawImageDescription rawImage) {
-        final List<String> layers = rawImage.getFsLayers().stream()
-            .map(Map::values)
-            .flatMap(Collection::stream)
+    private List<String> getLayersDigestDirectCreationOrder(final ManifestV2 manifestV2) {
+        return ListUtils.emptyIfNull(manifestV2.getLayers()).stream()
+            .map(ManifestV2.Config::getDigest)
             .collect(Collectors.toList());
-        Collections.reverse(layers);
-        return layers;
     }
 
     /**
@@ -238,15 +315,17 @@ public class DockerClient {
     public void deleteLayer(DockerRegistry registry, String image, String digest) {
         String url;
         try {
-            url = String.format(LAYER_DELETE_URL, registry.getPath(), URLEncoder.encode(image, "UTF-8"), digest);
+            url = String.format(BLOBS_URL, registry.getPath(), URLEncoder.encode(image, "UTF-8"), digest);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
-
         executeDeletion(url, image);
     }
 
-    private void executeDeletion(String url, String image) {
+    /**
+     * @return {@code true} if a requested entity has been deleted, {@code false} if it is not found in a registry
+     */
+    private boolean executeDeletion(final String url, final String image) {
         try {
             URI uri = new URI(url);
             HttpStatus status = getRestTemplate().execute(uri, HttpMethod.DELETE,
@@ -256,58 +335,132 @@ public class DockerClient {
             if (status != HttpStatus.ACCEPTED) {
                 throw new UnexpectedResponseStatusException(status);
             }
+            return true;
         } catch (URISyntaxException | UnexpectedResponseStatusException e) {
             throw new DockerConnectionException(url, e.getMessage());
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
-                LOGGER.error("Image not found:" + image);
-                return;
+                LOGGER.warn("Nothing to delete for image {}: {} is not found", image, url);
+                return false;
             }
-
+            throw new DockerConnectionException(url, e.getMessage());
+        } catch (RestClientException e) {
+            // a registry failure or an unreachable registry shall be reported the same way as any other registry
+            // communication error: the callers rely on DockerConnectionException to detect a failed deletion
+            LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
     }
 
     /**
      * Deletes an image from Docker registry
+     *
+     * Note that a manifest, that cannot be resolved by the given tag, cannot be deleted, since a registry
+     * provides no way to delete a manifest by a tag. Such a tag may still be listed by a registry,
+     * see {@link #untagImage} for details.
+     *
+     * A manifest, the given tag points to, is deleted as is, without resolving a manifest list to a platform
+     * specific image manifest: it is the manifest of a tag, that shall be deleted for a registry to remove
+     * the tag itself. The deletion of a referenced image manifest instead leaves a tag pointing
+     * to a broken manifest list behind.
+     *
      * @param registry registry, where image is located
      * @param image image to delete
-     * @return Manifest of a deleted image
+     * @param tag a tag of an image to delete
+     * @return Manifest of a deleted image or an empty value if a manifest cannot be resolved by the given tag
      */
     public Optional<ManifestV2> deleteImage(DockerRegistry registry, String image, String tag) {
-        Optional<ManifestV2> manifestOpt = getManifest(registry, image, tag);
-        return manifestOpt.map(manifest -> {
-            String url;
-            try {
-                url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), URLEncoder.encode(image, "UTF-8"),
-                                    manifest.getDigest());
-            } catch (UnsupportedEncodingException e) {
-                throw new IllegalArgumentException(e);
-            }
-
-            executeDeletion(url, image);
-            return manifest;
-        });
+        final Optional<ManifestV2> manifestOpt = getManifest(registry, image, tag);
+        if (!manifestOpt.isPresent()) {
+            LOGGER.warn("Manifest of image {}:{} cannot be resolved in registry {}, "
+                    + "no manifest deletion request will be sent", image, tag, registry.getPath());
+            return Optional.empty();
+        }
+        final String digest = manifestOpt.get().getDigest();
+        if (!deleteManifest(registry, image, digest)) {
+            LOGGER.warn("Manifest {} of image {}:{} is not found in registry {} and cannot be deleted",
+                    digest, image, tag, registry.getPath());
+        }
+        return manifestOpt;
     }
 
-    public RawImageDescription getRawImageDescription(DockerRegistry registry, String imageName, String tag) {
-        return getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+    /**
+     * Removes a tag of the given image from a registry even if a manifest, the tag points to, cannot be resolved.
+     *
+     * There is no way to delete a tag itself using Docker Registry API: a tag is removed only as a side effect
+     * of the deletion of a manifest it points to. Therefore if a manifest is already deleted, while a tag
+     * pointing to it is left behind (e.g. a registry has failed to untag a manifest after its deletion),
+     * such a dangling tag cannot be removed in a regular way at all.
+     *
+     * To get rid of such a tag it is first repointed to an empty manifest list, that does not reference any
+     * blobs and thus may be pushed as is, and then the pushed manifest is deleted, which makes a registry
+     * remove the tag as well. The operation is idempotent: if it fails in between, the tag will point to
+     * the empty manifest list and may be deleted in a regular way.
+     *
+     * @param registry registry, where image is located
+     * @param image an image (repository) name
+     * @param tag a tag to remove
+     * @return {@code true} if a temporary manifest has been deleted from a registry
+     */
+    public boolean untagImage(final DockerRegistry registry, final String image, final String tag) {
+        LOGGER.debug("Removing tag {} of image {} from registry {}", tag, image, registry.getPath());
+        final String digest = putEmptyManifestList(registry, image, tag);
+        return deleteManifest(registry, image, digest);
     }
 
-    private RawImageDescription getRawImageDescription(DockerRegistry registry, String imageName, String tag,
-                                                       HttpEntity headers) {
-        String url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), imageName, tag);
+    private boolean deleteManifest(final DockerRegistry registry, final String image, final String digest) {
+        return executeDeletion(String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), image, digest), image);
+    }
+
+    private String putEmptyManifestList(final DockerRegistry registry, final String image, final String tag) {
+        final String url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), image, tag);
+        final byte[] manifest = EMPTY_MANIFEST_LIST.getBytes(StandardCharsets.UTF_8);
         try {
-            URI uri = new URI(url);
-            ResponseEntity<RawImageDescription>
-                response = getRestTemplate().exchange(uri, HttpMethod.GET, headers,
-                                                      new ParameterizedTypeReference<RawImageDescription>() {});
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
-            } else {
+            final URI uri = new URI(url);
+            final HttpHeaders headers = getHttpHeaders();
+            headers.setContentType(MediaType.parseMediaType(MANIFEST_LIST_FORMAT));
+            final ResponseEntity<String> response = getRestTemplate()
+                    .exchange(uri, HttpMethod.PUT, new HttpEntity<>(manifest, headers), String.class);
+            if (response.getStatusCode() != HttpStatus.CREATED && response.getStatusCode() != HttpStatus.OK) {
                 throw new UnexpectedResponseStatusException(response.getStatusCode());
             }
-        } catch (URISyntaxException | UnexpectedResponseStatusException e) {
+            return Optional.ofNullable(response.getHeaders().getFirst(DOCKER_CONTENT_DIGEST_HEADER))
+                    .filter(StringUtils::isNotBlank)
+                    .orElseGet(() -> SHA_256_PREFIX + DigestUtils.sha256Hex(manifest));
+        } catch (URISyntaxException | UnexpectedResponseStatusException | RestClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new DockerConnectionException(url, e.getMessage());
+        }
+    }
+
+    private RawImageDescriptionV2 getRawImageDescription(final DockerRegistry registry, final String imageName,
+                                                         final String tag) {
+        final ManifestV2 manifestV2 = getManifestV2(registry, imageName, tag);
+        return getRawImageDescription(manifestV2, registry, imageName);
+    }
+
+    private RawImageDescriptionV2 getRawImageDescription(final ManifestV2 manifestV2, final DockerRegistry registry,
+                                                         final String imageName) {
+        String url;
+        try {
+            url = String.format(BLOBS_URL, registry.getPath(), URLEncoder.encode(imageName, "UTF-8"),
+                    manifestV2.getConfig().getDigest());
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException(e);
+        }
+        try {
+            final URI uri = new URI(url);
+            final ResponseEntity<byte[]> response = getRestTemplate().exchange(
+                    uri,
+                    HttpMethod.GET,
+                    new HttpEntity<>(getHttpHeaders()),
+                    byte[].class
+            );
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new DockerConnectionException(url, "Unexpected response status: " + response.getStatusCode());
+            }
+            return new ObjectMapper().readValue(response.getBody(), RawImageDescriptionV2.class);
+        } catch (IOException | URISyntaxException e) {
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
         }
@@ -318,7 +471,7 @@ public class DockerClient {
      * @param registry a registry, where image is located
      * @param imageName a name of an image (repository)
      * @param tag tag name
-     * @return image's manifest
+     * @return image's manifest or an empty value if a manifest is not found in a registry
      */
     public Optional<ManifestV2> getManifest(DockerRegistry registry, String imageName, String tag) {
         String url = String.format(IMAGE_DESCRIPTION_URL, registry.getPath(), imageName, tag);
@@ -328,36 +481,149 @@ public class DockerClient {
                 response = getRestTemplate().exchange(uri, HttpMethod.GET, getV2AuthHeaders(),
                                                       new ParameterizedTypeReference<ManifestV2>() {});
             if (response.getStatusCode() == HttpStatus.OK) {
-                List<String> digest = response.getHeaders().get("docker-content-digest");
-                ManifestV2 manifest = response.getBody();
-                manifest.setDigest(digest.get(0));
+                final ManifestV2 manifest = Optional.ofNullable(response.getBody())
+                        .orElseThrow(() -> new DockerConnectionException(url, "Manifest response has no body"));
+                manifest.setDigest(getManifestDigest(response, url));
                 return Optional.of(manifest);
             } else {
                 throw new UnexpectedResponseStatusException(response.getStatusCode());
             }
-        } catch (URISyntaxException | UnexpectedResponseStatusException e) {
+        } catch (HttpClientErrorException e) {
+            // only a missing manifest is reported as an empty value, any other client error (an expired token,
+            // insufficient permissions, etc.) shall not be mistaken for a nonexistent image version
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                LOGGER.debug("Manifest is not found at {}: {}", url, e.getMessage());
+                return Optional.empty();
+            }
             LOGGER.error(e.getMessage(), e);
             throw new DockerConnectionException(url, e.getMessage());
-        } catch (HttpClientErrorException e) {
+        } catch (URISyntaxException | UnexpectedResponseStatusException | RestClientException e) {
             LOGGER.error(e.getMessage(), e);
-            return Optional.empty();
+            throw new DockerConnectionException(url, e.getMessage());
         }
+    }
+
+    /**
+     * Extracts a digest of a manifest from a registry response. A digest identifies a manifest in a registry
+     * and is the only way to address it, e.g. to delete it, therefore a response without the digest header
+     * cannot be processed and shall be reported as an error rather than silently accepted.
+     */
+    private String getManifestDigest(final ResponseEntity<ManifestV2> response, final String url) {
+        return Optional.ofNullable(response.getHeaders().getFirst(DOCKER_CONTENT_DIGEST_HEADER))
+                .filter(StringUtils::isNotBlank)
+                .orElseThrow(() -> new DockerConnectionException(url,
+                        String.format("Manifest response has no %s header", DOCKER_CONTENT_DIGEST_HEADER)));
+    }
+
+    /**
+     * Gets an image manifest for a specified image and tag.
+     *
+     * If a tag points to a manifest list (an OCI index), a platform specific image manifest is resolved,
+     * since only an image manifest describes a configuration and layers of an image. A digest of the manifest,
+     * the tag points to, is kept though, because it is the digest, that identifies an image version
+     * in a registry, e.g. it is the one, that shall be used to delete a version.
+     *
+     * @param registry a registry, where image is located
+     * @param imageName a name of an image (repository)
+     * @param tag tag name
+     * @return an image manifest or an empty value if a manifest is not found in a registry
+     */
+    public Optional<ManifestV2> resolveImageManifest(final DockerRegistry registry, final String imageName,
+                                                     final String tag) {
+        return getManifest(registry, imageName, tag)
+                .map(manifest -> resolveManifestList(registry, imageName, manifest));
+    }
+
+    private ManifestV2 resolveManifestList(final DockerRegistry registry, final String imageName,
+                                           final ManifestV2 manifest) {
+        ManifestV2 resolved = manifest;
+        for (int depth = 0; depth < MANIFEST_RESOLUTION_DEPTH && isManifestList(resolved); depth++) {
+            final String digest = findImageManifestDigest(registry, imageName, resolved);
+            LOGGER.debug("Resolving manifest list {} of image {} to image manifest {}",
+                    resolved.getDigest(), imageName, digest);
+            resolved = getManifest(registry, imageName, digest)
+                    .orElseThrow(() -> new DockerConnectionException(registry.getPath(), String.format(
+                            "Image manifest %s of image %s is not found", digest, imageName)));
+        }
+        validateImageManifest(registry, imageName, manifest, resolved);
+        resolved.setDigest(manifest.getDigest());
+        return resolved;
+    }
+
+    /**
+     * Fails if a manifest does not describe an image: it is either a manifest list, that has not been resolved
+     * within the allowed depth, or a manifest without an image configuration, e.g. the empty manifest list,
+     * {@link #untagImage} temporary pushes, or a legacy schema 1 manifest. Such a manifest must never be returned
+     * as an image manifest, since none of the image attributes may be read from it.
+     */
+    private void validateImageManifest(final DockerRegistry registry, final String imageName,
+                                       final ManifestV2 manifest, final ManifestV2 resolved) {
+        if (isManifestList(resolved) || Objects.isNull(resolved.getConfig())) {
+            throw new DockerConnectionException(registry.getPath(), String.format(
+                    "Image manifest of image %s cannot be resolved from manifest %s",
+                    imageName, manifest.getDigest()));
+        }
+    }
+
+    /**
+     * Detects a manifest list (an OCI index) rather than an image manifest. Note that a manifest list may
+     * reference no image manifests at all, hence the media type is checked as well: such an empty list
+     * still describes no image and shall not be mistaken for an image manifest.
+     */
+    private boolean isManifestList(final ManifestV2 manifest) {
+        return CollectionUtils.isNotEmpty(manifest.getManifests())
+                || MANIFEST_LIST_FORMAT.equalsIgnoreCase(manifest.getMediaType())
+                || OCI_INDEX_FORMAT.equalsIgnoreCase(manifest.getMediaType());
+    }
+
+    /**
+     * Selects an image manifest, that describes an image the best: a manifest of the default platform is preferred,
+     * otherwise the first manifest of a known platform is used.
+     */
+    private String findImageManifestDigest(final DockerRegistry registry, final String imageName,
+                                          final ManifestV2 manifestList) {
+        final List<ManifestV2.ManifestReference> references = ListUtils.emptyIfNull(manifestList.getManifests());
+        if (references.isEmpty()) {
+            throw new DockerConnectionException(registry.getPath(), String.format(
+                    "Manifest list %s of image %s references no image manifests",
+                    manifestList.getDigest(), imageName));
+        }
+        return references.stream()
+                .filter(this::isDefaultPlatform)
+                .findFirst()
+                .orElseGet(() -> references.stream()
+                        .filter(this::isKnownPlatform)
+                        .findFirst()
+                        .orElse(references.get(0)))
+                .getDigest();
+    }
+
+    private boolean isDefaultPlatform(final ManifestV2.ManifestReference reference) {
+        return Optional.ofNullable(reference.getPlatform())
+                .filter(platform -> DEFAULT_OS.equalsIgnoreCase(platform.getOs())
+                        && DEFAULT_ARCHITECTURE.equalsIgnoreCase(platform.getArchitecture()))
+                .isPresent();
+    }
+
+    private boolean isKnownPlatform(final ManifestV2.ManifestReference reference) {
+        return Optional.ofNullable(reference.getPlatform())
+                .filter(platform -> !UNKNOWN_PLATFORM.equalsIgnoreCase(platform.getOs())
+                        && !UNKNOWN_PLATFORM.equalsIgnoreCase(platform.getArchitecture()))
+                .isPresent();
     }
 
     public ToolVersion getVersionAttributes(final DockerRegistry registry, final String imageName,
                                             final String tag) {
-        ToolVersion attributes = new ToolVersion();
+        final ToolVersion attributes = new ToolVersion();
         attributes.setVersion(tag);
-        ManifestV2 manifestV2 = getManifest(registry, imageName, tag)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Cannot get manifest for image %s/%s", imageName, tag)));
+        final ManifestV2 manifestV2 = getManifestV2(registry, imageName, tag);
         attributes.setDigest(manifestV2.getDigest());
-        attributes.setSize(manifestV2.getLayers()
+        attributes.setSize(ListUtils.emptyIfNull(manifestV2.getLayers())
                 .stream()
                 .mapToLong(ManifestV2.Config::getSize)
                 .sum());
-        RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
-        String platform = DockerParsingUtils.getPlatform(rawImage).orElse("linux");
+        final RawImageDescriptionV2 rawImage = getRawImageDescription(manifestV2, registry, imageName);
+        final String platform = DockerParsingUtils.getPlatform(rawImage).orElse("linux");
         attributes.setPlatform(platform);
         attributes.setModificationDate(getLatestDate(registry, imageName, tag));
         return attributes;
@@ -369,7 +635,7 @@ public class DockerClient {
 
     private HttpEntity getV2AuthHeaders() {
         HttpHeaders headers = getHttpHeaders();
-        headers.add(HttpHeaders.ACCEPT, V2_MANIFEST_FORMAT);
+        ACCEPTED_MANIFEST_FORMATS.forEach(format -> headers.add(HttpHeaders.ACCEPT, format));
         return new HttpEntity(headers);
     }
 
@@ -395,9 +661,28 @@ public class DockerClient {
                     .build();
             SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
 
-            CloseableHttpClient httpClient = HttpClients.custom()
-                    .setSSLSocketFactory(csf)
-                    .build();
+            HttpClientBuilder builder = HttpClients.custom()
+                    .setSSLSocketFactory(csf);
+//            drop Authorization headers when handling a cross-origin redirect
+            builder.setRedirectStrategy(new DefaultRedirectStrategy() {
+                @Override
+                public HttpUriRequest getRedirect(HttpRequest request,
+                                                  HttpResponse response,
+                                                  HttpContext context) throws ProtocolException {
+                    HttpUriRequest redirect = super.getRedirect(request, response, context);
+                    URI originalUri = URI.create(request.getRequestLine().getUri());
+                    URI redirectUri = redirect.getURI();
+
+                    if (!Objects.equals(originalUri, redirectUri)) {
+                        redirect.setHeaders(request.getAllHeaders());
+                        redirect.removeHeaders("Authorization");
+                    }
+
+                    return redirect;
+                }
+            });
+            CloseableHttpClient httpClient = builder.build();
+
             HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
             requestFactory.setHttpClient(httpClient);
             return requestFactory;
@@ -424,6 +709,10 @@ public class DockerClient {
     }
 
     private void initRestTemplate(ObjectMapper mapper) {
+        this.restTemplate = getRestTemplate(mapper);
+    }
+
+    private RestTemplate getRestTemplate(ObjectMapper mapper) {
         RestTemplateBuilder builder = new RestTemplateBuilder()
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
@@ -434,7 +723,7 @@ public class DockerClient {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));
         }
 
-        this.restTemplate = builder
+        return builder
                 .setConnectTimeout(REQUEST_TIMEOUT)
                 .build();
     }
@@ -448,7 +737,7 @@ public class DockerClient {
         return dockerResponseConverter;
     }
 
-    private Date getLatestDate(DockerRegistry registry, String imageName, String tag) {
-        return DockerParsingUtils.getLatestDate(getRawImageDescription(registry, imageName, tag, getAuthHeaders()));
+    private Date getLatestDate(final DockerRegistry registry, final String imageName, final String tag) {
+        return DockerParsingUtils.getLatestDate(getRawImageDescription(registry, imageName, tag));
     }
 }

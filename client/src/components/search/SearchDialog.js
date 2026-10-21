@@ -36,6 +36,7 @@ import getStyle from '../../utils/browserDependentStyle';
 import {facetedQueryString} from './faceted-search/utilities';
 import {DocumentTypeFilterName} from './faceted-search/filter';
 import getItemUrl from './faceted-search/utilities/get-item-url';
+import {getSearchPrompt} from './utilities/search-utilities';
 import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
@@ -171,6 +172,17 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     return aggregates;
   };
 
+  getSearchQuery = (searchCriteria) => {
+    const {preferences} = this.props;
+    const template = preferences.searchPromptTemplate;
+    return getSearchPrompt(
+      searchCriteria,
+      template,
+      false,
+      true
+    );
+  };
+
   performSearch = (force = false) => {
     this.delayedSearch && clearTimeout(this.delayedSearch);
     if (!force &&
@@ -192,11 +204,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
       return;
     }
     const searchCriteria = this.state.searchString;
+    const query = this.getSearchQuery(searchCriteria);
     this.setState({
       searching: true
     }, async () => {
       await this.props.searchEngine.send(
-        searchCriteria,
+        query,
         undefined,
         PAGE_SIZE,
         this.generateSearchTypes()
@@ -234,11 +247,12 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
       return;
     }
     const searchCriteria = this.state.searchString;
+    const query = this.getSearchQuery(searchCriteria);
     this.setState({
       searching: true
     }, async () => {
       await this.props.searchEngine.send(
-        searchCriteria,
+        query,
         undefined,
         PAGE_SIZE,
         this.generateSearchTypes()
@@ -468,6 +482,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         return;
       }
       const searchCriteria = this.state.searchString;
+      const query = this.getSearchQuery(searchCriteria);
       this.setState({
         searching: true
       }, async () => {
@@ -477,7 +492,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
           ? searchResults[searchResults.length - 1]
           : undefined;
         await this.props.searchEngine.send(
-          searchCriteria,
+          query,
           lastResult
             ? {docId: lastResult.elasticId, docScore: lastResult.score, scrollingBackward: false}
             : undefined,

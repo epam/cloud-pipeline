@@ -14,7 +14,10 @@
 
 import boto3
 from botocore.config import Config
-from distutils.version import LooseVersion
+try:
+    from packaging.version import Version as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 from random import randint
 from time import sleep
 import base64
@@ -225,8 +228,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         subnet_id = None
         if allowed_networks and len(allowed_networks) > 0:
             az_num = randint(0, len(allowed_networks) - 1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
+            az_name, subnet_id = list(allowed_networks.items())[az_num]
             utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
             additional_args = {'SubnetId': subnet_id, 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
         else:
@@ -263,7 +265,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 **additional_args
             )
         except ClientError as client_error:
-            if 'InstanceLimitExceeded' in client_error.message:
+            if 'InstanceLimitExceeded' in str(client_error):
                 utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
@@ -444,8 +446,8 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 LaunchSpecification=specifications,
             )
         except ClientError as client_error:
-            if 'Max spot instance count exceeded' in client_error.message or \
-                    'InstanceLimitExceeded' in client_error.message:
+            if 'Max spot instance count exceeded' in str(client_error) or \
+                    'InstanceLimitExceeded' in str(client_error):
                 utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
@@ -644,7 +646,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         _, config_tags = utils.load_cloud_config()
         if config_tags is None:
             return tags
-        for key, value in config_tags.iteritems():
+        for key, value in config_tags.items():
             tags.append({"Key": key, "Value": value})
         return tags
 

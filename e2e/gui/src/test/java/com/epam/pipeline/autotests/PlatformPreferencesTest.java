@@ -308,6 +308,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         final LogAO logAO = runsMenu()
                 .showLog(getLastRunId())
                 .shouldHaveRunningStatus()
+                .waitForTask("OOM Logs")
                 .clickTaskWithName("OOM Logs");
         final Set<String> logMess = logAO.logMessages().collect(toSet());
         assertTrue(logMess.stream()

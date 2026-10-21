@@ -49,4 +49,4 @@ if [ -z "$MOUNT_TASK_NAME" ]
 	exit 1
 fi
 
-$CP_PYTHON2_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}"
+$CP_PYTHON_PATH "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}"

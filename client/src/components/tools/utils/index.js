@@ -19,3 +19,4 @@ export {
   ScanStatuses} from './constants';
 
 export {default as getVersionRunningInfo} from './getVersionInfo';
+export {default as toolMatchesSearch} from './toolMatchesSearch';

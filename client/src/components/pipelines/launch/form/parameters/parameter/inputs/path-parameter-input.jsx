@@ -56,7 +56,8 @@ class LaunchFormPathParameterInput extends React.PureComponent {
       currentMetadataEntity,
       currentProjectMetadata,
       rootEntityId,
-      metadataAutoComplete
+      metadataAutoComplete,
+      placeholder = 'Path'
     } = this.props;
     let {
       type: pathType = 'path'
@@ -98,7 +99,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
               <Icon type={icon} />
             </div>
           )}
-          placeholder="Path"
+          placeholder={placeholder}
           size="large"
           currentProjectId={currentProjectId}
           currentMetadataEntity={currentMetadataEntity}
@@ -107,7 +108,7 @@ class LaunchFormPathParameterInput extends React.PureComponent {
           defaultInput={!metadataAutoComplete}
         />
         <BucketBrowser
-          multiple
+          multiple={!isOutputType}
           onSelect={onPathChange}
           onCancel={this.closeBucketBrowser}
           visible={bucketBrowserOpened}
@@ -139,7 +140,8 @@ LaunchFormPathParameterInput.propTypes = {
   currentProjectMetadata: PropTypes.object,
   currentMetadataEntity: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   rootEntityId: PropTypes.string,
-  metadataAutoComplete: PropTypes.bool
+  metadataAutoComplete: PropTypes.bool,
+  placeholder: PropTypes.string
 };
 
 export default LaunchFormPathParameterInput;

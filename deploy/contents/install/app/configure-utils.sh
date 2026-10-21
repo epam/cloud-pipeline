@@ -925,12 +925,37 @@ function api_setup_base_preferences {
     api_set_preference "ui.pipeline.deployment.name" "${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-"Cloud Pipeline"}" "true"
 
     ## System
-    api_set_preference "system.max.idle.timeout.minutes" "${CP_PREF_SYSTEM_MAX_IDLE_TIMEOUT_MINUTES:-1440}" "false"         # How long we tolerate utilization < system.idle.cpu.threshold (default: 24 hours)
-    api_set_preference "system.idle.action.timeout.minutes" "${CP_PREF_SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES:-480}" "false"    # How long we wait before performing action, defined by system.idle.action (default: 8 hours)
+local system_idle_monitoring_config="[]"
+read -r -d '' system_idle_monitoring_config <<-EOF
+[
+    {
+        "type": "CPU",
+        "enabled": ${CP_PREF_SYSTEM_IDLE_CPU_ENABLED:-true},
+        "thresholdPercent": ${CP_PREF_SYSTEM_IDLE_CPU_THRESHOLD:-1},
+        "gracePeriodMinutes": ${CP_PREF_SYSTEM_IDLE_CPU_GRACE_PERIOD_MINUTES:-1440},
+        "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_CPU_ACTION_TIMEOUT_MINUTES:-480},
+        "action": "${CP_PREF_SYSTEM_IDLE_CPU_ACTION:-NOTIFY}"
+    },
+    {
+        "type": "GPU",
+        "enabled": ${CP_PREF_SYSTEM_IDLE_GPU_ENABLED:-true},
+        "gracePeriodMinutes": ${CP_PREF_SYSTEM_IDLE_GPU_GRACE_PERIOD_MINUTES:-1440},
+        "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_GPU_ACTION_TIMEOUT_MINUTES:-480},
+        "action": "${CP_PREF_SYSTEM_IDLE_GPU_ACTION:-NOTIFY}"
+    },
+    {
+        "type": "ABSOLUTE",
+        "enabled": ${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ENABLED:-true},
+        "actionTimeoutMinutes": ${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ACTION_TIMEOUT_MINUTES:-480},
+        "action": "${CP_PREF_SYSTEM_IDLE_ABSOLUTE_ACTION:-NOTIFY}"
+    }
+]
+EOF
+
+    system_idle_monitoring_config="$(escape_string "$system_idle_monitoring_config")"
+    api_set_preference "system.idle.monitoring.config" "$system_idle_monitoring_config" "false"
     api_set_preference "system.resource.monitoring.period" "${CP_PREF_SYSTEM_RESOURCE_MONITORING_PERIOD:-300000}" "false"   # How often we poll utilization stats (default: 5 minutes)
     api_set_preference "system.resource.monitoring.stats.retention.period" "${CP_PREF_SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD:-5}" "false"    # How often we drop elastic indices (default: each 5 days)
-    api_set_preference "system.idle.action" "${CP_PREF_SYSTEM_IDLE_ACTION:-"NOTIFY"}" "false"                               # Which action to perform if a run is idle for system.max.idle.timeout.minutes + system.idle.action.timeout.minutes (default: notify only)
-    api_set_preference "system.idle.cpu.threshold" "${CP_PREF_SYSTEM_IDLE_CPU_THRESHOLD:-1}" "false"                        # %% of CPU utilization, which is considered idle (default: all runs with utilization below 1% are idle)
     api_set_preference "system.memory.consume.threshold" "${CP_PREF_SYSTEM_MEMORY_CONSUME_THRESHOLD:-95}" "false"           # %% of memory utilization that is considered "HIGH" (default: runs with RAM utilization above 95% are under pressure)
     api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
     api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
@@ -1091,12 +1116,17 @@ function api_register_drive_mapping {
 
     export CP_DAV_EXTERNAL_MAPPING_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_URL_PATH}/
     export CP_DAV_EXTERNAL_AUTH_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_AUTH_URL_PATH}/
+    # SMB credentials endpoint, which is proxied by EDGE to the cp-dav service
+    export CP_SMB_EXTERNAL_AUTH_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_SMB_URL_PATH:-smb}/auth
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                             "CP_DAV_EXTERNAL_MAPPING_URL" \
                             "$CP_DAV_EXTERNAL_MAPPING_URL"
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                             "CP_DAV_EXTERNAL_AUTH_URL" \
                             "$CP_DAV_EXTERNAL_AUTH_URL"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_SMB_EXTERNAL_AUTH_URL" \
+                            "$CP_SMB_EXTERNAL_AUTH_URL"
 
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
 
@@ -1340,65 +1370,6 @@ function api_register_pipeline {
     fi
 
     print_ok "Pipeline $pipeline_name is registered with ID $pipeline_id"
-}
-
-function api_register_demo_pipelines {
-    local demo_pipelines_path="${1:-$OTHER_PACKAGES_PATH/pipe-demo}"
-
-    for demo_pipeline_spec_file in $(find $demo_pipelines_path -type f -name "spec.json"); do
-        local demo_pipeline_dir=$(dirname $demo_pipeline_spec_file)
-
-        # Validate pipeline structure. At least we need src/ directory and a config.json
-        local demo_pipeline_config_json="$demo_pipeline_dir/config.json"
-        if [ ! -f "$demo_pipeline_config_json" ] || [ ! -d "$demo_pipeline_dir/src" ]; then
-            print_warn "Demo pipeline directory at ${demo_pipeline_dir} is malformed: it shall container src/ directory and a config.json at least. This pipeline will be skipped"
-            continue
-        fi
-
-        local demo_pipeline_spec_json=$(<$demo_pipeline_spec_file)
-        local demo_pipeline_parent_folder_name=$(jq -r '.parent_folder // "Pipelines"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_name=$(jq -r '.name // "NA"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_description=$(jq -r '.description // ""' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_version=$(jq -r '.version // "v1"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_grant_role_name=$(jq -r '.grant_role_name // "ROLE_USER"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_grant_role_permissions=$(jq -r '.grant_role_permissions // "21"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_cloud_provider_instance_type=$(jq -r ".${CP_CLOUD_PLATFORM} // \"NA\"" <<< "$demo_pipeline_spec_json")
-
-        if [ -z "$demo_pipeline_description" ]; then
-            print_warn "Demo pipeline at $demo_pipeline_dir does not contain a descripton in the spec.json. This pipeline will be skipped"
-        fi
-
-        if [ ! "$demo_pipeline_cloud_provider_instance_type" ] || [ "$demo_pipeline_cloud_provider_instance_type" == "NA" ]; then
-            print_warn "Demo pipeline at $demo_pipeline_dir is not support for the current cloud environment (${CP_CLOUD_PLATFORM}). This pipeline will be skipped"
-            continue
-        fi
-
-        # Update the pipeline's config.json with the environment variables (e.g. cloud-specific instance/vm type)
-        export CP_CONFIG_JSON_INSTANCE_TYPE="$demo_pipeline_cloud_provider_instance_type"
-        local demo_pipeline_config_json_contents="$(envsubst < "$demo_pipeline_config_json")"
-        cat <<< "$demo_pipeline_config_json_contents" > "$demo_pipeline_config_json"
-
-        print_info "Creating parent folder $demo_pipeline_parent_folder_name for the pipeline $demo_pipeline_name"
-        api_create_folder_path "$demo_pipeline_parent_folder_name"
-        if [ $? -ne 0 ]; then
-            print_warn "Errors occured while creating parent folder $demo_pipeline_parent_folder_name for the pipeline ${demo_pipeline_name}. This pipeline will be skipped"
-            continue
-        fi
-
-        api_register_pipeline   "$demo_pipeline_parent_folder_name" \
-                                "$demo_pipeline_name" \
-                                "$demo_pipeline_description" \
-                                "$demo_pipeline_dir" \
-                                "$demo_pipeline_grant_role_name" \
-                                "$demo_pipeline_grant_role_permissions" \
-                                "$demo_pipeline_version"
-
-        if [ $? -ne 0 ]; then
-            print_err "Error occured while registering a demo pipeline $demo_pipeline_name (see any output above)"
-            return 1
-        fi
-    done
-    unset CP_CONFIG_JSON_INSTANCE_TYPE
 }
 
 function api_register_data_transfer_pipeline {

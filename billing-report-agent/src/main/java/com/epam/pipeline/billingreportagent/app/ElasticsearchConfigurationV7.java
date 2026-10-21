@@ -1,0 +1,41 @@
+/*
+ * Copyright 2025 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.billingreportagent.app;
+
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.client.v7.ElasticsearchServiceClientV7;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@ConditionalOnProperty(name = "elasticsearch.client.version", havingValue = "V7")
+public class ElasticsearchConfigurationV7 {
+
+    @Bean
+    public ElasticsearchServiceClient elasticsearchServiceClient(
+            @Value("${elasticsearch.client.url:#{null}}") String elasticsearchUrl,
+            @Value("${elasticsearch.client.port:9200}") int elasticsearchPort,
+            @Value("${elasticsearch.client.scheme:http}") String elasticsearchScheme,
+            @Value("${elasticsearch.client.timeout:60000}") Integer socketTimeout,
+            @Value("${elasticsearch.client.auth:#{null}}") String elasticsearchAuth) {
+        return new ElasticsearchServiceClientV7(
+                elasticsearchUrl, elasticsearchPort, elasticsearchScheme, socketTimeout, elasticsearchAuth);
+    }
+
+}

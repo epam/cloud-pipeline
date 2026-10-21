@@ -196,7 +196,7 @@ class ParametersStore {
     if (enumeration && typeof enumeration.filter === 'function') {
       return enumeration
         .filter(o => o.isVisible(builtParameters))
-        .map(o => o.name);
+        .map(o => ({name: o.name, value: o.value !== undefined ? o.value : o.name}));
     }
     return undefined;
   };

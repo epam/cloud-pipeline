@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from buckets.utils.assertions_utils import assert_access_denied_error
 from common_utils.pipe_cli import pipe_tag_get, pipe_tag_set, pipe_tag_delete
 
 OBJECT_1 = ('key_1', 'value_1', 'string')
@@ -122,7 +123,7 @@ def assert_tags(entity_class, entity_identifier, tags_to_set, token):
 
 
 def assert_access_is_denied(entity_class, entity_identifier, error_text, expected_tags):
-    assert 'Access is denied' in error_text[0]
+    assert_access_denied_error(error_text)
     get_result = pipe_tag_get(entity_class, entity_identifier)
     assert not get_result[1]
     result_tags = parse_output_table(get_result[0])

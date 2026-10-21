@@ -20,11 +20,10 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyMetadataEntity;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPermissions;
@@ -36,11 +35,10 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
 class MetadataEntityMapperTest {
+    private final MetadataEntityMapper mapper = new MetadataEntityMapper();
 
     @Test
-    void shouldMapMetadataEntity() throws IOException {
-        MetadataEntityMapper mapper = new MetadataEntityMapper();
-
+    void shouldMapMetadataEntity() {
         MetadataClass metadataClass = new MetadataClass(1L, "Sample");
         MetadataEntity metadataEntity = new MetadataEntity();
         metadataEntity.setClassEntity(metadataClass);
@@ -54,7 +52,7 @@ class MetadataEntityMapperTest {
                 .entity(metadataEntity)
                 .permissions(PERMISSIONS_CONTAINER)
                 .build();
-        XContentBuilder contentBuilder = mapper.map(container);
+        Map<String, ?> contentBuilder = mapper.map(container);
 
         verifyMetadataEntity(metadataEntity, EXPECTED_METADATA, contentBuilder);
         verifyPermissions(PERMISSIONS_CONTAINER, contentBuilder);

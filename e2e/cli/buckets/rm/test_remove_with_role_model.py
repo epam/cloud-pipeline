@@ -62,7 +62,7 @@ class TestRmWithRoleModel(object):
             set_storage_permission(self.user, self.bucket_name, allow='r')
             error_text = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, self.test_file),
                                          expected_status=1, token=self.token)[1]
-            assert_error_message_is_present(error_text, 'Access is denied')
+            assert_access_denied_error(error_text)
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))

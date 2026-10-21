@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
@@ -32,6 +33,7 @@ import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -40,7 +42,9 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
+import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
@@ -48,13 +52,13 @@ import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_VALUE;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.ao.Primitive.TEMPLATE;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Profile.profileWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
@@ -115,7 +119,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public static By rootEntityType() {
-        return By.xpath("//*[contains(@class, 'aunch-form-parameter__launch-form-parameter') " +
+        return By.xpath(".//*[contains(@class, 'aunch-form-parameter__launch-form-parameter') " +
                 "and contains(., 'Root entity type')]");
     }
 
@@ -255,6 +259,15 @@ public class Configuration implements AccessObject<Configuration> {
                 .$$(byClassName("arameter-name-input__parameter-name"));
         IntStream.range(1, parameters.length)
                 .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i-1])));
+        return this;
+    }
+
+    public Configuration validateDisabledParameter(final String parameterName) {
+        final DetachedConfigurationParameterAO parameter = new DetachedConfigurationParameterAO(this,
+                parameterByName(parameterName).index());
+        final SelenideElement valueElement = parameter.get(PARAMETER_VALUE);
+        ensure(valueElement, Condition.disabled);
+        ensure(parameter.get(Primitive.REMOVE_PARAMETER), not(exist));
         return this;
     }
 

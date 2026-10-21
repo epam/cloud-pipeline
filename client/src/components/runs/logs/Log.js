@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, isObservableArray, observable} from 'mobx';
 import {Link} from 'react-router';
 import FileSaver from 'file-saver';
 import {
@@ -93,6 +93,7 @@ import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
 import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 import confirmPause from '../actions/pause-confirmation';
+import confirmResume from '../actions/resume-confirmation';
 import getRunDurationInfo from '../../../utils/run-duration';
 import RunTimelineInfo from './misc/run-timeline-info';
 import evaluateRunPrice from '../../../utils/evaluate-run-price';
@@ -103,6 +104,7 @@ import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import runNodeIsUnavailable from '../actions/node-availability';
 import {
   findReservationParameterConfig
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
@@ -375,6 +377,7 @@ class Logs extends localization.LocalizedReactComponent {
     if (run && preferences.loaded) {
       const payload = {
         instanceType: undefined,
+        fallbackInstanceTypes: undefined,
         hddSize: undefined,
         timeout: run.timeout,
         cmdTemplate: run.cmdTemplate,
@@ -395,6 +398,15 @@ class Logs extends localization.LocalizedReactComponent {
         payload.hddSize = run.instance.nodeDisk;
         payload.isSpot = run.instance.spot;
         payload.cloudRegionId = run.instance.cloudRegionId;
+        const fallbackInstanceTypes = run.instance.fallbackInstanceTypes;
+        if (
+          Array.isArray(fallbackInstanceTypes) ||
+          isObservableArray(fallbackInstanceTypes)
+        ) {
+          payload.fallbackInstanceTypes = fallbackInstanceTypes.length > 0
+            ? fallbackInstanceTypes.slice()
+            : undefined;
+        }
       }
       if (run.executionPreferences) {
         payload.executionEnvironment = run.executionPreferences.environment;
@@ -423,6 +435,11 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  get estimatedPriceVisible () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.utils.estimatedPriceVisible().logs;
   }
 
   get isCapacityBlock () {
@@ -489,21 +506,17 @@ class Logs extends localization.LocalizedReactComponent {
     }
   };
 
-  showResumeConfirmDialog = () => {
+  showResumeConfirmDialog = async () => {
     const {run} = this.state;
-    if (run) {
-      const dockerImageParts = (run.dockerImage || '').split('/');
-      const imageName = dockerImageParts[dockerImageParts.length - 1].split(':')[0];
-      const pipelineName = run.pipelineName || imageName || this.localizedString('pipeline');
-      Modal.confirm({
-        title: `Do you want to resume ${pipelineName}?`,
-        style: {
-          wordWrap: 'break-word'
-        },
-        onOk: () => this.resumePipeline(),
-        okText: 'RESUME',
-        cancelText: 'CANCEL'
-      });
+    if (!run) {
+      return;
+    }
+    const payload = await confirmResume({
+      id: this.props.runId,
+      run
+    });
+    if (payload) {
+      await this.resumePipeline(payload);
     }
   };
 
@@ -520,13 +533,10 @@ class Logs extends localization.LocalizedReactComponent {
     this.refreshRunInfo();
   };
 
-  resumePipeline = async (e) => {
-    if (e) {
-      e.stopPropagation();
-    }
+  resumePipeline = async (payload) => {
     const {runId: id} = this.props;
     const resumePipeline = new ResumePipeline(id);
-    await resumePipeline.send({});
+    await resumePipeline.send(payload || {});
     if (resumePipeline.error) {
       message.error(resumePipeline.error);
     }
@@ -1596,6 +1606,7 @@ class Logs extends localization.LocalizedReactComponent {
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(run) &&
         podIP &&
+        !runNodeIsUnavailable(run) &&
         checkRunActionAvailable(run, runActions.browse);
     }
     return false;
@@ -1843,22 +1854,40 @@ class Logs extends localization.LocalizedReactComponent {
       }
       let endpoints;
       let kubeServices;
-      if (this.endpointAvailable) {
-        const regionedUrls = parseRunServiceUrlConfiguration(serviceUrl);
+      const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+      const isActiveRun = activeRunStatuses.includes(status);
+      let externalTagUrls = [];
+      const externalUrlsTagValue = run.tags && run.tags.EXTERNAL_URLS;
+      if (externalUrlsTagValue) {
+        try {
+          const parsed = JSON.parse(externalUrlsTagValue);
+          if (Array.isArray(parsed)) {
+            externalTagUrls = parsed.filter(({displayOnCompletion}) => {
+              if (displayOnCompletion === false) {
+                return isActiveRun;
+              }
+              return true;
+            });
+          }
+        } catch (_) {
+          // ignore malformed tag value
+        }
+      }
+      const regionedUrls = this.endpointAvailable
+        ? parseRunServiceUrlConfiguration(serviceUrl)
+        : [];
+      if (regionedUrls.length > 0 || externalTagUrls.length > 0) {
+        const totalCount = regionedUrls.length + externalTagUrls.length;
         endpoints = (
           <tr style={{fontSize: '11pt'}}>
             <th style={{verticalAlign: 'middle'}}>
-              {
-                regionedUrls.length > 1
-                  ? 'Endpoints: '
-                  : 'Endpoint: '
-              }
+              {totalCount > 1 ? 'Endpoints: ' : 'Endpoint: '}
             </th>
             <td>
               <ul>
                 {
                   regionedUrls.map(({name, url, sameTab}, index) =>
-                    <li key={index}>
+                    <li key={`service-${index}`}>
                       <MultizoneUrl
                         target={sameTab ? '_top' : '_blank'}
                         configuration={url}
@@ -1867,6 +1896,19 @@ class Logs extends localization.LocalizedReactComponent {
                       >
                         {name}
                       </MultizoneUrl>
+                    </li>
+                  )
+                }
+                {
+                  externalTagUrls.map(({url, name}, index) =>
+                    <li key={`external-${index}`}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {name || url}
+                      </a>
                     </li>
                   )
                 }
@@ -2082,7 +2124,7 @@ class Logs extends localization.LocalizedReactComponent {
           }
           return cents / 100;
         };
-        price = (
+        price = this.estimatedPriceVisible ? (
           <tr>
             <th>Estimated price:</th>
             <td>
@@ -2100,7 +2142,7 @@ class Logs extends localization.LocalizedReactComponent {
               </JobEstimatedPriceInfo>
             </td>
           </tr>
-        );
+        ) : null;
       }
 
       Details =

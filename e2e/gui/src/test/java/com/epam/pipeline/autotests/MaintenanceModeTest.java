@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,6 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
-import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.PAUSED;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_SCHEDULE;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
@@ -59,6 +58,7 @@ import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.time.format.TextStyle.FULL;

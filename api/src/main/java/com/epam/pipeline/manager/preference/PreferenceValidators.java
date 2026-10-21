@@ -26,6 +26,7 @@ import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.monitoring.IdleMonitoringConfig;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
@@ -36,6 +37,7 @@ import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.EnumUtils;
@@ -195,6 +197,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) >= x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isEquals(int x) {
+        return (pref, dependencies) -> NumberUtils.isNumber(pref) && Integer.parseInt(pref) == x;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isLessThan(int x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Integer.parseInt(pref) < x;
     }
@@ -348,6 +354,49 @@ public final class PreferenceValidators {
                         .filter(Objects::nonNull)
                         .noneMatch(value -> value < 1),
                 String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
+    }
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidIdleMonitoringConfig =
+        isNullOrValidJson(new TypeReference<List<IdleMonitoringConfig>>() {})
+            .and((pref, dependencies) -> {
+                if (StringUtils.isBlank(pref)) {
+                    return true;
+                }
+                final List<IdleMonitoringConfig> configs =
+                    JsonMapper.parseData(pref, new TypeReference<List<IdleMonitoringConfig>>() {});
+                ListUtils.emptyIfNull(configs).forEach(PreferenceValidators::validateIdleMonitoringConfig);
+                return true;
+            });
+
+    private static void validateIdleMonitoringConfig(final IdleMonitoringConfig config) {
+        Assert.state(config.getType() != null,
+                "Idle monitoring config entry is missing required field 'type'.");
+        Assert.state(config.getAction() != null,
+                "Idle monitoring config entry is missing required field 'action'.");
+        Assert.state(config.getActionTimeoutMinutes() != null,
+                "Idle monitoring config entry is missing required field 'actionTimeoutMinutes'.");
+        switch (config.getType()) {
+            case CPU:
+                Assert.state(config.getThresholdPercent() != null,
+                        "CPU idle monitoring config requires 'thresholdPercent'.");
+                Assert.state(config.getGracePeriodMinutes() != null,
+                        "CPU idle monitoring config requires 'gracePeriodMinutes'.");
+                break;
+            case GPU:
+                Assert.state(config.getGracePeriodMinutes() != null,
+                        "GPU idle monitoring config requires 'gracePeriodMinutes'.");
+                Assert.state(config.getThresholdPercent() == null,
+                        "GPU idle monitoring config can't have 'thresholdPercent'.");
+                break;
+            case ABSOLUTE:
+                Assert.state(config.getThresholdPercent() == null,
+                        "ABSOLUTE idle monitoring config must not specify 'thresholdPercent'.");
+                Assert.state(config.getGracePeriodMinutes() == null,
+                        "ABSOLUTE idle monitoring config must not specify 'gracePeriodMinutes'.");
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown idle monitoring type: " + config.getType());
+        }
     }
 
     private PreferenceValidators() {

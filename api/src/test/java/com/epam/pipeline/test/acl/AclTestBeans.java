@@ -57,6 +57,11 @@ import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsEventService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -144,6 +149,8 @@ import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.resource.StaticResourcesService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
+import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.manager.user.OnlineUsersService;
@@ -197,6 +204,12 @@ public class AclTestBeans {
 
     @MockBean
     protected AuthManager mockAuthManager;
+
+    @MockBean
+    protected NamedJwtTokenManager namedJwtTokenManager;
+
+    @MockBean
+    protected JwtTokenRevocationManager jwtTokenRevocationManager;
 
     @MockBean
     protected JwtTokenGenerator tokenGenerator;
@@ -569,6 +582,21 @@ public class AclTestBeans {
 
     @MockBean
     protected QuotaService mockQuotaService;
+
+    @MockBean
+    protected PlatformUsageCreditsRuleService mockPlatformUsageCreditsRuleService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceService mockPlatformUsageCreditsUserBalanceService;
+
+    @MockBean
+    protected PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
+
+    @MockBean
+    protected PlatformUsageCreditsEventService mockPlatformUsageCreditsEventService;
+
+    @MockBean
+    protected PlatformUsageCreditsLaunchService mockPlatformUsageCreditsLaunchService;
 
     @MockBean
     protected UsersUsageReportService usersUsageReportService;

@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -48,6 +49,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -74,11 +76,13 @@ public class ClusterApiService {
     private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
+    @AclMaskList
     public List<NodeInstance> getNodes(final MachineType machineType) {
         return nodesManager.getNodes(machineType);
     }
 
     @PostFilter(NODE_READ_FILTER)
+    @AclMaskList
     public List<NodeInstance> filterNodes(final FilterNodesVO filterNodesVO, final MachineType machineType) {
         return nodesManager.filterNodes(filterNodesVO, machineType);
     }
@@ -151,6 +155,11 @@ public class ClusterApiService {
     @PreAuthorize(NODE_READ)
     public List<NodeDisk> loadNodeDisks(final String name) {
         return nodeDiskManager.loadByNodeId(name);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public NodeInstance attachDiskToNode(final String name, final DiskAttachRequest request) {
+        return nodesManager.attachDiskToNode(name, request);
     }
 
     public String buildEdgeExternalUrl(final String region) {

@@ -18,17 +18,17 @@ package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.action.DocWriteRequest;
 
 import java.time.LocalDateTime;
 import java.util.Collections;

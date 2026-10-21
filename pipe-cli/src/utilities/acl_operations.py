@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import click
 import future
-import prettytable
 from future.utils import iteritems
 
 from src.api.entity import Entity
 from src.api.user import User
+from src.utilities.printing.acl import create_acl_print_service
 
 
 class ACLOperations(object):
@@ -100,55 +98,20 @@ class ACLOperations(object):
         click.echo('Permissions set')
 
     @classmethod
-    def view_acl(cls, identifier, object_type):
+    def view_acl(cls, identifier, object_type, output_format=None):
         """ View object permissions
         """
+        print_service = create_acl_print_service(output_format)
         permissions_list, owner = User.get_permissions(identifier, object_type)
-        click.echo("Owner: %s" % owner)
-        if len(permissions_list) > 0:
-            permissions_table = prettytable.PrettyTable()
-            permissions_table.field_names = ["SID", "Principal", "Allow", "Deny"]
-            permissions_table.align = "r"
-            for permission in permissions_list:
-                permissions_table.add_row([permission.name,
-                                           permission.principal,
-                                           permission.get_allowed_permissions_description(),
-                                           permission.get_denied_permissions_description()])
-            click.echo(permissions_table)
-            click.echo()
-        else:
-            click.echo('No user permissions are configured')
+        print_service.print_acl(permissions_list, owner)
 
     @classmethod
-    def print_sid_objects(cls, sid_name, principal, acl_class=None):
+    def print_sid_objects(cls, sid_name, principal, acl_class=None, output_format=None):
+        print_service = create_acl_print_service(output_format)
         available_entities = Entity.load_available_entities(cls.normalize_sid_name(sid_name, principal),
                                                             principal, acl_class)
-        if len(available_entities) == 0:
-            click.echo("No accessible objects available for '%s'" % sid_name)
-            sys.exit(0)
-        entities_table = prettytable.PrettyTable()
-        entities_table.field_names = ["Type", "Name", "Owner"]
-        entities_table.align = "r"
-        for entity_type, entities in iteritems(available_entities):
-            for entity in entities:
-                entity_name = cls.build_name_by_type(entity, entity_type)
-                if not entity_name:
-                    continue
-                owner = entity['owner'] if 'owner' in entity else ''
-                entities_table.add_row([entity_type, entity_name, owner])
-        click.echo(entities_table)
-        click.echo()
-
-    @staticmethod
-    def build_name_by_type(entity, entity_type):
-        if str(entity_type).lower() == 'tool':
-            registry = entity['registry'] if 'registry' in entity else None
-            if 'image' in entity:
-                return "/".join([registry, entity['image']]) if registry else entity['image']
-            return None
-        if str(entity_type).lower() == 'docker_registry':
-            return entity['path'] if 'path' in entity else None
-        return entity['name'] if 'name' in entity else None
+        # printing service expects a plain dict with .items()
+        print_service.print_sid_objects(sid_name, dict(iteritems(available_entities)))
 
     @staticmethod
     def normalize_sid_name(sid_name, principal):

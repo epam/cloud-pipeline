@@ -84,12 +84,12 @@ public class LustreFSManager {
 
     public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
                                         final String type, final Integer throughput,
-                                        final Integer iops) {
+                                        final Integer iops, final String version) {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
                 .map(fs -> convert(fs, region))
-                .orElseGet(() -> createLustreFs(runId, size, type, throughput, iops, fsxClient));
+                .orElseGet(() -> createLustreFs(runId, size, type, throughput, iops, version, fsxClient));
     }
 
     public LustreFS updateLustreFsSize(final Long runId, final Integer size) {
@@ -168,7 +168,8 @@ public class LustreFSManager {
     }
 
     private LustreFS createLustreFs(final Long runId, final Integer size, final String type,
-                                    final Integer throughput, final Integer iops, final AmazonFSx fsxClient) {
+                                    final Integer throughput, final Integer iops, final String version,
+                                    final AmazonFSx fsxClient) {
         log.debug("Creating a new lustre fs for run id {}.", runId);
         final PipelineRun pipelineRun = runService.loadRunById(runId);
         final AwsRegion regionForRun = getRegion(pipelineRun);
@@ -185,6 +186,9 @@ public class LustreFSManager {
                 .withSubnetIds(getSubnetId(pipelineRun, regionForRun))
                 .withTags(tags)
                 .withLustreConfiguration(lustreConfiguration);
+        if (StringUtils.isNotBlank(version)) {
+            createFileSystemRequest.withFileSystemTypeVersion(version);
+        }
         if (isPersistent(deploymentType)) {
             createFileSystemRequest.withKmsKeyId(regionForRun.getKmsKeyArn());
         }

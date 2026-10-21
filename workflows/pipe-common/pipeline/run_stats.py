@@ -70,11 +70,11 @@ class Api:
         for id in tasks:
             task = tasks[id]
             task_time = (task.end - task.start).seconds
-            minutes = task_time/60
+            minutes = task_time//60
             seconds = task_time%60
             print('{}\t{}\t{} min {} s'.format(task.name, task.parameters, minutes, seconds))
             total_time += task_time
-        print
+        print()
         print('Whole pipeline ran for {} s.'.format(total_time))
 
 

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed, isObservableArray, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -72,11 +72,11 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  RUN_CAPABILITIES
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
-  RUN_CAPABILITIES,
   RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   applyCapabilities,
@@ -103,6 +103,7 @@ import RescheduleRunControl, {
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
 import {getValidationError} from '../elements/EndpointInput';
 import {getSelectOptions} from '../../special/instance-type-info';
+import {FallbackInstanceTypesInput} from '../../special/fallback-instance-types-input';
 import {
   correctLimitMountsParameterValue
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
@@ -113,6 +114,15 @@ import {
 } from '../../pipelines/launch/form/utilities/configure-fs/utilities';
 import ConfigurePlugins from '../../plugins/configure';
 import ReservationParameters from '../../pipelines/launch/form/components/reservation-parameters';
+import NodeUpRetryCountFormItem from '../../pipelines/launch/form/components/node-up-retry-count';
+import {
+  applyNodeUpRetryCountValue,
+  getDefaultNodeUpRetryCount,
+  getNodeUpRetryCountError,
+  getNodeUpRetryCountSkippedParameters,
+  isNodeUpRetryCountParameter,
+  nodeUpRetryCountValuesDiffer
+} from '../../pipelines/launch/form/utilities/node-up-retry-count';
 import {
   buildLaunchParametersFromReservationParameters, findReservationParameterConfig,
   readReservationParameters,
@@ -120,6 +130,14 @@ import {
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
 import roleModel from '../../../utils/roleModel';
+import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
+import Roles from '../../../models/user/Roles';
+import UserName from '../../special/UserName';
+import {
+  configurationShareToSids,
+  sidsToConfigurationShare,
+  shareSidsEqual
+} from './utilities/share-with-configuration';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -141,6 +159,7 @@ const regionNotConfiguredValue = 'not_configured';
   'onDemandToolInstanceTypes',
   'runDefaultParameters'
 )
+@inject(() => ({roles: new Roles()}))
 @roleModel.authenticationInfo
 @observer
 export default class EditToolForm extends React.Component {
@@ -215,7 +234,10 @@ export default class EditToolForm extends React.Component {
     rescheduleRun: undefined,
     runCapabilities: [],
     reservationParameters: undefined,
-    initialReservationParameters: undefined
+    initialReservationParameters: undefined,
+    shareSids: [],
+    initialShareSids: [],
+    shareDialogOpened: false
   };
 
   @observable defaultLimitMounts;
@@ -253,6 +275,13 @@ export default class EditToolForm extends React.Component {
       return (this.props.awsRegions.value || []).map(r => r);
     }
     return [];
+  }
+
+  @computed
+  get fallbackInstanceTypesDisabled () {
+    // when no fallback instance types are allowed, the control is hidden
+    // and fallback instance types are not saved to the tool configuration
+    return (this.props.preferences.maximumFallbackInstanceTypes || 0) <= 0;
   }
 
   get isWindowsPlatform () {
@@ -297,12 +326,24 @@ export default class EditToolForm extends React.Component {
     });
   };
 
+  get nodeUpRetryCountError () {
+    if (!this.props.preferences.allowNodeUpRetryCount) {
+      return undefined;
+    }
+    return getNodeUpRetryCountError(this.state.nodeUpRetryCount, this.props.preferences);
+  }
+
+  onNodeUpRetryCountChange = (nodeUpRetryCount) => {
+    this.setState({nodeUpRetryCount});
+  };
+
   handleSubmit = (e) => {
     e.preventDefault();
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (!err &&
         (!this.toolFormParameters || this.toolFormParameters.isValid) &&
         (!this.toolFormSystemParameters || this.toolFormSystemParameters.isValid) &&
+        !this.nodeUpRetryCountError &&
         (!this.endpointControl || this.endpointControl.validate())) {
         let parameters = {};
         if (this.toolFormParameters && this.toolFormSystemParameters) {
@@ -370,6 +411,11 @@ export default class EditToolForm extends React.Component {
             params,
             this.getCloudProvider()
           );
+          params = applyNodeUpRetryCountValue(
+            params,
+            this.state.nodeUpRetryCount,
+            this.props.preferences
+          );
           toggleParameter(CP_CAP_SGE, this.state.launchCluster && this.state.gridEngineEnabled);
           toggleParameter(CP_CAP_SPARK, this.state.launchCluster && this.state.sparkEnabled);
           toggleParameter(CP_CAP_SLURM, this.state.launchCluster && this.state.slurmEnabled);
@@ -428,6 +474,11 @@ export default class EditToolForm extends React.Component {
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
           instance_size: values.instanceType,
+          fallback_instance_types: !this.fallbackInstanceTypesDisabled &&
+            values.fallbackInstanceTypes &&
+            values.fallbackInstanceTypes.length > 0
+            ? values.fallbackInstanceTypes.slice()
+            : undefined,
           instance_image: values.instanceImage,
           friendly_url: prettyUrlGenerator.build(values.friendly_url),
           is_spot: `${values.is_spot}` === 'true',
@@ -445,6 +496,14 @@ export default class EditToolForm extends React.Component {
           }
         );
         configuration.parameters = appliedReservationParameters;
+        const {
+          users: shareWithUsers,
+          roles: shareWithRoles
+        } = sidsToConfigurationShare(this.state.shareSids);
+        /* eslint-disable camelcase */
+        configuration.share_with_users = shareWithUsers;
+        configuration.share_with_roles = shareWithRoles;
+        /* eslint-enable camelcase */
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
             await this.props.onSubmit(
@@ -471,6 +530,7 @@ export default class EditToolForm extends React.Component {
     switch (field) {
       case 'is_spot': return this.getPriceTypeInitialValue();
       case 'instance_size': return this.getInstanceTypeInitialValue();
+      case 'fallback_instance_types': return this.getFallbackInstanceTypesInitialValue();
       case 'instance_image': return this.getInstanceImageInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
@@ -485,6 +545,12 @@ export default class EditToolForm extends React.Component {
       (this.props.configuration && this.props.configuration.instance_size) ||
       (this.props.tool && this.props.tool.instanceType)
     );
+  };
+
+  getFallbackInstanceTypesInitialValue = () => {
+    const value = this.props.configuration &&
+      this.props.configuration.fallback_instance_types;
+    return Array.isArray(value) || isObservableArray(value) ? value.slice() : undefined;
   };
 
   getPrettyUrlInitialValue = () => {
@@ -570,6 +636,8 @@ export default class EditToolForm extends React.Component {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
     this.defaultLimitMounts = null;
+    state.nodeUpRetryCount = undefined;
+    state.initialNodeUpRetryCount = undefined;
     this.defaultProperties = [];
     this.defaultSystemProperties = [];
     this.defaultCommand = props.tool && props.tool.defaultCommand
@@ -649,6 +717,9 @@ export default class EditToolForm extends React.Component {
         state.initialReservationParameters = readReservationParameters(
           props.configuration.parameters
         );
+        const shareSids = configurationShareToSids(props.configuration);
+        state.shareSids = shareSids;
+        state.initialShareSids = shareSids;
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -669,6 +740,14 @@ export default class EditToolForm extends React.Component {
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               }
+              continue;
+            }
+            if (
+              this.props.preferences.allowNodeUpRetryCount &&
+              isNodeUpRetryCountParameter(key)
+            ) {
+              state.nodeUpRetryCount = props.configuration.parameters[key].value;
+              state.initialNodeUpRetryCount = state.nodeUpRetryCount;
               continue;
             }
             if (
@@ -705,6 +784,9 @@ export default class EditToolForm extends React.Component {
 
   componentDidMount () {
     this.reset();
+    if (this.props.roles) {
+      this.props.roles.fetchIfNeededOrWait();
+    }
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
       const cloudRegionId = this.props.configuration && this.props.configuration.cloudRegionId
@@ -1019,6 +1101,7 @@ export default class EditToolForm extends React.Component {
 
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
+      configurationFormFieldChanged('fallback_instance_types', 'fallbackInstanceTypes') ||
       configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
       configurationFormFieldChanged(
@@ -1052,6 +1135,10 @@ export default class EditToolForm extends React.Component {
         maxNodesCount !== this.state.maxNodesCount
       ) ||
       limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      nodeUpRetryCountValuesDiffer(
+        this.state.initialNodeUpRetryCount,
+        this.state.nodeUpRetryCount
+      ) ||
       kubeLabelsHasChanges(
         this.state.initialKubeLabels,
         this.state.kubeLabels
@@ -1060,7 +1147,8 @@ export default class EditToolForm extends React.Component {
         this.state.initialReservationParameters,
         this.state.reservationParameters
       ) ||
-      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications);
+      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications) ||
+      !shareSidsEqual(this.state.initialShareSids, this.state.shareSids);
   };
 
   initializeEndpointsControl = (control) => {
@@ -1342,6 +1430,112 @@ export default class EditToolForm extends React.Component {
     reservationParameters: value
   });
 
+  get endpointsAvailable () {
+    const endpoints = this.props.form.getFieldValue('endpoints') || [];
+    return (endpoints || []).length > 0;
+  }
+
+  openShareDialog = () => {
+    if (this.props.readOnly || !this.props.configuration) {
+      return;
+    }
+    this.setState({shareDialogOpened: true});
+  };
+
+  closeShareDialog = () => {
+    this.setState({shareDialogOpened: false});
+  };
+
+  saveShareSids = (sids = []) => {
+    this.setState({
+      shareSids: sids.slice(),
+      shareDialogOpened: false
+    });
+  };
+
+  splitRoleName = (name) => {
+    if (name && name.toLowerCase().indexOf('role_') === 0) {
+      return name.substring('role_'.length);
+    }
+    return name;
+  };
+
+  renderShareSidName = (sid) => {
+    if (sid.isPrincipal) {
+      return <UserName userName={sid.name} />;
+    }
+    const roles = this.props.roles?.loaded
+      ? (this.props.roles.value || [])
+      : [];
+    const [role] = roles.filter((r) => !r.predefined && r.name === sid.name);
+    if (role) {
+      return this.splitRoleName(sid.name);
+    }
+    return sid.name;
+  };
+
+  renderShareSummary = () => {
+    const {shareSids = []} = this.state;
+    if (!shareSids.length) {
+      return 'Not shared (click to configure)';
+    }
+    return shareSids.map((sid, index, array) => (
+      <span key={`${sid.name}-${sid.isPrincipal}`} style={{marginRight: 5}}>
+        {this.renderShareSidName(sid)}
+        {index < array.length - 1 ? ',' : undefined}
+      </span>
+    ));
+  };
+
+  renderShareWith = () => {
+    if (!this.props.configuration) {
+      return null;
+    }
+    const readOnly = this.state.pending || this.props.readOnly;
+    return (
+      <Row style={{marginBottom: 10, marginTop: 10}}>
+        <Col
+          xs={24}
+          sm={6}
+          style={{paddingRight: 10}}
+          className={classNames(
+            'cp-accent',
+            styles.toolSettingsTitle
+          )}
+        >
+          Share with:
+        </Col>
+        <Col xs={24} sm={12}>
+          <a
+            onClick={readOnly ? undefined : this.openShareDialog}
+            className={classNames('cp-text', {underline: !readOnly})}
+            style={{
+              cursor: readOnly ? 'default' : 'pointer',
+              pointerEvents: readOnly ? 'none' : undefined,
+              textDecoration: readOnly ? undefined : 'underline'
+            }}
+          >
+            {this.renderShareSummary()}
+          </a>
+          <ShareWithForm
+            endpointsAvailable={this.endpointsAvailable}
+            visible={this.state.shareDialogOpened}
+            roles={
+              this.props.roles?.loaded
+                ? (this.props.roles.value || []).map((r) => r)
+                : []
+            }
+            sids={(this.state.shareSids || []).map((s) => s)}
+            pending={readOnly}
+            onSave={this.saveShareSids}
+            onClose={this.closeShareDialog}
+            runSharing
+          />
+        </Col>
+      </Row>
+    );
+  };
+
   renderPrettyUrlFormItem = () => {
     const prettyUrlAvailable = this.isAdmin || this.isAdvancedUser;
     if (prettyUrlAvailable) {
@@ -1396,6 +1590,7 @@ export default class EditToolForm extends React.Component {
         allowSensitive = this.getAllowSensitiveInitialValue();
       }
       const limitMountsValue = getFieldValue('limitMounts');
+      const instanceTypeValue = this.getInstanceTypeValue();
       return (
         <div>
           {this.renderSeparator('Execution defaults')}
@@ -1440,6 +1635,42 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              {!this.fallbackInstanceTypesDisabled && (
+                <Form.Item
+                  {...this.formItemLayout}
+                  label=" "
+                  colon={false}
+                  style={{marginBottom: 10}}
+                >
+                  {getFieldDecorator('fallbackInstanceTypes', {
+                    initialValue: this.getFallbackInstanceTypesInitialValue()
+                  })(
+                    <FallbackInstanceTypesInput
+                      disabled={
+                        this.state.pending ||
+                        this.props.readOnly || (
+                          this.props.allowedInstanceTypes && (
+                            this.props.allowedInstanceTypes.changed ||
+                            this.props.allowedInstanceTypes.pending
+                          )
+                        )}
+                      instanceTypes={this.allowedInstanceTypes}
+                      showReservationTag
+                    />
+                  )}
+                </Form.Item>
+              )}
+              {this.props.preferences.allowNodeUpRetryCount && (
+                <NodeUpRetryCountFormItem
+                  formItemLayout={this.formItemLayout}
+                  style={{marginBottom: 10}}
+                  value={this.state.nodeUpRetryCount}
+                  error={this.nodeUpRetryCountError}
+                  placeholder={getDefaultNodeUpRetryCount(this.props.preferences)}
+                  disabled={this.state.pending || this.props.readOnly}
+                  onChange={this.onNodeUpRetryCountChange}
+                />
+              )}
               <Row>
                 <Col
                   xs={24}
@@ -1496,6 +1727,7 @@ export default class EditToolForm extends React.Component {
                 )}
               </Form.Item>
               {this.renderPrettyUrlFormItem()}
+              {this.renderShareWith()}
               <Form.Item
                 {...this.formItemLayout}
                 label="Disk (Gb)"
@@ -1801,6 +2033,7 @@ export default class EditToolForm extends React.Component {
                       provider={this.getCloudProvider()}
                       region={this.getCloudRegion()}
                       mode={RUN_CAPABILITIES_MODE.edit}
+                      instanceType={instanceTypeValue?.name}
                     />
                   </Form.Item>
                 )
@@ -1858,7 +2091,10 @@ export default class EditToolForm extends React.Component {
             getSystemParameterDisabledState={
               (parameterName) => getSystemParameterDisabledState(this, parameterName)
             }
-            skippedSystemParameters={getSkippedSystemParametersList(this)}
+            skippedSystemParameters={[
+              ...getSkippedSystemParametersList(this),
+              ...getNodeUpRetryCountSkippedParameters(this.props.preferences)
+            ]}
             value={this.defaultSystemProperties}
             onInitialized={this.onEditToolFormSystemParametersInitialized}
             testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
@@ -1988,6 +2224,7 @@ export default class EditToolForm extends React.Component {
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
                   (this.toolFormParameters && !this.toolFormParameters.isValid) ||
+                  !!this.nodeUpRetryCountError ||
                   this.state.kubeLabelsHasErrors ||
                   !endpointsAreValid
                 }>

@@ -36,8 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractJdbcTest {
@@ -142,7 +140,7 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractJdbcTest {
         
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
-        assertThat(actualPreference, is(expectedPreference));
+        Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
     }
 
     @Test
@@ -156,7 +154,6 @@ public class ToolSymlinkContextualPreferenceDaoTest  extends AbstractJdbcTest {
         assertTrue(loadedPreference.isPresent());
         final ContextualPreference actualPreference = loadedPreference.get();
         Assertions.assertThat(actualPreference).isEqualToIgnoringGivenFields(expectedPreference, "createdDate");
-        assertThat(actualPreference, is(expectedPreference));
     }
 
     @Test

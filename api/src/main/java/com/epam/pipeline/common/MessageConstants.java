@@ -91,6 +91,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_ICON_TOO_LARGE = "error.tool.icon.too.large";
     public static final String ERROR_TOOL_INVALID_IMAGE = "error.tool.invalid.image";
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
+    public static final String ERROR_TOOL_VERSION_DELETE_FAILED = "error.tool.version.delete.failed";
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
@@ -137,11 +138,14 @@ public final class MessageConstants {
     public static final String ERROR_RUN_OPERATION_FORBIDDEN = "error.run.operation.forbidden";
     public static final String ERROR_RUN_REGION_RELAUNCH_FORBIDDEN = "error.run.region.relaunch.forbidden";
     public static final String ERROR_RUN_NEXT_REGION_NOT_FOUND = "error.run.next.region.not.found";
+    public static final String ERROR_RUN_INSTANCE_TYPE_NOT_AVAILABLE_IN_REGIONS =
+            "error.run.instance.type.not.available.in.regions";
     public static final String ERROR_RUN_PARAMETERS_CLOUD_DEPENDENT = "error.run.parameters.cloud.dependent";
     public static final String ERROR_RESTART_CLUSTER_FORBIDDEN = "error.restart.cluster.forbidden";
     public static final String ERROR_RESTART_WORKER_FORBIDDEN = "error.restart.worker.forbidden";
     public static final String ERROR_RUN_IS_NOT_CONFIGURED_FOR_RESTART = "error.restart.is.not.configured";
     public static final String ERROR_RESTART_RUN_FAILURE = "error.restart.run.failure";
+    public static final String ERROR_RESTART_RUN_IN_REGION_FAILURE = "error.restart.run.in.region.failure";
     public static final String INFO_RESTART_RUN_SUCCESS = "info.restart.run.success";
     public static final String ERROR_RUN_START_FAILURE = "error.run.start.failure";
 
@@ -163,6 +167,7 @@ public final class MessageConstants {
     public static final String ERROR_DOCKER_IMAGE_NOT_FOUND = "error.docker.image.not.found";
     public static final String ERROR_PIPELINE_RUN_ID_NOT_FOUND = "error.pipeline.run.id.not.found";
     public static final String ERROR_ON_DEMAND_REQUIRED = "error.instance.on.demand.required";
+    public static final String ERROR_RUN_CANNOT_BE_PAUSED = "error.run.cannot.be.paused";
     public static final String ERROR_INSTANCE_IP_NOT_FOUND = "error.instance.ip.not.found";
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
@@ -185,12 +190,18 @@ public final class MessageConstants {
     public static final String INFO_LOG_PAUSE_COMPLETED = "info.log.pause.completed";
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
     public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
+    public static final String INFO_ATTEMPT_START_INSTANCE = "info.attempt.start.instance";
+    public static final String WARN_FAIL_START_INSTANCE = "warn.fail.start.instance";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
     public static final String ERROR_RUN_AS_PIPELINES_NOT_ALLOWED = "error.run.as.pipelines.not.allowed";
     public static final String ERROR_RUN_AS_PIPELINE_NOT_ALLOWED = "error.run.as.pipeline.not.allowed";
     public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
     public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
+    public static final String ERROR_RUN_SIDS_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.not.allowed.for.configuration";
+    public static final String ERROR_RUN_SIDS_UPDATE_NOT_ALLOWED_FOR_CONFIGURATION =
+            "error.run.sids.update.not.allowed.for.configuration";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
@@ -216,11 +227,12 @@ public final class MessageConstants {
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
     public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
+    public static final String ERROR_SAVE_RUN_METRICS = "error.save.run.metrics";
 
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
-    public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
+    public static final String DEBUG_RUN_METRICS_RECEIVED = "debug.run.metrics.received";
     public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
     public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
     public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
@@ -265,6 +277,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_VERSIONING_REQUIRED = "error.datastorage.versioning.required";
     public static final String ERROR_DATASTORAGE_CREATE_FAILED = "error.datastorage.create.failed";
     public static final String ERROR_DATASTORAGE_DELETE_FAILED = "error.datastorage.delete.failed";
+    public static final String ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES =
+            "error.datastorage.has.subfolder.storages";
     public static final String ERROR_DATASTORAGE_TYPE_NOT_SPECIFIED = "error.datastorage.type.not.specified";
     public static final String ERROR_DATASTORAGE_FORBIDDEN_MOUNT_POINT = "error.datastorage.forbidden.mount.point";
     public static final String ERROR_DATASTORAGE_IS_NOT_SHARED = "error.datastorage.is.not.shared";
@@ -423,8 +437,12 @@ public final class MessageConstants {
     public static final String INFO_INSTANCE_OFFERS_UPDATED = "instance.offers.updated";
     public static final String SETTING_IS_NOT_PROVIDED = "setting.is.not.provided";
     public static final String ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED = "instance.type.not.allowed";
+    public static final String ERROR_GPU_INSTANCE_NOT_ALLOWED_FOR_CPU_RUN =
+            "error.gpu.instance.not.allowed.for.cpu.run";
     public static final String ERROR_PRICE_TYPE_IS_NOT_ALLOWED = "price.type.not.allowed";
     public static final String ERROR_INSTANCE_DISK_IS_INVALID = "instance.disk.invalid";
+    public static final String ERROR_FALLBACK_INSTANCE_TYPES_EXCEEDS_LIMIT =
+            "fallback.instance.types.exceed.limit";
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
@@ -469,6 +487,8 @@ public final class MessageConstants {
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
     public static final String UNSUPPORTED_SECURITY_CLASS = "unsupported.security.class";
+    public static final String ERROR_USER_PERMISSIONS_CLASS_NOT_SUPPORTED =
+            "error.user.permissions.class.not.supported";
     public static final String ERROR_PERMISSION_IS_NOT_GRANTED = "error.permission.is.not.granted";
     public static final String ERROR_ENTITY_IS_LOCKED = "error.entity.is.locked";
     public static final String ERROR_USER_NOT_AUTHORIZED = "error.user.not.authorized";
@@ -580,6 +600,12 @@ public final class MessageConstants {
     public static final String ERROR_ATTACHMENT_NOT_FOUND = "error.attachment.not.found";
     public static final String ERROR_ATTACHMENT_SYSTEM_DATA_STORAGE_NOT_CONFIGURED =
         "error.attachment.system.data.storage.not.configured";
+
+    // Run Logs Storage
+    public static final String WARN_RUN_LOG_STORAGE_NOT_CONFIGURED = "warn.run.log.storage.not.configured";
+    public static final String ERROR_RUN_LOG_MIGRATION_FAILED = "error.run.log.migration.failed";
+    public static final String INFO_RUN_LOG_MIGRATED = "info.run.log.migrated";
+    public static final String WARN_RUN_LOG_MIGRATED = "warn.run.log.already.migrated";
 
     //Preferences
     public static final String ERROR_PREFERENCE_NAME_NOT_SPECIFIED = "error.preference.name.not.specified";
@@ -911,6 +937,37 @@ public final class MessageConstants {
             "error.aws.omics.store.incorrect.file.path";
     public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
+    //Archive runs
+    public static final String DEBUG_ARCHIVE_RUN_COMPLETED = "debug.archive.run.completed";
+    public static final String DEBUG_ARCHIVE_RUN_NO_IDS = "debug.archive.run.no.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_MASTER_BY_IDS = "debug.archive.run.loading.master.by.ids";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_MASTER = "debug.archive.run.loaded.master";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_CHILDREN = "debug.archive.run.loading.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_CHILDREN = "debug.archive.run.loaded.children";
+    public static final String DEBUG_ARCHIVE_RUN_LOADING_STATUSES = "debug.archive.run.loading.statuses";
+    public static final String DEBUG_ARCHIVE_RUN_LOADED_STATUSES = "debug.archive.run.loaded.statuses";
+
+    // Platform usage credits
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NOT_FOUND =
+            "error.platform.usage.credits.rule.not.found";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_NAME_EMPTY =
+            "error.platform.usage.credits.rule.name.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_FILTER_EMPTY =
+            "error.platform.usage.credits.rule.filter.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_ACTION_EMPTY =
+            "error.platform.usage.credits.rule.action.empty";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNKNOWN_FIELD =
+            "error.platform.usage.credits.rule.unknown.field";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_UNSUPPORTED_OPERAND =
+            "error.platform.usage.credits.rule.unsupported.operand";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_DURATION_NOT_SUPPORTED =
+            "error.platform.usage.credits.rule.duration.not.supported";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_RULE_TIME_WINDOW_INVALID =
+            "error.platform.usage.credits.rule.time.window.invalid";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_INSUFFICIENT =
+            "error.platform.usage.credits.insufficient";
+    public static final String ERROR_PLATFORM_USAGE_CREDITS_DISABLED =
+            "error.platform.usage.credits.disabled";
 
     private MessageConstants() {
         // no-op

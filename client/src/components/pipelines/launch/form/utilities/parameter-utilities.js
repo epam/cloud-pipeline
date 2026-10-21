@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,26 @@
  * limitations under the License.
  */
 
+import React from 'react';
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
 import {
   systemCapabilitiesParameters,
-  reservedParameters
+  reservedParameters,
+  CP_NODEUP_RETRY_COUNT
 } from './parameters';
+import {
+  getNodeUpRetryCountError,
+  isNodeUpRetryCountParameter,
+  nodeUpRetryCountNameIsReserved,
+  nodeUpRetryCountValueIsEmpty
+} from './node-up-retry-count';
 import {getSkippedParameters as getGPUScalingSkippedParameters} from './enable-gpu-scaling';
 import whoAmI from '../../../../../models/user/WhoAmI';
 import {base64toString, stringToBase64} from '../../../../../utils/base64';
+import MetadataEntityFilter from '../../../../../models/folderMetadata/MetadataEntityFilter';
+import {getFolderIdFromTree} from '../../../../../utils/folder-utils';
 
 function normalizeParameters (parameters) {
   const {keys = [], params = {}} = parameters || {};
@@ -307,7 +317,9 @@ function booleanParameterIsSetToValue (parameters, parameter, value = true) {
 }
 
 function getParameterValue (parameters, parameter, defaultValue = undefined) {
-  const value = (parameters && parameters.hasOwnProperty(parameter) ? parameters[parameter].value : undefined);
+  const value = (parameters && parameters.hasOwnProperty(parameter)
+    ? parameters[parameter].value
+    : undefined);
   if (value === undefined) {
     return defaultValue;
   }
@@ -339,6 +351,7 @@ window.launchFormVerbose = function (vb = true) {
  * @property {string} name
  * @property {string} type
  * @property {string} [description]
+ * @property {string} [placeholder]
  * @property {string|boolean} [value]
  * @property readOnly
  * @property required
@@ -353,6 +366,7 @@ window.launchFormVerbose = function (vb = true) {
  * @property [resolvedValue]
  * @property {boolean} [system]
  * @property {boolean} [userParameter]
+ * @property {object} [metadata_config]
  * @property {object} [restConfig]
  * @property {boolean} [fallbackConfig]
  * @property {ObjectParameterScheme} [scheme]
@@ -467,6 +481,160 @@ export function buildSchemeParameterValue (value, scheme) {
     result.push(e);
   }
   return stringToBase64(JSON.stringify(result));
+}
+
+/**
+ * Resolves metadata_entity parameter and update payload parameters from metadata_entity parameters
+ * @param {Object} [payload={}]
+ * @param {Parameter[]} [parameters=[]]
+ * @param {Object} [metadata={}]
+ **/
+function resolveMetadataEntityParameters (payload = {}, parameters = [], metadata = {}) {
+  const result = {...payload};
+  const metadataEntityParams = parameters.filter(
+    p => p.type === 'metadata_entity' && p.config?.metadata_config?.params
+  );
+  if (metadataEntityParams.length === 0) {
+    return result;
+  }
+  for (const param of metadataEntityParams) {
+    const {value, config} = param;
+    const {metadata_config: metadataConfig} = config;
+    const {params: paramsMapping} = metadataConfig;
+    if (!value || !paramsMapping) {
+      continue;
+    }
+    const metadataEntries = metadata[param.name];
+    if (!metadataEntries || !metadataEntries.elements) {
+      continue;
+    }
+    const externalIds = config.multiple
+      ? (typeof value === 'string' ? value.split(',').map(v => v.trim()) : [value])
+      : [value];
+    const matchingElements = metadataEntries.elements.filter(
+      element => externalIds.includes(element.externalId)
+    );
+    if (matchingElements.length === 0) {
+      continue;
+    }
+    for (const [paramName, metadataField] of Object.entries(paramsMapping)) {
+      const values = matchingElements
+        .map(element => {
+          const fieldData = element.data?.[metadataField];
+          return fieldData?.value;
+        })
+        .filter(v => v !== undefined && v !== null);
+      if (values.length === 0) {
+        continue;
+      }
+      const resolvedValue = config.multiple
+        ? values.join(',')
+        : values[0];
+      if (result[paramName]) {
+        result[paramName] = {
+          ...result[paramName],
+          value: resolvedValue
+        };
+      } else {
+        result[paramName] = {
+          type: 'string',
+          value: resolvedValue
+        };
+      }
+    }
+  }
+  return result;
+}
+
+const metadataCache = {};
+
+/**
+ * Fetch metadata for all metadata_entity type parameters.
+ * @param {Parameter[]} [parameters=[]]
+ * @param {Object} [pipeline]
+ * @param {Object} [pipelinesLibrary]
+ **/
+async function getMetadataForParameters (parameters = [], pipeline, pipelinesLibrary) {
+  const metadataEntityParams = parameters
+    .filter(p => p.type === 'metadata_entity' &&
+      p.config?.metadata_config?.metadataClass
+    );
+  if (metadataEntityParams.length === 0) {
+    return {};
+  }
+  const folderIdFallback = pipeline?.parentFolderId;
+  const getKey = ({config}) => {
+    const {folderId, metadataClass = '', filters, orderBy} = config?.metadata_config || {};
+    const filterKey = filters && filters.length > 0 ? JSON.stringify(filters) : '';
+    const orderByKey = orderBy && orderBy.length > 0 ? JSON.stringify(orderBy) : '';
+    return `${folderId || folderIdFallback}_${metadataClass}_${filterKey}_${orderByKey}`;
+  };
+  const requestsTemp = {};
+  for (const param of metadataEntityParams) {
+    const {folderId, metadataClass, filters, orderBy} = param.config.metadata_config;
+    const key = getKey(param);
+    if (metadataCache[key]) {
+      continue;
+    }
+    if (!requestsTemp[key]) {
+      const resolvedId = getFolderIdFromTree(folderId, pipelinesLibrary);
+      if (!resolvedId) {
+        console.warn(
+          `getMetadataForParameters: folder ${folderId} can not be resolved, ` +
+          'parent folder id will be used'
+        );
+      }
+      requestsTemp[key] = {
+        folderId: resolvedId || folderIdFallback,
+        metadataClass,
+        filters,
+        orderBy,
+        name: param.name
+      };
+    }
+  }
+  const requests = Object.entries(requestsTemp).map(
+    ([key, {name, folderId, metadataClass, filters, orderBy}]) => {
+      return new Promise((resolve) => {
+        const filterRequest = new MetadataEntityFilter();
+        const payload = {
+          folderId,
+          metadataClass,
+          page: 1,
+          pageSize: 999,
+          ...(filters && filters.length > 0 ? {filters} : {}),
+          ...(orderBy && orderBy.length > 0 ? {orderBy} : {})
+        };
+        filterRequest
+          .send(payload)
+          .then(() => {
+            if (filterRequest.error || !filterRequest.loaded) {
+              console.error(
+                `Error fetching metadata for ${name} parameter:`,
+                filterRequest.error
+              );
+              metadataCache[key] = {error: filterRequest.error};
+            } else {
+              metadataCache[key] = filterRequest.value || {};
+            }
+            resolve();
+          })
+          .catch((error) => {
+            console.error(`Error fetching metadata for ${name} parameter: ${error.message}`);
+            metadataCache[key] = {error: error.message};
+            resolve();
+          });
+      });
+    }
+  );
+  await Promise.all(requests);
+  const result = {};
+  for (const param of metadataEntityParams) {
+    const {name} = param;
+    const key = getKey(param);
+    result[name] = metadataCache[key];
+  }
+  return result;
 }
 
 /**
@@ -683,7 +851,7 @@ export function generateParameterConfigsFromJsonPayload (json) {
     for (const [key, value] of Object.entries(json)) {
       if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
         result.push(getParameterConfig(key, {type: parameterTypeFromValue(value), value}));
-      } else if (typeof value === 'object') {
+      } else if (typeof value === 'object' && value !== null) {
         if (Array.isArray(value)) {
           // object parameter
           result.push(getParameterConfig(key, {type: 'object', value}));
@@ -814,22 +982,29 @@ export function getParameterConfig (
         visible,
         validation,
         description,
+        placeholder,
         fallbackConfig = false,
         // eslint-disable-next-line camelcase
         pretty_name,
+        // eslint-disable-next-line camelcase
+        metadata_config,
         prettyName = pretty_name,
         scheme: parameterScheme,
+        // eslint-disable-next-line camelcase
+        read_only = false,
+        readonly = read_only,
+        readOnly = readonly,
         ...rest
       } = parameter;
       let parameterValue = value;
-      const readOnly = detached &&
+      const readOnlyComputed = readOnly || (detached &&
         pipeline &&
         noOverride &&
         (
           parameterValue !== undefined &&
           parameterValue !== null &&
           String(parameterValue).length !== 0
-        );
+        ));
       let scheme = parameterScheme ? getParameterSchemeConfig(parameterScheme) : undefined;
       let type = pType;
       if (type === 'object') {
@@ -854,7 +1029,7 @@ export function getParameterConfig (
         console.log('mapped value:', parameterValue);
         console.log('resolvedValue:', resolvedValue);
         console.log('no_override:', noOverride);
-        console.log('readOnly (computed):', readOnly);
+        console.log('readOnly (computed):', readOnlyComputed);
         console.log('required:', required);
         console.log('description:', description);
         console.log('validation:', validation);
@@ -877,8 +1052,10 @@ export function getParameterConfig (
         prettyName,
         type,
         description,
+        placeholder,
         value: typedValue(parameterValue),
-        readOnly: asBoolean(readOnly),
+        readOnly: asBoolean(readOnlyComputed),
+        readOnlyFromConfiguration: asBoolean(readOnly),
         noOverride: asBoolean(noOverride),
         section,
         required: asBoolean(required),
@@ -892,6 +1069,7 @@ export function getParameterConfig (
         validation,
         condition,
         system,
+        metadata_config,
         restConfig: rest,
         fallbackConfig,
         scheme
@@ -1074,21 +1252,25 @@ function getParameterValidationError (parameters, config) {
 /**
  * @param {Parameter[]} parameters
  * @param enumeration
+ * @returns {{name: string, value: string, visible: boolean}[]|undefined}
  */
 function parseParameterEnumeration (parameters, enumeration) {
   if (enumeration && (Array.isArray(enumeration) || isObservableArray(enumeration))) {
     return [...enumeration].map((item) => {
       if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
-        return String(item);
+        return {name: String(item), value: String(item), visible: true};
       }
-      if (typeof item === 'object') {
+      if (typeof item === 'object' && item.name !== undefined) {
         const {
           name,
+          value = name,
           visible
         } = item;
-        if (evaluate(parameters, `enum "${name}"`, visible)) {
-          return name;
-        }
+        return {
+          name,
+          value,
+          visible: evaluate(parameters, `enum "${name}"`, visible, true)
+        };
       }
       return undefined;
     }).filter(Boolean);
@@ -1186,7 +1368,8 @@ function validateParameter (parameter, parameters, rawEdit = false) {
         isCapabilityParameter(parameter.name) ||
         isReservationRequestParameter(parameter.name) ||
         isGPUScalingParameter(parameter.name) ||
-        isSystemParameter(parameter.name))
+        isSystemParameter(parameter.name) ||
+        (parameter.userParameter && nodeUpRetryCountNameIsReserved(parameter.name, preferences)))
     ) {
       throw new Error(`Name is reserved`);
     }
@@ -1204,7 +1387,9 @@ function validateParameter (parameter, parameters, rawEdit = false) {
     if (actualConfig.visible) {
       if (actualConfig.enumeration && actualConfig.enumeration.length > 0 && !rawEdit) {
         if (!actualConfig.multiple) {
-          value = actualConfig.enumeration.find((o) => o === value);
+          const matched = actualConfig.enumeration
+            .find((o) => o.visible && o.value === value);
+          value = matched ? matched.value : undefined;
         }
         if (!actualConfig.multiple && !value) {
           value = actualConfig.value;
@@ -1219,11 +1404,25 @@ function validateParameter (parameter, parameters, rawEdit = false) {
           throw new Error(validationError);
         }
       }
+      // with the dedicated "Capacity retries" control off, it is a usual parameter
+      const nodeUpRetryCount = preferences.allowNodeUpRetryCount &&
+        isNodeUpRetryCountParameter(parameter.name);
       if (
         actualConfig.required &&
+        // the launch applies the default when it is not set
+        !nodeUpRetryCount &&
         (value === undefined || value === null || String(value).trim() === '')
       ) {
         throw new Error('Required');
+      }
+      if (actualConfig.type.toLowerCase() === 'output' && value && value.includes(',')) {
+        throw new Error('Only one output path can be specified for output parameter');
+      }
+      if (nodeUpRetryCount) {
+        const nodeUpRetryCountError = getNodeUpRetryCountError(value, preferences);
+        if (nodeUpRetryCountError) {
+          throw new Error(nodeUpRetryCountError);
+        }
       }
     }
   } catch (e) {
@@ -1284,6 +1483,139 @@ function validateParametersIteration (parameters, rawEdit = false) {
   return {
     modified: changed,
     parameters: changed ? result : parameters
+  };
+}
+
+/**
+ * Parse validators module from string
+ * @param {string} moduleCode - The module code string
+ * @returns {Object} - Validators map: {paramName: validatorFn}
+ */
+function parseCustomValidatorsModule (moduleCode) {
+  if (!moduleCode || typeof moduleCode !== 'string') {
+    console.warn('parseCustomValidatorsModule: invalid module code provided');
+    return {};
+  }
+  try {
+    const moduleExports = {};
+    // eslint-disable-next-line no-new-func
+    const moduleFunction = new Function(
+      'module',
+      'exports',
+      'require',
+      `
+      ${moduleCode}
+      return module.exports;
+      `
+    );
+    const validators = moduleFunction(
+      {exports: moduleExports},
+      moduleExports,
+      (moduleName) => {
+        throw new Error(`require() is not allowed. Attempted to require: ${moduleName}`);
+      }
+    );
+    if (!validators || typeof validators !== 'object') {
+      console.error('Validators module must export an object, got:', typeof validators);
+      return {};
+    }
+    Object.keys(validators).forEach(key => {
+      if (typeof validators[key] !== 'function') {
+        console.error(`Invalid validator ${key}, must be function`);
+      }
+    });
+    return validators;
+  } catch (error) {
+    console.error('Failed to parse validators module:', error.message);
+    return {};
+  }
+};
+
+/**
+ * Applies custom validation functions to parameters.
+ * @param {Object.<string, function>} customValidators
+ * @param {Parameter[]} parameters
+ * @param {Object} opts
+ * @returns {Promise<{parameters: Parameter[], changed: boolean}>}
+ * A validator runs only if the parameter has a non-empty value, unless the function has
+ * `alwaysValidate === true`
+ */
+async function customValidate (customValidators, parameters, opts) {
+  if (!customValidators || typeof customValidators !== 'object') {
+    console.warn('customValidate: invalid customValidators provided');
+    return {parameters, changed: false};
+  }
+  const result = parameters.slice();
+  let changed = false;
+  const promises = parameters
+    .filter(({value, name}) => {
+      const validator = customValidators[name];
+      if (typeof validator !== 'function') {
+        return false;
+      }
+      if (validator.alwaysValidate === true) {
+        return true;
+      }
+      return !!value;
+    })
+    .map((parameter) => {
+      return new Promise(async (resolve) => {
+        try {
+          const validator = customValidators[parameter.name];
+          const validationResult = await validator(parameter, opts);
+          if (validationResult?.error) {
+            resolve({
+              ...parameter,
+              error: validationResult.error,
+              warning: undefined,
+              valid: false
+            });
+          } else if (validationResult?.warning) {
+            resolve({
+              ...parameter,
+              error: undefined,
+              warning: validationResult.warning,
+              valid: true
+            });
+          } else {
+            resolve({
+              ...parameter,
+              error: undefined,
+              warning: undefined,
+              valid: true
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Custom validator for "${parameter.name}" failed:`,
+            error.message
+          );
+          console.error('Stack trace:', error.stack);
+          resolve({
+            ...parameter,
+            error: undefined,
+            warning: 'Unable to validate parameter',
+            valid: true
+          });
+        }
+      });
+    });
+  const validationResults = await Promise.all(promises);
+  validationResults.forEach(parameter => {
+    const idx = result.findIndex(r => r.name === parameter.name);
+    if (idx >= 0) {
+      const shouldUpdate = parameter.error !== result[idx].error ||
+        parameter.warning !== result[idx].warning ||
+        parameter.valid !== result[idx].valid;
+      if (shouldUpdate) {
+        changed = true;
+        result.splice(idx, 1, parameter);
+      }
+    }
+  });
+  return {
+    parameters: result,
+    changed
   };
 }
 
@@ -1621,6 +1953,56 @@ export function isGPUScalingParameter (parameterName, options = {}) {
 }
 
 /**
+ * @param {Parameter[]} parameters
+ * @returns {Parameter|undefined}
+ */
+export function getNodeUpRetryCountParameter (parameters = []) {
+  // a parameter the user adds under this name is not the control's value
+  return (parameters || []).find((p) => !p.userParameter && isNodeUpRetryCountParameter(p.name));
+}
+
+/**
+ * Sets the CP_NODEUP_RETRY_COUNT value, adding the parameter if it is missing;
+ * an empty value removes it, so it is not stored at all
+ * @param {Parameter[]} parameters
+ * @param {string} value
+ * @returns {Parameter[]}
+ */
+export function setNodeUpRetryCountValue (parameters = [], value) {
+  const existing = getNodeUpRetryCountParameter(parameters);
+  if (nodeUpRetryCountValueIsEmpty(value)) {
+    return parameters.filter((p) => p !== existing);
+  }
+  if (existing) {
+    return parameters.map((p) => p === existing ? {...p, value} : p);
+  }
+  const cfg = getParameterConfig(CP_NODEUP_RETRY_COUNT, {type: 'int', value});
+  return [
+    ...parameters,
+    {
+      key: generateKey(parameters),
+      name: CP_NODEUP_RETRY_COUNT,
+      type: cfg.type,
+      value: cfg.value,
+      config: cfg,
+      configs: [cfg],
+      system: cfg.system
+    }
+  ];
+}
+
+/**
+ * With the dedicated "Capacity retries" control on, an empty value means "not set"
+ * @param {Parameter} parameter
+ * @returns {boolean}
+ */
+function isEmptyNodeUpRetryCountParameter (parameter) {
+  return preferences.allowNodeUpRetryCount &&
+    isNodeUpRetryCountParameter(parameter.name) &&
+    nodeUpRetryCountValueIsEmpty(parameter.value);
+}
+
+/**
  * @param {ObjectParameterScheme} [scheme]
  */
 export function objectParameterSchemeToPayload (scheme) {
@@ -1650,8 +2032,11 @@ export function parameterConfigToPayloadConfig (parameterConfig) {
     resolvedValue: parameterConfig.resolvedValue,
     validation: parameterConfig.validation,
     description: parameterConfig.description,
+    placeholder: parameterConfig.placeholder,
     scheme: objectParameterSchemeToPayload(parameterConfig.scheme),
-    pretty_name: parameterConfig.prettyName
+    pretty_name: parameterConfig.prettyName,
+    metadata_config: parameterConfig.metadata_config,
+    read_only: parameterConfig.readOnlyFromConfiguration
   };
 }
 
@@ -1678,6 +2063,7 @@ export function parametersToPayloadParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
+      !isEmptyNodeUpRetryCountParameter(parameter) &&
       !isReservedParameter(parameter.name))
     .reduce((acc, cur) => ({
       ...acc,
@@ -1722,6 +2108,7 @@ export function parametersToConfigurationParams (parameters = []) {
     .filter((parameter) => !isCapabilityParameter(parameter.name) &&
       !isReservationRequestParameter(parameter.name) &&
       !isGPUScalingParameter(parameter.name) &&
+      !isEmptyNodeUpRetryCountParameter(parameter) &&
       !isReservedParameter(parameter.name));
   for (const parameter of filtered) {
     const current = findParameterConfig(parameter, parameters);
@@ -1831,7 +2218,102 @@ export function parametersModified (parameters, initialParameters) {
   return modified;
 }
 
+/**
+ * Gets warning from parameters
+ * @param {Parameter[]} parameters
+ * @returns {Parameter[]}
+ */
+function getParametersWarning (parameters = []) {
+  const withWarnings = parameters
+    .filter((parameter) => parameter.warning && parameter.warning.trim().length > 0);
+  if (withWarnings.length > 0) {
+    const s = withWarnings.length > 1 ? 's' : '';
+    return (
+      <div>
+        The following parameter{s} {s ? 'have' : 'has a'} warning{s}:
+        {withWarnings.map(p => (<div key={p.name}>
+          <b>{p.name}</b>: {p.warning}
+        </div>))}
+      </div>
+    );
+  }
+  return null;
+}
+
+/**
+ * Gets warning from parameters
+ * @param {Parameter} parameter
+ * @param {boolean} showOptional
+ */
+function parameterIsVisible (parameter = {}, showOptional = true) {
+  const {config = {}} = parameter;
+  const {visible = true, required} = config;
+  if (showOptional) {
+    return visible;
+  }
+  return visible && required;
+}
+
+/**
+ * @param {Parameter[]} parameters
+ * @param {boolean} isSystem
+ * @param {boolean} rawEdit
+ * @param {object} userInfo
+ * @param {boolean} showOptional
+ * @param {boolean} hideNodeUpRetryCount - excludes CP_NODEUP_RETRY_COUNT, for callers
+ * that show it in its own control instead
+ */
+function getVisibleParameters (
+  parameters = [],
+  isSystem = false,
+  rawEdit = false,
+  userInfo,
+  showOptional = true,
+  hideNodeUpRetryCount = false
+) {
+  return parameters
+    .filter((parameter) => rawEdit || parameterIsVisible(parameter, showOptional))
+    // a parameter the user adds under this name stays listed, to show its name error
+    .filter((parameter) => !(
+      hideNodeUpRetryCount &&
+      !parameter.userParameter &&
+      isNodeUpRetryCountParameter(parameter.name)
+    ))
+    .filter((parameter) => isSystem
+      ? parameter.system &&
+      !isReservedParameter(parameter.name) &&
+      !isCapabilityParameter(parameter.name) &&
+      !isReservationRequestParameter(parameter.name) &&
+      !isGPUScalingParameter(parameter.name)
+      : !parameter.system)
+    .map((parameter) => isSystem ? mapSystemParameter(parameter, {
+      runDefaultParameters,
+      userInfo
+    }) : parameter);
+}
+
+/**
+ * @param {Parameter[]} parameters
+ */
+function downloadParametersTemplate (parameters = []) {
+  let yamlContent = '';
+  parameters.forEach((p) => {
+    const {name = '', value = ''} = p || {};
+    yamlContent += `${name}: ${value}\n`;
+  });
+  const blob = new Blob([yamlContent], {type: 'text/yaml;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'parameters-template.yaml';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export {
+  getVisibleParameters,
   getParameterValue,
   getParameterNumberValue,
   booleanParameterValue,
@@ -1839,7 +2321,9 @@ export {
   correctFormFieldValues,
   isVisible,
   validate,
+  customValidate,
   normalizeParameters,
+  parameterIsVisible,
   parseEnumeration,
   readParametersFromConfiguration,
   mergeParametersWithConfiguration,
@@ -1848,5 +2332,10 @@ export {
   addSystemParameter,
   addSystemParameters,
   hasResolvedValues,
-  toggleResolvedValues
+  toggleResolvedValues,
+  parseCustomValidatorsModule,
+  getParametersWarning,
+  downloadParametersTemplate,
+  getMetadataForParameters,
+  resolveMetadataEntityParameters
 };

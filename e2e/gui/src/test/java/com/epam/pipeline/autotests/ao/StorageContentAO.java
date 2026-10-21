@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.openqa.selenium.By;
 import org.testng.Assert;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -50,7 +51,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.editButton;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -171,18 +171,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     public StorageContentAO createFolder(String folderName) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE);
-        get(CREATE_FOLDER).waitUntil(enabled, DEFAULT_TIMEOUT);
+        get(CREATE_FOLDER).shouldBe(enabled);
         click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
-        $(byText("Create folder")).waitUntil(disappear, DEFAULT_TIMEOUT);
+        $(byText("Create folder")).shouldBe(disappear);
         return this;
     }
 
     public StorageContentAO createFolderWithError(String folderName, String message) {
         sleep(1, SECONDS);
         resetMouse().hover(CREATE);
-        get(CREATE_FOLDER).waitUntil(enabled, DEFAULT_TIMEOUT);
+        get(CREATE_FOLDER).shouldBe(enabled);
         click(CREATE_FOLDER);
         $(byId("name")).shouldBe(visible).setValue(folderName);
         $(button("OK")).shouldBe(visible).click();
@@ -199,7 +199,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         resetMouse().hover(CREATE).click(CREATE_FILE);
         $$(byId("name")).findBy(visible).setValue(fileName);
         $(button("OK")).shouldBe(visible).click();
-        $$(byClassName("browser__name-cell")).findBy(text(fileName)).waitUntil(exist, DEFAULT_TIMEOUT);
+        $$(byClassName("browser__name-cell")).findBy(text(fileName)).shouldBe(exist);
         return this;
     }
 
@@ -272,14 +272,17 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         String parentPath = format("%s/", inputField.should(exist).getValue());
         String addressPath = URI.create(parentPath).resolve(destination).toString();
 
-        inputField.setValue(addressPath).pressEnter();
+        setValue(inputField, addressPath);
+        inputField.pressEnter();
         return this;
     }
 
     public StorageContentAO tryNavigateToAnotherBucket(String anotherBucketName) {
         SelenideElement inputField = getOpenedNavigationBarInput().should(exist);
         String path = inputField.getValue();
-        inputField.setValue(replaceBucket(path, anotherBucketName)).pressEnter();
+
+        setValue(inputField, anotherBucketName);
+        inputField.pressEnter();
         return this;
     }
 
@@ -350,8 +353,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
-        $$(byClassName("browser__name-cell")).findBy(text(filename)).click();
-        $(buttonByIconClass("anticon-arrows-alt")).waitUntil(exist, DEFAULT_TIMEOUT);
+        $$(byClassName("browser__name-cell")).findBy(text(filename)).$x("./span/span").click();
+        $(buttonByIconClass("anticon-arrows-alt")).shouldBe(exist);
         return new MetadataSectionAO(this);
     }
 
@@ -444,6 +447,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public StorageContentAO validateIsUploading() {
+        $(withText("Uploading files...")).should(disappear);
+        return this;
+    }
+
     public StorageContentAO validateElementsAreNotEditable() {
         getElementsAOs().forEach(element -> element.ensureNotVisible(DELETE, EDIT));
         return this;
@@ -455,6 +463,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
+        if ($(byXpath(".//span[.='Attributes']")).exists()) {
+            return new MetadataSectionAO(this);
+        }
         click(ACTIONS);
         if (get(SHOW_METADATA).$(className("anticon-check")).exists()) {
             return new MetadataSectionAO(this);
@@ -498,6 +509,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO elementsShouldBeSelected(String... elementsNames) {
+        sleep(2, SECONDS);
         filesAndFolderElements().stream()
                 .filter(element ->
                         Arrays.stream(elementsNames)
@@ -509,7 +521,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO shouldContainNumberOfElements(int number) {
-        filesAndFolderElements().shouldHaveSize(number);
+        filesAndFolderElements().shouldHave(size(number));
         return this;
     }
 
@@ -831,8 +843,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public EditStoragePopUpAO editForNfsMount() {
-            if ($(byClassName("ant-modal-header")).isDisplayed() &&
-                    !$(byClassName("edit-storage-button")).isDisplayed()) {
+            if (!$(byClassName("edit-storage-button")).isDisplayed()) {
                 return this;
             }
             $(byClassName("edit-storage-button")).shouldBe(enabled).click();

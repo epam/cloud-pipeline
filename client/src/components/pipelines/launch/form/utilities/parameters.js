@@ -17,6 +17,8 @@ export const CP_DISABLE_HYPER_THREADING = 'CP_DISABLE_HYPER_THREADING';
 export const CP_CAP_LIMIT_MOUNTS = 'CP_CAP_LIMIT_MOUNTS';
 export const CP_CAP_RUN_CAPABILITIES = 'CP_CAP_RUN_CAPABILITIES';
 
+export const CP_NODEUP_RETRY_COUNT = 'CP_NODEUP_RETRY_COUNT';
+
 export const CP_CAP_DCV = 'CP_CAP_DCV';
 export const CP_CAP_DCV_DESKTOP = 'CP_CAP_DCV_DESKTOP';
 export const CP_CAP_DCV_WEB = 'CP_CAP_DCV_WEB';
@@ -71,3 +73,23 @@ export const reservedParameters = [
   CP_CAP_REQUESTS_GPU,
   CP_CAP_REQUESTS_RAM
 ];
+
+export const RUN_CAPABILITIES = {
+  dinD: 'DinD',
+  singularity: 'Singularity',
+  systemD: 'SystemD',
+  noMachine: 'NoMachine',
+  module: 'Module',
+  disableHyperThreading: 'Disable Hyper-Threading',
+  dcv: 'NICE DCV'
+};
+
+export const RUN_CAPABILITIES_PARAMETERS = {
+  [RUN_CAPABILITIES.dinD]: CP_CAP_DIND_CONTAINER,
+  [RUN_CAPABILITIES.singularity]: CP_CAP_SINGULARITY,
+  [RUN_CAPABILITIES.systemD]: CP_CAP_SYSTEMD_CONTAINER,
+  [RUN_CAPABILITIES.noMachine]: CP_CAP_DESKTOP_NM,
+  [RUN_CAPABILITIES.module]: CP_CAP_MODULES,
+  [RUN_CAPABILITIES.disableHyperThreading]: CP_DISABLE_HYPER_THREADING,
+  [RUN_CAPABILITIES.dcv]: CP_CAP_DCV
+};

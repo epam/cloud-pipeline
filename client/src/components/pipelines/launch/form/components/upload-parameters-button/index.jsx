@@ -1,11 +1,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, message} from 'antd';
+import {Button, Dropdown, Menu, message} from 'antd';
 import {readParametersFile} from './utilities';
 import styles from './upload-parameters-button.css';
+import {downloadParametersTemplate} from '../../utilities/parameter-utilities';
 
 class UploadParametersButton extends React.PureComponent {
+  get showDownload () {
+    const {parametersToDownload = []} = this.props;
+    return parametersToDownload.length > 0;
+  }
+
   onClick = () => {
     const {input} = this;
     if (input) {
@@ -52,7 +58,42 @@ class UploadParametersButton extends React.PureComponent {
 
   initializeInput = (input) => {
     this.input = input;
-  }
+  };
+
+  onMenuClick = ({key}) => {
+    const {parametersToDownload = [], disabled} = this.props;
+    if (disabled) {
+      return;
+    }
+    if (key === 'download') {
+      downloadParametersTemplate(parametersToDownload);
+    }
+  };
+
+  renderLink = () => {
+    const {parametersToDownload, disabled, children} = this.props;
+    if (disabled) {
+      return (
+        <span className="cp-text-not-important">
+          {children}
+          {this.showDownload ? (
+            <span style={{marginLeft: 8}}>Download template</span>
+          ) : null}
+        </span>
+      );
+    }
+    return (
+      <span>
+        <a onClick={this.onClick}>{children}</a>
+        <a
+          onClick={() => downloadParametersTemplate(parametersToDownload)}
+          style={{marginLeft: 8}}
+        >
+          Download template
+        </a>
+      </span>
+    );
+  };
 
   render () {
     const {
@@ -70,11 +111,7 @@ class UploadParametersButton extends React.PureComponent {
           className={classNames(className, styles.uploadParametersButtonContainer)}
           style={style}
         >
-          {
-            disabled
-              ? (<span className="cp-text-not-important">{children}</span>)
-              : (<a onClick={this.onClick}>{children}</a>)
-          }
+          {this.renderLink()}
           <input
             style={{display: 'none'}}
             type="file"
@@ -91,13 +128,29 @@ class UploadParametersButton extends React.PureComponent {
         className={classNames(className, styles.uploadParametersButtonContainer)}
         style={style}
       >
-        <Button
-          onClick={this.onClick}
-          size="small"
-          disabled={disabled}
-          type="primary">
-          {children}
-        </Button>
+        {this.showDownload ? (
+          <Dropdown.Button
+            overlay={(
+              <Menu onClick={this.onMenuClick}>
+                <Menu.Item key="download">Download template</Menu.Item>
+              </Menu>
+            )}
+            onClick={this.onClick}
+            size="small"
+            disabled={disabled}
+            type="primary"
+          >
+            {children}
+          </Dropdown.Button>
+        ) : (
+          <Button
+            onClick={this.onClick}
+            size="small"
+            disabled={disabled}
+            type="primary">
+            {children}
+          </Button>
+        )}
         <input
           style={{display: 'none'}}
           type="file"
@@ -119,7 +172,8 @@ UploadParametersButton.propTypes = {
   multiple: PropTypes.bool,
   accept: PropTypes.string,
   asLink: PropTypes.bool,
-  onParametersUploaded: PropTypes.func
+  onParametersUploaded: PropTypes.func,
+  parametersToDownload: PropTypes.arrayOf(PropTypes.shape({}))
 };
 
 export default UploadParametersButton;

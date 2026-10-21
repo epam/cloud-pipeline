@@ -19,20 +19,25 @@ import {computed, isObservableArray} from 'mobx';
 import escapeRegExp, {ESCAPE_CHARACTERS} from '../../utils/escape-reg-exp';
 import {parsePermissionsRestrictionsConfig} from './utilities/parse-permissions-restrictions';
 import {parseRunActionCriteria} from '../../components/runs/actions/actions-availability/utilities';
+import {
+  systemCapabilitiesParameters,
+  RUN_CAPABILITIES,
+  RUN_CAPABILITIES_PARAMETERS
+} from '../../components/pipelines/launch/form/utilities/parameters';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
 // eslint-disable-next-line max-len
 const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
-export const RUN_CAPABILITIES = {
-  dinD: 'DinD',
-  singularity: 'Singularity',
-  systemD: 'SystemD',
-  noMachine: 'NoMachine',
-  module: 'Module',
-  disableHyperThreading: 'Disable Hyper-Threading',
-  dcv: 'NICE DCV'
-};
+// mirrors the api's own default for `cluster.nodeup.retry.count`
+// (SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT)
+export const DEFAULT_NODE_UP_RETRY_COUNT = 5;
+
+const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
+  .reduce((acc, [name, parameter]) => ({
+    ...acc,
+    [parameter]: name
+  }), {});
 
 class PreferencesLoad extends Remote {
   constructor () {
@@ -101,6 +106,21 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get maximumFallbackInstanceTypes () {
+    return +this.getPreferenceValue('cluster.fallback.instance.types.max.count') || 0;
+  }
+
+  @computed
+  get allowNodeUpRetryCount () {
+    return `${this.getPreferenceValue('ui.launch.allow.nodeup.count')}` === 'true';
+  }
+
+  @computed
+  get defaultNodeUpRetryCount () {
+    return +this.getPreferenceValue('cluster.nodeup.retry.count') || DEFAULT_NODE_UP_RETRY_COUNT;
+  }
+
+  @computed
   get searchEnabled () {
     return !!this.getPreferenceValue('search.elastic.host');
   }
@@ -116,6 +136,11 @@ class PreferencesLoad extends Remote {
       }
     }
     return undefined;
+  }
+
+  @computed
+  get searchPromptTemplate () {
+    return this.getPreferenceValue('search.prompt.template');
   }
 
   @computed
@@ -396,12 +421,38 @@ class PreferencesLoad extends Remote {
             .filter(o => o.length);
         };
         const mapCapability = ([key, entry]) => {
-          if (
-            typeof entry === 'boolean' ||
-            entry.visible === false ||
-            Object.keys(RUN_CAPABILITIES).includes(key)
-          ) {
+          if (typeof entry === 'boolean' || entry.visible === false) {
             return undefined;
+          }
+          const isSystemCapability = systemCapabilitiesParameters.includes(key);
+          if (isSystemCapability) {
+            const displayName = SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY[key];
+            if (!displayName) {
+              return undefined;
+            }
+            return {
+              value: displayName,
+              name: entry?.name || displayName,
+              custom: false,
+              ...(entry?.description !== undefined
+                ? {description: entry.description}
+                : {}),
+              ...(entry?.platforms !== undefined
+                ? {platforms: parsePlatforms(entry.platforms)}
+                : {}),
+              ...(entry?.cloud !== undefined
+                ? {cloud: parseCloudProviders(entry.cloud)}
+                : {}),
+              ...(entry?.os !== undefined
+                ? {os: parseOS(entry.os)}
+                : {}),
+              ...(entry?.disclaimer !== undefined
+                ? {disclaimer: entry.disclaimer}
+                : {}),
+              ...(entry?.privileged !== undefined
+                ? {privileged: entry.privileged}
+                : {})
+            };
           }
           const {
             capabilities: childCapabilities = {}
@@ -418,7 +469,8 @@ class PreferencesLoad extends Remote {
             disclaimer: entry?.disclaimer || '',
             capabilities: Object.entries(childCapabilities)
               .map(mapCapability),
-            multiple: Boolean(entry?.multiple)
+            multiple: Boolean(entry?.multiple),
+            privileged: entry?.privileged
           };
         };
         return Object
@@ -546,6 +598,21 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get uiVscodeExtensionInstallTemplate () {
+    const value = this.getPreferenceValue('ui.vscode.extension.install.template');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "ui.vscode.extension.install.template" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
   get launchToolSizeLimits () {
     const value = this.getPreferenceValue('launch.tool.size.limits');
     if (value) {
@@ -601,6 +668,9 @@ class PreferencesLoad extends Remote {
       try {
         const capabilities = JSON.parse(value);
         const getCapabilityByKey = (key) => {
+          if (systemCapabilitiesParameters.includes(key)) {
+            return SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY[key];
+          }
           const capabilityKey = Object
             .keys(RUN_CAPABILITIES)
             .find((aKey) => aKey.toLowerCase() === (key || '').toLowerCase());
@@ -612,7 +682,7 @@ class PreferencesLoad extends Remote {
         return Object
           .entries(capabilities || {})
           .filter(([, value]) => (typeof value === 'boolean' && !value) ||
-            (typeof value === 'object' && !value.visible)
+            (typeof value === 'object' && value.visible === false)
           )
           .map(([key]) => getCapabilityByKey(key))
           .filter(Boolean);
@@ -1069,6 +1139,23 @@ class PreferencesLoad extends Remote {
       }
     }
     return undefined;
+  }
+
+  @computed
+  get miscAIPreferences () {
+    const value = this.getPreferenceValue('misc.ai.preferences');
+    if (value) {
+      try {
+        const cfg = JSON.parse(value);
+        if (typeof cfg === 'object') {
+          return cfg;
+        }
+        throw new Error(`unsupported type "${typeof cfg}"`);
+      } catch (e) {
+        console.warn('Error parsing "misc.ai.preferences" preference:', e.message);
+      }
+    }
+    return {};
   }
 
   @computed

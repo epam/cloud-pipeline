@@ -20,6 +20,7 @@ import json
 import jwt
 import os
 import pytz
+import requests
 import sys
 import tzlocal
 import platform
@@ -71,6 +72,7 @@ class Config(object):
         self.proxy_ntlm_user = None
         self.proxy_ntlm_domain = None
         self.proxy_ntlm_pass = None
+        self.ca_bundle = None
 
         if self.api and self.access_key:
             self.initialized = True
@@ -103,6 +105,8 @@ class Config(object):
                     self.initialized = True
                 if 'codec' in data:
                     self.change_encoding(data['codec'])
+                if 'ca_bundle' in data:
+                    self.ca_bundle = data['ca_bundle']
         elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
         self.validate_pac_proxy(self.proxy)
@@ -171,9 +175,11 @@ class Config(object):
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
-              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec, config_store):
+              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec, config_store,
+              ca_bundle=None):
         check_token(access_key, timezone)
         cls._validate_proxy(proxy, proxy_ntlm, proxy_ntlm_pass)
+        ca_bundle = cls._download_ca_bundle(ca_bundle)
         if codec and sys.version_info[0] >= 3:
             click.echo('Encoding can not be configured with current environment.', err=True)
             sys.exit(1)
@@ -186,7 +192,8 @@ class Config(object):
                   'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
                   'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass),
-                  'codec': codec
+                  'codec': codec,
+                  'ca_bundle': ca_bundle
                   }
         config_store_mode = config_store.lower()
         install_dir_config = cls.get_install_dir_config_path()
@@ -298,6 +305,30 @@ class Config(object):
         if self.__USER_TOKEN__:
             return self.__USER_TOKEN__
         return self.access_key
+
+    @classmethod
+    def _download_ca_bundle(cls, ca_bundle):
+        if not ca_bundle:
+            return ca_bundle
+        if not (ca_bundle.startswith('http://') or ca_bundle.startswith('https://')):
+            return ca_bundle
+        click.echo('Downloading CA bundle from {}...'.format(ca_bundle))
+        try:
+            response = requests.get(ca_bundle, verify=False)
+            response.raise_for_status()
+        except Exception as e:
+            click.echo('Failed to download CA bundle: {}'.format(e), err=True)
+            sys.exit(1)
+        home = os.path.expanduser('~')
+        config_folder = os.path.join(home, '.pipe')
+        if not os.path.exists(config_folder):
+            os.makedirs(config_folder)
+        local_path = os.path.join(config_folder, 'ca-bundle.crt')
+        with open(local_path, 'wb') as f:
+            f.write(response.content)
+        os.chmod(local_path, OWNER_ONLY_PERMISSION)
+        click.echo('CA bundle saved to {}'.format(local_path))
+        return local_path
 
     @classmethod
     def _validate_proxy(cls, proxy, proxy_ntlm, proxy_ntlm_pass):

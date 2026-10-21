@@ -113,6 +113,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -412,7 +413,8 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
 
-        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE) {
+        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE
+                || dataStorageVO.getType() == DataStorageType.NFS) {
             Assert.notNull(dataStorageVO.getFileShareMountId(),
                     messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
                            "fileShareMountId"));
@@ -545,6 +547,7 @@ public class DataStorageManager implements SecuredEntityManager {
         validateStorageIsNotUsedAsDefault(id, userManager.loadUsersByDeafultStorage(id));
 
         if (proceedOnCloud) {
+            validateStorageIsNotAParentForOtherStorages(dataStorage);
             try {
                 storageProviderManager.deleteBucket(dataStorage);
             } catch (DataStorageException e) {
@@ -1002,6 +1005,16 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public List<AbstractDataStorage> loadDataStoragesByMountId(final Long fsMountId) {
         return dataStorageDao.loadDataStoragesByMountId(fsMountId);
+    }
+
+    private void validateStorageIsNotAParentForOtherStorages(final AbstractDataStorage dataStorage) {
+        final List<AbstractDataStorage> subStorages =
+                dataStorageDao.loadDataStoragesByPathPrefix(dataStorage.getPath());
+        Assert.isTrue(subStorages.isEmpty(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_HAS_SUBFOLDER_STORAGES,
+                        dataStorage.getName(),
+                        subStorages.stream().map(AbstractDataStorage::getName)
+                                .collect(Collectors.joining(", "))));
     }
 
     private Optional<FileShareMount> findFileShareMount(final AbstractDataStorage storage,
@@ -1514,18 +1527,54 @@ public class DataStorageManager implements SecuredEntityManager {
 
     private StorageFolderListPermissionsContainer getPermissionsContainer(final AbstractDataStorage storage,
                                                                          final String path) {
-        return needToLoadPathPermissions(storage)
-                ? storagePathPermissionsService.getFolderListPermissions(storage.getId(), path)
-                : null;
+        if (!needToLoadPathPermissions(storage)) {
+            return null;
+        }
+        if (storagePermissionManager.isStorageReader()) {
+            return withReadPermission(loadFolderListPermissionsIfAny(storage, path));
+        }
+        return storagePathPermissionsService.getFolderListPermissions(storage.getId(), path);
+    }
+
+    private StorageFolderListPermissionsContainer loadFolderListPermissionsIfAny(final AbstractDataStorage storage,
+                                                                                final String path) {
+        try {
+            return storagePathPermissionsService.getFolderListPermissions(storage.getId(), path);
+        } catch (AccessDeniedException e) {
+            return StorageFolderListPermissionsContainer.builder().build();
+        }
+    }
+
+    /**
+     * Adds READ to every mask of the container, so that a storage reader is shown every item of a folder,
+     * while the WRITE bits still come from the path permissions.
+     */
+    private StorageFolderListPermissionsContainer withReadPermission(
+            final StorageFolderListPermissionsContainer container) {
+        final int readMask = new AclPermission(AclPermission.READ.getMask()).getSimpleMask();
+        container.setFolderMask(Optional.ofNullable(container.getFolderMask()).orElse(0) | readMask);
+        container.setFiles(withReadPermission(container.getFiles(), readMask));
+        container.setFolders(withReadPermission(container.getFolders(), readMask));
+        return container;
+    }
+
+    private Map<String, Integer> withReadPermission(final Map<String, Integer> masks, final int readMask) {
+        if (MapUtils.isEmpty(masks)) {
+            return masks;
+        }
+        return masks.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue() | readMask));
     }
 
     private void checkPermissionsOnItems(final AbstractDataStorage storage, final List<UpdateDataStorageItemVO> items) {
         if (needToLoadPathPermissions(storage)) {
-            ListUtils.emptyIfNull(items).forEach(item -> checkPermissionsOnItem(storage.getId(), item));
+            final boolean checkRead = needToLoadReadPathPermissions(storage);
+            ListUtils.emptyIfNull(items).forEach(item -> checkPermissionsOnItem(storage.getId(), item, checkRead));
         }
     }
 
-    private void checkPermissionsOnItem(final Long storageId, final UpdateDataStorageItemVO item) {
+    private void checkPermissionsOnItem(final Long storageId, final UpdateDataStorageItemVO item,
+                                        final boolean checkRead) {
         switch (item.getType()) {
             case File:
                 storagePathPermissionsService.canWriteToFile(storageId, item.getPath());
@@ -1534,7 +1583,10 @@ public class DataStorageManager implements SecuredEntityManager {
                 }
                 switch (item.getAction()) {
                     case Move: storagePathPermissionsService.canWriteToFile(storageId, item.getOldPath());
-                    case Copy: storagePathPermissionsService.canReadFile(storageId, item.getOldPath());
+                    case Copy:
+                        if (checkRead) {
+                            storagePathPermissionsService.canReadFile(storageId, item.getOldPath());
+                        }
                     default: break;
                 }
             case Folder:
@@ -1544,7 +1596,10 @@ public class DataStorageManager implements SecuredEntityManager {
                 }
                 switch (item.getAction()) {
                     case Move: storagePathPermissionsService.canWriteToFolder(storageId, item.getOldPath());
-                    case Copy: storagePathPermissionsService.canReadFolder(storageId, item.getOldPath());
+                    case Copy:
+                        if (checkRead) {
+                            storagePathPermissionsService.canReadFolder(storageId, item.getOldPath());
+                        }
                     default: break;
                 }
             default: break;
@@ -1553,7 +1608,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
     private void checkGetPermissionsOnItem(final AbstractDataStorage storage, final String path,
                                            final DataStorageItemType itemType) {
-        if (needToLoadPathPermissions(storage)) {
+        if (needToLoadReadPathPermissions(storage)) {
             switch (itemType) {
                 case Folder: storagePathPermissionsService.canGetFolder(storage.getId(), path);
                 case File: storagePathPermissionsService.canReadFile(storage.getId(), path);
@@ -1569,14 +1624,19 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private void checkReadPermissionsOnFile(final AbstractDataStorage storage, final String path) {
-        if (needToLoadPathPermissions(storage)) {
+        if (needToLoadReadPathPermissions(storage)) {
             storagePathPermissionsService.canReadFile(storage.getId(), path);
         }
     }
 
     private boolean needToLoadPathPermissions(final AbstractDataStorage storage) {
         return storage.isPathPermissionsEnabled() && DataStorageType.S3.equals(storage.getType())
-                && !authManager.isAdmin() && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
+                && !storagePermissionManager.isStorageAdmin()
+                && !authManager.getAuthorizedUser().equalsIgnoreCase(storage.getOwner());
+    }
+
+    private boolean needToLoadReadPathPermissions(final AbstractDataStorage storage) {
+        return needToLoadPathPermissions(storage) && !storagePermissionManager.isStorageReader();
     }
 
     private DataStorageListing addPathsMasks(final AbstractDataStorage storage,

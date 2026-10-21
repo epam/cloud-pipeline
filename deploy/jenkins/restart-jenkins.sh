@@ -48,7 +48,7 @@ docker run  -d \
             -e JENKINS_API_TOKEN= \
             -e JENKINS_HOST=$JENKINS_HOST \
             -e JENKINS_PORT=$JENKINS_PORT \
-            -e JENKINS_JOB_NAME=cloud-pipeline-build-pipectl \
+            -e JENKINS_JOB_NAME=cloud-pipeline-deploy-dev-aws \
             -e JENKINS_JOB_TOKEN=$JENKINS_JOB_TOKEN \
             -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
             --name cp-sqs-trigger \

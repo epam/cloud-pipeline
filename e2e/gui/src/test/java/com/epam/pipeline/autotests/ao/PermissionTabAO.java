@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.utils.*;
 
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
@@ -191,7 +192,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         public UserPermissionsTableAO validateAllCheckboxesAreListed() {
             Privilege.privilegesRows()
-                    .forEach(row -> row.findAll(byClassName("ant-checkbox-input")).shouldHaveSize(2));
+                    .forEach(row -> row.findAll(byClassName("ant-checkbox-input")).shouldHave(size(2)));
             return this;
         }
 

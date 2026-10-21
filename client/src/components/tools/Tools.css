@@ -209,12 +209,25 @@
 
 }
 
+.tool-version-actions,
+.tool-version-actions .run-button {
+  flex-wrap: nowrap;
+  display: flex;
+  align-items: center;
+}
+
 .tool-version-actions > button,
 .tool-version-actions > span,
 .tool-version-actions > div {
   margin-left: 5px !important;
   margin-right: 0 !important;
 }
+
+.version-list-toggle {
+  display: inline-flex;
+  vertical-align: middle;
+}
+
 
 .description-container {
   flex: 1;

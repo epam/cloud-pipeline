@@ -22,18 +22,27 @@ import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.platform.network.NetworkEventFilter;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramBin;
 import com.epam.pipeline.entity.cluster.monitoring.platform.histogram.HistogramType;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Node usage monitoring manager.
  */
 public interface UsageMonitoringManager {
+
+    Logger LOGGER = LoggerFactory.getLogger(UsageMonitoringManager.class);
+
 
     /**
      * Retrieves monitoring stats for node.
@@ -54,9 +63,54 @@ public interface UsageMonitoringManager {
      * @param runId The run ID to filter particular pod (optional)
      * @return List of monitoring stats.
      */
+    default PipelineRunPerformanceMetrics getMeanPerformanceMetricsForRun(final String nodeName,
+                                                                          final long runId,
+                                                                          final LocalDateTime from,
+                                                                          final LocalDateTime to) {
+        // hack to accumulate all data in one bin of histogram,
+        // when we specify interval much bigger that period of time when we have real data,
+        // ELK will put everything into one bucket,
+        //
+        // Also, calculation results such as avg and max aggregations will be fair,
+        // because elk "count" period of time in statistics only if it has real data
+        final Duration interval = Duration.between(from, to).multipliedBy(10);
+        List<MonitoringStats> statsForNode = getStatsForNode(nodeName, from, to, interval, null);
+        if (statsForNode.size() != 1) {
+            LOGGER.warn("Expected stats for node with one element, got: {}, won't save run performance metrics!",
+                    statsForNode.size());
+            return null;
+        }
+        return mapToRunPerformanceMetrics(runId, statsForNode.get(0));
+    }
+
+    /**
+     * Retrieves monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param runId The run ID to filter particular pod (optional)
+     * @return List of monitoring stats.
+     */
     List<MonitoringStats> getStatsForNode(String nodeName,
                                           @Nullable LocalDateTime from,
                                           @Nullable LocalDateTime to,
+                                          @Nullable Long runId);
+
+    /**
+     * Retrieves monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @param interval interval of time for the histogram step
+     * @param runId The run ID to filter particular pod (optional)
+     * @return List of monitoring stats.
+     */
+    List<MonitoringStats> getStatsForNode(String nodeName,
+                                          @Nullable LocalDateTime from,
+                                          @Nullable LocalDateTime to,
+                                          @Nullable Duration interval,
                                           @Nullable Long runId);
 
     /**
@@ -111,4 +165,29 @@ public interface UsageMonitoringManager {
     List<HistogramBin> getPlatformNetworkStats(HistogramType histogramType,
                                                LocalDateTime from, LocalDateTime to,
                                                Integer intervals, NetworkEventFilter filter);
+
+    default PipelineRunPerformanceMetrics mapToRunPerformanceMetrics(final long runId,
+                                                                     final MonitoringStats stat) {
+        final List<PipelineRunPerformanceMetric> result = new ArrayList<>();
+        if (stat.getCpuUsage() != null) {
+            result.add(
+                PipelineRunPerformanceMetric.builder()
+                        .type(PipelineRunPerformanceMetricsType.CPU)
+                        .capacity(stat.getContainerSpec().getNumberOfCores())
+                        .max(stat.getCpuUsage().getMax())
+                        .avg(stat.getCpuUsage().getLoad()).build()
+            );
+        }
+        if (stat.getMemoryUsage() != null) {
+            result.add(
+                PipelineRunPerformanceMetric.builder()
+                        .type(PipelineRunPerformanceMetricsType.MEMORY)
+                        .capacity(stat.getContainerSpec().getMaxMemory())
+                        .max(stat.getMemoryUsage().getMax())
+                        .avg(stat.getMemoryUsage().getUsage())
+                        .build()
+            );
+        }
+        return result.isEmpty() ? null : new PipelineRunPerformanceMetrics(runId, result);
+    }
 }

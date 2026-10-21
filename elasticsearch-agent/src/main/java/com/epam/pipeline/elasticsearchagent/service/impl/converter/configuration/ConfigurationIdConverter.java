@@ -15,8 +15,8 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration;
 
+import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
-import org.elasticsearch.action.bulk.BulkItemResponse;
 
 import static com.epam.pipeline.elasticsearchagent.service.impl.converter.configuration.RunConfigurationDocumentBuilder.ID_DELIMITER;
 

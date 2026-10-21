@@ -1,0 +1,12 @@
+name: Agent instructions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify-agent-instructions:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: verify instruction files
+        run: bash .agents/skills/modifying-instructions/scripts/verify-instructions.sh

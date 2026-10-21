@@ -15,9 +15,8 @@
  */
 package com.epam.pipeline.elasticsearchagent.service;
 
+import com.epam.pipeline.elasticsearch.model.BulkItemResponse;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-
 import java.time.LocalDateTime;
 import java.util.List;
 

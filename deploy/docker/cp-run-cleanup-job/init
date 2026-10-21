@@ -1,0 +1,32 @@
+#!/bin/bash
+
+if [ -z "$API" ]; then
+    if [ -z "${CP_API_SRV_INTERNAL_HOST}" ] || [ -z "$CP_API_SRV_INTERNAL_PORT" ]; then
+      echo "API is not provided and CP_API_SRV_INTERNAL_HOST CP_API_SRV_INTERNAL_PORT also is not present, can't construct API!"
+      exit 22
+    fi
+    export API="https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/restapi/"
+fi
+
+
+if [ -z "${API_TOKEN}" ]; then
+    if [ -n "$CP_API_JWT_ADMIN" ]; then
+       export API_TOKEN="$CP_API_JWT_ADMIN"
+    else
+       echo "API_TOKEN is not provided!"
+       exit 22
+    fi
+fi
+
+echo "Configuring pipe..."
+if ! pipe configure --auth-token ${API_TOKEN} --api ${API} --timezone local --proxy '' ; then
+  echo "Fail to configure pipe! Can't proceed further!"
+  exit 22
+else
+  echo "pipe configured."
+fi
+
+
+python -m cleanup.main
+EXIT_CODE=$?
+exit $EXIT_CODE

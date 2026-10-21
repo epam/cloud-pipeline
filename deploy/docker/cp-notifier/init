@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-function validate_smtp_parameter {
+function validate_notifier_parameter {
     local param_name="$1"
     local optional="$2"
     if [ -z "${!param_name}" ]; then
@@ -27,11 +27,18 @@ function validate_smtp_parameter {
     fi
 }
 
-validate_smtp_parameter "CP_NOTIFIER_SMTP_SERVER_HOST"
-validate_smtp_parameter "CP_NOTIFIER_SMTP_SERVER_PORT" 
-validate_smtp_parameter "CP_NOTIFIER_SMTP_FROM"
-validate_smtp_parameter "CP_NOTIFIER_SMTP_USER" "true"
-validate_smtp_parameter "CP_NOTIFIER_SMTP_PASS" "true"
+if [ "$CP_NOTIFIER_AZ_ENABLE" == "true" ]; then
+    validate_notifier_parameter "CP_NOTIFIER_AZ_CLIENT_ID"
+    validate_notifier_parameter "CP_NOTIFIER_AZ_CLIENT_SECRET" 
+    validate_notifier_parameter "CP_NOTIFIER_AZ_TENANT_ID"
+    validate_notifier_parameter "CP_NOTIFIER_AZ_SENDER"
+elif [ "$CP_NOTIFIER_SMTP_ENABLE" == "true" ]; then
+    validate_notifier_parameter "CP_NOTIFIER_SMTP_SERVER_HOST"
+    validate_notifier_parameter "CP_NOTIFIER_SMTP_SERVER_PORT" 
+    validate_notifier_parameter "CP_NOTIFIER_SMTP_FROM"
+    validate_notifier_parameter "CP_NOTIFIER_SMTP_USER" "true"
+    validate_notifier_parameter "CP_NOTIFIER_SMTP_PASS" "true"
+fi
 
 NOTIFIER_RUN_TIME_LOG=$CP_NOTIFIER_HOME/logs/runtime.log
 mkdir -p $(dirname $NOTIFIER_RUN_TIME_LOG)

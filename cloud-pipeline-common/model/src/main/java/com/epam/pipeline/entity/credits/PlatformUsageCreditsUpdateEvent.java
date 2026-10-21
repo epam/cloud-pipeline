@@ -1,0 +1,55 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.entity.credits;
+
+import com.epam.pipeline.vo.SecuredEntityVO;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlatformUsageCreditsUpdateEvent {
+
+    /**
+     * Optional client-supplied deduplication key.
+     *
+     * <p>When set, the server skips persisting the event if a record with the same {@code id}
+     * already exists in the database, making the call idempotent. Clients that may retry a
+     * batch (e.g. after a network timeout) should supply a stable, deterministic id — for
+     * example a UUID derived from the business key — so that retried batches do not
+     * double-apply credit changes.
+     *
+     * <p>If {@code null} the event is always treated as new and saved unconditionally.
+     */
+    private String id;
+    private Long userId;
+    /** Null for manual admin adjustments. */
+    private Long ruleId;
+    /** Null for manual admin adjustments. */
+    private SecuredEntityVO entity;
+    private PlatformUsageCreditsUpdateAction.ActionType incidentType;
+    /** Always positive; direction is given by incidentType. */
+    private int value;
+    private String message;
+    private LocalDateTime createdDate;
+}

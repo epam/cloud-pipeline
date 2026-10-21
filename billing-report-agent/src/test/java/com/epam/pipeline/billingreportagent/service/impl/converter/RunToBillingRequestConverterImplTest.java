@@ -25,14 +25,15 @@ import com.epam.pipeline.billingreportagent.model.ToolAddress;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
-import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -83,7 +84,7 @@ public class RunToBillingRequestConverterImplTest {
             .build();
 
     private final RunToBillingRequestConverter converter =
-        new RunToBillingRequestConverter(new RunBillingMapper(BILLING_CENTER_KEY));
+        new RunToBillingRequestConverter(new RunBillingMapper(BILLING_CENTER_KEY), ElasticStackVersion.V6);
 
     @Test
     public void convertShouldReturnElasticRequests() {
@@ -105,7 +106,7 @@ public class RunToBillingRequestConverterImplTest {
         assertEquals(1, billings.size());
 
         final DocWriteRequest billing = billings.get(0);
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
+        final Map<String, ?> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
         final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.RUN_BILLING_PREFIX, prevSync);
         assertEquals(expectedIndex, billing.index());
         assertEquals(run.getId().intValue(), requestFieldsMap.get("run_id"));

@@ -20,15 +20,16 @@ function generate_params_file() {
     all_cp_params_json=""
     all_cp_params=$(printenv | sed 's;=.*;;' | grep _PARAM_TYPE)
     for cp_param in $all_cp_params; do
-        [[ "$cp_param" =~ CP_* ]]  && continue
+        [[ "$cp_param" == CP_* ]]  && continue
         cp_param_clean=$(echo "$cp_param" | sed 's/_PARAM_TYPE//')
         cp_param_type="${!cp_param}"
-        if [ "$cp_param_type" == "boolean" ]; then
+        if [ "$cp_param_type" == "boolean" ] || [ "$cp_param_type" == "integer" ] || [ "$cp_param_type" == "float" ]; then
             all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": ${!cp_param_clean}"
         else
             # Escaping special characters for JSON
             _value=${!cp_param_clean}
             _value=${_value//\\/\\\\}
+            _value=$(eval "echo $_value")
             all_cp_params_json="${all_cp_params_json},\"$cp_param_clean\": \"${_value}\""
         fi
     done
@@ -166,7 +167,7 @@ printenv | grep '^NXF_'
 echo
 # - Print nextflow command
 echo "[INFO] Nextflow command:"
-_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}""
+_nf_cmd="$NXF_HOME/nextflow "${_ARGS[@]}" $CP_NF_EXTRA_ARGS"
 echo "$_nf_cmd"
 echo
 eval "$_nf_cmd"
@@ -177,4 +178,3 @@ if [ "$_IS_RUN_COMMAND" == "1" ]; then
 fi
 
 exit $_result_code
-

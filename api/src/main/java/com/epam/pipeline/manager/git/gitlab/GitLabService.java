@@ -384,7 +384,9 @@ public class GitLabService implements GitClientService {
 
     private GitlabClient getGitlabClientForRepository(final String repository, final String providedToken,
                                                       final boolean rootClient) {
-        final Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
+        final Long adminId = preferenceManager.findPreference(SystemPreferences.GIT_USER_ID)
+                .map(Long::valueOf)
+                .orElse(null);
         final String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         final boolean externalHost = StringUtils.isNotBlank(providedToken);
         final String token = externalHost ? providedToken

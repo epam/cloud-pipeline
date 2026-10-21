@@ -75,9 +75,11 @@ public class CloudPipelineAPIClient {
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") String cloudPipelineToken,
                                   @Value("${sync.search.files.elements.settings.preference.key}") String preferenceName,
+                                  @Value("${cloud.pipeline.connect.timeout:120}") int connectTimeout,
+                                  @Value("${cloud.pipeline.read.timeout:180}") int readTimeout,
                                   CloudPipelineApiExecutor cloudPipelineApiExecutor) {
         this.cloudPipelineAPI =
-                new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
+                new CloudPipelineApiBuilder(connectTimeout, readTimeout, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
         this.executor = cloudPipelineApiExecutor;
         this.storageSearchMasksPreferenceName = preferenceName;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.epam.pipeline.autotests.ao.StorageRulesTabAO.RuleAdditionPopupAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
@@ -56,6 +55,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.HISTORY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -186,6 +186,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
         historyTab()
                 .runPipeline()
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
 
         navigateToPipelineHistory()

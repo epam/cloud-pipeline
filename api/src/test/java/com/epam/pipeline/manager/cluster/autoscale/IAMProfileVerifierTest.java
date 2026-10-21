@@ -43,10 +43,13 @@ public class IAMProfileVerifierTest {
     private static final String RESTRICTED_INSTANCE_MASK = "m5*";
     private static final String RESTRICTED_REGION = "test";
     private static final String RESTRICTED_DOCKER_IMAGE = "ubuntu:latest";
+    private static final String RESTRICTED_PLATFORM_DOCKER_IMAGE = "windows:latest";
     private static final Long RESTRICTED_REGION_ID = 1L;
     private static final String ALLOWED_ROLE = "ROLE_TEST";
     private static final String ALLOWED_INSTANCE_TYPE = "r5.xlarge";
     private static final String ALLOWED_DOCKER_IMAGE = "centos:latest";
+    private static final String LINUX = "linux";
+    private static final String WINDOWS = "windows";
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final CloudRegionManager regionManager = mock(CloudRegionManager.class);
@@ -236,13 +239,57 @@ public class IAMProfileVerifierTest {
         assertThat(result).isTrue();
     }
 
+    @Test
+    public void shouldAllowIfPlatformOfTheToolDoesNotMatchThePlatformInNetworkConfigWithIAMRole() {
+        doReturn(getNetworksConfig(RESTRICTED_INSTANCE_MASK, null, null, WINDOWS))
+                .when(preferenceManager).getObjectPreferenceAs(any(), any());
+        doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+        final PipelineRun run = getRestrictedRun(ALLOWED_DOCKER_IMAGE, LINUX);
+
+        final PipelineUser pipelineUser = new PipelineUser();
+        doReturn(pipelineUser).when(authManager).getCurrentUser();
+
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldForbidIfPlatformOfTheToolMatchThePlatformInNetworkConfigWithIAMRole() {
+        doReturn(getNetworksConfig(RESTRICTED_INSTANCE_MASK,
+                Collections.singletonList(RESTRICTED_PLATFORM_DOCKER_IMAGE),
+                null, WINDOWS))
+                .when(preferenceManager).getObjectPreferenceAs(any(), any());
+        doReturn(getRestrictedRegion()).when(regionManager).loadOrDefault(RESTRICTED_REGION_ID);
+        final PipelineRun run = getRestrictedRun(RESTRICTED_PLATFORM_DOCKER_IMAGE, WINDOWS);
+
+        final PipelineUser pipelineUser = new PipelineUser();
+        doReturn(pipelineUser).when(authManager).getCurrentUser();
+
+        final boolean result = iamProfileVerifier.isImageRestricted(run);
+        assertThat(result).isTrue();
+    }
+
+    private static CloudRegionsConfiguration getNetworksConfig() {
+        return getNetworksConfig(RESTRICTED_INSTANCE_MASK,
+                Collections.singletonList(RESTRICTED_DOCKER_IMAGE),
+                Collections.singletonList(RESTRICTED_ROLE));
+    }
+
     private static CloudRegionsConfiguration getNetworksConfig(final String instanceMask,
                                                                final List<String> dockerImages,
                                                                final List<String> permissions) {
+        return getNetworksConfig(instanceMask, dockerImages, permissions, null);
+    }
+
+    private static CloudRegionsConfiguration getNetworksConfig(final String instanceMask,
+                                                               final List<String> dockerImages,
+                                                               final List<String> permissions,
+                                                               final String platform) {
         final AMIConfiguration amiConfig = new AMIConfiguration();
         amiConfig.setAdditionalSpec(Collections.singletonMap(IAM_INSTANCE_PROFILE, null));
         amiConfig.setPermissions(permissions);
         amiConfig.setDockerImages(dockerImages);
+        amiConfig.setPlatform(platform);
         amiConfig.setInstanceMask(instanceMask);
 
         final NetworkConfiguration regionConfig = new NetworkConfiguration();
@@ -254,20 +301,19 @@ public class IAMProfileVerifierTest {
         return config;
     }
 
-    private static CloudRegionsConfiguration getNetworksConfig() {
-        return getNetworksConfig(RESTRICTED_INSTANCE_MASK,
-                Collections.singletonList(RESTRICTED_DOCKER_IMAGE),
-                Collections.singletonList(RESTRICTED_ROLE));
+    private static PipelineRun getRestrictedRun() {
+        return getRestrictedRun(RESTRICTED_DOCKER_IMAGE, LINUX);
     }
 
-    private static PipelineRun getRestrictedRun() {
+    private static PipelineRun getRestrictedRun(final String image, final String platform) {
         final RunInstance instance = new RunInstance();
         instance.setNodeType(RESTRICTED_INSTANCE_TYPE);
         instance.setCloudRegionId(RESTRICTED_REGION_ID);
 
         final PipelineRun run = new PipelineRun();
         run.setInstance(instance);
-        run.setDockerImage(RESTRICTED_DOCKER_IMAGE);
+        run.setPlatform(platform);
+        run.setDockerImage(image);
 
         return run;
     }

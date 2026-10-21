@@ -46,7 +46,8 @@ public class PipelineUserWithStoragePath {
         FIRST_LOGIN_DATE("firstLoginDate"),
         ATTRIBUTES("attributes"),
         DEFAULT_STORAGE_ID("defaultStorageId"),
-        DEFAULT_STORAGE_PATH("defaultStoragePath");
+        DEFAULT_STORAGE_PATH("defaultStoragePath"),
+        USAGE_CREDITS("usageCredits");
 
         private final String value;
 

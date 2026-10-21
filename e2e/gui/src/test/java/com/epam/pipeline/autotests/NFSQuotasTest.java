@@ -110,6 +110,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     @BeforeMethod
     void openApplication() {
         open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @AfterClass(alwaysRun = true)
@@ -223,7 +225,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .reindexStorage()
                 .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)

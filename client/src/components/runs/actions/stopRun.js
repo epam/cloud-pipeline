@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import getCommitAllowedForTool from './get-commit-allowed-for-tool';
 import {diskSizeAllowsPause} from './warnings/disk-size-warning';
 import {checkRunActionAvailable, runActions} from './actions-availability';
+import runNodeIsUnavailable from './node-availability';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -46,6 +47,7 @@ export function canCommitRun (run) {
   // Checks only run state, not user permissions
   return canStopRun(run) &&
     runIsCommittable(run) &&
+    !runNodeIsUnavailable(run) &&
     checkRunActionAvailable(run, runActions.commit);
 }
 
@@ -86,8 +88,14 @@ export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
 
 export function canPauseRun (run, preferences) {
   // Checks only run state, not user permissions
-  const {instance, pipelineRunParameters, podIP, initialized} = run;
-  return canStopRun(run) && initialized &&
+  const {
+    instance,
+    pipelineRunParameters,
+    pauseDisabled = false,
+    podIP,
+    initialized
+  } = run;
+  return !pauseDisabled && canStopRun(run) && initialized &&
     instance && instance.spot !== undefined && !instance.spot &&
     podIP && !(run.nodeCount > 0) &&
     !(run.parentRunId && run.parentRunId > 0) &&
@@ -98,6 +106,7 @@ export function canPauseRun (run, preferences) {
       preferences,
       instance ? instance.nodeDisk : 0
     ) &&
+    !runNodeIsUnavailable(run) &&
     checkRunActionAvailable(run, runActions.pause);
 }
 
@@ -113,10 +122,20 @@ export function stopRun (parent, callback) {
     localization,
     dockerRegistries,
     hiddenObjects,
-    preferences
+    preferences,
+    authenticatedUserInfo
   } = parent.props;
   return function (run) {
-    return stopRunFn(run, callback, {preferences, localization, dockerRegistries, hiddenObjects});
+    return stopRunFn(
+      run,
+      callback,
+      {
+        preferences,
+        localization,
+        dockerRegistries,
+        hiddenObjects,
+        authenticatedUserInfo
+      });
   };
 }
 

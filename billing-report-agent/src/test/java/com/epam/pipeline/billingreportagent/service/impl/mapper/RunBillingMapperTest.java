@@ -25,7 +25,6 @@ import com.epam.pipeline.billingreportagent.model.ToolAddress;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
-import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -37,7 +36,6 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
@@ -79,7 +77,7 @@ public class RunBillingMapperTest {
     private static final String TEST_REGION_NAME = "test-region";
     private static final CloudProvider TEST_REGION_PROVIDER = CloudProvider.AWS;
     private static final BigDecimal TEST_PRICE = BigDecimal.ONE;
-    private static final int TEST_PRICES_MULTIPLIER = 100_000;
+    private static final Long TEST_PRICES_MULTIPLIER = 100_000L;
     private static final Long TEST_USAGE_MINUTES = 600L;
     private static final Long TEST_PAUSED_MINUTES = 400L;
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
@@ -165,57 +163,54 @@ public class RunBillingMapperTest {
             .region(region)
             .build();
 
-        final XContentBuilder mappedBilling = mapper.map(billingContainer);
-
-        final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
+        final Map<String, ?> mappedFields = mapper.map(billingContainer);
 
         Assert.assertEquals(SearchDocumentType.PIPELINE_RUN.name(),
                 mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        Assert.assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
-                mappedFields.get("created_date"));
-        Assert.assertEquals(ResourceType.COMPUTE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals(TEST_REGION_ID.intValue(), mappedFields.get("cloudRegionId"));
+        Assert.assertEquals(TEST_DATE, mappedFields.get("created_date"));
+        Assert.assertEquals(ResourceType.COMPUTE, mappedFields.get("resource_type"));
+        Assert.assertEquals(TEST_REGION_ID, mappedFields.get("cloudRegionId"));
         Assert.assertEquals(TEST_REGION_NAME, mappedFields.get("cloud_region_name"));
-        Assert.assertEquals(TEST_REGION_PROVIDER.toString(), mappedFields.get("cloud_region_provider"));
+        Assert.assertEquals(TEST_REGION_PROVIDER, mappedFields.get("cloud_region_provider"));
 
-        Assert.assertEquals(TEST_RUN_ID.intValue(), mappedFields.get("run_id"));
-        Assert.assertEquals(TEST_RUN_COMPUTE_TYPE.toString(), mappedFields.get("compute_type"));
+        Assert.assertEquals(TEST_RUN_ID, mappedFields.get("run_id"));
+        Assert.assertEquals(TEST_RUN_COMPUTE_TYPE, mappedFields.get("compute_type"));
         Assert.assertEquals(TEST_NODE_TYPE, mappedFields.get("instance_type"));
 
-        Assert.assertEquals(TEST_PIPELINE_ID.intValue(), mappedFields.get("pipeline"));
+        Assert.assertEquals(TEST_PIPELINE_ID, mappedFields.get("pipeline"));
         Assert.assertEquals(TEST_PIPELINE_NAME, mappedFields.get("pipeline_name"));
         Assert.assertEquals(TEST_PIPELINE_VERSION, mappedFields.get("pipeline_version"));
-        Assert.assertEquals(TEST_USER_ID.intValue(), mappedFields.get("pipeline_owner_id"));
+        Assert.assertEquals(TEST_USER_ID, mappedFields.get("pipeline_owner_id"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("pipeline_owner_name"));
         Assert.assertEquals(AbstractEntityMapper.SIMPLE_DATE_FORMAT.format(TEST_JAVA_DATE),
                 mappedFields.get("pipeline_created_date"));
 
         Assert.assertEquals(TEST_TOOL_IMAGE, mappedFields.get("tool"));
-        Assert.assertEquals(TEST_TOOL_REGISTRY_ID.intValue(), mappedFields.get("tool_registry_id"));
+        Assert.assertEquals(TEST_TOOL_REGISTRY_ID, mappedFields.get("tool_registry_id"));
         Assert.assertEquals(TEST_TOOL_REGISTRY_NAME, mappedFields.get("tool_registry_name"));
-        Assert.assertEquals(TEST_TOOL_GROUP_ID.intValue(), mappedFields.get("tool_group_id"));
+        Assert.assertEquals(TEST_TOOL_GROUP_ID, mappedFields.get("tool_group_id"));
         Assert.assertEquals(TEST_TOOL_GROUP_NAME, mappedFields.get("tool_group_name"));
-        Assert.assertEquals(TEST_TOOL_ID.intValue(), mappedFields.get("tool_id"));
+        Assert.assertEquals(TEST_TOOL_ID, mappedFields.get("tool_id"));
         Assert.assertEquals(TEST_TOOL_NAME, mappedFields.get("tool_name"));
         Assert.assertEquals(TEST_TOOL_VERSION, mappedFields.get("tool_version"));
-        Assert.assertEquals(TEST_USER_ID.intValue(), mappedFields.get("tool_owner_id"));
+        Assert.assertEquals(TEST_USER_ID, mappedFields.get("tool_owner_id"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("tool_owner_name"));
         Assert.assertEquals(AbstractEntityMapper.SIMPLE_DATE_FORMAT.format(TEST_JAVA_DATE),
                 mappedFields.get("tool_created_date"));
 
-        Assert.assertEquals(TEST_USAGE_MINUTES.intValue(), mappedFields.get("usage_minutes"));
-        Assert.assertEquals(TEST_PAUSED_MINUTES.intValue(), mappedFields.get("paused_minutes"));
-        Assert.assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
-        Assert.assertEquals(run.getComputePricePerHour().intValue() * TEST_PRICES_MULTIPLIER,
+        Assert.assertEquals(TEST_USAGE_MINUTES, mappedFields.get("usage_minutes"));
+        Assert.assertEquals(TEST_PAUSED_MINUTES, mappedFields.get("paused_minutes"));
+        Assert.assertEquals(run.getPricePerHour().longValue(), mappedFields.get("run_price"));
+        Assert.assertEquals(run.getComputePricePerHour().longValue() * TEST_PRICES_MULTIPLIER,
                 mappedFields.get("compute_price"));
-        Assert.assertEquals(run.getDiskPricePerHour().intValue() * TEST_PRICES_MULTIPLIER,
+        Assert.assertEquals(run.getDiskPricePerHour().longValue() * TEST_PRICES_MULTIPLIER,
                 mappedFields.get("disk_price"));
-        Assert.assertEquals(TEST_COST.intValue(), mappedFields.get("cost"));
+        Assert.assertEquals(TEST_COST, mappedFields.get("cost"));
 
         Assert.assertEquals(TEST_STARTED_DATE_STR, mappedFields.get("started_date"));
         Assert.assertEquals(TEST_FINISHED_DATE_STR, mappedFields.get("finished_date"));
 
-        Assert.assertEquals(TEST_USER_ID.intValue(), mappedFields.get("owner_id"));
+        Assert.assertEquals(TEST_USER_ID, mappedFields.get("owner_id"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }

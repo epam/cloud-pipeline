@@ -7,11 +7,9 @@ import Divider from './divider';
 import styles from './parameters.css';
 import LoadingView from '../../../../special/LoadingView';
 import {
+  getVisibleParameters,
   hasResolvedValues,
-  isCapabilityParameter,
-  isGPUScalingParameter, isReservationRequestParameter,
-  isReservedParameter,
-  mapSystemParameter, toggleResolvedValues
+  toggleResolvedValues
 } from '../utilities/parameter-utilities';
 import RootEntityTypeParameter from './parameter/root-entity-type-input';
 import {Checkbox} from 'antd';
@@ -43,12 +41,6 @@ function getSections (parameters) {
 function filterParameterBySection (parameter, section) {
   const parameterSection = getParameterSection(parameter);
   return parameterSection.toLowerCase() === section.toLowerCase();
-}
-
-function parameterIsVisible (parameter) {
-  const {config = {}} = parameter;
-  const {visible = true} = config;
-  return visible;
 }
 
 @inject(
@@ -85,6 +77,14 @@ class Parameters extends Component {
       return undefined;
     }
     return this.props.authenticatedUserInfo.value;
+  }
+
+  get optionalIsVisible () {
+    const {showOptionalParameters = true, system} = this.props;
+    if (system) {
+      return true;
+    }
+    return showOptionalParameters;
   }
 
   checkResolvedValues = () => {
@@ -156,24 +156,21 @@ class Parameters extends Component {
       detached,
       pipeline,
       parameterRowClassName,
-      description
+      description,
+      parametersMetadata,
+      hideNodeUpRetryCount
     } = this.props;
     if (!preferences.loaded || !runDefaultParameters.loaded) {
       return (<LoadingView />);
     }
-    const filtered = parameters
-      .filter((parameter) => rawEdit || parameterIsVisible(parameter))
-      .filter((parameter) => system
-        ? parameter.system &&
-        !isReservedParameter(parameter.name) &&
-        !isCapabilityParameter(parameter.name) &&
-        !isReservationRequestParameter(parameter.name) &&
-        !isGPUScalingParameter(parameter.name)
-        : !parameter.system)
-      .map((parameter) => system ? mapSystemParameter(parameter, {
-        runDefaultParameters,
-        userInfo: this.userInfo
-      }) : parameter);
+    const filtered = getVisibleParameters(
+      parameters,
+      system,
+      rawEdit,
+      this.userInfo,
+      this.optionalIsVisible,
+      hideNodeUpRetryCount
+    );
     const sections = getSections(filtered);
     const grouped = sections.map((section) => ({
       section,
@@ -311,6 +308,7 @@ class Parameters extends Component {
                       currentCloudRegionId={currentCloudRegionId}
                       currentProjectId={currentProjectId}
                       currentProjectMetadata={currentProjectMetadata}
+                      parametersMetadata={parametersMetadata}
                       currentMetadataEntity={currentMetadataEntity}
                       rootEntityId={rootEntityId}
                       metadataAutoComplete={metadataAutoComplete}
@@ -344,6 +342,7 @@ Parameters.propTypes = {
   rootEntityId: PropTypes.string,
   onChangeRootEntityId: PropTypes.func,
   showRootEntityId: PropTypes.bool,
+  showOptionalParameters: PropTypes.bool,
   metadataAutoComplete: PropTypes.bool,
   navigationClassName: PropTypes.string,
   navigationStyle: PropTypes.object,
@@ -351,7 +350,8 @@ Parameters.propTypes = {
   detached: PropTypes.bool,
   pipeline: PropTypes.bool,
   parameterRowClassName: PropTypes.string,
-  description: PropTypes.node
+  description: PropTypes.node,
+  hideNodeUpRetryCount: PropTypes.bool
 };
 
 export default Parameters;

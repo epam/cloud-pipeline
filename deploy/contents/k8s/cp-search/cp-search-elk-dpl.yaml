@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-search-elk
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-${CP_SEARCH_ELK_CLUSTER_VERSION}
           securityContext:
             privileged: true
           imagePullPolicy: "IfNotPresent"
@@ -39,8 +39,6 @@ spec:
               name: search-elk-data
             - mountPath: /usr/share/elasticsearch/backup
               name: search-elk-backup
-            - mountPath: /var/log/curator
-              name: search-elk-curator-log
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
@@ -58,9 +56,6 @@ spec:
         - name: search-elk-backup
           hostPath:
             path: /opt/search-elk/backup
-        - name: search-elk-curator-log
-          hostPath:
-            path: /opt/search-elk/log/curator
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials

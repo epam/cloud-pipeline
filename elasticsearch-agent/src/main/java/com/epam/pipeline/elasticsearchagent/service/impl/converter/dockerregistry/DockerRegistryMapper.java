@@ -19,11 +19,10 @@ import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -31,27 +30,21 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class DockerRegistryMapper implements EntityMapper<DockerRegistry> {
 
     @Override
-    public XContentBuilder map(final EntityContainer<DockerRegistry> container) {
-        DockerRegistry dockerRegistry = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            jsonBuilder
-                    .startObject()
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.DOCKER_REGISTRY.name())
-                    .field("id", dockerRegistry.getId())
-                    .field("name", dockerRegistry.getName())
-                    .field("path", dockerRegistry.getPath())
-                    .field("createdDate", parseDataToString(dockerRegistry.getCreatedDate()))
-                    .field("description", dockerRegistry.getDescription())
-                    .field("userName", dockerRegistry.getUserName());
+    public Map<String, ?> map(final EntityContainer<DockerRegistry> container) {
+        final DockerRegistry dockerRegistry = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.DOCKER_REGISTRY.name());
+        jsonMap.put("id", dockerRegistry.getId());
+        jsonMap.put("name", dockerRegistry.getName());
+        jsonMap.put("path", dockerRegistry.getPath());
+        jsonMap.put("createdDate", parseDataToString(dockerRegistry.getCreatedDate()));
+        jsonMap.put("description", dockerRegistry.getDescription());
+        jsonMap.put("userName", dockerRegistry.getUserName());
 
-            buildUserContent(container.getOwner(), jsonBuilder);
-            buildMetadata(container.getMetadata(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
+        buildUserContent(container.getOwner(), jsonMap);
+        buildMetadata(container.getMetadata(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for docker registry: ", e);
-        }
+        return jsonMap;
     }
 }

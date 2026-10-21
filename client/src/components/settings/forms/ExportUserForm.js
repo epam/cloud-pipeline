@@ -37,7 +37,8 @@ const Keys = [
   {label: 'Roles', value: 'includeRoles'},
   {label: 'Groups', value: 'includeGroups'},
   {label: 'Blocked', value: 'includeStatus'},
-  {label: 'Default data storage', value: 'includeDataStorage'}
+  {label: 'Default data storage', value: 'includeDataStorage'},
+  {label: 'Usage credits', value: 'includeCredits'}
 ];
 
 const DefaultValues = Keys.map(k => k.value);

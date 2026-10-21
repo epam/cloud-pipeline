@@ -81,12 +81,18 @@ public class NotificationParameterManager {
     }
 
     public Map<String, Object> build(final NotificationType type, final PipelineRun run,
-                                     final double cpuRate, final double idleCpuLevel) {
+                                     final double processorUnitValue, final double idleProcessorUnitThreshold) {
         final Map<String, Object> parameters = build(type);
         parameters.putAll(buildEntities(NotificationEntityClass.RUN, run.getId()));
         parameters.putAll(PipelineRunMapper.map(run));
-        parameters.put("idleCpuLevel", idleCpuLevel);
-        parameters.put("cpuRate", cpuRate * PERCENT);
+        if (NotificationType.IDLE_GPU_RUN.equals(type)) {
+            parameters.put("idleGpuNumberThreshold", idleProcessorUnitThreshold);
+            parameters.put("activeGpuNumber", processorUnitValue);
+        }
+        if (NotificationType.IDLE_CPU_RUN.equals(type)) {
+            parameters.put("idleCpuLevel", idleProcessorUnitThreshold);
+            parameters.put("cpuRate", processorUnitValue * PERCENT);
+        }
         return parameters;
     }
 
@@ -158,6 +164,15 @@ public class NotificationParameterManager {
         parameters.put("pipelineUsers", users.stream()
                 .map(user -> UserMapper.map(user, userStorages))
                 .collect(Collectors.toList()));
+        return parameters;
+    }
+
+    public Map<String, Object> build(final NotificationType type,
+                                     final PipelineUser user,
+                                     final int creditsBalance) {
+        final Map<String, Object> parameters = build(type);
+        parameters.put("user", UserMapper.map(user, Collections.emptyMap()));
+        parameters.put("creditsBalance", creditsBalance);
         return parameters;
     }
 

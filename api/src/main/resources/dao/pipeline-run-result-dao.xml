@@ -45,5 +45,13 @@
                 ]]>
             </value>
         </property>
+        <property name="deletePipelineRunResultsByRunIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.pipeline_run_result
+                    WHERE run_id IN (:RUN_ID)
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

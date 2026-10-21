@@ -238,6 +238,11 @@ docker build    $DOCKERS_SOURCES_PATH/cp-search-elk \
                 -t "$CP_SEARCH_ELK_DIST_NAME"
 docker push "$CP_SEARCH_ELK_DIST_NAME"
 
+CP_SEARCH_ELK_CURATOR_DIST_NAME=${CP_SEARCH_ELK_CURATOR_DIST_NAME:-"$CP_DIST_REPO_NAME:search-elk-curator-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-search-elk-curator \
+                -t "$CP_SEARCH_ELK_CURATOR_DIST_NAME"
+docker push "$CP_SEARCH_ELK_CURATOR_DIST_NAME"
+
 # Heapster ELK
 CP_HEAPSTER_ELK_DIST_NAME=${CP_HEAPSTER_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:heapster-elk-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-heapster-elk \
@@ -349,6 +354,13 @@ CP_MLFLOW_DIST_NAME=${CP_MLFLOW_DIST_NAME:-"$CP_DIST_REPO_NAME:mlflow-server-${D
 docker build    $DOCKERS_SOURCES_PATH/cp-mlflow-server \
                 -t "$CP_MLFLOW_DIST_NAME"
 docker push "$CP_MLFLOW_DIST_NAME"
+
+# cp-run-cleanup-job
+CP_RUN_CLEANUP_JOB_DIST_NAME=${CP_RUN_CLEANUP_JOB_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-run-cleanup-job-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-run-cleanup-job \
+                -t "$CP_RUN_CLEANUP_JOB_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_RUN_CLEANUP_JOB_DIST_NAME"
 
 
 ########################

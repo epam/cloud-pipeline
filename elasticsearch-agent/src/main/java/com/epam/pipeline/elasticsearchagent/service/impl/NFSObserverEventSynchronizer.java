@@ -16,13 +16,24 @@
 
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
-import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
-
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DeleteRequest;
+import com.epam.pipeline.elasticsearch.model.IndexRequest;
+import com.epam.pipeline.elasticsearch.model.IndicesOptions;
+import com.epam.pipeline.elasticsearch.model.MultiSearchRequest;
+import com.epam.pipeline.elasticsearch.model.MultiSearchResponse;
+import com.epam.pipeline.elasticsearch.model.MultiSearchResponseInner;
+import com.epam.pipeline.elasticsearch.model.QueryBuilders;
+import com.epam.pipeline.elasticsearch.model.SearchHit;
+import com.epam.pipeline.elasticsearch.model.SearchHits;
+import com.epam.pipeline.elasticsearch.model.SearchRequest;
+import com.epam.pipeline.elasticsearch.model.SearchResponse;
+import com.epam.pipeline.elasticsearch.model.SearchSourceBuilder;
 import com.epam.pipeline.elasticsearchagent.exception.ElasticClientException;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.model.nfsobserver.NFSObserverEvent;
 import com.epam.pipeline.elasticsearchagent.model.nfsobserver.NFSObserverEventType;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -38,19 +49,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.MultiSearchRequest;
-import org.elasticsearch.action.search.MultiSearchResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.Scroll;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -80,6 +78,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
+
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "sync.nfs-file.observer.sync.disable", matchIfMissing = true, havingValue = "false")
@@ -93,7 +93,6 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private static final String DOC_MAPPING_TYPE = "_doc";
     private static final String FOLDER_EVENT_WILDCARD = "/*";
     private static final int SCROLLING_PAGE_SIZE = 1000;
-    private static final Scroll TIME_SCROLL = new Scroll(new TimeValue(60000));
 
     private final String eventsBucketName;
     private final String eventsBucketFolderPath;
@@ -115,13 +114,18 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                             Integer eventsFileChunkSize,
                                         final @Value("${sync.nfs-file.observer.sync.pool.size:4}")
                                             Integer poolSize,
+                                        final @Value("${sync.nfs-file.storage.exclude.metadata.key:Billing status}")
+                                            String storageExcludeKey,
+                                        final @Value("${sync.nfs-file.storage.exclude.metadata.value:Exclude}")
+                                            String storageExcludeValue,
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
                                         final ElasticsearchServiceClient elasticsearchServiceClient,
                                         final ElasticIndexService elasticIndexService,
                                         final List<ObjectStorageFileManager> objectStorageFileManagers,
                                         final NFSStorageMounter nfsMounter) {
         super(indexSettingsPath, rootMountPoint, indexPrefix, indexName, bulkInsertSize, bulkLoadTagsSize,
-              cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter, tagDelimiter);
+              cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter, tagDelimiter,
+              storageExcludeKey, storageExcludeValue);
 
         this.eventsFileChunkSize = eventsFileChunkSize;
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
@@ -140,7 +144,9 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .filter(storage -> Objects.isNull(storage.getSourceStorageId()))
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
         final AbstractDataStorage eventsStorage = storagePathMapping.get(eventsBucketName);
-        storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS);
+        final Set<Long> excludedStorageIds = loadExcludedStorageIds();
+        storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS
+                || excludedStorageIds.contains(dataStorage.getId()));
         loadEventsFilesGroupedByProducer(getListingCredentials(eventsStorage))
             .forEach((producer, fileList) ->
                          processEventsFromFilesInChunks(storagePathMapping, eventsStorage, producer, fileList));
@@ -163,8 +169,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                         final String eventsProducer,
                                         final List<DataStorageFile> files) {
         try (IndexRequestContainer requestContainer =
-                 new IndexRequestContainer(requests -> getElasticsearchServiceClient().sendRequests(null, requests),
-                                           getBulkInsertSize())) {
+                 new IndexRequestContainer(null, getElasticsearchServiceClient(), getBulkInsertSize())) {
             groupEventsByStorage(storagePathMapping, files, eventsStorage)
                 .forEach((dataStorage, events) -> processStorageEvents(requestContainer, dataStorage, events));
             deleteEventFiles(eventsStorage, files);
@@ -326,7 +331,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             if (CollectionUtils.isNotEmpty(scrollingPageEvents)) {
                 allFilesEvents.addAll(scrollingPageEvents);
                 folderResponse = getElasticsearchServiceClient()
-                        .nextScrollPage(folderResponse.getScrollId(), TIME_SCROLL);
+                        .nextScrollPage(folderResponse.getScrollId());
             } else {
                 break;
             }
@@ -390,7 +395,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                 Optional.ofNullable(searchHitMap.get(event.getFilePath()))
                         .map(hit -> {
                             log.debug("Creating storage file removal request");
-                            return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId());
+                            return new DeleteRequest(hit.getIndex(), DOC_MAPPING_TYPE, hit.getId(),
+                                    getElasticsearchServiceClient().getVersion());
                         })
                         .ifPresent(requestContainer::add);
                 return null;
@@ -405,11 +411,14 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private Map<String, SearchHit> findIndexedFilesEvent(final AbstractDataStorage dataStorage,
                                                          final Collection<NFSObserverEvent> events) {
-        final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
-        events.stream().map(event -> buildFileSearchRequest(dataStorage, event)).forEach(multiSearchRequest::add);
+        final ElasticStackVersion version = getElasticsearchServiceClient().getVersion();
+        final MultiSearchRequest multiSearchRequest = new MultiSearchRequest(version);
+        events.stream()
+                .map(event -> buildFileSearchRequest(dataStorage, event))
+                .forEach(multiSearchRequest::add);
         final MultiSearchResponse multiSearchResponse = getElasticsearchServiceClient().search(multiSearchRequest);
         return Stream.of(multiSearchResponse.getResponses())
-            .map(MultiSearchResponse.Item::getResponse)
+            .map(MultiSearchResponseInner.Item::getResponse)
             .map(SearchResponse::getHits)
             .filter(hits -> hits.getTotalHits() == 1)
             .map(hits -> hits.getAt(0))
@@ -426,27 +435,29 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     }
 
     private SearchRequest buildFileSearchRequest(final AbstractDataStorage dataStorage, final NFSObserverEvent event) {
-        final SearchSourceBuilder source = new SearchSourceBuilder()
-            .query(QueryBuilders.boolQuery()
-                       .must(QueryBuilders.termQuery(FILE_ID_FIELD, event.getFilePath()))
-                       .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
+        final ElasticStackVersion version = getElasticsearchServiceClient().getVersion();
+        final SearchSourceBuilder source = new SearchSourceBuilder(version)
+            .query(QueryBuilders.boolQuery(version)
+                    .must(QueryBuilders.termQuery(FILE_ID_FIELD, event.getFilePath(), version))
+                    .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId(), version)))
             .size(1);
-        return new SearchRequest("*")
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
+        return new SearchRequest(version, "*")
+            .indicesOptions(IndicesOptions.lenientExpandOpen(version))
             .source(source);
     }
 
     private SearchRequest buildFolderSearchRequest(final AbstractDataStorage dataStorage,
                                                    final NFSObserverEvent event) {
+        final ElasticStackVersion version = getElasticsearchServiceClient().getVersion();
         final String eventPath = event.getFilePath();
-        final SearchSourceBuilder source = new SearchSourceBuilder()
-            .query(QueryBuilders.boolQuery()
-                       .must(QueryBuilders.prefixQuery(FILE_ID_FIELD, extractFolderFromFolderEvent(eventPath)))
-                       .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId())))
+        final SearchSourceBuilder source = new SearchSourceBuilder(version)
+            .query(QueryBuilders.boolQuery(version)
+                       .must(QueryBuilders.prefixQuery(FILE_ID_FIELD, extractFolderFromFolderEvent(eventPath), version))
+                       .must(QueryBuilders.termQuery(STORAGE_ID_FIELD, dataStorage.getId(), version)))
             .size(SCROLLING_PAGE_SIZE);
-        return new SearchRequest("*")
-            .scroll(TIME_SCROLL)
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
+        return new SearchRequest(version, "*")
+            .scroll()
+            .indicesOptions(IndicesOptions.lenientExpandOpen(version))
             .source(source);
     }
 

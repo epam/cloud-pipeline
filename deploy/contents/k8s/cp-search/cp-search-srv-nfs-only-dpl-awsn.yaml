@@ -22,7 +22,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: cp-search-srv
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-${CP_SEARCH_SRV_VERSION}
           imagePullPolicy: "Always"
           securityContext:
             privileged: true

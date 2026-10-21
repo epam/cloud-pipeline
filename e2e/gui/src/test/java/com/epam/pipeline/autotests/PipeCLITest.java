@@ -93,10 +93,14 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .switchPipeCLI()
                 .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY)
                 .generateAccessKey()
+                .ok()
                 .getCLIConfigureCommand();
         final String cliConfigureCommandConfigStore = format("%s --config-store install-dir", cliConfigureCommand);
         tools()
-                .perform(registry, group, tool, tool -> tool.run(this))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setDefaultLaunchOptions()
+                .doNotMountStoragesSelect(true)
+                .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell

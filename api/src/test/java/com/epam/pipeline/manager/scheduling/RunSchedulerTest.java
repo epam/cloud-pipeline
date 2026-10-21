@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ public class RunSchedulerTest extends AbstractSpringTest {
     private static final String CRON_EXPRESSION = "*/2 * * * * ?"; // to run every 2 seconds
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
     private static final String USER_OWNER = "OWNER";
+    private static final int TEST_SCHEDULER_TIMEOUT_MILLIS = 3000;
 
     @Autowired
     private RunScheduler runScheduler;
@@ -148,13 +149,11 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
         runScheduler.scheduleRunSchedule(runSchedule);
 
-        TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
-        runScheduler.unscheduleRunSchedule(runSchedule);
-
         final int numberOfInvocations = 1 + TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        Mockito.verify(configurationRunner, Mockito.times(numberOfInvocations))
+        Mockito.verify(configurationRunner, Mockito.timeout(TEST_SCHEDULER_TIMEOUT_MILLIS).times(numberOfInvocations))
                 .runConfiguration(Mockito.any(), Mockito.any(), Mockito.any());
 
+        runScheduler.unscheduleRunSchedule(runSchedule);
     }
 
     @Test

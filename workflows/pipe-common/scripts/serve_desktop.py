@@ -123,7 +123,7 @@ def _extract_user_from_request(logger):
     bearer_cookie = request.cookies.get('bearer')
     if not bearer_cookie:
         logger.warn('Bearer was not found in request cookies...')
-    user_name = jwt.decode(bearer_cookie, verify=False).get('sub') if bearer_cookie else None
+    user_name = jwt.decode(bearer_cookie, options={"verify_signature": False}, algorithms=["HS256", "RS256"]).get('sub') if bearer_cookie else None
     if not user_name:
         logger.warn('User name was not found in bearer. '
                     'Falling back to owner connection file...')
@@ -152,7 +152,7 @@ def start(serving_port, desktop_port, template_path):
     run_dir = _extract_parameter('RUN_DIR', default=os.path.join(runs_dir, pipeline_name + '-' + run_id))
     log_dir = _extract_parameter('LOG_DIR', default=os.path.join(run_dir, 'logs'))
     python_exec = os.path.join(os.getenv('CP_PYTHON_DIR', default='c:\\python'), 'python.exe') if is_windows() \
-        else _extract_parameter('CP_PYTHON2_PATH', default='python2')
+        else (_extract_parameter('CP_PYTHON_PATH') or _extract_parameter('CP_PYTHON2_PATH', default='python'))
     user_name = _extract_parameter('OWNER')
     if not user_name:
         raise RuntimeError('Cannot get OWNER from environment')

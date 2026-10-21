@@ -19,6 +19,8 @@ import {
   transformBytesToK8sRAMRequest,
   getInstanceResources, getInstanceResourcesAvailability
 } from './utilities';
+import {Link} from 'react-router';
+import UserName from '../../../../../special/UserName';
 
 class ReservationParameters extends React.PureComponent {
   state = {
@@ -28,7 +30,8 @@ class ReservationParameters extends React.PureComponent {
     resourcesPending: false,
     resourcesError: undefined,
     instanceType: undefined,
-    resourcesDetailsVisible: false
+    resourcesDetailsVisible: false,
+    expandedResourceNodes: {}
   };
 
   componentDidMount () {
@@ -97,7 +100,8 @@ class ReservationParameters extends React.PureComponent {
           resources: [],
           resourcesPending: true,
           resourcesError: undefined,
-          resourcesDetailsVisible: false
+          resourcesDetailsVisible: false,
+          expandedResourceNodes: {}
         });
         const config = await getReservationParametersConfig(instanceType);
         if (this.token === token) {
@@ -152,7 +156,8 @@ class ReservationParameters extends React.PureComponent {
         commit({
           resourcesPending: true,
           resourcesError: undefined,
-          resourcesDetailsVisible: false
+          resourcesDetailsVisible: false,
+          expandedResourceNodes: {}
         });
         try {
           const resources = await getInstanceResources(config);
@@ -174,7 +179,8 @@ class ReservationParameters extends React.PureComponent {
         resources: [],
         resourcesPending: false,
         resourcesError: undefined,
-        resourcesDetailsVisible: false
+        resourcesDetailsVisible: false,
+        expandedResourceNodes: {}
       });
     }
   };
@@ -382,6 +388,100 @@ class ReservationParameters extends React.PureComponent {
     }
   );
 
+  /**
+   * @param {object} usage
+   * @param {object} opts - cpu/gpu/ram flags, ramRequestsUnit, showAvailable
+   */
+  renderNodeResourcesUsageCells = (usage, opts) => {
+    const {
+      cpuRequestsEnabled,
+      ramRequestsEnabled,
+      gpuRequestsEnabled,
+      ramRequestsUnit,
+      showAvailable = true
+    } = opts;
+    const {used = {}, available = {}, total = {}} = usage || {};
+    const cells = [];
+    if (cpuRequestsEnabled) {
+      cells.push(
+        <td key="cpu">
+          <span>{used.cpu ?? 0}</span>
+          {
+            showAvailable && total.cpu ? (
+              <span className="cp-text-not-important">
+                {' out of '}
+                {total.cpu}
+              </span>
+            ) : null
+          }
+          {showAvailable && (
+            <span className="cp-text-not-important">
+              {' ('}
+              {available.cpu ?? 0}
+              {' available)'}
+            </span>
+          )}
+        </td>
+      );
+    }
+    if (ramRequestsEnabled) {
+      cells.push(
+        <td key="ram">
+          <span>
+            {transformBytesToK8sRAMRequest(
+              used.memory ?? 0,
+              {unit: ramRequestsUnit, appendSuffix: true}
+            )}
+          </span>
+          {
+            showAvailable && total.memory ? (
+              <span className="cp-text-not-important">
+                {' out of '}
+                {transformBytesToK8sRAMRequest(
+                  total.memory ?? 0,
+                  {unit: ramRequestsUnit, appendSuffix: true}
+                )}
+              </span>
+            ) : null
+          }
+          {showAvailable && (
+            <span className="cp-text-not-important">
+              {' ('}
+              {transformBytesToK8sRAMRequest(
+                available.memory ?? 0,
+                {unit: ramRequestsUnit, appendSuffix: true}
+              )}
+              {' available)'}
+            </span>
+          )}
+        </td>
+      );
+    }
+    if (gpuRequestsEnabled) {
+      cells.push(
+        <td key="gpu">
+          <span>{used.gpu ?? 0}</span>
+          {
+            showAvailable && total.gpu ? (
+              <span className="cp-text-not-important">
+                {' out of '}
+                {total.gpu}
+              </span>
+            ) : null
+          }
+          {showAvailable && (
+            <span className="cp-text-not-important">
+              {' ('}
+              {available.gpu ?? 0}
+              {' available)'}
+            </span>
+          )}
+        </td>
+      );
+    }
+    return cells;
+  };
+
   renderResourcesAvailability = () => {
     const {
       config,
@@ -392,7 +492,10 @@ class ReservationParameters extends React.PureComponent {
       resourcesDetailsVisible
     } = this.state;
     const openResourcesDetails = () => this.setState({resourcesDetailsVisible: true});
-    const closeResourcesDetails = () => this.setState({resourcesDetailsVisible: false});
+    const closeResourcesDetails = () => this.setState({
+      resourcesDetailsVisible: false,
+      expandedResourceNodes: {}
+    });
     const error = resourcesError
       ? (resourcesError.endsWith('.') ? resourcesError : `${resourcesError}.`)
       : undefined;
@@ -495,7 +598,7 @@ class ReservationParameters extends React.PureComponent {
               footer={false}
               closable
               onCancel={closeResourcesDetails}
-              width={400 + resourcesTypesCount * 100}
+              width={500 + resourcesTypesCount * 150}
             >
               <table className={styles.nodeResourcesTable}>
                 <thead>
@@ -504,7 +607,7 @@ class ReservationParameters extends React.PureComponent {
                     <th
                       colSpan={resourcesTypesCount}
                     >
-                      Available resources
+                      Used resources
                     </th>
                     <td>{'\u00A0'}</td>
                   </tr>
@@ -516,60 +619,119 @@ class ReservationParameters extends React.PureComponent {
                 </thead>
                 <tbody>
                   {
-                    nodes.map((nd, index) => (
-                      <tr key={`${nd.nodeName}-${index}`}>
-                        <td style={{textAlign: 'left'}}>
-                          <div>
-                            {
-                              nd.fits
-                                ? <Icon type="check-circle" className="cp-success" />
-                                : <Icon type="exclamation-circle" className="cp-warning" />
-                            }
-                            <span style={{marginLeft: 5}}>{nd.nodeName}</span>
-                          </div>
-                        </td>
-                        {cpuRequestsEnabled && (
-                          <td>
-                            <span>{nd.available.cpu}</span>
-                            <span className="cp-text-not-important">
-                              {' out of '}
-                              {nd.total.cpu}
-                            </span>
+                    nodes.map((nd, index) => {
+                      const nodeKey = `${nd.nodeName}-${index}`;
+                      const {
+                        expandedResourceNodes = {}
+                      } = this.state;
+                      const expanded = !!expandedResourceNodes[nodeKey];
+                      const details = nd.details && Array.isArray(nd.details) ? nd.details : [];
+                      const hasDetails = details.length > 0;
+                      const toggleNodeExpand = (e) => {
+                        e.preventDefault();
+                        this.setState((prev) => ({
+                          expandedResourceNodes: {
+                            ...prev.expandedResourceNodes,
+                            [nodeKey]: !prev.expandedResourceNodes[nodeKey]
+                          }
+                        }));
+                      };
+                      const resourceOpts = {
+                        cpuRequestsEnabled,
+                        ramRequestsEnabled,
+                        gpuRequestsEnabled,
+                        ramRequestsUnit,
+                        showAvailable: true
+                      };
+                      const detailResourceOpts = {
+                        ...resourceOpts,
+                        showAvailable: false
+                      };
+                      return [
+                        <tr key={nodeKey}>
+                          <td style={{textAlign: 'left'}}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                            >
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  width: 22,
+                                  flexShrink: 0,
+                                  textAlign: 'center'
+                                }}
+                              >
+                                {hasDetails ? (
+                                  <a
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-expanded={expanded}
+                                    onClick={toggleNodeExpand}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        toggleNodeExpand(e);
+                                      }
+                                    }}
+                                    style={{cursor: 'pointer'}}
+                                  >
+                                    <Icon type={expanded ? 'down' : 'right'} />
+                                  </a>
+                                ) : null}
+                              </span>
+                              {
+                                nd.fits
+                                  ? <Icon type="check-circle" className="cp-success" />
+                                  : <Icon type="exclamation-circle" className="cp-warning" />
+                              }
+                              <span style={{marginLeft: 5}}>{nd.nodeName}</span>
+                            </div>
                           </td>
-                        )}
-                        {ramRequestsEnabled && (
+                          {this.renderNodeResourcesUsageCells(
+                            nd,
+                            resourceOpts
+                          )}
                           <td>
-                            <span>
-                              {transformBytesToK8sRAMRequest(
-                                nd.available.memory,
-                                {unit: ramRequestsUnit, appendSuffix: true}
+                            <a onClick={() => onSelectNode(nd)}>
+                              Assign
+                            </a>
+                          </td>
+                        </tr>,
+                        ...(expanded && hasDetails
+                          ? details.map((detail, dIndex) => (
+                            <tr
+                              key={`${nodeKey}-detail-${dIndex}`}
+                              className={styles.nodeResourcesDetailRow}
+                            >
+                              <td
+                                style={{textAlign: 'left'}}
+                                className={styles.nodeResourcesDetailCell}
+                              >
+                                <Link
+                                  className={
+                                    classNames(
+                                      styles.nodeRunDetails
+                                    )
+                                  }
+                                  to={`/run/${detail.runId}`}
+                                >
+                                  Run {detail.runId}
+                                </Link>
+                                <UserName userName={detail.owner} style={{marginLeft: 5}} />
+                              </td>
+                              {this.renderNodeResourcesUsageCells(
+                                {used: detail.allocated || {}},
+                                detailResourceOpts
                               )}
-                            </span>
-                            <span className="cp-text-not-important">
-                              {' out of '}
-                              {transformBytesToK8sRAMRequest(
-                                nd.total.memory,
-                                {unit: ramRequestsUnit, appendSuffix: true}
-                              )}
-                            </span>
-                          </td>
-                        )}
-                        {gpuRequestsEnabled && (
-                          <td>
-                            <span>{nd.available.gpu}</span>
-                            <span className="cp-text-not-important">
-                              {' out of '}
-                              {nd.total.gpu}
-                            </span>
-                          </td>
-                        )}
-                        <td>
-                          <a onClick={() => onSelectNode(nd)}>
-                            Assign
-                          </a>
-                        </td>
-                      </tr>
-                    ))
+                              <td>{'\u00A0'}</td>
+                            </tr>
+                          ))
+                          : [])
+                      ];
+                    }).reduce((acc, cur) => acc.concat(cur), [])
                   }
                 </tbody>
               </table>

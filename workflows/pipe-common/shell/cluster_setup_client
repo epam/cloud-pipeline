@@ -34,7 +34,7 @@ fi
 ######################################################
 # Wait for master node
 ######################################################
-MASTER_INFO_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${MASTER_RUN_ID} --task-name InitializeSSHKeys")
+MASTER_INFO_RESULT=$(eval "$CP_PYTHON_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${MASTER_RUN_ID} --task-name InitializeSSHKeys")
 
 if [ $? -ne 0 ]
 then

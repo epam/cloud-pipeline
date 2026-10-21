@@ -20,6 +20,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,4 +31,5 @@ public class FilterExpression {
     private String value;
     private String operand;
     private String filterExpressionType;
+    private List<FilterExpression> expressions;
 }

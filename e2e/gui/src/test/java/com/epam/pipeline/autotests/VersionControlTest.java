@@ -173,11 +173,13 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     @Test(dependsOnMethods = {"validateRestoreFile"})
     @TestCase({"EPMCMBIBPC-820"})
     public void checkFilesVersionsAfterUpdate() {
-        anotherFile = Utils.createTempFileWithNameAndSize(file.getName());
+        anotherFile = Utils.createFileAndFillWithString(file.getName(), "123", 20);
         navigationMenu()
                 .library()
                 .selectStorage(storageName)
-                .uploadFile(anotherFile);
+                .uploadFileWithoutValidation(anotherFile)
+                .validateIsUploading()
+                .sleep(5, SECONDS);
         logout();
 
         loginAs(admin)
@@ -190,7 +192,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateHasSize((int) anotherFile.length())
                 .validateHasDateTime()
                 .selectNthFileWithName(0, file.getName())
-                .validateHasSize(0)
+                .validateHasSize((int) anotherFile.length())
                 .validateHasDateTime()
                 .selectNthFileWithName(0, file.getName())
                 .ensure(EDIT, visible);

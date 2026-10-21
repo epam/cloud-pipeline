@@ -80,6 +80,7 @@ import {
   getUserTagsValidationResult,
   getVisibleUserTags
 } from '../run-tags/utilities';
+import {applyRunNameAliasTag} from '../run-tags/alias';
 import {
   ensureValidReservationParametersForLaunchPayloads,
   findReservationParameterConfig
@@ -409,26 +410,21 @@ function runFn (
         : launchVersion;
       const hide = message
         .loading(`Launching ${payload.runNameAlias || launchName} (${messageVersion})...`, -1);
-      if (payload.runNameAlias) {
-        payload.tags = {
-          alias: payload.runNameAlias
-        };
-        delete payload.runNameAlias;
-      }
       for (const p of payloadsArray) {
+        applyRunNameAliasTag(p, p.runNameAlias);
         await PipelineRunner.send({...p, force: true});
       }
       hide();
       if (PipelineRunner.error) {
         message.error(PipelineRunner.error);
-        resolve(false);
+        resolve(undefined);
         callbackFn && callbackFn(false);
       } else {
         if (scheduleRules && scheduleRules.length > 0) {
           await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
         }
         await runHostedApp(PipelineRunner.value.id, hostedApplicationConfiguration);
-        resolve(true);
+        resolve(PipelineRunner.value);
         callbackFn && callbackFn(true);
       }
     };
@@ -516,15 +512,16 @@ function runFn (
         closable: false,
         okText: 'Launch',
         onOk: async function () {
-          const runSinglePayload = async (idx = 0) => {
+          const runSinglePayload = async (idx = 0, runs = []) => {
             if (idx >= payloadsArray.length) {
-              return;
+              return runs;
             }
             const singlePayload = payloadsArray[idx];
             const launchPostfix = payloadsArray.length > 1
               ? `${idx + 1} / ${payloadsArray.length}`
               : undefined;
             console.log(`launch payload ${launchPostfix || ''}:`, singlePayload);
+            let runNameAlias = singlePayload.runNameAlias;
             if (component) {
               if (component.state.runCapabilities) {
                 singlePayload.params = updateCapabilities(
@@ -574,16 +571,13 @@ function runFn (
                   delete singlePayload.params[CP_CAP_LIMIT_MOUNTS];
                 }
               }
-              if (component.state.runNameAlias) {
-                singlePayload.tags = {
-                  alias: component.state.runNameAlias
-                };
-              }
+              runNameAlias = component.state.runNameAlias;
             }
+            let launchedRun;
             if (!singlePayload.instanceType) {
               throw new Error('You should select instance type');
             } else {
-              const version = singlePayload.runNameAlias
+              const version = runNameAlias
                 ? `${launchName}:${launchVersion}`
                 : launchVersion;
               let details = [
@@ -595,12 +589,10 @@ function runFn (
               }
               const hide = message
                 .loading(
-                  `Launching ${singlePayload.runNameAlias || launchName}${details}...`,
+                  `Launching ${runNameAlias || launchName}${details}...`,
                   0
                 );
-              if (singlePayload.runNameAlias) {
-                delete singlePayload.runNameAlias;
-              }
+              applyRunNameAliasTag(singlePayload, runNameAlias);
               await ensureValidReservationParametersForLaunchPayloads([singlePayload]);
               try {
                 await PipelineRunner.send({...singlePayload, force: true});
@@ -608,6 +600,7 @@ function runFn (
                   message.error(PipelineRunner.error);
                   throw new Error(PipelineRunner.error);
                 } else {
+                  launchedRun = PipelineRunner.value;
                   if (scheduleRules && scheduleRules.length > 0) {
                     await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
                   }
@@ -617,19 +610,22 @@ function runFn (
                 hide();
               }
             }
-            return runSinglePayload(idx + 1);
+            if (launchedRun) {
+              runs.push(launchedRun);
+            }
+            return runSinglePayload(idx + 1, runs);
           };
           try {
-            await runSinglePayload();
-            resolve(true);
+            const runs = await runSinglePayload();
+            resolve(runs.pop());
             callbackFn && callbackFn(true);
           } catch (error) {
-            resolve(false);
+            resolve(undefined);
             callbackFn && callbackFn(false);
           }
         },
         onCancel () {
-          resolve(false);
+          resolve(undefined);
           callbackFn && callbackFn(false);
         }
       });
@@ -662,7 +658,7 @@ export class RunConfirmation extends React.Component {
   };
 
   static propTypes = {
-    warning: PropTypes.string,
+    warning: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     versionErrors: PropTypes.shape({
       size: PropTypes.shape({
         soft: PropTypes.bool,
@@ -1311,6 +1307,7 @@ export class RunConfirmation extends React.Component {
                     style={{padding: '2px'}}
                     showError={false}
                     getPopupContainer={node => node}
+                    instanceType={this.state.instanceType?.name}
                   />
                 </Provider>
               </div>
@@ -1412,7 +1409,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
       }),
       allowedWarning: PropTypes.string
     }),
-    warning: PropTypes.string,
+    warning: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,

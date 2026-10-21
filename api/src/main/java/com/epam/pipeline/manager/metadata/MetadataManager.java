@@ -33,10 +33,12 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.billing.BillingUtils;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
@@ -52,6 +54,8 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +68,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -103,6 +108,13 @@ public class MetadataManager {
 
     @Autowired
     private ToolManager toolManager;
+
+    @Autowired
+    @Lazy
+    private UserManager userManager;
+
+    @Value("${billing.center.key:}")
+    private String billingCenterKey;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -447,9 +459,15 @@ public class MetadataManager {
     }
 
     private Map<String, String> resolveInstanceTagsFromPreference(final PipelineRun run) {
-        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
-                .entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getValue, entry -> getInstanceTagValue(entry.getKey(), run)));
+        final Map<String, String> tags = new HashMap<>();
+        MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
+                .forEach((tagType, cloudKey) -> {
+                    final String value = getInstanceTagValue(tagType, run);
+                    if (StringUtils.isNotBlank(value)) {
+                        tags.put(cloudKey, value);
+                    }
+                });
+        return tags;
     }
 
     private String getInstanceTagValue(final CommonInstanceTagsType tagType, final PipelineRun run) {
@@ -460,6 +478,14 @@ public class MetadataManager {
                 return run.getId().toString();
             case owner:
                 return run.getOwner();
+            case billing_center:
+                if (StringUtils.isBlank(billingCenterKey)) {
+                    return null;
+                }
+                return Optional.ofNullable(userManager.loadUserByName(run.getOwner()))
+                        .map(user -> BillingUtils.getUserBillingCenter(user, billingCenterKey, this))
+                        .filter(StringUtils::isNotBlank)
+                        .orElse(null);
             default:
                 throw new IllegalArgumentException(String.format("Failed to resolve instance tag type '%s'", tagType));
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@
 
 package com.epam.pipeline.manager.docker;
 
-import com.epam.pipeline.entity.docker.ContainerConfig;
-import com.epam.pipeline.entity.docker.HistoryEntry;
-import com.epam.pipeline.entity.docker.HistoryEntryV1;
-import com.epam.pipeline.entity.docker.RawImageDescription;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.epam.pipeline.entity.docker.HistoryEntryV2;
+import com.epam.pipeline.entity.docker.RawImageDescriptionV2;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -34,16 +28,13 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class DockerParsingUtils {
@@ -55,7 +46,6 @@ public final class DockerParsingUtils {
             .appendFraction(ChronoField.MICRO_OF_SECOND, 0, MAX_MICRO_SECONDS_LENGTH, true)
             .toFormatter();
     private static final String NOP_PREFIX = "#(nop)";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String SPACE = " ";
     private static final String ADD_TO_FROM_COMMAND_PATTERN = "(ADD|COPY) (file|multi|dir):[a-zA-Z0-9]* in /";
     private static final List<String> COMMANDS = Arrays.asList("ADD", "ARG", "CMD", "COPY", "ENTRYPOINT", "ENV",
@@ -69,44 +59,24 @@ public final class DockerParsingUtils {
     private static final String RUN_TEMPLATE = "RUN %s";
     private static final String FROM_TEMPLATE = "FROM %s";
 
-    public static Date getEarliestDate(final RawImageDescription rawImage) {
+    public static Date getEarliestDate(final RawImageDescriptionV2 rawImage) {
         return getMinElement(getDateStream(rawImage), Comparator.naturalOrder());
     }
 
-    public static Date getLatestDate(final RawImageDescription rawImage) {
+    public static Date getLatestDate(final RawImageDescriptionV2 rawImage) {
         return getMinElement(getDateStream(rawImage), Comparator.reverseOrder());
     }
 
-    public static Optional<String> getPlatform(final RawImageDescription rawImage) {
-        return getHistoryEntryStream(rawImage)
-                .map(HistoryEntryV1::getOs)
-                .filter(Objects::nonNull)
-                .findFirst()
-                .map(StringUtils::trim)
-                .map(StringUtils::lowerCase);
+    public static Optional<String> getPlatform(final RawImageDescriptionV2 rawImage) {
+        return Optional.of(rawImage.getOs().toLowerCase());
     }
 
-    public static List<String> getBuildHistory(final RawImageDescription rawImage) {
-        final List<String> commandsHistory = getHistoryEntryStream(rawImage)
-            .map(HistoryEntryV1::getContainerConfig)
-            .map(ContainerConfig::getCommands)
-            .filter(CollectionUtils::isNotEmpty)
-            .map(commands -> String.join(SPACE, commands))
-            .map(DockerParsingUtils::cropNopPrefix)
-            .map(String::trim)
-            .map(command -> command.replaceAll("\\s+", SPACE))
-            .collect(Collectors.toList());
-        Collections.reverse(commandsHistory);
-        return commandsHistory;
+    public static String getBuildHistory(final HistoryEntryV2 historyEntry) {
+        return cropNopPrefix(historyEntry.getCreatedBy()).trim().replaceAll("\\s+", SPACE);
     }
 
-    public static Map<String, String> getLabels(final RawImageDescription rawImage) {
-        return getHistoryEntryStream(rawImage)
-                .map(HistoryEntryV1::getContainerConfig)
-                .map(ContainerConfig::getLabels)
-                .filter(MapUtils::isNotEmpty)
-                .flatMap(labels -> labels.entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public static Map<String, String> getLabels(final RawImageDescriptionV2 rawImage) {
+        return rawImage.getContainerConfig().getLabels();
     }
 
     public static List<String> processCommands(final String from, final List<String> commands,
@@ -171,19 +141,8 @@ public final class DockerParsingUtils {
         return result.replaceAll("\\$", "\\\\$");
     }
 
-    private static Stream<HistoryEntryV1> getHistoryEntryStream(final RawImageDescription rawImage) {
-        return ListUtils.emptyIfNull(rawImage.getHistory()).stream()
-            .map(HistoryEntry::getV1Compatibility)
-            .map(DockerParsingUtils::parseHistoryEntry);
-    }
-
-    private static HistoryEntryV1 parseHistoryEntry(final String jsonString) {
-        try {
-            return MAPPER.readValue(jsonString, HistoryEntryV1.class);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(
-                "History entry received has illegal format and can't be parsed correctly.");
-        }
+    private static Stream<HistoryEntryV2> getHistoryEntryStream(final RawImageDescriptionV2 rawImage) {
+        return rawImage.getHistory().stream();
     }
 
     private static String cropNopPrefix(final String command) {
@@ -193,13 +152,13 @@ public final class DockerParsingUtils {
                : command.substring(nopIndex + NOP_PREFIX.length() + 1);
     }
 
-    private static Stream<Date> getDateStream(final RawImageDescription rawImage) {
+    private static Stream<Date> getDateStream(final RawImageDescriptionV2 rawImage) {
         return getHistoryEntryStream(rawImage)
-            .map(HistoryEntryV1::getCreated)
-            .map(DockerParsingUtils::parseDate);
+                .map(HistoryEntryV2::getCreated)
+                .map(DockerParsingUtils::parseDate);
     }
 
-    private static Date parseDate(String v1Compatibility) {
+    public static Date parseDate(String v1Compatibility) {
         Matcher m = Pattern.compile(PATTERN).matcher(v1Compatibility);
         if (m.find()) {
             String date = m.group(1);

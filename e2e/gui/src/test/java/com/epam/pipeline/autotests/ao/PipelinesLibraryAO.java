@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,8 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
@@ -96,7 +97,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      */
     public static final Condition collapsedItem = new Condition("is collapsed item") {
         @Override
-        public boolean apply(final WebElement treeItem) {
+        public boolean apply(Driver driver, final WebElement treeItem) {
             return $(treeItem).find(switcher).has(cssClass("ant-tree-switcher_close"));
         }
     };
@@ -106,7 +107,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
      */
     public static final Condition expandedItem = new Condition("is expanded item") {
         @Override
-        public boolean apply(final WebElement treeItem) {
+        public boolean apply(Driver driver, final WebElement treeItem) {
             return $(treeItem).find(switcher).has(cssClass("ant-tree-switcher_open"));
         }
     };
@@ -117,7 +118,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public static final Condition selectedItem = new Condition("be selected") {
         private final By wrapper = byClassName("ant-tree-node-content-wrapper");
         @Override
-        public boolean apply(final WebElement treeItem) {
+        public boolean apply(Driver driver, final WebElement treeItem) {
             return $(treeItem).find(wrapper).has(cssClass("ant-tree-node-selected"));
         }
     };
@@ -235,7 +236,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
-        $(byId("edit-storage-delete-dialog-delete-button")).waitUntil(enabled, C.DEFAULT_TIMEOUT);
+        $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(enabled);
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
@@ -351,7 +352,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO assertNoPipelinesAreDisplayed() {
-        $$("[class^=pipelines-library-tree-node-pipeline]").shouldHaveSize(0);
+        $$("[class^=pipelines-library-tree-node-pipeline]").shouldHave(size(0));
         return this;
     }
 
@@ -364,11 +365,11 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO createPipeline(Template template, String pipelineName) {
-        return template.createPipeline(pipelineName);
+        return template.createPipeline(pipelineName).validatePopupClosed();
     }
 
     public PipelinesLibraryAO createPipeline(String pipelineName) {
-        return Template.DEFAULT.createPipeline(pipelineName);
+        return Template.DEFAULT.createPipeline(pipelineName).validatePopupClosed();
     }
 
     public PipelinesLibraryAO removePipeline(String pipelineName) {
@@ -398,7 +399,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public PipelinesLibraryAO validatePopupClosed() {
-        $(byClassName("ant-modal-content")).shouldNot(be(visible));
+        $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
     }
 

@@ -1,5 +1,5 @@
 /.gradle
-/.idea
+.idea/
 *.log
 api/src/main/resources/static/
 *.class
@@ -9,3 +9,54 @@ api/src/main/resources/static/
 .gnupg/
 docs/site
 dist
+vscode-cloud-pipeline/.env
+
+# Agent config: everything under .claude/ is tracked and shared EXCEPT these,
+# which are per-developer. See AGENTS.md.
+.claude/settings.local.json
+CLAUDE.local.md
+**/CLAUDE.local.md
+
+# Per-workstation toolchain decisions, written by the configure-dev-environment skill.
+.agents/localenv/
+
+# Worktrees a task is being carried out in, per the implement-task skill. Each one is a checkout of
+# this repository and belongs to nobody but the task that created it. The second path is where some
+# clients put one by default.
+/.worktrees/
+.claude/worktrees/
+
+# Local environment files, per the naming convention in AGENTS.md. A .env.example is a template and
+# stays tracked.
+.env
+.env.local
+.env.*.local
+secrets/
+*.pem
+*.p12
+*.jks
+*.keystore
+*.secret
+
+# Scratch output for local tools (e.g. Playwright MCP's snapshots/screenshots), configured via
+# configure-dev-environment. Per-workstation, never committed.
+.agents/.temp/
+
+# Working plans and ledgers, written by the plan-change skill. Sharing one means moving it and its
+# ledger into .agents/plans/, which is tracked.
+.agents/plans.local/
+
+# Per-developer state of the dev-sandbox skill's AWS sandboxes: instance IDs, SSH keys and the
+# clusters' credentials. Never committed.
+.agents/sandboxes.local/
+
+# Build output of modules whose own .gitignore, if they have one, leaves it out, and which the
+# dev-sandbox skill builds: with the API, and for its billing, search and monitoring services.
+/jwt-generator/build/
+/cloud-pipeline-common/event-sourcing-java-client/build/
+/cloud-pipeline-common/model/build/
+/billing-report-agent/build/
+/elasticsearch-agent/build/
+/elasticsearch-common/build/
+/monitoring-service/build/
+/shaded/opensearch/build/

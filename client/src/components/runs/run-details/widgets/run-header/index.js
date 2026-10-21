@@ -30,7 +30,8 @@ function RunHeader (props) {
     preferences,
     currentMode,
     onChangeMode,
-    modes
+    modes,
+    showEstimatedPrice = true
   } = props;
   const {
     id = runId
@@ -81,7 +82,7 @@ function RunHeader (props) {
           <RunTimeline run={run} runTasks={runTasks} loaded={loaded && runTasksLoaded} />
         </div>
       )}
-      {loaded && (
+      {loaded && showEstimatedPrice ? (
         <div
           className={classNames(
             styles.runHeaderRow,
@@ -90,7 +91,7 @@ function RunHeader (props) {
         >
           <RunEstimatedPrice run={run} runTasks={runTasks} />
         </div>
-      )}
+      ) : null}
       {
         loaded &&
         RunTags.shouldDisplayTags(run, preferences) && (
@@ -118,11 +119,13 @@ RunHeader.propTypes = {
   onRefreshRunInfo: PropTypes.func,
   currentMode: PropTypes.string,
   modes: PropTypes.arrayOf(PropTypes.string),
-  onChangeMode: PropTypes.func
+  onChangeMode: PropTypes.func,
+  showEstimatedPrice: PropTypes.bool
 };
 
 RunHeader.defaultProps = {
-  loaded: true
+  loaded: true,
+  showEstimatedPrice: true
 };
 
 export default inject('preferences')(observer(RunHeader));

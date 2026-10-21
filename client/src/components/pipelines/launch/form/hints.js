@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Icon, Popover, Row} from 'antd';
+import {MAX_NODE_UP_RETRY_COUNT} from './utilities/node-up-retry-count';
 import styles from './LaunchPipelineForm.css';
 
 function renderHint (localizedStringFn, hint, placement, style) {
@@ -71,6 +72,23 @@ const instanceTypeHint = (localizedStringFn) => (
     To launch a number of calculation instances - tick <b>"Launch cluster"</b> checkbox and specify number of additional <b>worker nodes</b>.
     <br />
     This will run current job on a master node that is connected to the workers via SSH
+  </Row>
+);
+
+const fallbackInstanceTypesHint = (localizedStringFn) => (
+  <Row style={{maxWidth: 300}}>
+    Specify one or more <b>fallback instance types</b> that will be used to launch the job
+    if the selected <b>node type</b> is not available.
+  </Row>
+);
+
+const nodeUpRetryCountHint = () => (
+  <Row style={{maxWidth: 300}}>
+    The number of attempts to start a compute node before the run fails
+    or is rescheduled to another region. Optional: when it is empty, the run
+    uses the <b>cluster.nodeup.retry.count</b> system preference, shown as the placeholder.
+    The maximum is {MAX_NODE_UP_RETRY_COUNT}, or that preference's value
+    if it is higher.
   </Row>
 );
 
@@ -200,6 +218,8 @@ const hints = {
   pipelineHint,
   dockerImageHint,
   instanceTypeHint,
+  fallbackInstanceTypesHint,
+  nodeUpRetryCountHint,
   awsRegionHint,
   runCapabilitiesHint,
   awsRegionRestrictedByToolSettingsHint,

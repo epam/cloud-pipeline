@@ -106,7 +106,7 @@ function resolve_system_preference() {
 function get_required_disk_size() {
   _DISK="$1"
   _DELTA="$2"
-  echo $($CP_PYTHON2_PATH -c "print($_DISK+$_DISK*$_DELTA)") | cut -d"." -f1
+  echo $($CP_PYTHON_PATH -c "print($_DISK+$_DISK*$_DELTA)") | cut -d"." -f1
 }
 
 function get_fractional_part() {

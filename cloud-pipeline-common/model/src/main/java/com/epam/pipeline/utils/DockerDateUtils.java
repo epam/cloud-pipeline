@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package com.epam.pipeline.utils;
 
-import com.epam.pipeline.entity.docker.RawImageDescription;
+import com.epam.pipeline.entity.docker.HistoryEntryV2;
+import com.epam.pipeline.entity.docker.RawImageDescriptionV2;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -26,32 +27,37 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public final class DockerDateUtils {
     private static final int MAX_MICRO_SECONDS_LENGTH = 9;
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    private static final String PATTERN = "created\\W*([\\d-]+)T([\\d:.]+)";
+    private static final String PATTERN = "([\\d-]+)T([\\d:.]+)";
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
             .appendPattern(DATE_TIME_FORMAT)
             .appendFraction(ChronoField.MICRO_OF_SECOND, 0, MAX_MICRO_SECONDS_LENGTH, true)
             .toFormatter();
 
-    public static Date getEarliestDate(RawImageDescription rawImage) {
-        return rawImage.getHistory()
-                .stream()
-                .map(historyEntry -> parseDate(historyEntry.getV1Compatibility()))
-                .sorted()
-                .findFirst()
-                .orElseThrow(RuntimeException::new);
+    public static Date getEarliestDate(final RawImageDescriptionV2 rawImage) {
+        return getMinElement(getDateStream(rawImage), Comparator.naturalOrder());
     }
 
-    public static Date getLatestDate(RawImageDescription rawImage) {
-        return rawImage.getHistory()
-                .stream()
-                .map(historyEntry -> parseDate(historyEntry.getV1Compatibility()))
-                .sorted(Comparator.reverseOrder())
-                .findFirst()
-                .orElseThrow(RuntimeException::new);
+    public static Date getLatestDate(final RawImageDescriptionV2 rawImage) {
+        return getMinElement(getDateStream(rawImage), Comparator.reverseOrder());
+    }
+
+    private static Stream<Date> getDateStream(final RawImageDescriptionV2 rawImage) {
+        return getHistoryEntryStream(rawImage)
+                .map(HistoryEntryV2::getCreated)
+                .map(DockerDateUtils::parseDate);
+    }
+
+    private static <T> T getMinElement(Stream<T> stream, Comparator<T> comparator) {
+        return stream.min(comparator).orElseThrow(RuntimeException::new);
+    }
+
+    private static Stream<HistoryEntryV2> getHistoryEntryStream(final RawImageDescriptionV2 rawImage) {
+        return rawImage.getHistory().stream();
     }
 
     private static Date parseDate(String v1Compatibility) {

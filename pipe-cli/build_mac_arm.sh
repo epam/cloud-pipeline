@@ -115,10 +115,11 @@ function build_pipe {
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py $onefile
 }
-build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file --onefile
-mv $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file/pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file/pipe-osx-arm
 
 build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder
+if [ "$PIPE_CLI_REQUIRES_SIGNING" == "true" ]; then
+  bash sign_mac.sh $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder/pipe
+fi
 tar -zcf $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder/pipe-osx-arm.tar.gz \
         -C $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder \
         pipe

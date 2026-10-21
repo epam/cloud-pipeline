@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import logging
-import mutex
 import os
 import subprocess
 from datetime import datetime, timedelta
@@ -99,7 +98,7 @@ class Event(object):
         self.type = type
         self.owner = owner
         self.status = status
-        self.message = message
+        str(self) = message
 
     def get_object_str(self, api_url):
         if self.type == RUN_TYPE:
@@ -144,7 +143,7 @@ class Notifier(object):
             event_str += EVENT_PATTERN.format(**{'object': object_str,
                                                  'owner': event.owner,
                                                  'status': event.status,
-                                                 'message': event.message})
+                                                 'message': str(event)})
 
         return EMAIL_TEMPLATE.format(**{'events': event_str,
                                         'deploy_name': self.deploy_name})
@@ -264,7 +263,7 @@ def _cleanup_paused_instances(api, logger, users, dry_run, notifier):
         except Exception as e:
             logger.warning('Paused instances cleanup has failed.')
             notifier.add(Event(run.get('id'), None, RUN_TYPE, run.get('owner'), 'ERROR',
-                               'Failed to terminate paused run: ' + e.message))
+                               'Failed to terminate paused run: ' + str(e)))
     logger.info('Finishing paused instances cleanup...')
 
 
@@ -300,7 +299,7 @@ def _cleanup_running_instances(api, logger, users, dry_run, notifier):
         except Exception as e:
             logger.warning('Running instances cleanup has failed.')
             notifier.add(Event(run.get('id'), None, RUN_TYPE, run.get('owner'), 'ERROR',
-                               'Failed to stop active run: ' + e.message))
+                               'Failed to stop active run: ' + str(e)))
     logger.info('Finishing running instances cleanup...')
 
 
@@ -353,7 +352,7 @@ def _cleanup_tools(api, logger, users, dry_run, notifier):
         except Exception as e:
             logger.warning('Tool cleanup has failed.')
             notifier.add(Event(tool.get('id'), tool.get('image'), TOOL_TYPE, tool.get('owner'), 'ERROR',
-                               'Failed to process tool: ' + e.message))
+                               'Failed to process tool: ' + str(e)))
     logger.info('Finishing tools cleanup...')
 
 
@@ -428,9 +427,9 @@ def _cleanup_storages(api, logger, users, blocked_users, dry_run, notifier):
             logger.warning('Interrupted.')
             raise
         except Exception as e:
-            logger.error('Data storage cleanup has failed: {}'.format(e.message))
+            logger.error('Data storage cleanup has failed: {}'.format(str(e)))
             notifier.add(Event(storage.get('id'), storage.get('name'), STORAGE_TYPE, storage.get('owner'), 'ERROR',
-                               'Failed to process storage: ' + e.message))
+                               'Failed to process storage: ' + str(e)))
     logger.info('Finishing data storages cleanup...')
 
 

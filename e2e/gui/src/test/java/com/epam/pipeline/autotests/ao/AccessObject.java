@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,11 +39,12 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.appear;
-import static com.codeborne.selenide.Condition.appears;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
@@ -299,7 +300,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE refresh() {
-        Selenide.refresh();
+        Utils.refresh();
         return (ELEMENT_TYPE) this;
     }
 
@@ -430,7 +431,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE messageShouldAppear(String message, long timeout) {
-        $(withText(message)).waitUntil(appears, timeout);
+        $(withText(message)).shouldBe(appear, ofMillis(timeout));
         return (ELEMENT_TYPE) this;
     }
 
@@ -542,7 +543,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE checkDropDownCount(final Primitive combobox, final int count) {
         get(combobox).shouldBe(visible).click();
-        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHaveSize(count);
+        SelenideElements.of(byClassName("ant-select-dropdown-menu-item")).shouldHave(size(count));
         return (ELEMENT_TYPE) this;
     }
 

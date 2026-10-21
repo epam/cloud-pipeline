@@ -1,0 +1,70 @@
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.input {
+  width: 100%;
+}
+
+.clear {
+  font-size: x-small;
+  cursor: pointer;
+}
+
+.link {
+  cursor: pointer;
+}
+
+.link > i {
+  margin-right: 5px;
+}
+
+.overlay {
+  width: 400px;
+}
+
+.hint {
+  padding: 5px 8px;
+}
+
+.options {
+  max-height: 300px;
+  overflow: auto;
+  padding-bottom: 5px;
+}
+
+.empty {
+  padding: 8px;
+  text-align: center;
+}
+
+.group-title {
+  padding: 3px 8px;
+  font-weight: bold;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.option.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.option-check {
+  margin-right: 5px;
+}
+
+.option-check-hidden {
+  visibility: hidden;
+}
+
+.option-label {
+  flex: 1;
+  overflow: hidden;
+}

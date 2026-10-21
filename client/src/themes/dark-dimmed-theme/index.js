@@ -20,7 +20,6 @@ export default {
   identifier: 'dark-dimmed-theme',
   name: 'Dark dimmed',
   extends: 'dark-theme',
-  dark: true,
   predefined: true,
   configuration: {
     '@application-background-color': 'rgb(40, 44, 50)',

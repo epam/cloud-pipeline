@@ -25,7 +25,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -43,18 +45,27 @@ public class PodInstance {
     private String parentName;
     private PodInstanceStatus status;
     private List<ContainerInstance> containers;
+    private Map<String, String> labels;
 
     public PodInstance() {
         containers = new ArrayList<>();
+        labels = Collections.emptyMap();
     }
 
-    public PodInstance(Pod pod) {
+    public PodInstance(final Pod pod) {
+        this(pod, false);
+    }
+
+    public PodInstance(final Pod pod, final boolean showLabes) {
         this();
         ObjectMeta metadata = pod.getMetadata();
         if (metadata != null) {
             this.setUid(UUID.fromString(metadata.getUid()));
             this.setName(metadata.getName());
             this.setNamespace(metadata.getNamespace());
+            if (showLabes) {
+                this.setLabels(metadata.getLabels());
+            }
         }
         PodStatus podStatus = pod.getStatus();
         if (podStatus != null) {

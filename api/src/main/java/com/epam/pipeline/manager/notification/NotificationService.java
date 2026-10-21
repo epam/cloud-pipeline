@@ -52,12 +52,12 @@ public interface NotificationService {
 
     }
 
-    default void notifyRunStatusChanged(PipelineRun pipelineRun) {
+    default void notifyRunStatusChanged(PipelineRun run, Map<String, Object> additionalNotificationParams) {
 
     }
 
     default void notifyIdleRuns(List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
-                                NotificationType notificationType) {
+                                NotificationType notificationType, double idleLevel) {
 
     }
 

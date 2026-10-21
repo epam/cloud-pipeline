@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,7 +112,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
     @Test
     @TestCase(value = "EPMCMBIBPC-3015")
     public void failedAuthentication() {
-        Selenide.close();
+        Selenide.closeWindow();
         if ("true".equalsIgnoreCase(C.AUTH_TOKEN)) {
             if (impersonateMode()) {
                 Selenide.clearBrowserCookies();
@@ -126,6 +126,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 sleep(1, SECONDS);
             }
         } else {
+            setUpConfiguration();
             open(C.ROOT_ADDRESS);
             new AuthenticationPageAO()
                     .login(C.LOGIN)
@@ -300,7 +301,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
                 .attr("href");
         logout();
         if (impersonateMode()) {
-            Selenide.close();
+            Selenide.closeWindow();
             Selenide.clearBrowserCookies();
             addExtension(C.ANONYM_EXTENSION_PATH);
             open(endpoint);
@@ -321,7 +322,7 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         logout();
         final Account anonymousAccount = new Account(C.ANONYMOUS_NAME, C.ANONYMOUS_TOKEN);
         if (impersonateMode()) {
-            Selenide.close();
+            Selenide.closeWindow();
             Selenide.clearBrowserCookies();
             final String edgeUrl = endpoint.split(format("pipeline-%s-%s-0", getLastRunId(), C.VALID_ENDPOINT))[0];
             open(edgeUrl);

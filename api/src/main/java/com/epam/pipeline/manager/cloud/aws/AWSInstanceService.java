@@ -181,6 +181,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
+    public void changeInstanceType(final AwsRegion region, final String instanceId, final String instanceType) {
+        log.debug("Changing AWS instance {} type to {}", instanceId, instanceType);
+        ec2Helper.changeInstanceType(instanceId, instanceType, region);
+    }
+
+    @Override
     public CloudInstanceOperationResult startInstance(final AwsRegion region, final String instanceId) {
         log.debug("Starting AWS instance {}", instanceId);
         return ec2Helper.startInstance(instanceId, region);
@@ -277,6 +283,13 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request,
                            final Map<String, String> tags) {
         ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region,
+                region.getKmsKeyArn(), tags);
+    }
+
+    @Override
+    public void attachDiskToInstance(final AwsRegion region, final String nodeName, final DiskAttachRequest request,
+                                     final Map<String, String> tags) {
+        ec2Helper.createAndAttachVolumeToInstance(nodeName, request.getSize(), region,
                 region.getKmsKeyArn(), tags);
     }
 

@@ -24,6 +24,8 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -39,6 +41,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,6 +82,9 @@ public class UserApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private RunLimitsService mockRunLimitsService;
+
+    @Autowired
+    private PlatformUsageCreditsUserBalanceCRUDService mockPlatformUsageCreditsUserBalanceCRUDService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -235,25 +241,25 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUserForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, false);
 
-        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false, false)).isEqualTo(pipelineUser);
     }
 
     @Test
     @WithMockUser(roles = USER_ADMIN_ROLE)
     public void shouldLoadUserForUserAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, false);
 
-        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false, false)).isEqualTo(pipelineUser);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUserForUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).load(ID, false);
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, false);
 
-        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false, false)).isEqualTo(pipelineUser);
     }
 
     @Test
@@ -261,7 +267,16 @@ public class UserApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadUserForNotUserReader() {
         doReturn(pipelineUser).when(mockUserManager).load(ID);
         initAclEntity(pipelineUser);
-        assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false));
+        assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false, false));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldLoadUserWithCreditsForAdmin() {
+        doReturn(pipelineUser).when(mockUserManager).load(ID, false, true);
+
+        assertThat(userApiService.loadUser(ID, false, true)).isEqualTo(pipelineUser);
+        verify(mockUserManager).load(ID, false, true);
     }
 
     @Test
@@ -359,32 +374,51 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUsersForAdmin() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
 
-        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false, false)).isEqualTo(pipelineUserList);
     }
 
     @Test
     @WithMockUser(roles = USER_ADMIN_ROLE)
     public void shouldLoadUsersForUserAdmin() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
 
-        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false, false)).isEqualTo(pipelineUserList);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUsersForUserReader() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
 
-        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false, false)).isEqualTo(pipelineUserList);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyLoadUsersForNotUserReader() {
         doReturn(pipelineUserList).when(mockUserManager).loadAllUsers();
-        assertThat(userApiService.loadUsers(false)).isEmpty();
+        assertThat(userApiService.loadUsers(false, false)).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldLoadUsersWithCreditsForAdmin() {
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, true);
+
+        assertThat(userApiService.loadUsers(false, true)).isEqualTo(pipelineUserList);
+        verify(mockUserManager).loadAllUsers(false, true);
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldNotEnrichCreditsWhenFlagIsFalse() {
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false, false);
+
+        userApiService.loadUsers(false, false);
+
+        verify(mockUserManager).loadAllUsers(false, false);
     }
 
     @Test
@@ -430,8 +464,33 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     public void shouldGetCurrentUser() {
         doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
+        doReturn(Optional.empty())
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
 
         assertThat(userApiService.getCurrentUser()).isEqualTo(pipelineUser);
+    }
+
+    @Test
+    public void shouldSetUsageCreditsOnGetCurrentUser() {
+        final PlatformUsageCreditsUserBalance balance =
+                new PlatformUsageCreditsUserBalance(pipelineUser.getId(), 1500, null, null);
+        doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
+        doReturn(Optional.of(balance))
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
+
+        final PipelineUser result = userApiService.getCurrentUser();
+
+        assertThat(result.getUsageCredits()).isEqualTo(balance);
+    }
+
+    @Test
+    public void shouldLeaveUsageCreditsNullWhenNoBalanceExists() {
+        pipelineUser.setUsageCredits(null);
+        doReturn(pipelineUser).when(mockUserManager).getCurrentUser();
+        doReturn(Optional.empty())
+                .when(mockPlatformUsageCreditsUserBalanceCRUDService).findByUserId(pipelineUser.getId());
+
+        assertThat(userApiService.getCurrentUser().getUsageCredits()).isNull();
     }
 
     @Test

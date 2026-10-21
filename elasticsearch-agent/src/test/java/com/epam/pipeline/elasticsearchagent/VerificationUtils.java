@@ -20,8 +20,10 @@ import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 final class VerificationUtils {
@@ -51,7 +53,12 @@ final class VerificationUtils {
     }
 
     private static ArrayList<String> toStringArray(final Object object) {
-        return new ArrayList<>((Collection<? extends String>) object);
+        if (object instanceof Collection) {
+            return new ArrayList<>((Collection<? extends String>) object);
+        }
+        return Arrays.stream((Object[]) object)
+                .map(o -> (String) o)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private VerificationUtils() {

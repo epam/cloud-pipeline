@@ -46,6 +46,7 @@ import ToolsGroupListWithIssues from '../../models/tools/ToolsGroupListWithIssue
 import PipelineRunFilter from '../../models/pipelines/PipelineRunSingleFilter';
 import HiddenObjects from '../../utils/hidden-objects';
 import extractTools, {TOP_USED_FILTER, DEFAULT_FILTER} from './utils/extractTools';
+import toolMatchesSearch from './utils/toolMatchesSearch';
 import styles from './Tools.css';
 
 const findGroupByNameSelector = (name) => (group) => {
@@ -239,17 +240,7 @@ export default class Tools extends React.Component {
       };
       return (this.currentGroup.tools || [])
         .map(t => t)
-        .filter(
-          t => !this.state.search ||
-          !this.state.search.length ||
-          t.image.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0 ||
-          (
-            t.labels &&
-            t.labels.filter(l => l
-              .toLowerCase()
-              .indexOf(this.state.search.toLowerCase()) >= 0).length > 0
-          )
-        )
+        .filter(t => toolMatchesSearch(t, this.state.search))
         .map(checkIssues);
     }
     return [];
@@ -265,11 +256,7 @@ export default class Tools extends React.Component {
             t => {
               if (this.state.search &&
                 this.state.search.length &&
-                (t.image.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0 ||
-                  (t.labels && t.labels
-                    .filter(
-                      l => l.toLowerCase().indexOf(this.state.search.toLowerCase()) >= 0
-                    ).length > 0))) {
+                toolMatchesSearch(t, this.state.search)) {
                 tools.push(t);
               }
             })));

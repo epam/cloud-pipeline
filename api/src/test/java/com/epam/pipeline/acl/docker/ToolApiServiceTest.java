@@ -196,6 +196,26 @@ public class ToolApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
+    public void updateBlackListWithToolVersion() {
+        doReturn(toolVersionScanResult).when(mockToolManager)
+                .updateBlackListWithToolVersionStatus(ID, TEST_STRING, true);
+
+        assertThat(toolApiService.updateBlackListWithToolVersion(ID, TEST_STRING, true))
+                .isEqualTo(toolVersionScanResult);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyUpdateBlackListWithToolVersion() {
+        doReturn(toolVersionScanResult).when(mockToolManager)
+                .updateBlackListWithToolVersionStatus(ID, TEST_STRING, true);
+
+        assertThrows(AccessDeniedException.class, () ->
+                toolApiService.updateBlackListWithToolVersion(ID, TEST_STRING, true));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadToolWithRegistryForAdmin() {
         doReturn(tool).when(mockToolManager).loadTool(TEST_STRING, TEST_STRING);
 

@@ -64,7 +64,7 @@ fi
 
 # Execute command
 CMD="import pipeline; command=pipeline.LoggedCommand(\"${COMMAND_TEXT}\", None, \"${DEFAULT_TASK_NAME}\", buffer_size=${LOG_BUFFER_SIZE}, log_stdout=${LOG_TO_CONSOLE}); command.execute();"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"
 result=$?
 
 exit $result

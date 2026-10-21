@@ -86,11 +86,19 @@ public class IAMProfileVerifier {
             return amiConfigurations.stream()
                     .filter(c -> checkPermissions(c.getPermissions(), roles))
                     .filter(c -> checkDockerImages(c.getDockerImages(), targetImage))
+                    .filter(c -> checkPlatform(c.getPlatform(), run.getPlatform()))
                     .anyMatch(c -> checkInstanceMask(c.getInstanceMask(), instanceType));
         } catch (Exception e) {
             log.error("Failed to check AMI: ", e);
             return false;
         }
+    }
+
+    private boolean checkPlatform(final String configurationPlatform, final String runPlatform) {
+        if (StringUtils.isBlank(configurationPlatform)) {
+            return true;
+        }
+        return Objects.equals(configurationPlatform, runPlatform);
     }
 
     private boolean checkPermissions(final List<String> permissions, final Set<String> roles) {

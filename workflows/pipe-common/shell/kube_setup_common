@@ -337,7 +337,7 @@ EOF
             _cri_registry_name=$(basename $_cri_registry)
             sed -i "/\[plugins.\"io.containerd.grpc.v1.cri\".registry.configs\]/a\
 \        [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"$_cri_registry_name\".auth]\n\
-          username = \"$OWNER\"\n\
+          username = \"$OWNER_CP_ACCOUNT\"\n\
           password = \"$API_TOKEN\"\n" "$_containerd_config_file"
         done
         pipe_log_info "Containerd private registry access is configured (using docker config from $_dind_registry_certs_dir)" "$_kube_common_setup_task_name"

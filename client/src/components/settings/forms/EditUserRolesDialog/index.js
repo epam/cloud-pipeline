@@ -30,6 +30,8 @@ import {
   Tabs
 } from 'antd';
 import UserInfoSummary from './UserInfoSummary';
+import UsageCreditsStatistics from '../../user-profile/usage-credits-statistics';
+import UsageCreditsCounter from '../../user-profile/usage-credits-statistics/credits-counter';
 import User from '../../../../models/user/User';
 import Roles from '../../../../models/user/Roles';
 import MetadataUpdateKeys from '../../../../models/metadata/MetadataUpdateKeys';
@@ -64,6 +66,7 @@ import {
 } from '../../../runs/logs/forms/configure-run-as-permissions/utilities';
 import styles from './EditUserRolesDialog.css';
 import RequiredLaunchTags from '../../../special/metadata/special/required-launch-tags';
+import UserTokensTable from '../../UserTokensTable';
 
 const RESTRICTED_METADATA_KEYS = [
   MuteEmailNotifications.metadataKey
@@ -72,7 +75,7 @@ const RESTRICTED_METADATA_KEYS = [
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation', 'preferences')
 @inject((common, params) => ({
-  userInfo: params.user ? new User(params.user.id) : null,
+  userInfo: params.user ? new User(params.user.id, true) : null,
   userId: params.user ? params.user.id : null,
   roles: new Roles(),
   credentialProfiles: params.user
@@ -879,6 +882,16 @@ export default class EditUserRolesDialog extends React.Component {
             }
           </tbody>
         </table>
+        <UsageCreditsCounter
+          user={this.props.user}
+          style={{
+            container: {gap: 2},
+            label: {
+              width: 150,
+              fontWeight: 'normal'
+            }
+          }}
+        />
       </div>
     );
   }
@@ -1313,6 +1326,26 @@ export default class EditUserRolesDialog extends React.Component {
             />
           )
         }
+        {
+          (
+            this.isAdmin ||
+            (
+              roleModel.readAllowed(this.props.user) &&
+              roleModel.writeAllowed(this.props.user)
+            )
+          ) && (
+            <Tabs.TabPane
+              tab="API TOKENS"
+              key="api-tokens"
+            />
+          )
+        }
+        {
+          <Tabs.TabPane
+            tab="USAGE CREDITS"
+            key="usage-credits"
+          />
+        }
       </Tabs>
     );
   };
@@ -1338,6 +1371,23 @@ export default class EditUserRolesDialog extends React.Component {
           objectIdentifier={userId}
           showOwner={false}
         />
+      );
+    }
+    if (activeTab === 'api-tokens') {
+      return (
+        <UserTokensTable
+          userId={userId}
+        />
+      );
+    }
+    if (activeTab === 'usage-credits') {
+      return (
+        <div style={{flex: 1, overflow: 'auto'}}>
+          <UsageCreditsStatistics
+            user={user}
+            pageSize={10}
+          />
+        </div>
       );
     }
     return this.renderUserRolesTab();

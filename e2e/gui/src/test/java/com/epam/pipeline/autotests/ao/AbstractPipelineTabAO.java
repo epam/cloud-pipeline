@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.lang.reflect.Constructor;
@@ -25,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static com.codeborne.selenide.Condition.attribute;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.not;
@@ -106,7 +106,7 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     protected void changeTabTo(Primitive tab) {
-        sleep(2, SECONDS).get(tab).waitUntil(enabled, DEFAULT_TIMEOUT);
+        sleep(2, SECONDS).get(tab).shouldBe(enabled);
         click(tab).tabShouldBeActive(tab);
     }
 
@@ -117,12 +117,15 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     public PipelineRunFormAO runPipeline() {
-        sleep(2, SECONDS);
-        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
-        sleep(2, SECONDS);
+        get(RUN).shouldBe(exist, not(disabled));
         click(RUN);
-        sleep(1, SECONDS);
         return new PipelineRunFormAO(pipelineName);
+    }
+
+    public void runPipelineWithException(String message) {
+        get(RUN).shouldBe(exist, not(disabled));
+        click(RUN);
+        new PipelineRunFormAO().validateException(message);
     }
 
     @Override

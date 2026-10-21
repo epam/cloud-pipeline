@@ -23,6 +23,7 @@ import TerminatePipeline from '../../../../models/pipelines/TerminatePipeline';
 import DataStorageLifeCycleRulesPostpone
 from '../../../../models/dataStorage/lifeCycleRules/DataStorageLifeCycleRulesPostpone';
 import {canPauseRun, canStopRun} from '../../../runs/actions';
+import confirmResume from '../../../runs/actions/resume-confirmation';
 import RunStatuses from '../../../special/run-status-icon/run-statuses';
 
 function parseQuotaForNavigation (quota) {
@@ -103,9 +104,13 @@ const ACTIONS = {
   resumeRun: {
     key: 'Resume run',
     actionFn: async ({entity, callback}) => {
+      const payload = await confirmResume({id: entity.id, run: entity});
+      if (!payload) {
+        return;
+      }
       const hide = message.loading('Resuming...', -1);
       const request = new ResumePipeline(entity.id);
-      await request.send({});
+      await request.send(payload);
       if (request.error) {
         message.error(request.error);
       }

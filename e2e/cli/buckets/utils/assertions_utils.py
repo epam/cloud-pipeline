@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 import pytest
 
 from common_utils.pipe_cli import pipe_storage_cp
@@ -19,10 +21,19 @@ from buckets.utils.object_info import ObjectInfo
 from buckets.utils.cloud.utilities import *
 from buckets.utils.file_utils import *
 
+_ACCESS_DENIED_RE = re.compile(r'access\s+(is\s+)?denied', re.IGNORECASE)
+
 
 def assert_error_message_is_present(output, message):
     text = "".join(output)
-    assert message in text, "Command output '{}' doesn't contain expected message: '{}'".format(text, message)
+    assert message.lower() in text.lower(), \
+        "Command output '{}' doesn't contain expected message: '{}'".format(text, message)
+
+
+def assert_access_denied_error(output):
+    text = "".join(output)
+    assert _ACCESS_DENIED_RE.search(text), \
+        "Expected access denied error message, got: '{}'".format(text)
 
 
 def assert_files_skipped(bucket_name, *files):

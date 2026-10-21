@@ -17,31 +17,25 @@
 package com.epam.pipeline.billingreportagent.service.storage.requests;
 
 import com.epam.pipeline.billingreportagent.model.storage.requests.StorageRequest;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class StorageRequestMapper {
 
-    public XContentBuilder map(final StorageRequest requests) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            return jsonBuilder.startObject()
-                    .field("created_date", requests.getCreatedDate())
-                    .field("user", requests.getUser().getUserName())
-                    .field("user_id", requests.getUser().getId())
-                    .field("storage_id", requests.getStorageId())
-                    .field("storage_name", requests.getStorageName())
-                    .field("read_requests", requests.getReadRequests())
-                    .field("write_requests", requests.getWriteRequests())
-                    .field("total_requests", requests.getTotalRequests())
-                    .field("period", requests.getPeriod())
-                    .endObject();
-        } catch (
-                IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for storage requests: ", e);
-        }
+    public Map<String, ?> map(final StorageRequest requests) {
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put("created_date", requests.getCreatedDate());
+        jsonMap.put("user", requests.getUser().getUserName());
+        jsonMap.put("user_id", requests.getUser().getId());
+        jsonMap.put("storage_id", requests.getStorageId());
+        jsonMap.put("storage_name", requests.getStorageName());
+        jsonMap.put("read_requests", requests.getReadRequests());
+        jsonMap.put("write_requests", requests.getWriteRequests());
+        jsonMap.put("total_requests", requests.getTotalRequests());
+        jsonMap.put("period", requests.getPeriod());
+        return jsonMap;
     }
 }

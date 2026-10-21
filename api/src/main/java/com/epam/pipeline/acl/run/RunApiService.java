@@ -45,10 +45,13 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTask;
 import com.epam.pipeline.entity.pipeline.run.EngineRunTaskFilter;
+import com.epam.pipeline.entity.pipeline.run.EngineRunTaskKeys;
 import com.epam.pipeline.entity.pipeline.run.EngineType;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunResult;
+import com.epam.pipeline.entity.pipeline.run.PipelineRunWithEngineTasks;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunInstanceConfigVO;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -56,6 +59,7 @@ import com.epam.pipeline.entity.pipeline.run.runtime.RunRuntimeData;
 import com.epam.pipeline.entity.pipeline.run.runtime.RunSyncRuntimeDataType;
 import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.run.EngineRunTaskGroupStatsEntity;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -82,6 +86,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -322,7 +328,11 @@ public class RunApiService {
     @QuotaLaunchCheck
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun resumeRun(Long runId) {
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun resumeRun(final Long runId, final RunInstanceConfigVO runInstanceConfig) {
+        if (runInstanceConfig != null) {
+            runManager.applyRunInstanceConfig(runId, runInstanceConfig);
+        }
         return pipelineRunDockerOperationManager.resumeRun(runId);
     }
 
@@ -410,6 +420,11 @@ public class RunApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
+    public void archiveRuns(final List<Long> runIds) {
+        archiveRunService.archiveRuns(runIds);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     public void archiveRuns(final String name, final boolean principal, final Integer days) {
         archiveRunService.archiveRuns(name, principal, days);
     }
@@ -459,5 +474,16 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public List<PipelineRunResult> loadPipelineRunResultsForRun(final Long runId) {
         return runResultManager.loadPipelineRunResultsForRun(runId);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final Long runId) {
+        return runManager.loadPipelineRunPerformanceMetrics(runId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
+    public List<PipelineRunWithEngineTasks> getPipelineRunInfoByEngineTask(final EngineType engineType,
+                                                                           final EngineRunTaskKeys keys) {
+        return engineRunTaskService.loadRunInfoByTasks(engineType, keys.getEngineTaskKeys());
     }
 }

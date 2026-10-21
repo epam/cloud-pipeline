@@ -2,7 +2,7 @@
 name: Enhancement
 about: Request a feature implementation
 title: ''
-labels: kind/enhancement
+labels: kind/enhancement, intel/natural 🧐
 assignees: ''
 
 ---

@@ -25,12 +25,11 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -44,61 +43,50 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
     private final String billingCenterKey;
 
     @Override
-    public XContentBuilder map(final EntityContainer<StorageBillingInfo> container) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            final StorageBillingInfo billingInfo = container.getEntity();
-            final AbstractDataStorage storage = billingInfo.getEntity();
+    public Map<String, ?> map(final EntityContainer<StorageBillingInfo> container) {
+        final StorageBillingInfo billingInfo = container.getEntity();
+        final AbstractDataStorage storage = billingInfo.getEntity();
 
-            final Optional<AbstractCloudRegion> region = Optional.ofNullable(container.getRegion());
+        final Optional<AbstractCloudRegion> region = Optional.ofNullable(container.getRegion());
 
-            jsonBuilder.startObject()
-                .field(DOC_TYPE_FIELD, documentType.name())
-                .field("created_date", billingInfo.getDate()) // Document creation date: 2022-07-22
-                .field("resource_type", billingInfo.getResourceType()) // Document resource type: COMPUTE / STORAGE
-                .field("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null))
-                .field("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null))
-                .field("cloud_region_provider", region.map(AbstractCloudRegion::getProvider).orElse(null))
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(DOC_TYPE_FIELD, documentType.name());
+        jsonMap.put("created_date", billingInfo.getDate()); // Document creation date: 2022-07-22
+        jsonMap.put("resource_type", billingInfo.getResourceType()); // Document resource type: COMPUTE / STORAGE
+        jsonMap.put("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null));
+        jsonMap.put("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null));
+        jsonMap.put("cloud_region_provider", region.map(AbstractCloudRegion::getProvider).orElse(null));
 
-                .field("storage_id", storage.getId())
-                .field("storage_name", storage.getName())
-                .field("storage_path", storage.getPath())
-                .field("storage_type", billingInfo.getResourceStorageType()) // Storage resource type: OBJECT_STORAGE / FILE_STORAGE
-                .field("provider", storage.getType()) // Storage common type: S3 / AZ / GS / NFS
-                .field("object_storage_type", billingInfo.getObjectStorageType()) // Object storage type: S3 / AZ / GS
-                .field("file_storage_type", billingInfo.getFileStorageType()) // File storage type: NFS / SMB / LUSTRE
-                .field("storage_created_date", asString(storage.getCreatedDate()))
-                .field("usage_bytes", billingInfo.getUsageBytes())
-                .field("usage_bytes_avg", billingInfo.getUsageBytes())
-                .field("cost", billingInfo.getCost());
+        jsonMap.put("storage_id", storage.getId());
+        jsonMap.put("storage_name", storage.getName());
+        jsonMap.put("storage_path", storage.getPath());
+        jsonMap.put("storage_type", billingInfo.getResourceStorageType()); // Storage resource type: OBJECT_STORAGE / FILE_STORAGE
+        jsonMap.put("provider", storage.getType()); // Storage common type: S3 / AZ / GS / NFS
+        jsonMap.put("object_storage_type", billingInfo.getObjectStorageType()); // Object storage type: S3 / AZ / GS
+        jsonMap.put("file_storage_type", billingInfo.getFileStorageType()); // File storage type: NFS / SMB / LUSTRE
+        jsonMap.put("storage_created_date", asString(storage.getCreatedDate()));
+        jsonMap.put("usage_bytes", billingInfo.getUsageBytes());
+        jsonMap.put("usage_bytes_avg", billingInfo.getUsageBytes());
+        jsonMap.put("cost", billingInfo.getCost());
 
-            final List<StorageBillingInfo.StorageBillingInfoDetails> billingDetails = billingInfo.getBillingDetails();
-            if (CollectionUtils.isNotEmpty(billingDetails)) {
-                // Detailed costs and sizes by Storage Class and file versions
-                for (StorageBillingInfo.StorageBillingInfoDetails storageClassDetails : billingDetails) {
-                    final String storageClass = storageClassDetails.getStorageClass().toLowerCase(Locale.ROOT);
-                    jsonBuilder.field(String.format("%s_cost", storageClass), storageClassDetails.getCost());
-                    jsonBuilder.field(
-                            String.format("%s_usage_bytes", storageClass), storageClassDetails.getUsageBytes());
-                    jsonBuilder.field(
-                            String.format("%s_ov_cost", storageClass), storageClassDetails.getOldVersionCost());
-                    jsonBuilder.field(
-                            String.format("%s_ov_usage_bytes", storageClass),
-                            storageClassDetails.getOldVersionUsageBytes()
-                    );
-                    jsonBuilder.field(String.format("%s_total_cost", storageClass),
-                            storageClassDetails.getCost() + storageClassDetails.getOldVersionCost());
-                    jsonBuilder.field(
-                            String.format("%s_total_usage_bytes", storageClass),
-                            storageClassDetails.getUsageBytes() + storageClassDetails.getOldVersionUsageBytes());
-                }
+        final List<StorageBillingInfo.StorageBillingInfoDetails> billingDetails = billingInfo.getBillingDetails();
+        if (CollectionUtils.isNotEmpty(billingDetails)) {
+            // Detailed costs and sizes by Storage Class and file versions
+            for (StorageBillingInfo.StorageBillingInfoDetails storageClassDetails : billingDetails) {
+                final String storageClass = storageClassDetails.getStorageClass().toLowerCase(Locale.ROOT);
+                jsonMap.put(String.format("%s_cost", storageClass), storageClassDetails.getCost());
+                jsonMap.put(String.format("%s_usage_bytes", storageClass), storageClassDetails.getUsageBytes());
+                jsonMap.put(String.format("%s_ov_cost", storageClass), storageClassDetails.getOldVersionCost());
+                jsonMap.put(String.format("%s_ov_usage_bytes", storageClass),
+                        storageClassDetails.getOldVersionUsageBytes());
+                jsonMap.put(String.format("%s_total_cost", storageClass),
+                        storageClassDetails.getCost() + storageClassDetails.getOldVersionCost());
+                jsonMap.put(String.format("%s_total_usage_bytes", storageClass),
+                        storageClassDetails.getUsageBytes() + storageClassDetails.getOldVersionUsageBytes());
             }
-
-            return buildUserContent(container.getOwner(), jsonBuilder)
-                    .endObject();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for data storage: ", e);
         }
+
+        buildUserContent(container.getOwner(), jsonMap);
+        return jsonMap;
     }
-
 }
-

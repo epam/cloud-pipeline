@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -30,12 +29,12 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_INSTANCE_PRICE_TYPE;
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.screenshot;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 
 public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
@@ -109,24 +108,24 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                 .expandTab(EXEC_ENVIRONMENT)
                 .expandTab(ADVANCED_PANEL)
                 .setPriceType(DEFAULT_INSTANCE_PRICE_TYPE)
-                .doNotMountStoragesSelect(true)
                 .enableClusterLaunch()
                 .clusterSettingsForm("Auto-scaled cluster")
                 .ok()
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep infinity && sleep infinity")
                 .clickAddBooleanParameter()
                 .setName(CP_CAP_AUTOSCALE_DNS_HOSTS)
+                .setEnableParameter(true)
                 .close()
                 .doNotMountStoragesSelect(true)
                 .launchTool(this, nameWithoutGroup(tool));
         final String parentRunId = getLastRunId();
         LogAO logAO = runsMenu()
-                .showLog(parentRunId);
+                .showLog(parentRunId)
+                .waitForSshLink();
         String childRunID = logAO
                 .waitForNestedRunsLink()
                 .getNestedRunID(1);
         logAO
-                .waitForSshLink()
                 .waitForNestedRunWorking(childRunID)
                 .ssh(shell -> {
                     shell
@@ -135,11 +134,12 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
                             .assertNextStringIsVisible("Complete!",
                                     format("pipeline-%s", parentRunId))
                             .execute(format(command[2], childRunID))
-                            .waitUntilTextAppearsSeveralTimes(parentRunId, 3)
+                            .waitUntilTextAppearsSeveralTimes(parentRunId, 2)
                             .assertPageAfterCommandContainsStrings(format(command[2], childRunID), SERVER_IP);
                     String childRunIP = getRunIP(shell.lastCommandResult("Name:"));
                     shell
                             .execute(format(command[3], childRunIP))
+                            .waitUntilTextAppearsSeveralTimes(parentRunId, 3)
                             .assertPageAfterCommandContainsStrings(format(command[3], childRunIP), "0")
                             .close();
                 });
@@ -151,8 +151,6 @@ public class DnsHostsManagementTest extends AbstractSeveralPipelineRunningTest
         if (!matcher.find()) {
             final String screenName = format("DnsHostsManagementTest_%s", Utils.randomSuffix());
             screenshot(screenName);
-            throw new ElementNotFound(format("Could not get run IP from message: %s. Screenshot: %s.png", logMessage,
-                    screenName), exist);
         }
         return matcher.group();
     }

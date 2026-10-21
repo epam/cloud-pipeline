@@ -26,9 +26,13 @@ RUN apt update && \
 
 RUN python3 -m pip install --upgrade pip && pip3 install setuptools_rust==0.12.1
 
+ENV CP_GITLAB_READER_HOME="/opt/gitlab-reader"
+
+ADD init.sh /init.sh
+RUN chmod +x /init.sh
+
 # API distribution
 ARG CP_API_DIST_URL=""
-ENV CP_GITLAB_READER_HOME="/opt/gitlab-reader"
 
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
@@ -46,9 +50,5 @@ RUN cd $CP_GITLAB_READER_HOME/gitreader && \
     python3 -m pip install wheel && \
     python3 -m pip install uwsgi==2.0.20 && \
     python3 setup.py install
-
-
-ADD init.sh /init.sh
-RUN chmod +x /init.sh
 
 CMD ["/init.sh"]

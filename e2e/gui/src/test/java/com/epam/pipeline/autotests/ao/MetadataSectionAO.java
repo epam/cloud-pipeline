@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
@@ -42,14 +43,17 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Primitive.VALUE_FIELD;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static java.lang.String.format;
+import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -153,7 +157,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO assertNumberOfKeysIs(int expectedNumberOfKeys) {
         $$(byClassName(keyFieldId)).filter(have(cssClass("key")))
-                .filter(not(have(cssClass("read-only")))).shouldHaveSize(expectedNumberOfKeys);
+                .filter(not(have(cssClass("read-only")))).shouldHave(size(expectedNumberOfKeys));
         return this;
     }
 
@@ -168,7 +172,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO ensureMetadataSectionNotContainText(String text) {
-        $(byCssSelector(".Pane.horizontal.Pane1")).shouldNotHave(text(text));
+        $(className("cp-split-panel")).shouldNotHave(text(text));
         return this;
     }
 
@@ -222,7 +226,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         if ("0".equals(sizeWithUnit)) {
             ensure(byClassName("torage-size__storage-size"), matchText("Request storage re-index"));
         } else {
-            ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
+            ensure(byClassName("torage-size__detail"), matchText(format("Standard size: %s", sizeWithUnit)));
         }
         return this;
     }
@@ -260,7 +264,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                     break;
                 }
             }
-            sleep(1, MINUTES);
+            sleep(30, SECONDS);
             refresh();
             sleep(5, SECONDS);
 
@@ -269,12 +273,20 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO reindexStorage() {
+        int attempt = 0;
+        int maxAttempts = 10;
+        $(byXpath(".//*[contains(text(), '-index')]")).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
         if ($(byText("Re-index")).exists()) {
             $(byText("Re-index")).click();
         } else {
             $(byText("Request storage re-index")).click();
         }
-        sleep(1, MINUTES);
+        while (!$(byXpath(".//*[contains(text(), 'Standard')]")).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            refresh();
+            attempt++;
+        }
         return this;
     }
 
@@ -333,7 +345,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         public ConfigureNotificationAO addRecipient(final String recipient) {
             click(RECIPIENTS);
             actions().sendKeys(recipient).perform();
-            enter();
+            $$(byXpath(".//li[contains(@class, 'ant-select-dropdown-menu-item')]"))
+                    .filter(Condition.exactText(recipient)).first().click();
             click(byText("Recipients:"));
             return this;
         }
@@ -375,7 +388,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         public ConfigureNotificationAO checkRecipients(final List<String> recipients) {
             recipients.forEach(recipient -> $$(byClassName("ant-select-selection__choice"))
                     .filter(Condition.attribute("title", recipient))
-                    .shouldHaveSize(1));
+                    .shouldHave(size(1)));
             return this;
         }
 
@@ -384,7 +397,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                     .findBy(text(action))
                     .findAll(byClassName("s-notifications__input"))
                     .filter(Condition.value(volumeThresholdInGb))
-                    .shouldHaveSize(1);
+                    .shouldHave(size(1));
             return this;
         }
 
@@ -399,6 +412,3 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         }
     }
 }
-
-
-

@@ -74,8 +74,8 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private static final String AND = " AND ";
     private static final String OR = " OR ";
     private static final String UNION_ALL = " UNION ALL ";
-    private static final String FACET_GROUPING_QUERY_TEMPLATE = "SELECT '%s' AS metadata_field, %s AS metadata_value," +
-            " COUNT(*) AS count FROM base GROUP BY %s";
+    private static final String FACET_GROUPING_QUERY_TEMPLATE = "SELECT '%s' AS metadata_field, \"%s\"" +
+            " AS metadata_value, COUNT(*) AS count FROM base GROUP BY \"%s\"";
     private static final int BATCH_SIZE = 1000;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -352,7 +352,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 if (facet.isPredefined()) {
                     throw new IllegalArgumentException("Predefined facets are not supported: " + facet.getField());
                 }
-                clauseJoiner.add(format("e.data #>> '{%s,value}' as %s", facet.getField(), facet.getField()));
+                clauseJoiner.add(format("e.data #>> '{%s,value}' as \"%s\"", facet.getField(), facet.getField()));
             }
         );
         return clauseJoiner.toString();

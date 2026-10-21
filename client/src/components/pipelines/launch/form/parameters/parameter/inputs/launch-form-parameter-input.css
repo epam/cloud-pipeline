@@ -15,3 +15,16 @@
   text-align: center;
   border: 1px solid transparent;
 }
+
+.metadata-entity-option {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.metadata-entity-option-description {
+  font-size: smaller;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

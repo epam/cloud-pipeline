@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
-from prettytable import prettytable
 
 from src.utilities.storage.api_listing import ApiStorageListingManager
 from src.utilities.storage.common import StorageOperations
@@ -39,9 +37,9 @@ class DataUsageCommand(object):
         self.size_format = size_format
         self.show_archive = True
 
-    def validate(self):
+    def validate(self, print_service):
         if self.depth and not self.storage_name:
-            click.echo("Error: bucket path must be provided with --depth option", err=True)
+            print_service.error("Error: bucket path must be provided with --depth option")
             return False
 
         if self.storage_name:
@@ -93,6 +91,10 @@ class DataUsageCommand(object):
 
 
 class DataUsageHelper(object):
+
+    def __init__(self, print_service):
+        self._print_service = print_service
+
     def fetch_data_eagerly(self, du_command, storage):
         for relative_path in self.__get_storage_summary_with_depth(storage, du_command.relative_path, du_command.depth):
             yield self.__get_storage_usage(storage.path, relative_path)
@@ -102,7 +104,9 @@ class DataUsageHelper(object):
         storage_to_fetch = [storage] if storage else list(DataStorage.list())
         for _storage in storage_to_fetch:
             if _storage.source_storage_id:
-                click.echo("Storage '%s' is mirror of another storage, will not load du information." % _storage.name, err=True)
+                self._print_service.warning(
+                    "Storage '%s' is mirror of another storage, will not load du information." % _storage.name,
+                    err=True)
                 continue
             if du_command.perform_on_cloud and _storage.type != "nfs":
                 summary = self.get_cloud_storage_summary(_storage, du_command.relative_path, du_command.depth)
@@ -132,12 +136,12 @@ class DataUsageHelper(object):
             items.append([path, usage])
         return items
 
-    @classmethod
-    def __get_storage_usage(cls, storage_name, relative_path):
+    def __get_storage_usage(self, storage_name, relative_path):
         try:
             usage = DataStorage.get_storage_usage(storage_name, relative_path)
         except Exception as e:
-            click.echo("Failed to load usage for datastorage '%s'. Cause: %s" % (storage_name, str(e)), err=True)
+            self._print_service.warning("Failed to load usage for datastorage '%s'. Cause: %s" % (storage_name, str(e)),
+                                        err=True)
             return None, None
         result = StorageUsage()
         for tier, stats in usage.get("usage", {}).items():
@@ -248,96 +252,15 @@ class DuOutput(object):
         return DuOutput.__all() + DuOutput.__current() + DuOutput.__old()
 
     @staticmethod
-    def configure_table(_header):
-        _table = prettytable.PrettyTable()
-        _table.field_names = _header
-        _table.align = "r"
-        _table.align['Storage'] = 'l'
-        _table.border = False
-        _table.padding_width = 2
-        return _table
-
-    @staticmethod
-    def build_header(du_command, du_leafs):
-        _header = [
-            "Storage", "Files count", "Size (%s)" % DuOutput.pretty_size(du_command.size_format)
-        ]
-        if not du_command.show_archive:
-            return _header
-        if du_command.output_mode in DuOutput.__brief():
-            _header.append("Archive size (%s)" % DuOutput.pretty_size(du_command.size_format))
+    def get_tier_size(tier_usage, generation):
+        if not tier_usage:
+            return 0
+        if DuOutput.is_current(generation):
+            return tier_usage.size
+        elif DuOutput.is_old(generation):
+            return tier_usage.old_versions_size
         else:
-            possible_additional_columns = set()
-            for _item in du_leafs:
-                possible_additional_columns.update(filter(lambda t: t != DuOutput.STANDARD_TIER, _item[1].get_tiers()))
-            for _column in possible_additional_columns:
-                if _column not in _header:
-                    _header.append(_column + " (%s)" % DuOutput.pretty_size(du_command.size_format))
-        return _header
-
-    @staticmethod
-    def build_row(du_command, _header, _item):
-        def _get_size(tier_usage):
-            if not tier_usage:
-                return 0
-            if DuOutput.is_current(du_command.generation):
-                return tier_usage.size
-            elif DuOutput.is_old(du_command.generation):
-                return tier_usage.old_versions_size
-            else:
-                return tier_usage.size + tier_usage.old_versions_size
-
-        item_usage = _item[1]
-        _row = [_item[0], item_usage.get_total_count()]
-        usage_by_tiers = item_usage.get_usage()
-        _row.append(
-            DuOutput.pretty_size_value(
-                _get_size(usage_by_tiers.get(DuOutput.STANDARD_TIER)), du_command.size_format
-            )
-        )
-
-        if not du_command.show_archive:
-            return _row
-
-        if du_command.output_mode in DuOutput.__brief():
-            archive_size = 0
-            for archive_tier in filter(lambda t: t != DuOutput.STANDARD_TIER, item_usage.get_tiers()):
-                archive_size += _get_size(usage_by_tiers.get(archive_tier))
-            _row.append(DuOutput.pretty_size_value(archive_size, du_command.size_format))
-        else:
-            for _header_column in _header[3:]:
-                _row.append(
-                    DuOutput.pretty_size_value(
-                        _get_size(
-                            next((t for t in usage_by_tiers.values() if _header_column.startswith(t.tier)), None)
-                        ),
-                        du_command.size_format
-                    )
-                )
-        return _row
-
-    @staticmethod
-    def format_table(du_command, du_leafs):
-        header = DuOutput.build_header(du_command, du_leafs)
-        table = DuOutput.configure_table(header)
-        for item in du_leafs:
-            table.add_row(DuOutput.build_row(du_command, header, item))
-        return table
-
-    @staticmethod
-    def print_item(du_command, item, header, table):
-        if not table:
-            header = DuOutput.build_header(du_command, [])
-            table = DuOutput.configure_table(header)
-            table.add_row(DuOutput.build_row(du_command, header, item))
-            click.echo(table)
-            table.clear_rows()
-            table.header = False
-        else:
-            table.add_row(DuOutput.build_row(du_command, header, item))
-            click.echo(table)
-            table.clear_rows()
-        return header, table
+            return tier_usage.size + tier_usage.old_versions_size
 
     @staticmethod
     def pretty_size(size_format):

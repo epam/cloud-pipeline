@@ -113,7 +113,7 @@ class Pipeline(API):
                         status_notifications=False,
                         status_notifications_status=None, status_notifications_recipient=None,
                         status_notifications_subject=None, status_notifications_body=None,
-                        run_as_user=None):
+                        run_as_user=None, pod_assign_policy=None, fallback_instance_types=None):
         api = cls.instance()
         params = {}
         for parameter in parameters:
@@ -125,6 +125,8 @@ class Pipeline(API):
             payload['hddSize'] = instance_disk
         if instance_type is not None:
             payload['instanceType'] = instance_type
+        if fallback_instance_types:
+            payload['fallbackInstanceTypes'] = list(fallback_instance_types)
         if docker_image is not None:
             payload['dockerImage'] = docker_image
         if cmd_template is not None:
@@ -147,6 +149,8 @@ class Pipeline(API):
             payload['prettyUrl'] = friendly_url
         if run_as_user:
             payload['runAs'] = run_as_user
+        if pod_assign_policy is not None:
+            payload['podAssignPolicy'] = pod_assign_policy
         if status_notifications:
             if status_notifications_body:
                 with open(status_notifications_body, 'r') as f:
@@ -172,13 +176,15 @@ class Pipeline(API):
                        status_notifications=False,
                        status_notifications_status=None, status_notifications_recipient=None,
                        status_notifications_subject=None, status_notifications_body=None,
-                       run_as_user=None):
+                       run_as_user=None, pod_assign_policy=None, fallback_instance_types=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
             payload['hddSize'] = instance_disk
         if instance_type is not None:
             payload['instanceType'] = instance_type
+        if fallback_instance_types:
+            payload['fallbackInstanceTypes'] = list(fallback_instance_types)
         if docker_image is not None:
             payload['dockerImage'] = docker_image
         if cmd_template is not None:
@@ -199,6 +205,8 @@ class Pipeline(API):
             payload['prettyUrl'] = friendly_url
         if run_as_user:
             payload['runAs'] = run_as_user
+        if pod_assign_policy is not None:
+            payload['podAssignPolicy'] = pod_assign_policy
         if status_notifications:
             if status_notifications_body:
                 with open(status_notifications_body, 'r') as f:
@@ -230,9 +238,17 @@ class Pipeline(API):
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
-    def resume_pipeline(cls, run_id):
+    def resume_pipeline(cls, run_id, instance_type=None, fallback_instance_types=None):
         api = cls.instance()
-        response_data = api.call('/run/{}/resume'.format(run_id), None, http_method='post')
+        body = None
+        if instance_type is not None or fallback_instance_types is not None:
+            payload = {}
+            if instance_type is not None:
+                payload['instanceType'] = instance_type
+            if fallback_instance_types is not None:
+                payload['fallbackInstanceTypes'] = list(fallback_instance_types)
+            body = json.dumps(payload)
+        response_data = api.call('/run/{}/resume'.format(run_id), body, http_method='post')
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod

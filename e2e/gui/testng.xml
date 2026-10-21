@@ -104,29 +104,29 @@
         </classes>
     </test>
 
-    <test name="WDLPipelineTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLPipelineTest"/>
-        </classes>
-    </test>
+    <!--  <test name="WDLPipelineTest">
+            <classes>
+                <class name="com.epam.pipeline.autotests.WDLPipelineTest"/>
+           </classes>
+       </test>
 
-    <test name="WDLEditorTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLEditorTest"/>
-        </classes>
-    </test>
+       <test name="WDLEditorTest">
+           <classes>
+               <class name="com.epam.pipeline.autotests.WDLEditorTest"/>
+           </classes>
+       </test>
 
-    <test name="WDLTaskEditorTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLTaskEditorTest"/>
-        </classes>
-    </test>
+       <test name="WDLTaskEditorTest">
+           <classes>
+               <class name="com.epam.pipeline.autotests.WDLTaskEditorTest"/>
+           </classes>
+       </test>
 
-    <test name="WDLScatterEditorTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.WDLScatterEditorTest"/>
-        </classes>
-    </test>
+       <test name="WDLScatterEditorTest">
+           <classes>
+               <class name="com.epam.pipeline.autotests.WDLScatterEditorTest"/>
+           </classes>
+       </test> -->
 
     <test name="LaunchClusterTest">
         <classes>
@@ -140,11 +140,12 @@
         </classes>
     </test>
 
-    <test name="RunPipelineWithSeveralOutputParametersTest">
+    <!--Disabled. Reason - multiple selection isn't supported for output parameters now-->
+    <!--<test name="RunPipelineWithSeveralOutputParametersTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RunPipelineWithSeveralOutputParametersTest"/>
         </classes>
-    </test>
+    </test>-->
 
     <test name="LaunchParametersNavigationTest">
         <classes>

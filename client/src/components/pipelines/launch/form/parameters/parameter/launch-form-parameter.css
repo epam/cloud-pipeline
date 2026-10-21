@@ -5,3 +5,14 @@
 .launch-form-parameter > *:not(:last-child) {
   margin-bottom: 2px;
 }
+
+.parameter-description {
+  overflow-wrap: break-word;
+}
+
+.parameter-description table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  max-width: 100%;
+}

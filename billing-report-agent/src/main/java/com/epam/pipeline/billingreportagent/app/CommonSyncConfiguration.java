@@ -18,7 +18,6 @@ package com.epam.pipeline.billingreportagent.app;
 
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsService;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
@@ -45,6 +44,8 @@ import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
 import com.epam.pipeline.billingreportagent.service.storage.requests.StorageRequestMapper;
 import com.epam.pipeline.billingreportagent.service.storage.requests.StorageRequestSynchronizer;
+import com.epam.pipeline.elasticsearch.ElasticStackVersion;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -78,6 +79,9 @@ public class CommonSyncConfiguration {
 
     @Value("${sync.storage.historical.billing.generation:false}")
     private boolean enableStorageHistoricalBillingGeneration;
+
+    @Value("${elasticsearch.client.version:V6}")
+    private ElasticStackVersion version;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
@@ -143,7 +147,8 @@ public class CommonSyncConfiguration {
                         StorageType.OBJECT_STORAGE,
                         pricingService,
                         apiClient,
-                        enableStorageHistoricalBillingGeneration),
+                        enableStorageHistoricalBillingGeneration,
+                        version),
                 DataStorageType.S3);
     }
 
@@ -177,7 +182,8 @@ public class CommonSyncConfiguration {
                         apiClient,
                         fileShareMountsService,
                         MountType.NFS,
-                        enableStorageHistoricalBillingGeneration),
+                        enableStorageHistoricalBillingGeneration,
+                        version),
                 DataStorageType.NFS);
     }
 
@@ -210,7 +216,8 @@ public class CommonSyncConfiguration {
                         pricingService,
                         apiClient,
                         fileShareMountsService,
-                        enableStorageHistoricalBillingGeneration),
+                        enableStorageHistoricalBillingGeneration,
+                        version),
                 DataStorageType.NFS);
     }
 
@@ -235,7 +242,8 @@ public class CommonSyncConfiguration {
                         StorageType.OBJECT_STORAGE,
                         pricingService,
                         apiClient,
-                        enableStorageHistoricalBillingGeneration),
+                        enableStorageHistoricalBillingGeneration,
+                        version),
                 DataStorageType.GS);
     }
 
@@ -271,7 +279,8 @@ public class CommonSyncConfiguration {
                         StorageType.OBJECT_STORAGE,
                         pricingService,
                         apiClient,
-                        enableStorageHistoricalBillingGeneration),
+                        enableStorageHistoricalBillingGeneration,
+                        version),
                 DataStorageType.AZ);
     }
 
@@ -305,7 +314,8 @@ public class CommonSyncConfiguration {
                         apiClient,
                         fileShareMountsService,
                         MountType.NFS,
-                        enableStorageHistoricalBillingGeneration),
+                        enableStorageHistoricalBillingGeneration,
+                        version),
                 DataStorageType.NFS);
     }
 
@@ -339,7 +349,8 @@ public class CommonSyncConfiguration {
                                                                             apiClient,
                                                                             fileShareMountsService,
                                                                             MountType.SMB,
-                                                                            enableStorageHistoricalBillingGeneration),
+                                                                            enableStorageHistoricalBillingGeneration,
+                                                                            version),
                                        DataStorageType.NFS);
     }
 

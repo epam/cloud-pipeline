@@ -25,6 +25,7 @@ import 'rc-slider/assets/index.css';
 import './index.css';
 import './staticStyles/rc-menu.css';
 import './staticStyles/antd-extensions.css';
+import './staticStyles/markdown.css';
 
 ReactDOM.render(
   <Root />,

@@ -74,15 +74,12 @@ commit_file() {
 }
 
 configure_pip() {
+    _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+        | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+
+    # py2 mirror
     if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
-        # Converts regional s3 endpoints
-        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
-        # to regional website s3 endpoints
-        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
-        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
-            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
         if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
-            # If the conversion was successful
             CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
         else
             CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
@@ -94,22 +91,44 @@ configure_pip() {
     export CP_REPO_PYPI_BASE_URL_DEFAULT
     export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
     export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+    echo "Using pypi repository (py2) $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+
+    # py3 mirror
+    if [ -z "$CP_REPO_PYPI3_BASE_URL_DEFAULT" ]; then
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi3/simple"
+        else
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI3_BASE_URL_DEFAULT
+    export CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT
+    export CP_PIP3_EXTRA_ARGS="${CP_PIP3_EXTRA_ARGS} --index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository (py3) $CP_REPO_PYPI3_BASE_URL_DEFAULT ($CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT)..."
 }
 
 install_pip() {
-    pip --version
+    $CP_PYTHON_PATH -m pip --version
     if [[ "$?" -ne 0 ]]; then
         echo "Installing pip"
-        curl "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" -o "get-pip.py"
-        python get-pip.py
+        if [ "$CP_PYTHON_VERSION" == "2" ]; then
+            curl "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" -o "get-pip.py"
+            $CP_PYTHON_PATH get-pip.py 2>/dev/null || true
+        fi
     fi
     configure_pip
 }
 
 install_pipeline_code() {
     echo "Installing pipeline packages and code"
-    pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+    if [ "$CP_PYTHON_VERSION" == "3" ]; then
+        $CP_PYTHON_PATH -m pip install $CP_PIP3_EXTRA_ARGS -I -q setuptools==68.0.0
+    else
+        $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+    fi
     mkdir $COMMON_REPO_DIR
     cd $COMMON_REPO_DIR
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
@@ -120,7 +139,11 @@ install_pipeline_code() {
         exit "$_DOWNLOAD_RESULT"
     fi
     tar xf pipe-common.tar.gz
-    pip install $CP_PIP_EXTRA_ARGS . -q -I
+    if [ "$CP_PYTHON_VERSION" == "3" ]; then
+        $CP_PYTHON_PATH -m pip install $CP_PIP3_EXTRA_ARGS . -q -I
+    else
+        $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+    fi
     # Init path for shell scripts from common repository
     chmod +x $COMMON_REPO_DIR/shell/*
     export PATH=$PATH:$COMMON_REPO_DIR/shell

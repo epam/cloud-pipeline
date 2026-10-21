@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.scan.*;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
+import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -74,6 +75,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrowsChecked;
+import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -87,6 +90,8 @@ public class AggregatingToolScanManagerTest {
     private static final int MAX_HIGH_VULNERABILITIES = 3;
     private static final int MAX_MEDIUM_VULNERABILITIES = -1;
     private static final String TEST_IMAGE = "testImage";
+    private static final String TEST_REGISTRY_PATH = "registry:443";
+    private static final String REGISTRY_ERROR = "Registry is not available";
     private static final String LATEST_VERSION = "latest";
     private static final String ACTUAL_SCANNED_VERSION = "actual";
     private static final String TEST_VULNERABILITY_NAME = "testVulnerability";
@@ -236,7 +241,7 @@ public class AggregatingToolScanManagerTest {
         when(dockerRegistryManager.load(testTool.getRegistryId())).thenReturn(testRegistry);
         when(dockerClientFactory.getDockerClient(eq(testRegistry), anyString())).thenReturn(mockDockerClient);
 
-        when(mockDockerClient.getManifest(any(), Mockito.anyString(), Mockito.anyString()))
+        when(mockDockerClient.resolveImageManifest(any(), Mockito.anyString(), Mockito.anyString()))
             .thenReturn(Optional.of(testManifest));
 
         when(mockDockerClient.getVersionAttributes(any(), eq(TEST_IMAGE), eq(LATEST_VERSION)))
@@ -304,7 +309,7 @@ public class AggregatingToolScanManagerTest {
     }
 
     @Test
-    public void testScanTool() throws ToolScanExternalServiceException {
+    public void testScanTool() throws ToolScanExternalServiceException, InterruptedException {
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
             .thenReturn(new ToolVersionAttributes());
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
@@ -340,6 +345,7 @@ public class AggregatingToolScanManagerTest {
         Assert.assertEquals(feature.getVersion(), loadedDependency.getVersion());
 
         //check that rescan works
+        Thread.sleep(1);
         ToolVersionScanResult rescan = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, true);
 
         Assert.assertNotEquals(rescan.getScanDate(), result.getScanDate());
@@ -380,6 +386,17 @@ public class AggregatingToolScanManagerTest {
         when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
                 .thenReturn(Optional.of(scanResult));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void shouldReportRegistryErrorAsScanFailureOfASingleVersion() {
+        // a scheduler handles ToolScanExternalServiceException per version, while any other error aborts
+        // a scan of all the remaining versions of a tool
+        when(mockDockerClient.getImageHistory(any(), eq(TEST_IMAGE), eq(LATEST_VERSION)))
+                .thenThrow(new DockerConnectionException(TEST_REGISTRY_PATH, REGISTRY_ERROR));
+
+        assertThrowsChecked(ToolScanExternalServiceException.class,
+            () -> aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false));
     }
 
     @Test
@@ -584,6 +601,27 @@ public class AggregatingToolScanManagerTest {
         when(toolVersionManager.findToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(windowsToolVersion);
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
         Mockito.verifyZeroInteractions(preferenceManager);
+    }
+    
+    @Test
+    public void shouldDenyBlackListedTool() {
+        // Setup: Tool version is in blacklist
+        toolScanResult.setFromBlackList(true);
+        TestUtils.generateScanResult(0, 0, 0, toolScanResult);
+    
+        // Should deny execution even if no vulnerabilities and grace period is active
+        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        notInvoked(toolVersionManager).findToolVersion(Mockito.anyLong(), Mockito.anyString());
+    }
+    
+    @Test
+    public void shouldAllowWhenNotBlackListed() {
+        // Setup: Tool version is not blacklisted, has no vulnerabilities
+        toolScanResult.setFromBlackList(false);
+        TestUtils.generateScanResult(0, 0, 0, toolScanResult);
+    
+        // Should allow execution
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     private final class MockCall<T> implements Call<T> {

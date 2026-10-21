@@ -98,15 +98,6 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String podStatus;
     private List<RunSid> runSids;
     private Map<String, String> envVars;
-    /**
-     * Last time the notification on long-running pipeline was issued
-     */
-    private Date lastNotificationTime;
-    /**
-     * Last time the notification on idle pipeline was issued
-     */
-    private LocalDateTime lastIdleNotificationTime;
-    private LocalDateTime lastNetworkConsumptionNotificationTime;
     private LocalDateTime prolongedAtTime;
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;
@@ -129,7 +120,12 @@ public class PipelineRun extends AbstractSecuredEntity {
     private String stateReasonMessage;
     private List<RestartRun> restartedRuns;
     private List<RunStatus> runStatuses;
+
+    // Is used to disable AUTO-pause functionality, see ResourceMonitoringManager.performPause()
     private boolean nonPause;
+
+    // Is used to completely disable pause functionality, even per user request
+    private boolean pauseDisabled;
     private Long projectId;
 
     /**
@@ -144,6 +140,7 @@ public class PipelineRun extends AbstractSecuredEntity {
      * Cluster workers price estimation. This value shall be calculated for master runs only.
      */
     private BigDecimal workersPrice;
+    private String logsStoragePath;
 
     public PipelineRun() {
         this.terminating = false;

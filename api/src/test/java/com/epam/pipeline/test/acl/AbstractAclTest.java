@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.acl;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -76,6 +77,7 @@ public abstract class AbstractAclTest {
     protected static final String USER_READER_ROLE = "USER_READER";
     protected static final String SIMPLE_USER_ROLE = "SIMPLE_USER";
     protected static final String STORAGE_MANAGER_ROLE = "STORAGE_MANAGER";
+    protected static final String STORAGE_READER_ROLE = "STORAGE_READER";
     protected static final String SIMPLE_USER = "SIMPLE_USER";
     protected static final String ANOTHER_SIMPLE_USER = "ANOTHER_SIMPLE_USER";
     protected static final String TEST_NAME = "TEST_NAME";
@@ -240,5 +242,9 @@ public abstract class AbstractAclTest {
 
     protected void mockUserContext(final UserContext userContext) {
         doReturn(userContext).when(mockUserManager).loadUserContext(any());
+    }
+
+    protected void mockUser(final PipelineUser user) {
+        doReturn(user).when(mockUserManager).loadByNameOrId(eq(user.getUserName()));
     }
 }

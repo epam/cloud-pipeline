@@ -15,10 +15,10 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.AbstractSpringApplicationTest;
 import com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao;
 import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline.PipelineLoader;
 import com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline.PipelineMapper;
 import org.junit.jupiter.api.Test;

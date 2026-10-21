@@ -30,15 +30,14 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.Getter;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -54,77 +53,73 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
     }
 
     @Override
-    public XContentBuilder map(final EntityContainer<PipelineRunBillingInfo> container) {
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            final PipelineRunBillingInfo billingInfo = container.getEntity();
-            final PipelineRun run = billingInfo.getEntity().getPipelineRun();
+    public Map<String, ?> map(final EntityContainer<PipelineRunBillingInfo> container) {
+        final PipelineRunBillingInfo billingInfo = container.getEntity();
+        final PipelineRun run = billingInfo.getEntity().getPipelineRun();
 
-            final Optional<AbstractCloudRegion> region = Optional.ofNullable(container.getRegion());
+        final Optional<AbstractCloudRegion> region = Optional.ofNullable(container.getRegion());
 
-            final Optional<EntityContainer<Pipeline>> pipelineEntity = Optional.ofNullable(
-                    billingInfo.getEntity().getPipeline());
-            final Optional<Pipeline> pipeline = pipelineEntity.map(EntityContainer::getEntity);
-            final Optional<PipelineUser> pipelineOwner = pipelineEntity.map(EntityContainer::getOwner)
-                    .map(EntityWithMetadata::getEntity);
+        final Optional<EntityContainer<Pipeline>> pipelineEntity = Optional.ofNullable(
+                billingInfo.getEntity().getPipeline());
+        final Optional<Pipeline> pipeline = pipelineEntity.map(EntityContainer::getEntity);
+        final Optional<PipelineUser> pipelineOwner = pipelineEntity.map(EntityContainer::getOwner)
+                .map(EntityWithMetadata::getEntity);
 
-            final Optional<EntityContainer<Tool>> toolEntity = Optional.ofNullable(
-                    billingInfo.getEntity().getTool());
-            final Optional<Tool> tool = toolEntity.map(EntityContainer::getEntity);
-            final Optional<PipelineUser> toolOwner = toolEntity.map(EntityContainer::getOwner)
-                    .map(EntityWithMetadata::getEntity);
+        final Optional<EntityContainer<Tool>> toolEntity = Optional.ofNullable(
+                billingInfo.getEntity().getTool());
+        final Optional<Tool> tool = toolEntity.map(EntityContainer::getEntity);
+        final Optional<PipelineUser> toolOwner = toolEntity.map(EntityContainer::getOwner)
+                .map(EntityWithMetadata::getEntity);
 
-            jsonBuilder.startObject()
-                .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
-                .field("created_date", billingInfo.getDate()) // Document creation date: 2022-07-22
-                .field("resource_type", billingInfo.getResourceType()) // Document resource type: COMPUTE / STORAGE
-                .field("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null))
-                .field("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null))
-                .field("cloud_region_provider", region.map(AbstractCloudRegion::getProvider).orElse(null))
+        final Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name());
+        jsonMap.put("created_date", billingInfo.getDate()); // Document creation date: 2022-07-22
+        jsonMap.put("resource_type", billingInfo.getResourceType()); // Document resource type: COMPUTE / STORAGE
+        jsonMap.put("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null));
+        jsonMap.put("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null));
+        jsonMap.put("cloud_region_provider", region.map(AbstractCloudRegion::getProvider).orElse(null));
 
-                .field("run_id", run.getId())
-                .field("compute_type", billingInfo.getEntity().getRunType())
-                .field("instance_type", run.getInstance().getNodeType())
+        jsonMap.put("run_id", run.getId());
+        jsonMap.put("compute_type", billingInfo.getEntity().getRunType());
+        jsonMap.put("instance_type", run.getInstance().getNodeType());
 
-                .field("pipeline", run.getPipelineId()) // Pipeline id: 12345
-                .field("pipeline_name", run.getPipelineName())
-                .field("pipeline_version", run.getVersion())
-                .field("pipeline_owner_id", pipelineOwner.map(PipelineUser::getId).orElse(null))
-                .field("pipeline_owner_name", pipelineOwner.map(PipelineUser::getUserName).orElse(null))
-                .field("pipeline_created_date", pipeline.map(BaseEntity::getCreatedDate)
+        jsonMap.put("pipeline", run.getPipelineId()); // Pipeline id: 12345
+        jsonMap.put("pipeline_name", run.getPipelineName());
+        jsonMap.put("pipeline_version", run.getVersion());
+        jsonMap.put("pipeline_owner_id", pipelineOwner.map(PipelineUser::getId).orElse(null));
+        jsonMap.put("pipeline_owner_name", pipelineOwner.map(PipelineUser::getUserName).orElse(null));
+        jsonMap.put("pipeline_created_date", pipeline.map(BaseEntity::getCreatedDate)
                         .map(this::asString)
-                        .orElse(null))
+                        .orElse(null));
 
-                .field("tool", run.getDockerImage()) // Docker image full path: registry/group/tool:version
-                .field("tool_registry_id", tool.map(Tool::getRegistryId).orElse(null))
-                .field("tool_registry_name", billingInfo.getEntity().getToolAddress().getRegistry())
-                .field("tool_group_id", tool.map(Tool::getToolGroupId).orElse(null))
-                .field("tool_group_name", billingInfo.getEntity().getToolAddress().getGroup())
-                .field("tool_id", tool.map(Tool::getId).orElse(null))
-                .field("tool_name", billingInfo.getEntity().getToolAddress().getTool())
-                .field("tool_version", billingInfo.getEntity().getToolAddress().getVersion())
-                .field("tool_owner_id", toolOwner.map(PipelineUser::getId).orElse(null))
-                .field("tool_owner_name", toolOwner.map(PipelineUser::getUserName).orElse(null))
-                .field("tool_created_date", tool.map(BaseEntity::getCreatedDate)
+        jsonMap.put("tool", run.getDockerImage()); // Docker image full path: registry/group/tool:version
+        jsonMap.put("tool_registry_id", tool.map(Tool::getRegistryId).orElse(null));
+        jsonMap.put("tool_registry_name", billingInfo.getEntity().getToolAddress().getRegistry());
+        jsonMap.put("tool_group_id", tool.map(Tool::getToolGroupId).orElse(null));
+        jsonMap.put("tool_group_name", billingInfo.getEntity().getToolAddress().getGroup());
+        jsonMap.put("tool_id", tool.map(Tool::getId).orElse(null));
+        jsonMap.put("tool_name", billingInfo.getEntity().getToolAddress().getTool());
+        jsonMap.put("tool_version", billingInfo.getEntity().getToolAddress().getVersion());
+        jsonMap.put("tool_owner_id", toolOwner.map(PipelineUser::getId).orElse(null));
+        jsonMap.put("tool_owner_name", toolOwner.map(PipelineUser::getUserName).orElse(null));
+        jsonMap.put("tool_created_date", tool.map(BaseEntity::getCreatedDate)
                         .map(this::asString)
-                        .orElse(null))
+                        .orElse(null));
 
-                .field("usage_minutes", billingInfo.getUsageMinutes())
-                .field("paused_minutes", billingInfo.getPausedMinutes())
-                .field("run_price", run.getPricePerHour().unscaledValue().longValue())
-                .field("compute_price", scaled(run.getComputePricePerHour()))
-                .field("disk_price", scaled(run.getDiskPricePerHour()))
-                .field("cost", billingInfo.getCost())
-                .field("disk_cost", billingInfo.getDiskCost())
-                .field("compute_cost", billingInfo.getComputeCost())
+        jsonMap.put("usage_minutes", billingInfo.getUsageMinutes());
+        jsonMap.put("paused_minutes", billingInfo.getPausedMinutes());
+        jsonMap.put("run_price", run.getPricePerHour().unscaledValue().longValue());
+        jsonMap.put("compute_price", scaled(run.getComputePricePerHour()));
+        jsonMap.put("disk_price", scaled(run.getDiskPricePerHour()));
+        jsonMap.put("cost", billingInfo.getCost());
+        jsonMap.put("disk_cost", billingInfo.getDiskCost());
+        jsonMap.put("compute_cost", billingInfo.getComputeCost());
 
-                .field("started_date", asString(run.getStartDate()))
-                .field("finished_date", asString(run.getEndDate()));
+        jsonMap.put("started_date", asString(run.getStartDate()));
+        jsonMap.put("finished_date", asString(run.getEndDate()));
 
-            return buildUserContent(container.getOwner(), jsonBuilder)
-                .endObject();
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline run: ", e);
-        }
+        buildUserContent(container.getOwner(), jsonMap);
+        return jsonMap;
     }
 
     private long scaled(final BigDecimal price) {

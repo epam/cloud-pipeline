@@ -52,6 +52,7 @@ public class RunLogDao extends DryRunJdbcDaoSupport {
     @Setter(onMethod_={@Required}) private String loadTaskForInstanceQuery;
     @Setter(onMethod_={@Required}) private String loadTaskStatusQuery;
     @Setter(onMethod_={@Required}) private String deleteRunLogByRunIdsQuery;
+    @Setter(onMethod_={@Required}) private String loadAllLogsByRunIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createRunLog(RunLog runLog) {
@@ -118,6 +119,14 @@ public class RunLogDao extends DryRunJdbcDaoSupport {
     public List<PipelineTask> loadTaskByInstance(Long runId, String instance) {
         return getJdbcTemplate().query(loadTaskForInstanceQuery,
                 PipelineLogParameters.getTaskRowMapper(false), runId, instance);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<RunLog> loadAllLogsForRun(final Long runId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineLogParameters.RUN_ID.name(), runId);
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadAllLogsByRunIdQuery, params, PipelineLogParameters.getRowMapper()));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

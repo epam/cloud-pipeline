@@ -18,26 +18,29 @@ import logging
 import multiprocessing
 import os
 import platform
-import prettytable
 import sys
+import re
 from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
 import concurrent.futures
 
+from src.api.cloud_region import CloudRegion
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
-from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
+from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand
+from src.utilities.printing.storage_du import create_storage_du_print_service
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult, StorageOperations
-from src.utilities.printing.storage import print_storage_items, init_items_table
+from src.utilities.printing.storage import print_storage_items
+from src.utilities.printing.storage import create_storage_object_tag_print_service
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.storage_path_permissions_manager import get_permissions_manager
@@ -535,8 +538,31 @@ class DataStorageOperations(object):
             except ValueError:
                 click.echo("Error: Given region id '{}' is not a number.".format(region_id))
                 sys.exit(1)
+        file_share_mount_id = None
+        if type and type.upper() == 'NFS':
+            file_share_mount_id = DataStorageOperations._resolve_file_share_mount_id(path)
+            if file_share_mount_id is None:
+                click.echo("Error: Could not find a file share mount matching path '{}'.".format(path), err=True)
+                sys.exit(1)
         DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
-                         directory.id if directory else None, on_cloud, region_id)
+                         directory.id if directory else None, on_cloud, region_id, file_share_mount_id)
+
+    @classmethod
+    def _resolve_file_share_mount_id(cls, path):
+        server_port_mask = re.compile(r'^[^:]+(:[\d]+)?$', re.IGNORECASE)
+        regions = CloudRegion.get_cloud_regions()
+        mounts = [mount for region in regions for mount in (region.get('fileShareMounts') or [])]
+        path_lower = path.lower()
+        for mount in mounts:
+            mount_root = (mount.get('mountRoot') or '').strip()
+            if not mount_root:
+                continue
+            mount_type = (mount.get('mountType') or '').upper()
+            separator = ':' if mount_type == 'NFS' and server_port_mask.match(mount_root) else ''
+            prefix = (mount_root + separator).lower()
+            if path_lower.startswith(prefix):
+                return mount.get('id')
+        return None
 
     @classmethod
     def delete(cls, name, on_cloud, yes):
@@ -593,7 +619,8 @@ class DataStorageOperations(object):
             manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive,
+                     print_service):
         """Lists storage contents
         """
 
@@ -606,27 +633,27 @@ class DataStorageOperations(object):
             original_path = ''
             root_bucket, original_path, _ = DataStorage.load_from_uri(path)
             if show_versions and not root_bucket.policy.versioning_enabled:
-                click.echo('Error: versioning is not enabled for storage.', err=True)
+                print_service.error('Error: versioning is not enabled for storage.', err=True)
                 sys.exit(1)
             if root_bucket is None:
-                click.echo('Storage path "{}" was not found'.format(path), err=True)
+                print_service.error('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
             if show_archive and root_bucket.type != 'S3':
-                click.echo('Error: --show-archive option is not available for this provider.', err=True)
+                print_service.error('Error: --show-archive option is not available for this provider.', err=True)
                 sys.exit(1)
             if show_archive and not UserOperationsManager()\
                     .has_storage_archive_permissions(root_bucket.identifier, root_bucket.owner):
-                click.echo(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
+                print_service.error(ARCHIVED_PERMISSION_ERROR_MASSAGE, err=True)
                 sys.exit(1)
             else:
                 relative_path = original_path if original_path != '/' else ''
                 cls.__print_data_storage_contents(root_bucket, relative_path, show_details, recursive,
                                                   page_size=page, show_versions=show_versions, show_all=show_all,
-                                                  show_archive=show_archive)
+                                                  show_archive=show_archive, print_service=print_service)
         else:
             # If no argument is specified - list brief details of all buckets
             cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
-                                              show_extended=show_extended)
+                                              show_extended=show_extended, print_service=print_service)
 
     @classmethod
     def storage_mk_dir(cls, folders):
@@ -654,13 +681,11 @@ class DataStorageOperations(object):
             raise RuntimeError("Failed to set tags for path '{}'.".format(path))
 
     @classmethod
-    def get_object_tags(cls, path, version):
+    def get_object_tags(cls, path, version, output_format=None):
+        print_service = create_storage_object_tag_print_service(output_format)
         root_bucket, full_path, relative_path = DataStorage.load_from_uri(path)
         tags = DataStorage.get_object_tags(root_bucket.identifier, relative_path, version)
-        if not tags:
-            click.echo("No tags available for path '{}'.".format(path))
-        else:
-            click.echo(cls.create_table(tags))
+        print_service.print_tags(path, tags)
 
     @classmethod
     def delete_object_tags(cls, path, tags, version):
@@ -672,26 +697,26 @@ class DataStorageOperations(object):
 
     @classmethod
     def du(cls, storage_name, relative_path=None, depth=None, perform_on_cloud=False,
-           output_mode='brief', generation="all", size_format='M'):
+           output_mode='brief', generation="all", size_format='M', output_format=None):
+        print_service = create_storage_du_print_service(output_format)
         du_command = DataUsageCommand(storage_name, relative_path, depth,
                                       perform_on_cloud, output_mode, generation, size_format)
-        if not du_command.validate():
+        if not du_command.validate(print_service):
             # Bad input
             sys.exit(22)
         storage = DataStorage.fetch_storage(du_command.storage_name) if du_command.storage_name else None
+        helper = DataUsageHelper(print_service)
         if du_command.eagerly_allowed(storage):
             if storage.type.lower() == 's3' or storage.type.lower() == 'nfs':
-                table = None
-                header = None
-                for _item in DataUsageHelper().fetch_data_eagerly(du_command, storage):
-                    header, table = DuOutput.print_item(du_command, _item, header, table)
-                click.echo()
+                for _item in helper.fetch_data_eagerly(du_command, storage):
+                    print_service.add_item(du_command, _item)
+                print_service.flush()
                 sys.exit(0)
-            click.echo("Using --cloud, because --depth is used", err=True)
+            print_service.warning("Using --cloud, because --depth is used", err=True)
             du_command.perform_on_cloud = True
-        du_leafs = DataUsageHelper().fetch_data(du_command, storage)
-        click.echo(DuOutput.format_table(du_command, du_leafs))
-        click.echo()
+        du_leafs = helper.fetch_data(du_command, storage)
+        print_service.print_items(du_command, du_leafs)
+        print_service.flush()
 
     @classmethod
     def convert_input_pairs_to_json(cls, tags):
@@ -704,22 +729,13 @@ class DataStorageOperations(object):
         return result
 
     @classmethod
-    def create_table(cls, tags):
-        table = prettytable.PrettyTable()
-        table.field_names = ["Tag name", "Value"]
-        table.align = "l"
-        table.header = True
-        for (key, value) in iteritems(tags):
-            table.add_row([key, value])
-        return table
-
-    @classmethod
     def __load_storage_list(cls, extended=False):
         return list(DataStorage.list_with_mount_limits()) if extended else list(DataStorage.list())
 
     @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False, show_extended=False, show_archive=False):
+                                      show_versions=False, show_all=False, show_extended=False, show_archive=False,
+                                      print_service=None):
         next_page_token = None
         manager = None
         paging_allowed = (recursive and not page_size and not show_versions and bucket_model is not None
@@ -740,38 +756,34 @@ class DataStorageOperations(object):
             items = [s for s in cls.__load_storage_list(show_extended) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
 
             if not items:
-                click.echo("No datastorages available.")
+                print_service.empty_items()
                 sys.exit(0)
 
-        fields = ["Type", "Labels", "Modified", "Size", "Name"]
-        if show_versions:
-            fields.append("Version")
         if show_extended:
-            fields.extend(["Mount status", "Mount limits", "Metadata"])
             cls.assign_metadata_to_items(items)
 
-        items_table = init_items_table(fields)
-        print_storage_items(bucket_model, items, show_details, items_table, show_extended, show_versions)
+        print_service.init_header(show_versions, show_extended)
+        print_storage_items(bucket_model, items, show_details, print_service, show_extended, show_versions)
 
         if not next_page_token:
-            click.echo()
+            print_service.flush()
             return
 
-        cls.__print_paging_storage_contents(manager, bucket_model, items_table, relative_path,
+        cls.__print_paging_storage_contents(print_service, manager, bucket_model, relative_path,
                                             recursive, show_details, next_page_token, show_versions, show_archive)
 
     @classmethod
-    def __print_paging_storage_contents(cls, manager, bucket_model, items_table, relative_path,
+    def __print_paging_storage_contents(cls, print_service, manager, bucket_model, relative_path,
                                         recursive, show_details, next_page_token, show_versions,
                                         show_archive):
-        items_table.header = False
+        print_service.disable_header()
         while True:
             items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
                                                                page_size=BATCH_SIZE, start_token=next_page_token,
                                                                show_archive=show_archive)
-            print_storage_items(bucket_model, items, show_details, items_table, False, show_versions)
+            print_storage_items(bucket_model, items, show_details, print_service, False, show_versions)
             if not next_page_token:
-                click.echo()
+                print_service.flush()
                 return
 
     @classmethod
@@ -910,6 +922,7 @@ class DataStorageOperations(object):
         destination_relative_path = cls._get_tuple_item(item, 5, relative_path)
 
         fail_after_exception = None
+        source_last_modified = cls._get_tuple_item(item, 4)
         try:
             transfer_result = transfer_params.manager.transfer(transfer_params.source_wrapper,
                                                                transfer_params.destination_wrapper,
@@ -921,7 +934,8 @@ class DataStorageOperations(object):
                                                                tags=transfer_params.tags,
                                                                io_threads=transfer_params.io_threads, lock=lock,
                                                                checksum_algorithm=transfer_params.checksum_algorithm,
-                                                               checksum_skip=transfer_params.checksum_skip)
+                                                               checksum_skip=transfer_params.checksum_skip,
+                                                               source_last_modified=source_last_modified)
             if not transfer_params.destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(transfer_params.source_wrapper,

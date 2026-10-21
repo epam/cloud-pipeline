@@ -27,10 +27,12 @@ import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
@@ -47,6 +49,7 @@ import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineWithMetadata;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -387,5 +390,15 @@ public class PipelineApiService {
     public VersionStorageReportFile generateReportForVersionedStorage(final Long id,
                                                                       final GitDiffReportFilter reportFilters) {
         return fileGenerationManager.generateVersionStorageReport(id, reportFilters);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<GitNamespace> getAllowedNamespaces(final RepositoryType type) {
+        return pipelineRepositoryService.getAllowedNamespaces(type);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<GitRepositoryDTO> getNamespaceRepositories(final String namespaceId, final RepositoryType type) {
+        return pipelineRepositoryService.getNamespaceRepositories(namespaceId, type);
     }
 }

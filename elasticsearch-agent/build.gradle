@@ -28,6 +28,7 @@ dependencies {
 
     // Core library
     implementation project(":cloud-pipeline-common:model")
+    implementation(project(path: ":elasticsearch-common", configuration: "shadow"))
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
@@ -38,11 +39,6 @@ dependencies {
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-jdbc", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-web", version: springBootVersion
-
-    // Elasticsearch
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
-    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
 
     // DB
     // Pool
@@ -89,10 +85,13 @@ dependencies {
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
-    testImplementation group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
     testImplementation group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
     testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
+    testImplementation group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion
+    testImplementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
+    testImplementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
+    testImplementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
 
     testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
     testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion

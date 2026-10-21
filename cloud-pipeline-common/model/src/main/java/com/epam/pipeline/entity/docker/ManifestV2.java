@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.docker;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,10 +26,15 @@ import lombok.Setter;
 /**
  * A Value Object, representing Docker Registry Manifest of schema V2.
  * See https://docs.docker.com/registry/spec/manifest-v2-2/ for reference.
+ *
+ * The same object represents a manifest list (a multi platform image) and an OCI image index: such a manifest
+ * has no {@code config} and no {@code layers}, but references platform specific image manifests
+ * in the {@code manifests} field.
  */
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ManifestV2 {
     private Integer schemaVersion;
     private String mediaType;
@@ -37,6 +43,10 @@ public class ManifestV2 {
      * Contains layers, sorted from the base image
      */
     private List<Config> layers;
+    /**
+     * Contains image manifests, referenced by a manifest list (an index), and is empty for an image manifest
+     */
+    private List<ManifestReference> manifests;
 
     /**
      * The {@code digest} field comes from the docker-content-digest header and represents manifest's identifier.
@@ -47,8 +57,34 @@ public class ManifestV2 {
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Config {
         private String digest;
         private Long size;
+    }
+
+    /**
+     * A reference to an image manifest of a specific platform from a manifest list (an index).
+     */
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ManifestReference {
+        private String digest;
+        private Long size;
+        private String mediaType;
+        private Platform platform;
+    }
+
+    @Setter
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Platform {
+        private String architecture;
+        private String os;
     }
 }

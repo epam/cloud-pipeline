@@ -53,7 +53,8 @@ class KubeClient:
         @:return map: <run ID> -> <docker container hash>
         """
         run_pods = self._client.list_namespaced_pod(namespace=self._namespace,
-                                                    label_selector=self.RUN_ID_LABEL)
+                                                    label_selector=self.RUN_ID_LABEL,
+                                                    field_selector=f'spec.nodeName={self._node_name}')
         containers = {}
         for pod in run_pods.items:
             if pod.spec.node_name != self._node_name:

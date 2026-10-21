@@ -33,7 +33,7 @@ import {
 import CodeEditor from '../../special/CodeEditor';
 import compareArrays from '../../../utils/compareArrays';
 import EmailPreview from './EmailPreview';
-import NotificationPreferences from './edit-email-notification-preferences';
+import NotificationPreferencesControl from './edit-email-notification-preferences';
 import PreferencesUpdate from '../../../models/preferences/PreferencesUpdate';
 import styles from './EditEmailNotification.css';
 
@@ -183,7 +183,7 @@ export default class EditEmailNotification extends React.Component {
     const {getFieldDecorator, resetFields} = this.props.form;
     return (
       <div style={{width: '100%', overflowY: 'auto'}}>
-        <NotificationPreferences
+        <NotificationPreferencesControl
           type={this.props.template.type}
           session={this.state.preferencesSession}
           onChange={this.preferencesChanged}

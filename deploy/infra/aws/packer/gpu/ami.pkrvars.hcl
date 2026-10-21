@@ -1,0 +1,8 @@
+instance_type        = "g5.xlarge"
+region               = "us-east-1"
+source_ami           = ""
+ssh_username         = "ec2-user"
+iam_instance_profile = ""
+subnet_id            = ""
+deps_file            = "gpu/install-deps.sh"
+ami_type             = "gpu"

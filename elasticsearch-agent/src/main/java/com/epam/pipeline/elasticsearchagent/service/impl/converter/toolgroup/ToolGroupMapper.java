@@ -19,11 +19,10 @@ import com.epam.pipeline.elasticsearchagent.model.EntityContainer;
 import com.epam.pipeline.elasticsearchagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -31,28 +30,22 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class ToolGroupMapper implements EntityMapper<ToolGroup> {
 
     @Override
-    public XContentBuilder map(final EntityContainer<ToolGroup> container) {
-        ToolGroup toolGroup = container.getEntity();
-        try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
-            jsonBuilder.startObject();
+    public Map<String, ?> map(final EntityContainer<ToolGroup> container) {
+        final ToolGroup toolGroup = container.getEntity();
+        final Map<String, Object> jsonMap = new HashMap<>();
 
-            jsonBuilder
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.TOOL_GROUP.name())
-                    .field("id", toolGroup.getId())
-                    .field("name", toolGroup.getName())
-                    .field("registryId", toolGroup.getRegistryId())
-                    .field("parentId", toolGroup.getRegistryId())
-                    .field("createdDate", parseDataToString(toolGroup.getCreatedDate()))
-                    .field("description", toolGroup.getDescription());
+        jsonMap.put(DOC_TYPE_FIELD, SearchDocumentType.TOOL_GROUP.name());
+        jsonMap.put("id", toolGroup.getId());
+        jsonMap.put("name", toolGroup.getName());
+        jsonMap.put("registryId", toolGroup.getRegistryId());
+        jsonMap.put("parentId", toolGroup.getRegistryId());
+        jsonMap.put("createdDate", parseDataToString(toolGroup.getCreatedDate()));
+        jsonMap.put("description", toolGroup.getDescription());
 
-            buildUserContent(container.getOwner(), jsonBuilder);
-            buildMetadata(container.getMetadata(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
+        buildUserContent(container.getOwner(), jsonMap);
+        buildMetadata(container.getMetadata(), jsonMap);
+        buildPermissions(container.getPermissions(), jsonMap);
 
-            jsonBuilder.endObject();
-            return jsonBuilder;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Failed to create elasticsearch document for tool group: ", e);
-        }
+        return jsonMap;
     }
 }

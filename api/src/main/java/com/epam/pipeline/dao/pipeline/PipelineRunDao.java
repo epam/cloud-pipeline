@@ -42,6 +42,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import joptsimple.internal.Strings;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -77,6 +78,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("PMD.ConsecutiveLiteralAppends")
+@Slf4j
 public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private Pattern wherePattern = Pattern.compile("@WHERE@");
@@ -97,13 +99,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Autowired
     private RunServiceUrlDao serviceUrlDao;
 
-    @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
-    private String initTaskName;
-
     @Value("${run.pipeline.nodeup.task.name?:InitializeNode}")
     private String nodeUpTaskName;
-
-    private TaskStatus initTaskStatus = TaskStatus.SUCCESS;
 
     private String pipelineRunSequence;
     private String createPipelineRunQuery;
@@ -135,8 +132,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadRunSidsQueryForList;
     private String updatePodStatusQuery;
     private String loadEnvVarsQuery;
-    private String updateLastNotificationQuery;
-    private String updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
+    private String updateProlongedAtTimeQuery;
     private String updateRunQuery;
     private String updatePipelineNameForRunsQuery;
     private String clearPipelineIdForRunsQuery;
@@ -145,6 +141,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadAllRunsPossiblyActiveInPeriodQuery;
     private String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     private String loadAllRunsByStatusQuery;
+    private String loadRunsByStatusesAndOriginalOwnerQuery;
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
     private String loadRunsByNodeNameQuery;
@@ -155,6 +152,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
     private String deleteRunsByIdInQuery;
     private String checkIfRunExistsQuery;
+    private String updateRunInitializedQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -301,23 +299,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     public void updatePodIP(PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updatePodIPQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateRunLastNotification(PipelineRun run) {
-        getNamedParameterJdbcTemplate().update(updateLastNotificationQuery, PipelineRunParameters
-                .getParameters(run, getConnection()));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateRunsLastNotification(Collection<PipelineRun> runs) {
-        if (CollectionUtils.isEmpty(runs)) {
-            return;
-        }
-
-        MapSqlParameterSource[] params = getParamsForBatchUpdate(runs);
-
-        getNamedParameterJdbcTemplate().batchUpdate(updateLastNotificationQuery, params);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -483,6 +464,17 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                 .collect(Collectors.toList()));
         return addServiceUrls(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
                 .query(loadAllRunsByStatusQuery, params, PipelineRunParameters.getRowMapper())));
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineRun> loadRunsByStatusesAndOriginalOwner(final List<TaskStatus> statuses, final String owner) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, statuses.stream()
+                .map(TaskStatus::getId)
+                .collect(Collectors.toList()));
+        params.addValue(PipelineRunParameters.OWNER.name(), owner.toLowerCase());
+        return addServiceUrls(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadRunsByStatusesAndOriginalOwnerQuery, params, PipelineRunParameters.getRowMapper())));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -1027,14 +1019,12 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         return whereBuilder.toString();
     }
 
-    public void updateProlongIdleRunAndLastIdleNotificationTime(PipelineRun run) {
-        getNamedParameterJdbcTemplate().update(updateProlongedAtTimeAndLastIdleNotificationTimeQuery,
+    public void updateProlongedAtTime(PipelineRun run) {
+        getNamedParameterJdbcTemplate().update(updateProlongedAtTimeQuery,
                 PipelineRunParameters.getParameters(run, getConnection()));
     }
 
     private void addTaskStatusParams(MapSqlParameterSource params) {
-        params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
-        params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
         params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
     }
 
@@ -1070,6 +1060,13 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(PipelineRunParameters.RUN_ID.name(), runId);
         return getNamedParameterJdbcTemplate().queryForObject(checkIfRunExistsQuery, params, Integer.class) > 0;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunInitialized(final Long runId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.RUN_ID.name(), runId);
+        getNamedParameterJdbcTemplate().update(updateRunInitializedQuery, params);
     }
 
     public MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
@@ -1112,6 +1109,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         POD_ID,
         PIPELINE_NAME,
         NODE_TYPE,
+        INSTANCE_FALLBACK_TYPES,
         NODE_IP,
         NODE_ID,
         NODE_DISK,
@@ -1137,9 +1135,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         NODE_COUNT,
         START_DATE_FROM,
         END_DATE_TO,
-        INITIALIZATION_FINISHED,
-        TASK_NAME,
-        TASK_STATUS,
+        INITIALIZED,
         ENTITIES_IDS,
         IS_SPOT,
         CONFIGURATION_ID,
@@ -1147,10 +1143,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         IS_PRINCIPAL,
         POD_STATUS,
         ENV_VARS,
-        LAST_NOTIFICATION_TIME,
         PROLONGED_AT_TIME,
-        LAST_IDLE_NOTIFICATION_TIME,
-        LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME,
         PROJECT_PIPELINES,
         PROJECT_CONFIGS,
         EXEC_PREFERENCES,
@@ -1161,6 +1154,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         FS_PRICE_PER_HOUR,
         STATE_REASON,
         NON_PAUSE,
+        PAUSE_DISABLED,
         NODE_REAL_DISK,
         QUEUED,
         NODEUP_TASK,
@@ -1172,7 +1166,8 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         NODE_POOL_ID,
         NODE_START_DATE,
         PROJECT_ID,
-        PARAMETERS_JSON;
+        PARAMETERS_JSON,
+        LOGS_STORAGE_PATH;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -1212,10 +1207,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(POD_STATUS.name(), run.getPodStatus());
             params.addValue(ENV_VARS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getEnvVars()));
             params.addValue(PROLONGED_AT_TIME.name(), run.getProlongedAtTime());
-            params.addValue(LAST_NOTIFICATION_TIME.name(), run.getLastNotificationTime());
-            params.addValue(LAST_IDLE_NOTIFICATION_TIME.name(), run.getLastIdleNotificationTime());
-            params.addValue(LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name(),
-                    run.getLastNetworkConsumptionNotificationTime());
             params.addValue(EXEC_PREFERENCES.name(),
                     JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
             params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
@@ -1226,9 +1217,11 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(CLUSTER_PRICE.name(), run.getWorkersPrice());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
+            params.addValue(PAUSE_DISABLED.name(), run.isPauseDisabled());
             params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
             params.addValue(SENSITIVE.name(), BooleanUtils.toBoolean(run.getSensitive()));
             params.addValue(KUBE_SERVICE_ENABLED.name(), BooleanUtils.toBoolean(run.isKubeServiceEnabled()));
+            params.addValue(LOGS_STORAGE_PATH.name(), run.getLogsStoragePath());
             addInstanceFields(run, params);
             return params;
         }
@@ -1257,6 +1250,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
             params.addValue(NODE_PLATFORM.name(), instance.map(RunInstance::getNodePlatform).orElse(null));
             params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
+            params.addValue(INSTANCE_FALLBACK_TYPES.name(), instance
+                    .map(RunInstance::getFallbackInstanceTypes)
+                    .map(JsonMapper::convertListToJsonStringForQuery)
+                    .orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -1284,7 +1281,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
         static PipelineRun parseExtendedPipelineRun(final ResultSet rs) throws SQLException {
             PipelineRun run = parsePipelineRun(rs);
-            run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+            run.setInitialized(rs.getBoolean(INITIALIZED.name()));
             if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
                 run.setQueued(rs.getBoolean(QUEUED.name()));
             }
@@ -1349,6 +1346,16 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             instance.setNodeId(rs.getString(NODE_ID.name()));
             instance.setNodeIP(rs.getString(NODE_IP.name()));
             instance.setNodeType(rs.getString(NODE_TYPE.name()));
+
+            final String fallbackInstanceTypesJson = rs.getString(INSTANCE_FALLBACK_TYPES.name());
+            if (fallbackInstanceTypesJson != null) {
+                final List<String> fallbackInstanceList =
+                        JsonMapper.parseData(fallbackInstanceTypesJson, new TypeReference<List<String>>() {});
+                if (CollectionUtils.isNotEmpty(fallbackInstanceList)) {
+                    instance.setFallbackInstanceTypes(fallbackInstanceList);
+                }
+            }
+
             instance.setNodeImage(rs.getString(NODE_IMAGE.name()));
             instance.setNodeName(rs.getString(NODE_NAME.name()));
             instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));
@@ -1376,23 +1383,6 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             run.setConfigurationId(rs.getLong(CONFIGURATION_ID.name()));
             run.setPodStatus(rs.getString(POD_STATUS.name()));
 
-            Timestamp lastNotificationTime = rs.getTimestamp(LAST_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                run.setLastNotificationTime(new Date(lastNotificationTime.getTime()));
-            }
-
-            Timestamp lastIdleNotificationTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                run.setLastIdleNotificationTime(lastIdleNotificationTime.toLocalDateTime()); // convert to UTC
-            }
-
-            Timestamp lastNetworkConsumptionNotificationTime = rs.getTimestamp(
-                    LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name());
-            if (!rs.wasNull()) {
-                // convert to UTC
-                run.setLastNetworkConsumptionNotificationTime(lastNetworkConsumptionNotificationTime.toLocalDateTime());
-            }
-
             Timestamp idleNotificationStartingTime = rs.getTimestamp(PROLONGED_AT_TIME.name());
             if (!rs.wasNull()) {
                 run.setProlongedAtTime(idleNotificationStartingTime.toLocalDateTime());
@@ -1411,12 +1401,17 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setNonPause(nonPause);
             }
+            boolean pauseDisabled = rs.getBoolean(PAUSE_DISABLED.name());
+            if (!rs.wasNull()) {
+                run.setPauseDisabled(pauseDisabled);
+            }
             final String tagsJson = rs.getString(TAGS.name());
             if (!rs.wasNull()) {
                 final Map<String, String> newTags =
                     JsonMapper.parseData(tagsJson, new TypeReference<Map<String, String>>() {});
                 run.setTags(newTags);
             }
+            run.setLogsStoragePath(rs.getString(LOGS_STORAGE_PATH.name()));
             return run;
         }
 
@@ -1676,20 +1671,13 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     }
 
     @Required
-    public void setUpdateProlongedAtTimeAndLastIdleNotificationTimeQuery(
-            String updateProlongedAtTimeAndLastIdleNotificationTimeQuery) {
-        this.updateProlongedAtTimeAndLastIdleNotificationTimeQuery =
-                updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
+    public void setUpdateProlongedAtTimeQuery(String updateProlongedAtTimeQuery) {
+        this.updateProlongedAtTimeQuery = updateProlongedAtTimeQuery;
     }
 
     @Required
     public void setLoadEnvVarsQuery(String loadEnvVarsQuery) {
         this.loadEnvVarsQuery = loadEnvVarsQuery;
-    }
-
-    @Required
-    public void setUpdateLastNotificationQuery(String updateLastNotificationQuery) {
-        this.updateLastNotificationQuery = updateLastNotificationQuery;
     }
 
     @Required
@@ -1731,6 +1719,11 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Required
     public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
         this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
+    }
+
+    @Required
+    public void setLoadRunsByStatusesAndOriginalOwnerQuery(final String loadRunsByStatusesAndOriginalOwnerQuery) {
+        this.loadRunsByStatusesAndOriginalOwnerQuery = loadRunsByStatusesAndOriginalOwnerQuery;
     }
 
     @Required
@@ -1797,5 +1790,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Required
     public void setCheckIfRunExistsQuery(final String checkIfRunExistsQuery) {
         this.checkIfRunExistsQuery = checkIfRunExistsQuery;
+    }
+
+    @Required
+    public void setUpdateRunInitializedQuery(final String updateRunInitializedQuery) {
+        this.updateRunInitializedQuery = updateRunInitializedQuery;
     }
 }

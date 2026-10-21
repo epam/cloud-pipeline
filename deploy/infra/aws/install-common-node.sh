@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2025 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,34 @@ yum install -y  nc \
 yum install -y iproute-tc
 curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
+function install_python3_packages {
+      local _install_path="$1"
+      local _tmp_install_dir="/tmp/"
+      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      CP_PYTHON3_DISTRO_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/python3.12.tar.gz"
+
+      echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
+      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
+
+      tar zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/python3.tgz"
+      echo "Python3 distro is installed into ${_install_path}/python3.12"
+
+      if command -v python3 &>/dev/null; then
+            echo "python3 is already available ($(command -v python3)), leaving it untouched"
+      else
+            ln -s "${_install_path}/python3.12/bin/python3.12" "/usr/bin/python3"
+      fi
+
+      if command -v pip3 &>/dev/null; then
+            echo "pip3 is already available ($(command -v pip3)), leaving it untouched"
+      else
+            ln -s "${_install_path}/python3.12/bin/pip3.12" "/usr/bin/pip3"
+      fi
+}
+
+install_python3_packages "/usr/local"
+
 # Install jq
 wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
 chmod +x /usr/bin/jq
@@ -57,8 +85,9 @@ yum install -y  docker-ce-20.10* \
 if [ $? -ne 0 ]; then
   echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
 
-  # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-20.10*
+  # Otherwise try to install default docker (e.g. if it's amazon linux) defining containerd version
+  rm -f /etc/yum.repos.d/docker-ce.repo
+  yum install -y docker-20.10* containerd-1.6*
   if [ $? -ne 0 ]; then
     echo "Unable to install default docker-18.03* too, exiting"
     exit 1

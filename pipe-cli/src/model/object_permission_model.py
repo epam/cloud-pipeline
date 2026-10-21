@@ -61,21 +61,29 @@ class ObjectPermissionModel(object):
         return ', '.join(descriptions)
 
     def get_allowed_permissions_description(self):
-        descriptions = []
-        if self.read_allowed:
-            descriptions.append('Read')
-        if self.write_allowed:
-            descriptions.append('Write')
-        if self.execute_allowed:
-            descriptions.append('Execute')
-        return ', '.join(descriptions)
+        return ', '.join(self.get_allowed_permissions_list())
 
     def get_denied_permissions_description(self):
-        descriptions = []
+        return ', '.join(self.get_denied_permissions_list())
+    
+    def get_allowed_permissions_list(self):
+        """Get list of allowed permissions."""
+        permissions = []
+        if self.read_allowed:
+            permissions.append('Read')
+        if self.write_allowed:
+            permissions.append('Write')
+        if self.execute_allowed:
+            permissions.append('Execute')
+        return permissions
+    
+    def get_denied_permissions_list(self):
+        """Get list of denied permissions."""
+        permissions = []
         if self.read_denied:
-            descriptions.append('Read')
+            permissions.append('Read')
         if self.write_denied:
-            descriptions.append('Write')
+            permissions.append('Write')
         if self.execute_denied:
-            descriptions.append('Execute')
-        return ', '.join(descriptions)
+            permissions.append('Execute')
+        return permissions

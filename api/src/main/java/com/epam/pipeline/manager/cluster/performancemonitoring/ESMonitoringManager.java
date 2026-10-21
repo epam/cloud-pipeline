@@ -109,13 +109,22 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to, final Long runId) {
+        return getStatsForNode(nodeName, from, to, null, runId);
+    }
+
+    @Override
+    public List<MonitoringStats> getStatsForNode(String nodeName,
+                                                 final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final Duration interval,
+                                                 final Long runId) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
         final LocalDateTime oldestMonitoring = oldestMonitoringDate(HEAPSTER_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
-        final Duration interval = interval(start, end);
+        final Duration effectiveInterval = interval != null ? interval : interval(start, end);
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
-                ? getStats(nodeName, start, end, interval, runId)
+                ? getStats(nodeName, start, end, effectiveInterval, runId)
                 : Collections.emptyList();
     }
 

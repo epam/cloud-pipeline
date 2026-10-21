@@ -51,6 +51,11 @@ class RunDetails extends React.Component {
     cliCommandsError: undefined
   };
 
+  get estimatedPriceVisible () {
+    const {uiNavigation} = this.props;
+    return uiNavigation.utils.estimatedPriceVisible().logs;
+  }
+
   componentDidMount () {
     this.onRunChanged();
   }
@@ -289,6 +294,7 @@ class RunDetails extends React.Component {
           currentMode={currentMode}
           modes={modes}
           onChangeMode={onChangeMode}
+          showEstimatedPrice={this.estimatedPriceVisible}
         />
         <RunTabs
           className={classNames(

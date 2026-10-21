@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -171,7 +171,7 @@ function renderRegion (run) {
   return null;
 }
 
-export default function renderRunCard (run) {
+export default function renderRunCard (run, showEstimatedPrice = true) {
   return [
     <Row key="pipeline" style={{fontWeight: 'bold'}}>
       {renderPipeline(run)}
@@ -190,7 +190,7 @@ export default function renderRunCard (run) {
       }
     </Row>,
     <Row key="time" style={{fontSize: 'smaller'}}>
-      {renderTime(run)}{renderEstimatedPrice(run)}
+      {renderTime(run)}{showEstimatedPrice && renderEstimatedPrice(run)}
     </Row>,
     <Row key="commit status">
       {renderCommitStatus(run)}

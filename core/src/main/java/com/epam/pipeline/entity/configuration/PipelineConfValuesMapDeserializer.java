@@ -44,6 +44,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String SECTION_FIELD = "section";
     private static final String REQUIRED_FIELD = "required";
     private static final String NO_OVERRIDE_FIELD = "no_override";
+    private static final String READ_ONLY_FIELD = "read_only";
     private static final String ENUM_FIELD = "enum";
     private static final String DESCRIPTION_FIELD = "description";
     private static final String VISIBLE_FIELD = "visible";
@@ -51,6 +52,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
     private static final String ANNOTATION_FIELD = "annotation";
     private static final String SCHEME_FIELD = "scheme";
     private static final String MULTIPLE = "multiple";
+    private static final String METADATA_CONFIG = "metadata_config";
     private static final  NullNode NULL_NODE = NullNode.getInstance();
     private final ObjectMapper mapper;
 
@@ -101,6 +103,10 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 if (hasValue(noOverride)) {
                     parameter.setNoOverride(noOverride.asBoolean());
                 }
+                JsonNode readOnly = child.get(READ_ONLY_FIELD);
+                if (hasValue(readOnly)) {
+                    parameter.setReadOnly(readOnly.asBoolean());
+                }
                 parseEnumValues(ctxt, child, parameter);
                 final JsonNode description = child.get(DESCRIPTION_FIELD);
                 if (hasValue(description)) {
@@ -128,6 +134,11 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 final JsonNode multipleNode = child.get(MULTIPLE);
                 if (hasValue(multipleNode)) {
                     parameter.setMultiple(multipleNode.asBoolean());
+                }
+                final JsonNode metadataConfig = child.get(METADATA_CONFIG);
+                if (hasValue(metadataConfig) && metadataConfig.isObject()) {
+                    parameter.setMetadataConfig(mapper.readValue(metadataConfig.traverse(),
+                            new TypeReference<Map<String, Object>>(){}));
                 }
             }
             parameters.put(name, parameter);

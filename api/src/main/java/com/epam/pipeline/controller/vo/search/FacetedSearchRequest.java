@@ -37,4 +37,10 @@ public class FacetedSearchRequest {
     private ScrollingParameters scrollingParameters;
     private List<SearchRequestSort> sorts;
     private List<SearchStorageFilesRequest> files;
+
+    // escape '/' symbol as it going to fail elasticsearch on search request
+    public String getQuery() {
+        return ElasticSearchQueryUtils.getEscapedQuery(query);
+    }
+
 }

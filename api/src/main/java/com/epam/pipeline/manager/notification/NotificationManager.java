@@ -31,6 +31,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,10 +54,13 @@ import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.user.Sid;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -83,11 +88,25 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 
+
 @Service
 @Slf4j
 public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
 
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
+    public static final String TRUE = "true";
+    public static final String METRICS_PREFIX = "metrics_";
+    public static final String TAGS_POSTFIX = "tags";
+    public static final String AVG_POSTFIX = "_avg";
+    public static final String MAX_POSTFIX = "_max";
+    public static final String CAPACITY_POSTFIX = "_capacity";
+    public static final long SECS_IN_MIN = 60L;
+    private static final EnumSet<NotificationType> IDLE_NOTIFICATION_TYPES =
+            EnumSet.of(
+                    NotificationType.IDLE_RUN,
+                    NotificationType.IDLE_CPU_RUN,
+                    NotificationType.IDLE_GPU_RUN
+            );
 
     @Autowired
     private UserManager userManager;
@@ -118,6 +137,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Autowired
     private DataStorageManager dataStorageManager;
+
+    @Autowired
+    private PipelineRunManager pipelineRunManager;
 
     private final AntPathMatcher matcher = new AntPathMatcher();
 
@@ -165,6 +187,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         message.setCopyUserIds(getCCUsers(settings));
 
         saveNotification(message);
+        monitoringNotificationDao.updateNotificationTimestamp(Collections.singletonList(run.getId()), type);
     }
 
     /**
@@ -239,9 +262,17 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyRunStatusChanged(final PipelineRun run) {
+    public void notifyRunStatusChanged(final PipelineRun run, final Map<String, Object> additionalNotificationParams) {
         final NotificationType type = NotificationType.PIPELINE_RUN_STATUS;
-        contextualNotificationManager.notifyRunStatusChanged(run);
+
+        Map<String, Object> additionalRunParams = additionalNotificationParams;
+        if (run.getStatus().isFinal()) {
+            additionalRunParams = Stream.of(additionalNotificationParams, getRunPerformanceMetricParameters(run))
+                    .flatMap(paramMap -> paramMap.entrySet().stream())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        contextualNotificationManager.notifyRunStatusChanged(run, additionalRunParams);
 
         final NotificationSettings settings = settingsManager.load(type);
         if (settings == null || !settings.isEnabled()) {
@@ -259,8 +290,12 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run));
 
+        final Map<String, Object> runParameters = parameterManager.build(type, run);
+
+        runParameters.putAll(additionalRunParams);
+
+        message.setTemplateParameters(runParameters);
         message.setCopyUserIds(getCCUsers(settings));
 
         if (settings.isKeepInformedOwner()) {
@@ -271,19 +306,39 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         saveNotification(message);
     }
 
+    private Map<String, Object> getRunPerformanceMetricParameters(final PipelineRun run) {
+        final Map<String, Object> runPerformanceMetrics = new HashMap<>();
+        final List<String> runFlags = MapUtils.emptyIfNull(run.getTags()).entrySet().stream()
+                .filter(tag -> tag.getValue().equalsIgnoreCase(TRUE))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        if (!runFlags.isEmpty()) {
+            runPerformanceMetrics.put(METRICS_PREFIX + TAGS_POSTFIX, runFlags);
+        }
+        Optional.ofNullable(pipelineRunManager.loadPipelineRunPerformanceMetrics(run.getId()))
+                .map(PipelineRunPerformanceMetrics::getMetrics).orElse(Collections.emptyList())
+                .forEach(metric -> {
+                    final String metricName = metric.getType().name();
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + AVG_POSTFIX, metric.getAvg());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + MAX_POSTFIX, metric.getMax());
+                    runPerformanceMetrics.put(METRICS_PREFIX + metricName + CAPACITY_POSTFIX, metric.getCapacity());
+                });
+        return runPerformanceMetrics;
+    }
+
     /**
      * Issues a notification of an idle Pipeline Run for multiple runs.
      *
-     * @param pipelineCpuRatePairs a list of pairs of PipelineRun and Double cpu usage rate value
+     * @param pipelineRatePairs a list of pairs of PipelineRun and Double cpu rate usage/active gpu number value
      * @param type a type of notification to be issued. Supported types are IDLE_RUN, IDLE_RUN_PAUSED,
      *                         IDLE_RUN_STOPPED
      * @throws IllegalArgumentException if notificationType is not from IDLE_RUN group
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
-                               final NotificationType type) {
-        if (CollectionUtils.isEmpty(pipelineCpuRatePairs)) {
+    public void notifyIdleRuns(final List<Pair<PipelineRun, Double>> pipelineRatePairs,
+                               final NotificationType type, final double usageIdleLevel) {
+        if (CollectionUtils.isEmpty(pipelineRatePairs)) {
             return;
         }
 
@@ -297,29 +352,28 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         }
 
         final List<Long> ccUserIds = getCCUsers(settings);
-        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineRatePairs);
 
-        final double idleCpuLevel = preferenceManager.getPreference(
-                SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
         final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
                 .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
         final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
 
-        final List<Pair<PipelineRun, Double>> filtered = pipelineCpuRatePairs.stream()
+        final List<Pair<PipelineRun, Double>> filtered = pipelineRatePairs.stream()
                 .filter(pair -> shouldNotifyIdleRun(pair.getLeft().getId(), type, settings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
                 .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
                 .collect(Collectors.toList());
+
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForIdleRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
-                        pair.getRight(), idleCpuLevel, type))
+                        pair.getRight(), usageIdleLevel, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
 
-        if (NotificationType.IDLE_RUN.equals(type)) {
+        if (IDLE_NOTIFICATION_TYPES.contains(type)) {
             final List<Long> runIds = filtered.stream()
                     .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
-            monitoringNotificationDao.updateNotificationTimestamp(runIds, NotificationType.IDLE_RUN);
+            monitoringNotificationDao.updateNotificationTimestamp(runIds, type);
         }
     }
 
@@ -327,13 +381,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                                        final List<Long> ccUserIds,
                                                        final Map<String, PipelineUser> pipelineOwners,
                                                        final PipelineRun run,
-                                                       final double cpuRate,
-                                                       final double idleCpuLevel,
+                                                       final double usageRate,
+                                                       final double usageIdleLevel,
                                                        final NotificationType type) {
-        log.debug("Sending idle run notification for run '{}'.", run.getId());
+        log.debug("Sending '{}' notification for run '{}'.", type.name(), run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run, cpuRate, idleCpuLevel));
+        message.setTemplateParameters(parameterManager.build(type, run, usageRate, usageIdleLevel));
         if (idleRunSettings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
         }
@@ -693,6 +747,24 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         monitoringNotificationDao.createMonitoringNotification(message);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void notifyLowUsageCredits(final Long userId, final int creditsBalance) {
+        final NotificationType type = NotificationType.LOW_USAGE_CREDITS;
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled() || settings.getTemplateId() == 0) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+                    "usage credits"));
+            return;
+        }
+        final PipelineUser user = userManager.load(userId);
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(parameterManager.build(type, user, creditsBalance));
+        message.setToUserId(userId);
+        message.setCopyUserIds(getCCUsers(settings));
+        saveNotification(message);
+    }
+
     private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
         final Stream<PipelineUser> plainUsersStream = recipients.stream()
                 .filter(Sid::isPrincipal)
@@ -736,7 +808,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 });
     }
 
-    private boolean shouldNotify(final Long id, final NotificationSettings notificationSettings) {
+    public boolean shouldNotify(final Long id, final NotificationSettings notificationSettings) {
         final Long resendDelay = notificationSettings.getResendDelay();
         final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(
                 id,
@@ -825,6 +897,13 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return Collections.emptyList();
         }
 
+        if (type == NotificationType.LONG_PAUSED_STOPPED) {
+            final long longPausedActionThreshold = Optional.ofNullable(
+                    preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES)
+            ).map(Integer::longValue).map(minutes -> minutes * SECS_IN_MIN).orElse(-1L);
+            settings.setThreshold(longPausedActionThreshold);
+        }
+
         final LocalDateTime now = DateUtils.nowUTC();
         final Long threshold = settings.getThreshold();
         if (threshold == null || threshold <= 0) {
@@ -885,7 +964,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     private boolean shouldNotifyIdleRun(final Long runId, final NotificationType notificationType,
                                         final NotificationSettings notificationSettings) {
-        if (!NotificationType.IDLE_RUN.equals(notificationType)) {
+        if (!IDLE_NOTIFICATION_TYPES.contains(notificationType)) {
             return true;
         }
         return shouldNotify(runId, notificationSettings);

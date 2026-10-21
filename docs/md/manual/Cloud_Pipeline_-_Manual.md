@@ -94,6 +94,7 @@
     - [15.2. Using Terminal access](15_Interactive_services/15.2._Using_Terminal_access.md)
     - [15.3. Expose node filesystem](15_Interactive_services/15.3._Expose_node_filesystem.md)
     - [15.4. Interactive service examples](15_Interactive_services/15.4._Interactive_service_examples.md)
+    - [15.5. VSCode interactions](15_Interactive_services/15.5._VSCode_interactions.md)
 - [16. Issues](16_Issues/16._Issues.md)
 - [17. CP objects tagging by additional attributes](17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes.md)
     - [17.1. Faceted filters search using tags](17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md)

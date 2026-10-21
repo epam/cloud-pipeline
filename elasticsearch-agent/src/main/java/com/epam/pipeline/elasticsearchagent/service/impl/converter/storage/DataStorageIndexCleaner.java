@@ -15,13 +15,13 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.storage;
 
+import com.epam.pipeline.elasticsearch.ElasticsearchException;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.model.EventType;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
-import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.EventProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchException;
 import org.springframework.util.StringUtils;
 
 @RequiredArgsConstructor

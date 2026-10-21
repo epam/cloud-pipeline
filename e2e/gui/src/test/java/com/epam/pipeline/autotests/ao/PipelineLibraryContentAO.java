@@ -100,7 +100,7 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public PipelineLibraryContentAO assertPipelineName(String name){
-        return ensure(xpath("//div[@class = 'browser__item-header']//span"), text(name));
+        return ensure(xpath(".//div[@class = 'browser__item-header']//span"), text(name));
     }
 
     public PipelineLibraryContentAO assertVersionNot(String version) {

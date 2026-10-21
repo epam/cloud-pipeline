@@ -20,17 +20,17 @@ import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.RunToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
+import com.epam.pipeline.elasticsearch.client.ElasticsearchServiceClient;
+import com.epam.pipeline.elasticsearch.model.DocWriteRequest;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.elasticsearch.action.DocWriteRequest;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -62,7 +62,8 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
         this.indexService = indexService;
         this.indexPrefix = indexPrefix + pipelineRunIndexName;
         this.loader = loader;
-        this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper);
+        this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper,
+                elasticsearchServiceClient.getVersion());
         this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize, insertTimeout);
     }
 

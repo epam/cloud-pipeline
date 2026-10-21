@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.dto.git.GitRepositoryDTO;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitNamespace;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
@@ -98,4 +100,14 @@ public interface GitClientService {
     GitCommitEntry uploadFiles(Pipeline pipeline, List<UploadFileMetadata> files, String message);
 
     boolean fileExists(Pipeline pipeline, String filePath);
+
+    default List<GitNamespace> getAllowedNamespaces() {
+        throw new UnsupportedOperationException(
+                String.format("Getting allowed namespaces is not supported for %s repository", getType()));
+    }
+
+    default List<GitRepositoryDTO> getNamespaceRepositories(String namespaceId) {
+        throw new UnsupportedOperationException(
+                String.format("Getting namespace repositories is not supported for %s repository", getType()));
+    }
 }

@@ -33,6 +33,7 @@ import MuteEmailNotifications from '../../../special/metadata/special/mute-email
 import SshThemeSelect from '../../../special/metadata/special/ssh-theme-select';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 import RequiredLaunchTags from '../../../special/metadata/special/required-launch-tags';
+import UsageCreditsCounter from '../usage-credits-statistics/credits-counter';
 
 function renderRoleName (role) {
   if (!role.predefined) {
@@ -123,6 +124,16 @@ class ProfileSettings extends React.Component {
             }
           </tbody>
         </table>
+        <UsageCreditsCounter
+          user={userInfo}
+          style={{
+            container: {marginLeft: 6, gap: 2},
+            label: {
+              width: 150,
+              fontWeight: 'normal'
+            }
+          }}
+        />
         <div
           className={
             classNames(

@@ -66,13 +66,13 @@ public class ContextualPreferenceManagerTest {
     private static final String USER_NAME = "userName";
     private static final PipelineUser USER = new PipelineUser(1L, null, Arrays.asList(ROLE_1, ROLE_2),
             Collections.emptyList(), false, false, null, null, null, null, null, null,
-            Collections.emptyMap(), Collections.emptyList(), null, Collections.emptyList(), null, null);
+            Collections.emptyMap(), Collections.emptyList(), null, Collections.emptyList(), null, null, null);
     private static final PipelineUser USER_WITHOUT_ROLES = new PipelineUser(USER.getId(), null, null,
             Collections.emptyList(), false, false, null, null, null, null, null, null,
-            Collections.emptyMap(), Collections.emptyList(), null, Collections.emptyList(), null, null);
+            Collections.emptyMap(), Collections.emptyList(), null, Collections.emptyList(), null, null, null);
     private static final PipelineUser USER_WITHOUT_ID = new PipelineUser(null, USER_NAME, Collections.emptyList(),
             Collections.emptyList(), false, false, null, null, null, null, null, null,
-            Collections.emptyMap(), Collections.emptyList(), null, Collections.emptyList(), null, null);
+            Collections.emptyMap(), Collections.emptyList(), null, Collections.emptyList(), null, null, null);
 
     private final ContextualPreferenceExternalResource toolResource =
             new ContextualPreferenceExternalResource(LEVEL, TOOL_ID);
@@ -267,7 +267,8 @@ public class ContextualPreferenceManagerTest {
         when(authManager.getCurrentUser()).thenReturn(USER_WITHOUT_ROLES);
         when(userManager.load(eq(USER_WITHOUT_ROLES.getId()))).thenReturn(USER);
 
-        final ContextualPreference searchedPreference = manager.search(NAMES, null);
+        final ContextualPreference searchedPreference = manager.search(NAMES,
+                (ContextualPreferenceExternalResource) null);
 
         assertThat(searchedPreference, is(preference));
     }

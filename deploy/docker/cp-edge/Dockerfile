@@ -36,7 +36,6 @@ ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
 RUN yum install -y python2 \
-                   python3 \
                    unzip \
                    git \
                    curl \
@@ -62,6 +61,15 @@ RUN yum install -y python2 \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
                 pykube==0.15.0
+
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    pip3 install rsa==4.0 \
+                 pykube-ng==23.6.0
 
 # Openresty + http_connect module
 RUN yum install -y  pcre-devel \
@@ -116,6 +124,7 @@ ADD validate_cookie.lua /etc/nginx/validate_cookie.lua
 ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
 ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
+ADD validate_cookie_smb.lua /etc/nginx/validate_cookie_smb.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
 ADD validate_proxy_auth.lua /etc/nginx/validate_proxy_auth.lua
 COPY maintenance*.lua /etc/nginx/
@@ -159,5 +168,19 @@ ADD ingress-config /etc/nginx/ingress
 RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
-COPY filebeat-config/* /etc/filebeat/
+COPY filebeat-config/elasticsearch/* /etc/filebeat/
 RUN chmod go-w /etc/filebeat/*
+
+RUN cd /tmp \
+    && wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-oss-7.10.0-linux-x86_64.tar.gz \
+    && tar -xzf /tmp/filebeat-oss-7.10.0-linux-x86_64.tar.gz -C /opt/ \
+    && mv /opt/filebeat-7.10.0-linux-x86_64 /opt/filebeat-oss
+
+COPY filebeat-config/opensearch/* /opt/filebeat-oss/
+RUN chmod go-w /opt/filebeat-oss/*
+
+
+# Install SQUID
+
+RUN yum install -y squid
+COPY squid.conf.tmpl /etc/squid/squid.conf.tmpl

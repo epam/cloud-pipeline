@@ -30,7 +30,10 @@ from itertools import groupby
 from operator import itemgetter
 from random import randint
 import json
-from distutils.version import LooseVersion
+try:
+    from packaging.version import Version as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 import fnmatch
 import sys
 import math
@@ -57,6 +60,19 @@ DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 POOL_ID_KEY = 'pool_id'
 KUBE_CONFIG_PATH = '~/.kube/config'
+# learn more about spot instance request statuses:
+# https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-instances-request-status-lifecycle.html
+SPOT_HOLDING_STATES = [
+    'capacity-not-available',
+    'capacity-oversubscribed',
+    'constraint-not-fulfillable',
+    'price-too-low',
+]
+SPOT_PRE_FULFILLMENT_TERMINAL_STATES = [
+    'schedule-expired',
+    'canceled-before-fulfillment',
+    'system-error'
+]
 
 current_run_id = 0
 api_url = None
@@ -195,7 +211,7 @@ def get_networks_config(ec2, aws_region, instance_type):
 
     if allowed_networks and len(allowed_networks) > 0:
         try:
-            allowed_networks_details = ec2.describe_subnets(SubnetIds=allowed_networks.values())['Subnets']
+            allowed_networks_details = ec2.describe_subnets(SubnetIds=list(allowed_networks.values()))['Subnets']
             
             # Get the list of AZs, which offer the "instance_type", as some of the AZs can't provide certain types and an error is thrown:
             #   Your requested instance type (xxxxx) is not supported in your requested Availability Zone (xxxxx)
@@ -379,7 +395,7 @@ def resource_tags(cloud_region):
     merged_tags = merge_tags(region_tags, config_tags)
     if merged_tags is None:
         return tags
-    for key, value in merged_tags.iteritems():
+    for key, value in merged_tags.items():
         tags.append({"Key": key, "Value": value})
     return tags
 
@@ -390,9 +406,9 @@ def merge_tags(region_tags, global_tags):
     if global_tags is None:
         return region_tags
     merged = {}
-    for key, value in global_tags.iteritems():
+    for key, value in global_tags.items():
         merged[key] = value
-    for key, value in region_tags.iteritems():
+    for key, value in region_tags.items():
         merged[key] = value
     return merged
 
@@ -475,15 +491,14 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     elif allowed_networks and len(allowed_networks) > 0:
         if availability_zone:
             pipe_log('- Desired availability zone {} was specified, trying to use it'.format(availability_zone))
-            for az_name, az_subnet_id in allowed_networks.iteritems():
+            for az_name, az_subnet_id in allowed_networks.items():
                 if az_name == availability_zone:
                     az_name = availability_zone
                     subnet_id = az_subnet_id
                     break
         if subnet_id is None:
             az_num = randint(0, len(allowed_networks)-1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
+            az_name, subnet_id = list(allowed_networks.items())[az_num]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
 
 
@@ -563,10 +578,10 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             **additional_args
         )
     except ClientError as client_error:
-        if 'InstanceLimitExceeded' in client_error.message:
+        if 'InstanceLimitExceeded' in str(client_error):
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
-        elif 'InsufficientInstanceCapacity' in client_error.message:
+        elif 'InsufficientInstanceCapacity' in str(client_error):
             pipe_log_warn(INSUFFICIENT_CAPACITY_ERROR_MASSAGE)
             sys.exit(INSUFFICIENT_CAPACITY_EXIT_CODE)
         else:
@@ -643,7 +658,7 @@ def fetch_network_interface_info(ec2, network_interface, availability_zone, allo
     if availability_zone is not None and availability_zone != eni_az_name:
         raise RuntimeError('- Specified network interface {} is located in az {}, but explicitly configured az is {}, operation failed.'.format(network_interface, eni_az_name, availability_zone))
 
-    if allowed_networks and len(allowed_networks) > 0 and eni_az_name not in [az_name for az_name, _ in allowed_networks.iteritems()]:
+    if allowed_networks and len(allowed_networks) > 0 and eni_az_name not in [az_name for az_name, _ in allowed_networks.items()]:
         raise RuntimeError('- Specified network interface {} is located in az {}, but this az is not in allowed list, operation failed.'.format(network_interface, eni_az_name))
 
     subnet_id = eni_subnet_id
@@ -669,7 +684,7 @@ def get_certs_string():
         else:
             repo_urls = []
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 repo_urls.append(url)
                 entries.append(command_pattern.format(url=url, cert=cert))
             return ",".join(repo_urls), " && ".join(entries)
@@ -796,7 +811,7 @@ def get_swap_ratio(swap_params):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    payload = jwt.decode(api_token, verify=False)
+    payload = jwt.decode(api_token, options={"verify_signature": False}, algorithms=["RS256"])
     if 'sub' in payload:
         subject = payload['sub']
         user_data_script = user_data_script\
@@ -865,8 +880,8 @@ def get_current_status(ec2, ins_id):
         else:
             return -1
     except ClientError as client_error:
-        if 'does not exist' in client_error.message:
-            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, client_error.message))
+        if 'does not exist' in str(client_error):
+            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, str(client_error)))
             return -1
         else:
             raise client_error
@@ -953,6 +968,11 @@ def verify_run_id(ec2, run_id):
         pipe_log('No existing instance found for RunID {}\n-'.format(run_id))
     return ins_id, ins_ip
 
+def is_node_ready(node_conditions):
+    for condition in node_conditions:
+        if condition.get("type") == u"Ready":
+            return condition.get("status") == u"True"
+    return False
 
 def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
     nodenames = get_possible_kube_node_names(ec2, ins_id)
@@ -976,8 +996,8 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
         rep = 0
         while rep <= num_rep:
             node = pykube.Node.objects(api).filter(field_selector={'metadata.name': ret_namenode})
-            status = node.response['items'][0]['status']['conditions'][3]['status']
-            if status == u'True':
+            node_conditions = node.response['items'][0]['status']['conditions']
+            if is_node_ready(node_conditions):
                 pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                 break
             rep = increment_or_fail(num_rep, rep,
@@ -1054,16 +1074,21 @@ def terminate_instance(ec2_client, instance_id, spot_request_id=None, kube_clien
             pipe_log('Node {} was not found in the kube cluster'.format(kube_node_real_name))
 
 
+def _get_spot_instance_request_id(instance):
+    spot_request_id = None
+    if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
+        spot_request_id = instance['SpotInstanceRequestId']
+    return spot_request_id
+
+
 def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instance_id_on_fail=None, kube_client=None):
     rep = rep + 1
     if rep > num_rep:
         if kill_instance_id_on_fail:
-            spot_request_id = None
             pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
                      'See more details below'.format(kill_instance_id_on_fail))
             instance = ec2_client.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
-            if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
-                spot_request_id = instance['SpotInstanceRequestId']
+            spot_request_id = _get_spot_instance_request_id(instance)
             terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id, kube_client)
         raise RuntimeError(error_message)
     return rep
@@ -1119,7 +1144,7 @@ def get_spot_prices(ec2, aws_region, instance_type, hours=3):
 
 def exit_if_spot_unavailable(run_id, last_status):
     # will exit with code '5' if a spot request can't be fulfilled
-    if last_status in ['capacity-not-available', 'capacity-oversubscribed', 'constraint-not-fulfillable']:
+    if last_status in SPOT_HOLDING_STATES or last_status in SPOT_PRE_FULFILLMENT_TERMINAL_STATES:
         pipe_log('[ERROR] Could not fulfill spot request for run {}, status: {}'.format(run_id, last_status),
                  status=TaskStatus.FAILURE)
         sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
@@ -1234,8 +1259,8 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
             LaunchSpecification=specifications,
         )
     except ClientError as client_error:
-        if 'Max spot instance count exceeded' in client_error.message or \
-                'InstanceLimitExceeded' in client_error.message:
+        if 'Max spot instance count exceeded' in str(client_error) or \
+                'InstanceLimitExceeded' in str(client_error):
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
         else:
@@ -1352,6 +1377,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
 
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
+        cancel_if_bad_spot_request_status(status, request_id, run_id)
         pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
         # TODO: review all this logic, it is difficult to read and maintain
         if rep >= num_rep:
@@ -1374,9 +1400,9 @@ def wait_for_fulfilment(status):
            or status == 'pending-fulfillment' or status == 'fulfilled'
 
 
-def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id, input_tags):
+def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id, input_tags, spot_num_rep):
     pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
-    for interation in range(0, 5):
+    for interation in range(0, spot_num_rep):
         spot_req = get_spot_req_by_run_id(ec2, run_id)
         if spot_req:
             request_id = spot_req['SpotInstanceRequestId']
@@ -1392,10 +1418,11 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_i
                     spot_req = ec2.describe_spot_instance_requests(
                         SpotInstanceRequestIds=[request_id])['SpotInstanceRequests'][0]
                     status = spot_req['Status']['Code']
-                    pipe_log('Exceeded retry count ({}) for spot instance (SpotInstanceRequestId: {}). Spot instance request status code: {}.'
-                                .format(num_rep, request_id, status))
+                    cancel_if_bad_spot_request_status(status, request_id, run_id)
                     rep = rep + 1
                     if rep > num_rep:
+                        pipe_log('Exceeded retry count ({}) for spot instance (SpotInstanceRequestId: {}). Spot instance request status code: {}.'
+                                 .format(num_rep, request_id, status))
                         exit_if_spot_unavailable(run_id, status)
                         return '', ''
                 if  instance_is_active(ec2, spot_req['InstanceId']):
@@ -1403,6 +1430,76 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_i
         sleep(5)
     pipe_log('No spot request for RunID {} found\n-'.format(run_id))
     return '', ''
+
+
+def cancel_if_bad_spot_request_status(status, request_id, run_id):
+    if status in SPOT_PRE_FULFILLMENT_TERMINAL_STATES:
+        pipe_log('Spot instance request ({}) in terminal status: {}'.format(request_id, status))
+        exit_if_spot_unavailable(run_id, status)
+    if status == 'bad-parameters':
+        raise RuntimeError('Invalid spot request parameters')
+
+
+def list_active_instances_for_run(ec2, run_id):
+    response = ec2.describe_instances(
+        Filters=[
+            run_id_filter(run_id),
+            {
+                'Name': 'instance-state-name',
+                'Values': ['pending', 'running']
+            }
+        ]
+    )
+    instances = []
+    for reservation in response.get('Reservations', []):
+        for instance in reservation.get('Instances', []):
+            if instance_is_active(ec2, instance['InstanceId']):
+                instances.append(instance)
+    return instances
+
+
+def elect_winner_instance(instances):
+    # Oldest LaunchTime, then smallest InstanceId.
+    return min(instances, key=lambda instance: (instance['LaunchTime'], instance['InstanceId']))
+
+
+def process_duplicated_instances(ins_id, run_id, instances, ec2, kube_client):
+    for instance in instances:
+        other_id = instance['InstanceId']
+        if other_id == ins_id:
+            # skip winner
+            continue
+        pipe_log('Winner {} terminating extra instance {} for RunID {}'.format(ins_id, other_id, run_id))
+        try:
+            terminate_instance(ec2, other_id,
+                               spot_request_id=_get_spot_instance_request_id(instance),
+                               kube_client=kube_client)
+        except Exception as e:
+            pipe_log('Failed to terminate duplicated instance {}: {}'.format(other_id, str(e)))
+
+
+def check_duplicates(ec2, run_id, ins_id, kube_client=None):
+    instances = list_active_instances_for_run(ec2, run_id)
+    if not instances:
+        raise RuntimeError('No active instance found for RunID {} while resolving duplicates'.format(run_id))
+    winner = elect_winner_instance(instances)
+    winner_id = winner['InstanceId']
+    pipe_log('Duplicate check for RunID {}: this={}, winner={}, live={}'.format(
+        run_id, ins_id, winner_id, [i['InstanceId'] for i in instances]))
+    if len(instances) == 1 and ins_id == winner_id:
+        pipe_log('No duplicate instances found for RunID {}'.format(run_id))
+        return
+    if ins_id != winner_id:
+        current = next((i for i in instances if i['InstanceId'] == ins_id), None)
+        pipe_log('Instance {} lost duplicate election for RunID {} (winner {}). Terminating.'.format(
+            ins_id, run_id, winner_id))
+        terminate_instance(ec2, ins_id,
+                           spot_request_id=_get_spot_instance_request_id(current) if current else None,
+                           kube_client=kube_client)
+        raise RuntimeError(
+            'Duplicate instance {} for RunID {} (winner {}). Terminated.'.format(ins_id, run_id, winner_id))
+    # current instance is winner, but duplicates found, these instance shall be terminated
+    process_duplicated_instances(ins_id, run_id, instances, ec2, kube_client)
 
 
 def get_spot_req_by_run_id(ec2, run_id):
@@ -1479,6 +1576,7 @@ def main():
     parser.add_argument("--ins_img", type=str, default='ami-f68f3899')
     parser.add_argument("--ins_platform", type=str, default='linux')
     parser.add_argument("--num_rep", type=int, default=400) # 400 x 3s = 20m
+    parser.add_argument("--spot_num_rep", type=int, required=False, default=5) # 5 x 5s = 25s
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
     parser.add_argument("--bid_price", type=float, default=1.0)
@@ -1514,6 +1612,7 @@ def main():
     if ins_platform == 'null':
         ins_platform = 'linux'
     num_rep = args.num_rep
+    spot_num_rep = args.spot_num_rep
     time_rep = args.time_rep
     is_spot = args.is_spot
     bid_price = args.bid_price
@@ -1632,7 +1731,7 @@ def main():
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id,
-                                                       input_tags)
+                                                       input_tags, spot_num_rep)
 
         if not ins_id:
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
@@ -1644,6 +1743,9 @@ def main():
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
         nodename = verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api)
+
+        check_duplicates(ec2, run_id, ins_id, kube_client=api)
+
         label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, additional_labels)
         pipe_log('Node created:\n'
                  '- {}\n'

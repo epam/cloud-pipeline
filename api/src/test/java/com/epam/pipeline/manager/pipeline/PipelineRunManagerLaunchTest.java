@@ -33,13 +33,19 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -54,15 +60,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
+import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
@@ -88,6 +91,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -121,6 +125,8 @@ public class PipelineRunManagerLaunchTest {
     private static final String TEST_USER = "user";
     private static final String TEST_USER_2 = "user2";
     private static final String IMAGE = "testImage";
+    private static final String STRING_TYPE = "string";
+    private static final String RESOLVED_VALUE = "resolved";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime TEST_PERIOD_18 = TEST_PERIOD.plusHours(18);
     private static final int HOURS_18 = 18;
@@ -189,6 +195,12 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private FolderApiService folderApiService;
 
+    @Mock
+    private PlatformUsageCreditsLaunchService platformUsageCreditsLaunchService;
+
+    @Mock
+    private RestartRunManager restartRunManager;
+
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -218,6 +230,7 @@ public class PipelineRunManagerLaunchTest {
         initMocks(this);
 
         mock(CLUSTER_DOCKER_EXTRA_MULTI);
+        mock(CLUSTER_FALLBACK_INSTANCE_TYPES_MAX_COUNT);
         mock(CLUSTER_INSTANCE_HDD_EXTRA_MULTI);
         mock(CLUSTER_SPOT);
         mock(COMMIT_TIMEOUT);
@@ -431,6 +444,31 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
+    public void pipelineRunShouldDisablePauseIfRunLaunchedWithNonRunIdPodAssignPolicy() {
+        final PipelineConfiguration configurationWithNonRunIdAssignPolicy = configuration;
+        configurationWithNonRunIdAssignPolicy.setPodAssignPolicy(
+            RunContainerSpec.builder()
+                .selector(
+                    RunContainerSpec.PodAssignSelector.builder()
+                            .label(KubernetesConstants.CP_LABEL_PREFIX + "some-tag")
+                            .value("some-value").build()
+                ).build()
+        );
+        final PipelineRun pipelineRun = launchPipeline(configurationWithNonRunIdAssignPolicy, INSTANCE_TYPE);
+
+        assertThat(pipelineRun.isPauseDisabled(), is(true));
+        assertThat(pipelineRun.isNonPause(), is(true));
+    }
+
+    @Test
+    public void pipelineRunShouldNotDisablePauseIfRunLaunchedRunIdPodAssignPolicy() {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE);
+
+        assertThat(pipelineRun.isPauseDisabled(), is(false));
+        assertThat(pipelineRun.isNonPause(), is(false));
+    }
+
+    @Test
     public void launchPipelineShouldRegisterNotificationsRequestsIfSpecified() {
         final PipelineRun pipelineRun = launchPipelineWithNotificationRequests(configuration);
 
@@ -476,6 +514,74 @@ public class PipelineRunManagerLaunchTest {
         );
         pipelineRun = launchTool(configuration, INSTANCE_TYPE);
         assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+    }
+
+    @Test
+    public void restartRunShouldPreserveFallbackInstanceTypes() {
+        final String fallbackType = "fallback.type";
+        final PipelineRun run = getRunToRestart();
+        run.getInstance().setFallbackInstanceTypes(singletonList(fallbackType));
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNotNull(restartedRun.getInstance());
+        assertThat(restartedRun.getInstance().getFallbackInstanceTypes(), is(singletonList(fallbackType)));
+    }
+
+    @Test
+    public void restartRunShouldCopyParametersLoadedFromJson() {
+        final PipelineRun run = getRunToRestart();
+        run.setParams(null);
+        final PipelineRunParameter parameter = new PipelineRunParameter(TEST_NAME, TEST_STRING, STRING_TYPE);
+        parameter.setResolvedValue(RESOLVED_VALUE);
+        run.setPipelineRunParameters(singletonList(parameter));
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertThat(restartedRun.getPipelineRunParameters().size(), is(1));
+        final PipelineRunParameter restartedParameter = restartedRun.getPipelineRunParameters().get(0);
+        assertNotSame(parameter, restartedParameter);
+        assertEquals(TEST_NAME, restartedParameter.getName());
+        assertEquals(TEST_STRING, restartedParameter.getValue());
+        assertEquals(STRING_TYPE, restartedParameter.getType());
+        assertEquals(RESOLVED_VALUE, restartedParameter.getResolvedValue());
+    }
+
+    @Test
+    public void restartRunShouldParseParametersFromString() {
+        final PipelineRun run = getRunToRestart();
+        run.setPipelineRunParameters(null);
+        run.setParams(TEST_NAME + "=" + TEST_STRING);
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertThat(restartedRun.getPipelineRunParameters().size(), is(1));
+        assertEquals(TEST_NAME, restartedRun.getPipelineRunParameters().get(0).getName());
+        assertEquals(TEST_STRING, restartedRun.getPipelineRunParameters().get(0).getValue());
+    }
+
+    private PipelineRun getRunToRestart() {
+        final RunInstance instance = new RunInstance();
+        instance.setCloudRegionId(REGION_ID);
+        instance.setCloudProvider(CloudProvider.AWS);
+        instance.setNodeType(INSTANCE_TYPE);
+        instance.setNodeDisk(parseInt(INSTANCE_DISK));
+        instance.setEffectiveNodeDisk(parseInt(INSTANCE_DISK));
+
+        final PipelineRun run = getPipelineRun(ID, TEST_USER);
+        run.setInstance(instance);
+        run.setDockerImage(IMAGE);
+        run.setActualDockerImage(IMAGE);
+        return run;
+    }
+
+    private void mockRestart() {
+        doReturn(configuration).when(pipelineConfigurationManager).getConfigurationFromRun(any());
+        doReturn(ID_2).when(pipelineRunDao).createRunId();
+        doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(any(), any(), any(), any());
     }
 
     private void mock(final InstancePrice price) {

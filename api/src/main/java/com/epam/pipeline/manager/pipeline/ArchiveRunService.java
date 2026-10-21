@@ -66,7 +66,18 @@ public class ArchiveRunService {
     private final MetadataDao metadataDao;
     private final UserManager userManager;
     private final RoleManager roleManager;
+    private final ArchiveRunCoreService archiveRunCoreService;
     private final ArchiveRunAsynchronousService archiveRunAsyncService;
+
+    public void archiveRuns(final List<Long> runIds) {
+        if (ListUtils.emptyIfNull(runIds).isEmpty()) {
+            log.debug("No run IDs provided to archive.");
+            return;
+        }
+        final Integer runsChunkSize = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
+        ListUtils.partition(runIds, runsChunkSize).forEach(archiveRunCoreService::archiveRunsByIds);
+    }
 
     public void archiveRuns(final String identifier, final boolean principal, final Integer days) {
         final String metadataKey = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);

@@ -23,7 +23,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: cp-billing-srv
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:billing-srv-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:billing-srv-${CP_BILLING_SRV_VERSION}
           imagePullPolicy: "Always"
           command: ["/init"]
           envFrom:

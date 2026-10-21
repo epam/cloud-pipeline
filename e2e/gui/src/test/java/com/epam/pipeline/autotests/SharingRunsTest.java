@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,14 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
-import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
-import static com.epam.pipeline.autotests.utils.C.DEFAULT_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.text;
@@ -34,7 +32,9 @@ import static com.epam.pipeline.autotests.ao.Primitive.FRIENDLY_URL;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVICES;
 import static com.epam.pipeline.autotests.ao.Primitive.SHARE_WITH;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_CLOUD_REGION;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
+import static com.epam.pipeline.autotests.utils.Utils.refresh;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -51,9 +51,11 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     private String userGroup = C.ROLE_USER;
     private int timeout = C.SHARING_TIMEOUT;
 
-    @BeforeMethod
+    @AfterMethod
     public void openPage() {
         open(C.ROOT_ADDRESS);
+        logout();
+        loginAs(admin);
     }
 
     @Test
@@ -61,6 +63,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     public void validationOfFriendlyURL() {
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .doNotMountStoragesSelect(true)
                 .setValue(FRIENDLY_URL, friendlyURL)
                 .launch(this)
                 .showLog(runID = getRunId())
@@ -92,8 +95,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2678"})
     public void shareToolRunWithUser() {
-        try {
-            runsMenu()
+             runsMenu()
                     .showLog(runID)
                     .shareWithUser(user.login, false)
                     .validateShareLink(user.login);
@@ -116,20 +118,14 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
             sleep(timeout, SECONDS);
-            open(endpointsLink, "", user.login, user.password);
+            open(endpointsLink);
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
     }
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2679"})
     public void shareToolRunWithUserGroup() {
-        try {
             runsMenu()
                     .log(getRunId(), log -> log
                             .shareWithGroup(userGroup)
@@ -140,6 +136,7 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             loginAs(user);
             sleep(timeout, SECONDS);
             open(endpointsLink);
+            refresh();
             new ToolPageAO(endpointsLink)
                     .validateEndpointPage(user.login)
                     .assertURLEndsWith(friendlyURL);
@@ -154,20 +151,15 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
             restartBrowser(C.ROOT_ADDRESS);
             loginAs(user);
             sleep(timeout, SECONDS);
-            open(endpointsLink, "", user.login, user.password);
+            open(endpointsLink);
+            refresh();
             new ToolPageAO(endpointsLink)
                     .assertPageTitleIs("401 Authorization Required");
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
     }
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-2680"})
     public void displayingSharingToolAtServicesPanel() {
-        try {
             runsMenu()
                     .showLog(runID)
                     .shareWithUser(user.login, false)
@@ -203,18 +195,12 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .markCheckboxByName("Services")
                     .ok()
                     .ensureVisible(SERVICES)
-                    .checkNoServicesLabel();
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
+                    .checkEndpointsLinkNotOnServicesPanel(runID);
     }
 
     @Test(dependsOnMethods = {"validationOfFriendlyURL"})
     @TestCase({"EPMCMBIBPC-3179"})
     public void shareSSHSession() {
-        try {
             navigationMenu()
                     .settings()
                     .switchToPreferences()
@@ -263,10 +249,5 @@ public class SharingRunsTest extends AbstractSinglePipelineRunningTest implement
                     .ensureVisible(SERVICES)
                     .checkEndpointsLinkOnServicesPanel(name[name.length - 1])
                     .checkSSHLinkIsNotDisplayedOnServicesPanel(runID);
-        } finally {
-            open(C.ROOT_ADDRESS);
-            logout();
-            loginAs(admin);
-        }
     }
 }

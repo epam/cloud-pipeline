@@ -179,7 +179,16 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
 
 module_dir=$(dirname "$1")
 permissions_path="$module_dir/permissions.json"
-result="You are not allowed to launch this module. Please contact your administrator."
+result="You don't have permissions to launch this module."
+result_body="Please contact"
+
+config_path="$2"
+result_body_support="your administrator"
+if [[ -f "$config_path" ]]; then
+    support_users=$(jq -r '.support | join(" / ")' "$config_path" 2>/dev/null)
+    if ! [[ -z "$support_users" ]]; then result_body_support="$support_users"; fi
+fi
+result_body="$result_body $result_body_support"
 
 delimiter="."
 current_user_info_base64=$(echo "$API_TOKEN" | cut -d "$delimiter" -f 2)
@@ -189,14 +198,18 @@ current_user_info=$(echo "$current_user_info_base64" | base64 -d)
 current_user=$(echo "$current_user_info" | jq -r '.sub')
 
 if [[ -z "$current_user" ]]; then
-    result="User ID is undefined. $result"
+    result="User ID is undefined.\n$result $result_body to resolve the issue."
 elif [[ -f "$permissions_path" ]]; then
-    permissions_mode=$(jq -r '.mode' "$permissions_path")
-    allowed_values=$(jq -r '.values | @sh' "$permissions_path")
+    permissions_mode=$(jq -r '.mode' "$permissions_path" 2>/dev/null)
+    allowed_values=$(jq -r '.values | join(", ")' "$permissions_path" 2>/dev/null)
 
-    if [[ "$permissions_mode" == 'user' ]]; then
+    if [[ -z "$permissions_mode" ]]; then
+        result="Module permissions file has incorrect format.\n$result_body to resolve the issue."
+    elif [[ "$permissions_mode" == 'user' ]]; then
         if printf "%s\0" "$allowed_values" | grep -w -F -i -- "$current_user" > /dev/null; then
             result="true"
+        else
+            result="$result $result_body to request access."
         fi
 
     elif [[ "$permissions_mode" == 'location' ]]; then
@@ -206,14 +219,19 @@ elif [[ -f "$permissions_path" ]]; then
                       -d ["$user_entity"] "${API}metadata/load" | jq '.payload[0].data.user_region.value' | tr -d '" ')
 
         if [[ -n "$user_region" && "$user_region" != null ]]; then
-            if printf "%s\0" "$allowed_values" | grep -w -F -i -- "$user_region" > /dev/null; then
+            if [[ "$user_region" == 'all' ]]; then
+                result="true"
+            elif printf "%s\0" "$allowed_values" | grep -w -F -i -- "$user_region" > /dev/null; then
                 result="true"
             else
-                result="Region does not match permissions. $result"
+                result="This module can be used in $allowed_values only.\n$result_body to request access from your location."
             fi
         else
-            result="Region is undefined. $result"
+            result="This module can be used in $allowed_values only. Your region is undefined.\n$result_body to resolve the issue."
         fi
+
+    else
+        result="true"
     fi
 else
     result="true"
@@ -230,7 +248,7 @@ local module_msg = {}
 local function load_hook(t)
     if (mode() ~= "load") then return end
 
-    local cmdCheckPermissions = "bash " .. "$CP_CAP_MODULES_CONFIG_DIR" .. "/CheckPermissions.sh " .. t.fn
+    local cmdCheckPermissions = "bash " .. "$CP_CAP_MODULES_CONFIG_DIR" .. "/CheckPermissions.sh " .. t.fn .. " $CP_CAP_MODULES_PERMISSIONS_CONFIG_PATH"
     local handle = io.popen(cmdCheckPermissions)
     local cmdResult = handle:read("*a")
     handle:close()

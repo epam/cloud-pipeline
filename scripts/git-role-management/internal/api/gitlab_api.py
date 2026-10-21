@@ -20,6 +20,7 @@ from ..model.git_user import GitUser
 from ..model.git_group import GitGroup
 from ..model.git_project import GitProject
 from ..config import Config
+from ..compat import to_bytes
 
 
 class GitLabException(Exception):
@@ -41,11 +42,11 @@ class GitLab(object):
         try:
             text_json = json.loads(text)
             if 'message' in text_json:
-                print text_json['message']
+                print(text_json['message'])
         except RuntimeError:
-            print text
+            print(text)
         except:
-            print text
+            print(text)
         return None
 
     def call(self,
@@ -142,9 +143,9 @@ class GitLab(object):
 
     def create_user(self, userName, name, email, password):
         payload = {
-            'name': name.encode('utf8'),
-            'username': userName.encode('utf8').replace(' ', '_'),
-            'email': email.encode('utf8'),
+            'name': to_bytes(name),
+            'username': to_bytes(userName).replace(' ', '_'),
+            'email': to_bytes(email),
             'password': password,
             'skip_confirmation': True
         }
@@ -166,7 +167,7 @@ class GitLab(object):
     def create_group(self, name):
         payload = {
             'name': name,
-            'path': name.replace(' ', '-').encode(encoding='UTF-8', errors='strict')
+            'path': to_bytes(name.replace(' ', '-'))
         }
         return self.call(
             'groups',

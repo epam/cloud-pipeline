@@ -1,0 +1,54 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cp-quota-sync-job
+  namespace: default
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          namespace: default
+          labels:
+            cloud-pipeline/cp-quota-sync-job: "true"
+            cloud-pipeline/core-component: "CronJob"
+        spec:
+          nodeSelector:
+            cloud-pipeline/cp-api-srv: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+          restartPolicy: Never
+          containers:
+          - name: cp-quota-sync-job
+            image: python:3.12-slim
+            imagePullPolicy: IfNotPresent
+            command: ["python3", "/opt/cp-quota-sync-job/sync_quotas.py"]
+            envFrom:
+            - configMapRef:
+                name: cp-config-global
+            env:
+              - name: CP_QUOTA_SYNC_VALUE
+                value: "1000"
+              - name: CP_QUOTA_SYNC_PERIOD
+                value: "MONTH"
+              - name: CP_QUOTA_SYNC_NOTIFY_THRESHOLDS
+                value: "100,600"
+              - name: CP_QUOTA_SYNC_EXTRA_RECIPIENTS
+                value: ""
+              - name: CP_QUOTA_SYNC_DRY_RUN
+                value: "false"
+              - name: CP_QUOTA_SYNC_LOG_LEVEL
+                value: INFO
+            volumeMounts:
+            - name: cp-quota-sync-job-script
+              mountPath: /opt/cp-quota-sync-job
+          volumes:
+          - name: cp-quota-sync-job-script
+            configMap:
+              name: cp-quota-sync-job-script

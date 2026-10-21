@@ -183,16 +183,17 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             })
             .sleep(5, SECONDS)
             .editConfiguration(anotherProfile, profile -> {
-                profile.refresh().clickAddPathParameter().setName(secondParameter).setValue(secondParameterValue);
+                profile.refresh().ensureVisible(ESTIMATED_PRICE).clickAddPathParameter()
+                        .setName(secondParameter).setValue(secondParameterValue);
                 profile.click(SAVE).ensureDisable(SAVE);
             })
             .sleep(5, SECONDS)
             .editConfiguration(defaultProfile, profile ->
-                profile.refresh().ensure(byText(firstParameter), exist)
+                profile.refresh().ensureVisible(ESTIMATED_PRICE).ensure(byText(firstParameter), exist)
                        .ensure(byValue(firstParameterValue), visible)
             )
             .editConfiguration(anotherProfile, profile ->
-                profile.refresh().ensure(byText(secondParameter), exist)
+                profile.refresh().ensureVisible(ESTIMATED_PRICE).ensure(byText(secondParameter), exist)
                        .ensure(byValue(secondParameterValue), visible)
             );
     }

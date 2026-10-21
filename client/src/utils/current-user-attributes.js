@@ -31,13 +31,7 @@ class CurrentUserAttributes {
   constructor (authenticatedUserInfo, dataStorageAvailable) {
     this.userInfo = authenticatedUserInfo;
     this.dataStorages = dataStorageAvailable;
-    if (authenticatedUserInfo) {
-      this.userInfo
-        .fetchIfNeededOrWait()
-        .then(() => {
-          this.refresh(true);
-        });
-    }
+    (this.refresh)();
   }
 
   @computed
@@ -49,36 +43,43 @@ class CurrentUserAttributes {
   }
 
   refresh (force = false) {
-    if (this.user) {
-      if (!this.request) {
-        this.request = new MetadataLoad(this.user.id, 'PIPELINE_USER');
-      }
-      if (!this.refreshPromise || force) {
-        this.refreshPromise = new Promise((resolve) => {
-          this.dataStorages
-            .fetchIfNeededOrWait()
-            .then(() => this.request.fetch())
-            .then(() => {
-              if (this.request.error) {
-                throw new Error(this.request.error);
-              } else if (this.request.loaded) {
-                const [info] = this.request.value || [];
-                const {
-                  data = {}
-                } = info || {};
-                this.attributes = data;
-                this.loaded = true;
-              }
-            })
-            .catch(e => {
-              console.warn(`Error fetching user attributes: ${e.message}`);
-            })
-            .then(() => resolve());
-        });
-      }
-      return this.refreshPromise;
+    if (!this.refreshPromise || force) {
+      this.refreshPromise = new Promise(async (resolve) => {
+        try {
+          const promises = [];
+          if (this.userInfo) {
+            promises.push(this.userInfo.fetchIfNeededOrWait());
+          }
+          if (this.dataStorages) {
+            promises.push(this.dataStorages.fetchIfNeededOrWait());
+          }
+          await Promise.all(promises);
+          const {user} = this;
+          if (!user) {
+            throw new Error('Error fetching user info');
+          }
+          const request = new MetadataLoad(user.id, 'PIPELINE_USER');
+          await request.fetch();
+          if (request.error) {
+            throw new Error(request.error);
+          }
+          if (!request.loaded) {
+            throw new Error('Error fetching user attributes');
+          }
+          const [info] = request.value || [];
+          const {
+            data = {}
+          } = info || {};
+          this.attributes = data;
+          this.loaded = true;
+        } catch (e) {
+          console.warn(`Error fetching user attributes: ${e.message}`);
+        } finally {
+          resolve();
+        }
+      });
     }
-    return Promise.resolve();
+    return this.refreshPromise;
   }
 
   hasAttribute (name) {

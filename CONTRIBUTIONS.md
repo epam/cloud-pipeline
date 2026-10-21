@@ -57,6 +57,63 @@ After the task creation (formulation), it shall be assigned to one or more membe
 Then assignee(s) can begin the task implementation. If desired, assignee sets the label about the beginning of the task implementation - **`state/underway`**.  
 After the task implementation, assignee should set the corresponding label (**`state/verify`**) and/or leave the comment (_with a link to the code_) which mean that task implementation is finished and the next stages can be started.
 
+#### Branch naming
+
+The task implementation is being performed in a separate branch. Its name shall reference the task entity, so that a branch, its issue and its pull request can be matched to each other without reading the diff:
+
+```
+issue_<issue number>/<short_description>_<area>
+```
+
+- `<issue number>` - number of the corresponding `GitHub` issue, without the `#` sign
+- `<short_description>` - few words about the change, in lower case, words separated by underscores
+- `<area>` - the part of the Platform the change lands in (see _Areas_ below). It is being **omitted** when the change spans several areas or when the area can't be determined
+
+For example:
+
+```
+issue_4538/remove_hardcoded_notification_timestamps_api
+issue_4512/evolve_mechanism_of_idle_runs_gui
+issue_4521/notification_dlq
+```
+
+Everything is in lower case, a branch name shall contain **exactly one `/`**. The issue reference (or the type prefix) is the only namespace; the area goes into the name as a `_<area>` suffix and never as a second path segment.
+The `release/<version>` and `stage/<version>/<name>` lines are maintained by the team and are not being created per task. They are the exception to the one-slash rule.
+
+#### Branch naming: changes without an issue
+
+For the changes that have no corresponding issue - small infrastructure, scripts, CI - the type prefix is being used in place of the issue reference:
+
+```
+feature/<short_description>_<area>       # new functionality, infrastructure, tooling
+fix/<short_description>_<area>           # bug fix
+```
+
+#### Areas
+
+| Area | Covers |
+|---|---|
+| `api` | `api/` - the REST API server |
+| `gui` | `client/` - the main Platform GUI |
+| `cli` | `pipe-cli/`, including `mount/` and `pipe-omics/` |
+| `runtime` | `workflows/pipe-common` and `scripts/` - the code injected into job containers |
+| `deploy` | `deploy/` - Dockerfiles, `cp-edge`, `pipectl` |
+| `docs` | `docs/` - release notes and the user manual |
+| `e2e` | `e2e/` - has its own `gradlew` and toolchain |
+
+Any other change takes its **module or top-level directory name** as the area - `core`, `notifier`, `vm-monitor`, `data-transfer-service`, `billing-report-agent`, `hcs-image-viewer`. The authoritative module list is `settings.gradle`.
+
+#### Changes that span several areas
+
+Such a change is being split - **one branch and one pull request per area**, sharing the issue namespace:
+
+```
+issue_4538/notification_tags_api
+issue_4538/notification_tags_gui
+```
+
+When one person carries the whole change and it is small, a single branch with the area omitted (`issue_4538/notification_tags`) is being used instead.
+
 ### Verification
 
 After the task implementation is done, it shall be verified.  
@@ -105,7 +162,7 @@ After the issue type is selected ("**Get started**" button), the template of the
 Then, the issue author:
 
 - fills in all necessary fields (title and detailed description)
-- (_optionally_) sets labels for simpler search/sorting issues. By default, to `bug` and `enhancement` issues the corresponding labels are being set automatically (![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_03.png) and ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_04.png)). Author can remove them or add another ones.
+- (_optionally_) sets labels for simpler search/sorting issues. By default, to `bug` and `enhancement` issues the corresponding labels are being set automatically (![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_03.png) and ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_04.png)). Author can remove them or add another ones. Both templates also set **`intel/natural 🧐`** - _Authorship labels_ has the rule for changing it.
 - (_optionally_) assigns the implementation of the task to a specific member of the development team
 - confirms the issue creation - clicks the "**Submit new issue**" button
 
@@ -196,3 +253,41 @@ In general, the whole contribution procedure looks like:
 6. Test results: test case and test issues are closed, automated test results are being uploaded to the Cloud Pipeline repo, comment "_tests are passed_" to the original task
 7. Documentation writing: pull request(s), comment "_docs were updated_" to the original task
 8. Task is closed
+
+***
+
+## Working with AI coding agents
+
+Agent instructions live in the repository and are reviewed like code - every agent reads them on every task, so a wrong one is a bug that reproduces itself.
+
+### Authorship labels
+
+Two labels record who made an item:
+
+- **`intel/artificial 🤖`** - created by an agent or with an agent's help, and on an issue, implemented by one
+- **`intel/natural 🧐`** - created by a person alone
+
+The emoji is part of each label name. The two are not exclusive: an issue written by a person and implemented by an agent carries both, and that is the accurate record of it. **`intel/natural 🧐`** is a person's to set and to remove - an agent only ever adds **`intel/artificial 🤖`**, to what it had a hand in.
+
+Both issue templates set **`intel/natural 🧐`** by default, so an issue opened through the web interface is marked without anyone having to remember. Where an agent drafted the text, replace it with **`intel/artificial 🤖`** yourself. And when an agent hands a branch back for you to open the pull request, that pull request needs the label too.
+
+### Preparing the local environment
+
+Before the first change, an agent can set up the workstation toolchain. Any of these prompts starts it:
+
+```
+configure development environment
+set up my machine for this repo
+```
+
+The agent asks which parts of the Platform you are going to work on and installs only what those need. Nothing is installed without a confirmation.
+
+Ask again later to add an area that was skipped - "install Java for this repo" - and only the missing part is being set up. The chosen version managers, versions and environment names are being recorded in `.agents/localenv/`, which is per-developer and is not being committed.
+
+### Instruction files and skills
+
+**`AGENTS.md` is the source of truth** for conventions. Any directory may add its own for its subtree. A **skill** is a procedure an agent loads on demand, under `.agents/skills/`. Facts that are always true belong in `AGENTS.md`; multi-step procedures belong in a skill.
+
+**Ask an agent to scaffold a new skill** - a request like "write a skill for _\<procedure\>_". Then review and finish it: the agent knows the format, and you know the procedure.
+
+If your agent does not find the skills, run the instruction verifier - `.agents/skills/README.md` has the fix.

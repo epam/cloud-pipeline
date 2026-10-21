@@ -23,16 +23,19 @@ export const ScanStatusDescriptionsFn = (latest = false, allowedToExecute = fals
     : `This Run is pulling the ${latest ? 'latest ' : ''}version which unfortunately couldn't be run due to security status.`;
   let notScanned = `The ${latest ? 'latest ' : ''}version shall be scanned for vulnerabilities.`;
   let vulnerabilitiesNumberExceeds = `The ${latest ? 'latest ' : ''}version vulnerabilities exceed the security threshold.`;
+  let blackListed = `The ${latest ? 'latest ' : ''}version is on the black list.`;
   if (!allowedToExecute) {
     const extra = latest ? 'an older one' : 'another one';
     againstSecurityPolicy += ` Try to find ${extra}.`;
     notScanned += ` You can try ${extra}.`;
     vulnerabilitiesNumberExceeds += ` You can try ${extra}.`;
+    blackListed += ` Try to find ${extra}.`;
   }
   return {
     againstSecurityPolicy,
     notScanned,
-    vulnerabilitiesNumberExceeds
+    vulnerabilitiesNumberExceeds,
+    blackListed
   };
 };
 
@@ -43,10 +46,12 @@ export const LaunchMessages = (gracePeriodEnd) => {
   let launchNotScanned = `The version shall be scanned for security vulnerabilities${extra}. Run anyway?`;
   let vulnerabilitiesNumberExceeds = `The version has a critical number of vulnerabilities${extra}. Run anyway?`;
   let againstSecurityPolicy = `The version doesn't meet security policy${extra}. Run anyway?`;
+  let blackListed = 'The version is on the black list.';
   return {
     launchNotScanned,
     vulnerabilitiesNumberExceeds,
-    againstSecurityPolicy
+    againstSecurityPolicy,
+    blackListed
   };
 };
 

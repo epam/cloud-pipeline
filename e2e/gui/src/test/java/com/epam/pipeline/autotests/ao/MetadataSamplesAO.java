@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import com.codeborne.selenide.Driver;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.codeborne.selenide.CollectionCondition.size;
 import static com.codeborne.selenide.CollectionCondition.texts;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
@@ -47,7 +49,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ADD_INSTANCE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static org.openqa.selenium.By.className;
-import static org.openqa.selenium.By.tagName;
+
 import static org.testng.Assert.assertTrue;
 
 public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
@@ -79,7 +81,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     }
 
     public MetadataSamplesAO ensureNumberOfRowsIs(int expectedNumberOfRows) {
-        SelenideElements.of(rows).shouldHaveSize(expectedNumberOfRows);
+        SelenideElements.of(rows).shouldHave(size(expectedNumberOfRows));
         return this;
     }
 
@@ -167,7 +169,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     }
 
     public MetadataSamplesAO initializeSorting(String columnName) {
-        Selenide.actions().moveToElement($(columnHeader(columnName)), 0, 0).click().build().perform();
+        Selenide.actions().moveToElement($(columnHeader(columnName)), -10, 0).click().build().perform();
         return this;
     }
 
@@ -221,7 +223,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public void ensureCellContainsHyperlink() {
-            particularCell.findElement(tagName("a")).isDisplayed();
+            particularCell.find(byXpath("./a")).has(Condition.attribute("href"));
         }
 
         public void ensureCellContains(String substring) {
@@ -233,7 +235,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public MetadataSectionAO clickOnHyperlink() {
-            particularCell.find(tagName("a")).click();
+            particularCell.find(byXpath("./a")).click();
             return new MetadataSectionAO(this);
         }
 
@@ -244,8 +246,8 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         public static Condition hyperlink(String text) {
             return new Condition("hyperlink") {
                 @Override
-                public boolean apply(final WebElement element) {
-                    return element.findElement(tagName("a")).isDisplayed()
+                public boolean apply(Driver driver, final WebElement element) {
+                    return element.findElement(By.tagName("a")).isDisplayed()
                             && element.findElement(withText(text)).isDisplayed();
                 }
             };

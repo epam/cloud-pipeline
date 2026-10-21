@@ -340,6 +340,13 @@ export default function (props, state, options) {
     executionEnvironmentCheck(props, state, options) ||
     // instance type check
     modified(form, parameters, `${EXEC_ENVIRONMENT}.type`, 'instance_size') ||
+    // fallback instance types check
+    modified(
+      form,
+      parameters,
+      `${EXEC_ENVIRONMENT}.fallbackInstanceTypes`,
+      'fallback_instance_types'
+    ) ||
     // docker image check
     modified(form, parameters, `${EXEC_ENVIRONMENT}.dockerImage`, 'docker_image') ||
     // disk check

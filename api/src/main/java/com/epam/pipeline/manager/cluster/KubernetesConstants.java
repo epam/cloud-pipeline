@@ -49,6 +49,7 @@ public final class KubernetesConstants {
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";
     public static final String UNAVAILABLE_NODE_LABEL = "Unavailable";
+    public static final String OWNER_LABEL = "owner";
 
     public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
     public static final String CP_CAP_SYSTEMD_CONTAINER = "CP_CAP_SYSTEMD_CONTAINER";
@@ -59,6 +60,7 @@ public final class KubernetesConstants {
 
     public static final String POD_SUCCEEDED_PHASE = "Succeeded";
     public static final String POD_FAILED_PHASE = "Failed";
+    public static final String POD_PENDING_PHASE = "Pending";
     public static final String NODE_LOST = "NodeLost";
     public static final String POD_UNSCHEDULABLE = "Unschedulable";
     public static final String POD_RUNNING_PHASE = "Running";

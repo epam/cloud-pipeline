@@ -8,6 +8,31 @@ import RunSSHButton from '../run-actions/run-ssh-button';
 import RunFsBrowserButton from '../run-actions/run-fs-browser-button';
 import {Icon} from 'antd';
 
+const ACTIVE_RUN_STATUSES = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+
+function parseExternalUrlsTag (run) {
+  const {tags, status} = run || {};
+  const tagValue = tags && tags.EXTERNAL_URLS;
+  if (!tagValue) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(tagValue);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    const isActiveRun = ACTIVE_RUN_STATUSES.includes(status);
+    return parsed.filter(({displayOnCompletion}) => {
+      if (displayOnCompletion === false) {
+        return isActiveRun;
+      }
+      return true;
+    });
+  } catch (_) {
+    return [];
+  }
+}
+
 function RunEndpoints (props) {
   const {
     className,
@@ -17,10 +42,9 @@ function RunEndpoints (props) {
   if (!run) {
     return null;
   }
-  const {
-    serviceUrl
-  } = run;
+  const {serviceUrl} = run;
   const regionedUrls = parseRunServiceUrlConfiguration(serviceUrl);
+  const externalUrls = parseExternalUrlsTag(run);
   return (
     <div
       className={classNames(styles.runEndpoints, className)}
@@ -38,6 +62,20 @@ function RunEndpoints (props) {
             <Icon style={{marginRight: 5}} type="export" />
             <span>{regionedUrl.name}</span>
           </MultizoneUrl>
+        ))
+      }
+      {
+        externalUrls.map(({url, name}, eIndex) => (
+          <a
+            key={`external-endpoint-${eIndex}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.runEndpoint}
+          >
+            <Icon style={{marginRight: 5}} type="export" />
+            <span>{name || url}</span>
+          </a>
         ))
       }
       <RunSSHButton run={run} className={styles.runEndpoint} icon="code-o" />

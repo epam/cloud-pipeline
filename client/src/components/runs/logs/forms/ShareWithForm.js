@@ -316,8 +316,24 @@ export default class ShareWithForm extends React.Component {
       }
     };
     const changeAccessLevel = (item) => (e) => {
-      const {sids} = this.state;
-      sids[item.id].accessType = e.target.checked ? AccessTypes.ssh : AccessTypes.endpoint;
+      const accessType = e.target.checked ? AccessTypes.ssh : AccessTypes.endpoint;
+      const updateSidAccess = (sid, currentSids) => currentSids.map((s) => {
+        if (
+          s.name.toLowerCase() === sid.name.toLowerCase() &&
+          s.isPrincipal === sid.isPrincipal
+        ) {
+          return {...s, accessType};
+        }
+        return s;
+      });
+      let sids = this.state.sids.map((s) => ({...s}));
+      if (item.name === ROLE_ALL.name) {
+        ROLE_ALL.includedRoles.forEach((roleName) => {
+          sids = updateSidAccess({name: roleName, isPrincipal: false}, sids);
+        });
+      } else {
+        sids = updateSidAccess(item, sids);
+      }
       this.setState({sids});
     };
     const columns = [
@@ -400,12 +416,15 @@ export default class ShareWithForm extends React.Component {
       endpoint: combineEndpointRoles
     } = this.combineRolesIntoAllRoles;
     if (combineSshRoles || combineEndpointRoles) {
+      const allRolesAccessType = combineSshRoles ? AccessTypes.ssh : AccessTypes.endpoint;
       data = [
         ...data,
         {
           ...ROLE_ALL,
           key: ROLE_ALL.name,
-          id: data.length
+          id: data.length,
+          isPrincipal: false,
+          accessType: allRolesAccessType
         }
       ].filter(({name, accessType}) => {
         if (

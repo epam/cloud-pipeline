@@ -500,6 +500,29 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void eagerSearchGroupingRun() {
+        Pipeline testPipeline = getPipeline();
+        PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
+        PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
+        PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
+        parent.getInstance().setFallbackInstanceTypes(Arrays.asList(NODE_TYPE, NODE_TYPE_2));
+        pipelineRunDao.updateRunInstance(parent);
+        PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+        filterVO.setStatuses(Collections.singletonList(TaskStatus.SUCCESS));
+
+        List<PipelineRun> runs = pipelineRunDao.eagerSearchPipelineParentRuns(filterVO, null);
+        assertEquals(2, runs.size());
+        assertEquals(lonely.getId(), runs.get(0).getId());
+        assertEquals(parent.getId(), runs.get(1).getId());
+        assertEquals(1, runs.get(1).getChildRuns().size());
+        assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
+        assertThat(runs.get(1).getInstance().getFallbackInstanceTypes(),
+                hasItems(NODE_TYPE, NODE_TYPE_2));
+    }
+
+    @Test
     public void searchPipelineRuns() {
         Pipeline testPipeline2 = getPipeline();
 
@@ -712,7 +735,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertNull(loadedRun.getProlongedAtTime());
 
         run.setProlongedAtTime(time);
-        pipelineRunDao.updateProlongIdleRunAndLastIdleNotificationTime(run);
+        pipelineRunDao.updateProlongedAtTime(run);
 
         loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(time, loadedRun.getProlongedAtTime());
@@ -870,40 +893,17 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void testUpdateRunsLastNotification() {
+    public void testUpdateProlongedAtTime() {
         PipelineRun run1 = createTestPipelineRun();
 
-        Date lastNotificationDate = DateUtils.now();
-        LocalDateTime lastIdleNotificationDate = DateUtils.nowUTC();
-        run1.setLastNotificationTime(lastNotificationDate);
-        run1.setLastIdleNotificationTime(lastIdleNotificationDate);
+        LocalDateTime now = DateUtils.nowUTC();
+        run1.setProlongedAtTime(now);
 
-        pipelineRunDao.updateRunLastNotification(run1);
+        pipelineRunDao.updateProlongedAtTime(run1);
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run1.getId());
 
-        assertEquals(loadedRun.getLastNotificationTime(), lastNotificationDate);
-        assertEquals(loadedRun.getLastIdleNotificationTime(), lastIdleNotificationDate);
-
-        PipelineRun run2 = createTestPipelineRun();
-        PipelineRun run3 = createTestPipelineRun();
-        Stream.of(run2, run3).forEach(r -> {
-            r.setLastNotificationTime(lastNotificationDate);
-            r.setLastIdleNotificationTime(lastIdleNotificationDate);
-        });
-
-        pipelineRunDao.updateRunsLastNotification(Arrays.asList(run2, run3));
-        Stream.of(run2, run3).forEach(r -> {
-            PipelineRun loaded = pipelineRunDao.loadPipelineRun(r.getId());
-            assertEquals(loaded.getLastNotificationTime(), lastNotificationDate);
-            assertEquals(loaded.getLastIdleNotificationTime(), lastIdleNotificationDate);
-        });
-
-        List<PipelineRun> running = pipelineRunDao.loadRunningPipelineRuns();
-        assertFalse(running.isEmpty());
-        running.forEach(loaded -> {
-            assertEquals(loaded.getLastNotificationTime(), lastNotificationDate);
-            assertEquals(loaded.getLastIdleNotificationTime(), lastIdleNotificationDate);
-        });
+        assertEquals(loadedRun.getProlongedAtTime().truncatedTo(java.time.temporal.ChronoUnit.SECONDS),
+                now.truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
     }
 
     @Test
@@ -925,10 +925,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final PipelineRun run = createTestPipelineRun();
         validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
 
-        createLog(run, TaskStatus.RUNNING, initTaskName);
-        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
-
-        createLog(run, TaskStatus.SUCCESS, initTaskName);
+        pipelineRunDao.updateRunInitialized(run.getId());
         validateLoadRunBooleanFieldValue(true, run, PipelineRun::getInitialized);
     }
 
@@ -1436,6 +1433,43 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                 Collections.singletonMap(USER, testDate),
                 Collections.singletonList(TaskStatus.RUNNING.getId()), TEST_PAGE_SIZE, false, 0);
         assertThat(runs.size(), is(1));
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithFallbacks() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        List<String> fallbackInstanceTypes = new ArrayList<>();
+        fallbackInstanceTypes.add(NODE_TYPE);
+        fallbackInstanceTypes.add(NODE_TYPE_2);
+        run.getInstance().setFallbackInstanceTypes(fallbackInstanceTypes);
+
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+
+        List<String> dbFallbackInstanceTypes = loadedRun.getInstance().getFallbackInstanceTypes();
+        assertThat(dbFallbackInstanceTypes.size(), is(2));
+        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE));
+        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE_2));
+    }
+
+    @Test
+    public void shouldUpdateFallbacks() {
+        PipelineRun run = createTestPipelineRun(testPipeline.getId());
+        assertTrue(Objects.isNull(run.getInstance().getFallbackInstanceTypes()));
+
+        List<String> fallbackInstanceTypes = new ArrayList<>();
+        fallbackInstanceTypes.add(NODE_TYPE);
+        fallbackInstanceTypes.add(NODE_TYPE_2);
+        run.getInstance().setFallbackInstanceTypes(fallbackInstanceTypes);
+
+        pipelineRunDao.updateRun(run);
+        PipelineRun loaded = pipelineRunDao.loadPipelineRun(run.getId());
+        assertEquals(run.getId(), loaded.getId());
+        List<String> dbFallbackInstanceTypes = loaded.getInstance().getFallbackInstanceTypes();
+        assertThat(dbFallbackInstanceTypes.size(), is(2));
+        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE));
+        assertTrue(dbFallbackInstanceTypes.contains(NODE_TYPE_2));
     }
 
     private PipelineRun createTestPipelineRun() {

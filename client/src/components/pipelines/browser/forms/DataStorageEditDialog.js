@@ -70,7 +70,8 @@ export class DataStorageEditDialog extends React.Component {
     addExistingStorageFlag: PropTypes.bool,
     omicsStore: PropTypes.bool,
     isNfsMount: PropTypes.bool,
-    policySupported: PropTypes.bool
+    policySupported: PropTypes.bool,
+    storageOperationsEnabled: PropTypes.bool
   };
 
   state = {
@@ -289,12 +290,14 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get transitionRulesAvailable () {
     const {
-      dataStorage
+      dataStorage,
+      storageOperationsEnabled = true
     } = this.props;
     return (this.userPermissions.read || this.userPermissions.write) &&
       dataStorage &&
       dataStorage.id &&
-      /^s3$/i.test(dataStorage.storageType || dataStorage.type);
+      /^s3$/i.test(dataStorage.storageType || dataStorage.type) &&
+      storageOperationsEnabled;
   }
 
   get transitionRulesReadOnly () {

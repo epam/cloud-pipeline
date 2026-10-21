@@ -351,6 +351,12 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_CAP_SHARE_FS_LUSTRE_VERSION",
+        "type": "string",
+        "description": "Allows to specify Lustre file system version (supported for Lustre FS only). Possible values are: [2.10, 2.12, 2.15]. If not set, AWS FSx default for the chosen deployment type is used",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_CAP_HW_ADDR",
         "type": "string",
         "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
@@ -397,9 +403,16 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_MOUNT_THREADS",
+        "type": "int",
+        "description": "Allows to specify the number of threads used to mount data storages. Default: 1 (storages are mounted one by one)",
+        "defaultValue": "1",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_PIPE_FUSE_MOUNT_TIMEOUT",
         "type": "int",
-        "description": "Allows to specify the pipe fuse timeout",
+        "description": "Allows to specify the maximum time in ms to wait for a pipe fuse mount. Default: 10000",
         "defaultValue": "10000",
         "passToWorkers": false
     },
@@ -625,6 +638,12 @@
         "type": "boolean",
         "description": "Enables rescheduling run to other regions",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_NODEUP_RETRY_COUNT",
+        "type": "int",
+        "description": "Overrides the maximal number of tries to start a node for the run (cluster.nodeup.retry.count)",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_GRID_ENGINE_NOTIFICATIONS",

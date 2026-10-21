@@ -22,7 +22,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: cp-node-reporter
-        image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-reporter-$CP_VERSION
+        image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-reporter-${CP_NODE_REPORTER_VERSION}
         imagePullPolicy: "IfNotPresent"
         resources:
           limits:

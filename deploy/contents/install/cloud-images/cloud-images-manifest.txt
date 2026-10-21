@@ -1,0 +1,15 @@
+aws,eu-central-1,ami-045eb1fadf4938d00,CloudPipeline_Image_0_16_a6ca754705bd816_Common,2020-08-24/11:24:15
+aws,eu-central-1,ami-0c16e147fb0879027,CloudPipeline_Image_0_16_fb7848697_GPU_Docker_20_10_23_5.15_nvidia_570_124,2025-04-21/15:32:32
+aws,eu-central-1,ami-0bf363cc24f6a3343,CloudPipeline_Image_0_16_4fdff5cfb5f7486_Common_Win,2021-09-28/11:20:58
+aws,us-east-1,ami-03829c1e6820ad1a4,CloudPipeline_Image_0_16_a6ca754705bd816_Common,2020-08-24/11:24:15
+aws,us-east-1,ami-08c9b99f9174b77d5,CloudPipeline_Image_0_16_a6ca754705bd816_GPU,2020-08-24/11:24:15
+aws,eu-west-1,ami-09f571762a7fdc1a2,CloudPipeline_Image_0_16_a6ca754705bd816_Common,2020-08-24/11:24:15
+aws,eu-west-1,ami-033c185e5f36b0d75,CloudPipeline_Image_0_16_a6ca754705bd816_GPU,2020-08-24/11:24:15
+az,eastus,/subscriptions/c26ab92d-829a-4bf2-9386-1b71387611a7/resourceGroups/epm-cmbi/providers/Microsoft.Compute/images/CloudPipeline-Image-Common,CloudPipeline-Image-Common,2019-03-22/18:50:56
+az,eastus,/subscriptions/c26ab92d-829a-4bf2-9386-1b71387611a7/resourceGroups/epm-cmbi/providers/Microsoft.Compute/images/CloudPipeline-Image-GPU,CloudPipeline-Image-GPU,2019-03-22/19:04:30
+az,westeurope,/subscriptions/c26ab92d-829a-4bf2-9386-1b71387611a7/resourceGroups/epm-cmbi/providers/Microsoft.Compute/images/CloudPipeline-Image017-Common,CloudPipeline-Image017-Common,2021-06-03/19:16:28
+az,westeurope,/subscriptions/c26ab92d-829a-4bf2-9386-1b71387611a7/resourceGroups/epm-cmbi/providers/Microsoft.Compute/images/CloudPipeline-Image-GPU,CloudPipeline-Image-GPU,2019-03-22/19:39:01
+gcp,us,or2-msq-epm-cmbi-t1iylu/cloudpipeline-image-common-us,CloudPipeline-Image-Common,2020-05-19/11:24:15
+gcp,us,or2-msq-epm-cmbi-t1iylu/cloudpipeline-image-gpu-us,CloudPipeline-Image-GPU,2020-05-19/11:24:15
+gcp,eu,or2-msq-epm-cmbi-t1iylu/cloudpipeline-image-common-eu,CloudPipeline-Image-Common,2020-05-19/11:24:15
+gcp,eu,or2-msq-epm-cmbi-t1iylu/cloudpipeline-image-gpu-eu,CloudPipeline-Image-GPU,2020-05-19/11:24:15

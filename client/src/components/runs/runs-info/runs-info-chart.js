@@ -19,14 +19,14 @@ class RunsInfoChart extends Component {
     onEntryClick: PropTypes.func
   };
 
-  componentDidMount() {
+  componentDidMount () {
     const {themes} = this.props;
     if (themes) {
       themes.addThemeChangedListener(this.updateChart);
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount () {
     const {themes} = this.props;
     if (themes) {
       themes.removeThemeChangedListener(this.updateChart);
@@ -110,8 +110,8 @@ class RunsInfoChart extends Component {
             },
             ticks: {
               autoSkip: false,
-              maxRotation: labelsCount > 5 ? 90 : undefined,
-              minRotation: labelsCount > 5 ? 90 : undefined,
+              maxRotation: labelsCount > 5 ? 90 : 15,
+              minRotation: labelsCount > 5 ? 90 : 1,
               fontColor: this.fontColor
             }
           }],

@@ -23,14 +23,15 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang.math.NumberUtils;
 
+
 @RequiredArgsConstructor
 public enum PreferenceType {
     STRING(0, value -> true),
-    INTEGER(1, NumberUtils::isDigits),
+    INTEGER(1, isDigitOrNegativeDigitValidator()),
     FLOAT(2, NumberUtils::isNumber),
     BOOLEAN(3, value -> "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value)),
     OBJECT(4, value -> PreferenceValidators.isNullOrAnyValidJson.test(value, null)),
-    LONG(5, NumberUtils::isDigits);
+    LONG(5, isDigitOrNegativeDigitValidator());
 
     @Getter
     private final long id;
@@ -45,5 +46,15 @@ public enum PreferenceType {
 
     public boolean validate(final String value) {
         return validator.test(value);
+    }
+
+    private static Predicate<String> isDigitOrNegativeDigitValidator() {
+        return value -> {
+            String digitPart = value;
+            if (value.startsWith("-")) {
+                digitPart = value.substring(1);
+            }
+            return NumberUtils.isDigits(digitPart);
+        };
     }
 }

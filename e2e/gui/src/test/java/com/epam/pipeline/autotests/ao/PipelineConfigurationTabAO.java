@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.function.Consumer;
+
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.visible;
@@ -107,7 +108,7 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
     }
 
     public class PipelineConfigurationProfilePopup extends PopupAO<PipelineConfigurationProfilePopup, PipelineConfigurationTabAO> {
-        private final SelenideElement context = $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-modal-title') and text() = 'Create configuration']]"));
+        private final SelenideElement context = $(byXpath(".//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-modal-title') and text() = 'Create configuration']]"));
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(CLOSE, context().find(byClassName("ant-modal-close"))),
                 entry(CANCEL, context().find(button("CANCEL"))),

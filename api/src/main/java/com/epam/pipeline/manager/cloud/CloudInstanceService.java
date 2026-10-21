@@ -88,6 +88,14 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     void terminateNode(T region, String internalIp, String nodeName);
 
     /**
+     * Changes instance type of a previously stopped cloud instance.
+     * Default implementation is a no-op for providers that do not support this operation.
+     */
+    default void changeInstanceType(T region, String instanceId, String instanceType) {
+        log.warn("changeInstanceType is not supported for provider {}", region.getProvider());
+    }
+
+    /**
      * Starts previously stopped cloud instance
      * @param instanceId
      * @return CloudInstanceOperationResult object as result of operation. This object contains status and massage.
@@ -200,6 +208,15 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param tags
      */
     void attachDisk(T region, Long runId, DiskAttachRequest request, Map<String, String> tags);
+
+    /**
+     * Creates and attaches a new disk to the cloud instance identified by node name.
+     */
+    default void attachDiskToInstance(T region, String nodeName, DiskAttachRequest request,
+                                      Map<String, String> tags) {
+        throw new UnsupportedOperationException(String.format(
+                "Attaching disk to instance by node name is not supported for cloud provider %s", getProvider()));
+    }
 
     /**
      * Loads all disks attached to cloud instance.

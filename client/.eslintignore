@@ -1,0 +1,8 @@
+# Generated code. Fixing a lint error here is pointless — regenerating the file overwrites it.
+
+# jison parsers, generated from the .jison grammars beside them
+src/utils/filter/parser.js
+src/utils/filter/filterComposer.js
+
+# generated from src/themes/styles/ by `npm run gui-themes-prepare`
+src/themes/utilities/theme.less.template.js

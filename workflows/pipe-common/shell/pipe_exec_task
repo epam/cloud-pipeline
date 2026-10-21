@@ -54,7 +54,7 @@ fi
 
 # Execute command
 CMD="import pipeline; launcher = pipeline.PodLauncher(task_name=\"${TASK_NAME}\"); launcher.launch_pod($PARENT_ID, \"${CMD_TEXT}\", \"$DOCKER\", pass_env_vars=\"${PASS_ENV}\");"
-$CP_PYTHON2_PATH -c "$CMD"
+$CP_PYTHON_PATH -c "$CMD"
 result=$?
 
 exit $result

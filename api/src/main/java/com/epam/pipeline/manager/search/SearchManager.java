@@ -20,12 +20,14 @@ import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.search.ElasticStackVersion;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.manager.utils.elasticsearch.ELKVersionedRestHighLevelClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -84,11 +86,14 @@ public class SearchManager {
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
                                         final boolean allowNoIndex, final Set<String> storageSizeMasks,
                                         final Set<String> storageClasses, final boolean allowVersions) {
-        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
+        try (ELKVersionedRestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final MultiSearchRequest searchRequest = requestBuilder.buildStorageSumRequest(
                     dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks,
                     storageClasses, allowVersions);
-            final MultiSearchResponse searchResponse = client.msearch(searchRequest, RequestOptions.DEFAULT);
+            final ElasticStackVersion elasticStackVersion = preferenceManager.getPreference(
+                    SystemPreferences.SEARCH_ELASTIC_VERSION);
+            final MultiSearchResponse searchResponse = client.msearch(
+                    searchRequest, RequestOptions.DEFAULT, elasticStackVersion);
             return resultConverter.buildStorageUsageResponse(searchRequest, searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -159,4 +164,5 @@ public class SearchManager {
     private String getTypeFieldName() {
         return preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_TYPE_FIELD);
     }
+
 }

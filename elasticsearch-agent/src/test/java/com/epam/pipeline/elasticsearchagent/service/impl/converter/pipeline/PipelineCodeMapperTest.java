@@ -16,10 +16,9 @@
 package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
+import java.util.Map;
 
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPermissions;
 import static com.epam.pipeline.elasticsearchagent.MapperVerificationUtils.verifyPipelineCode;
@@ -34,14 +33,14 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 class PipelineCodeMapperTest {
 
     @Test
-    void shouldMapPipelineCode() throws IOException {
+    void shouldMapPipelineCode() {
         PipelineCodeMapper mapper = new PipelineCodeMapper();
 
         Pipeline pipeline = new Pipeline();
         pipeline.setId(1L);
         pipeline.setName(TEST_NAME);
 
-        XContentBuilder contentBuilder = mapper.pipelineCodeToDocument(pipeline, TEST_VERSION, TEST_PATH,
+        Map<String, ?> contentBuilder = mapper.pipelineCodeToDocument(pipeline, TEST_VERSION, TEST_PATH,
                 TEST_VALUE_BYTE, PERMISSIONS_CONTAINER);
 
         verifyPipelineCode(pipeline, TEST_VERSION, TEST_PATH, TEST_VALUE, contentBuilder);

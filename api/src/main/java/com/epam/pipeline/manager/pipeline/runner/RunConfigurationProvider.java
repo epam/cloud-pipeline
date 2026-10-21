@@ -131,6 +131,7 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
     }
 
     private void validateEntryConfiguration(final PipelineConfiguration configuration) {
+        validateFallbackInstanceTypesCount(configuration);
         if (configuration.getInstanceType() != null) {
             final List<ContextualPreferenceExternalResource> resources = retrieveResource(configuration);
             Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(configuration.getInstanceType(), resources,
@@ -138,6 +139,10 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                             configuration.getInstanceType()));
         }
+    }
+
+    private void validateFallbackInstanceTypesCount(final PipelineConfiguration configuration) {
+        pipelineConfigurationManager.validateFallbackInstanceTypesCount(configuration.getFallbackInstanceTypes());
     }
 
     private List<ContextualPreferenceExternalResource> retrieveResource(final PipelineConfiguration configuration) {

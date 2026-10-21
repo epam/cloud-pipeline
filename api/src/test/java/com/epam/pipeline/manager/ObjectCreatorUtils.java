@@ -54,6 +54,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 public final class ObjectCreatorUtils {
 
     private static final String TEST_REVISION_1 = "testtest1";
@@ -63,6 +64,7 @@ public final class ObjectCreatorUtils {
     private static final String TEST_REGION = "region";
     public static final int TEST_DISK_SIZE = 100;
     private static final String TEST_PLATFORM = "linux";
+    private static final String FAKE_IP = "127.0.0.1";
 
     private ObjectCreatorUtils() {
     }
@@ -290,6 +292,7 @@ public final class ObjectCreatorUtils {
         RunInstance instance = new RunInstance();
         instance.setSpot(true);
         instance.setNodeId("1");
+        instance.setNodeIP(FAKE_IP);
         instance.setCloudRegionId(regionId);
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setNodePlatform(TEST_PLATFORM);

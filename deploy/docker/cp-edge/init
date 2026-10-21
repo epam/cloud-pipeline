@@ -70,6 +70,8 @@ export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
 export CP_DAV_EXTRA_INTERNAL_PORT="${CP_DAV_EXTRA_INTERNAL_PORT:-31086}"
 export CP_DAV_AUTH_URL_PATH="${CP_DAV_AUTH_URL_PATH:-webdav/auth-sso}"
 export CP_DAV_EXTERNAL_MAPPING_URL="${CP_DAV_EXTERNAL_MAPPING_URL:-$EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT/$CP_DAV_URL_PATH/}"
+export CP_SMB_URL_PATH="${CP_SMB_URL_PATH:-smb}"
+export CP_SMB_AUTH_PORT="${CP_SMB_AUTH_PORT:-31087}"
 export CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}"
 export CP_EDGE_SSL_PROTOCOLS="${CP_EDGE_SSL_PROTOCOLS:-TLSv1.1 TLSv1.2}"
 export CP_EDGE_SSL_CIPHERS="EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
@@ -96,6 +98,7 @@ else
     export CP_EDGE_FSBROWSER_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
     export CP_EDGE_INVALIDATE_URL_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
 fi
+export CP_SMB_URL_CORS="${CP_SMB_URL_CORS:-*}"
 # FIXME: !!! WebDAV tips For Windows Drive Mapping:
 #        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
 #        !!! - File size/timout restrictions which require registry to be modified !!!
@@ -111,7 +114,7 @@ echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
 NGINX_COMMON_CONF="$(envsubst '${CP_EDGE_SSL_PROTOCOLS} ${CP_EDGE_SSL_CIPHERS}' < /etc/nginx/endpoints-config/server.common.conf)"
 echo "$NGINX_COMMON_CONF" > /etc/nginx/endpoints-config/server.common.conf
 
-NGINX_CONF="$(envsubst '${CP_EDGE_REGION} ${CP_EDGE_CONNECT_PROXY_AUTHENTICATION} ${CP_EDGE_ROOT_PROXY_PASS_DESTINATION} ${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT} ${CP_DAV_EXTRA_INTERNAL_PORT}' < /etc/nginx/nginx.conf)"
+NGINX_CONF="$(envsubst '${CP_EDGE_REGION} ${CP_EDGE_CONNECT_PROXY_AUTHENTICATION} ${CP_EDGE_ROOT_PROXY_PASS_DESTINATION} ${CP_EDGE_INVALIDATE_AUTH_PATH} ${CP_EDGE_INVALIDATE_URL_CORS} ${CP_EDGE_FSBROWSER_CORS} ${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT} ${CP_DAV_EXTRA_INTERNAL_PORT} ${CP_SMB_URL_PATH} ${CP_SMB_AUTH_PORT} ${CP_SMB_URL_CORS}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 # Add the "ingress" configuration to the nginx, which will force all the client traffic to flow via EDGE
@@ -171,6 +174,32 @@ done
 nohup node /etc/ssh-proxy/wetty/app.cjs -p 32000 >> /var/log/wetty.log 2>&1 &
 WETTY_PID="$!"
 
+# --- Python interpreter selection ---
+# Mirrors cp-api-srv's init-api CP_PYTHON_VERSION/CP_PYTHON_PATH resolution (issue #4589), so
+# sync-routes.py and maintenance.py pick the same interpreter the same way.
+# CP_PYTHON_VERSION=2 (default) keeps existing behavior; both interpreters are already on the image.
+export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
+# The yum install (Dockerfile:38) always provides "python2" here, unlike cp-api-srv's CentOS 7 image -
+# the "|| command -v python" fallback is only carried over for symmetry with that script, and never fires.
+export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
+# Not "command -v python3.12": Rocky 8 can pull in its own bare /usr/bin/python3.12 (no pip, none of
+# this image's packages) as a transitive yum dependency, which would shadow the from-source build the
+# Dockerfile installs into CP_PYTHON3_HOME and leave sync-routes.py/maintenance.py without requests/pykube.
+# CP_PYTHON3_HOME is overridable so tests can point it at a stub tree instead of a real install.
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$([ -x "$CP_PYTHON3_HOME/bin/python3.12" ] && echo "$CP_PYTHON3_HOME/bin/python3.12" || command -v python3)}"
+if [ "$CP_PYTHON_VERSION" == "2" ]; then
+    export CP_PYTHON_PATH="$CP_PYTHON2_PATH"
+else
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
+    export PATH="$CP_PYTHON3_HOME/bin:$PATH"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "Active python environment not found (CP_PYTHON_VERSION=$CP_PYTHON_VERSION), exiting."
+    exit 1
+fi
+echo "Active python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
 env > /etc/maintenance/env.sh
@@ -184,14 +213,26 @@ nohup bash /etc/maintenance/crontab.sh &> /dev/null &
 MAINTENANCE_CRON_PID="$!"
 
 # Run Filebeat instances
-nohup filebeat \
-      -path.data /var/lib/filebeat/security-log \
-      -path.logs /var/log/filebeat/security-log \
-      -c filebeat-security-log.yml &
-nohup filebeat \
-      -path.data /var/lib/filebeat/audit-dav \
-      -path.logs /var/log/filebeat/audit-dav \
-      -c filebeat-audit-dav.yml &
+CP_SEARCH_ELK_TYPE="${CP_SEARCH_ELK_TYPE:-elasticsearch}"
+if [ "${CP_SEARCH_ELK_TYPE}" == "opensearch" ]; then
+  nohup /opt/filebeat-oss/filebeat \
+        -path.data /var/lib/filebeat/security-log \
+        -path.logs /var/log/filebeat/security-log \
+        -c /opt/filebeat-oss/filebeat-security-log.yml &
+  nohup /opt/filebeat-oss/filebeat \
+        -path.data /var/lib/filebeat/audit-dav \
+        -path.logs /var/log/filebeat/audit-dav \
+        -c /opt/filebeat-oss/filebeat-audit-dav.yml &
+else
+  nohup filebeat \
+        -path.data /var/lib/filebeat/security-log \
+        -path.logs /var/log/filebeat/security-log \
+        -c filebeat-security-log.yml &
+  nohup filebeat \
+        -path.data /var/lib/filebeat/audit-dav \
+        -path.logs /var/log/filebeat/audit-dav \
+        -c filebeat-audit-dav.yml &
+fi
 
 # Prepare the static assets
 for static_file in /etc/nginx/static/*; do
@@ -205,9 +246,39 @@ nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
 sleep 5
 
+# Configure Squid
+if [ "$CP_EDGE_SQUID_ENABLED" == "true" ] && [ "$CP_EDGE_SQUID_SSL_PORTS" ]; then
+    export CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR="${CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR:-$CP_KUBE_FLANNEL_CIDR}"
+    if [ -z "$CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR" ]; then
+        export CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR="10.244.0.0/16"
+    fi
+
+    _new_line=$'\n'
+    if [ "$CP_EDGE_SQUID_SSL_PORTS" ]; then
+        CP_EDGE_SQUID_SSL_PORTS_ACLS=""
+        for _squid_port in ${CP_EDGE_SQUID_SSL_PORTS//,/ }; do
+            
+            CP_EDGE_SQUID_SSL_PORTS_ACLS="${CP_EDGE_SQUID_SSL_PORTS_ACLS}acl SSL_ports port ${_squid_port}${_new_line}"
+        done
+        export CP_EDGE_SQUID_SSL_PORTS_ACLS
+    fi
+
+    export CP_EDGE_SQUID_PORT="${CP_EDGE_SQUID_PORT:-3128}"
+    export CP_EDGE_SQUID_CACHE_DIR="${CP_EDGE_SQUID_CACHE_DIR:-/var/spool/squid}"
+
+    SQUID_CONF="$(envsubst '${CP_EDGE_SQUID_ALLOWED_TARGETS_CIDR} ${CP_EDGE_SQUID_SSL_PORTS_ACLS} ${CP_EDGE_SQUID_PORT} ${CP_EDGE_SQUID_CACHE_DIR}' < /etc/squid/squid.conf.tmpl)"
+    echo "$SQUID_CONF" > /etc/squid/squid.conf
+
+    mkdir -p "${CP_EDGE_SQUID_CACHE_DIR}"
+    chown -R squid:squid "${CP_EDGE_SQUID_CACHE_DIR}"
+
+    squid -N -f /etc/squid/squid.conf -z
+    squid -f /etc/squid/squid.conf
+fi
+
 # Workaround the container hanging when being terminated
 function sig_handler {
-    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), stopping cron (PID $CRON_PID), stopping maintenance cron (PID $MAINTENANCE_CRON_PID) quitting nginx and exiting"
+    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), stopping cron (PID $CRON_PID), stopping maintenance cron (PID $MAINTENANCE_CRON_PID) quitting nginx/squid and exiting"
     if [ $WETTY_PID -ne 0 ]; then
         kill -SIGTERM "$WETTY_PID"
         wait "$WETTY_PID"
@@ -221,9 +292,13 @@ function sig_handler {
         wait "$MAINTENANCE_CRON_PID"
     fi
     nginx -s quit
+    if squid -k check &> /dev/null; then
+        squid -k shutdown
+    fi
     exit 143
 }
 trap 'kill $! ; sig_handler' SIGTERM
+
 # Print wetty and cron logs to the stdout
 tail -f /var/log/wetty.log -f /var/log/sync-routes.log -f /var/log/maintenance.log &
 wait "$!"
