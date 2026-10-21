@@ -107,6 +107,11 @@ import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
+import handleDownloadArchive, {
+  archivePathsFromSelection,
+  defaultArchiveName
+} from '../../../special/download-storage-archive';
+import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
@@ -149,7 +154,8 @@ const SUBMITTED_STATUS = 'SUBMITTED';
   'folders',
   'pipelinesLibrary',
   'dataStorageCache',
-  'preferences'
+  'preferences',
+  'asyncTasks'
 )
 @HiddenObjects.checkStorages(props => props.params.id)
 @inject(({routing}, {params, onReloadTree}) => {
@@ -176,6 +182,7 @@ const SUBMITTED_STATUS = 'SUBMITTED';
 export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
+    downloadArchiveModalVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
     editDropdownVisible: false,
@@ -1040,6 +1047,22 @@ export default class DataStorage extends React.Component {
 
   closeCreateFileDialog = () => {
     this.setState({createFile: false});
+  };
+
+  closeDownloadArchiveModal = () => {
+    this.setState({downloadArchiveModalVisible: false});
+  };
+
+  submitDownloadArchive = (name) => {
+    const {asyncTasks, storageId} = this.props;
+    const {selectedItems = []} = this.state;
+    this.closeDownloadArchiveModal();
+    handleDownloadArchive(
+      asyncTasks,
+      storageId,
+      archivePathsFromSelection(selectedItems),
+      name
+    );
   };
 
   createFolder = async ({name}) => {
@@ -2289,7 +2312,8 @@ export default class DataStorage extends React.Component {
   renderSelectionActionsButton = () => {
     const {
       preferences,
-      storageId
+      storageId,
+      asyncTasks
     } = this.props;
     const {selectedItems = []} = this.state;
     const itemsAvailableForShare = selectedItems
@@ -2320,6 +2344,7 @@ export default class DataStorage extends React.Component {
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
       download: 'download',
+      downloadArchive: 'download-archive',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
       permissions: 'permissions',
@@ -2335,6 +2360,21 @@ export default class DataStorage extends React.Component {
       title: 'Download',
       icon: 'download',
       available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
+    };
+    const archivePaths = archivePathsFromSelection(selectedItems);
+    // The cap belongs in `disabled`, not in `available`: `appendAction` below
+    // only pushes an action whose `available` is true, so folding the cap in
+    // here would make the item vanish once the limit is reached, instead of
+    // showing it greyed out with the reason underneath, as required.
+    const downloadArchiveAction = {
+      key: Keys.downloadArchive,
+      title: 'Download archive',
+      icon: 'download',
+      available: !this.isOmicsStore && archivePaths.length > 0,
+      disabled: !!asyncTasks && asyncTasks.activeTasksLimitReached,
+      description: asyncTasks && asyncTasks.activeTasksLimitReached
+        ? `Limit reached (${asyncTasks.activeTasks.length}/${asyncTasks.maxUserTasks})`
+        : undefined
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2431,6 +2471,7 @@ export default class DataStorage extends React.Component {
     appendAction(generateURLAction);
     appendAction(copyPathsAction);
     appendAction(downloadAction);
+    appendAction(downloadArchiveAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
       appendAction(permissionsAction);
@@ -2471,6 +2512,9 @@ export default class DataStorage extends React.Component {
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
           break;
+        case Keys.downloadArchive:
+          this.setState({downloadArchiveModalVisible: true});
+          break;
         case Keys.copyPaths:
           this.copyPathsToClipboard(selectedItems);
           break;
@@ -2491,6 +2535,7 @@ export default class DataStorage extends React.Component {
           size="small"
           id={`selection-action-${action.key}`}
           onClick={(event) => doAction(action, event)}
+          disabled={action.disabled}
           style={{lineHeight: 1}}
         >
           {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
@@ -2511,11 +2556,21 @@ export default class DataStorage extends React.Component {
         <MenuItem
           id={`selection-action-${action.key}`}
           key={action.key}
+          disabled={action.disabled}
           className={classNames(action.className, `selection-action-${action.key}`)}
         >
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
-            {action.title}
+          <div>
+            <div style={{display: 'flex', alignItems: 'center'}}>
+              {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+              {action.title}
+            </div>
+            {
+              action.description && (
+                <div className="cp-text-not-important">
+                  {action.description}
+                </div>
+              )
+            }
           </div>
         </MenuItem>
       );
@@ -3280,6 +3335,12 @@ export default class DataStorage extends React.Component {
               />
             ) : null;
           }}
+        />
+        <DownloadArchiveModal
+          visible={this.state.downloadArchiveModalVisible}
+          defaultName={defaultArchiveName()}
+          onCancel={this.closeDownloadArchiveModal}
+          onSubmit={this.submitDownloadArchive}
         />
         <SharedItemInfo
           visible={this.state.shareDialogVisible}
