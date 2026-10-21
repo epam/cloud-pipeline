@@ -1028,16 +1028,12 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-244**](Runs/EPMCMBIBPC-244.md) | [MANUAL] Clear filtering completed runs by pipeline completed date |  |
 | [**EPMCMBIBPC-245**](Runs/EPMCMBIBPC-245.md) | [MANUAL] Filtering completed runs by pipeline owner |  |
 | [**EPMCMBIBPC-246**](Runs/EPMCMBIBPC-246.md) | [MANUAL] Clear filtering completed runs by pipeline owner |  |
-| [**EPMCMBIBPC-247**](Runs/EPMCMBIBPC-247.md) | [MANUAL] Filtering completed runs by pipeline version |  |
-| [**EPMCMBIBPC-248**](Runs/EPMCMBIBPC-248.md) | [MANUAL] Clear filtering completed runs by pipeline version |  |
 | [**EPMCMBIBPC-250**](Runs/EPMCMBIBPC-250.md) | [MANUAL] Filtering completed runs by pipeline parent run |  |
 | [**EPMCMBIBPC-251**](Runs/EPMCMBIBPC-251.md) | [MANUAL] Clear filtering completed runs by pipeline parent run |  |
 | [**EPMCMBIBPC-252**](Runs/EPMCMBIBPC-252.md) | [MANUAL] Navigation on "COMPLETED RUNS" page |  |
 | [**EPMCMBIBPC-253**](Runs/EPMCMBIBPC-253.md) | [MANUAL] Navigation on "ACTIVE RUNS" page |  |
 | [**EPMCMBIBPC-257**](Runs/EPMCMBIBPC-257.md) | [MANUAL] Filtering active runs by pipeline parent run |  |
 | [**EPMCMBIBPC-258**](Runs/EPMCMBIBPC-258.md) | [MANUAL] Clear filtering active runs by pipeline parent run |  |
-| [**EPMCMBIBPC-259**](Runs/EPMCMBIBPC-259.md) | [MANUAL] Filtering active runs by pipeline version |  |
-| [**EPMCMBIBPC-260**](Runs/EPMCMBIBPC-260.md) | [MANUAL] Clear filtering active runs by pipeline version |  |
 | [**EPMCMBIBPC-261**](Runs/EPMCMBIBPC-261.md) | [MANUAL] Filtering active runs by pipeline owner |  |
 | [**EPMCMBIBPC-262**](Runs/EPMCMBIBPC-262.md) | [MANUAL] Clear filtering active runs by pipeline owner |  |
 | [**EPMCMBIBPC-263**](Runs/EPMCMBIBPC-263.md) | [MANUAL] Filtering active runs by pipeline started date |  |
