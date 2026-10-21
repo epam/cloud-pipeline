@@ -54,6 +54,10 @@ _UNSAFE_IN_PATH = re.compile(r'[^A-Za-z0-9._-]+')
 # added unconditionally.
 _WRITE_OPTIONS = frozenset({'rw'})
 
+# What separates the host from the path in the platform's NFS notation. `mount` needs both halves,
+# while the platform stores the root of an EFS share as the host alone.
+_HOST_DELIMITER = ':/'
+
 
 class NfsSource(FileSource):
     """
@@ -136,21 +140,21 @@ class NfsSource(FileSource):
         `sudo` only when not already root: a container runs as root and may not have sudo at all.
         """
         self._mount_point.mkdir(parents=True, exist_ok=True)
+        source = _mount_source(self._share)
         command = [] if os.geteuid() == 0 else ['sudo']
         command += ['mount', '-t', self._share.protocol]
         options = _mount_options(self._share)
         if options:
             command += ['-o', options]
-        command += [self._share.mount_root, str(self._mount_point)]
-        LOG.info('Mounting %s at %s', self._share.mount_root, self._mount_point)
+        command += [source, str(self._mount_point)]
+        LOG.info('Mounting %s at %s', source, self._mount_point)
         completed = self._run(command, 'mount')
         if completed is None:
-            raise UnsupportedSource(f'Mounting {self._share.mount_root} did not finish within '
-                                    f'{self._timeout} s')
+            raise UnsupportedSource(f'Mounting {source} did not finish within {self._timeout} s')
         if completed.returncode != 0:
             # `mount` writes its reason to stderr, and that is what tells "no route to host" from
             # "access denied by server".
-            raise UnsupportedSource(f'Mounting {self._share.mount_root} failed: '
+            raise UnsupportedSource(f'Mounting {source} failed: '
                                     f'{completed.stderr.strip() or completed.returncode}')
 
     def _run(self, command: list[str], what: str) -> subprocess.CompletedProcess | None:
@@ -253,18 +257,51 @@ def _share_directory_name(mount_root: str) -> str:
     return _UNSAFE_IN_PATH.sub('_', mount_root).strip('_')
 
 
+def _mount_source(share: FileShare) -> str:
+    """
+    The source `mount` is given: `host:/path`.
+
+    Mirrors `NFSHelper.formatNfsPath`. The platform stores the root of an EFS share as the host
+    alone - `fs-1234.efs.eu-central-1.amazonaws.com` - and `mount.nfs` refuses that with "remote
+    share not in 'host:dir' format", so the delimiter is added when it is missing.
+    """
+    root = share.mount_root.strip()
+    if _HOST_DELIMITER not in root:
+        return f'{root}{_HOST_DELIMITER}'
+    trimmed = root.rstrip('/')
+    # A root of exactly `host:/` is already a source; trimming it would leave `host:`.
+    return trimmed if _HOST_DELIMITER in trimmed else root
+
+
 def _storage_folder(storage: Storage, share: FileShare) -> str:
     """
-    The storage's own folder inside its share: its path without the share root.
+    The storage's own folder inside its share: its path without the share's root.
+
+    The host and the path are compared apart, because the two values are written differently per
+    provider: a classic NFS share is `host:/export` and its storages `host:/export/folder`, while an
+    EFS share is the host alone and its storages are `host:/folder`. Taking the root off as a plain
+    string prefix left `:/folder` for the second case.
 
     A storage that is the whole share yields an empty string, which joins onto a `Path` unchanged.
     """
-    relative = storage.path.removeprefix(share.mount_root.rstrip('/')).strip('/')
-    if relative == storage.path.strip('/') and relative:
-        # The prefix did not match. Guessing would mean archiving the wrong folder.
+    share_host, share_path = _split_root(share.mount_root)
+    storage_host, storage_path = _split_root(storage.path)
+    if storage_host != share_host:
+        # Guessing would mean archiving the wrong folder, or the wrong server.
         raise UnsupportedSource(f'Storage path {storage.path} does not start with the root of its '
                                 f'share {share.mount_root}')
-    return relative
+    if not share_path:
+        return storage_path
+    if storage_path != share_path and not storage_path.startswith(f'{share_path}/'):
+        raise UnsupportedSource(f'Storage path {storage.path} is not inside the root of its share '
+                                f'{share.mount_root}')
+    return storage_path[len(share_path):].strip('/')
+
+
+def _split_root(value: str) -> tuple[str, str]:
+    """The platform's NFS notation as `(host, path inside the share)`. Either half may be empty."""
+    host, _, path = value.partition(':')
+    return host.strip('/'), path.strip('/')
 
 
 def _is_inside(candidate: Path, root: Path) -> bool:

@@ -3,6 +3,11 @@
 //
 // version.py is tracked, so `finalizedBy` puts the original text back even when the build fails.
 
+// `python3`, not `python`: on RHEL and CentOS 7 `python` is still 2.7, and the sdist then fails
+// inside distutils. This service needs 3.12 anyway. Override with `-PsatsPython=/path/to/python` or
+// the CP_SATS_PYTHON environment variable.
+def pythonExecutable = project.findProperty('satsPython') ?: System.getenv('CP_SATS_PYTHON') ?: 'python3'
+
 ext.savedVersionText = null
 
 task restoreVersionFile {
@@ -20,7 +25,7 @@ task build(type: Exec) {
         // and an `Exec` has no `version` property.
         setVersion(project.version.toString())
     }
-    commandLine 'python', "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
+    commandLine pythonExecutable, "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
     doLast {
         copy {
             from "$project.rootDir/storage-async-task-service/dist/sats-${project.version}.tar.gz"
