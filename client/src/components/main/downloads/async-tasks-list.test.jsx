@@ -300,3 +300,61 @@ test('reopening the status filter re-ticks the already-committed statuses', asyn
   expect(screen.getByRole('checkbox', {name: 'RUNNING'})).toBeChecked();
   expect(screen.getByRole('checkbox', {name: 'FAILED'})).not.toBeChecked();
 });
+
+// The pagination row beneath the table. `/async-task/filter` returns no
+// total, so there is no last-page button - only first/prev/next, copying
+// client/src/components/pipelines/browser/data-storage/components/
+// storage-pagination.js. Rendered only when there is something to navigate
+// (`page > 1 || hasNextPage`), per the "a single short page would be noise"
+// decision, so the absent-row cases below assert there is nothing to find
+// rather than a disabled button.
+test('renders no pagination row on page 1 with no next page', () => {
+  render(<AsyncTasksList tasks={[]} page={1} hasNextPage={false} />);
+
+  expect(screen.queryByRole('button', {name: /next page/i})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: /previous page/i})).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', {name: /first page/i})).not.toBeInTheDocument();
+});
+
+test('renders the pagination row once there is a next page', async () => {
+  const onPageChange = fn();
+  render(
+    <AsyncTasksList tasks={[]} page={1} hasNextPage onPageChange={onPageChange} />
+  );
+
+  expect(screen.getByText('1')).toBeInTheDocument();
+  await click(screen.getByRole('button', {name: /next page/i}));
+
+  expect(onPageChange).toHaveBeenCalledWith(2);
+});
+
+test('on page 3, First calls onPageChange(1) and Previous calls onPageChange(2)', async () => {
+  const onPageChange = fn();
+  render(
+    <AsyncTasksList tasks={[]} page={3} hasNextPage onPageChange={onPageChange} />
+  );
+
+  expect(screen.getByText('3')).toBeInTheDocument();
+
+  await click(screen.getByRole('button', {name: /first page/i}));
+  expect(onPageChange).toHaveBeenCalledWith(1);
+
+  await click(screen.getByRole('button', {name: /previous page/i}));
+  expect(onPageChange).toHaveBeenCalledWith(2);
+});
+
+test('First and Previous are disabled on page 1 while Next stays enabled', () => {
+  render(<AsyncTasksList tasks={[]} page={1} hasNextPage />);
+
+  expect(screen.getByRole('button', {name: /first page/i})).toBeDisabled();
+  expect(screen.getByRole('button', {name: /previous page/i})).toBeDisabled();
+  expect(screen.getByRole('button', {name: /next page/i})).not.toBeDisabled();
+});
+
+test('Next is disabled when hasNextPage is false, on a page beyond the first', () => {
+  render(<AsyncTasksList tasks={[]} page={2} hasNextPage={false} />);
+
+  expect(screen.getByRole('button', {name: /next page/i})).toBeDisabled();
+  expect(screen.getByRole('button', {name: /first page/i})).not.toBeDisabled();
+  expect(screen.getByRole('button', {name: /previous page/i})).not.toBeDisabled();
+});

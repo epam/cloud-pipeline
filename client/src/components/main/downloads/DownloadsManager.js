@@ -16,7 +16,6 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {message} from 'antd';
 import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
@@ -33,17 +32,11 @@ import styles from './DownloadsManager.css';
 // on a cadence.
 const POLL_INTERVAL_MS = 5000;
 
-function taskSorter (a, b) {
-  const dateA = moment.utc(a.created).valueOf();
-  const dateB = moment.utc(b.created).valueOf();
-  if (dateA === dateB) {
-    return 0;
-  } else if (dateA > dateB) {
-    return -1;
-  } else {
-    return 1;
-  }
-}
+// Fixed, not user-configurable: a page-size selector would be extra state for
+// little value when `/async-task/filter` returns no total. Matches
+// client/src/components/main/notification/NotificationBrowser.js's own
+// DEFAULT_PAGE_SIZE.
+const PAGE_SIZE = 20;
 
 // This page issues its OWN unfiltered `/async-task/filter` request rather
 // than reading the shared `asyncTasks` store's `tasks`. That store's
@@ -70,7 +63,11 @@ export default class DownloadsManager extends React.Component {
     // `owner` comes from the admin-only Owner Select in async-tasks-filters.js;
     // `statuses` comes from the Status column's own filter dropdown in
     // async-tasks-list.js - two different UI surfaces, one filter object.
-    filters: {}
+    filters: {},
+    // 1-based, matching the API (`AsyncTaskFilterVO`: "Counted from 1.
+    // Ignored unless pageSize is set."). Keeping it 1-based here means
+    // nothing has to add one at the request boundary.
+    page: 1
   };
 
   constructor (props) {
@@ -155,11 +152,19 @@ export default class DownloadsManager extends React.Component {
           this.setState({filters});
         }
       }
-      const body = {type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE};
-      // Deliberately no `page`, no `pageSize`: see the comment above this
-      // class. `owner`/`statuses` are added only when the filter bar/column
-      // has a value for them - never an empty array, never an empty string -
-      // so a cleared filter reads to the backend as "unfiltered" rather than
+      const body = {
+        type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE,
+        // Unlike CurrentUserAsyncTasks's background poll (which must keep
+        // sending neither key - see that file), this page's own request
+        // always pages: `page` is 1-based state, `pageSize` is fixed. See
+        // the comment above this class for why `owner`/`statuses` are
+        // conditional while these two are not.
+        page: this.state.page,
+        pageSize: PAGE_SIZE
+      };
+      // `owner`/`statuses` are added only when the filter bar/column has a
+      // value for them - never an empty array, never an empty string - so a
+      // cleared filter reads to the backend as "unfiltered" rather than
       // "match nothing". In particular, once the owner has been seeded
       // above, a cleared `filters.owner` must NOT fall back to `userName`:
       // that fallback only ever applies before the first seed, which is why
@@ -185,11 +190,32 @@ export default class DownloadsManager extends React.Component {
     }
   };
 
+  // The server already sorts every response newest-first, unconditionally,
+  // in both its paged and unpaged branches (`AsyncTaskManager.loadByFilter`
+  // on origin/java21_issue_4570_download_archive), with no sort parameter in
+  // the request. Passed through verbatim: a client-side re-sort would only
+  // reorder the current page among itself, which becomes an inconsistency
+  // across pages the moment anything makes the two orderings differ.
   get tasks () {
     if (!this.request || !this.request.loaded) {
       return [];
     }
-    return [...(this.request.value || [])].sort(taskSorter);
+    return this.request.value || [];
+  }
+
+  // `true` when the current response holds exactly PAGE_SIZE tasks - read
+  // off the request's own value, not the (identical) `tasks` getter, so the
+  // meaning stays "what the server returned" even if a future change makes
+  // `tasks` derive something else from it. A full page *might* mean more
+  // exist; a short page definitely means this is the last one. Deliberately
+  // optimistic: the next button can be enabled on an exactly-full last page,
+  // and clicking it then shows an empty page - recoverable, since first/prev
+  // stay enabled.
+  get hasNextPage () {
+    const length = this.request && this.request.loaded
+      ? (this.request.value || []).length
+      : 0;
+    return length === PAGE_SIZE;
   }
 
   handleCancel = async (task) => {
@@ -247,7 +273,9 @@ export default class DownloadsManager extends React.Component {
     if (key === 'owner') {
       this.ownerSeeded = true;
     }
-    this.setState({filters: next}, () => {
+    // Resets to page 1 in the same setState call: a filter change that kept
+    // an earlier page would show an empty table for no visible reason.
+    this.setState({filters: next, page: 1}, () => {
       this.loadTasks();
     });
   };
@@ -257,6 +285,17 @@ export default class DownloadsManager extends React.Component {
 
   // async-tasks-list.js's Status column filter dropdown.
   handleStatusesFilterChange = (statuses) => this.setFilter('statuses', statuses);
+
+  // Guards against a page below 1 (the first-page button already disables
+  // itself there, but a stray call should still be a no-op rather than send
+  // page: 0). `setState`'s callback is what lets `loadTasks` see the new
+  // page - the same shape `setFilter` above uses.
+  handlePageChange = (page) => {
+    const nextPage = Math.max(1, page);
+    this.setState({page: nextPage}, () => {
+      this.loadTasks();
+    });
+  };
 
   render () {
     const {asyncTasks} = this.props;
@@ -285,6 +324,9 @@ export default class DownloadsManager extends React.Component {
           disabled={this.state.actionPending}
           statusesFilter={this.state.filters.statuses}
           onStatusesFilterChange={this.handleStatusesFilterChange}
+          page={this.state.page}
+          hasNextPage={this.hasNextPage}
+          onPageChange={this.handlePageChange}
         />
       </div>
     );

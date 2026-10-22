@@ -283,17 +283,71 @@ class AsyncTasksList extends React.Component {
     ];
   }
 
+  // `/async-task/filter` returns a bare list with no total count and no page
+  // metadata, so there is no number from which to render antd's own page
+  // numbers or a last-page jump - only "is there a previous page" and "might
+  // there be a next one". Copies the first/prev/next-with-no-total shape of
+  // client/src/components/pipelines/browser/data-storage/components/
+  // storage-pagination.js:40-75, rendered only when there is something to
+  // navigate: a single short first page would otherwise show a pointless row.
+  get pagination () {
+    const {page, hasNextPage, onPageChange} = this.props;
+    if (!(page > 1 || hasNextPage)) {
+      return null;
+    }
+    return (
+      <div className={styles.pagination}>
+        <Button
+          id="downloads-first-page"
+          aria-label="First page"
+          size="small"
+          disabled={page <= 1}
+          onClick={() => onPageChange(1)}
+        >
+          <Icon style={{marginRight: '-3px'}} type="caret-left" />
+          <Icon type="caret-left" />
+        </Button>
+        <Button
+          id="downloads-prev-page"
+          aria-label="Previous page"
+          size="small"
+          style={{margin: 3}}
+          disabled={page <= 1}
+          onClick={() => onPageChange(page - 1)}
+        >
+          <Icon type="caret-left" />
+        </Button>
+        <span className={classNames('ant-pagination-item', 'ant-pagination-item-active')}>
+          {page}
+        </span>
+        <Button
+          id="downloads-next-page"
+          aria-label="Next page"
+          size="small"
+          style={{margin: 3}}
+          disabled={!hasNextPage}
+          onClick={() => onPageChange(page + 1)}
+        >
+          <Icon type="caret-right" />
+        </Button>
+      </div>
+    );
+  }
+
   render () {
     const {tasks, pending} = this.props;
     return (
-      <Table
-        rowKey="id"
-        size="small"
-        pagination={false}
-        loading={pending}
-        dataSource={tasks || []}
-        columns={this.columns}
-      />
+      <div>
+        <Table
+          rowKey="id"
+          size="small"
+          pagination={false}
+          loading={pending}
+          dataSource={tasks || []}
+          columns={this.columns}
+        />
+        {this.pagination}
+      </div>
     );
   }
 }
@@ -305,7 +359,10 @@ AsyncTasksList.propTypes = {
   onDownload: PropTypes.func,
   disabled: PropTypes.bool,
   statusesFilter: PropTypes.array,
-  onStatusesFilterChange: PropTypes.func
+  onStatusesFilterChange: PropTypes.func,
+  page: PropTypes.number,
+  hasNextPage: PropTypes.bool,
+  onPageChange: PropTypes.func
 };
 
 AsyncTasksList.defaultProps = {
@@ -314,7 +371,10 @@ AsyncTasksList.defaultProps = {
   onCancel: () => {},
   onDownload: () => {},
   disabled: false,
-  onStatusesFilterChange: () => {}
+  onStatusesFilterChange: () => {},
+  page: 1,
+  hasNextPage: false,
+  onPageChange: () => {}
 };
 
 export default AsyncTasksList;

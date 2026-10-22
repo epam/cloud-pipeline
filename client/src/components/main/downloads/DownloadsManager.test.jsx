@@ -89,8 +89,21 @@ function filterRow (label) {
   return screen.getByText(`${label}:`).closest('div');
 }
 
+// A programmatic fixture, per the "build the 20-task fixture
+// programmatically rather than by hand" instruction - a full page's worth of
+// tasks to drive `hasNextPage`.
+function buildTasks (count) {
+  return Array.from({length: count}, (_, index) => ({
+    id: index + 1,
+    status: 'SUCCESS',
+    params: {archiveName: `archive-${index + 1}`},
+    created: '2026-10-21T13:00:00.000Z'
+  }));
+}
+
 test(
-  'fetches on mount with the owner seeded to the current user, and no statuses/page/pageSize',
+  'fetches on mount with the owner seeded to the current user, no statuses, ' +
+  'and page 1 / pageSize 20',
   async () => {
     const api = stubApi();
     stubFilter(api, []);
@@ -108,8 +121,11 @@ test(
     // in the filter bar by default.
     expect(body.owner).toBe(USER_NAME);
     expect(body).not.toHaveProperty('statuses');
-    expect(body).not.toHaveProperty('page');
-    expect(body).not.toHaveProperty('pageSize');
+    // This is a deliberate behaviour change (phase 12), not a weakened test:
+    // the page's own request now always pages, unlike the background poll in
+    // CurrentUserAsyncTasks.js, which must still send neither key.
+    expect(body.page).toBe(1);
+    expect(body.pageSize).toBe(20);
   }
 );
 
@@ -364,4 +380,120 @@ test('keeps refreshing on its own while mounted, and stops once unmounted', asyn
   } finally {
     useRealTimers();
   }
+});
+
+// `hasNextPage` is derived from the current response's length, not rendered
+// unconditionally - async-tasks-list.js only shows the pagination row at all
+// when `page > 1 || hasNextPage`, so a short first page renders no row to
+// query a "disabled" state from. A full page is where there IS a button to
+// assert on; a short one is proven by the row being absent altogether, which
+// is the other half of the same derivation.
+test('a full page renders an enabled Next button', async () => {
+  const api = stubApi();
+  stubFilter(api, buildTasks(20));
+
+  renderWithStores(<DownloadsManager />, stores());
+
+  expect(await screen.findByRole('button', {name: /next page/i})).not.toBeDisabled();
+});
+
+test('a page shorter than the page size renders no pagination row at all', async () => {
+  const api = stubApi();
+  stubFilter(api, buildTasks(3));
+
+  renderWithStores(<DownloadsManager />, stores());
+
+  await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
+  await screen.findByText('archive-1');
+  expect(screen.queryByRole('button', {name: /next page/i})).not.toBeInTheDocument();
+});
+
+test('clicking Next re-issues the request with page: 2', async () => {
+  const api = stubApi();
+  stubFilter(api, buildTasks(20));
+
+  renderWithStores(<DownloadsManager />, stores());
+
+  await waitFor(() => expect(
+    api.calls.filter(c => c.path === FILTER_ROUTE).length
+  ).toBe(1));
+
+  await click(await screen.findByRole('button', {name: /next page/i}));
+
+  await waitFor(() => expect(
+    api.calls.filter(c => c.path === FILTER_ROUTE).length
+  ).toBe(2));
+  const body = JSON.parse(api.calls.filter(c => c.path === FILTER_ROUTE)[1].body);
+  expect(body.page).toBe(2);
+});
+
+test(
+  'changing a filter resets the body\'s page to 1, even after paging forward',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, buildTasks(20));
+
+    renderWithStores(<DownloadsManager />, stores());
+
+    await waitFor(() => expect(
+      api.calls.filter(c => c.path === FILTER_ROUTE).length
+    ).toBe(1));
+
+    await click(await screen.findByRole('button', {name: /next page/i}));
+    await waitFor(() => expect(
+      api.calls.filter(c => c.path === FILTER_ROUTE).length
+    ).toBe(2));
+    expect(
+      JSON.parse(api.calls.filter(c => c.path === FILTER_ROUTE)[1].body).page
+    ).toBe(2);
+
+    // Commits the Status column's own filter dropdown - the other source
+    // that funnels through DownloadsManager's `setFilter`, next to the owner
+    // Select.
+    await click(screen.getByLabelText('Filter by status'));
+    await click(screen.getByRole('checkbox', {name: 'RUNNING'}));
+    await click(screen.getByText('OK'));
+
+    await waitFor(() => expect(
+      api.calls.filter(c => c.path === FILTER_ROUTE).length
+    ).toBe(3));
+    const body = JSON.parse(api.calls.filter(c => c.path === FILTER_ROUTE)[2].body);
+    expect(body.page).toBe(1);
+  }
+);
+
+// The regression phase 12 exists to prevent: with `taskSorter` gone, rows
+// must render in exactly the order the server sent them, newest-first or
+// not - asserting the timestamps merely descend would still pass if the
+// client silently re-sorted, since this fixture already happens to be
+// oldest-first from the server.
+test('renders rows in exactly the order the server returned them', async () => {
+  const api = stubApi();
+  stubFilter(api, [
+    {
+      id: 1,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-oldest'},
+      created: '2026-10-19T10:00:00.000Z'
+    },
+    {
+      id: 2,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-middle'},
+      created: '2026-10-20T10:00:00.000Z'
+    },
+    {
+      id: 3,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-newest'},
+      created: '2026-10-21T10:00:00.000Z'
+    }
+  ]);
+
+  renderWithStores(<DownloadsManager />, stores());
+
+  await screen.findByText('archive-oldest');
+  const names = screen.getAllByText(/^archive-(oldest|middle|newest)$/)
+    .map((element) => element.textContent);
+  expect(names).toEqual(['archive-oldest', 'archive-middle', 'archive-newest']);
 });

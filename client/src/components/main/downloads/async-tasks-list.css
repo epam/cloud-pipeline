@@ -36,3 +36,13 @@
   justify-content: space-between;
   margin: 5px 10px;
 }
+
+/* The paging row beneath the table - geometry only, copying
+ * client/src/components/pipelines/browser/data-storage/components/
+ * storage-pagination.css's `.storage-pagination`. */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
