@@ -15,8 +15,10 @@
  */
 
 import React from 'react';
+import {observable} from 'mobx';
 import {
   render,
+  renderWithStores,
   screen,
   within,
   click,
@@ -27,6 +29,7 @@ import {
   advanceTimers
 } from '@test';
 import AsyncTasksList from './async-tasks-list';
+import {POLLED_STATUSES} from '../../../models/asyncTask/statuses';
 
 const SUCCESS_TASK = {
   id: 1,
@@ -87,15 +90,30 @@ const EXPIRED_TASK = {
   created: '2026-10-21T13:13:02.274Z'
 };
 
+// Every fixture's `archiveName` above is bare (no `.zip`), so the component's
+// own display logic always appends the suffix - this is what every `rowFor`
+// lookup below actually finds in the DOM. The dedicated ".zip suffix" suite
+// further down exercises that display logic directly.
+function displayedArchiveName (archiveName) {
+  return `${archiveName}.zip`;
+}
+
 function rowFor (archiveName) {
-  return screen.getByText(archiveName).closest('tr');
+  return screen.getByText(displayedArchiveName(archiveName)).closest('tr');
+}
+
+function authenticatedUserInfoDouble (admin = true) {
+  return observable({
+    loaded: true,
+    value: {userName: 'current-user', admin}
+  });
 }
 
 test('renders a row per task, found by the archive name', () => {
   render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
 
-  expect(screen.getByText('archive-success')).toBeInTheDocument();
-  expect(screen.getByText('archive-running')).toBeInTheDocument();
+  expect(screen.getByText('archive-success.zip')).toBeInTheDocument();
+  expect(screen.getByText('archive-running.zip')).toBeInTheDocument();
 });
 
 test('shows the Download button only for a SUCCESS task', () => {
@@ -242,6 +260,47 @@ test('renders a dash, not "0 bytes", when archiveSizeBytes is null', () => {
   expect(within(row).queryByText('0 bytes')).not.toBeInTheDocument();
 });
 
+// The Archive column appends ".zip" the same way the backend's own
+// DataStorageDownloadArchiveManager.offeredArchiveName does, so the name
+// shown here always matches the file the user actually receives.
+describe('the Archive column\'s .zip suffix', () => {
+  test('appends .zip to a bare name', () => {
+    const task = {...SUCCESS_TASK, params: {...SUCCESS_TASK.params, archiveName: 'my-archive'}};
+    render(<AsyncTasksList tasks={[task]} />);
+
+    expect(screen.getByText('my-archive.zip')).toBeInTheDocument();
+    expect(screen.queryByText('my-archive')).not.toBeInTheDocument();
+  });
+
+  test('leaves a name that already ends in .zip unchanged, never doubled', () => {
+    const task = {
+      ...SUCCESS_TASK,
+      params: {...SUCCESS_TASK.params, archiveName: 'my-archive.zip'}
+    };
+    render(<AsyncTasksList tasks={[task]} />);
+
+    expect(screen.getByText('my-archive.zip')).toBeInTheDocument();
+    expect(screen.queryByText('my-archive.zip.zip')).not.toBeInTheDocument();
+  });
+
+  test('treats the suffix check case-insensitively', () => {
+    const task = {
+      ...SUCCESS_TASK,
+      params: {...SUCCESS_TASK.params, archiveName: 'my-archive.ZIP'}
+    };
+    render(<AsyncTasksList tasks={[task]} />);
+
+    expect(screen.getByText('my-archive.ZIP')).toBeInTheDocument();
+  });
+
+  test('applies to the task-id fallback when archiveName is absent', () => {
+    const task = {id: 123, status: 'SUCCESS', created: '2026-10-21T13:13:02.274Z'};
+    render(<AsyncTasksList tasks={[task]} />);
+
+    expect(screen.getByText('123.zip')).toBeInTheDocument();
+  });
+});
+
 // The Status column's own filter dropdown - a custom antd Table column
 // filter, copying client/src/components/runs/run-table/columns/
 // column-run.js's StatusesRegionsFilterComponent (a Checkbox per value, OK/
@@ -261,19 +320,27 @@ function openStatusesFilter () {
   return click(screen.getByLabelText('Filter by status'));
 }
 
-test('ticking a status and clicking OK calls onStatusesFilterChange with it', async () => {
-  const onStatusesFilterChange = fn();
-  render(<AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />);
+test(
+  'ticking a status not already in the default and clicking OK adds it',
+  async () => {
+    const onStatusesFilterChange = fn();
+    render(<AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />);
 
-  await openStatusesFilter();
-  await click(screen.getByRole('checkbox', {name: 'PENDING'}));
-  await click(screen.getByText('OK'));
+    // `statusesFilter` defaults to POLLED_STATUSES (see defaultProps), which
+    // already has PENDING/RUNNING/CANCEL_REQUESTED/STOPPING/SUCCESS/FAILED
+    // ticked when the dropdown opens - CANCELLED is the one still unticked.
+    await openStatusesFilter();
+    await click(screen.getByRole('checkbox', {name: 'CANCELLED'}));
+    await click(screen.getByText('OK'));
 
-  expect(onStatusesFilterChange).toHaveBeenCalledWith(['PENDING']);
-});
+    expect(onStatusesFilterChange).toHaveBeenCalledTimes(1);
+    const [committed] = onStatusesFilterChange.mock.calls[0];
+    expect([...committed].sort()).toEqual([...POLLED_STATUSES, 'CANCELLED'].sort());
+  }
+);
 
 test(
-  'clicking Clear calls onStatusesFilterChange with no statuses, never an empty array',
+  'clicking Clear calls onStatusesFilterChange with POLLED_STATUSES, never undefined',
   async () => {
     const onStatusesFilterChange = fn();
     render(
@@ -287,7 +354,7 @@ test(
     await openStatusesFilter();
     await click(screen.getByText('Clear'));
 
-    expect(onStatusesFilterChange).toHaveBeenCalledWith(undefined);
+    expect(onStatusesFilterChange).toHaveBeenCalledWith(POLLED_STATUSES);
   }
 );
 
@@ -309,6 +376,118 @@ test('reopening the status filter re-ticks the already-committed statuses', asyn
   expect(screen.getByRole('checkbox', {name: 'PENDING'})).toBeChecked();
   expect(screen.getByRole('checkbox', {name: 'RUNNING'})).toBeChecked();
   expect(screen.getByRole('checkbox', {name: 'FAILED'})).not.toBeChecked();
+});
+
+// The statuses filter's new default, and the comparison that decides whether
+// the header's filter icon lights up. This is where the behaviour is most
+// likely to regress, since `filteredValue` now compares by value rather than
+// by "is anything set at all" - see async-tasks-list.js's own comment on it.
+//
+// `filteredValue` is read straight off the rendered `columns` getter via a
+// ref, not off a DOM class: antd's FilterMenu only ever applies its own
+// `-selected` class to the *default*, library-rendered filter icon
+// (FilterMenu.renderFilterIcon in node_modules/antd/lib/table/
+// filterDropdown.js) - the branch that never runs once a column supplies its
+// own `filterIcon`, which both the Status and Owner columns do. So there is
+// no DOM signal for "is this filter active" to query at all here, and
+// reaching for one would be exactly the antd-internals coupling rule 6 warns
+// against. Reading `filteredValue` off `columns` instead asserts on this
+// component's own output, which is what the decision is actually about.
+describe('the Status column default (POLLED_STATUSES)', () => {
+  function statusFilteredValue (instance) {
+    return instance.columns.find((column) => column.key === 'status').filteredValue;
+  }
+
+  test('is not active at the default, with no statusesFilter prop at all', () => {
+    let instance;
+    render(<AsyncTasksList tasks={[]} ref={(r) => { instance = r; }} />);
+
+    expect(statusFilteredValue(instance)).toEqual([]);
+  });
+
+  test('is not active when POLLED_STATUSES is passed explicitly', () => {
+    let instance;
+    render(
+      <AsyncTasksList
+        tasks={[]}
+        statusesFilter={POLLED_STATUSES}
+        ref={(r) => { instance = r; }}
+      />
+    );
+
+    expect(statusFilteredValue(instance)).toEqual([]);
+  });
+
+  test('is not active when the default arrives in a shuffled order', () => {
+    let instance;
+    const shuffled = [...POLLED_STATUSES].reverse();
+    render(
+      <AsyncTasksList tasks={[]} statusesFilter={shuffled} ref={(r) => { instance = r; }} />
+    );
+
+    expect(statusFilteredValue(instance)).toEqual([]);
+  });
+
+  test('becomes active once the selection differs from the default', () => {
+    let instance;
+    render(
+      <AsyncTasksList
+        tasks={[]}
+        statusesFilter={[...POLLED_STATUSES, 'CANCELLED']}
+        ref={(r) => { instance = r; }}
+      />
+    );
+
+    expect(statusFilteredValue(instance)).toEqual(['filtered']);
+  });
+
+  test(
+    'ticking everything off and pressing OK reports the default, not an empty list',
+    async () => {
+      const onStatusesFilterChange = fn();
+      render(
+        <AsyncTasksList
+          tasks={[]}
+          statusesFilter={['PENDING']}
+          onStatusesFilterChange={onStatusesFilterChange}
+        />
+      );
+
+      await openStatusesFilter();
+      await click(screen.getByRole('checkbox', {name: 'PENDING'}));
+      await click(screen.getByText('OK'));
+
+      expect(onStatusesFilterChange).toHaveBeenCalledWith(POLLED_STATUSES);
+    }
+  );
+
+  // antd's own filter-icon highlight (`FilterMenu.renderFilterIcon` in
+  // node_modules/antd/lib/table/filterDropdown.js) never fires once a column
+  // supplies a custom `filterIcon`, which this one does (for its
+  // `aria-label` - see that column's own comment) - so without a fix,
+  // nothing ever shows the filter as active. The fix lands on the header
+  // `<th>` itself (`column.className`, via `headerClassNameFor`), not on
+  // the icon: that same antd function clones the icon with a `className`
+  // computed from `filterIcon.className` - a property an element never
+  // actually has (it lives on `.props.className`) - so any className put on
+  // the icon element is unconditionally discarded, no matter what. `<th>`
+  // is reached through `closest`, because the header cell - not the "Status"
+  // text or the icon individually - is what carries the class.
+  // `cp-primary` is this component's own class, applied by its own
+  // `headerClassNameFor` helper, not an antd internal - querying for it is
+  // exactly what rule 6 permits ("a CSS-module class your own component
+  // owns").
+  test('the header cell carries cp-primary once the selection differs from the default', () => {
+    render(<AsyncTasksList tasks={[]} statusesFilter={[...POLLED_STATUSES, 'CANCELLED']} />);
+
+    expect(screen.getByText('Status').closest('th')).toHaveClass('cp-primary');
+  });
+
+  test('the header cell does not carry cp-primary at the default', () => {
+    render(<AsyncTasksList tasks={[]} />);
+
+    expect(screen.getByText('Status').closest('th')).not.toHaveClass('cp-primary');
+  });
 });
 
 // The pagination row beneath the table. `/async-task/filter` returns no
@@ -471,5 +650,137 @@ test('hovering the count shows every archived path', async () => {
     } finally {
       useRealTimers();
     }
+  });
+});
+
+// The Owner column - admin-only, with its own UserAutoComplete-backed filter
+// dropdown (client/src/components/runs/run-table/columns/column-owner.js is
+// the precedent). UserAutoComplete carries its own
+// `@inject('authenticatedUserInfo')`, so every case here renders through
+// `renderWithStores` with that store doubled, even though the rest of this
+// file never needs a Provider - see async-tasks-list.js's own header comment
+// for why that narrows, rather than breaks, this component's "presentational"
+// invariant. These cases stay to the commit paths (OK/Clear/visibility) and
+// leave UserAutoComplete's own search-as-you-type behaviour (which issues its
+// own `UserFind` request) covered by that component's own tests - exercising
+// it here would mean stubbing the network for a component this file does not
+// own.
+describe('the Owner column', () => {
+  function renderList (props = {}) {
+    return renderWithStores(
+      <AsyncTasksList tasks={[]} {...props} />,
+      {authenticatedUserInfo: authenticatedUserInfoDouble()}
+    );
+  }
+
+  test('is absent, with no filter icon, when isAdmin is false', () => {
+    renderList({isAdmin: false});
+
+    expect(screen.queryByText('Owner')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Filter by owner')).not.toBeInTheDocument();
+  });
+
+  test('is present, with its own filter icon, when isAdmin is true', () => {
+    renderList({isAdmin: true});
+
+    expect(screen.getByText('Owner')).toBeInTheDocument();
+    expect(screen.getByLabelText('Filter by owner')).toBeInTheDocument();
+  });
+
+  test('opening the dropdown renders the autocomplete and the OK/Clear links', async () => {
+    renderList({isAdmin: true});
+
+    await click(screen.getByLabelText('Filter by owner'));
+
+    // antd's AutoComplete fakes its placeholder with a sibling `<div>`
+    // rather than the native HTML attribute (it has to, to keep showing it
+    // once a value is selected but the text input itself is empty), so
+    // `getByPlaceholderText` cannot find it - `combobox` is this control's
+    // own ARIA role, and the only one in this popover (the Status column's
+    // own dropdown has none).
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByText('OK')).toBeInTheDocument();
+    expect(screen.getByText('Clear')).toBeInTheDocument();
+  });
+
+  test('OK commits the already-selected owner as a string, never an array', async () => {
+    const onOwnerFilterChange = fn();
+    renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
+
+    await click(screen.getByLabelText('Filter by owner'));
+    await click(screen.getByText('OK'));
+
+    expect(onOwnerFilterChange).toHaveBeenCalledWith('someone-else');
+  });
+
+  test('Clear commits undefined, regardless of the committed owner', async () => {
+    const onOwnerFilterChange = fn();
+    renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
+
+    await click(screen.getByLabelText('Filter by owner'));
+    await click(screen.getByText('Clear'));
+
+    expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
+  });
+
+  // No accessible way to drive antd's own outside-click dismissal from this
+  // harness (rc-trigger's Trigger wires that through its own internal
+  // document listener, not through a role/label/text this suite can reach -
+  // the Status column's own suite above does not attempt it either). Calling
+  // the instance's own handler is the same "no accessible DOM hook" case
+  // DownloadsManager.test.jsx already reaches into `wrappedInstance.state`
+  // for - here there is no store/MobX wrapper, so the ref is the component
+  // itself.
+  test('closing the dropdown by any other means still commits (commit-on-close)', async () => {
+    const onOwnerFilterChange = fn();
+    let instance;
+    renderList({
+      isAdmin: true,
+      ownerFilter: 'someone-else',
+      onOwnerFilterChange,
+      ref: (r) => { instance = r; }
+    });
+
+    await click(screen.getByLabelText('Filter by owner'));
+    instance.handleOwnerFilterVisibleChange(false);
+
+    expect(onOwnerFilterChange).toHaveBeenCalledWith('someone-else');
+  });
+
+  // Read off `columns` via a ref, not a DOM class - see the Status column
+  // default suite's own comment above for why: antd never applies its
+  // `-selected` class once a column supplies its own `filterIcon`, which
+  // this one does.
+  test('filteredValue lights the icon once an owner is set', () => {
+    let instance;
+    renderList({isAdmin: true, ownerFilter: 'someone-else', ref: (r) => { instance = r; }});
+
+    const ownerColumn = instance.columns.find((column) => column.key === 'owner');
+    expect(ownerColumn.filteredValue).toEqual(['filtered']);
+  });
+
+  test('filteredValue is empty with no owner set', () => {
+    let instance;
+    renderList({isAdmin: true, ref: (r) => { instance = r; }});
+
+    const ownerColumn = instance.columns.find((column) => column.key === 'owner');
+    expect(ownerColumn.filteredValue).toEqual([]);
+  });
+
+  // Same antd limitation as the Status column's own header-class tests
+  // above: a custom `filterIcon` means antd's own highlight never fires,
+  // and a `className` on the icon itself is unconditionally discarded (see
+  // `headerClassNameFor`'s own comment), so the active look lands on the
+  // header `<th>` instead, via `column.className`.
+  test('the header cell carries cp-primary once an owner is set', () => {
+    renderList({isAdmin: true, ownerFilter: 'someone-else'});
+
+    expect(screen.getByText('Owner').closest('th')).toHaveClass('cp-primary');
+  });
+
+  test('the header cell does not carry cp-primary with no owner set', () => {
+    renderList({isAdmin: true});
+
+    expect(screen.getByText('Owner').closest('th')).not.toHaveClass('cp-primary');
   });
 });

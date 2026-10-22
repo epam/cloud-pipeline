@@ -24,23 +24,22 @@ import {
   waitFor,
   fn,
   stubApi,
-  ok,
-  useFakeTimers,
-  useRealTimers
+  ok
 } from '@test';
 import DownloadsManager from './DownloadsManager';
+import {POLLED_STATUSES} from '../../../models/asyncTask/statuses';
 
 const WHOAMI_ROUTE = '/whoami';
 const FILTER_ROUTE = '/async-task/filter';
 const USER_NAME = 'current-user';
-// Mirrors DownloadsManager's own POLL_INTERVAL_MS. Not imported: that constant
-// is not part of the module's public surface, and a mismatch here would just
-// make this test fail loudly rather than silently poll at the wrong cadence.
-const POLL_INTERVAL_MS = 5000;
+// Matches DownloadsManager's own PAGE_SIZE. Not imported: that constant is
+// not part of the module's public surface.
+const PAGE_SIZE = 15;
 
 // A plain observable object is a sufficient store double (rule 10) — the page
 // no longer reads `tasks` off the shared store, only the cap and the two
-// actions, so the double carries exactly those and nothing else.
+// actions, so the double carries exactly those and nothing else. No
+// pausePolling/resumePolling here any more: nothing calls them.
 function asyncTasksDouble (overrides = {}) {
   return observable(Object.assign({
     activeTasksLimitReached: false,
@@ -49,10 +48,10 @@ function asyncTasksDouble (overrides = {}) {
   }, overrides));
 }
 
-// The page now renders <AsyncTasksFilters> internally, which @injects these
-// two stores (admin controls the Owner control's visibility); every render
-// of <DownloadsManager /> needs both, or mobx-react's inject throws "Store
-// '...' is not available!".
+// `admin: true` by default: the Owner column (async-tasks-list.js) is
+// admin-only, and most of this suite exercises it. `users` is NOT needed any
+// more - the Owner column's dropdown embeds UserAutoComplete, which fetches
+// its own candidates through UserFind rather than reading a preloaded list.
 function authenticatedUserInfoDouble (admin = true) {
   return observable({
     loaded: true,
@@ -60,17 +59,7 @@ function authenticatedUserInfoDouble (admin = true) {
   });
 }
 
-function usersDouble () {
-  return observable({
-    loaded: true,
-    value: [
-      {id: 1, userName: USER_NAME},
-      {id: 2, userName: 'someone-else'}
-    ]
-  });
-}
-
-// The page now also @injects `dataStorages` (the shared singleton that loads
+// The page also @injects `dataStorages` (the shared singleton that loads
 // every storage with one GET /datastorage/loadAll - see models/dataStorage/
 // DataStorages.js) to resolve the Storage column's name. A plain double, per
 // rule 10: `{loaded, value}` is all the getter reads.
@@ -85,7 +74,6 @@ function stores (overrides = {}) {
   return {
     asyncTasks: asyncTasksDouble(overrides),
     authenticatedUserInfo: authenticatedUserInfoDouble(),
-    users: usersDouble(),
     dataStorages: dataStoragesDouble()
   };
 }
@@ -95,11 +83,12 @@ function stubFilter (api, tasks) {
   api.reply(FILTER_ROUTE, tasks);
 }
 
-// Finds the filter bar's labelled row by its rendered "Label:" text - the
-// same shape async-tasks-filters.test.jsx uses for the component in
-// isolation.
-function filterRow (label) {
-  return screen.getByText(`${label}:`).closest('div');
+function filterCalls (api) {
+  return api.calls.filter(c => c.path === FILTER_ROUTE);
+}
+
+function refreshButton () {
+  return screen.getByRole('button', {name: /refresh/i});
 }
 
 // A programmatic fixture, per the "build the 20-task fixture
@@ -115,30 +104,29 @@ function buildTasks (count) {
 }
 
 test(
-  'fetches on mount with the owner seeded to the current user, no statuses, ' +
-  'and page 1 / pageSize 20',
+  'fetches on mount with the owner seeded to the current user, statuses defaulted ' +
+  'to POLLED_STATUSES, and page 1 / pageSize 15',
   async () => {
     const api = stubApi();
     stubFilter(api, []);
 
     renderWithStores(<DownloadsManager />, stores());
 
-    await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
-    const call = api.calls.find(c => c.path === FILTER_ROUTE);
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    const call = filterCalls(api)[0];
     expect(call.method).toBe('POST');
     const body = JSON.parse(call.body);
     expect(body.type).toBe('DOWNLOAD_ARCHIVE');
-    // The default owner now comes from the filter bar's state (seeded to the
-    // current user on the first load), not a bare whoAmI fallback - see
-    // DownloadsManager's loadTasks. Still no statuses: nothing is selected
-    // in the filter bar by default.
     expect(body.owner).toBe(USER_NAME);
-    expect(body).not.toHaveProperty('statuses');
-    // This is a deliberate behaviour change (phase 12), not a weakened test:
-    // the page's own request now always pages, unlike the background poll in
-    // CurrentUserAsyncTasks.js, which must still send neither key.
+    // The real, visible behaviour change this phase owns: the table hides
+    // CANCELLED/EXPIRED by default, because the request now always carries
+    // a concrete `statuses` list rather than omitting the key. Compared
+    // order-independently against the imported constant, the same way
+    // CurrentUserAsyncTasks.test.js pins its own (deliberately different)
+    // use of it.
+    expect([...body.statuses].sort()).toEqual([...POLLED_STATUSES].sort());
     expect(body.page).toBe(1);
-    expect(body.pageSize).toBe(20);
+    expect(body.pageSize).toBe(PAGE_SIZE);
   }
 );
 
@@ -156,7 +144,7 @@ test('renders the heading and the rows from its own response', async () => {
   renderWithStores(<DownloadsManager />, stores());
 
   expect(screen.getByText('Downloads')).toBeInTheDocument();
-  expect(await screen.findByText('archive-one')).toBeInTheDocument();
+  expect(await screen.findByText('archive-one.zip')).toBeInTheDocument();
 });
 
 test('renders a row for a CANCELLED task and for an EXPIRED task', async () => {
@@ -178,8 +166,8 @@ test('renders a row for a CANCELLED task and for an EXPIRED task', async () => {
 
   renderWithStores(<DownloadsManager />, stores());
 
-  expect(await screen.findByText('archive-cancelled')).toBeInTheDocument();
-  expect(screen.getByText('archive-expired')).toBeInTheDocument();
+  expect(await screen.findByText('archive-cancelled.zip')).toBeInTheDocument();
+  expect(screen.getByText('archive-expired.zip')).toBeInTheDocument();
 });
 
 test('resolves the Storage column to the dataStorages singleton\'s name', async () => {
@@ -214,11 +202,10 @@ test(
     renderWithStores(<DownloadsManager />, {
       asyncTasks: asyncTasksDouble(),
       authenticatedUserInfo: authenticatedUserInfoDouble(),
-      users: usersDouble(),
       dataStorages: dataStoragesDouble({loaded: false, value: []})
     });
 
-    expect(await screen.findByText('archive-one')).toBeInTheDocument();
+    expect(await screen.findByText('archive-one.zip')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
   }
 );
@@ -227,7 +214,7 @@ test('shows the cap hint only when the injected store reports the limit reached'
   const api = stubApi();
   stubFilter(api, []);
   const first = renderWithStores(<DownloadsManager />, stores({activeTasksLimitReached: false}));
-  await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
   expect(screen.queryByText(/limit of active archive downloads/i)).not.toBeInTheDocument();
   // Unmount before swapping the stub: the first instance's own async mount
   // fetch must settle against the stub it started with, not the next test's.
@@ -245,90 +232,127 @@ test('shows the cap hint only when the injected store reports the limit reached'
 });
 
 test(
-  'committing the Status column filter re-issues the request with that filter in the body',
+  'committing the Status column filter re-issues the request with the fuller list',
   async () => {
     const api = stubApi();
     stubFilter(api, []);
 
     renderWithStores(<DownloadsManager />, stores());
 
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(1));
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
     // The Status column's own filter dropdown (async-tasks-list.js), a
     // custom antd Table column filter - not a bar-level control. Found by
-    // its own `aria-label`, not antd's locale-dependent `title` (see
-    // async-tasks-list.js's `filterIcon` and async-tasks-list.test.jsx's
-    // comment on `openStatusesFilter`).
+    // its own `aria-label`, not antd's locale-dependent `title`. CANCELLED
+    // is ticked rather than an already-default status (e.g. RUNNING),
+    // because the dropdown now opens with POLLED_STATUSES already checked -
+    // ticking one of those would UNCHECK it instead.
     await click(screen.getByLabelText('Filter by status'));
-    await click(screen.getByRole('checkbox', {name: 'RUNNING'}));
+    await click(screen.getByRole('checkbox', {name: 'CANCELLED'}));
     await click(screen.getByText('OK'));
 
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(2));
-    const call = api.calls.filter(c => c.path === FILTER_ROUTE)[1];
-    const body = JSON.parse(call.body);
-    expect(body.statuses).toEqual(['RUNNING']);
+    await waitFor(() => expect(filterCalls(api).length).toBe(2));
+    const body = JSON.parse(filterCalls(api)[1].body);
+    expect([...body.statuses].sort()).toEqual([...POLLED_STATUSES, 'CANCELLED'].sort());
   }
 );
 
-// Covers the regression the plan this phase follows calls out as "the one
-// most likely to regress into re-seeding on the next poll": once the user
-// has deliberately chosen an owner, a later background tick must not
-// silently overwrite it back to the seeded default. Driven through picking
-// a DIFFERENT owner rather than clearing the filter back to "every user":
-// rc-select 6.9.8's (the version antd 2.13.14 pins) single-select clear icon
-// renders with no text, role, label or title - verified against the
-// installed package - so it cannot be reached under test/AGENTS.md rule 6.
-//
-// This proves the guard holds once `filters.owner` is non-empty; it does
-// NOT exercise the narrower race `setFilter`'s own comment documents - an
-// admin clearing the owner filter back to undefined while the very first
-// `loadTasks` call is still awaiting `whoAmI`. That path is covered by
-// marking `this.ownerSeeded` inside `setFilter` itself rather than by a test
-// here, for the same reason: there is no accessible way to drive the actual
-// "clear" interaction from this suite either.
+// Covers both the "default is the current user" and the "a cleared owner
+// sends no `owner` key, and nothing re-seeds it" requirements, now through
+// the Owner column's own dropdown (async-tasks-list.js) rather than the
+// deleted filter bar. Clearing, not picking a different user, is what this
+// drives: unlike the old bare `Select`, the dropdown's `Clear` link is
+// reachable under test/AGENTS.md rule 6 (a bare antd Select's clear icon
+// is not - see the equivalent test this one replaces, previously blocked by
+// exactly that), and it reaches the same `setFilter`/`ownerSeeded` guard
+// without needing to drive UserAutoComplete's own UserFind-backed search.
 test(
-  'picking a different owner persists across a poll tick, never reseeded back',
+  'the owner filter defaults to the current user, and clearing it sends no owner key, ' +
+  'surviving a later Refresh with no automatic refetch in between',
   async () => {
-    useFakeTimers();
-    try {
-      const api = stubApi();
-      stubFilter(api, []);
+    const api = stubApi();
+    stubFilter(api, []);
 
-      renderWithStores(<DownloadsManager />, stores());
+    renderWithStores(<DownloadsManager />, stores());
 
-      await waitFor(() => expect(
-        api.calls.filter(c => c.path === FILTER_ROUTE).length
-      ).toBe(1));
-      const firstBody = JSON.parse(
-        api.calls.filter(c => c.path === FILTER_ROUTE)[0].body
-      );
-      expect(firstBody.owner).toBe(USER_NAME);
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
 
-      await click(within(filterRow('Owner')).getByRole('combobox'));
-      await click(screen.getByRole('menuitem', {name: 'someone-else'}));
+    await click(screen.getByLabelText('Filter by owner'));
+    await click(screen.getByText('Clear'));
 
-      await waitFor(() => expect(
-        api.calls.filter(c => c.path === FILTER_ROUTE).length
-      ).toBe(2));
+    await waitFor(() => expect(filterCalls(api).length).toBe(2));
+    expect(JSON.parse(filterCalls(api)[1].body)).not.toHaveProperty('owner');
 
-      // Ticks past one background poll interval. If the seeding guard were
-      // keyed on "the first call" rather than "has a userName ever been
-      // seeded", this would silently overwrite the chosen owner back to
-      // USER_NAME on this very tick.
-      await waitFor(() => expect(
-        api.calls.filter(c => c.path === FILTER_ROUTE).length
-      ).toBe(3), {timeout: POLL_INTERVAL_MS * 2});
+    // No poller is left to re-seed or to refetch anything on its own - a
+    // short real wait is enough to prove nothing fires in the background,
+    // the mirror of what used to be proven by ticking a fake clock past a
+    // five-second poll interval.
+    await expect(waitFor(() => expect(
+      filterCalls(api).length
+    ).toBe(3), {timeout: 200})).rejects.toThrow();
+    expect(filterCalls(api).length).toBe(2);
 
-      const calls = api.calls.filter(c => c.path === FILTER_ROUTE);
-      const lastBody = JSON.parse(calls[calls.length - 1].body);
-      expect(lastBody.owner).toBe('someone-else');
-    } finally {
-      useRealTimers();
-    }
+    await click(refreshButton());
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(3));
+    expect(JSON.parse(filterCalls(api)[2].body)).not.toHaveProperty('owner');
+  }
+);
+
+// "Reset filters" - visible only once either column's own filter differs
+// from its default, reusing exactly the comparisons the columns' own header
+// highlight is built from (DownloadsManager's `filtersChanged`): `statuses`
+// against `POLLED_STATUSES` via `compareArrays`, `owner` against the seeded
+// current user. Clicking it restores both in one request and re-fetches.
+test(
+  'Reset filters is hidden at the default, appears once a filter changes, and ' +
+  'restores both to their defaults in one request',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithStores(<DownloadsManager />, stores());
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+
+    // Changes the Owner filter away from the seeded default. Scoped with
+    // `within` from here on: antd's `Dropdown` does not unmount a popover's
+    // content on close (only hides it), so once both the Owner and Status
+    // dropdowns have been opened at least once, a bare `getByText('OK')`
+    // matches both - one visible, one hidden - and throws for ambiguity.
+    await click(screen.getByLabelText('Filter by owner'));
+    await click(within(screen.getByRole('combobox').closest('.filterPopoverContainer'))
+      .getByText('Clear'));
+    await waitFor(() => expect(filterCalls(api).length).toBe(2));
+
+    expect(screen.getByRole('button', {name: /reset filters/i})).toBeInTheDocument();
+    // The header cell itself is lit for a different reason (any owner set
+    // at all) and stays lit either way here - this assertion is about the
+    // Status column, whose own highlight genuinely tracks "differs from
+    // default" and so must still read as default-at-this-point.
+    expect(screen.getByText('Status').closest('th')).not.toHaveClass('cp-primary');
+
+    // Also changes the Status filter, so both differ from their defaults.
+    await click(screen.getByLabelText('Filter by status'));
+    const cancelledCheckbox = screen.getByRole('checkbox', {name: 'CANCELLED'});
+    await click(cancelledCheckbox);
+    await click(within(cancelledCheckbox.closest('.filterPopoverContainer')).getByText('OK'));
+    await waitFor(() => expect(filterCalls(api).length).toBe(3));
+    expect(screen.getByText('Status').closest('th')).toHaveClass('cp-primary');
+
+    await click(screen.getByRole('button', {name: /reset filters/i}));
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(4));
+    const body = JSON.parse(filterCalls(api)[3].body);
+    expect(body.owner).toBe(USER_NAME);
+    expect([...body.statuses].sort()).toEqual([...POLLED_STATUSES].sort());
+    expect(body.page).toBe(1);
+    // Both columns read as un-highlighted again, and the control itself
+    // disappears - there is nothing left to reset.
+    expect(screen.getByText('Status').closest('th')).not.toHaveClass('cp-primary');
+    expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
   }
 );
 
@@ -347,17 +371,14 @@ test('cancelling a task calls the store and re-issues the page\'s own request', 
   renderWithStores(<DownloadsManager />, {
     asyncTasks,
     authenticatedUserInfo: authenticatedUserInfoDouble(),
-    users: usersDouble(),
     dataStorages: dataStoragesDouble()
   });
 
-  const row = (await screen.findByText('archive-running')).closest('tr');
+  const row = (await screen.findByText('archive-running.zip')).closest('tr');
   await click(within(row).getByRole('button', {name: /Cancel/i}));
 
   await waitFor(() => expect(asyncTasks.cancelTask).toHaveBeenCalledWith(5));
-  await waitFor(() => expect(
-    api.calls.filter(c => c.path === FILTER_ROUTE).length
-  ).toBe(2));
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
 });
 
 test('disables row actions while a cancel is in flight, re-enabling once it settles', async () => {
@@ -380,12 +401,11 @@ test('disables row actions while a cancel is in flight, re-enabling once it sett
   renderWithStores(<DownloadsManager />, {
     asyncTasks,
     authenticatedUserInfo: authenticatedUserInfoDouble(),
-    users: usersDouble(),
     dataStorages: dataStoragesDouble()
   });
 
-  const findRow = () => screen.getByText('archive-in-flight').closest('tr');
-  await screen.findByText('archive-in-flight');
+  const findRow = () => screen.getByText('archive-in-flight.zip').closest('tr');
+  await screen.findByText('archive-in-flight.zip');
   await click(within(findRow()).getByRole('button', {name: /Cancel/i}));
 
   await waitFor(() => {
@@ -399,151 +419,126 @@ test('disables row actions while a cancel is in flight, re-enabling once it sett
   });
 });
 
-test('keeps refreshing on its own while mounted, and stops once unmounted', async () => {
-  useFakeTimers();
-  try {
-    const api = stubApi();
-    stubFilter(api, []);
+test('does not refetch on its own once mounted - there is no poller left', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
 
-    const utils = renderWithStores(<DownloadsManager />, stores());
+  renderWithStores(<DownloadsManager />, stores());
 
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(1));
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
-    // Nothing remounted it, and nothing clicked cancel: the row count going up
-    // on its own is the poll this test exists to prove. `waitFor` advances
-    // the fake clock itself (dom-testing-library detects it), in its default
-    // 50ms steps, so a generous `timeout` is what lets it reach a 5-second
-    // poll interval — it costs nothing in real wall-clock time.
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(2), {timeout: POLL_INTERVAL_MS * 2});
+  // This replaces phase 15's test of PRESENCE ("keeps refreshing on its own
+  // while mounted") with a test of ABSENCE: nothing is scheduled any more,
+  // so a short real wait is enough to prove no second call ever arrives -
+  // there is no fake clock to advance past, because there is no interval.
+  await expect(waitFor(() => expect(
+    filterCalls(api).length
+  ).toBe(2), {timeout: 200})).rejects.toThrow();
+  expect(filterCalls(api).length).toBe(1);
+});
 
-    utils.unmount();
-    // Stopped, not merely slow: a bare `advanceTimers` here proves nothing by
-    // itself, because nothing then drains the microtasks a still-running poll
-    // would need to actually record a third call — the assertion right after
-    // it would pass whether or not componentWillUnmount stopped the poller.
-    // Asserting through a `waitFor` that is expected to time out does drain
-    // them (it is what the earlier `waitFor` calls above use to observe a
-    // poll that DOES happen), so it is what actually exercises the stop.
-    await expect(waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(3), {timeout: POLL_INTERVAL_MS * 2})).rejects.toThrow();
+test('clicking Refresh re-issues the request with the same page and filters', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
 
-    expect(api.calls.filter(c => c.path === FILTER_ROUTE).length).toBe(2);
-  } finally {
-    useRealTimers();
-  }
+  renderWithStores(<DownloadsManager />, stores());
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  const firstBody = JSON.parse(filterCalls(api)[0].body);
+
+  await click(refreshButton());
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  expect(JSON.parse(filterCalls(api)[1].body)).toEqual(firstBody);
 });
 
 // The regression test for the live-update bug: `this.request` is a
 // `RemotePost` (models/basic/RemotePost.js), whose `value` is a plain getter
-// backed by a field that is never `@observable` — so before this phase's
-// `pollTick` fix, a poll past the first one wrote fresh data into
-// `this.request` with zero re-render, and the row below sat on the FIRST
-// response forever. A test that only checked the first response would pass
-// even with that bug, so this one drives TWO sequential poll ticks with two
-// DIFFERENT responses and asserts the SECOND one is what ends up on screen.
-// Do not "simplify" this into a single-load assertion — that would silently
-// remove the regression guard.
+// backed by a field that is never `@observable` — so without `fetchTick`, a
+// fetch past the first one writes fresh data into `this.request` with zero
+// re-render, and the row below sits on the FIRST response forever. Driven
+// through two manual Refresh clicks rather than poll ticks: Refresh, not a
+// background interval, is this phase's only repeat trigger, but the
+// underlying reactivity gap - and so this guard - is unrelated to what
+// triggers the fetch.
 test(
-  'live-updates the row across a second poll tick, not just the first load',
-  async () => {
-    useFakeTimers();
-    try {
-      const api = stubApi();
-      api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
-      let pollCount = 0;
-      // `api.reply`/re-registering the same pattern would not do: stubApi's
-      // route table has no "last registration wins" rule (the first matching
-      // registration always answers). `api.handle` gives one handler full
-      // control to vary its own reply call by call.
-      api.handle(FILTER_ROUTE, () => {
-        pollCount += 1;
-        const status = pollCount === 1 ? 'PENDING' : 'SUCCESS';
-        return ok([
-          {
-            id: 1,
-            status,
-            params: {archiveName: 'archive-live'},
-            created: '2026-10-21T13:00:00.000Z'
-          }
-        ]);
-      });
-
-      let instance;
-      renderWithStores(
-        <DownloadsManager ref={(r) => { instance = r; }} />,
-        stores()
-      );
-
-      expect(await screen.findByText('PENDING')).toBeInTheDocument();
-      // The first-load spinner flips `hasLoadedOnce` once and must stay true
-      // from here on - the phase-9 fix this change must not regress. There is
-      // no accessible DOM hook for antd's own loading overlay (rule 6 in
-      // client/test/AGENTS.md forbids querying its internals by class), so
-      // this reads the component's own state directly through
-      // `wrappedInstance`, the handle mobx-react's `inject` HOC exposes for
-      // exactly this - not an antd internal.
-      expect(instance.wrappedInstance.state.hasLoadedOnce).toBe(true);
-
-      // Ticks past one background poll interval, onto the second, different
-      // response.
-      await waitFor(() => expect(
-        api.calls.filter(c => c.path === FILTER_ROUTE).length
-      ).toBe(2), {timeout: POLL_INTERVAL_MS * 2});
-
-      await waitFor(() => expect(screen.queryByText('PENDING')).not.toBeInTheDocument());
-      expect(screen.getByText('SUCCESS')).toBeInTheDocument();
-      // Still gated to the first load only - never reappears on a later poll.
-      expect(instance.wrappedInstance.state.hasLoadedOnce).toBe(true);
-    } finally {
-      useRealTimers();
-    }
-  }
-);
-
-test('pauses the shared background poll on mount, resumes it on unmount', async () => {
-  const api = stubApi();
-  stubFilter(api, []);
-  const pausePolling = fn();
-  const resumePolling = fn();
-
-  const utils = renderWithStores(
-    <DownloadsManager />,
-    stores({pausePolling, resumePolling})
-  );
-
-  await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
-  expect(pausePolling).toHaveBeenCalledTimes(1);
-  expect(resumePolling).not.toHaveBeenCalled();
-
-  utils.unmount();
-
-  expect(resumePolling).toHaveBeenCalledTimes(1);
-  // Only mount pauses, only unmount resumes - neither fires a second time.
-  expect(pausePolling).toHaveBeenCalledTimes(1);
-});
-
-// Proves the guards in componentDidMount/componentWillUnmount: every other
-// test in this file already renders and unmounts against a double built by
-// `asyncTasksDouble()`, which (by design, see that function) carries neither
-// method - so this one is explicit about what that absence is proving, rather
-// than relying on it as a side effect.
-test(
-  'mounts and unmounts without throwing when asyncTasks has neither pause nor resume method',
+  'live-updates the row when Refresh fetches a changed response, not just on the first load',
   async () => {
     const api = stubApi();
-    stubFilter(api, []);
+    api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
+    let fetchCount = 0;
+    // `api.reply`/re-registering the same pattern would not do: stubApi's
+    // route table has no "last registration wins" rule (the first matching
+    // registration always answers). `api.handle` gives one handler full
+    // control to vary its own reply call by call.
+    api.handle(FILTER_ROUTE, () => {
+      fetchCount += 1;
+      const status = fetchCount === 1 ? 'PENDING' : 'SUCCESS';
+      return ok([
+        {
+          id: 1,
+          status,
+          params: {archiveName: 'archive-live'},
+          created: '2026-10-21T13:00:00.000Z'
+        }
+      ]);
+    });
 
-    const utils = renderWithStores(<DownloadsManager />, stores());
-    await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
+    renderWithStores(<DownloadsManager />, stores());
 
-    expect(() => utils.unmount()).not.toThrow();
+    expect(await screen.findByText('PENDING')).toBeInTheDocument();
+
+    await click(refreshButton());
+
+    await waitFor(() => expect(screen.queryByText('PENDING')).not.toBeInTheDocument());
+    expect(screen.getByText('SUCCESS')).toBeInTheDocument();
   }
 );
+
+// There is no longer a "first load only" gate on `pending` (removed along
+// with `hasLoadedOnce`, which existed only to serve it) - once polling was
+// gone, so was its reason, and the table's loading state now shows for
+// every fetch: a manual Refresh, a filter change, or a page change, not
+// just the first one. Reads `this.request.pending` directly through
+// `wrappedInstance`, the same "no accessible DOM hook" case the regression
+// test above used to read `hasLoadedOnce` from - antd's own `Spin` carries
+// no ARIA marker this harness could query instead (rule 6).
+test('shows the pending state on a manual Refresh, not just the first load', async () => {
+  const api = stubApi();
+  api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
+  let resolveSecond;
+  let callCount = 0;
+  api.handle(FILTER_ROUTE, () => {
+    callCount += 1;
+    if (callCount === 1) {
+      return ok([]);
+    }
+    return new Promise((resolve) => {
+      resolveSecond = resolve;
+    });
+  });
+
+  let instance;
+  renderWithStores(
+    <DownloadsManager ref={(r) => { instance = r; }} />,
+    stores()
+  );
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(instance.wrappedInstance.request.pending).toBe(false);
+
+  await click(refreshButton());
+  // `loadTasks` awaits `whoAmI.fetchIfNeededOrWait()` before `request.send`
+  // ever reaches `global.fetch`, so the actual network call - and so
+  // `resolveSecond` being assigned - lands a few microtasks after `click`'s
+  // own single `await settle()`. Waiting for the call count confirms
+  // `resolveSecond` is already assigned before using it.
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  expect(instance.wrappedInstance.request.pending).toBe(true);
+
+  resolveSecond(ok([]));
+  await waitFor(() => expect(instance.wrappedInstance.request.pending).toBe(false));
+});
 
 // `hasNextPage` is derived from the current response's length, not rendered
 // unconditionally - async-tasks-list.js only shows the pagination row at all
@@ -553,7 +548,7 @@ test(
 // is the other half of the same derivation.
 test('a full page renders an enabled Next button', async () => {
   const api = stubApi();
-  stubFilter(api, buildTasks(20));
+  stubFilter(api, buildTasks(PAGE_SIZE));
 
   renderWithStores(<DownloadsManager />, stores());
 
@@ -566,27 +561,23 @@ test('a page shorter than the page size renders no pagination row at all', async
 
   renderWithStores(<DownloadsManager />, stores());
 
-  await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
-  await screen.findByText('archive-1');
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  await screen.findByText('archive-1.zip');
   expect(screen.queryByRole('button', {name: /next page/i})).not.toBeInTheDocument();
 });
 
 test('clicking Next re-issues the request with page: 2', async () => {
   const api = stubApi();
-  stubFilter(api, buildTasks(20));
+  stubFilter(api, buildTasks(PAGE_SIZE));
 
   renderWithStores(<DownloadsManager />, stores());
 
-  await waitFor(() => expect(
-    api.calls.filter(c => c.path === FILTER_ROUTE).length
-  ).toBe(1));
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
   await click(await screen.findByRole('button', {name: /next page/i}));
 
-  await waitFor(() => expect(
-    api.calls.filter(c => c.path === FILTER_ROUTE).length
-  ).toBe(2));
-  const body = JSON.parse(api.calls.filter(c => c.path === FILTER_ROUTE)[1].body);
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  const body = JSON.parse(filterCalls(api)[1].body);
   expect(body.page).toBe(2);
 });
 
@@ -594,33 +585,26 @@ test(
   'changing a filter resets the body\'s page to 1, even after paging forward',
   async () => {
     const api = stubApi();
-    stubFilter(api, buildTasks(20));
+    stubFilter(api, buildTasks(PAGE_SIZE));
 
     renderWithStores(<DownloadsManager />, stores());
 
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(1));
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
     await click(await screen.findByRole('button', {name: /next page/i}));
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(2));
-    expect(
-      JSON.parse(api.calls.filter(c => c.path === FILTER_ROUTE)[1].body).page
-    ).toBe(2);
+    await waitFor(() => expect(filterCalls(api).length).toBe(2));
+    expect(JSON.parse(filterCalls(api)[1].body).page).toBe(2);
 
     // Commits the Status column's own filter dropdown - the other source
-    // that funnels through DownloadsManager's `setFilter`, next to the owner
-    // Select.
+    // that funnels through DownloadsManager's `setFilter`, next to the
+    // Owner column. CANCELLED, not an already-default status - see the
+    // comment on the equivalent test above.
     await click(screen.getByLabelText('Filter by status'));
-    await click(screen.getByRole('checkbox', {name: 'RUNNING'}));
+    await click(screen.getByRole('checkbox', {name: 'CANCELLED'}));
     await click(screen.getByText('OK'));
 
-    await waitFor(() => expect(
-      api.calls.filter(c => c.path === FILTER_ROUTE).length
-    ).toBe(3));
-    const body = JSON.parse(api.calls.filter(c => c.path === FILTER_ROUTE)[2].body);
+    await waitFor(() => expect(filterCalls(api).length).toBe(3));
+    const body = JSON.parse(filterCalls(api)[2].body);
     expect(body.page).toBe(1);
   }
 );
@@ -655,8 +639,29 @@ test('renders rows in exactly the order the server returned them', async () => {
 
   renderWithStores(<DownloadsManager />, stores());
 
-  await screen.findByText('archive-oldest');
-  const names = screen.getAllByText(/^archive-(oldest|middle|newest)$/)
+  await screen.findByText('archive-oldest.zip');
+  const names = screen.getAllByText(/^archive-(oldest|middle|newest)\.zip$/)
     .map((element) => element.textContent);
-  expect(names).toEqual(['archive-oldest', 'archive-middle', 'archive-newest']);
+  expect(names).toEqual(['archive-oldest.zip', 'archive-middle.zip', 'archive-newest.zip']);
 });
+
+test(
+  'the Owner column is absent for a non-admin user, and no owner key is ever special',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithStores(<DownloadsManager />, {
+      asyncTasks: asyncTasksDouble(),
+      authenticatedUserInfo: authenticatedUserInfoDouble(false),
+      dataStorages: dataStoragesDouble()
+    });
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(screen.queryByText('Owner')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Filter by owner')).not.toBeInTheDocument();
+    // The seeded owner is still sent - the column controls visibility only,
+    // never the request itself.
+    expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
+  }
+);

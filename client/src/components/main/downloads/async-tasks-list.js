@@ -20,24 +20,33 @@ import {Table, Button, Icon, Tooltip, Checkbox, Popover} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
+import compareArrays from '../../../utils/compareArrays';
 import {
   ASYNC_TASK_STATUSES,
   ACTIVE_STATUSES,
+  POLLED_STATUSES,
   taskIsActive,
   taskCanBeCancelled,
   taskArchiveIsAvailable,
   normalizeStatus,
   archiveNameOf
 } from '../../../models/asyncTask/statuses';
+import UserAutoComplete from '../../special/UserAutoComplete';
 import styles from './async-tasks-list.css';
 
 // All eight statuses, in the vocabulary's own declaration order - the
 // checkbox list the Status column's filter dropdown offers.
 const ALL_STATUSES = Object.keys(ASYNC_TASK_STATUSES);
 
-// Purely presentational: no @inject, no model import, no store. Everything it
-// needs arrives as props, so it is testable without a Provider or a router,
-// and reusable from a future modal that renders it directly.
+// Presentational: no @inject and no model import of its own. Everything it
+// needs arrives as props, so most of it is testable without a Provider or a
+// router, and reusable from a future modal that renders it directly. The one
+// exception is the Owner column (admin-only, below): it embeds
+// UserAutoComplete, which carries its own `@inject('authenticatedUserInfo')`,
+// and mobx-react's `inject` throws when that store is absent from context. So
+// a test that renders with `isAdmin` true needs `renderWithStores`. `isAdmin`
+// defaults to `false`, which is what keeps every other test in this file free
+// of that requirement.
 
 // Mirrors the COLORS lookup in
 // client/src/components/pipelines/browser/forms/life-cycle-rules/components/restore-status-icon.js:
@@ -66,6 +75,53 @@ function archiveSizeOf (task) {
   return bytes;
 }
 
+// Mirrors the backend's own DataStorageDownloadArchiveManager.offeredArchiveName
+// (StringUtils.endsWithIgnoreCase(requested, ".zip") ? requested : requested + ".zip"):
+// the displayed name gets the suffix appended unless it is already there,
+// case-insensitively, so what is shown here matches the file the user
+// actually receives. Applies to the task-id fallback too.
+function displayArchiveNameOf (task) {
+  const name = archiveNameOf(task);
+  if (!name) {
+    return name;
+  }
+  const value = `${name}`;
+  return /\.zip$/i.test(value) ? value : `${value}.zip`;
+}
+
+// antd's own `FilterMenu.renderFilterIcon` (node_modules/antd/lib/table/
+// filterDropdown.js) only ever applies its built-in "active" highlight
+// (`dropdownSelectedClass`, driven by its own `selectedKeys`) in the branch
+// where a column supplies NO custom `filterIcon` - the branch that clones a
+// custom one never touches it. Both columns below supply their own icon (to
+// carry an `aria-label` instead of antd's locale-dependent `title` - see the
+// Status column's own comment), which means antd's highlight never fires for
+// either, independently of its own `selectedKeys` bookkeeping being correct
+// for a fully custom `filterDropdown` in the first place.
+//
+// A `className` on the `filterIcon` element itself cannot fix this: that
+// same function clones it with `className: classnames(filterIcon.className,
+// ...)` - reading `.className` directly off the *element*, which is always
+// `undefined` (an element's own prop lives at `.props.className`), not off
+// `.props`. So `cloneElement`'s className always wins with a value that can
+// never include ours, no matter what we pass. `title` is overwritten the
+// same unconditional way (to the current locale's `filterTitle`), which is
+// the existing, unrelated reason this file carries its own `aria-label`
+// rather than relying on it.
+//
+// `column.className` has no such bug - rc-table's own header-row builder
+// (node_modules/rc-table/lib/Table.js's `getHeaderRows`) applies it to the
+// header `<th>` verbatim (`className: column.className || ''`), a
+// completely different, unbroken code path. So the active look is applied
+// there instead: `cp-primary` on the whole header cell, not the icon alone -
+// the existing "something is active" colour this same file already uses for
+// the in-progress status spinner, not a new one. It still reads as the
+// header being "active", icon included, since nothing in that cell overrides
+// an inherited `color`.
+function headerClassNameFor (filtered) {
+  return classNames({'cp-primary': filtered});
+}
+
 class AsyncTasksList extends React.Component {
   // Pure UI mechanics: whether the Status column's filter dropdown is open,
   // and which boxes are ticked while it is - "pending" until OK or Clear
@@ -74,11 +130,40 @@ class AsyncTasksList extends React.Component {
   // this component stays free of @inject and model imports either way.
   state = {
     statusesFilterVisible: false,
-    pendingStatuses: []
+    pendingStatuses: [],
+    // The Owner column's own dropdown mechanics, mirroring the Status
+    // column's pair above: `ownerFilterVisible` is whether the dropdown is
+    // open, `pendingOwner` is the not-yet-committed value while it is. The
+    // *committed* value is `this.props.ownerFilter`, owned by the parent.
+    ownerFilterVisible: false,
+    pendingOwner: undefined
   };
 
   get committedStatuses () {
     return this.props.statusesFilter || [];
+  }
+
+  get committedOwner () {
+    return this.props.ownerFilter;
+  }
+
+  // Whether the Status column's selection differs from the default
+  // (POLLED_STATUSES) - the single comparison that decides both the header
+  // icon's active look and `filteredValue`, computed once so the two can
+  // never drift apart. `compareArrays` is order-independent, which is what
+  // makes this correct regardless of checkbox order.
+  get statusesFiltered () {
+    return !compareArrays(this.committedStatuses, POLLED_STATUSES);
+  }
+
+  // Whether any owner is committed at all - deliberately NOT "differs from
+  // the seeded default": the seeded default (the current user) is itself a
+  // real, active filter (an admin genuinely is seeing only their own tasks),
+  // so a lit icon here is accurate from the first load. Do not change this
+  // to a "differs from default" comparison - that is a different question,
+  // the one DownloadsManager's own "Reset filters" control answers.
+  get ownerFiltered () {
+    return !!this.committedOwner;
   }
 
   openStatusesFilter = () => {
@@ -99,14 +184,20 @@ class AsyncTasksList extends React.Component {
     this.setState({pendingStatuses: [...nextStatuses]});
   };
 
-  // Commits `statuses` as the filter - an empty array becomes `undefined`,
-  // never sent on as `[]`: the key-omission rule this feature's request
-  // bodies follow throughout (never an empty array, never an empty string).
+  // Commits `statuses` as the filter. Unlike every other filter in this
+  // feature, an empty selection does NOT omit the key: it commits
+  // POLLED_STATUSES (every status except CANCELLED/EXPIRED) instead of
+  // `undefined`. "Untick every box, then OK" is the same gesture as `Clear`
+  // (both below), and mapping either to `undefined` would delete the filter
+  // and so show MORE rows than before unticking - the opposite of the
+  // gesture. So `Clear` and "untick everything, OK" both land on the same
+  // default. This is a named exception to the general key-omission rule the
+  // Owner filter below still follows.
   commitStatusesFilter = (statuses) => {
     const {onStatusesFilterChange} = this.props;
     this.setState({statusesFilterVisible: false, pendingStatuses: []});
     if (onStatusesFilterChange) {
-      onStatusesFilterChange(statuses && statuses.length ? statuses : undefined);
+      onStatusesFilterChange(statuses && statuses.length ? statuses : POLLED_STATUSES);
     }
   };
 
@@ -168,13 +259,101 @@ class AsyncTasksList extends React.Component {
     );
   }
 
+  openOwnerFilter = () => {
+    this.setState({
+      ownerFilterVisible: true,
+      pendingOwner: this.committedOwner
+    });
+  };
+
+  handlePendingOwnerChange = (owner) => {
+    this.setState({pendingOwner: owner});
+  };
+
+  // Commits `owner` as the filter - a string, or `undefined` to mean "any
+  // user". Unlike the Status filter above, an empty/cleared owner DOES omit
+  // the key (the general rule): `owner` is a single `String` server-side, so
+  // there is no "everything except two values" default to fall back to the
+  // way POLLED_STATUSES is for statuses - "any user" already is the absence
+  // of a filter.
+  commitOwnerFilter = (owner) => {
+    const {onOwnerFilterChange} = this.props;
+    this.setState({ownerFilterVisible: false, pendingOwner: undefined});
+    if (onOwnerFilterChange) {
+      onOwnerFilterChange(owner || undefined);
+    }
+  };
+
+  handleOwnerFilterOk = () => {
+    this.commitOwnerFilter(this.state.pendingOwner);
+  };
+
+  handleOwnerFilterClear = () => {
+    this.commitOwnerFilter(undefined);
+  };
+
+  // Same "commit on close" shape as handleStatusesFilterVisibleChange above.
+  handleOwnerFilterVisibleChange = (visible) => {
+    if (visible) {
+      this.openOwnerFilter();
+    } else {
+      this.commitOwnerFilter(this.state.pendingOwner);
+    }
+  };
+
+  // Copies client/src/components/runs/run-table/columns/column-owner.js's
+  // OwnersRolesFilterComponent (lines 28-105), minus its roles half: a single
+  // UserAutoComplete rather than a checkbox list, because `owner` is a single
+  // `String` server-side while `statuses` above is a `List` - a checkbox list
+  // here would let an admin tick several users and then send only one of
+  // them, promising something the API cannot do. UserAutoComplete cannot
+  // itself signal "cleared" (its `onChange` only fires from a selection), but
+  // that stops mattering inside a column-filter dropdown: the `Clear` link
+  // below carries that signal externally, the same way the precedent's does.
+  get ownerFilterDropdown () {
+    const {pendingOwner} = this.state;
+    return (
+      <div
+        className={classNames(styles.filterPopoverContainer, 'cp-filter-popover-container')}
+        style={{width: 300}}
+      >
+        <UserAutoComplete
+          placeholder="Owner"
+          value={pendingOwner}
+          onChange={this.handlePendingOwnerChange}
+          onPressEnter={this.handleOwnerFilterOk}
+        />
+        <div className={styles.filterActionsButtonsContainer}>
+          <a onClick={this.handleOwnerFilterOk}>{'OK'}</a>
+          <a onClick={this.handleOwnerFilterClear}>{'Clear'}</a>
+        </div>
+      </div>
+    );
+  }
+
   get columns () {
-    const {onCancel, onDownload, disabled, storageNamesById} = this.props;
+    const {onCancel, onDownload, disabled, storageNamesById, isAdmin} = this.props;
+    // Admin-only, and omitted from the array entirely (not merely hidden)
+    // when `isAdmin` is false - a non-admin must see neither the column nor
+    // its filter. Inserted right after Status below: it pairs with the
+    // other filterable column, and tacking it onto the end next to Actions
+    // would bury it.
+    const ownerColumn = isAdmin ? {
+      title: 'Owner',
+      key: 'owner',
+      className: headerClassNameFor(this.ownerFiltered),
+      render: (task) => task.owner,
+      filterDropdown: this.ownerFilterDropdown,
+      filterDropdownVisible: this.state.ownerFilterVisible,
+      onFilterDropdownVisibleChange: this.handleOwnerFilterVisibleChange,
+      filteredValue: this.ownerFiltered ? ['filtered'] : [],
+      filterIcon: <Icon type="filter" aria-label="Filter by owner" />
+    } : null;
     return [
       {
         title: 'Archive',
         key: 'archive',
-        render: (task) => archiveNameOf(task)
+        render: (task) => displayArchiveNameOf(task)
       },
       {
         title: 'Storage',
@@ -238,25 +417,37 @@ class AsyncTasksList extends React.Component {
       {
         title: 'Status',
         key: 'status',
+        // `cp-primary` on the whole header cell once the selection differs
+        // from the default - see `headerClassNameFor`'s own comment for why
+        // this, and not a `className` on `filterIcon` below, is what
+        // actually renders.
+        className: headerClassNameFor(this.statusesFiltered),
         // A custom column filter, the same shape
         // client/src/components/runs/run-table/columns/column-run.js uses:
         // `filterDropdown` is our own JSX, `filterDropdownVisible` and
         // `onFilterDropdownVisibleChange` make it a controlled dropdown, and
         // `filteredValue` (an antd-recognised Column prop - see
-        // node_modules/antd/lib/table/Column.d.ts) lights the header's
-        // filter icon blue once a status is committed.
+        // node_modules/antd/lib/table/Column.d.ts) is what antd's own
+        // `Table` uses for its internal filter-state bookkeeping
+        // (`getFilteredValueColumns` in node_modules/antd/lib/table/
+        // Table.js) - not what drives this header's active look, which is
+        // the `className` above.
         filterDropdown: this.statusesFilterDropdown,
         filterDropdownVisible: this.state.statusesFilterVisible,
         onFilterDropdownVisibleChange: this.handleStatusesFilterVisibleChange,
-        filteredValue: this.committedStatuses.length ? ['filtered'] : [],
-        // A custom `filterIcon`, visually identical to antd's default
-        // (`type="filter"`) but carrying our own `aria-label` - antd's
-        // `FilterMenu.renderFilterIcon` (node_modules/antd/lib/table/
-        // filterDropdown.js) *always* overwrites this element's `title` to
-        // the current locale's `filterTitle` (no LocaleProvider is
-        // configured in the test harness, so that title renders in antd's
-        // default zh-CN today), but leaves every other prop - this
-        // `aria-label` included - untouched. Querying by that locale- and
+        // `statusesFilter` is now always populated (see defaultProps and
+        // DownloadsManager's initial state), so `statusesFiltered` compares
+        // against POLLED_STATUSES rather than a truthy/non-empty check - a
+        // plain "is it set" test would light the icon permanently. It
+        // should read as active only once the selection has actually moved
+        // away from the default.
+        filteredValue: this.statusesFiltered ? ['filtered'] : [],
+        // A custom `filterIcon` carrying our own `aria-label` instead of
+        // antd's default - `FilterMenu.renderFilterIcon` (node_modules/antd/
+        // lib/table/filterDropdown.js) *always* overwrites a default icon's
+        // `title` to the current locale's `filterTitle` (no LocaleProvider
+        // is configured in the test harness, so that title renders in
+        // antd's default zh-CN today). Querying by that locale- and
         // antd-version-dependent title would be exactly the antd-internals
         // coupling client/test/AGENTS.md rule 6 warns against; this label is
         // ours, so the test queries it instead.
@@ -281,6 +472,7 @@ class AsyncTasksList extends React.Component {
           return content;
         }
       },
+      ownerColumn,
       {
         title: 'Created',
         key: 'created',
@@ -321,7 +513,7 @@ class AsyncTasksList extends React.Component {
           </span>
         )
       }
-    ];
+    ].filter(Boolean);
   }
 
   // `/async-task/filter` returns a bare list with no total count and no page
@@ -404,7 +596,10 @@ AsyncTasksList.propTypes = {
   page: PropTypes.number,
   hasNextPage: PropTypes.bool,
   onPageChange: PropTypes.func,
-  storageNamesById: PropTypes.object
+  storageNamesById: PropTypes.object,
+  isAdmin: PropTypes.bool,
+  ownerFilter: PropTypes.string,
+  onOwnerFilterChange: PropTypes.func
 };
 
 AsyncTasksList.defaultProps = {
@@ -413,11 +608,20 @@ AsyncTasksList.defaultProps = {
   onCancel: () => {},
   onDownload: () => {},
   disabled: false,
+  // Matches DownloadsManager's own initial `state.filters.statuses`: with the
+  // Status filter's default now a concrete list rather than "unfiltered",
+  // the component's own default must agree, or a test/caller that renders
+  // with no `statusesFilter` prop at all would compare `[]` against
+  // POLLED_STATUSES, find them different, and light the filter icon
+  // spuriously.
+  statusesFilter: POLLED_STATUSES,
   onStatusesFilterChange: () => {},
   page: 1,
   hasNextPage: false,
   onPageChange: () => {},
-  storageNamesById: {}
+  storageNamesById: {},
+  isAdmin: false,
+  onOwnerFilterChange: () => {}
 };
 
 export default AsyncTasksList;

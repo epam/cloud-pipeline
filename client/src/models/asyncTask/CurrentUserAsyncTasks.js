@@ -212,30 +212,6 @@ class CurrentUserAsyncTasks extends AsyncTaskFilter {
     }
     return this.fetch();
   }
-
-  // `/downloads` (DownloadsManager.js) calls this on mount, while it runs its
-  // own, broader poll of the same tasks: this store's poll would be pure
-  // duplication for as long as that page is open. `setContinuous(false)`, not
-  // `pause()` - the poller's own `pause`/`resume` are wired to the Page
-  // Visibility API (continuous-fetch/index.js's `attachDocumentVisibilityHandlers`),
-  // which calls `resume()` on every tab-visible event, so a tab switch while
-  // still on `/downloads` would silently undo a `pause()`. `setContinuous`
-  // has no such wiring. The `if (this.poller)` guard is load-bearing, not
-  // defensive noise: an instance built with `{autoUpdate: false}` - every
-  // unit test - has no poller, so this must be a safe no-op there.
-  pausePolling () {
-    if (this.poller) {
-      this.poller.setContinuous(false);
-    }
-  }
-
-  // The counterpart to pausePolling() above, called on `/downloads`'s unmount.
-  // Same `setContinuous`, same reasoning, same no-poller guard.
-  resumePolling () {
-    if (this.poller) {
-      this.poller.setContinuous(true);
-    }
-  }
 }
 
 export {CurrentUserAsyncTasks};
