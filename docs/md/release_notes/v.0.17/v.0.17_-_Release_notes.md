@@ -1523,7 +1523,7 @@ For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_li
 
 Previously, selecting several files in the Storage browser and downloading them fetched the files one by one, and any selected folder was silently skipped.
 
-In **`v0.17`**, a selection of files **and** folders can be downloaded as a single `ZIP` archive instead. The archive is built by the platform in the background: the user names it from the **Download archive** item next to **Download**, and later tracks, cancels or fetches it from the new **Downloads** page.
+In **`v0.17`**, a selection of files **and** folders can be downloaded as a single `ZIP` archive instead. The archive is built by the platform in the background: the user names it from the **Download archive** item next to **Download**, and later tracks, cancels or fetches it from the new **Downloads** page, which shows each task's status and archive size, can be filtered by status and (for an administrator) by owner, and is paged.
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
 
