@@ -57,6 +57,15 @@ export default class DownloadsManager extends React.Component {
     // failure - see RemotePost) would flash it on every 5-second background
     // poll for as long as the page stays open.
     hasLoadedOnce: false,
+    // Bumped, never read, on every `loadTasks` outcome - see the comment in
+    // `loadTasks`'s `finally` block for why: `this.request` is a `RemotePost`
+    // (models/basic/RemotePost.js), whose `value` is a plain getter backed by
+    // a field that is never `@observable`, so MobX never notices a poll
+    // updating it and this @observer component never re-renders from it on
+    // its own. This counter's only job is forcing that re-render so `render()`
+    // re-reads `this.request.value` on every poll, not just the first. Do not
+    // "clean up" this field for being unused in `render()` - that is the point.
+    pollTick: 0,
     // Page-local UI state, not a store: client/AGENTS.md calls for anything
     // request-scoped to be instantiated in the component rather than added to
     // the global Provider. Shape: {owner, statuses}, every key optional.
@@ -82,7 +91,19 @@ export default class DownloadsManager extends React.Component {
   // apart from "seeded, then cleared".
   ownerSeeded = false;
 
+  // Guards `loadTasks`'s now-unconditional `setState` call (see its `finally`
+  // block) against firing after unmount: `componentWillUnmount` stops this
+  // page's own poller, but that only cancels a *scheduled* fetch, not one
+  // already in flight - a poll's `await this.request.send(body)` can still be
+  // pending at the exact instant the page unmounts, and its `finally` still
+  // runs once that resolves. Before this phase, the same `setState` call was
+  // gated to fire once ever (`hasLoadedOnce`), so this race existed only
+  // around the very first load; bumping `pollTick` on every poll widens the
+  // window to every one of them, so it earns its own guard.
+  mounted = false;
+
   componentDidMount () {
+    this.mounted = true;
     // Polls this page's own request continuously while it is mounted, so a
     // task that finishes while the page is open updates its row instead of
     // sitting at PENDING until a reload. A distinct identifier from
@@ -95,9 +116,29 @@ export default class DownloadsManager extends React.Component {
       intervalMS: POLL_INTERVAL_MS,
       identifier: 'downloads-page-async-tasks'
     });
+    // This page's own poll above covers everything the shared store's
+    // background poll (CurrentUserAsyncTasks.js) does and more, so pause that
+    // one for as long as this page stays mounted - pure duplication
+    // otherwise. Started AFTER this page's own poller, deliberately: that one
+    // fetches immediately on construction, so at no instant is neither poller
+    // running. Guarded for a store double with no `pausePolling` method (a
+    // minimal test double), so rendering with one does not throw.
+    const {asyncTasks} = this.props;
+    if (asyncTasks && typeof asyncTasks.pausePolling === 'function') {
+      asyncTasks.pausePolling();
+    }
   }
 
   componentWillUnmount () {
+    this.mounted = false;
+    // Resumes the shared poll BEFORE stopping this page's own one - the
+    // mirror of componentDidMount's ordering, so there is still never an
+    // instant with neither poller running. `resumePolling` fetches
+    // immediately, so the shared store catches up at once.
+    const {asyncTasks} = this.props;
+    if (asyncTasks && typeof asyncTasks.resumePolling === 'function') {
+      asyncTasks.resumePolling();
+    }
     if (this.poller) {
       this.poller.stop();
     }
@@ -184,8 +225,20 @@ export default class DownloadsManager extends React.Component {
     } catch (error) {
       this.reportError(error.message);
     } finally {
-      if (!this.state.hasLoadedOnce) {
-        this.setState({hasLoadedOnce: true});
+      // `hasLoadedOnce` still flips once and gates the first-load spinner
+      // only - unchanged from before this phase. `pollTick` is new and is
+      // bumped unconditionally on every call, success or failure: see its
+      // comment in the state initialiser for why - it is the only thing
+      // forcing this @observer component to re-render on a poll after the
+      // first one, since `this.request.value` is not itself MobX-reactive.
+      // Guarded by `this.mounted` - see that field's own comment - since this
+      // now runs on every poll, not just the first, widening the window in
+      // which an in-flight poll's completion can land after unmount.
+      if (this.mounted) {
+        this.setState(previous => ({
+          hasLoadedOnce: true,
+          pollTick: previous.pollTick + 1
+        }));
       }
     }
   };

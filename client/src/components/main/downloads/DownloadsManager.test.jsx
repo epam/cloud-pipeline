@@ -24,6 +24,7 @@ import {
   waitFor,
   fn,
   stubApi,
+  ok,
   useFakeTimers,
   useRealTimers
 } from '@test';
@@ -436,6 +437,113 @@ test('keeps refreshing on its own while mounted, and stops once unmounted', asyn
     useRealTimers();
   }
 });
+
+// The regression test for the live-update bug: `this.request` is a
+// `RemotePost` (models/basic/RemotePost.js), whose `value` is a plain getter
+// backed by a field that is never `@observable` — so before this phase's
+// `pollTick` fix, a poll past the first one wrote fresh data into
+// `this.request` with zero re-render, and the row below sat on the FIRST
+// response forever. A test that only checked the first response would pass
+// even with that bug, so this one drives TWO sequential poll ticks with two
+// DIFFERENT responses and asserts the SECOND one is what ends up on screen.
+// Do not "simplify" this into a single-load assertion — that would silently
+// remove the regression guard.
+test(
+  'live-updates the row across a second poll tick, not just the first load',
+  async () => {
+    useFakeTimers();
+    try {
+      const api = stubApi();
+      api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
+      let pollCount = 0;
+      // `api.reply`/re-registering the same pattern would not do: stubApi's
+      // route table has no "last registration wins" rule (the first matching
+      // registration always answers). `api.handle` gives one handler full
+      // control to vary its own reply call by call.
+      api.handle(FILTER_ROUTE, () => {
+        pollCount += 1;
+        const status = pollCount === 1 ? 'PENDING' : 'SUCCESS';
+        return ok([
+          {
+            id: 1,
+            status,
+            params: {archiveName: 'archive-live'},
+            created: '2026-10-21T13:00:00.000Z'
+          }
+        ]);
+      });
+
+      let instance;
+      renderWithStores(
+        <DownloadsManager ref={(r) => { instance = r; }} />,
+        stores()
+      );
+
+      expect(await screen.findByText('PENDING')).toBeInTheDocument();
+      // The first-load spinner flips `hasLoadedOnce` once and must stay true
+      // from here on - the phase-9 fix this change must not regress. There is
+      // no accessible DOM hook for antd's own loading overlay (rule 6 in
+      // client/test/AGENTS.md forbids querying its internals by class), so
+      // this reads the component's own state directly through
+      // `wrappedInstance`, the handle mobx-react's `inject` HOC exposes for
+      // exactly this - not an antd internal.
+      expect(instance.wrappedInstance.state.hasLoadedOnce).toBe(true);
+
+      // Ticks past one background poll interval, onto the second, different
+      // response.
+      await waitFor(() => expect(
+        api.calls.filter(c => c.path === FILTER_ROUTE).length
+      ).toBe(2), {timeout: POLL_INTERVAL_MS * 2});
+
+      await waitFor(() => expect(screen.queryByText('PENDING')).not.toBeInTheDocument());
+      expect(screen.getByText('SUCCESS')).toBeInTheDocument();
+      // Still gated to the first load only - never reappears on a later poll.
+      expect(instance.wrappedInstance.state.hasLoadedOnce).toBe(true);
+    } finally {
+      useRealTimers();
+    }
+  }
+);
+
+test('pauses the shared background poll on mount, resumes it on unmount', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
+  const pausePolling = fn();
+  const resumePolling = fn();
+
+  const utils = renderWithStores(
+    <DownloadsManager />,
+    stores({pausePolling, resumePolling})
+  );
+
+  await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
+  expect(pausePolling).toHaveBeenCalledTimes(1);
+  expect(resumePolling).not.toHaveBeenCalled();
+
+  utils.unmount();
+
+  expect(resumePolling).toHaveBeenCalledTimes(1);
+  // Only mount pauses, only unmount resumes - neither fires a second time.
+  expect(pausePolling).toHaveBeenCalledTimes(1);
+});
+
+// Proves the guards in componentDidMount/componentWillUnmount: every other
+// test in this file already renders and unmounts against a double built by
+// `asyncTasksDouble()`, which (by design, see that function) carries neither
+// method - so this one is explicit about what that absence is proving, rather
+// than relying on it as a side effect.
+test(
+  'mounts and unmounts without throwing when asyncTasks has neither pause nor resume method',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    const utils = renderWithStores(<DownloadsManager />, stores());
+    await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
+
+    expect(() => utils.unmount()).not.toThrow();
+  }
+);
 
 // `hasNextPage` is derived from the current response's length, not rendered
 // unconditionally - async-tasks-list.js only shows the pagination row at all

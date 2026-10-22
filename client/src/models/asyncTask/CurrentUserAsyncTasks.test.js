@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {stubApi, fn} from '@test';
+import {stubApi, fn, waitFor, useFakeTimers, useRealTimers} from '@test';
 import {CurrentUserAsyncTasks} from './CurrentUserAsyncTasks';
 import {POLLED_STATUSES, ASYNC_TASK_STATUSES} from './statuses';
 import preferences from '../preferences/PreferencesLoad';
@@ -22,6 +22,9 @@ import preferences from '../preferences/PreferencesLoad';
 const WHOAMI_ROUTE = '/whoami';
 const FILTER_ROUTE = '/async-task/filter';
 const USER_NAME = 'current-user';
+// Mirrors the store's own POLL_INTERVAL_MS (not exported, and not part of the
+// store's public surface).
+const POLL_INTERVAL_MS = 5000;
 
 function stubWhoAmI (api) {
   api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
@@ -266,6 +269,69 @@ describe('cancelTask', () => {
     expect(call.method).toBe('POST');
     expect(result).toEqual(cancelledTask);
   });
+});
+
+describe('pausePolling / resumePolling', () => {
+  // The guard both methods open with: an instance built with
+  // `{autoUpdate: false}` - every other test in this file - has no `poller`
+  // at all, and `/downloads` (DownloadsManager.js) calls both unconditionally
+  // on mount/unmount, so a minimal store double or a test instance must never
+  // throw from either.
+  it('are safe no-ops on an instance with no poller', () => {
+    const store = newStore();
+
+    expect(() => store.pausePolling()).not.toThrow();
+    expect(() => store.resumePolling()).not.toThrow();
+  });
+
+  it(
+    'pausePolling stops the scheduled poll, and resumePolling restarts it',
+    async () => {
+      useFakeTimers();
+      const api = stubApi();
+      stubWhoAmI(api);
+      api.reply(FILTER_ROUTE, []);
+      // A real poller this time - the default `autoUpdate`, not `newStore()`'s
+      // `{autoUpdate: false}` - since pausePolling/resumePolling exist only
+      // to act on one.
+      const store = new CurrentUserAsyncTasks();
+      try {
+        // continuousFetch's own `fetchImmediate` default covers this first
+        // call, from the constructor itself.
+        await waitFor(() => expect(
+          api.calls.filter(c => c.path === FILTER_ROUTE).length
+        ).toBe(1));
+
+        store.pausePolling();
+
+        // Proves the poll stopped, not merely slowed: a `waitFor` that is
+        // expected to time out is what actually drains the fake clock far
+        // enough to tell the two apart (see DownloadsManager.test.jsx's own
+        // "keeps refreshing..." test for the same reasoning) - a bare
+        // `advanceTimers` here would prove nothing, since nothing would then
+        // observe whether a second call landed.
+        await expect(waitFor(() => expect(
+          api.calls.filter(c => c.path === FILTER_ROUTE).length
+        ).toBe(2), {timeout: POLL_INTERVAL_MS * 2})).rejects.toThrow();
+        expect(api.calls.filter(c => c.path === FILTER_ROUTE).length).toBe(1);
+
+        store.resumePolling();
+
+        // `setContinuous(true)` fetches immediately (continuous-fetch/
+        // index.js), so this does not need to wait out a further interval.
+        await waitFor(() => expect(
+          api.calls.filter(c => c.path === FILTER_ROUTE).length
+        ).toBe(2));
+      } finally {
+        // Stops the poller this test started: the suite has no teardown for
+        // a live poller today, so this test - the only one that builds one -
+        // owns cleaning it up, or it would keep firing into the next test
+        // and trip the harness's network guard.
+        store.poller.stop();
+        useRealTimers();
+      }
+    }
+  );
 });
 
 describe('consumeTask', () => {
