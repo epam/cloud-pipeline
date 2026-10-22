@@ -63,6 +63,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
@@ -1858,6 +1859,13 @@ For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#contr
 ***
 
 ## Notable Bug fixes
+
+### Launch form: a conditional multi-select enum parameter is shown empty
+
+[#4673](https://github.com/epam/cloud-pipeline/issues/4673)
+
+Previously, a multi-select enum parameter defined under `conditional_parameters` did not get its default value when its condition matched.
+Now, the launch form shows its default value.
 
 ### Launch: a run name alias replaces the run's custom and required tags
 
