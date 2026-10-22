@@ -48,8 +48,33 @@ function asyncTasksDouble (overrides = {}) {
   }, overrides));
 }
 
+// The page now renders <AsyncTasksFilters> internally, which @injects these
+// two stores (admin controls the Owner control's visibility); every render
+// of <DownloadsManager /> needs both, or mobx-react's inject throws "Store
+// '...' is not available!".
+function authenticatedUserInfoDouble (admin = true) {
+  return observable({
+    loaded: true,
+    value: {userName: USER_NAME, admin}
+  });
+}
+
+function usersDouble () {
+  return observable({
+    loaded: true,
+    value: [
+      {id: 1, userName: USER_NAME},
+      {id: 2, userName: 'someone-else'}
+    ]
+  });
+}
+
 function stores (overrides = {}) {
-  return {asyncTasks: asyncTasksDouble(overrides)};
+  return {
+    asyncTasks: asyncTasksDouble(overrides),
+    authenticatedUserInfo: authenticatedUserInfoDouble(),
+    users: usersDouble()
+  };
 }
 
 function stubFilter (api, tasks) {
@@ -57,22 +82,36 @@ function stubFilter (api, tasks) {
   api.reply(FILTER_ROUTE, tasks);
 }
 
-test('fetches its own unfiltered task list on mount, with no statuses/page/pageSize', async () => {
-  const api = stubApi();
-  stubFilter(api, []);
+// Finds the filter bar's labelled row by its rendered "Label:" text - the
+// same shape async-tasks-filters.test.jsx uses for the component in
+// isolation.
+function filterRow (label) {
+  return screen.getByText(`${label}:`).closest('div');
+}
 
-  renderWithStores(<DownloadsManager />, stores());
+test(
+  'fetches on mount with the owner seeded to the current user, and no statuses/page/pageSize',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
 
-  await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
-  const call = api.calls.find(c => c.path === FILTER_ROUTE);
-  expect(call.method).toBe('POST');
-  const body = JSON.parse(call.body);
-  expect(body.type).toBe('DOWNLOAD_ARCHIVE');
-  expect(body.owner).toBe(USER_NAME);
-  expect(body).not.toHaveProperty('statuses');
-  expect(body).not.toHaveProperty('page');
-  expect(body).not.toHaveProperty('pageSize');
-});
+    renderWithStores(<DownloadsManager />, stores());
+
+    await waitFor(() => expect(api.calls.some(c => c.path === FILTER_ROUTE)).toBe(true));
+    const call = api.calls.find(c => c.path === FILTER_ROUTE);
+    expect(call.method).toBe('POST');
+    const body = JSON.parse(call.body);
+    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
+    // The default owner now comes from the filter bar's state (seeded to the
+    // current user on the first load), not a bare whoAmI fallback - see
+    // DownloadsManager's loadTasks. Still no statuses: nothing is selected
+    // in the filter bar by default.
+    expect(body.owner).toBe(USER_NAME);
+    expect(body).not.toHaveProperty('statuses');
+    expect(body).not.toHaveProperty('page');
+    expect(body).not.toHaveProperty('pageSize');
+  }
+);
 
 test('renders the heading and the rows from its own response', async () => {
   const api = stubApi();
@@ -135,6 +174,94 @@ test('shows the cap hint only when the injected store reports the limit reached'
   await new Promise(resolve => setTimeout(resolve, 0));
 });
 
+test(
+  'committing the Status column filter re-issues the request with that filter in the body',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithStores(<DownloadsManager />, stores());
+
+    await waitFor(() => expect(
+      api.calls.filter(c => c.path === FILTER_ROUTE).length
+    ).toBe(1));
+
+    // The Status column's own filter dropdown (async-tasks-list.js), a
+    // custom antd Table column filter - not a bar-level control. Found by
+    // its own `aria-label`, not antd's locale-dependent `title` (see
+    // async-tasks-list.js's `filterIcon` and async-tasks-list.test.jsx's
+    // comment on `openStatusesFilter`).
+    await click(screen.getByLabelText('Filter by status'));
+    await click(screen.getByRole('checkbox', {name: 'RUNNING'}));
+    await click(screen.getByText('OK'));
+
+    await waitFor(() => expect(
+      api.calls.filter(c => c.path === FILTER_ROUTE).length
+    ).toBe(2));
+    const call = api.calls.filter(c => c.path === FILTER_ROUTE)[1];
+    const body = JSON.parse(call.body);
+    expect(body.statuses).toEqual(['RUNNING']);
+  }
+);
+
+// Covers the regression the plan this phase follows calls out as "the one
+// most likely to regress into re-seeding on the next poll": once the user
+// has deliberately chosen an owner, a later background tick must not
+// silently overwrite it back to the seeded default. Driven through picking
+// a DIFFERENT owner rather than clearing the filter back to "every user":
+// rc-select 6.9.8's (the version antd 2.13.14 pins) single-select clear icon
+// renders with no text, role, label or title - verified against the
+// installed package - so it cannot be reached under test/AGENTS.md rule 6.
+//
+// This proves the guard holds once `filters.owner` is non-empty; it does
+// NOT exercise the narrower race `setFilter`'s own comment documents - an
+// admin clearing the owner filter back to undefined while the very first
+// `loadTasks` call is still awaiting `whoAmI`. That path is covered by
+// marking `this.ownerSeeded` inside `setFilter` itself rather than by a test
+// here, for the same reason: there is no accessible way to drive the actual
+// "clear" interaction from this suite either.
+test(
+  'picking a different owner persists across a poll tick, never reseeded back',
+  async () => {
+    useFakeTimers();
+    try {
+      const api = stubApi();
+      stubFilter(api, []);
+
+      renderWithStores(<DownloadsManager />, stores());
+
+      await waitFor(() => expect(
+        api.calls.filter(c => c.path === FILTER_ROUTE).length
+      ).toBe(1));
+      const firstBody = JSON.parse(
+        api.calls.filter(c => c.path === FILTER_ROUTE)[0].body
+      );
+      expect(firstBody.owner).toBe(USER_NAME);
+
+      await click(within(filterRow('Owner')).getByRole('combobox'));
+      await click(screen.getByRole('menuitem', {name: 'someone-else'}));
+
+      await waitFor(() => expect(
+        api.calls.filter(c => c.path === FILTER_ROUTE).length
+      ).toBe(2));
+
+      // Ticks past one background poll interval. If the seeding guard were
+      // keyed on "the first call" rather than "has a userName ever been
+      // seeded", this would silently overwrite the chosen owner back to
+      // USER_NAME on this very tick.
+      await waitFor(() => expect(
+        api.calls.filter(c => c.path === FILTER_ROUTE).length
+      ).toBe(3), {timeout: POLL_INTERVAL_MS * 2});
+
+      const calls = api.calls.filter(c => c.path === FILTER_ROUTE);
+      const lastBody = JSON.parse(calls[calls.length - 1].body);
+      expect(lastBody.owner).toBe('someone-else');
+    } finally {
+      useRealTimers();
+    }
+  }
+);
+
 test('cancelling a task calls the store and re-issues the page\'s own request', async () => {
   const api = stubApi();
   stubFilter(api, [
@@ -147,7 +274,11 @@ test('cancelling a task calls the store and re-issues the page\'s own request', 
   ]);
   const asyncTasks = asyncTasksDouble();
 
-  renderWithStores(<DownloadsManager />, {asyncTasks});
+  renderWithStores(<DownloadsManager />, {
+    asyncTasks,
+    authenticatedUserInfo: authenticatedUserInfoDouble(),
+    users: usersDouble()
+  });
 
   const row = (await screen.findByText('archive-running')).closest('tr');
   await click(within(row).getByRole('button', {name: /Cancel/i}));
@@ -175,7 +306,11 @@ test('disables row actions while a cancel is in flight, re-enabling once it sett
     }))
   });
 
-  renderWithStores(<DownloadsManager />, {asyncTasks});
+  renderWithStores(<DownloadsManager />, {
+    asyncTasks,
+    authenticatedUserInfo: authenticatedUserInfoDouble(),
+    users: usersDouble()
+  });
 
   const findRow = () => screen.getByText('archive-in-flight').closest('tr');
   await screen.findByText('archive-in-flight');

@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Button, Icon, Tooltip} from 'antd';
+import {Table, Button, Icon, Tooltip, Checkbox} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
@@ -29,6 +29,11 @@ import {
   normalizeStatus,
   archiveNameOf
 } from '../../../models/asyncTask/statuses';
+import styles from './async-tasks-list.css';
+
+// All eight statuses, in the vocabulary's own declaration order - the
+// checkbox list the Status column's filter dropdown offers.
+const ALL_STATUSES = Object.keys(ASYNC_TASK_STATUSES);
 
 // Purely presentational: no @inject, no model import, no store. Everything it
 // needs arrives as props, so it is testable without a Provider or a router,
@@ -62,6 +67,107 @@ function archiveSizeOf (task) {
 }
 
 class AsyncTasksList extends React.Component {
+  // Pure UI mechanics: whether the Status column's filter dropdown is open,
+  // and which boxes are ticked while it is - "pending" until OK or Clear
+  // commits them. The *committed* filter (`this.props.statusesFilter`) is
+  // owned by the parent, which is what actually drives the server request -
+  // this component stays free of @inject and model imports either way.
+  state = {
+    statusesFilterVisible: false,
+    pendingStatuses: []
+  };
+
+  get committedStatuses () {
+    return this.props.statusesFilter || [];
+  }
+
+  openStatusesFilter = () => {
+    this.setState({
+      statusesFilterVisible: true,
+      pendingStatuses: this.committedStatuses.slice()
+    });
+  };
+
+  toggleStatus = (status) => (event) => {
+    const {pendingStatuses} = this.state;
+    const nextStatuses = new Set(pendingStatuses);
+    if (event.target.checked) {
+      nextStatuses.add(status);
+    } else {
+      nextStatuses.delete(status);
+    }
+    this.setState({pendingStatuses: [...nextStatuses]});
+  };
+
+  // Commits `statuses` as the filter - an empty array becomes `undefined`,
+  // never sent on as `[]`: the key-omission rule this feature's request
+  // bodies follow throughout (never an empty array, never an empty string).
+  commitStatusesFilter = (statuses) => {
+    const {onStatusesFilterChange} = this.props;
+    this.setState({statusesFilterVisible: false, pendingStatuses: []});
+    if (onStatusesFilterChange) {
+      onStatusesFilterChange(statuses && statuses.length ? statuses : undefined);
+    }
+  };
+
+  handleStatusesFilterOk = () => {
+    this.commitStatusesFilter(this.state.pendingStatuses);
+  };
+
+  handleStatusesFilterClear = () => {
+    this.commitStatusesFilter(undefined);
+  };
+
+  // Called by antd's Table filter Dropdown itself - on open (seed the
+  // pending checkboxes from the committed filter) and on close by any means
+  // other than our own OK/Clear links, e.g. a click outside the dropdown,
+  // which commits whatever is currently ticked. Copies
+  // client/src/components/runs/run-table/columns/state-utilities.js's
+  // onDropdownVisibilityChanged "commit on close" shape, reimplemented
+  // locally for this single-parameter case rather than imported: that file's
+  // helpers are shaped around a host table's own `{filters, filtersState}`
+  // state (and a `search` sub-feature this column does not need), built for
+  // column-run.js's two-parameter statuses+regions combo.
+  handleStatusesFilterVisibleChange = (visible) => {
+    if (visible) {
+      this.openStatusesFilter();
+    } else {
+      this.commitStatusesFilter(this.state.pendingStatuses);
+    }
+  };
+
+  // Copies the Checkbox-list-plus-OK/Clear shape of
+  // client/src/components/runs/run-table/columns/column-run.js's
+  // StatusesRegionsFilterComponent (lines 31-143), minus the regions half
+  // this column has no equivalent of. `cp-filter-popover-container` is the
+  // existing theme class that component also reuses - no new `cp-*` class.
+  get statusesFilterDropdown () {
+    const {pendingStatuses} = this.state;
+    const pendingSet = new Set(pendingStatuses);
+    return (
+      <div
+        className={classNames(styles.filterPopoverContainer, 'cp-filter-popover-container')}
+      >
+        {
+          ALL_STATUSES.map((status) => (
+            <div key={status} className={styles.filterItem}>
+              <Checkbox
+                checked={pendingSet.has(status)}
+                onChange={this.toggleStatus(status)}
+              >
+                {status}
+              </Checkbox>
+            </div>
+          ))
+        }
+        <div className={styles.filterActionsButtonsContainer}>
+          <a onClick={this.handleStatusesFilterOk}>{'OK'}</a>
+          <a onClick={this.handleStatusesFilterClear}>{'Clear'}</a>
+        </div>
+      </div>
+    );
+  }
+
   get columns () {
     const {onCancel, onDownload, disabled} = this.props;
     return [
@@ -91,6 +197,29 @@ class AsyncTasksList extends React.Component {
       {
         title: 'Status',
         key: 'status',
+        // A custom column filter, the same shape
+        // client/src/components/runs/run-table/columns/column-run.js uses:
+        // `filterDropdown` is our own JSX, `filterDropdownVisible` and
+        // `onFilterDropdownVisibleChange` make it a controlled dropdown, and
+        // `filteredValue` (an antd-recognised Column prop - see
+        // node_modules/antd/lib/table/Column.d.ts) lights the header's
+        // filter icon blue once a status is committed.
+        filterDropdown: this.statusesFilterDropdown,
+        filterDropdownVisible: this.state.statusesFilterVisible,
+        onFilterDropdownVisibleChange: this.handleStatusesFilterVisibleChange,
+        filteredValue: this.committedStatuses.length ? ['filtered'] : [],
+        // A custom `filterIcon`, visually identical to antd's default
+        // (`type="filter"`) but carrying our own `aria-label` - antd's
+        // `FilterMenu.renderFilterIcon` (node_modules/antd/lib/table/
+        // filterDropdown.js) *always* overwrites this element's `title` to
+        // the current locale's `filterTitle` (no LocaleProvider is
+        // configured in the test harness, so that title renders in antd's
+        // default zh-CN today), but leaves every other prop - this
+        // `aria-label` included - untouched. Querying by that locale- and
+        // antd-version-dependent title would be exactly the antd-internals
+        // coupling client/test/AGENTS.md rule 6 warns against; this label is
+        // ours, so the test queries it instead.
+        filterIcon: <Icon type="filter" aria-label="Filter by status" />,
         render: (task) => {
           const {status, errorMessage} = task;
           const content = (
@@ -174,7 +303,9 @@ AsyncTasksList.propTypes = {
   pending: PropTypes.bool,
   onCancel: PropTypes.func,
   onDownload: PropTypes.func,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  statusesFilter: PropTypes.array,
+  onStatusesFilterChange: PropTypes.func
 };
 
 AsyncTasksList.defaultProps = {
@@ -182,7 +313,8 @@ AsyncTasksList.defaultProps = {
   pending: false,
   onCancel: () => {},
   onDownload: () => {},
-  disabled: false
+  disabled: false,
+  onStatusesFilterChange: () => {}
 };
 
 export default AsyncTasksList;

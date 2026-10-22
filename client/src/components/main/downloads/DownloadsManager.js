@@ -23,6 +23,7 @@ import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
 import whoAmI from '../../../models/user/WhoAmI';
 import {ASYNC_TASK_TYPES} from '../../../models/asyncTask/statuses';
 import AsyncTasksList from './async-tasks-list';
+import AsyncTasksFilters from './async-tasks-filters';
 import downloadArchiveTask from './download-archive-task';
 import continuousFetch from '../../../utils/continuous-fetch';
 import styles from './DownloadsManager.css';
@@ -62,13 +63,27 @@ export default class DownloadsManager extends React.Component {
     // only. Without it, `request.pending` (set by every `send()`, success or
     // failure - see RemotePost) would flash it on every 5-second background
     // poll for as long as the page stays open.
-    hasLoadedOnce: false
+    hasLoadedOnce: false,
+    // Page-local UI state, not a store: client/AGENTS.md calls for anything
+    // request-scoped to be instantiated in the component rather than added to
+    // the global Provider. Shape: {owner, statuses}, every key optional.
+    // `owner` comes from the admin-only Owner Select in async-tasks-filters.js;
+    // `statuses` comes from the Status column's own filter dropdown in
+    // async-tasks-list.js - two different UI surfaces, one filter object.
+    filters: {}
   };
 
   constructor (props) {
     super(props);
     this.request = new AsyncTaskFilter();
   }
+
+  // Seeds `filters.owner` to the current user on the first load only - see the
+  // comment inside `loadTasks`. A plain instance field, not state: an admin
+  // who deliberately clears the owner filter must not be re-seeded on the
+  // next 5-second poll, and state would offer no way to tell "never seeded"
+  // apart from "seeded, then cleared".
+  ownerSeeded = false;
 
   componentDidMount () {
     // Polls this page's own request continuously while it is mounted, so a
@@ -111,17 +126,49 @@ export default class DownloadsManager extends React.Component {
   // behaviour, not this one's. A persistently failing endpoint is still
   // retried at the fixed interval instead of backing off - a known, accepted
   // tradeoff here, not an oversight.
+  //
+  // One other known, accepted tradeoff: the poller and `setFilter` share this
+  // one `AsyncTaskFilter` instance, and `RemotePost.send` (src/models/basic/
+  // RemotePost.js) silently no-ops while a previous `send()` on the same
+  // instance is still in flight. So a filter committed in the narrow window
+  // while a background poll's request is already in flight does not reach
+  // the server on this call - but `this.state.filters` already holds the new
+  // value, so the very next poll tick (at most POLL_INTERVAL_MS later) reads
+  // it fresh and sends it. A momentary, bounded delay, not a lost filter.
   loadTasks = async () => {
     try {
       await whoAmI.fetchIfNeededOrWait();
       const {userName} = whoAmI.loaded ? (whoAmI.value || {}) : {};
+      let {filters} = this.state;
+      // Seeds `filters.owner` to the current user, once, the first time a
+      // userName is actually known - the explicit "current user by default"
+      // ask. Gating on `userName` rather than merely "the first call" lets a
+      // slow or momentarily failing `/whoami` retry on a later poll instead
+      // of seeding forever skipped. Once seeded, `this.ownerSeeded` stays
+      // true for the rest of the session, so an admin who deliberately
+      // clears the owner filter afterwards is never re-seeded by the next
+      // 5-second poll.
+      if (!this.ownerSeeded && userName) {
+        this.ownerSeeded = true;
+        if (filters.owner === undefined) {
+          filters = {...filters, owner: userName};
+          this.setState({filters});
+        }
+      }
       const body = {type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE};
-      // `owner` is sent explicitly, the same way the background poll does,
-      // because it is ACL-guarded server-side rather than a filter a regular
-      // user could abuse. Deliberately no `statuses`, no `page`, no
-      // `pageSize`: see the comment above this class.
-      if (userName) {
-        body.owner = userName;
+      // Deliberately no `page`, no `pageSize`: see the comment above this
+      // class. `owner`/`statuses` are added only when the filter bar/column
+      // has a value for them - never an empty array, never an empty string -
+      // so a cleared filter reads to the backend as "unfiltered" rather than
+      // "match nothing". In particular, once the owner has been seeded
+      // above, a cleared `filters.owner` must NOT fall back to `userName`:
+      // that fallback only ever applies before the first seed, which is why
+      // it lives inside the `if` above rather than here.
+      if (filters.owner) {
+        body.owner = filters.owner;
+      }
+      if (Array.isArray(filters.statuses) && filters.statuses.length > 0) {
+        body.statuses = filters.statuses;
       }
       await this.request.send(body);
       if (this.request.error) {
@@ -174,6 +221,43 @@ export default class DownloadsManager extends React.Component {
     }
   };
 
+  // The single contract both filter sources below go through: a falsy or
+  // empty-array value deletes its key rather than storing it as `[]`/
+  // `undefined` - the same "a cleared filter omits its key entirely" rule
+  // `loadTasks` applies when building the request body. Re-fetches directly
+  // rather than through `this.poller.fetch()`: a plain `loadTasks()` call is
+  // simpler and the poller keeps its own 5-second schedule regardless.
+  setFilter = (key, value) => {
+    const next = {...this.state.filters};
+    const isEmpty = !value || (Array.isArray(value) && value.length === 0);
+    if (isEmpty) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+    // Closes the one gap `loadTasks`'s own seeding guard cannot close by
+    // itself: "cleared" and "never touched" are both `filters.owner ===
+    // undefined", so if the admin clears the Owner filter while the very
+    // first `loadTasks` call is still awaiting `whoAmI.fetchIfNeededOrWait()`,
+    // that call would otherwise see an undefined `owner`, not yet know
+    // `ownerSeeded`, and seed it right back to the current user once it
+    // resolves - silently undoing a deliberate clear. Marking it seeded here,
+    // the moment the owner filter is touched at all (cleared or set), closes
+    // that race regardless of timing.
+    if (key === 'owner') {
+      this.ownerSeeded = true;
+    }
+    this.setState({filters: next}, () => {
+      this.loadTasks();
+    });
+  };
+
+  // async-tasks-filters.js's admin-only Owner Select.
+  handleOwnerFilterChange = (owner) => this.setFilter('owner', owner);
+
+  // async-tasks-list.js's Status column filter dropdown.
+  handleStatusesFilterChange = (statuses) => this.setFilter('statuses', statuses);
+
   render () {
     const {asyncTasks} = this.props;
     return (
@@ -189,12 +273,18 @@ export default class DownloadsManager extends React.Component {
             </span>
           ) : null
         }
+        <AsyncTasksFilters
+          owner={this.state.filters.owner}
+          onChange={this.handleOwnerFilterChange}
+        />
         <AsyncTasksList
           tasks={this.tasks}
           pending={!this.state.hasLoadedOnce && !!(this.request && this.request.pending)}
           onCancel={this.handleCancel}
           onDownload={this.handleDownload}
           disabled={this.state.actionPending}
+          statusesFilter={this.state.filters.statuses}
+          onStatusesFilterChange={this.handleStatusesFilterChange}
         />
       </div>
     );

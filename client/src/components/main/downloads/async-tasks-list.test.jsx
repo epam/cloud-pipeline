@@ -231,3 +231,72 @@ test('renders a dash, not "0 bytes", when archiveSizeBytes is null', () => {
   expect(within(row).getByText('—')).toBeInTheDocument();
   expect(within(row).queryByText('0 bytes')).not.toBeInTheDocument();
 });
+
+// The Status column's own filter dropdown - a custom antd Table column
+// filter, copying client/src/components/runs/run-table/columns/
+// column-run.js's StatusesRegionsFilterComponent (a Checkbox per value, OK/
+// Clear links). Its own open/pending-checkbox state is local UI mechanics;
+// the *committed* filter is owned by the parent through `statusesFilter`/
+// `onStatusesFilterChange`, so this component stays free of @inject and a
+// model import either way. The dropdown's overlay renders through rc-trigger
+// into a portal, so it is queried via `screen`, the same caveat phase 6's
+// modal and phase 14's popover already had to work around (client/test/
+// AGENTS.md, "mouseenter/mouseleave do not reach a component", applies to
+// rc-trigger content generally). The filter icon is found by its own
+// `aria-label`, not by antd's `title` - that title is always antd's current
+// locale's `filterTitle` (no LocaleProvider is configured in this harness,
+// so it renders in antd's default zh-CN today), which is exactly the
+// antd-internals coupling rule 6 warns against.
+function openStatusesFilter () {
+  return click(screen.getByLabelText('Filter by status'));
+}
+
+test('ticking a status and clicking OK calls onStatusesFilterChange with it', async () => {
+  const onStatusesFilterChange = fn();
+  render(<AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />);
+
+  await openStatusesFilter();
+  await click(screen.getByRole('checkbox', {name: 'PENDING'}));
+  await click(screen.getByText('OK'));
+
+  expect(onStatusesFilterChange).toHaveBeenCalledWith(['PENDING']);
+});
+
+test(
+  'clicking Clear calls onStatusesFilterChange with no statuses, never an empty array',
+  async () => {
+    const onStatusesFilterChange = fn();
+    render(
+      <AsyncTasksList
+        tasks={[]}
+        statusesFilter={['PENDING']}
+        onStatusesFilterChange={onStatusesFilterChange}
+      />
+    );
+
+    await openStatusesFilter();
+    await click(screen.getByText('Clear'));
+
+    expect(onStatusesFilterChange).toHaveBeenCalledWith(undefined);
+  }
+);
+
+test('ticking a box without clicking OK does not call onStatusesFilterChange', async () => {
+  const onStatusesFilterChange = fn();
+  render(<AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />);
+
+  await openStatusesFilter();
+  await click(screen.getByRole('checkbox', {name: 'RUNNING'}));
+
+  expect(onStatusesFilterChange).not.toHaveBeenCalled();
+});
+
+test('reopening the status filter re-ticks the already-committed statuses', async () => {
+  render(<AsyncTasksList tasks={[]} statusesFilter={['PENDING', 'RUNNING']} />);
+
+  await openStatusesFilter();
+
+  expect(screen.getByRole('checkbox', {name: 'PENDING'})).toBeChecked();
+  expect(screen.getByRole('checkbox', {name: 'RUNNING'})).toBeChecked();
+  expect(screen.getByRole('checkbox', {name: 'FAILED'})).not.toBeChecked();
+});
