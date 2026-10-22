@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import compareArrays from '../../utils/compareArrays';
+
 // The shared async-task status vocabulary, so nothing else in this feature
 // hard-codes a status string.
 
@@ -93,4 +95,31 @@ export function taskArchiveIsAvailable (task) {
 // (or `params` itself) is missing.
 export function archiveNameOf (task) {
   return (task && task.params && task.params.archiveName) || (task && task.id);
+}
+
+// The single "differs from default" comparison for the Status column's
+// filter - shared by async-tasks-list.js (the header icon's highlight and
+// `filteredValue`) and DownloadsManager.js (the "Reset filters" control's
+// visibility), so the two can never drift apart the way the Owner column's
+// equivalent once did. `compareArrays` is order-independent, which is what
+// makes this correct regardless of checkbox order. `defaultStatuses`
+// defaults to POLLED_STATUSES because that is every caller's own default
+// today, but it is a parameter rather than a hard-coded reference so a
+// future caller with a different default is not forced to fake one up.
+export function statusesAreFiltered (statuses, defaultStatuses = POLLED_STATUSES) {
+  return !compareArrays(statuses || [], defaultStatuses);
+}
+
+// The single "differs from default" comparison for the Owner column's
+// filter, the owner equivalent of `statusesAreFiltered` above - shared by
+// the same two call sites for the same reason. `defaultOwner` is the
+// current user, known only once `/whoami` has resolved (DownloadsManager's
+// own `defaultOwner` field): while it is still unknown, there is nothing to
+// compare against yet, so this reports "not filtered" rather than treating
+// an as-yet-unseeded `owner` as a deliberate change.
+export function ownerIsFiltered (owner, defaultOwner) {
+  if (defaultOwner === undefined) {
+    return false;
+  }
+  return (owner || undefined) !== defaultOwner;
 }

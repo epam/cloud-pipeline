@@ -22,7 +22,9 @@ import {
   taskCanBeCancelled,
   taskArchiveIsAvailable,
   normalizeStatus,
-  archiveNameOf
+  archiveNameOf,
+  statusesAreFiltered,
+  ownerIsFiltered
 } from './statuses';
 
 describe('taskIsActive', () => {
@@ -146,5 +148,50 @@ describe('POLLED_STATUSES', () => {
     expect([...POLLED_STATUSES].sort()).toEqual(
       [...ACTIVE_STATUSES, 'SUCCESS', 'FAILED'].sort()
     );
+  });
+});
+
+// The shared "differs from default" comparisons the Status/Owner column
+// filter icons (async-tasks-list.js) and the "Reset filters" control
+// (DownloadsManager.js) both call, so the two can never independently decide
+// what "default" means - see each function's own comment in ./statuses.js.
+describe('statusesAreFiltered', () => {
+  test('false when the selection equals the default', () => {
+    expect(statusesAreFiltered(POLLED_STATUSES, POLLED_STATUSES)).toBe(false);
+  });
+  test('false when the selection equals the default in a different order', () => {
+    expect(statusesAreFiltered([...POLLED_STATUSES].reverse(), POLLED_STATUSES)).toBe(false);
+  });
+  test('false for an empty selection against an empty default', () => {
+    expect(statusesAreFiltered([], [])).toBe(false);
+  });
+  test('true when the selection differs from the default', () => {
+    expect(statusesAreFiltered([...POLLED_STATUSES, 'CANCELLED'], POLLED_STATUSES)).toBe(true);
+  });
+  test('treats a missing selection as empty, not a throw', () => {
+    expect(statusesAreFiltered(undefined, POLLED_STATUSES)).toBe(true);
+  });
+  test('defaults the comparison target to POLLED_STATUSES when none is given', () => {
+    expect(statusesAreFiltered(POLLED_STATUSES)).toBe(false);
+    expect(statusesAreFiltered(['CANCELLED'])).toBe(true);
+  });
+});
+
+describe('ownerIsFiltered', () => {
+  test('false when the owner equals defaultOwner, even though a value is set', () => {
+    expect(ownerIsFiltered('current-user', 'current-user')).toBe(false);
+  });
+  test('true when the owner differs from defaultOwner', () => {
+    expect(ownerIsFiltered('someone-else', 'current-user')).toBe(true);
+  });
+  test('false when neither owner nor defaultOwner is set', () => {
+    expect(ownerIsFiltered(undefined, undefined)).toBe(false);
+  });
+  test('false while defaultOwner is not yet known, regardless of owner', () => {
+    expect(ownerIsFiltered('someone-else', undefined)).toBe(false);
+    expect(ownerIsFiltered(undefined, undefined)).toBe(false);
+  });
+  test('true when owner is cleared but defaultOwner is known', () => {
+    expect(ownerIsFiltered(undefined, 'current-user')).toBe(true);
   });
 });

@@ -756,19 +756,45 @@ describe('the Owner column', () => {
   // filter icon highlight is driven by in production; asserting on that
   // icon's own internal class here would be exactly the antd-internals
   // coupling rule 6 warns against.
-  test('filteredValue lights the icon once an owner is set', () => {
-    let instance;
-    renderList({isAdmin: true, ownerFilter: 'someone-else', ref: (r) => { instance = r; }});
+  //
+  // `ownerFiltered`'s semantics: "differs from `defaultOwner`" (the current
+  // user, passed down from DownloadsManager), never "is anything set at
+  // all" - an owner is set from the very first load, since it is seeded by
+  // default, so a lit icon from that alone would be permanently wrong. See
+  // `ownerIsFiltered` in models/asyncTask/statuses.js.
+  describe('filteredValue - differs from defaultOwner, not "is anything set"', () => {
+    test('is empty when the committed owner equals defaultOwner, even though it is set', () => {
+      let instance;
+      renderList({
+        isAdmin: true,
+        ownerFilter: 'current-user',
+        defaultOwner: 'current-user',
+        ref: (r) => { instance = r; }
+      });
 
-    const ownerColumn = instance.columns.find((column) => column.key === 'owner');
-    expect(ownerColumn.filteredValue).toEqual(['filtered']);
-  });
+      const ownerColumn = instance.columns.find((column) => column.key === 'owner');
+      expect(ownerColumn.filteredValue).toEqual([]);
+    });
 
-  test('filteredValue is empty with no owner set', () => {
-    let instance;
-    renderList({isAdmin: true, ref: (r) => { instance = r; }});
+    test('lights up once the committed owner differs from defaultOwner', () => {
+      let instance;
+      renderList({
+        isAdmin: true,
+        ownerFilter: 'someone-else',
+        defaultOwner: 'current-user',
+        ref: (r) => { instance = r; }
+      });
 
-    const ownerColumn = instance.columns.find((column) => column.key === 'owner');
-    expect(ownerColumn.filteredValue).toEqual([]);
+      const ownerColumn = instance.columns.find((column) => column.key === 'owner');
+      expect(ownerColumn.filteredValue).toEqual(['filtered']);
+    });
+
+    test('is empty while defaultOwner is not yet known, even with an owner already set', () => {
+      let instance;
+      renderList({isAdmin: true, ownerFilter: 'someone-else', ref: (r) => { instance = r; }});
+
+      const ownerColumn = instance.columns.find((column) => column.key === 'owner');
+      expect(ownerColumn.filteredValue).toEqual([]);
+    });
   });
 });

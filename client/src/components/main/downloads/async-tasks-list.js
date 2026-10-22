@@ -20,7 +20,6 @@ import {Table, Button, Icon, Tooltip, Checkbox, Popover} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
-import compareArrays from '../../../utils/compareArrays';
 import {
   ASYNC_TASK_STATUSES,
   ACTIVE_STATUSES,
@@ -29,7 +28,9 @@ import {
   taskCanBeCancelled,
   taskArchiveIsAvailable,
   normalizeStatus,
-  archiveNameOf
+  archiveNameOf,
+  statusesAreFiltered,
+  ownerIsFiltered
 } from '../../../models/asyncTask/statuses';
 import UserAutoComplete from '../../special/UserAutoComplete';
 import styles from './async-tasks-list.css';
@@ -143,20 +144,26 @@ class AsyncTasksList extends React.Component {
   // Whether the Status column's selection differs from the default
   // (POLLED_STATUSES) - the single comparison that decides both the header
   // icon's active look and `filteredValue`, computed once so the two can
-  // never drift apart. `compareArrays` is order-independent, which is what
-  // makes this correct regardless of checkbox order.
+  // never drift apart. `statusesAreFiltered` (models/asyncTask/statuses.js)
+  // is order-independent, which is what makes this correct regardless of
+  // checkbox order, and is the same comparison DownloadsManager's own
+  // "Reset filters" visibility reuses - see that file's `filtersChanged`.
   get statusesFiltered () {
-    return !compareArrays(this.committedStatuses, POLLED_STATUSES);
+    return statusesAreFiltered(this.committedStatuses, POLLED_STATUSES);
   }
 
-  // Whether any owner is committed at all - deliberately NOT "differs from
-  // the seeded default": the seeded default (the current user) is itself a
-  // real, active filter (an admin genuinely is seeing only their own tasks),
-  // so a lit icon here is accurate from the first load. Do not change this
-  // to a "differs from default" comparison - that is a different question,
-  // the one DownloadsManager's own "Reset filters" control answers.
+  // Whether the committed owner differs from the default - the current
+  // user. "Default" here means exactly what DownloadsManager seeds `owner`
+  // to on first load (its own `defaultOwner` field, passed down as the
+  // `defaultOwner` prop): a lit icon means the admin is looking at someone
+  // *other than* themselves, not merely that an owner is set at all - an
+  // owner is set from the very first load, since it is seeded by default,
+  // so "is anything set" would light this permanently. `ownerIsFiltered`
+  // (models/asyncTask/statuses.js) is the same comparison DownloadsManager's
+  // own "Reset filters" visibility reuses, so the two can never drift apart
+  // the way this used to from that one.
   get ownerFiltered () {
-    return !!this.committedOwner;
+    return ownerIsFiltered(this.committedOwner, this.props.defaultOwner);
   }
 
   openStatusesFilter = () => {
@@ -577,7 +584,14 @@ AsyncTasksList.propTypes = {
   storageNamesById: PropTypes.object,
   isAdmin: PropTypes.bool,
   ownerFilter: PropTypes.string,
-  onOwnerFilterChange: PropTypes.func
+  onOwnerFilterChange: PropTypes.func,
+  // The current user - DownloadsManager's own `defaultOwner` field, the
+  // single source of truth `ownerFiltered` compares `ownerFilter` against.
+  // `undefined` until DownloadsManager's first successful `/whoami` (see
+  // that file's own comment on `defaultOwner`), in which case `ownerFiltered`
+  // reports "not filtered" rather than guessing - see `ownerIsFiltered`
+  // (models/asyncTask/statuses.js).
+  defaultOwner: PropTypes.string
 };
 
 AsyncTasksList.defaultProps = {

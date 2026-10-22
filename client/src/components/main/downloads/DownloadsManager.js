@@ -20,8 +20,12 @@ import classNames from 'classnames';
 import {message, Button, Icon} from 'antd';
 import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
 import whoAmI from '../../../models/user/WhoAmI';
-import {ASYNC_TASK_TYPES, POLLED_STATUSES} from '../../../models/asyncTask/statuses';
-import compareArrays from '../../../utils/compareArrays';
+import {
+  ASYNC_TASK_TYPES,
+  POLLED_STATUSES,
+  statusesAreFiltered,
+  ownerIsFiltered
+} from '../../../models/asyncTask/statuses';
 import AsyncTasksList from './async-tasks-list';
 import downloadArchiveTask from './download-archive-task';
 import styles from './DownloadsManager.css';
@@ -366,22 +370,17 @@ export default class DownloadsManager extends React.Component {
   };
 
   // Whether either filter differs from its default - the single comparison
-  // that decides the "Reset filters" control's visibility below. Deliberately
-  // reuses the same two comparisons the two columns' own filter icon highlight
-  // is built from (`compareArrays` against `POLLED_STATUSES` for statuses,
-  // `async-tasks-list.js`'s `statusesFiltered`; a plain inequality against
-  // `this.defaultOwner` for owner, since the Owner column's own `ownerFiltered`
-  // deliberately means something else - "is any owner set at all", true from
-  // the first load onward - and answers a different question than "has
-  // anything actually changed from the out-of-the-box view"). Computed here
-  // rather than threaded down from `async-tasks-list.js`, since this control
-  // renders beside the heading, not inside that table.
+  // that decides the "Reset filters" control's visibility below. Calls the
+  // exact same two shared comparisons (models/asyncTask/statuses.js) that
+  // async-tasks-list.js's own `statusesFiltered`/`ownerFiltered` getters are
+  // built from, rather than re-deriving a third copy of either check - the
+  // two can no longer drift apart the way the owner one once did. Computed
+  // here rather than threaded down from `async-tasks-list.js`, since this
+  // control renders beside the heading, not inside that table.
   get filtersChanged () {
     const {filters} = this.state;
-    const statusesChanged = !compareArrays(filters.statuses || [], POLLED_STATUSES);
-    const ownerChanged = this.defaultOwner !== undefined &&
-      (filters.owner || undefined) !== this.defaultOwner;
-    return statusesChanged || ownerChanged;
+    return statusesAreFiltered(filters.statuses, POLLED_STATUSES) ||
+      ownerIsFiltered(filters.owner, this.defaultOwner);
   }
 
   // Resets both filters to their defaults in one `setState`, resets to page
@@ -466,6 +465,7 @@ export default class DownloadsManager extends React.Component {
           isAdmin={this.isAdmin}
           ownerFilter={this.state.filters.owner}
           onOwnerFilterChange={this.handleOwnerFilterChange}
+          defaultOwner={this.defaultOwner}
           statusesFilter={this.state.filters.statuses}
           onStatusesFilterChange={this.handleStatusesFilterChange}
           page={this.state.page}
