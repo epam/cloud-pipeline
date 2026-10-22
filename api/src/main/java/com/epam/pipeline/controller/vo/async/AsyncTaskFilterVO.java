@@ -69,4 +69,7 @@ public class AsyncTaskFilterVO {
 
     @Schema(description = "Omit it, or leave it at zero, to get every matching task without paging.")
     private Integer pageSize;
+
+    private AsyncTaskSortField sortBy;
+    private boolean ascending;
 }

@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.async;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
+import com.epam.pipeline.controller.vo.async.AsyncTaskSortField;
 import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.dto.async.AsyncTaskParams;
 import com.epam.pipeline.dto.async.AsyncTaskResult;
@@ -46,11 +47,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.controller.vo.async.AsyncTaskSortField.CREATED;
+
 @Service
 @RequiredArgsConstructor
 public class AsyncTaskManager {
-
-    private static final String CREATED_FIELD = "created";
     private static final String RESULT_FIELD = "result";
     private static final String ERROR_MESSAGE_FIELD = "errorMessage";
 
@@ -85,15 +86,16 @@ public class AsyncTaskManager {
     }
 
     /**
-     * Lists tasks matching the filter, newest first. Paging applies only for a positive page size;
-     * zero or absent means every match, because that is what an untouched form sends.
+     * Lists tasks matching the filter. Sorting defaults to newest created first, which is the order
+     * this method has always answered in; paging applies only for a positive page size, because zero
+     * or absent is what an untouched form sends.
      */
     public List<AsyncTask> loadByFilter(final AsyncTaskFilterVO filter) {
-        final Sort newestFirst = Sort.by(Sort.Direction.DESC, CREATED_FIELD);
+        final Sort sort = sortOf(filter);
         final List<AsyncTaskEntity> found = isPaged(filter)
-                ? repository.findAll(AsyncTaskSpecification.of(filter), pageable(filter, newestFirst))
+                ? repository.findAll(AsyncTaskSpecification.of(filter), pageable(filter, sort))
                         .getContent()
-                : repository.findAll(AsyncTaskSpecification.of(filter), newestFirst);
+                : repository.findAll(AsyncTaskSpecification.of(filter), sort);
         return found.stream().map(asyncTaskMapper::toDto).collect(Collectors.toList());
     }
 
@@ -156,6 +158,12 @@ public class AsyncTaskManager {
         Assert.isTrue(entity.getStatus().isActive(), messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ALREADY_FINISHED, id, entity.getStatus()));
         return asyncTaskMapper.toDto(entity);
+    }
+
+    private Sort sortOf(final AsyncTaskFilterVO filter) {
+        final AsyncTaskSortField sortBy = Optional.ofNullable(filter.getSortBy()).orElse(CREATED);
+        final Sort.Direction direction = filter.isAscending() ? Sort.Direction.ASC : Sort.Direction.DESC;
+        return Sort.by(direction, sortBy.getFieldName());
     }
 
     private boolean isPaged(final AsyncTaskFilterVO filter) {
