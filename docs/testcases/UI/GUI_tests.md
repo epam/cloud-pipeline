@@ -781,6 +781,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4146_4_10**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_10.md) | ROLE_USER_ADMIN: impersonate admin user |  |
 | [**4146_4_11**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_user_admin/4146_4_11.md) | ROLE_USER_ADMIN: add admin roles to user |  |
 | [**4593_1**](Role_Based_Access_Control/4593_storage_reader_role/4593_1.md) | ROLE_STORAGE_READER: read-only access to existing storages |  |
+| [**4666_1**](Role_Based_Access_Control/4666_pipeline_reader_executor_roles/4666_1.md) | ROLE_PIPELINE_READER and ROLE_PIPELINE_EXECUTOR: read and launch access to existing pipelines |  |
 
 </details>
 
