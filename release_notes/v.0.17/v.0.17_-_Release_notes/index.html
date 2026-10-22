@@ -256,6 +256,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a>
@@ -707,6 +709,7 @@
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a></li>
 <li><a href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a></li>
 <li><a href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a></li>
 <li><a href="#new-nodes-stop-being-created-after-failed-restarts-in-another-region">New nodes stop being created after failed restarts in another region</a></li>
@@ -2169,6 +2172,7 @@ The parameter also defines when a run is relaunched in another region in case of
 <h2 id="python-3-support-for-backend-services">Python 3 support for backend services</h2>
 <p><code>pipe-common</code> and the job container launch script now support running under either Python 2 or Python 3.12, selected via the <code>CP_PYTHON_VERSION</code> environment variable (<code>2</code> by default, for backward compatibility). The same support was added to the API service pod (<code>cp-api-srv</code>) and its git synchronization sidecar (<code>cp-git-sync</code>): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (<code>boto3</code>/<code>botocore</code>, <code>azure-mgmt-*</code>, <code>google-api-python-client</code>, and <code>pipe-common</code> itself), so they run under either interpreter.</p>
 <p>The <code>data_loader</code> system pipeline and the <code>Python</code> pipeline template now resolve their interpreter via <code>CP_PYTHON_PATH</code> as well, instead of a hardcoded <code>python</code>, so they also run under either Python version. The <code>pipe-demo</code> NGS demo pipelines and the <code>Luigi</code> pipeline template, which still only ran under Python 2, were removed.</p>
+<p>The WebDAV service (<code>cp-dav</code>) also moved from CentOS 7 to Rocky Linux 8 and got the same <code>CP_PYTHON_VERSION</code>/Python 3.12 support, covering its NFS-synchronization scripts and the storage <code>chown</code>/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.</p>
 <hr />
 <h2 id="run-controls-for-an-unavailable-node">Run controls for an unavailable node</h2>
 <p>When the compute node of a run stops reporting its status, the run gets the <code>NODE_UNAVAILABLE</code> tag. If the node does not recover within the grace period (the <code>cluster.node.unavailable.grace.period.minutes</code> system preference, or the <code>NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES</code> run parameter), the node is terminated.<br />
@@ -2177,6 +2181,10 @@ Previously, the GUI still showed the <strong>PAUSE</strong>, <strong>COMMIT</str
 For more details see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#controls">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4673">#4673</a></p>
+<p>Previously, a multi-select enum parameter defined under <code>conditional_parameters</code> did not get its default value when its condition matched.
+Now, the launch form shows its default value.</p>
 <h3 id="launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4626">#4626</a></p>
 <p>Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.

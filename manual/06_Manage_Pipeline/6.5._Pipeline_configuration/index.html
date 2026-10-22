@@ -590,7 +590,7 @@ In <strong><code>config.json</code></strong> file, each parameter is described a
 </tr>
 <tr>
 <td></td>
-<td>For parameters with multiple predefined scalar values.<br>In GUI, such parameter field is displayed as dropdown list, where one value can be selected.<br><br>To specify all numeration values, additional attribute shall be used in format:<br><code>"enum" : ["&lt;ENUM_VALUE1&gt;", "&lt;ENUM_VALUE2&gt;", ...]</code>, where <code>&lt;ENUM_VALUE&gt;</code> - enumeration value.<br><br><strong><em>Note</em></strong>: for additional features of <code>enum</code> type see <a href="#enum-type-features">below</a>.</td>
+<td>For parameters with multiple predefined scalar values.<br>In GUI, such parameter field is displayed as dropdown list, where one value (or several values - see <a href="#enum-type-features">below</a>) can be selected.<br><br>To specify all numeration values, additional attribute shall be used in format:<br><code>"enum" : ["&lt;ENUM_VALUE1&gt;", "&lt;ENUM_VALUE2&gt;", ...]</code>, where <code>&lt;ENUM_VALUE&gt;</code> - enumeration value.<br><br><strong><em>Note</em></strong>: for additional features of <code>enum</code> type see <a href="#enum-type-features">below</a>.</td>
 <td><code>enum</code></td>
 <td><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_27.png" /><br><br>In the GUI:<br><img alt="CP_PipelineConfiguration" src="../attachments/ConfigJson_20.png" /></td>
 </tr>
@@ -770,6 +770,21 @@ parameters: {
 ...
 </code></pre>
 <p>In the example above, values <code>hg19</code> and <code>hg38</code> will be visible for parameter <code>p2</code> only if parameter <code>p1</code> is set to <code>human</code>.</p>
+<p>To allow several enumeration values to be selected, set the attribute <strong><code>multiple</code></strong> to <code>true</code>.
+The parameter's value is then a comma-separated list of the selected values, and its default value is set in the same format:</p>
+<pre><code class="language-json">...
+parameters: {
+    &quot;p4&quot;: {
+        &quot;type&quot; : &quot;enum&quot;,
+        &quot;enum&quot; : [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;],
+        &quot;multiple&quot; : true,
+        &quot;value&quot; : &quot;a,c&quot;
+    }
+    ...
+}
+...
+</code></pre>
+<p>In the example above, <code>a</code> and <code>c</code> will be selected by default, and the parameter's value will be <code>a,c</code>.</p>
 <h4 id="metadata-type-features"><code>Metadata</code> type features</h4>
 <p>If the parameter has <code>"type" : "metadata"</code>, then format of its value shall be: <code>&lt;METADATA_OBJECT_ID&gt;:&lt;INSTANCE_TYPE_NAME&gt;:&lt;INSTANCE_ID1&gt;,&lt;INSTANCE_ID2&gt;,...</code><br />
 Where:</p>
