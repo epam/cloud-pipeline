@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -57,11 +57,11 @@ public class DtsRunConfigurationEntry extends AbstractRunConfigurationEntry {
         if (coresNumber != null && coresNumber < 0) {
             return false;
         }
-        if (pipelineId == null && StringUtils.hasText(dockerImage) &&
-                StringUtils.hasText(cmdTemplate)) {
+        if (pipelineId == null && StringUtils.isNotBlank(dockerImage) &&
+                StringUtils.isNotBlank(cmdTemplate)) {
             return true;
         }
-        return pipelineId != null && StringUtils.hasText(pipelineVersion);
+        return pipelineId != null && StringUtils.isNotBlank(pipelineVersion);
     }
 
     @Override

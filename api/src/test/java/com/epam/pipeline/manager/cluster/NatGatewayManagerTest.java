@@ -16,17 +16,24 @@
 package com.epam.pipeline.manager.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.entity.cluster.nat.NatRouteStatus;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRuleDescription;
 import com.epam.pipeline.entity.cluster.nat.NatRoutingRulesRequest;
 import com.epam.pipeline.manager.AbstractManagerTest;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +43,7 @@ import java.util.List;
 
 @Transactional
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+@ExtendWith(MockitoExtension.class)
 public class NatGatewayManagerTest extends AbstractManagerTest {
 
     private static final String NAT_ROUTE_DOMAIN_NAME = "nowhere.com";
@@ -54,13 +62,10 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
     @SpyBean
     private KubernetesManager kubernetesManager;
 
-    @Rule
-    public ExpectedException exceptionRule = ExpectedException.none();
-
-    @Before
+    @BeforeEach
     public void init() {
-        Mockito.doReturn(Collections.emptyList()).when(kubernetesManager)
-            .getCloudPipelineServiceInstances(Mockito.anyString());
+        doReturn(Collections.emptyList()).when(kubernetesManager)
+                .getCloudPipelineServiceInstances(anyString());
     }
 
     @Test
@@ -69,17 +74,18 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
         final NatRoutingRuleDescription newRoutingRule2 = buildRoutingRule(EXTERNAL_PORT_2);
 
         final NatRoutingRulesRequest natRoutingRulesRequest1 =
-            new NatRoutingRulesRequest(Collections.singletonList(newRoutingRule1));
+                new NatRoutingRulesRequest(Collections.singletonList(newRoutingRule1));
         assertThat(natGatewayManager.registerRoutingRulesCreation(natRoutingRulesRequest1)).hasSize(1);
         assertThat(natGatewayManager.loadAllRoutes()).hasSize(1);
 
         final NatRoutingRulesRequest natRoutingRulesRequest2 =
-            new NatRoutingRulesRequest(Collections.singletonList(newRoutingRule2));
+                new NatRoutingRulesRequest(Collections.singletonList(newRoutingRule2));
         assertThat(natGatewayManager.registerRoutingRulesCreation(natRoutingRulesRequest2)).hasSize(1);
         assertThat(natGatewayManager.loadAllRoutes()).hasSize(2);
 
-        exceptionRule.expect(IllegalArgumentException.class);
-        natGatewayManager.registerRoutingRulesCreation(natRoutingRulesRequest1);
+        assertThrows(IllegalArgumentException.class, () ->
+                natGatewayManager.registerRoutingRulesCreation(natRoutingRulesRequest1)
+        );
     }
 
     @Test
@@ -101,14 +107,14 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
         final List<NatRoutingRuleDescription> newRules = Collections.singletonList(newRoutingRule);
         final NatRoutingRulesRequest natRoutingRulesRequest = new NatRoutingRulesRequest(newRules);
         assertThat(natGatewayManager.registerRoutingRulesCreation(natRoutingRulesRequest)).hasSize(1);
-        Mockito.verify(natGatewayDao, Mockito.times(newRules.size()))
-            .registerRoutingRules(Mockito.anyList(), Mockito.eq(NatRouteStatus.CREATION_SCHEDULED));
+        verify(natGatewayDao, times(newRules.size()))
+                .registerRoutingRules(anyList(), eq(NatRouteStatus.CREATION_SCHEDULED));
         assertThat(natGatewayManager.loadAllRoutes()).hasSize(1);
 
         assertThat(natGatewayManager.registerRoutingRulesRemoval(natRoutingRulesRequest)).hasSize(1);
-        Mockito.verify(natGatewayDao, Mockito.times(0))
-            .registerRoutingRules(Mockito.anyList(), Mockito.eq(NatRouteStatus.TERMINATION_SCHEDULED));
-        Mockito.verify(natGatewayDao, Mockito.times(newRules.size())).updateRoute(Mockito.any());
+        verify(natGatewayDao, times(0))
+                .registerRoutingRules(anyList(), eq(NatRouteStatus.TERMINATION_SCHEDULED));
+        verify(natGatewayDao, times(newRules.size())).updateRoute(any());
         assertThat(natGatewayManager.loadAllRoutes()).hasSize(1);
     }
 

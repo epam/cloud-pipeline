@@ -18,12 +18,14 @@ package com.epam.pipeline.entity.pipeline.run.container;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Value
 @Builder
+@Jacksonized
 public class ContainerSecurityContext {
 
     Boolean allowPrivilegeEscalation;

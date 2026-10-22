@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
@@ -27,12 +28,12 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class AnalysisConfiguration<T extends AbstractRunConfigurationEntry> {
 
     private List<T> entries;
     private Long configurationId;
     private String expansionExpression;
     private List<Long> entitiesIds;
-    private String refreshToken;
     private List<PipelineStartNotificationRequest> notifications;
 }

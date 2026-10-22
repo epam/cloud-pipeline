@@ -22,13 +22,15 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
-import org.apache.commons.collections.CollectionUtils;
-import org.junit.Assert;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public final class TestUtils {
 
@@ -49,8 +51,8 @@ public final class TestUtils {
             return;
         }
 
-        Assert.assertEquals(expected.size(), actual.size());
-        expected.forEach(element -> Assert.assertTrue(actual.contains(element)));
+        assertEquals(expected.size(), actual.size());
+        expected.forEach(element -> assertTrue(actual.contains(element)));
     }
 
     public static PipelineRun createTestPipelineRun(final Long runId, final Long pipelineId, final String tool,

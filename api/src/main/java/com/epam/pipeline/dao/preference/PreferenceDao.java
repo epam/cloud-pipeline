@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -32,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 @Slf4j
 public class PreferenceDao extends NamedParameterJdbcDaoSupport {
@@ -113,23 +114,27 @@ public class PreferenceDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(upsertPreferenceQuery, "Required query upsertPreferenceQuery is not set");
+        Assert.notNull(loadPreferenceByNameQuery, "Required query loadPreferenceByNameQuery is not set");
+        Assert.notNull(loadAllPreferencesQuery, "Required query loadAllPreferencesQuery is not set");
+        Assert.notNull(deletePreferenceQuery, "Required query deletePreferenceQuery is not set");
+    }
 
-    @Required
+
     public void setUpsertPreferenceQuery(String upsertPreferenceQuery) {
         this.upsertPreferenceQuery = upsertPreferenceQuery;
     }
 
-    @Required
     public void setLoadPreferenceByNameQuery(String loadPreferenceByNameQuery) {
         this.loadPreferenceByNameQuery = loadPreferenceByNameQuery;
     }
 
-    @Required
     public void setLoadAllPreferencesQuery(String loadAllPreferencesQuery) {
         this.loadAllPreferencesQuery = loadAllPreferencesQuery;
     }
 
-    @Required
     public void setDeletePreferenceQuery(String deletePreferenceQuery) {
         this.deletePreferenceQuery = deletePreferenceQuery;
     }

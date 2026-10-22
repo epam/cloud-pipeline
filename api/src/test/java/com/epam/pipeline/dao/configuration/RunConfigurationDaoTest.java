@@ -17,16 +17,13 @@
 package com.epam.pipeline.dao.configuration;
 
 import com.epam.pipeline.dao.pipeline.FolderDao;
-import com.epam.pipeline.entity.configuration.FirecloudRunConfigurationEntry;
-import com.epam.pipeline.entity.configuration.InputsOutputs;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RunConfigurationDaoTest extends AbstractJdbcTest {
     
@@ -49,15 +46,6 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
     private static final String TEST_INSTANCE = "m4.xlarge";
     private static final String TEST_DISK = "10";
     private static final String TEST_OWNER = "test_user";
-
-    private static final String TEST_INPUT_NAME = "input_name";
-    private static final String TEST_INPUT_TYPE = "File";
-    private static final String TEST_INPUT_VALUE = "input_value";
-    private static final String TEST_OUTPUT_NAME = "output_name";
-    private static final String TEST_OUTPUT_VALUE = "output_value";
-    private static final String TEST_FIRECLOUD_METHOD = "method_name";
-    private static final String TEST_FIRECLOUD_METHOD_SNAPSHOT = "1";
-    private static final String TEST_FIRECLOUD_CONFIGURATION = "config";
 
     @Autowired
     private RunConfigurationDao runConfigurationDao;
@@ -85,12 +73,12 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
 
         //loadAll
         List<RunConfiguration> configurations = runConfigurationDao.loadAll();
-        Assert.assertEquals(1, configurations.size());
+        assertEquals(1, configurations.size());
         verifyRunConfiguration(configuration, configurations.get(0));
 
         //loadRoot
         configurations = runConfigurationDao.loadRootEntities();
-        Assert.assertEquals(1, configurations.size());
+        assertEquals(1, configurations.size());
         verifyRunConfiguration(configuration, configurations.get(0));
 
         //load with folders
@@ -105,40 +93,7 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
 
         //delete
         runConfigurationDao.delete(created.getId());
-        Assert.assertTrue(runConfigurationDao.loadAll().isEmpty());
-    }
-
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testFirecloudConfigCreation() {
-        List<InputsOutputs> inputs = Stream.of(InputsOutputs
-                .builder()
-                .name(TEST_INPUT_NAME)
-                .type(TEST_INPUT_TYPE)
-                .value(TEST_INPUT_VALUE)
-                .build()).collect(Collectors.toList());
-
-        List<InputsOutputs> outputs = Stream.of(InputsOutputs
-                .builder()
-                .name(TEST_OUTPUT_NAME)
-                .value(TEST_OUTPUT_VALUE)
-                .build()).collect(Collectors.toList());
-
-        //create
-        FirecloudRunConfigurationEntry entry = ObjectCreatorUtils.createFirecloudConfigEntry(
-                TEST_CONFIG_NAME, inputs, outputs, TEST_FIRECLOUD_METHOD,
-                TEST_FIRECLOUD_METHOD_SNAPSHOT, TEST_FIRECLOUD_CONFIGURATION);
-
-        RunConfiguration configuration =
-                ObjectCreatorUtils.createConfiguration(TEST_NAME, TEST_DESCRIPTION, null,
-                        TEST_OWNER, Collections.singletonList(entry));
-
-        RunConfiguration created = runConfigurationDao.create(configuration);
-        verifyFirecloudConfiguration(configuration, created);
-
-        //load
-        RunConfiguration loaded = runConfigurationDao.load(created.getId());
-        verifyFirecloudConfiguration(configuration, loaded);
+        assertTrue(runConfigurationDao.loadAll().isEmpty());
     }
 
     @Test
@@ -167,48 +122,30 @@ public class RunConfigurationDaoTest extends AbstractJdbcTest {
         verifyFolderTree(parent, loaded.getParent());
     }
 
-    private void verifyFirecloudConfiguration(RunConfiguration expected, RunConfiguration actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getEntries().size(), actual.getEntries().size());
-        verifyFirecloudEntry((FirecloudRunConfigurationEntry) expected.getEntries().get(0),
-                (FirecloudRunConfigurationEntry) actual.getEntries().get(0));
-    }
-
-    private void verifyFirecloudEntry(FirecloudRunConfigurationEntry expected, FirecloudRunConfigurationEntry actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getMethodConfigurationName(), actual.getMethodConfigurationName());
-        Assert.assertEquals(expected.getMethodConfigurationSnapshot(), actual.getMethodConfigurationSnapshot());
-        Assert.assertEquals(expected.getMethodName(), actual.getMethodName());
-        Assert.assertEquals(expected.getMethodSnapshot(), actual.getMethodSnapshot());
-        Assert.assertEquals(expected.getMethodInputs(), actual.getMethodInputs());
-        Assert.assertEquals(expected.getMethodOutputs(), actual.getMethodOutputs());
-        Assert.assertEquals(expected.getParameters(), actual.getParameters());
-    }
-
     private void verifyRunConfiguration(RunConfiguration expected, RunConfiguration actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getDescription(), actual.getDescription());
-        Assert.assertEquals(expected.getEntries().size(), actual.getEntries().size());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDescription(), actual.getDescription());
+        assertEquals(expected.getEntries().size(), actual.getEntries().size());
         verifyRunConfigurationEntry((RunConfigurationEntry) expected.getEntries().get(0),
                 (RunConfigurationEntry) actual.getEntries().get(0));
     }
 
     private void verifyRunConfigurationEntry(RunConfigurationEntry expected, RunConfigurationEntry actual) {
-        Assert.assertEquals(expected.getName(), actual.getName());
-        Assert.assertEquals(expected.getDefaultConfiguration(), actual.getDefaultConfiguration());
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getDefaultConfiguration(), actual.getDefaultConfiguration());
         verifyPipeConfiguration(expected.getConfiguration(), actual.getConfiguration());
     }
 
     private void verifyPipeConfiguration(PipelineConfiguration expected, PipelineConfiguration actual) {
-        Assert.assertEquals(expected.getCmdTemplate(), actual.getCmdTemplate());
-        Assert.assertEquals(expected.getDockerImage(), actual.getDockerImage());
-        Assert.assertEquals(expected.getInstanceType(), actual.getInstanceType());
-        Assert.assertEquals(expected.getInstanceDisk(), actual.getInstanceDisk());
+        assertEquals(expected.getCmdTemplate(), actual.getCmdTemplate());
+        assertEquals(expected.getDockerImage(), actual.getDockerImage());
+        assertEquals(expected.getInstanceType(), actual.getInstanceType());
+        assertEquals(expected.getInstanceDisk(), actual.getInstanceDisk());
     }
 
     private void verifyFolderTree(final Folder expected, final Folder actual) {
-        Assert.assertEquals(expected.getId(), actual.getId());
-        Assert.assertEquals(expected.getParentId(), actual.getParentId());
+        assertEquals(expected.getId(), actual.getId());
+        assertEquals(expected.getParentId(), actual.getParentId());
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }

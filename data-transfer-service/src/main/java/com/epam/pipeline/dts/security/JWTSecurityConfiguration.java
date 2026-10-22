@@ -23,50 +23,50 @@ import com.epam.pipeline.dts.security.service.RestAuthenticationEntryPoint;
 import com.epam.pipeline.dts.security.service.SecurityService;
 import com.epam.pipeline.dts.security.service.impl.SecurityServiceImpl;
 import com.epam.pipeline.dts.transfer.model.UsernameTransformation;
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import static org.springframework.security.config.http.SessionCreationPolicy.STATELESS;
+
 @Configuration
 @EnableWebSecurity
-@ComponentScan
-public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
+public class JWTSecurityConfiguration {
 
     @Value("${jwt.public.key}")
     private String publicKey;
 
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) {
-        auth.authenticationProvider(jwtAuthenticationProvider());
-    }
+    @Bean
+    public SecurityFilterChain jwtSecurityFilterChain(final HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+            .csrf(AbstractHttpConfigurer::disable)
+            .exceptionHandling(
+                    exceptions -> exceptions.defaultAuthenticationEntryPointFor(
+                            new RestAuthenticationEntryPoint(),
+                            new AntPathRequestMatcher(getSecuredResources())
+                    ))
+            .securityMatcher(getFullRequestMatcher())
+            .authorizeHttpRequests(auth -> {
+                //instead of adding "/error" to getUnsecuredResources method
+                auth.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
+                auth.requestMatchers(HttpMethod.OPTIONS).permitAll();
+                auth.requestMatchers(getUnsecuredResources()).permitAll();
+                auth.requestMatchers(getSecuredResources()).authenticated();
+            })
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(STATELESS))
+            .addFilterBefore(getJwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-                .csrf().disable()
-                .exceptionHandling()
-                .authenticationEntryPoint(new RestAuthenticationEntryPoint())
-                .and()
-                .requestMatcher(getFullRequestMatcher())
-                .authorizeRequests()
-                .antMatchers(HttpMethod.OPTIONS).permitAll()
-                .antMatchers(getUnsecuredResources()).permitAll()
-                .antMatchers(getSecuredResources()).authenticated()
-                .and()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .addFilterBefore(getJwtAuthenticationFilter(),
-                        UsernamePasswordAuthenticationFilter.class);
+        return httpSecurity.build();
     }
 
     @Bean
@@ -88,15 +88,14 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected String getSecuredResources() {
-        return "/restapi/**";
+        return "/**";
     }
 
     protected String[] getUnsecuredResources() {
         return new String[] {
-            "/restapi/swagger-resources/**",
-            "/restapi/swagger-ui.html",
-            "/restapi/webjars/springfox-swagger-ui/**",
-            "/restapi/v2/api-docs/**"
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/v3/api-docs/**"
         };
     }
 

@@ -18,20 +18,36 @@ package com.epam.pipeline.elasticsearch.model.v7.action.search;
 
 import com.epam.pipeline.elasticsearch.model.MultiSearchRequestInner;
 import com.epam.pipeline.elasticsearch.model.SearchRequest;
-import lombok.Getter;
+import org.opensearch.client.opensearch.core.MsearchRequest;
+import org.opensearch.client.opensearch.core.msearch.RequestItem;
 
-@Getter
-public class MultiSearchRequestV7 implements MultiSearchRequestInner{
+import java.util.ArrayList;
+import java.util.List;
 
-    private final org.opensearch.action.search.MultiSearchRequest inner;
+public class MultiSearchRequestV7 implements MultiSearchRequestInner {
 
-    public MultiSearchRequestV7() {
-        inner = new org.opensearch.action.search.MultiSearchRequest();
-    }
+    private final List<RequestItem> searches = new ArrayList<>();
 
     @Override
     public MultiSearchRequestInner add(final SearchRequest request) {
-        inner.add(((SearchRequestV7) request.getInner()).getInner());
+        final SearchRequestV7 inner = (SearchRequestV7) request.getInner();
+        final org.opensearch.client.opensearch.core.SearchRequest sr = inner.build();
+        searches.add(RequestItem.of(ri -> ri
+                .header(h -> h.index(sr.index()))
+                .body(b -> {
+                    if (sr.query() != null) {
+                        b.query(sr.query());
+                    }
+                    if (sr.size() != null) {
+                        b.size(sr.size());
+                    }
+                    return b;
+                })
+        ));
         return this;
+    }
+
+    public MsearchRequest buildMsearchRequest() {
+        return MsearchRequest.of(r -> r.searches(searches));
     }
 }

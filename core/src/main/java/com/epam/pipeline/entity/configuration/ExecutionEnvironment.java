@@ -29,14 +29,13 @@ import java.util.Map;
 @Getter
 public enum ExecutionEnvironment {
 
-    CLOUD_PLATFORM(0, true), FIRECLOUD(1, true), DTS(2, false);
+    CLOUD_PLATFORM(0, true), DTS(2, false);
     private final long id;
     private final boolean monitored;
 
     private static final Map<Long, ExecutionEnvironment> ID_MAP = new HashMap<>();
     static {
         ID_MAP.put(CLOUD_PLATFORM.id, CLOUD_PLATFORM);
-        ID_MAP.put(FIRECLOUD.id, FIRECLOUD);
         ID_MAP.put(DTS.id, DTS);
     }
 

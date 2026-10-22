@@ -18,12 +18,14 @@ package com.epam.pipeline.entity.pipeline.run;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 import lombok.Getter;
 
 @Data
 @AllArgsConstructor
 @Builder
+@Jacksonized
 public class EngineRunTaskSortVO {
     private Columns column;
     private boolean descending;

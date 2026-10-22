@@ -54,8 +54,8 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,14 +77,15 @@ import static com.epam.pipeline.manager.ObjectCreatorUtils.constructDataStorageV
 import static com.epam.pipeline.manager.ObjectCreatorUtils.constructPipelineVO;
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createConfigEntry;
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createRunConfigurationVO;
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -156,8 +157,7 @@ public class FolderManagerTest extends AbstractSpringTest {
 
     private AbstractCloudRegion cloudRegion;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
         awsRegionDTO.setName("US");
         awsRegionDTO.setRegionCode("us-east-1");
@@ -197,15 +197,15 @@ public class FolderManagerTest extends AbstractSpringTest {
         assertEquals(expected.getExternalId(), actual.getExternalId());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void deleteFolderWithPipeline() throws Exception {
         folderManager.create(folder);
         PipelineVO pipeline = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         pipelineManager.create(pipeline);
-        folderManager.delete(folder.getId());
+        assertThrows(IllegalArgumentException.class, () -> folderManager.delete(folder.getId()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test//(expected = .class)
     public void deleteFolderWithStorage() throws Exception {
         folderManager.create(folder);
         DataStorageVO storageVO = constructDataStorageVO(
@@ -213,7 +213,7 @@ public class FolderManagerTest extends AbstractSpringTest {
                 STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         dataStorageManager.create(storageVO, false, false, false);
-        folderManager.delete(folder.getId());
+        assertThrows(IllegalArgumentException.class, () -> folderManager.delete(folder.getId()));
     }
 
     @Test
@@ -321,13 +321,13 @@ public class FolderManagerTest extends AbstractSpringTest {
         assertEquals(storage.getParentFolderId(), loadedStorage.getParentFolderId());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void deleteFolder() throws Exception {
         folderManager.create(folder);
         Folder loaded = folderManager.load(folder.getId());
         assertNotNull(loaded);
         folderManager.delete(folder.getId());
-        folderManager.load(folder.getId());
+        assertThrows(IllegalArgumentException.class, () -> folderManager.load(folder.getId()));
     }
 
 
@@ -627,7 +627,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         assertEquals(2, folderManager.countDataStorages(folderManager.load(childFolderWithStorage3.getId())));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void cloneFolderWithExistentFolderNameShouldFail() {
         Folder sourceFolder = new Folder();
         sourceFolder.setName(FOLDER_TO_CLONE);
@@ -638,7 +638,8 @@ public class FolderManagerTest extends AbstractSpringTest {
         childSourceFolder.setParentId(sourceFolder.getId());
         folderManager.create(childSourceFolder);
 
-        folderManager.cloneFolder(childSourceFolder.getId(), sourceFolder.getId(), CHILD_FOLDER_TO_CLONE);
+        assertThrows(IllegalStateException.class, () -> folderManager.cloneFolder(childSourceFolder.getId(),
+            sourceFolder.getId(), CHILD_FOLDER_TO_CLONE));
     }
 
     private void generateDataStorage(Long parentId) {

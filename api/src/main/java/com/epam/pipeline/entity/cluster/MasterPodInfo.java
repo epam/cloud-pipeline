@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.cluster;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class MasterPodInfo {
     private String name;
 }

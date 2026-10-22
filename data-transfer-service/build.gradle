@@ -14,138 +14,122 @@
  * limitations under the License.
  */
 
-import de.undercouch.gradle.tasks.download.Download
-
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-    }
-}
-
 plugins {
-    id "de.undercouch.download" version "3.1.2"
+    id 'java'
+    id 'jacoco'
+    id 'org.springframework.boot' version '3.3.13'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'de.undercouch.download' version '5.5.0'
 }
-
-apply plugin: "java"
-apply plugin: "jacoco"
-apply plugin: "org.springframework.boot"
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+import de.undercouch.gradle.tasks.download.Download
 
 dependencies {
     configurations {
-        all*.exclude module : "spring-boot-starter-logging"
+        all*.exclude module: 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
+        all*.exclude group: 'com.fasterxml.jackson.module', module: 'jackson-module-jaxb-annotations'
     }
 
-    implementation project(":cloud-pipeline-common:model")
+    implementation project(':cloud-pipeline-common:model')
 
-    compileOnly group: "org.projectlombok", name: "lombok", version: lombokVersion
+    implementation 'org.projectlombok:lombok:1.18.34'
+    annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4jVersion
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4jVersion
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: log4jVersion
-
-    // Spring
-    compile group: "org.springframework.boot", name: "spring-boot-starter-web",         version: springBootVersion
-    compile group: "org.springframework.boot", name: "spring-boot-starter-tomcat",      version: springBootVersion
-    compile group: "org.springframework.boot", name: "spring-boot-starter-data-jpa",    version: springBootVersion
-    compile group: "org.springframework.boot", name: "spring-boot-starter-security",    version: springBootVersion
+    //Spring
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-tomcat'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 
     // DB
-    compile group: "com.h2database",    name: "h2",     version: "1.4.197"
-    compile group: "com.mchange",       name: "c3p0",   version: "0.9.5.2"
-
-    // Swagger
-    compile group: "io.springfox", name: "springfox-swagger2",      version: swaggerVersion
-    compile group: "io.springfox", name: "springfox-swagger-ui",    version: swaggerVersion
+    implementation 'com.h2database:h2:2.3.232'
+    implementation 'com.mchange:c3p0:0.9.5.2'
 
     // Mapstruct
-    compile group: "org.mapstruct", name: "mapstruct-jdk8", version: mapstructVersion
-    compile group: "org.mapstruct", name: "mapstruct-processor", version: mapstructVersion
+    implementation group: "org.mapstruct", name: "mapstruct", version: mapstructVersion
+    annotationProcessor group: "org.mapstruct", name: "mapstruct-processor", version: mapstructVersion
 
-    // Security JWT
-    compile group: "com.auth0", name: "java-jwt", version: "3.3.0"
+    implementation 'com.auth0:java-jwt:3.3.0'
 
-    // Apache Commons
-    compile group: "commons-validator",     name: "commons-validator",      version: "1.5.0"
-    compile group: "org.apache.commons",    name: "commons-math3",          version: "3.6.1"
-    compile group: "org.apache.commons",    name: "commons-text",           version: "1.4"
-    compile group: "org.apache.commons", name: "commons-lang3", version: "3.8"
-    compile group: "org.apache.commons", name: "commons-collections4", version: "4.0"
-    compile group: "commons-io", name: "commons-io", version: "2.6"
+    implementation 'commons-validator:commons-validator:1.5.0'
+    implementation 'org.apache.commons:commons-math3:3.6.1'
+    implementation 'org.apache.commons:commons-text:1.4'
+    implementation 'org.apache.commons:commons-lang3:3.8'
+    implementation 'org.apache.commons:commons-collections4:4.0'
+    implementation 'commons-io:commons-io:2.6'
 
-    // Google Cloud Storage SDK
-    compile group: "com.google.cloud", name: "google-cloud-storage", version: "1.34.0"
+    implementation 'com.google.cloud:google-cloud-storage:1.34.0'
 
-    // Thymeleaf for template
-    compile group: "org.thymeleaf", name: "thymeleaf", version: "3.0.9.RELEASE"
+    implementation 'org.thymeleaf:thymeleaf:3.0.9.RELEASE'
 
-    //Retrofit
-    implementation group: "com.squareup.retrofit2", name: "retrofit",           version: retrofitVersion
-    implementation group: "com.squareup.retrofit2", name: "converter-jackson",  version: retrofitVersion
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-jackson:$retrofitVersion"
 
-    //XML parsing
-    implementation group: "com.fasterxml.jackson.dataformat",   name: "jackson-dataformat-xml", version: "2.9.6"
-    implementation group: "com.fasterxml.woodstox",             name: "woodstox-core",          version: "5.1.0"
+    // XML parsing
+    implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
+    implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.16.0'
+    implementation 'com.fasterxml.woodstox:woodstox-core:5.1.0'
 
-    // Tests
-    implementation  group: "org.springframework.boot",  name: "spring-boot-starter-test",   version: springBootVersion
-    testCompile     group: "com.github.marschall",      name: "memoryfilesystem",           version: "1.2.1"
-    testCompile group: "org.projectlombok", name: "lombok", version: lombokVersion
-    testCompile group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
-    testRuntime group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
-    testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
-    testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'com.github.marschall:memoryfilesystem:1.2.1'
+    testImplementation 'org.projectlombok:lombok:1.18.34'
+    testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
 
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.34'
 }
 
 bootJar {
-    archiveName "data-transfer-service.jar"
+    archiveFileName = "data-transfer-service.jar"
     manifest {
         attributes(
                 "Implementation-Version": "$version")
     }
 }
 
-test {
-    useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
+jar {
+    enabled = false
 }
 
-jacoco {
-    toolVersion = "0.7.9"
+test {
+    useJUnitPlatform()
+    reports.html.required = true
 }
 
 jacocoTestReport {
     reports {
-        xml.enabled false
-        csv.enabled false
+        xml.required = false
+        csv.required = false
+        html.required = true
     }
 }
 
-def jreURL = "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/"
-def windowsJre = "OpenJDK8U-jre_x64_windows_hotspot_8u292b10.zip"
-def windowsJrePath = "jdk8u292-b10-jre"
-def linuxJre = "openjdk-1.8.0_222_linux-x64_bin.tar.gz"
-def linuxJrePath = "openjdk-8u222-b10"
+def jreURL = "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/java/"
+def windowsJre = "amazon-corretto-21.0.12.8.1-windows-x64-jdk.zip"
+def windowsJrePath = "jdk21.0.12_8"
+def linuxJre = "amazon-corretto-21.0.12.8.1-linux-x64.tar.gz"
+def linuxJrePath = "amazon-corretto-21.0.12.8.1-linux-x64"
 
 task customStartScriptsWin(type: CreateStartScripts) {
     applicationName = 'dts'
     mainClassName = 'org.springframework.boot.loader.JarLauncher'
     classpath = files('data-transfer-service.jar')
     defaultJvmOpts = ["-Xms512m", "-Xmx2g"]
-    outputDir = file("$buildDir/scripts")
+    outputDir = file("$buildDir/scripts/win")
     doLast {
         windowsScript.text = windowsScript.text.replace("set JAVA_EXE=%JAVA_HOME%/bin/java.exe",
                 "set JAVA_EXE=%APP_HOME%/jre/bin/java.exe")
@@ -155,19 +139,19 @@ task customStartScriptsWin(type: CreateStartScripts) {
 task downloadJreWin(type: Download) {
     dependsOn bootJar
     src jreURL + windowsJre
-    dest "$buildDir/downloads/$windowsJre"
+    dest "$buildDir/downloads/win/$windowsJre"
     overwrite true
 }
 
 task unpackJreWin(type: Copy) {
     dependsOn downloadJreWin
-    from(zipTree("$buildDir/downloads/$windowsJre"))
-    into("$buildDir/downloads")
+    from(zipTree("$buildDir/downloads/win/$windowsJre"))
+    into("$buildDir/downloads/win")
 }
 
 task bundleWindows(type: Zip) {
     dependsOn unpackJreWin, customStartScriptsWin, bootJar
-    from ("$buildDir/downloads/$windowsJrePath") {
+    from ("$buildDir/downloads/win/$windowsJrePath") {
         include '**/*'
         into('jre')
     }
@@ -175,11 +159,11 @@ task bundleWindows(type: Zip) {
         include '**/*.jar'
         into('lib')
     }
-    from("$buildDir/scripts") {
+    from("$buildDir/scripts/win") {
         into('bin')
     }
-    baseName = 'dts'
-    archiveName = 'data-transfer-service-windows.zip'
+    archiveBaseName = 'dts'
+    archiveFileName = 'data-transfer-service-windows.zip'
 }
 
 task customStartScriptsLinux(type: CreateStartScripts) {
@@ -187,7 +171,7 @@ task customStartScriptsLinux(type: CreateStartScripts) {
     mainClassName = 'org.springframework.boot.loader.JarLauncher'
     classpath = files('data-transfer-service.jar')
     defaultJvmOpts = ["-Xms512m", "-Xmx2g"]
-    outputDir = file("$buildDir/scripts")
+    outputDir = file("$buildDir/scripts/linux")
     doLast {
         unixScript.text = unixScript.text.replace("# Determine the Java command to use to start the JVM.",
                 "export JAVA_HOME=\$APP_HOME/jre/")
@@ -197,19 +181,19 @@ task customStartScriptsLinux(type: CreateStartScripts) {
 task downloadJreLinux(type: Download) {
     dependsOn bootJar
     src jreURL + linuxJre
-    dest "$buildDir/downloads/$linuxJre"
+    dest "$buildDir/downloads/linux/$linuxJre"
     overwrite true
 }
 
 task unpackJreLinux(type: Copy) {
     dependsOn downloadJreLinux
-    from(tarTree(resources.gzip("$buildDir/downloads/$linuxJre")))
-    into("$buildDir/downloads")
+    from(tarTree(resources.gzip("$buildDir/downloads/linux/$linuxJre")))
+    into("$buildDir/downloads/linux")
 }
 
 task bundleLinux(type: Zip) {
     dependsOn unpackJreLinux, customStartScriptsLinux, bootJar
-    from ("$buildDir/downloads/$linuxJrePath") {
+    from ("$buildDir/downloads/linux/$linuxJrePath") {
         include '**/*'
         into('jre')
     }
@@ -217,10 +201,9 @@ task bundleLinux(type: Zip) {
         include '**/*.jar'
         into('lib')
     }
-    from("$buildDir/scripts") {
+    from("$buildDir/scripts/linux") {
         into('bin')
     }
-    baseName = 'dts'
-    archiveName = 'data-transfer-service-linux.zip'
+    archiveBaseName = 'dts'
+    archiveFileName = 'data-transfer-service-linux.zip'
 }
-

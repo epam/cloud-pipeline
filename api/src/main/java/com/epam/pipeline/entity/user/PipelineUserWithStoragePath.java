@@ -20,12 +20,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Delegate;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.Map;
 
 @Getter
 @Setter
 @Builder
+@Jacksonized
 public class PipelineUserWithStoragePath {
 
     @Delegate

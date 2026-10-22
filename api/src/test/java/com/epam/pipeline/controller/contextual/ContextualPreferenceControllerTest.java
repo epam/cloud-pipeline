@@ -24,7 +24,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceSearchRequest;
 import com.epam.pipeline.acl.contextual.ContextualPreferenceApiService;
 import com.epam.pipeline.test.creator.contextual.ContextualPreferenceCreatorUtils;
 import com.epam.pipeline.test.web.AbstractControllerTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -107,12 +107,12 @@ public class ContextualPreferenceControllerTest extends AbstractControllerTest {
         final ContextualPreferenceSearchRequest searchRequest = ContextualPreferenceCreatorUtils.getCPSearchRequest();
         final String content = getObjectMapper().writeValueAsString(searchRequest);
         Mockito.doReturn(contextualPreference).when(mockContextualPreferenceApiService)
-                .search(searchRequest.getPreferences(), searchRequest.getResource());
+                .search(searchRequest.preferences(), searchRequest.resource());
 
         final MvcResult mvcResult = performRequest(post(CONTEXTUAL_URL).content(content));
 
         Mockito.verify(mockContextualPreferenceApiService)
-                .search(searchRequest.getPreferences(), searchRequest.getResource());
+                .search(searchRequest.preferences(), searchRequest.resource());
         assertResponse(mvcResult, contextualPreference, ContextualPreferenceCreatorUtils.CONTEXTUAL_PREFERENCE_TYPE);
     }
 

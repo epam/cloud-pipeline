@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.pipeline.run.runtime;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class RunRuntimeData {
     private final RunSyncRuntimeDataType type;
     private final Object data;

@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.scheduling.RunScheduleJob;
+import org.quartz.Job;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -62,7 +63,7 @@ public class PipelineRunScheduleProvider implements ScheduleProvider {
     }
 
     @Override
-    public Class<?> getScheduleJobClass() {
+    public Class<? extends Job> getScheduleJobClass() {
         return RunScheduleJob.class;
     }
 

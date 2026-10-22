@@ -1,0 +1,1 @@
+DELETE FROM pipeline.preference WHERE preference_name LIKE 'firecloud.%' OR preference_name IN ('google.client.settings', 'google.client.id', 'google.redirect.url');

@@ -24,5 +24,5 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class ScrollV7 implements Scroll {
 
-    private final org.opensearch.search.Scroll inner;
+    private final String keepAlive;
 }

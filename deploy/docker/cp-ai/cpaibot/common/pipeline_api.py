@@ -107,7 +107,6 @@ class PipelineAPI:
     METADATA_ENTITY_FIELDS = '/metadataEntity/fields'
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
-    LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     METADATA_ENTITY_FILTER = '/metadataEntity/filter'
     LOAD_DTS = "/dts"
     LOAD_CONFIGURATION = '/configuration/%d'

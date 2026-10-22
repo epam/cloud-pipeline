@@ -16,8 +16,10 @@
 package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class PipelinePoolInstanceFilter implements LongInstanceFilter {
 
     private PoolInstanceFilterOperator operator;

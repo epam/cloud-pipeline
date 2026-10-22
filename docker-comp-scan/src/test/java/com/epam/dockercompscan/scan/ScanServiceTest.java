@@ -27,9 +27,8 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -39,6 +38,11 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ScanServiceTest extends AbstractSpringTest {
 
@@ -58,7 +62,7 @@ public class ScanServiceTest extends AbstractSpringTest {
     @Autowired
     private LayerScanCache layerScanCache;
 
-    @Before
+    @BeforeEach
     public void setUp() throws IOException, URISyntaxException {
         headTestLayer = getLayer("sha256:test", "http://false-docker.io", null);
         childTestLayer = getLayer("sha256:test2", "http://false-docker.io", headTestLayer.getLayer().getName());
@@ -73,28 +77,29 @@ public class ScanServiceTest extends AbstractSpringTest {
 
         List<LayerScanResult> layers = scanService.loadImageScan(childTestLayer.getLayer().getName()).getLayers();
 
-        Assert.assertEquals(2, layers.size());
+        assertEquals(2, layers.size());
         LayerScanResult child = layers.get(0);
-        Assert.assertFalse(child.getDependencies().isEmpty());
+        assertFalse(child.getDependencies().isEmpty());
 
-        Assert.assertNotNull(layerScanCache.getIfPresent(LayerKey.withName(childTestLayer.getLayer().getName())));
-        Assert.assertNotNull(layerScanCache.getIfPresent(
+        assertNotNull(layerScanCache.getIfPresent(LayerKey.withName(childTestLayer.getLayer().getName())));
+        assertNotNull(layerScanCache.getIfPresent(
                 LayerKey.withParent(childTestLayer.getLayer().getParentName())));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void scanServiceCleanupCacheTest() throws InterruptedException {
         scanService.scan(headTestLayer);
         scanService.scan(childTestLayer);
 
         List<LayerScanResult> layers = scanService.loadImageScan(childTestLayer.getLayer().getName()).getLayers();
 
-        Assert.assertEquals(2, layers.size());
+        assertEquals(2, layers.size());
 
         Thread.sleep(SLEEP_PERIOD);
         layerScanCache.cleanUp();
 
-        scanService.loadImageScan(headTestLayer.getLayer().getName());
+        assertThrows(IllegalArgumentException.class,
+            () -> scanService.loadImageScan(headTestLayer.getLayer().getName()));
     }
 
     private static ScanRequest getLayer(String name, String path, String parentName) {

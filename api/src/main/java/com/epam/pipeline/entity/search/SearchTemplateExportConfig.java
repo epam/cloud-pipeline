@@ -19,11 +19,13 @@ package com.epam.pipeline.entity.search;
 import com.epam.pipeline.entity.user.SidImpl;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class SearchTemplateExportConfig {
     @JsonProperty("friendly_name")
     private String friendlyName;

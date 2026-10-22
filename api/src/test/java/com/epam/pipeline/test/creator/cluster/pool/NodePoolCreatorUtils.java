@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.RunOwnerGroup
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.RunOwnerPoolInstanceFilter;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +60,7 @@ public final class NodePoolCreatorUtils {
         final NodePool pool = new NodePool();
         pool.setId(id);
         pool.setName(POOL_NAME);
-        pool.setCreated(LocalDateTime.now());
+        pool.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS));
         pool.setCount(INSTANCE_COUNT);
         pool.setDockerImages(Collections.singleton(DOCKER_IMAGE));
         pool.setPriceType(PriceType.ON_DEMAND);

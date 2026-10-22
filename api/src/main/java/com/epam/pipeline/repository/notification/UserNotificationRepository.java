@@ -21,11 +21,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.time.LocalDateTime;
 
-public interface UserNotificationRepository extends PagingAndSortingRepository<UserNotificationEntity, Long> {
+public interface UserNotificationRepository extends PagingAndSortingRepository<UserNotificationEntity, Long>,
+        CrudRepository<UserNotificationEntity, Long> {
     Page<UserNotificationEntity> findByUserIdAndIsReadOrderByCreatedDateDesc(Long userId, boolean isRead,
                                                                              Pageable pageable);
     Page<UserNotificationEntity> findByUserIdOrderByCreatedDateDesc(Long userId, Pageable pageable);

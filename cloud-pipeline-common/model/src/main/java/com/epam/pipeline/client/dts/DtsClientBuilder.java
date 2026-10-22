@@ -80,7 +80,7 @@ public class DtsClientBuilder {
     }
 
     @RequiredArgsConstructor
-    private static class TokenInterceptor implements Interceptor {
+    private static final class TokenInterceptor implements Interceptor {
 
         private final String token;
 

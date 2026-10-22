@@ -88,9 +88,9 @@ public class InactiveUsersMonitoringServiceCore {
         final LocalDateTime now = DateUtils.nowUTC();
         final Map<String, GroupStatus> blockedGroups = ListUtils.emptyIfNull(
                 userManager.loadAllGroupsBlockingStatuses()).stream()
-                .filter(GroupStatus::isBlocked)
-                .filter(groupStatus -> allowedPeriodExceeded(now, groupStatus.getLastModifiedData(), userBlockedDays))
-                .collect(Collectors.toMap(GroupStatus::getGroupName, Function.identity()));
+                .filter(GroupStatus::blocked)
+                .filter(groupStatus -> allowedPeriodExceeded(now, groupStatus.lastModifiedData(), userBlockedDays))
+                .collect(Collectors.toMap(GroupStatus::groupName, Function.identity()));
 
         return allUsers.stream()
                 .filter(user -> shouldNotify(user, now, userBlockedDays, userIdleDays, blockedGroups))
