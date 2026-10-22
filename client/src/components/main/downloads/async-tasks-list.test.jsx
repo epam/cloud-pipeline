@@ -42,6 +42,41 @@ const FAILED_TASK = {
   finished: '2026-10-21T13:16:00.000Z'
 };
 
+const PENDING_TASK = {
+  id: 5,
+  status: 'PENDING',
+  params: {archiveName: 'archive-pending', storageId: 7, paths: ['e.txt']},
+  created: '2026-10-21T13:13:02.274Z'
+};
+
+const CANCEL_REQUESTED_TASK = {
+  id: 6,
+  status: 'CANCEL_REQUESTED',
+  params: {archiveName: 'archive-cancel-requested', storageId: 7, paths: ['f.txt']},
+  created: '2026-10-21T13:13:02.274Z'
+};
+
+const STOPPING_TASK = {
+  id: 7,
+  status: 'STOPPING',
+  params: {archiveName: 'archive-stopping', storageId: 7, paths: ['g.txt']},
+  created: '2026-10-21T13:13:02.274Z'
+};
+
+const CANCELLED_TASK = {
+  id: 8,
+  status: 'CANCELLED',
+  params: {archiveName: 'archive-cancelled', storageId: 7, paths: ['h.txt']},
+  created: '2026-10-21T13:13:02.274Z'
+};
+
+const EXPIRED_TASK = {
+  id: 9,
+  status: 'EXPIRED',
+  params: {archiveName: 'archive-expired', storageId: 7, paths: ['i.txt']},
+  created: '2026-10-21T13:13:02.274Z'
+};
+
 function rowFor (archiveName) {
   return screen.getByText(archiveName).closest('tr');
 }
@@ -126,4 +161,73 @@ test('renders both API timestamp shapes through displayDate', () => {
   expect(screen.queryByText('2026-10-21 13:15:19.689')).not.toBeInTheDocument();
   expect(screen.getAllByText('2026-10-21 13:13:02').length).toBeGreaterThan(0);
   expect(screen.getAllByText('2026-10-21 13:15:19').length).toBeGreaterThan(0);
+});
+
+test('a SUCCESS task gets the cp-success class, not cp-primary', () => {
+  render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
+
+  const statusText = within(rowFor('archive-success')).getByText('SUCCESS');
+  expect(statusText).toHaveClass('cp-success');
+  expect(statusText).not.toHaveClass('cp-primary');
+});
+
+// Every one of the four "still working" statuses, driven through one loop
+// rather than four copy-pasted tests, the way client/test/AGENTS.md's own
+// rules favour a single assertion shape over several near-identical ones.
+[PENDING_TASK, RUNNING_TASK, CANCEL_REQUESTED_TASK, STOPPING_TASK].forEach((task) => {
+  test(`${task.status} is cp-primary and shows the "In progress" spinner`, () => {
+    render(<AsyncTasksList tasks={[task]} />);
+
+    const row = rowFor(task.params.archiveName);
+    expect(within(row).getByText(task.status)).toHaveClass('cp-primary');
+    expect(within(row).getByTitle('In progress')).toBeInTheDocument();
+  });
+});
+
+[SUCCESS_TASK, FAILED_TASK, CANCELLED_TASK, EXPIRED_TASK].forEach((task) => {
+  test(`the "In progress" spinner is absent for ${task.status}`, () => {
+    render(<AsyncTasksList tasks={[task]} />);
+
+    expect(within(rowFor(task.params.archiveName)).queryByTitle('In progress'))
+      .not.toBeInTheDocument();
+  });
+});
+
+test('CANCELLED and EXPIRED keep the cp-text-not-important class', () => {
+  render(<AsyncTasksList tasks={[CANCELLED_TASK, EXPIRED_TASK]} />);
+
+  expect(within(rowFor('archive-cancelled')).getByText('CANCELLED'))
+    .toHaveClass('cp-text-not-important');
+  expect(within(rowFor('archive-expired')).getByText('EXPIRED'))
+    .toHaveClass('cp-text-not-important');
+});
+
+test('renders the archive size through displaySize', () => {
+  const task = {...SUCCESS_TASK, result: {archiveSizeBytes: 1234567}};
+  render(<AsyncTasksList tasks={[task]} />);
+
+  // 1234567 bytes / 1024 / 1024 is 1.177…, which displaySize formats as "1.18 Mb".
+  expect(within(rowFor('archive-success')).getByText('1.18 Mb')).toBeInTheDocument();
+});
+
+test('renders a dash when the result carries no archiveSizeBytes', () => {
+  const task = {...SUCCESS_TASK, result: {}};
+  render(<AsyncTasksList tasks={[task]} />);
+
+  expect(within(rowFor('archive-success')).getByText('—')).toBeInTheDocument();
+});
+
+test('renders a dash when a SUCCESS task has no result at all', () => {
+  render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
+
+  expect(within(rowFor('archive-success')).getByText('—')).toBeInTheDocument();
+});
+
+test('renders a dash, not "0 bytes", when archiveSizeBytes is null', () => {
+  const task = {...SUCCESS_TASK, result: {archiveSizeBytes: null}};
+  render(<AsyncTasksList tasks={[task]} />);
+
+  const row = rowFor('archive-success');
+  expect(within(row).getByText('—')).toBeInTheDocument();
+  expect(within(row).queryByText('0 bytes')).not.toBeInTheDocument();
 });

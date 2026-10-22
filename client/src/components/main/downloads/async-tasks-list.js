@@ -19,8 +19,11 @@ import PropTypes from 'prop-types';
 import {Table, Button, Icon, Tooltip} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
+import displaySize from '../../../utils/displaySize';
 import {
   ASYNC_TASK_STATUSES,
+  ACTIVE_STATUSES,
+  taskIsActive,
   taskCanBeCancelled,
   taskArchiveIsAvailable,
   normalizeStatus,
@@ -31,18 +34,31 @@ import {
 // needs arrives as props, so it is testable without a Provider or a router,
 // and reusable from a future modal that renders it directly.
 
+// Mirrors the COLORS lookup in
+// client/src/components/pipelines/browser/forms/life-cycle-rules/components/restore-status-icon.js:
+// a status-keyed class map. The four "still working" entries are built from
+// ACTIVE_STATUSES rather than listed by hand, so this grouping cannot drift
+// from the one the cap and the Cancel button already use.
+const STATUS_CLASS_NAMES = ACTIVE_STATUSES.reduce((result, status) => ({
+  ...result,
+  [status]: 'cp-primary'
+}), {
+  [ASYNC_TASK_STATUSES.SUCCESS]: 'cp-success',
+  [ASYNC_TASK_STATUSES.FAILED]: 'cp-danger',
+  [ASYNC_TASK_STATUSES.CANCELLED]: 'cp-text-not-important',
+  [ASYNC_TASK_STATUSES.EXPIRED]: 'cp-text-not-important'
+});
+
 function statusClassName (status) {
-  switch (normalizeStatus(status)) {
-    case ASYNC_TASK_STATUSES.FAILED:
-      return 'cp-danger';
-    case ASYNC_TASK_STATUSES.CANCELLED:
-    case ASYNC_TASK_STATUSES.EXPIRED:
-      return 'cp-text-not-important';
-    case ASYNC_TASK_STATUSES.SUCCESS:
-      return 'cp-primary';
-    default:
-      return undefined;
+  return STATUS_CLASS_NAMES[normalizeStatus(status)];
+}
+
+function archiveSizeOf (task) {
+  const bytes = task.result && task.result.archiveSizeBytes;
+  if (bytes === undefined || bytes === null || Number.isNaN(Number(bytes))) {
+    return undefined;
   }
+  return bytes;
 }
 
 class AsyncTasksList extends React.Component {
@@ -65,12 +81,23 @@ class AsyncTasksList extends React.Component {
         render: (task) => (task.params && task.params.paths ? task.params.paths.length : 0)
       },
       {
+        title: 'Size',
+        key: 'size',
+        render: (task) => {
+          const bytes = archiveSizeOf(task);
+          return bytes === undefined ? '—' : displaySize(bytes);
+        }
+      },
+      {
         title: 'Status',
         key: 'status',
         render: (task) => {
           const {status, errorMessage} = task;
           const content = (
             <span className={classNames(statusClassName(status))}>
+              {taskIsActive(task) ? (
+                <Icon type="loading" title="In progress" style={{marginRight: 5}} />
+              ) : null}
               {status}
             </span>
           );
