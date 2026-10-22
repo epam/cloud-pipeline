@@ -1,10 +1,6 @@
 # Edit bucket backup duration (re-opening the dialog)
 
 Test verifies that an edited backup duration persists after re-opening the storage's edit dialog.
-(This case and [EPMCMBIBPC-473](EPMCMBIBPC-473.md) used to cover two separate fields - STS and LTS
-duration - that have since been merged into the single **Backup duration** field; the two cases
-are now functionally close, with this one specifically checking the value survives a dialog
-re-open.)
 
 **Prerequisites**:
 - Perform [EPMCMBIBPC-470](EPMCMBIBPC-470.md)

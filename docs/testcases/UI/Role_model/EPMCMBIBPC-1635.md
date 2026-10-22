@@ -10,7 +10,7 @@ Test verifies that a tool with fully-denied permissions is hidden even though th
 | 1 | Login as the administrator |  |
 | 2 | Navigate to the **Tools** page |  |
 | 3 | Select a registry and a group |  |
-| 4 | Click the **Settings** button (gear icon) |  |
+| 4 | Click the gear icon |  |
 | 5 | Hover over **Group** |  |
 | 6 | Click **Edit** |  |
 | 7 | Add a user |  |

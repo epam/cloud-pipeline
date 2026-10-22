@@ -7,7 +7,7 @@ Test verifies that downloading with "Update path values" enabled turns the metad
 | 1 | Open the **Library** page, navigate to the **Metadata** object uploaded at step 11 of the [EPMCMBIBPC-2722](EPMCMBIBPC-2722.md) case |  |
 | 2 | Click on the **Sample [4]** object |  |
 | 3 | Set the checkbox in front of the row with ID `2` (save the value from the **Name_short** column) |  |
-| 4 | Click the actions button (gear icon), then click **Transfer to the cloud** |  |
+| 4 | Click the gear icon, then click **Transfer to the cloud** |  |
 | 5 | Repeat steps 4-8 of the [EPMCMBIBPC-2723](EPMCMBIBPC-2723.md) case |  |
 | 6 | In the **Transfer to the Cloud** pop-up, select `AnotherLocation` in the **Select path fields** drop-down list |  |
 | 7 | Select `Name_short` in the **Select name field** drop-down list |  |

@@ -13,7 +13,7 @@ Test verifies that a group added to a pipeline's Permissions tab is displayed in
 | 1 | Login as admin |  |
 | 2 | Open the **Library** page |  |
 | 3 | Click on any existing pipeline (from the prerequisites) |  |
-| 4 | Hover over the **Settings** button (gear icon) in the upper-right corner; in the list that appears, click **Edit** |  |
+| 4 | Hover over the gear icon in the upper-right corner; in the list that appears, click **Edit** |  |
 | 5 | Click the **Permissions** tab |  |
 | 6 | Click the **Add group** icon |  |
 | 7 | In the pop-up that appears, enter an existing group name (from the prerequisites) |  |

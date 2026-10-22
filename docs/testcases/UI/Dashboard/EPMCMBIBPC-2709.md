@@ -21,8 +21,3 @@ Test verifies the DATA widget's records for an object storage, an aliased object
 | 15 | Enter into the **Search storages** field the storage path from step 3 | Only the record for the storage created at step 3 is displayed |
 | 16 | Clear the **Search storages** field, enter into it the alias from step 5 | Only the record for the storage created at step 5 is displayed |
 | 17 | Clear the **Search storages** field |  |
-
-**Note:** the "storage type" icon described at step 11 is only displayed when the platform has more
-than one cloud provider configured. On a single-provider platform, only the "region" icon is shown for
-the storages created at steps 3 and 5, and the storage created at step 7 is marked with an "NFS" text
-label instead of an icon.

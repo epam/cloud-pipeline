@@ -10,7 +10,7 @@ Test verifies the tool UI for a user with read-only permissions on the tool's gr
 | 1 | Login as the administrator |  |
 | 2 | Navigate to the **Tools** page |  |
 | 3 | Select a registry and a group |  |
-| 4 | Click the **Settings** button (gear icon) |  |
+| 4 | Click the gear icon |  |
 | 5 | Hover over **Group** |  |
 | 6 | Click **Edit** |  |
 | 7 | Add a user |  |

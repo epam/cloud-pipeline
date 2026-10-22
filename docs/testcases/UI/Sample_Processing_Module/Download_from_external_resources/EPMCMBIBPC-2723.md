@@ -6,7 +6,7 @@ Test verifies downloading metadata-referenced files into per-path-field subfolde
 | :---: | --- | --- |
 | 1 | Perform the [EPMCMBIBPC-2722](EPMCMBIBPC-2722.md) case |  |
 | 2 | Set the checkbox in front of the row with ID `1` (save the value from the **Name** column) |  |
-| 3 | Click the actions button (gear icon), then click **Transfer to the cloud** |  |
+| 3 | Click the gear icon, then click **Transfer to the cloud** |  |
 | 4 | In the **Transfer to the Cloud** pop-up, click **Browse** near the **Destination** field |  |
 | 5 | In the pop-up that appears, click on the folder created at step 3 of the [EPMCMBIBPC-2722](EPMCMBIBPC-2722.md) case |  |
 | 6 | Click on the storage created at step 6 of the [EPMCMBIBPC-2722](EPMCMBIBPC-2722.md) case |  |

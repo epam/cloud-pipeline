@@ -1,6 +1,6 @@
 # [MANUAL] Add descriptions to all parameters within config form validation
 
-Test verifies the tooltip text shown for each field's **?** icon on the Configuration tab.
+Test verifies the tooltip text shown for each field's info icon on the Configuration tab.
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |

@@ -14,7 +14,7 @@ Test verifies that permissions granted to a group on a tool apply equally to eve
 | 2 | Open the **Tools** page |  |
 | 3 | Select the **Default** registry |  |
 | 4 | Select a group |  |
-| 5 | Click the **Settings** button (gear icon) |  |
+| 5 | Click the gear icon |  |
 | 6 | In the list that appears, hover over **Group** -> click the **Edit** item |  |
 | 7 | Click the **Permissions** tab |  |
 | 8 | Click the **Add group** icon |  |

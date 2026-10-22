@@ -35,7 +35,7 @@ Test verifies that user that has Read, Execute access to a pipeline with input a
 | 18 | Select the ***User Management*** tab | The **Users** tab opens by default |
 | 19 | Click the *admin user* from the prerequisites in the table | |
 | 20 | Click the *configure* link next to the *Can run as this user:* | |
-| 21 | Click the add user icon button on the *Share with users and groups* pop up | |
+| 21 | Click the **Add user** button on the *Share with users and groups* pop up | |
 | 22 | Specify the non-admin user name from prerequisites. Click the **OK** button | |
 | 23 | Save changes by the **OK** button | |
 | 24 | Logout | |

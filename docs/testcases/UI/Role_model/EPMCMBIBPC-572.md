@@ -9,7 +9,7 @@ Test verifies that a user with only read permission on a tool group sees that gr
 1. Login as admin
 2. Open the **Tools** page
 3. Select the **Default** registry, select a group
-4. Click the **Settings** button (gear icon); in the list that appears, hover over **Registry** -> click **Edit**
+4. Click the gear icon; in the list that appears, hover over **Registry** -> click **Edit**
 5. Click the **Permissions** tab
 6. Click the **Delete** icon opposite the user name from the prerequisites (if that record exists in the permissions table)
 7. Click the **Delete** icon opposite the user group name (**ROLE_USER**) (if that record exists in the permissions table)
@@ -20,7 +20,7 @@ Test verifies that a user with only read permission on a tool group sees that gr
 | 1 | Login as admin |  |
 | 2 | Open the **Tools** page |  |
 | 3 | Select the **Default** registry, select a group (the same as at preparation step 3) |  |
-| 4 | Click the **Settings** button (gear icon); in the list that appears, hover over **Group** -> click **Edit** |  |
+| 4 | Click the gear icon; in the list that appears, hover over **Group** -> click **Edit** |  |
 | 5 | Click the **Permissions** tab |  |
 | 6 | Click the **Add user** icon |  |
 | 7 | In the pop-up that appears, enter an existing user name from the prerequisites |  |
@@ -33,7 +33,7 @@ Test verifies that a user with only read permission on a tool group sees that gr
 | 14 | Select the **Default** registry, if it isn't already selected |  |
 | 15 | Click the tools group name | At least one group is available in the list that appears: the group selected at step 3 |
 | 16 | In the list that appears, click on the group from step 3 | The list of visible tools is equal to the tools list that appeared after step 3 |
-| 17 | Click the **Settings** button (gear icon) |  |
+| 17 | Click the gear icon |  |
 | 18 | In the list that appears, hover over **Group** | The **+ Create personal** item appears |
 
 **After**:

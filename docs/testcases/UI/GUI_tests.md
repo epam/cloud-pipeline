@@ -854,7 +854,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (145 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (139 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -894,7 +894,6 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**1825_2**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_2.md) | Check run "hosted" applications (1 port) |  |
 | [**1825_3**](Run_tools_in_sandbox/1825_allow_to_run_hosted_applications/1825_3.md) | [Manual] Check run "hosted" applications (several ports) |  |
 | [**3052_1**](Run_tools_in_sandbox/3052_report_run_tags_timepoint/3052_1.md) | Report timestamp when a PRESSURE tag was assigned to a run |  |
-| [**3052_2**](Run_tools_in_sandbox/3052_report_run_tags_timepoint/3052_2.md) | Report timestamp when a IDLE tag was assigned to a run |  |
 | [**4419_1**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_1.md) | Admin adds a tool version to the black list |  |
 | [**4419_2**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_2.md) | Blacklisted tool version is visible but cannot be launched by a regular user |  |
 | [**4419_3**](Run_tools_in_sandbox/4419_tool_version_black_list/4419_3.md) | Pipeline with blacklisted tool version can't be launched by a regular user |  |
@@ -905,12 +904,6 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4439_3**](Run_tools_in_sandbox/4439/4439_3.md) | Custom endpoint with displayOnCompletion=false is hidden after run completion |  |
 | [**4439_4**](Run_tools_in_sandbox/4439/4439_4.md) | Custom endpoint with displayOnCompletion=true (or omitted) remains visible after run completion |  |
 | [**4439_5**](Run_tools_in_sandbox/4439/4439_5.md) | Custom endpoints are shown in all run log form views (Default, Nextflow, MLflow) |  |
-| [**4461_1**](Run_tools_in_sandbox/4461/4461_1.md) | Admin can create a credit deduction rule for idle runs |  |
-| [**4461_2**](Run_tools_in_sandbox/4461/4461_2.md) | Admin can create a credit reward rule for spot instance usage |  |
-| [**4461_3**](Run_tools_in_sandbox/4461/4461_3.md) | Run launch is blocked when user has insufficient credits |  |
-| [**4461_4**](Run_tools_in_sandbox/4461/4461_4.md) | Credit balance is displayed and reflects configured default for new users |  |
-| [**4461_5**](Run_tools_in_sandbox/4461/4461_5.md) | Credit transaction events are recorded in the audit trail |  |
-| [**4461_6**](Run_tools_in_sandbox/4461/4461_6.md) | User receives notification when credit balance falls below the configured threshold |  |
 | [**4512_1**](Run_tools_in_sandbox/4512/4512_1.md) | IDLE_CPU and IDLE tags for non-GPU run with CPU utilization below than threshold |  |
 | [**4512_2**](Run_tools_in_sandbox/4512/4512_2.md) | IDLE_GPU tag for a GPU run with no GPU activity |  |
 | [**4512_3**](Run_tools_in_sandbox/4512/4512_3.md) | Notifications for idle states |  |
