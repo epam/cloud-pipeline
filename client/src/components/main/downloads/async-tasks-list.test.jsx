@@ -358,3 +358,34 @@ test('Next is disabled when hasNextPage is false, on a page beyond the first', (
   expect(screen.getByRole('button', {name: /first page/i})).not.toBeDisabled();
   expect(screen.getByRole('button', {name: /previous page/i})).not.toBeDisabled();
 });
+
+// The Storage column resolves `task.params.storageId` against the
+// `storageNamesById` lookup the container builds from the `dataStorages`
+// singleton. Every fixture above carries `storageId: 7`, so these reuse
+// SUCCESS_TASK rather than adding new fixtures.
+test('resolves a known storageId to its name, and hides the raw id', () => {
+  render(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{7: 'my-storage'}} />);
+
+  const row = rowFor('archive-success');
+  expect(within(row).getByText('my-storage')).toBeInTheDocument();
+  expect(within(row).queryByText('7')).not.toBeInTheDocument();
+});
+
+test('falls back to the raw id when the storageId has no entry in the map', () => {
+  render(<AsyncTasksList tasks={[SUCCESS_TASK]} storageNamesById={{99: 'some-other-storage'}} />);
+
+  expect(within(rowFor('archive-success')).getByText('7')).toBeInTheDocument();
+});
+
+test('falls back to the raw id, without throwing, when storageNamesById is omitted', () => {
+  render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
+
+  expect(within(rowFor('archive-success')).getByText('7')).toBeInTheDocument();
+});
+
+test('still resolves a name when the task\'s storageId arrives as a string', () => {
+  const task = {...SUCCESS_TASK, params: {...SUCCESS_TASK.params, storageId: '7'}};
+  render(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
+
+  expect(within(rowFor('archive-success')).getByText('my-storage')).toBeInTheDocument();
+});

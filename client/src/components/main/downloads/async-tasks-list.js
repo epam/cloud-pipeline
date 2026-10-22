@@ -169,7 +169,7 @@ class AsyncTasksList extends React.Component {
   }
 
   get columns () {
-    const {onCancel, onDownload, disabled} = this.props;
+    const {onCancel, onDownload, disabled, storageNamesById} = this.props;
     return [
       {
         title: 'Archive',
@@ -179,7 +179,23 @@ class AsyncTasksList extends React.Component {
       {
         title: 'Storage',
         key: 'storage',
-        render: (task) => task.params && task.params.storageId
+        // Resolves the id to the storage's name via the lookup the container
+        // builds from the `dataStorages` singleton, falling back to the raw
+        // id when the storage is unknown (deleted, or the list has not
+        // loaded yet) - never nothing, and never a throw either way. The
+        // `Number(...)` coercion is defensive, not load-bearing against a
+        // plain object (whose keys stringify either way): a task's
+        // storageId may arrive as a string or a number, and coercing first
+        // keeps the lookup correct if `storageNamesById` is ever built as a
+        // `Map`, where a numeric and a string key are genuinely distinct.
+        render: (task) => {
+          const storageId = task.params && task.params.storageId;
+          if (storageId === undefined || storageId === null) {
+            return storageId;
+          }
+          const name = storageNamesById ? storageNamesById[Number(storageId)] : undefined;
+          return name || storageId;
+        }
       },
       {
         title: 'Items',
@@ -362,7 +378,8 @@ AsyncTasksList.propTypes = {
   onStatusesFilterChange: PropTypes.func,
   page: PropTypes.number,
   hasNextPage: PropTypes.bool,
-  onPageChange: PropTypes.func
+  onPageChange: PropTypes.func,
+  storageNamesById: PropTypes.object
 };
 
 AsyncTasksList.defaultProps = {
@@ -374,7 +391,8 @@ AsyncTasksList.defaultProps = {
   onStatusesFilterChange: () => {},
   page: 1,
   hasNextPage: false,
-  onPageChange: () => {}
+  onPageChange: () => {},
+  storageNamesById: {}
 };
 
 export default AsyncTasksList;

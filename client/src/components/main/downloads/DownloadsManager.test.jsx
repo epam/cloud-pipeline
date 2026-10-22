@@ -69,11 +69,23 @@ function usersDouble () {
   });
 }
 
+// The page now also @injects `dataStorages` (the shared singleton that loads
+// every storage with one GET /datastorage/loadAll - see models/dataStorage/
+// DataStorages.js) to resolve the Storage column's name. A plain double, per
+// rule 10: `{loaded, value}` is all the getter reads.
+function dataStoragesDouble (overrides = {}) {
+  return observable(Object.assign({
+    loaded: true,
+    value: [{id: 7, name: 'my-storage'}]
+  }, overrides));
+}
+
 function stores (overrides = {}) {
   return {
     asyncTasks: asyncTasksDouble(overrides),
     authenticatedUserInfo: authenticatedUserInfoDouble(),
-    users: usersDouble()
+    users: usersDouble(),
+    dataStorages: dataStoragesDouble()
   };
 }
 
@@ -168,6 +180,47 @@ test('renders a row for a CANCELLED task and for an EXPIRED task', async () => {
   expect(await screen.findByText('archive-cancelled')).toBeInTheDocument();
   expect(screen.getByText('archive-expired')).toBeInTheDocument();
 });
+
+test('resolves the Storage column to the dataStorages singleton\'s name', async () => {
+  const api = stubApi();
+  stubFilter(api, [
+    {
+      id: 1,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-one', storageId: 7},
+      created: '2026-10-21T13:00:00.000Z'
+    }
+  ]);
+
+  renderWithStores(<DownloadsManager />, stores());
+
+  expect(await screen.findByText('my-storage')).toBeInTheDocument();
+});
+
+test(
+  'falls back to the raw storage id, without throwing, while dataStorages has not loaded',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, [
+      {
+        id: 1,
+        status: 'SUCCESS',
+        params: {archiveName: 'archive-one', storageId: 7},
+        created: '2026-10-21T13:00:00.000Z'
+      }
+    ]);
+
+    renderWithStores(<DownloadsManager />, {
+      asyncTasks: asyncTasksDouble(),
+      authenticatedUserInfo: authenticatedUserInfoDouble(),
+      users: usersDouble(),
+      dataStorages: dataStoragesDouble({loaded: false, value: []})
+    });
+
+    expect(await screen.findByText('archive-one')).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+  }
+);
 
 test('shows the cap hint only when the injected store reports the limit reached', async () => {
   const api = stubApi();
@@ -293,7 +346,8 @@ test('cancelling a task calls the store and re-issues the page\'s own request', 
   renderWithStores(<DownloadsManager />, {
     asyncTasks,
     authenticatedUserInfo: authenticatedUserInfoDouble(),
-    users: usersDouble()
+    users: usersDouble(),
+    dataStorages: dataStoragesDouble()
   });
 
   const row = (await screen.findByText('archive-running')).closest('tr');
@@ -325,7 +379,8 @@ test('disables row actions while a cancel is in flight, re-enabling once it sett
   renderWithStores(<DownloadsManager />, {
     asyncTasks,
     authenticatedUserInfo: authenticatedUserInfoDouble(),
-    users: usersDouble()
+    users: usersDouble(),
+    dataStorages: dataStoragesDouble()
   });
 
   const findRow = () => screen.getByText('archive-in-flight').closest('tr');

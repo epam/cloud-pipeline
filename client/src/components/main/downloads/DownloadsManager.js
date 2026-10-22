@@ -45,7 +45,7 @@ const PAGE_SIZE = 20;
 // or EXPIRED task; the complete history, those two included, is exactly what
 // this page exists to show. The injected store still backs `cancelTask`,
 // `consumeTask` and the active-task cap - only the read path moves.
-@inject('asyncTasks')
+@inject('asyncTasks', 'dataStorages')
 @observer
 export default class DownloadsManager extends React.Component {
   state = {
@@ -218,6 +218,27 @@ export default class DownloadsManager extends React.Component {
     return length === PAGE_SIZE;
   }
 
+  // Maps a task's numeric storage id to its name, for the Storage column.
+  // `dataStorages` is the shared singleton already in Root.js's Provider
+  // (one GET /datastorage/loadAll for every storage the caller can see, see
+  // models/dataStorage/DataStorages.js) - nothing here re-fetches it. A
+  // plain object, not a Map, so it travels to async-tasks-list.js as plain
+  // data and that file stays free of @inject and model imports. A plain
+  // getter rather than @computed: `tasks`/`hasNextPage` above are plain
+  // getters too, and nothing else in this file imports `computed` from
+  // mobx - the class is already @observer, which is what makes the column
+  // re-render once `dataStorages` resolves.
+  get storageNamesById () {
+    const {dataStorages} = this.props;
+    if (!dataStorages || !dataStorages.loaded) {
+      return {};
+    }
+    return (dataStorages.value || []).reduce((result, storage) => ({
+      ...result,
+      [storage.id]: storage.name
+    }), {});
+  }
+
   handleCancel = async (task) => {
     const {asyncTasks} = this.props;
     this.setState({actionPending: true});
@@ -327,6 +348,7 @@ export default class DownloadsManager extends React.Component {
           page={this.state.page}
           hasNextPage={this.hasNextPage}
           onPageChange={this.handlePageChange}
+          storageNamesById={this.storageNamesById}
         />
       </div>
     );
