@@ -89,38 +89,31 @@ function displayArchiveNameOf (task) {
   return /\.zip$/i.test(value) ? value : `${value}.zip`;
 }
 
-// antd's own `FilterMenu.renderFilterIcon` (node_modules/antd/lib/table/
-// filterDropdown.js) only ever applies its built-in "active" highlight
-// (`dropdownSelectedClass`, driven by its own `selectedKeys`) in the branch
-// where a column supplies NO custom `filterIcon` - the branch that clones a
-// custom one never touches it. Both columns below supply their own icon (to
-// carry an `aria-label` instead of antd's locale-dependent `title` - see the
-// Status column's own comment), which means antd's highlight never fires for
-// either, independently of its own `selectedKeys` bookkeeping being correct
-// for a fully custom `filterDropdown` in the first place.
+// Neither filterable column below supplies a custom `filterIcon` - on
+// purpose. antd's own `FilterMenu.renderFilterIcon` (node_modules/antd/lib/
+// table/filterDropdown.js) only ever applies its built-in "active" highlight
+// (`selectedKeys.length > 0 ? prefixCls + '-selected' : ''`, fed by
+// `filteredValue` below through antd's own `Table`) in the branch that
+// renders its own default icon; supplying any custom `filterIcon` at all -
+// even one that only adds a `className` - takes that branch, and so the
+// highlight, out unconditionally: `cloneElement`'s `className` is computed
+// from `filterIcon.className`, which is always `undefined` on an element
+// (the prop lives at `.props.className`, not on the element itself), so a
+// custom icon's own class is discarded too. A column `className` keyed off
+// the same filtered state does not hit this bug (rc-table's own
+// `getHeaderRows` applies it to the header `<th>` verbatim), but it is not
+// what this component was asked to show, and it does not look the way it
+// does on the Runs table - the highlight belongs on the icon antd already
+// renders, not reproduced on the header cell.
 //
-// A `className` on the `filterIcon` element itself cannot fix this: that
-// same function clones it with `className: classnames(filterIcon.className,
-// ...)` - reading `.className` directly off the *element*, which is always
-// `undefined` (an element's own prop lives at `.props.className`), not off
-// `.props`. So `cloneElement`'s className always wins with a value that can
-// never include ours, no matter what we pass. `title` is overwritten the
-// same unconditional way (to the current locale's `filterTitle`), which is
-// the existing, unrelated reason this file carries its own `aria-label`
-// rather than relying on it.
-//
-// `column.className` has no such bug - rc-table's own header-row builder
-// (node_modules/rc-table/lib/Table.js's `getHeaderRows`) applies it to the
-// header `<th>` verbatim (`className: column.className || ''`), a
-// completely different, unbroken code path. So the active look is applied
-// there instead: `cp-primary` on the whole header cell, not the icon alone -
-// the existing "something is active" colour this same file already uses for
-// the in-progress status spinner, not a new one. It still reads as the
-// header being "active", icon included, since nothing in that cell overrides
-// an inherited `color`.
-function headerClassNameFor (filtered) {
-  return classNames({'cp-primary': filtered});
-}
+// The only reason either column used to carry a custom icon was giving a
+// test a locale-independent handle to click: `renderFilterIcon` always
+// overwrites the icon's `title` to the current locale's `filterTitle`, zh-CN
+// without a `LocaleProvider` in scope. The test file solves that at its own
+// source instead, rendering through `renderWithLocale` from `@test` so
+// antd's own icon carries the real, English title ("Filter menu") -
+// `client/src/components/runs/run-table/columns/column-run.js` and
+// `column-owner.js` never set a custom `filterIcon` either.
 
 class AsyncTasksList extends React.Component {
   // Pure UI mechanics: whether the Status column's filter dropdown is open,
@@ -341,13 +334,11 @@ class AsyncTasksList extends React.Component {
     const ownerColumn = isAdmin ? {
       title: 'Owner',
       key: 'owner',
-      className: headerClassNameFor(this.ownerFiltered),
       render: (task) => task.owner,
       filterDropdown: this.ownerFilterDropdown,
       filterDropdownVisible: this.state.ownerFilterVisible,
       onFilterDropdownVisibleChange: this.handleOwnerFilterVisibleChange,
-      filteredValue: this.ownerFiltered ? ['filtered'] : [],
-      filterIcon: <Icon type="filter" aria-label="Filter by owner" />
+      filteredValue: this.ownerFiltered ? ['filtered'] : []
     } : null;
     return [
       {
@@ -417,11 +408,6 @@ class AsyncTasksList extends React.Component {
       {
         title: 'Status',
         key: 'status',
-        // `cp-primary` on the whole header cell once the selection differs
-        // from the default - see `headerClassNameFor`'s own comment for why
-        // this, and not a `className` on `filterIcon` below, is what
-        // actually renders.
-        className: headerClassNameFor(this.statusesFiltered),
         // A custom column filter, the same shape
         // client/src/components/runs/run-table/columns/column-run.js uses:
         // `filterDropdown` is our own JSX, `filterDropdownVisible` and
@@ -430,8 +416,10 @@ class AsyncTasksList extends React.Component {
         // node_modules/antd/lib/table/Column.d.ts) is what antd's own
         // `Table` uses for its internal filter-state bookkeeping
         // (`getFilteredValueColumns` in node_modules/antd/lib/table/
-        // Table.js) - not what drives this header's active look, which is
-        // the `className` above.
+        // Table.js) and, through it, for the header's own filter icon
+        // highlight - see this file's own comment above the class
+        // declaration for why no custom `filterIcon` is supplied here to
+        // carry that.
         filterDropdown: this.statusesFilterDropdown,
         filterDropdownVisible: this.state.statusesFilterVisible,
         onFilterDropdownVisibleChange: this.handleStatusesFilterVisibleChange,
@@ -442,16 +430,6 @@ class AsyncTasksList extends React.Component {
         // should read as active only once the selection has actually moved
         // away from the default.
         filteredValue: this.statusesFiltered ? ['filtered'] : [],
-        // A custom `filterIcon` carrying our own `aria-label` instead of
-        // antd's default - `FilterMenu.renderFilterIcon` (node_modules/antd/
-        // lib/table/filterDropdown.js) *always* overwrites a default icon's
-        // `title` to the current locale's `filterTitle` (no LocaleProvider
-        // is configured in the test harness, so that title renders in
-        // antd's default zh-CN today). Querying by that locale- and
-        // antd-version-dependent title would be exactly the antd-internals
-        // coupling client/test/AGENTS.md rule 6 warns against; this label is
-        // ours, so the test queries it instead.
-        filterIcon: <Icon type="filter" aria-label="Filter by status" />,
         render: (task) => {
           const {status, errorMessage} = task;
           const content = (

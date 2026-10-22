@@ -18,7 +18,7 @@ import React from 'react';
 import {observable} from 'mobx';
 import {
   render,
-  renderWithStores,
+  renderWithLocale,
   screen,
   within,
   click,
@@ -311,20 +311,30 @@ describe('the Archive column\'s .zip suffix', () => {
 // into a portal, so it is queried via `screen`, the same caveat phase 6's
 // modal and phase 14's popover already had to work around (client/test/
 // AGENTS.md, "mouseenter/mouseleave do not reach a component", applies to
-// rc-trigger content generally). The filter icon is found by its own
-// `aria-label`, not by antd's `title` - that title is always antd's current
-// locale's `filterTitle` (no LocaleProvider is configured in this harness,
-// so it renders in antd's default zh-CN today), which is exactly the
-// antd-internals coupling rule 6 warns against.
+// rc-trigger content generally).
+//
+// The column supplies no custom `filterIcon` (see async-tasks-list.js's own
+// comment, above its class declaration, for why), so the icon opened here is
+// antd's own default one, reached by its real English `title` ("Filter
+// menu", `antd/lib/locale-provider/en_US.js`'s `filterTitle`) - which only
+// renders instead of antd's bundled zh-CN default once the tree sits inside
+// a `<LocaleProvider>`, which `renderWithLocale` from `@test` provides, the
+// way src/components/main/App.js wraps the real application. Scoped to the
+// Status column's own header cell, because the Owner column (admin-only,
+// further down this file) renders the identical default icon under the
+// same title when both are present.
 function openStatusesFilter () {
-  return click(screen.getByLabelText('Filter by status'));
+  const header = screen.getByText('Status').closest('th');
+  return click(within(header).getByTitle('Filter menu'));
 }
 
 test(
   'ticking a status not already in the default and clicking OK adds it',
   async () => {
     const onStatusesFilterChange = fn();
-    render(<AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />);
+    renderWithLocale(
+      <AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />
+    );
 
     // `statusesFilter` defaults to POLLED_STATUSES (see defaultProps), which
     // already has PENDING/RUNNING/CANCEL_REQUESTED/STOPPING/SUCCESS/FAILED
@@ -343,7 +353,7 @@ test(
   'clicking Clear calls onStatusesFilterChange with POLLED_STATUSES, never undefined',
   async () => {
     const onStatusesFilterChange = fn();
-    render(
+    renderWithLocale(
       <AsyncTasksList
         tasks={[]}
         statusesFilter={['PENDING']}
@@ -360,7 +370,9 @@ test(
 
 test('ticking a box without clicking OK does not call onStatusesFilterChange', async () => {
   const onStatusesFilterChange = fn();
-  render(<AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />);
+  renderWithLocale(
+    <AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />
+  );
 
   await openStatusesFilter();
   await click(screen.getByRole('checkbox', {name: 'RUNNING'}));
@@ -369,7 +381,7 @@ test('ticking a box without clicking OK does not call onStatusesFilterChange', a
 });
 
 test('reopening the status filter re-ticks the already-committed statuses', async () => {
-  render(<AsyncTasksList tasks={[]} statusesFilter={['PENDING', 'RUNNING']} />);
+  renderWithLocale(<AsyncTasksList tasks={[]} statusesFilter={['PENDING', 'RUNNING']} />);
 
   await openStatusesFilter();
 
@@ -384,15 +396,17 @@ test('reopening the status filter re-ticks the already-committed statuses', asyn
 // by "is anything set at all" - see async-tasks-list.js's own comment on it.
 //
 // `filteredValue` is read straight off the rendered `columns` getter via a
-// ref, not off a DOM class: antd's FilterMenu only ever applies its own
-// `-selected` class to the *default*, library-rendered filter icon
-// (FilterMenu.renderFilterIcon in node_modules/antd/lib/table/
-// filterDropdown.js) - the branch that never runs once a column supplies its
-// own `filterIcon`, which both the Status and Owner columns do. So there is
-// no DOM signal for "is this filter active" to query at all here, and
-// reaching for one would be exactly the antd-internals coupling rule 6 warns
-// against. Reading `filteredValue` off `columns` instead asserts on this
-// component's own output, which is what the decision is actually about.
+// ref, not off a DOM class. antd's own `FilterMenu` does apply a `-selected`
+// class to its default filter icon once `filteredValue` lands here (that is
+// the production bug this change fixes - see async-tasks-list.js's own
+// comment above its class declaration), but that class is antd's own
+// internal, not this component's - asserting on it here would be exactly
+// the antd-internals coupling rule 6 warns against. Reading `filteredValue`
+// off `columns` instead asserts on this component's own output, which is
+// what the decision is actually about. Neither
+// client/src/components/runs/run-table/columns/column-run.js nor
+// column-owner.js has a test file at all, so there is no precedent here for
+// asserting on antd's own highlight either - only for not trying to.
 describe('the Status column default (POLLED_STATUSES)', () => {
   function statusFilteredValue (instance) {
     return instance.columns.find((column) => column.key === 'status').filteredValue;
@@ -445,7 +459,7 @@ describe('the Status column default (POLLED_STATUSES)', () => {
     'ticking everything off and pressing OK reports the default, not an empty list',
     async () => {
       const onStatusesFilterChange = fn();
-      render(
+      renderWithLocale(
         <AsyncTasksList
           tasks={[]}
           statusesFilter={['PENDING']}
@@ -460,34 +474,6 @@ describe('the Status column default (POLLED_STATUSES)', () => {
       expect(onStatusesFilterChange).toHaveBeenCalledWith(POLLED_STATUSES);
     }
   );
-
-  // antd's own filter-icon highlight (`FilterMenu.renderFilterIcon` in
-  // node_modules/antd/lib/table/filterDropdown.js) never fires once a column
-  // supplies a custom `filterIcon`, which this one does (for its
-  // `aria-label` - see that column's own comment) - so without a fix,
-  // nothing ever shows the filter as active. The fix lands on the header
-  // `<th>` itself (`column.className`, via `headerClassNameFor`), not on
-  // the icon: that same antd function clones the icon with a `className`
-  // computed from `filterIcon.className` - a property an element never
-  // actually has (it lives on `.props.className`) - so any className put on
-  // the icon element is unconditionally discarded, no matter what. `<th>`
-  // is reached through `closest`, because the header cell - not the "Status"
-  // text or the icon individually - is what carries the class.
-  // `cp-primary` is this component's own class, applied by its own
-  // `headerClassNameFor` helper, not an antd internal - querying for it is
-  // exactly what rule 6 permits ("a CSS-module class your own component
-  // owns").
-  test('the header cell carries cp-primary once the selection differs from the default', () => {
-    render(<AsyncTasksList tasks={[]} statusesFilter={[...POLLED_STATUSES, 'CANCELLED']} />);
-
-    expect(screen.getByText('Status').closest('th')).toHaveClass('cp-primary');
-  });
-
-  test('the header cell does not carry cp-primary at the default', () => {
-    render(<AsyncTasksList tasks={[]} />);
-
-    expect(screen.getByText('Status').closest('th')).not.toHaveClass('cp-primary');
-  });
 });
 
 // The pagination row beneath the table. `/async-task/filter` returns no
@@ -657,40 +643,57 @@ test('hovering the count shows every archived path', async () => {
 // dropdown (client/src/components/runs/run-table/columns/column-owner.js is
 // the precedent). UserAutoComplete carries its own
 // `@inject('authenticatedUserInfo')`, so every case here renders through
-// `renderWithStores` with that store doubled, even though the rest of this
-// file never needs a Provider - see async-tasks-list.js's own header comment
-// for why that narrows, rather than breaks, this component's "presentational"
-// invariant. These cases stay to the commit paths (OK/Clear/visibility) and
-// leave UserAutoComplete's own search-as-you-type behaviour (which issues its
-// own `UserFind` request) covered by that component's own tests - exercising
-// it here would mean stubbing the network for a component this file does not
+// `renderWithLocale`'s own `stores` option (which wraps in the same
+// `<Provider>` `renderWithStores` would) with that store doubled, even
+// though the rest of this file never needs a Provider - see
+// async-tasks-list.js's own header comment for why that narrows, rather
+// than breaks, this component's "presentational" invariant. It also wraps
+// in antd's `<LocaleProvider>`, needed for the same reason the Status
+// column's own suite above does: opening the dropdown goes through the
+// column's own default filter icon, found by its real English `title`
+// ("Filter menu") rather than antd's bundled zh-CN default. These cases
+// stay to the commit paths (OK/Clear/visibility) and leave
+// UserAutoComplete's own search-as-you-type behaviour (which issues its own
+// `UserFind` request) covered by that component's own tests - exercising it
+// here would mean stubbing the network for a component this file does not
 // own.
 describe('the Owner column', () => {
   function renderList (props = {}) {
-    return renderWithStores(
+    return renderWithLocale(
       <AsyncTasksList tasks={[]} {...props} />,
-      {authenticatedUserInfo: authenticatedUserInfoDouble()}
+      {stores: {authenticatedUserInfo: authenticatedUserInfoDouble()}}
     );
   }
 
-  test('is absent, with no filter icon, when isAdmin is false', () => {
+  // Scoped to the Owner column's own header cell - see openStatusesFilter's
+  // own comment above for why the Status and Owner columns' default filter
+  // icons cannot be told apart by title alone once both are present.
+  function openOwnerFilter () {
+    const header = screen.getByText('Owner').closest('th');
+    return click(within(header).getByTitle('Filter menu'));
+  }
+
+  test('is absent entirely when isAdmin is false', () => {
     renderList({isAdmin: false});
 
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Filter by owner')).not.toBeInTheDocument();
+    // Only the Status column's own default filter icon remains - no second
+    // one for an Owner column that was never rendered at all.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(1);
   });
 
   test('is present, with its own filter icon, when isAdmin is true', () => {
     renderList({isAdmin: true});
 
     expect(screen.getByText('Owner')).toBeInTheDocument();
-    expect(screen.getByLabelText('Filter by owner')).toBeInTheDocument();
+    // One default filter icon per filterable column - Status and Owner.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
   });
 
   test('opening the dropdown renders the autocomplete and the OK/Clear links', async () => {
     renderList({isAdmin: true});
 
-    await click(screen.getByLabelText('Filter by owner'));
+    await openOwnerFilter();
 
     // antd's AutoComplete fakes its placeholder with a sibling `<div>`
     // rather than the native HTML attribute (it has to, to keep showing it
@@ -707,7 +710,7 @@ describe('the Owner column', () => {
     const onOwnerFilterChange = fn();
     renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
 
-    await click(screen.getByLabelText('Filter by owner'));
+    await openOwnerFilter();
     await click(screen.getByText('OK'));
 
     expect(onOwnerFilterChange).toHaveBeenCalledWith('someone-else');
@@ -717,7 +720,7 @@ describe('the Owner column', () => {
     const onOwnerFilterChange = fn();
     renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
 
-    await click(screen.getByLabelText('Filter by owner'));
+    await openOwnerFilter();
     await click(screen.getByText('Clear'));
 
     expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
@@ -741,16 +744,18 @@ describe('the Owner column', () => {
       ref: (r) => { instance = r; }
     });
 
-    await click(screen.getByLabelText('Filter by owner'));
+    await openOwnerFilter();
     instance.handleOwnerFilterVisibleChange(false);
 
     expect(onOwnerFilterChange).toHaveBeenCalledWith('someone-else');
   });
 
-  // Read off `columns` via a ref, not a DOM class - see the Status column
-  // default suite's own comment above for why: antd never applies its
-  // `-selected` class once a column supplies its own `filterIcon`, which
-  // this one does.
+  // Read off `columns` via a ref, not a DOM class - the real, testable
+  // signal for "is this filter active" is this component's own
+  // `filteredValue`, which is what antd's own (now unmodified) default
+  // filter icon highlight is driven by in production; asserting on that
+  // icon's own internal class here would be exactly the antd-internals
+  // coupling rule 6 warns against.
   test('filteredValue lights the icon once an owner is set', () => {
     let instance;
     renderList({isAdmin: true, ownerFilter: 'someone-else', ref: (r) => { instance = r; }});
@@ -765,22 +770,5 @@ describe('the Owner column', () => {
 
     const ownerColumn = instance.columns.find((column) => column.key === 'owner');
     expect(ownerColumn.filteredValue).toEqual([]);
-  });
-
-  // Same antd limitation as the Status column's own header-class tests
-  // above: a custom `filterIcon` means antd's own highlight never fires,
-  // and a `className` on the icon itself is unconditionally discarded (see
-  // `headerClassNameFor`'s own comment), so the active look lands on the
-  // header `<th>` instead, via `column.className`.
-  test('the header cell carries cp-primary once an owner is set', () => {
-    renderList({isAdmin: true, ownerFilter: 'someone-else'});
-
-    expect(screen.getByText('Owner').closest('th')).toHaveClass('cp-primary');
-  });
-
-  test('the header cell does not carry cp-primary with no owner set', () => {
-    renderList({isAdmin: true});
-
-    expect(screen.getByText('Owner').closest('th')).not.toHaveClass('cp-primary');
   });
 });

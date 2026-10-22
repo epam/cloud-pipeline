@@ -367,8 +367,8 @@ export default class DownloadsManager extends React.Component {
 
   // Whether either filter differs from its default - the single comparison
   // that decides the "Reset filters" control's visibility below. Deliberately
-  // reuses the same two comparisons the two columns' own header highlight is
-  // built from (`compareArrays` against `POLLED_STATUSES` for statuses,
+  // reuses the same two comparisons the two columns' own filter icon highlight
+  // is built from (`compareArrays` against `POLLED_STATUSES` for statuses,
   // `async-tasks-list.js`'s `statusesFiltered`; a plain inequality against
   // `this.defaultOwner` for owner, since the Owner column's own `ownerFiltered`
   // deliberately means something else - "is any owner set at all", true from

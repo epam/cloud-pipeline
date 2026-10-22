@@ -18,6 +18,7 @@ import React from 'react';
 import {observable} from 'mobx';
 import {
   renderWithStores,
+  renderWithLocale,
   screen,
   within,
   click,
@@ -89,6 +90,22 @@ function filterCalls (api) {
 
 function refreshButton () {
   return screen.getByRole('button', {name: /refresh/i});
+}
+
+// Neither the Status nor the Owner column (async-tasks-list.js) supplies a
+// custom `filterIcon`, so each is antd's own default icon, found by its
+// real English `title` ("Filter menu") - which only renders instead of
+// antd's bundled zh-CN default once the tree sits inside a
+// `<LocaleProvider>`, which `renderWithLocale` from `@test` provides (see
+// the tests below that use it). Scoped to each column's own header cell,
+// because both render the identical default icon under the same title when
+// both are present (an admin user, the default here).
+function statusFilterIcon () {
+  return within(screen.getByText('Status').closest('th')).getByTitle('Filter menu');
+}
+
+function ownerFilterIcon () {
+  return within(screen.getByText('Owner').closest('th')).getByTitle('Filter menu');
 }
 
 // A programmatic fixture, per the "build the 20-task fixture
@@ -237,17 +254,16 @@ test(
     const api = stubApi();
     stubFilter(api, []);
 
-    renderWithStores(<DownloadsManager />, stores());
+    renderWithLocale(<DownloadsManager />, {stores: stores()});
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
     // The Status column's own filter dropdown (async-tasks-list.js), a
-    // custom antd Table column filter - not a bar-level control. Found by
-    // its own `aria-label`, not antd's locale-dependent `title`. CANCELLED
+    // custom antd Table column filter - not a bar-level control. CANCELLED
     // is ticked rather than an already-default status (e.g. RUNNING),
     // because the dropdown now opens with POLLED_STATUSES already checked -
     // ticking one of those would UNCHECK it instead.
-    await click(screen.getByLabelText('Filter by status'));
+    await click(statusFilterIcon());
     await click(screen.getByRole('checkbox', {name: 'CANCELLED'}));
     await click(screen.getByText('OK'));
 
@@ -273,12 +289,12 @@ test(
     const api = stubApi();
     stubFilter(api, []);
 
-    renderWithStores(<DownloadsManager />, stores());
+    renderWithLocale(<DownloadsManager />, {stores: stores()});
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
     expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
 
-    await click(screen.getByLabelText('Filter by owner'));
+    await click(ownerFilterIcon());
     await click(screen.getByText('Clear'));
 
     await waitFor(() => expect(filterCalls(api).length).toBe(2));
@@ -301,10 +317,11 @@ test(
 );
 
 // "Reset filters" - visible only once either column's own filter differs
-// from its default, reusing exactly the comparisons the columns' own header
-// highlight is built from (DownloadsManager's `filtersChanged`): `statuses`
-// against `POLLED_STATUSES` via `compareArrays`, `owner` against the seeded
-// current user. Clicking it restores both in one request and re-fetches.
+// from its default, reusing exactly the comparisons the columns' own filter
+// icon highlight is built from (DownloadsManager's `filtersChanged`):
+// `statuses` against `POLLED_STATUSES` via `compareArrays`, `owner` against
+// the seeded current user. Clicking it restores both in one request and
+// re-fetches.
 test(
   'Reset filters is hidden at the default, appears once a filter changes, and ' +
   'restores both to their defaults in one request',
@@ -312,7 +329,7 @@ test(
     const api = stubApi();
     stubFilter(api, []);
 
-    renderWithStores(<DownloadsManager />, stores());
+    renderWithLocale(<DownloadsManager />, {stores: stores()});
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
     expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
@@ -322,25 +339,19 @@ test(
     // content on close (only hides it), so once both the Owner and Status
     // dropdowns have been opened at least once, a bare `getByText('OK')`
     // matches both - one visible, one hidden - and throws for ambiguity.
-    await click(screen.getByLabelText('Filter by owner'));
+    await click(ownerFilterIcon());
     await click(within(screen.getByRole('combobox').closest('.filterPopoverContainer'))
       .getByText('Clear'));
     await waitFor(() => expect(filterCalls(api).length).toBe(2));
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeInTheDocument();
-    // The header cell itself is lit for a different reason (any owner set
-    // at all) and stays lit either way here - this assertion is about the
-    // Status column, whose own highlight genuinely tracks "differs from
-    // default" and so must still read as default-at-this-point.
-    expect(screen.getByText('Status').closest('th')).not.toHaveClass('cp-primary');
 
     // Also changes the Status filter, so both differ from their defaults.
-    await click(screen.getByLabelText('Filter by status'));
+    await click(statusFilterIcon());
     const cancelledCheckbox = screen.getByRole('checkbox', {name: 'CANCELLED'});
     await click(cancelledCheckbox);
     await click(within(cancelledCheckbox.closest('.filterPopoverContainer')).getByText('OK'));
     await waitFor(() => expect(filterCalls(api).length).toBe(3));
-    expect(screen.getByText('Status').closest('th')).toHaveClass('cp-primary');
 
     await click(screen.getByRole('button', {name: /reset filters/i}));
 
@@ -349,9 +360,7 @@ test(
     expect(body.owner).toBe(USER_NAME);
     expect([...body.statuses].sort()).toEqual([...POLLED_STATUSES].sort());
     expect(body.page).toBe(1);
-    // Both columns read as un-highlighted again, and the control itself
-    // disappears - there is nothing left to reset.
-    expect(screen.getByText('Status').closest('th')).not.toHaveClass('cp-primary');
+    // The control itself disappears - there is nothing left to reset.
     expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
   }
 );
@@ -587,7 +596,7 @@ test(
     const api = stubApi();
     stubFilter(api, buildTasks(PAGE_SIZE));
 
-    renderWithStores(<DownloadsManager />, stores());
+    renderWithLocale(<DownloadsManager />, {stores: stores()});
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
@@ -599,7 +608,7 @@ test(
     // that funnels through DownloadsManager's `setFilter`, next to the
     // Owner column. CANCELLED, not an already-default status - see the
     // comment on the equivalent test above.
-    await click(screen.getByLabelText('Filter by status'));
+    await click(statusFilterIcon());
     await click(screen.getByRole('checkbox', {name: 'CANCELLED'}));
     await click(screen.getByText('OK'));
 
@@ -651,15 +660,19 @@ test(
     const api = stubApi();
     stubFilter(api, []);
 
-    renderWithStores(<DownloadsManager />, {
-      asyncTasks: asyncTasksDouble(),
-      authenticatedUserInfo: authenticatedUserInfoDouble(false),
-      dataStorages: dataStoragesDouble()
+    renderWithLocale(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: authenticatedUserInfoDouble(false),
+        dataStorages: dataStoragesDouble()
+      }
     });
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
     expect(screen.queryByText('Owner')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Filter by owner')).not.toBeInTheDocument();
+    // Only the Status column's own default filter icon remains - no second
+    // one for an Owner column that was never rendered at all.
+    expect(screen.getAllByTitle('Filter menu')).toHaveLength(1);
     // The seeded owner is still sent - the column controls visibility only,
     // never the request itself.
     expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
