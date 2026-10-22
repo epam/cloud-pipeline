@@ -15,7 +15,17 @@
  */
 
 import React from 'react';
-import {render, screen, within, click, hover, fn} from '@test';
+import {
+  render,
+  screen,
+  within,
+  click,
+  hover,
+  fn,
+  useFakeTimers,
+  useRealTimers,
+  advanceTimers
+} from '@test';
 import AsyncTasksList from './async-tasks-list';
 
 const SUCCESS_TASK = {
@@ -388,4 +398,78 @@ test('still resolves a name when the task\'s storageId arrives as a string', () 
   render(<AsyncTasksList tasks={[task]} storageNamesById={{7: 'my-storage'}} />);
 
   expect(within(rowFor('archive-success')).getByText('my-storage')).toBeInTheDocument();
+});
+
+// The Items column: a count, wrapped in a Popover listing the archived
+// paths. The popover is built on rc-trigger (antd's Popover), so its content
+// only mounts once hovered (client/test/AGENTS.md, "mouseenter/mouseleave do
+// not reach a component") and `mouseEnterDelay={1}` defers that open by a
+// second via setTimeout - hence the fake-timer dance below, rather than
+// waiting on wall time.
+test('shows the correct item count for a populated task', () => {
+  render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
+
+  expect(within(rowFor('archive-success')).getByText('2')).toBeInTheDocument();
+  expect(within(rowFor('archive-running')).getByText('1')).toBeInTheDocument();
+});
+
+test('hovering the count shows every archived path', async () => {
+  useFakeTimers();
+  try {
+    render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
+
+    await hover(within(rowFor('archive-success')).getByText('2'));
+    advanceTimers(1000);
+
+    // The popover renders into a portal outside the table's subtree, so it
+    // is searched for from `screen`, never from `within(rowFor(...))`.
+    expect(await screen.findByText('a/')).toBeInTheDocument();
+    expect(await screen.findByText('b.txt')).toBeInTheDocument();
+  } finally {
+    useRealTimers();
+  }
+});
+
+// All three shapes the count's own guard already treats as "nothing to
+// show": no `params` at all, `params` with no `paths`, and an empty `paths`
+// array. Each renders the bare count (0) with no Popover at all - an empty
+// popover that opens on hover and shows nothing would be worse than no
+// affordance.
+[
+  {
+    description: 'params is absent entirely',
+    task: {id: 20, status: 'SUCCESS', created: '2026-10-21T13:13:02.274Z'}
+  },
+  {
+    description: 'params carries no paths key',
+    task: {
+      id: 21,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-no-paths-key', storageId: 7},
+      created: '2026-10-21T13:13:02.274Z'
+    }
+  },
+  {
+    description: 'paths is an empty array',
+    task: {
+      id: 22,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-empty-paths', storageId: 7, paths: []},
+      created: '2026-10-21T13:13:02.274Z'
+    }
+  }
+].forEach(({description, task}) => {
+  test(`renders the bare count with no popover trigger when ${description}`, async () => {
+    useFakeTimers();
+    try {
+      render(<AsyncTasksList tasks={[task]} />);
+
+      await hover(screen.getByText('0'));
+      advanceTimers(1000);
+
+      expect(document.querySelector('.archivePathsPopoverContainer')).not.toBeInTheDocument();
+    } finally {
+      useRealTimers();
+    }
+  });
 });

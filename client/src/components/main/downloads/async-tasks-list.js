@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Button, Icon, Tooltip, Checkbox} from 'antd';
+import {Table, Button, Icon, Tooltip, Checkbox, Popover} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
@@ -200,7 +200,32 @@ class AsyncTasksList extends React.Component {
       {
         title: 'Items',
         key: 'items',
-        render: (task) => (task.params && task.params.paths ? task.params.paths.length : 0)
+        // A count with no popover at all when there is nothing to list - the
+        // same guard the count itself already applies for a missing
+        // `params`/`paths`. An empty popover that opens on hover and shows
+        // nothing would be worse than no affordance.
+        render: (task) => {
+          const paths = (task.params && task.params.paths) || [];
+          const count = paths.length;
+          if (!count) {
+            return count;
+          }
+          return (
+            <Popover
+              mouseEnterDelay={1}
+              trigger="hover"
+              content={
+                <div className={styles.archivePathsPopoverContainer}>
+                  {paths.map((path, index) => (
+                    <div key={`${path}-${index}`}>{path}</div>
+                  ))}
+                </div>
+              }
+            >
+              <span>{count}</span>
+            </Popover>
+          );
+        }
       },
       {
         title: 'Size',

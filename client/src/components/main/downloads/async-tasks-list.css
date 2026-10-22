@@ -46,3 +46,14 @@
   justify-content: flex-end;
   margin-top: 10px;
 }
+
+/* The Items column's popover content - a bounded list of the archived
+ * paths. A task can carry very many of them, so this is capped and
+ * scrollable rather than left to run off the screen; `word-break` wraps a
+ * long path instead of widening the popover. Geometry only, no colours. */
+.archive-paths-popover-container {
+  max-height: 300px;
+  max-width: 400px;
+  overflow: auto;
+  word-break: break-all;
+}
