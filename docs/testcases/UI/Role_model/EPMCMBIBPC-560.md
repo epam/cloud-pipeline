@@ -20,4 +20,4 @@ Test verifies that rerunning a completed run is denied once execute permission i
 | 14 | Click on the pipeline selected at step 5 |  |
 | 15 | Click on the pipeline version |  |
 | 16 | Click the **HISTORY** tab |  |
-| 17 | Click the **RERUN** hyperlink opposite the run completed at step 1 | An error message like "You have no permissions" appears |
+| 17 | Check the run completed at step 1 in the table | The **RERUN** hyperlink opposite that run is not displayed |

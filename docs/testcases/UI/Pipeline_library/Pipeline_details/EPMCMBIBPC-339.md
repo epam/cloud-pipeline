@@ -3,12 +3,12 @@
 Test verifies creating a folder on the CODE tab of a pipeline.
 
 **Prerequisites**:
-- Perform the [EPMCMBIBPC-343](EPMCMBIBPC-343.md) case
+- Perform the [EPMCMBIBPC-285](../Pipeline_editing/EPMCMBIBPC-285.md) case
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Open library |  |
-| 2 | Click on the pipeline from the [EPMCMBIBPC-343](EPMCMBIBPC-343.md) case in the library-tree |  |
+| 2 | Click on the pipeline from the [EPMCMBIBPC-285](../Pipeline_editing/EPMCMBIBPC-285.md) case in the library-tree |  |
 | 3 | Click on pipeline version |  |
 | 4 | Select **CODE** tab on the appeared page |  |
 | 5 | Click **+** button in the header above the pipeline file list |  |

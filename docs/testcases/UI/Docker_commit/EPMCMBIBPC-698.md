@@ -37,4 +37,4 @@ Test verifies committing a running pipeline as a new docker tool.
 | 21 | Click on `{registry_name}`, select **Default registry** |  |
 | 22 | Click on `{group_name}`, select a tools group from the Preparation section |  |
 | 23 | Input a name for the docker image - `shell` |  |
-| 24 | Click **COMMIT** button | <li> the pop-up is closed <li> in the right upper corner, the label **COMMITING** appears <li> the commit finishes successfully |
+| 24 | Click **COMMIT** button | <li> the pop-up is closed <li> in the right upper corner, the label **COMMITTING...** appears <li> the commit finishes successfully |

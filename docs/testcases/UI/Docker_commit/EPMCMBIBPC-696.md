@@ -10,4 +10,4 @@ Test verifies that committing with the Stop pipeline flag set stops the run afte
 | 4 | Specify a tool name equal to the tool selected at step 4 of the [EPMCMBIBPC-692](EPMCMBIBPC-692.md) case |  |
 | 5 | Set the **Stop pipeline** checkbox |  |
 | 6 | Click **COMMIT** button |  |
-| 7 | Click **OK** button in the appeared pop-up | <li> the pop-up is closed <li> in the right upper corner, the label **COMMITING** appears <li> the commit finishes successfully <li> after the commit finishes, the pipeline is stopped |
+| 7 | Click **OK** button in the appeared pop-up | <li> the pop-up is closed <li> in the right upper corner, the label **COMMITTING...** appears <li> the commit finishes successfully <li> after the commit finishes, the pipeline is stopped |

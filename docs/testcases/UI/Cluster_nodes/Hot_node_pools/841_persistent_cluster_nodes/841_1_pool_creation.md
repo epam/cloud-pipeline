@@ -24,7 +24,7 @@ Test verifies hot node pool creation and its shown in the *Cluster* and *Hot nod
 | 3 | Click the **HOT NODE POOLS** tab | |
 | 4 | Click the "**+ Create**" button | |
 | 5 | Specify valid _Pool name_ | |
-| 6 | Specify the "_Starts on_" day - the current day of the week then specify the "_Starts on_" time `00:00` | |
+| 6 | Click the **Add schedule** button, then specify the "_Starts on_" day - the current day of the week then specify the "_Starts on_" time `00:00` | |
 | 7 | Specify the "_Ends on_" day - the next day of the week then specify the "_Ends on_" time `23:59` | |
 | 8 | Specify the _Nodes count_ - `2` | |
 | 9 | Select the _Region_ - the same one as was saved at step 4 of the preparations | |
@@ -34,10 +34,10 @@ Test verifies hot node pool creation and its shown in the *Cluster* and *Hot nod
 | 13 | Click the "**+ Add docker image**" button | |
 | 14 | In the appeared field, select any tool from the `Default registry` and `library` group (e.g. `ubuntu`) | |
 | 15 | Select the _Condition_ - `Matches all filters ("and")` | |
-| 16 | Click the "**+ Filter**" button | |
+| 16 | Click the "**+ Add filter**" button | |
 | 17 | Select the _Property_ in the appeared popup - `Run owner` | |
 | 18 | Select the _Owner_ - the admin user name from the prerequisites | |
-| 19 | Click the **CREATE** button | The new item appears in the pools list. This item contains: <ul><li> the name equals to the specified at step 5 <li> labels: `2 NODES`, `<instance_type>` equals to the selected at step 11, `SPOT`, `<disk_size> GB` equals to the disk size specified at step 12 <li> label with the tool name selected at step 14 label with the schedule in format: `<day_starts_on>, 00:00 - <day_ends_on>, 23:59` with the values of week days specified at steps 6-7 <li> buttons: **Edit** and **Remove** |
+| 19 | Click the **CREATE** button | The new item appears in the pools list. This item contains: <ul><li> the name equals to the specified at step 5 <li> labels: `2 NODES`, `<instance_type>` equals to the selected at step 11, `SPOT`, `<disk_size> GB` equals to the disk size specified at step 12 <li> label with the tool name selected at step 14 label with the schedule in format: `<day_starts_on>, 00:00 - <day_ends_on>, 23:59` with the values of week days specified at steps 6-7 <li> buttons: **Edit**, usage chart and **Remove** |
 | 20 | Click the just-created node pool item | The nodes page appears that contains at least header with the pool name specified at step 5 |
 | 21 | Click the **Refresh** button every minute until two nodes appear in the node list | <li> The header becomes `<pool_name> nodes (2 nodes, 2 nodes with associated RunId)` where `<pool_name>` is the pool name specified at step 5 <li> two nodes appear. Each appeared node has: <ul><li> the label with the pool name specified at step 5 <li> the label starts from `RUN ID P-` |
 | 22 | Save node names | |

@@ -16,7 +16,7 @@ Test verifies launching an Apache Spark cluster: the master/worker setup tasks a
 | 7 | Click the **Configure cluster** control |  |
 | 8 | Click the **Cluster** tab |  |
 | 9 | Set the **Enable Apache Spark** checkbox |  |
-| 10 | Click **OK** button | The name of the **Configure cluster** control becomes **Apache Spark Cluster (1 child node)** |
+| 10 | Click **OK** button | The name of the **Configure cluster** control becomes **Apache Spark Cluster (1 child node), LFS** |
 | 11 | Expand the **Advanced** section |  |
 | 12 | Set the **Start idle** checkbox |  |
 | 13 | Click **Launch** button |  |
