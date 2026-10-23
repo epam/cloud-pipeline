@@ -107,6 +107,12 @@ import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
+import handleDownloadArchive, {
+  archiveDownloadAllowed,
+  archivePathsFromSelection,
+  defaultArchiveName
+} from '../../../special/download-storage-archive';
+import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
@@ -149,7 +155,8 @@ const SUBMITTED_STATUS = 'SUBMITTED';
   'folders',
   'pipelinesLibrary',
   'dataStorageCache',
-  'preferences'
+  'preferences',
+  'asyncTasks'
 )
 @HiddenObjects.checkStorages(props => props.params.id)
 @inject(({routing}, {params, onReloadTree}) => {
@@ -176,6 +183,7 @@ const SUBMITTED_STATUS = 'SUBMITTED';
 export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
+    downloadArchiveModalVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
     editDropdownVisible: false,
@@ -1040,6 +1048,46 @@ export default class DataStorage extends React.Component {
 
   closeCreateFileDialog = () => {
     this.setState({createFile: false});
+  };
+
+  // The cap is re-checked against the server here, on the click itself, and
+  // the modal opens only if there is room - see `archiveDownloadAllowed`
+  // (special/download-storage-archive.js) for why the greyed-out menu item is
+  // not enough on its own. The same check runs again inside
+  // `startArchiveDownload` when OK is pressed, since this modal can sit open
+  // for as long as the user likes.
+  // Invoked fire-and-forget from the selection dropdown's click handler, so
+  // it catches for itself: an escaping rejection would become an unhandled
+  // one and the click would look like it did nothing at all.
+  // `archiveDownloadAllowed` answers true for anything it cannot check, so
+  // this only ever hides a bug, never a refusal.
+  openDownloadArchiveModal = async () => {
+    const {asyncTasks} = this.props;
+    let allowed = true;
+    try {
+      allowed = await archiveDownloadAllowed(asyncTasks);
+    } catch (error) {
+      console.warn('Could not check the active-download limit', error);
+    }
+    if (allowed) {
+      this.setState({downloadArchiveModalVisible: true});
+    }
+  };
+
+  closeDownloadArchiveModal = () => {
+    this.setState({downloadArchiveModalVisible: false});
+  };
+
+  submitDownloadArchive = (name) => {
+    const {asyncTasks, storageId} = this.props;
+    const {selectedItems = []} = this.state;
+    this.closeDownloadArchiveModal();
+    handleDownloadArchive(
+      asyncTasks,
+      storageId,
+      archivePathsFromSelection(selectedItems),
+      name
+    );
   };
 
   createFolder = async ({name}) => {
@@ -2320,6 +2368,7 @@ export default class DataStorage extends React.Component {
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
       download: 'download',
+      downloadArchive: 'download-archive',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
       permissions: 'permissions',
@@ -2335,6 +2384,20 @@ export default class DataStorage extends React.Component {
       title: 'Download',
       icon: 'download',
       available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
+    };
+    const archivePaths = archivePathsFromSelection(selectedItems);
+    // Deliberately carries no cap state: the item is never greyed out and
+    // never explains the cap up front. Clicking it counts the user's active
+    // tasks against the server (`openDownloadArchiveModal` above) and, at the
+    // cap, shows a message instead of opening the name modal. A hint here
+    // could only come from a background poll of the task list, which the
+    // notification tracker no longer keeps (models/asyncTask/
+    // CurrentUserAsyncTasks.js polls the user's own queued tasks one by one).
+    const downloadArchiveAction = {
+      key: Keys.downloadArchive,
+      title: 'Download archive',
+      icon: 'download',
+      available: !this.isOmicsStore && archivePaths.length > 0
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2431,6 +2494,7 @@ export default class DataStorage extends React.Component {
     appendAction(generateURLAction);
     appendAction(copyPathsAction);
     appendAction(downloadAction);
+    appendAction(downloadArchiveAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
       appendAction(permissionsAction);
@@ -2471,6 +2535,9 @@ export default class DataStorage extends React.Component {
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
           break;
+        case Keys.downloadArchive:
+          this.openDownloadArchiveModal();
+          break;
         case Keys.copyPaths:
           this.copyPathsToClipboard(selectedItems);
           break;
@@ -2486,16 +2553,24 @@ export default class DataStorage extends React.Component {
     };
     if (actions.length === 1) {
       const action = actions[0];
+      // `title` sits on this wrapping span, not the Button itself: a disabled
+      // native <button> does not raise its own `title` tooltip in Chrome or
+      // Safari (Firefox is the odd one out), so the reason would be invisible
+      // for exactly the disabled case it exists to explain. An always-enabled
+      // ancestor shows it regardless.
       return (
-        <Button
-          size="small"
-          id={`selection-action-${action.key}`}
-          onClick={(event) => doAction(action, event)}
-          style={{lineHeight: 1}}
-        >
-          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
-          {action.title}
-        </Button>
+        <span title={action.description}>
+          <Button
+            size="small"
+            id={`selection-action-${action.key}`}
+            onClick={(event) => doAction(action, event)}
+            disabled={action.disabled}
+            style={{lineHeight: 1}}
+          >
+            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+            {action.title}
+          </Button>
+        </span>
       );
     }
     const title = selectedItems && selectedItems.length > 0
@@ -2511,11 +2586,21 @@ export default class DataStorage extends React.Component {
         <MenuItem
           id={`selection-action-${action.key}`}
           key={action.key}
+          disabled={action.disabled}
           className={classNames(action.className, `selection-action-${action.key}`)}
         >
-          <div style={{display: 'flex', alignItems: 'center'}}>
-            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
-            {action.title}
+          <div>
+            <div style={{display: 'flex', alignItems: 'center'}}>
+              {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+              {action.title}
+            </div>
+            {
+              action.description && (
+                <div className="cp-text-not-important">
+                  {action.description}
+                </div>
+              )
+            }
           </div>
         </MenuItem>
       );
@@ -3280,6 +3365,12 @@ export default class DataStorage extends React.Component {
               />
             ) : null;
           }}
+        />
+        <DownloadArchiveModal
+          visible={this.state.downloadArchiveModalVisible}
+          defaultName={defaultArchiveName()}
+          onCancel={this.closeDownloadArchiveModal}
+          onSubmit={this.submitDownloadArchive}
         />
         <SharedItemInfo
           visible={this.state.shareDialogVisible}

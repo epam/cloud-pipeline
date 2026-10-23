@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-// MobX- and router-bearing. A test file must never hand-roll a <Provider> or a
-// <Router>: MobX 3 -> 6 and react-router 3 -> 6 both rewrite these wrappers, and
-// they should rewrite one file.
+// MobX-, router- and antd-locale-bearing. A test file must never hand-roll a
+// <Provider>, a <Router> or antd's own <LocaleProvider>: MobX 3 -> 6,
+// react-router 3 -> 6 and an antd major all rewrite these wrappers, and each
+// should rewrite one file.
 
 import React from 'react';
 import {Provider} from 'mobx-react';
 import {Router, Route, createMemoryHistory} from 'react-router';
+import {LocaleProvider} from 'antd';
+import enUS from 'antd/lib/locale-provider/en_US';
 import {render} from './render';
 
 /**
@@ -62,4 +65,26 @@ export function renderWithRouter (element, options = {}) {
     ? renderWithStores(tree, stores, options)
     : render(tree, options);
   return Object.assign({history}, rendered);
+}
+
+/**
+ * Renders inside antd's <LocaleProvider locale={enUS}>, the way
+ * src/components/main/App.js wraps the whole application. Needed only when a
+ * test interacts with or asserts on antd's own default, locale-driven UI (for
+ * example a column's default filter icon, whose `title` otherwise renders in
+ * antd's bundled default locale, zh-CN, rather than the English production
+ * actually shows).
+ *
+ * `options.stores`, if passed, wraps in a <Provider> as well, nested inside
+ * the <LocaleProvider> - the same opt-in shape `renderWithRouter` above uses
+ * for the same purpose. The two providers use React's legacy context API
+ * independently of each other, so nesting order carries no behaviour; this
+ * one is not a claim about how Root.js/App.js nest their own two Providers
+ * (where the store one is actually outermost, above App.js's own
+ * <LocaleProvider>).
+ */
+export function renderWithLocale (element, options = {}) {
+  const {stores} = options;
+  const tree = stores ? <Provider {...stores}>{element}</Provider> : element;
+  return render(<LocaleProvider locale={enUS}>{tree}</LocaleProvider>, options);
 }

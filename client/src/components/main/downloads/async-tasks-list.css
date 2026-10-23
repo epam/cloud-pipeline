@@ -1,0 +1,80 @@
+/*
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* Layout and geometry only - the background and shadow come from the
+ * existing `cp-filter-popover-container` theme class
+ * (client/src/themes/styles/runs.less), reused rather than duplicated here.
+ * Copies the shape of
+ * client/src/components/runs/run-table/columns/run-table-columns.css's
+ * `.filter-popover-container`/`.filter-actions-buttons-container`. */
+
+.filter-popover-container {
+  padding: 5px;
+  border-radius: 4px;
+  min-width: 120px;
+}
+
+.filter-item {
+  margin: 5px;
+}
+
+.filter-actions-buttons-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 10px;
+}
+
+/* The paging row beneath the table - geometry only, copying
+ * client/src/components/pipelines/browser/data-storage/components/
+ * storage-pagination.css's `.storage-pagination`. */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+/* The current-page label between those buttons, and NOT optional decoration:
+ * antd 2.13's own `.ant-pagination-item` is 28px tall, bordered, and carries
+ * `margin-right: 8px`, while the `size="small"` buttons either side of it are
+ * 22px and spaced by their own `margin: 3`. Without these two rules the
+ * number sits taller than the buttons, in a box of its own, with a wider gap
+ * on its right than its left. The same correction, for the same reason, as
+ * storage-pagination.css's `.current-page-counter` - the two antd classes on
+ * that span are never applied without this one. */
+.current-page-counter {
+  border: 0;
+  margin: 0;
+  min-width: 22px;
+  height: 22px;
+  line-height: 22px;
+}
+
+/* antd makes every pagination item look clickable; this one is a label. */
+.current-page-counter:hover {
+  cursor: default;
+}
+
+/* The Items column's popover content - a bounded list of the archived
+ * paths. A task can carry very many of them, so this is capped and
+ * scrollable rather than left to run off the screen; `word-break` wraps a
+ * long path instead of widening the popover. Geometry only, no colours. */
+.archive-paths-popover-container {
+  max-height: 300px;
+  max-width: 400px;
+  overflow: auto;
+  word-break: break-all;
+}
