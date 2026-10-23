@@ -503,6 +503,18 @@ test('renders the pagination row once there is a next page', async () => {
   expect(onPageChange).toHaveBeenCalledWith(2);
 });
 
+// The regression guard for a copy that took the markup and left the geometry
+// behind: with antd's two classes alone, the page number renders 28px tall
+// and bordered beside 22px buttons (see `.current-page-counter` in
+// async-tasks-list.css). Asserting on this module's OWN CSS-module class,
+// which rule 6 permits - the rule is about antd's internals - because the
+// height itself is not computed in jsdom and so cannot be asserted directly.
+test('the page number carries the class that sizes it to match the buttons', () => {
+  render(<AsyncTasksList tasks={[]} page={2} hasNextPage />);
+
+  expect(screen.getByText('2')).toHaveClass('currentPageCounter');
+});
+
 test('on page 3, First calls onPageChange(1) and Previous calls onPageChange(2)', async () => {
   const onPageChange = fn();
   render(

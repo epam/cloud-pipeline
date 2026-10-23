@@ -298,6 +298,11 @@ class AsyncTasksList extends React.Component {
   // client/src/components/pipelines/browser/data-storage/components/
   // storage-pagination.js:40-75, rendered only when there is something to
   // navigate: a single short first page would otherwise show a pointless row.
+  //
+  // The page-number span carries `styles.currentPageCounter` as well as the
+  // two antd classes, which is what makes it the same height as the small
+  // buttons beside it - see that rule in ./async-tasks-list.css before
+  // touching the trio.
   get pagination () {
     const {page, hasNextPage, onPageChange} = this.props;
     if (!(page > 1 || hasNextPage)) {
@@ -325,7 +330,13 @@ class AsyncTasksList extends React.Component {
         >
           <Icon type="caret-left" />
         </Button>
-        <span className={classNames('ant-pagination-item', 'ant-pagination-item-active')}>
+        <span
+          className={classNames(
+            styles.currentPageCounter,
+            'ant-pagination-item',
+            'ant-pagination-item-active'
+          )}
+        >
           {page}
         </span>
         <Button

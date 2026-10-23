@@ -47,6 +47,27 @@
   margin-top: 10px;
 }
 
+/* The current-page label between those buttons, and NOT optional decoration:
+ * antd 2.13's own `.ant-pagination-item` is 28px tall, bordered, and carries
+ * `margin-right: 8px`, while the `size="small"` buttons either side of it are
+ * 22px and spaced by their own `margin: 3`. Without these two rules the
+ * number sits taller than the buttons, in a box of its own, with a wider gap
+ * on its right than its left. The same correction, for the same reason, as
+ * storage-pagination.css's `.current-page-counter` - the two antd classes on
+ * that span are never applied without this one. */
+.current-page-counter {
+  border: 0;
+  margin: 0;
+  min-width: 22px;
+  height: 22px;
+  line-height: 22px;
+}
+
+/* antd makes every pagination item look clickable; this one is a label. */
+.current-page-counter:hover {
+  cursor: default;
+}
+
 /* The Items column's popover content - a bounded list of the archived
  * paths. A task can carry very many of them, so this is capped and
  * scrollable rather than left to run off the screen; `word-break` wraps a
