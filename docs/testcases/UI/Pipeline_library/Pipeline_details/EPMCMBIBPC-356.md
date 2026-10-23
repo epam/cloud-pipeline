@@ -10,4 +10,4 @@ Test verifies that creating a duplicate storage rule is rejected with a SQL erro
 | 1 | Click **Add new rule** button |  |
 | 2 | Specify `*` into the **File mask** field |  |
 | 3 | Set the **Move to STS** checkbox |  |
-| 4 | Click **Create** button | <li> the pop-up window is still open <li> the error message `Your operation has been aborted due to SQL error` appears |
+| 4 | Click **Create** button | <li> the pop-up window is still open <li> the error message `Your operation has been aborted due to SQL error.` appears |

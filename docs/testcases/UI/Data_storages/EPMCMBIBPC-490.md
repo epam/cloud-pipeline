@@ -12,7 +12,7 @@ Test verifies that canceling the multi-folder deletion pop-up leaves the storage
 | 6 | Repeat steps 3-5 |  |
 | 7 | Check the checkbox near the folder created after step 5 |  |
 | 8 | Check the checkbox near the folder created after step 6 |  |
-| 9 | Click the appeared **Remove all selected** button |  |
+| 9 | Click the **Selection actions** button, then click **Remove** button |  |
 | 10 | Click **Cancel** button in the appeared pop-up window | The list of files and folders in the storage doesn't change |
 | 11 | Repeat step 9 |  |
 | 12 | Click **OK** button in the appeared pop-up window |  |

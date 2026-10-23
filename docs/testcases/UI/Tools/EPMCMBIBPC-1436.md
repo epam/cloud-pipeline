@@ -18,7 +18,7 @@ Test verifies that the estimated price is shown on the launch page and its price
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Expand **Advanced** section if it's minimized | The **Launch** page shows: <li> the sign `Launch <tool_name> <tool_version_name>. Estimated price per hour: <value> $` <li> a reference-info icon on the right of that sign |
+| 1 | Expand **Advanced** section if it's minimized | The **Launch** page shows: <li> the sign `Launch <tool_name>:<tool_version_name>` <li> below it, `Estimated price per hour: <value> $` with a reference-info icon on its right |
 | 2 | Change the price type |  |
 | 3 | Hover over the info icon (i in a black circle) near the **Estimated price per hour** sign | Information table appears:<br>`Price per hour: <value> $`<br>`Minimum price: <value> $`<br>`Maximum price: <value> $`<br>`Average price: <value> $` |
 | 4 | Click the **v** button on the right of the **Add parameter** button |  |

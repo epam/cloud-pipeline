@@ -1,6 +1,6 @@
-# Validation of "Show files versions" behavior
+# Validation of "Show file versions" behavior
 
-Test verifies that checking **Show files versions** on a versioned storage reveals a **+** button in front of every file.
+Test verifies that checking **Show file versions** on a versioned storage reveals a **+** button in front of every file.
 
 **Prerequisites**:
 - Login as admin
@@ -20,4 +20,4 @@ Test verifies that checking **Show files versions** on a versioned storage revea
 | 11 | Click **OK** button |  |
 | 12 | Click **Upload** button |  |
 | 13 | Select a file and confirm the upload in the appeared pop-up window |  |
-| 14 | Set the **Show files versions** checkbox | <li> the **Show files versions** checkbox is checked <li> `+` buttons are displayed in front of all files |
+| 14 | Set the **Show file versions** checkbox | <li> the **Show file versions** checkbox is checked <li> `+` buttons are displayed in front of all files |

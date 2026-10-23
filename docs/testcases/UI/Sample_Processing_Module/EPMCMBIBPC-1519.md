@@ -5,7 +5,7 @@ Test creates a storage with fastq files and reference/BWA folders, as shared tes
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
 | 1 | Open the **Library** page |  |
-| 2 | Hover over **+ Create v** |  |
+| 2 | Click on **+ Create v** |  |
 | 3 | In the list that appears, select **Storages** -> click **Create new object storage** |  |
 | 4 | Specify a valid storage path, click **Create** |  |
 | 5 | Open the created storage |  |

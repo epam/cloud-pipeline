@@ -20,7 +20,7 @@ Test verifies creating, editing and deleting a user's personal tool group.
 | 11 | Click **CANCEL** button |  |
 | 12 | Repeat step 6 |  |
 | 13 | Select **Group** → **Delete** in the appeared list |  |
-| 14 | Click **OK** button in the appeared pop-up | <li> the message `Personal tool group was not found in registry.` is displayed <li> **CREATE PERSONAL TOOL GROUP** button appears |
+| 14 | Click **Delete** button in the appeared pop-up | <li> the message `Personal tool group was not found in registry.` is displayed <li> **CREATE PERSONAL TOOL GROUP** button appears |
 | 15 | Repeat step 6 |  |
 | 16 | Select **Group** → **+ Create personal** in the appeared list | <li> the message `No tools found` appears <li> **CREATE PERSONAL TOOL GROUP** button is not displayed |
 | 17 | Repeat steps 3-4 |  |

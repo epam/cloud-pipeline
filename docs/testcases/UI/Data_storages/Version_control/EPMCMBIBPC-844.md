@@ -4,7 +4,7 @@ Test verifies that marking a non-empty folder for deletion hides it, and that sh
 
 **Prerequisites**:
 - Perform [EPMCMBIBPC-813](EPMCMBIBPC-813.md)
-- Uncheck the **Show files versions** checkbox
+- Uncheck the **Show file versions** checkbox
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
@@ -18,5 +18,5 @@ Test verifies that marking a non-empty folder for deletion hides it, and that sh
 | 8 | Click `..` |  |
 | 9 | Click on the delete icon opposite the folder name created at steps 1-4 |  |
 | 10 | Click **OK** button in the appeared pop-up window | The folder doesn't display |
-| 11 | Set the **Show files versions** checkbox |  |
+| 11 | Set the **Show file versions** checkbox |  |
 | 12 | Open the appeared folder | The file uploaded at step 7 is displayed and colored red |

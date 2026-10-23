@@ -11,7 +11,7 @@ Test verifies that an Output parameter path entered directly on the launch form 
 | 5 | On the pipeline page select **CODE** tab |  |
 | 6 | Add a script for saving files into the code file (replace the code file with the attached one) |  |
 | 7 | Click **RUN** button |  |
-| 8 | Click **Add parameters** button |  |
+| 8 | Click **Add parameter** button |  |
 | 9 | In the appeared row, specify a parameter name into the left field (e.g. `result`) |  |
 | 10 | In the appeared row, specify into the right field a path like `{full path to the storage created at step 2}/storage_rules_folder/${RUN_ID}/` |  |
 | 11 | Click **Launch** button |  |
