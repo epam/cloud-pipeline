@@ -412,7 +412,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Notifications</b> (26 tests, 13 automated)</summary>
+<summary><b>Notifications</b> (18 tests, 13 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -434,14 +434,6 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-1513**](Notifications/EPMCMBIBPC-1513.md) | [MANUAL] Validation of create empty active notification |  |
 | [**EPMCMBIBPC-1515**](Notifications/EPMCMBIBPC-1515.md) | [MANUAL] Validation of create active notification paired with empty active notification |  |
 | [**TC-NOTIFICATION-01**](Notifications/TC-NOTIFICATION-01.md) | Do not send notifications if a run's status did not change |  |
-| [**3015_1**](Notifications/3015/3015_1.md) | [Manual] Push notification appears in the top-right corner when a system event fires |  |
-| [**3015_2**](Notifications/3015/3015_2.md) | [Manual] Clicking a push notification opens it in a pop-up and marks it as read on close |  |
-| [**3015_3**](Notifications/3015/3015_3.md) | [Manual] Closing a push notification via the cross button marks it as read |  |
-| [**3015_4**](Notifications/3015/3015_4.md) | [Manual] Multiple push notifications collapse into a tile with Hide and Read all controls |  |
-| [**3015_5**](Notifications/3015/3015_5.md) | [Manual] Notifications section displays unread and read lists with correct fields |  |
-| [**3015_6**](Notifications/3015/3015_6.md) | [Manual] Read all and Refresh buttons work correctly in the Notifications section |  |
-| [**3015_7**](Notifications/3015/3015_7.md) | [Manual] Muting notifications prevents push pop-ups but notifications still appear in the Notifications section |  |
-| [**3015_8**](Notifications/3015/3015_8.md) | [Manual] Notifications are removed after the configured storing period expires |  |
 
 </details>
 
