@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-import {fn} from '@test';
+import {fn, screen} from '@test';
 import handleDownloadArchive, {
+  archiveDownloadAllowed,
   archivePathsFromSelection,
   defaultArchiveName
 } from './download-storage-archive';
@@ -83,6 +84,51 @@ describe('defaultArchiveName', () => {
 
   test('satisfies the server\'s ^[\\w\\-. ]+$ rule', () => {
     expect(defaultArchiveName()).toMatch(/^[\w\-. ]+$/);
+  });
+});
+
+describe('archiveDownloadAllowed', () => {
+  test('answers true, and says nothing, when the store reports room', async () => {
+    const asyncTasks = {
+      checkActiveTasksLimit: fn().mockResolvedValue({allowed: true})
+    };
+
+    await expect(archiveDownloadAllowed(asyncTasks)).resolves.toBe(true);
+    expect(asyncTasks.checkActiveTasksLimit).toHaveBeenCalledTimes(1);
+  });
+
+  test('answers false and shows the store\'s reason when the cap is reached', async () => {
+    const asyncTasks = {
+      checkActiveTasksLimit: fn().mockResolvedValue({
+        allowed: false,
+        reason: 'You already have 3 archive downloads in progress.'
+      })
+    };
+
+    await expect(archiveDownloadAllowed(asyncTasks)).resolves.toBe(false);
+    // antd's `message` renders into a portal on `document.body`, which is
+    // what `screen` queries - no module mocking needed (rule 2).
+    expect(
+      await screen.findByText('You already have 3 archive downloads in progress.')
+    ).toBeInTheDocument();
+  });
+
+  // The check is one more request, so it is one more thing that can fail -
+  // and it must never be the thing that blocks a download, since the server
+  // enforces the quota itself. `checkActiveTasksLimit` turns a failed count
+  // into `{allowed: true}` on its own (its own tests cover that); these two
+  // cover what this helper does when the store itself cannot answer.
+  test('answers true when the store rejects outright', async () => {
+    const asyncTasks = {
+      checkActiveTasksLimit: fn().mockRejectedValue(new Error('unexpected'))
+    };
+
+    await expect(archiveDownloadAllowed(asyncTasks)).resolves.toBe(true);
+  });
+
+  test('answers true when there is no store to ask, without throwing', async () => {
+    await expect(archiveDownloadAllowed(undefined)).resolves.toBe(true);
+    await expect(archiveDownloadAllowed({})).resolves.toBe(true);
   });
 });
 

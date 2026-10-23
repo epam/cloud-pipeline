@@ -108,6 +108,7 @@ import DownloadOmicsButton from './components/download-omics-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
 import handleDownloadArchive, {
+  archiveDownloadAllowed,
   archivePathsFromSelection,
   defaultArchiveName
 } from '../../../special/download-storage-archive';
@@ -1047,6 +1048,30 @@ export default class DataStorage extends React.Component {
 
   closeCreateFileDialog = () => {
     this.setState({createFile: false});
+  };
+
+  // The cap is re-checked against the server here, on the click itself, and
+  // the modal opens only if there is room - see `archiveDownloadAllowed`
+  // (special/download-storage-archive.js) for why the greyed-out menu item is
+  // not enough on its own. The same check runs again inside
+  // `startArchiveDownload` when OK is pressed, since this modal can sit open
+  // for as long as the user likes.
+  // Invoked fire-and-forget from the selection dropdown's click handler, so
+  // it catches for itself: an escaping rejection would become an unhandled
+  // one and the click would look like it did nothing at all.
+  // `archiveDownloadAllowed` answers true for anything it cannot check, so
+  // this only ever hides a bug, never a refusal.
+  openDownloadArchiveModal = async () => {
+    const {asyncTasks} = this.props;
+    let allowed = true;
+    try {
+      allowed = await archiveDownloadAllowed(asyncTasks);
+    } catch (error) {
+      console.warn('Could not check the active-download limit', error);
+    }
+    if (allowed) {
+      this.setState({downloadArchiveModalVisible: true});
+    }
   };
 
   closeDownloadArchiveModal = () => {
@@ -2312,8 +2337,7 @@ export default class DataStorage extends React.Component {
   renderSelectionActionsButton = () => {
     const {
       preferences,
-      storageId,
-      asyncTasks
+      storageId
     } = this.props;
     const {selectedItems = []} = this.state;
     const itemsAvailableForShare = selectedItems
@@ -2362,19 +2386,18 @@ export default class DataStorage extends React.Component {
       available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
     };
     const archivePaths = archivePathsFromSelection(selectedItems);
-    // The cap belongs in `disabled`, not in `available`: `appendAction` below
-    // only pushes an action whose `available` is true, so folding the cap in
-    // here would make the item vanish once the limit is reached, instead of
-    // showing it greyed out with the reason underneath, as required.
+    // Deliberately carries no cap state: the item is never greyed out and
+    // never explains the cap up front. Clicking it counts the user's active
+    // tasks against the server (`openDownloadArchiveModal` above) and, at the
+    // cap, shows a message instead of opening the name modal. A hint here
+    // could only come from a background poll of the task list, which the
+    // notification tracker no longer keeps (models/asyncTask/
+    // CurrentUserAsyncTasks.js polls the user's own queued tasks one by one).
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',
       icon: 'download',
-      available: !this.isOmicsStore && archivePaths.length > 0,
-      disabled: !!asyncTasks && asyncTasks.activeTasksLimitReached,
-      description: asyncTasks && asyncTasks.activeTasksLimitReached
-        ? `Limit reached (${asyncTasks.activeTasks.length}/${asyncTasks.maxUserTasks})`
-        : undefined
+      available: !this.isOmicsStore && archivePaths.length > 0
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2513,7 +2536,7 @@ export default class DataStorage extends React.Component {
           handleDownloadItems(preferences, itemsAvailableForDownload);
           break;
         case Keys.downloadArchive:
-          this.setState({downloadArchiveModalVisible: true});
+          this.openDownloadArchiveModal();
           break;
         case Keys.copyPaths:
           this.copyPathsToClipboard(selectedItems);

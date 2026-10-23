@@ -37,13 +37,15 @@ export const ACTIVE_STATUSES = [
   ASYNC_TASK_STATUSES.STOPPING
 ];
 
-// The exact `statuses` filter the background poll (CurrentUserAsyncTasks) sends:
-// the active statuses plus SUCCESS and FAILED, the transition the completion
-// notification announces. CANCELLED and EXPIRED are deliberately left out —
-// both are already terminal and nothing watches for them (no cap counts them,
-// no notification fires for them), so asking for them on a 5-second tick would
-// be permanent weight for rows nobody reads. A later reader completing this
-// list to "all eight statuses" would put that weight back — don't.
+// The `/downloads` page's default Status filter: the active statuses plus
+// SUCCESS and FAILED. CANCELLED and EXPIRED are deliberately left out, so the
+// table hides them until the user ticks them back on — both are terminal and
+// neither is something anyone is waiting on.
+//
+// This used to be the `statuses` a background poll of the whole task list
+// sent; there is no such poll any more (CurrentUserAsyncTasks watches the
+// user's own queued tasks one by one, asking for ACTIVE_STATUSES when it needs
+// a count). The list is unchanged, but its one remaining job is that default.
 export const POLLED_STATUSES = [
   ...ACTIVE_STATUSES,
   ASYNC_TASK_STATUSES.SUCCESS,

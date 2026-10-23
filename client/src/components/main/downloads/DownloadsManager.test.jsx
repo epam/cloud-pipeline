@@ -25,7 +25,11 @@ import {
   waitFor,
   fn,
   stubApi,
-  ok
+  ok,
+  fail,
+  jsonResponse,
+  useFakeTimers,
+  useRealTimers
 } from '@test';
 import DownloadsManager from './DownloadsManager';
 import {POLLED_STATUSES} from '../../../models/asyncTask/statuses';
@@ -36,14 +40,18 @@ const USER_NAME = 'current-user';
 // Matches DownloadsManager's own PAGE_SIZE. Not imported: that constant is
 // not part of the module's public surface.
 const PAGE_SIZE = 15;
+// Mirrors DownloadsManager's own POLL_INTERVAL_MS, for the same reason.
+const POLL_INTERVAL_MS = 5000;
 
 // A plain observable object is a sufficient store double (rule 10) — the page
 // no longer reads `tasks` off the shared store, only the cap and the two
-// actions, so the double carries exactly those and nothing else. No
-// pausePolling/resumePolling here any more: nothing calls them.
+// actions, so the double carries exactly those and nothing else.
+// `pausePolling`/`resumePolling` are deliberately absent from the default
+// double: the page calls both on mount/unmount through a `typeof` guard, so
+// every test in this file that does not pass them is also proving that guard
+// holds (one test below says so explicitly).
 function asyncTasksDouble (overrides = {}) {
   return observable(Object.assign({
-    activeTasksLimitReached: false,
     cancelTask: fn().mockResolvedValue({}),
     consumeTask: fn().mockResolvedValue(undefined)
   }, overrides));
@@ -227,25 +235,20 @@ test(
   }
 );
 
-test('shows the cap hint only when the injected store reports the limit reached', async () => {
+// The cap hint this page used to render is gone, and so is the store member
+// it read: nothing counts the user's active tasks in the background any more,
+// and nothing can be queued from this page for a hint to warn about. The cap
+// is counted against the server where an archive is actually asked for. The
+// double below deliberately still offers the old member, so this stays a
+// guard against someone reviving the hint from it.
+test('renders no cap hint, even when the injected store reports the limit reached', async () => {
   const api = stubApi();
   stubFilter(api, []);
-  const first = renderWithStores(<DownloadsManager />, stores({activeTasksLimitReached: false}));
-  await waitFor(() => expect(filterCalls(api).length).toBe(1));
-  expect(screen.queryByText(/limit of active archive downloads/i)).not.toBeInTheDocument();
-  // Unmount before swapping the stub: the first instance's own async mount
-  // fetch must settle against the stub it started with, not the next test's.
-  first.unmount();
 
-  const api2 = stubApi();
-  stubFilter(api2, []);
   renderWithStores(<DownloadsManager />, stores({activeTasksLimitReached: true}));
 
-  expect(await screen.findByText(/limit of active archive downloads/i)).toBeInTheDocument();
-  // Lets a stray zero-delay timeout from Remote's lazy-fetch getters (read by
-  // this second instance's own mount fetch) settle inside this test, rather
-  // than firing after the suite has torn down.
-  await new Promise(resolve => setTimeout(resolve, 0));
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(screen.queryByText(/limit of active archive downloads/i)).not.toBeInTheDocument();
 });
 
 test(
@@ -284,35 +287,47 @@ test(
 // without needing to drive UserAutoComplete's own UserFind-backed search.
 test(
   'the owner filter defaults to the current user, and clearing it sends no owner key, ' +
-  'surviving a later Refresh with no automatic refetch in between',
+  'surviving both a later poll tick and a Refresh',
   async () => {
-    const api = stubApi();
-    stubFilter(api, []);
+    useFakeTimers();
+    try {
+      const api = stubApi();
+      stubFilter(api, []);
 
-    renderWithLocale(<DownloadsManager />, {stores: stores()});
+      renderWithLocale(<DownloadsManager />, {stores: stores()});
 
-    await waitFor(() => expect(filterCalls(api).length).toBe(1));
-    expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
+      await waitFor(() => expect(filterCalls(api).length).toBe(1));
+      expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
 
-    await click(ownerFilterIcon());
-    await click(screen.getByText('Clear'));
+      await click(ownerFilterIcon());
+      await click(screen.getByText('Clear'));
 
-    await waitFor(() => expect(filterCalls(api).length).toBe(2));
-    expect(JSON.parse(filterCalls(api)[1].body)).not.toHaveProperty('owner');
+      await waitFor(() => expect(filterCalls(api).length).toBe(2));
+      expect(JSON.parse(filterCalls(api)[1].body)).not.toHaveProperty('owner');
 
-    // No poller is left to re-seed or to refetch anything on its own - a
-    // short real wait is enough to prove nothing fires in the background,
-    // the mirror of what used to be proven by ticking a fake clock past a
-    // five-second poll interval.
-    await expect(waitFor(() => expect(
-      filterCalls(api).length
-    ).toBe(3), {timeout: 200})).rejects.toThrow();
-    expect(filterCalls(api).length).toBe(2);
+      // The `ownerSeeded` guard, now that a poll tick is what exercises it:
+      // a cleared owner must stay cleared on every later fetch, and the poll
+      // is the one that fires without the user doing anything. `waitFor`
+      // drives the fake clock itself in 50ms steps, so a generous `timeout`
+      // is what lets it reach the interval at no wall-clock cost.
+      await waitFor(() => expect(filterCalls(api).length).toBe(3), {
+        timeout: POLL_INTERVAL_MS * 2
+      });
+      expect(JSON.parse(filterCalls(api)[2].body)).not.toHaveProperty('owner');
 
-    await click(refreshButton());
+      // Clicked at the instant the tick above is still in flight (`waitFor`
+      // returns as soon as the call is *recorded*, which is before its
+      // response lands), which is the window `RemotePost.send`'s in-flight
+      // no-op used to swallow a user's click in - hence `refetch`'s wait. Do
+      // not "stabilise" this by settling the tick first: that would remove
+      // the only guard against that regression.
+      await click(refreshButton());
 
-    await waitFor(() => expect(filterCalls(api).length).toBe(3));
-    expect(JSON.parse(filterCalls(api)[2].body)).not.toHaveProperty('owner');
+      await waitFor(() => expect(filterCalls(api).length).toBe(4));
+      expect(JSON.parse(filterCalls(api)[3].body)).not.toHaveProperty('owner');
+    } finally {
+      useRealTimers();
+    }
   }
 );
 
@@ -428,22 +443,175 @@ test('disables row actions while a cancel is in flight, re-enabling once it sett
   });
 });
 
-test('does not refetch on its own once mounted - there is no poller left', async () => {
+test('keeps refreshing on its own while mounted, and stops once unmounted', async () => {
+  useFakeTimers();
+  try {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    const utils = renderWithStores(<DownloadsManager />, stores());
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+
+    // Nothing remounted it and nothing clicked anything: the call count going
+    // up on its own is the poll this test exists to prove. `waitFor` advances
+    // the fake clock itself (dom-testing-library detects it), in its default
+    // 50ms steps, so a generous `timeout` is what lets it reach a 5-second
+    // poll interval — it costs nothing in real wall-clock time.
+    await waitFor(() => expect(filterCalls(api).length).toBe(2), {
+      timeout: POLL_INTERVAL_MS * 2
+    });
+
+    utils.unmount();
+    // Stopped, not merely slow: a bare `advanceTimers` here proves nothing by
+    // itself, because nothing then drains the microtasks a still-running poll
+    // would need to actually record a third call — the assertion right after
+    // it would pass whether or not componentWillUnmount stopped the poller.
+    // Asserting through a `waitFor` that is expected to time out does drain
+    // them (it is what the earlier `waitFor` calls above use to observe a
+    // poll that DOES happen), so it is what actually exercises the stop.
+    await expect(waitFor(() => expect(
+      filterCalls(api).length
+    ).toBe(3), {timeout: POLL_INTERVAL_MS * 2})).rejects.toThrow();
+
+    expect(filterCalls(api).length).toBe(2);
+  } finally {
+    useRealTimers();
+  }
+});
+
+test('pauses the shared background poll on mount, resumes it on unmount', async () => {
   const api = stubApi();
   stubFilter(api, []);
+  const pausePolling = fn();
+  const resumePolling = fn();
+
+  const utils = renderWithStores(
+    <DownloadsManager />,
+    stores({pausePolling, resumePolling})
+  );
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(pausePolling).toHaveBeenCalledTimes(1);
+  expect(resumePolling).not.toHaveBeenCalled();
+
+  utils.unmount();
+
+  expect(resumePolling).toHaveBeenCalledTimes(1);
+  // Only mount pauses, only unmount resumes - neither fires a second time,
+  // and in particular a poll tick does not touch either.
+  expect(pausePolling).toHaveBeenCalledTimes(1);
+});
+
+// Proves the `typeof` guards in componentDidMount/componentWillUnmount: every
+// other test in this file already renders and unmounts against a double built
+// by `asyncTasksDouble()`, which (by design, see that function) carries
+// neither method - so this one is explicit about what that absence is
+// proving, rather than relying on it as a side effect.
+test(
+  'mounts and unmounts without throwing when asyncTasks has neither pause nor resume method',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    const utils = renderWithStores(<DownloadsManager />, stores());
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+
+    expect(() => utils.unmount()).not.toThrow();
+  }
+);
+
+// The table's loading overlay has no accessible handle - antd 2.13 renders it
+// as a `Spin` with no role and no `aria-busy`, and rule 6 forbids querying
+// antd's own class names - so these two read the page's own `state.loading`
+// through `wrappedInstance`, the handle mobx-react's `inject` HOC exposes for
+// exactly this. It is this component's own state, not an antd internal.
+//
+// Why it is worth testing at all: `pending` used to be wired straight to
+// `this.request.pending`, which `send()` raises on every call. With the poll
+// back, that would flash the overlay every five seconds for as long as the
+// page stays open.
+test('a poll tick does not raise the loading overlay', async () => {
+  useFakeTimers();
+  try {
+    const api = stubApi();
+    api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
+    let holdSecondResponse;
+    let callCount = 0;
+    api.handle(FILTER_ROUTE, () => {
+      callCount += 1;
+      if (callCount === 1) {
+        return ok([]);
+      }
+      // The poll tick's response is held open, so the assertion below runs
+      // while that request is genuinely in flight - the exact window the
+      // overlay used to appear in.
+      return new Promise((resolve) => {
+        holdSecondResponse = () => resolve(ok([]));
+      });
+    });
+
+    let instance;
+    renderWithStores(
+      <DownloadsManager ref={(r) => { instance = r; }} />,
+      stores()
+    );
+
+    // The first load DOES raise it and lowers it again once the response
+    // lands - the behaviour the poll must not repeat.
+    await waitFor(() => expect(instance.wrappedInstance.state.loading).toBe(true));
+    await waitFor(() => expect(instance.wrappedInstance.state.loading).toBe(false));
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(2), {
+      timeout: POLL_INTERVAL_MS * 2
+    });
+    expect(instance.wrappedInstance.state.loading).toBe(false);
+
+    // Settled inside the test, and asserted on: a response left in flight
+    // would land after the harness has already unmounted the tree.
+    holdSecondResponse();
+    await waitFor(() => expect(instance.wrappedInstance.state.fetchTick).toBe(2));
+    expect(instance.wrappedInstance.state.loading).toBe(false);
+  } finally {
+    useRealTimers();
+  }
+});
+
+// A failed fetch must not blank the table: `RemotePost.update` sets `loaded`
+// back to false on a failure, so without the `tasks` getter's fallback the
+// rows would vanish on any failure and come back on the next success - which,
+// now that the page polls, means every five seconds on an endpoint that is
+// intermittently failing. The error is still reported; this is about what
+// stays on screen. Driven through Refresh rather than a poll tick because the
+// behaviour is the getter's, not the poller's, and a failing tick's own
+// interval backoff would still be settling as the test ends.
+test('keeps the last rows on screen when a fetch fails', async () => {
+  const api = stubApi();
+  api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
+  let callCount = 0;
+  api.handle(FILTER_ROUTE, () => {
+    callCount += 1;
+    if (callCount === 1) {
+      return ok([
+        {
+          id: 1,
+          status: 'RUNNING',
+          params: {archiveName: 'archive-kept'},
+          created: '2026-10-21T13:00:00.000Z'
+        }
+      ]);
+    }
+    return jsonResponse(fail('Service unavailable'));
+  });
 
   renderWithStores(<DownloadsManager />, stores());
 
-  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(await screen.findByText('archive-kept.zip')).toBeInTheDocument();
 
-  // This replaces phase 15's test of PRESENCE ("keeps refreshing on its own
-  // while mounted") with a test of ABSENCE: nothing is scheduled any more,
-  // so a short real wait is enough to prove no second call ever arrives -
-  // there is no fake clock to advance past, because there is no interval.
-  await expect(waitFor(() => expect(
-    filterCalls(api).length
-  ).toBe(2), {timeout: 200})).rejects.toThrow();
-  expect(filterCalls(api).length).toBe(1);
+  await click(refreshButton());
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  expect(screen.getByText('archive-kept.zip')).toBeInTheDocument();
 });
 
 test('clicking Refresh re-issues the request with the same page and filters', async () => {
@@ -466,10 +634,10 @@ test('clicking Refresh re-issues the request with the same page and filters', as
 // backed by a field that is never `@observable` — so without `fetchTick`, a
 // fetch past the first one writes fresh data into `this.request` with zero
 // re-render, and the row below sits on the FIRST response forever. Driven
-// through two manual Refresh clicks rather than poll ticks: Refresh, not a
-// background interval, is this phase's only repeat trigger, but the
-// underlying reactivity gap - and so this guard - is unrelated to what
-// triggers the fetch.
+// through a manual Refresh rather than a poll tick, which needs no fake
+// clock: the underlying reactivity gap - and so this guard - is unrelated to
+// what triggers the fetch, and the poll's own equivalent is covered by
+// "keeps refreshing on its own while mounted" above.
 test(
   'live-updates the row when Refresh fetches a changed response, not just on the first load',
   async () => {
@@ -504,15 +672,12 @@ test(
   }
 );
 
-// There is no longer a "first load only" gate on `pending` (removed along
-// with `hasLoadedOnce`, which existed only to serve it) - once polling was
-// gone, so was its reason, and the table's loading state now shows for
-// every fetch: a manual Refresh, a filter change, or a page change, not
-// just the first one. Reads `this.request.pending` directly through
-// `wrappedInstance`, the same "no accessible DOM hook" case the regression
-// test above used to read `hasLoadedOnce` from - antd's own `Spin` carries
-// no ARIA marker this harness could query instead (rule 6).
-test('shows the pending state on a manual Refresh, not just the first load', async () => {
+// The other half of "a poll tick does not raise the loading overlay" above:
+// an explicit refetch still does, on every one of them rather than only the
+// first load. Asserts on `state.loading` - what `pending` is actually wired
+// to - and not on `this.request.pending`, which `send()` raises for a poll
+// tick too and so can no longer tell the two cases apart.
+test('shows the loading state on a manual Refresh, not just the first load', async () => {
   const api = stubApi();
   api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
   let resolveSecond;
@@ -534,7 +699,7 @@ test('shows the pending state on a manual Refresh, not just the first load', asy
   );
 
   await waitFor(() => expect(filterCalls(api).length).toBe(1));
-  expect(instance.wrappedInstance.request.pending).toBe(false);
+  await waitFor(() => expect(instance.wrappedInstance.state.loading).toBe(false));
 
   await click(refreshButton());
   // `loadTasks` awaits `whoAmI.fetchIfNeededOrWait()` before `request.send`
@@ -543,10 +708,10 @@ test('shows the pending state on a manual Refresh, not just the first load', asy
   // own single `await settle()`. Waiting for the call count confirms
   // `resolveSecond` is already assigned before using it.
   await waitFor(() => expect(filterCalls(api).length).toBe(2));
-  expect(instance.wrappedInstance.request.pending).toBe(true);
+  expect(instance.wrappedInstance.state.loading).toBe(true);
 
   resolveSecond(ok([]));
-  await waitFor(() => expect(instance.wrappedInstance.request.pending).toBe(false));
+  await waitFor(() => expect(instance.wrappedInstance.state.loading).toBe(false));
 });
 
 // `hasNextPage` is derived from the current response's length, not rendered

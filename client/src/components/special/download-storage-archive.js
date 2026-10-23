@@ -71,6 +71,51 @@ export function defaultArchiveName () {
 }
 
 /**
+ * The cap check that runs when the user clicks "Download archive", before the
+ * archive-name modal opens. Toasts the reason and answers `false` when the
+ * user is already at the limit, so the caller can decline to open it.
+ *
+ * This is the only thing standing between the user and the cap: the menu item
+ * is never greyed out and nothing counts their tasks in the background, so a
+ * count that is anything other than the server's own would be a guess.
+ * `checkActiveTasksLimit` (models/asyncTask/CurrentUserAsyncTasks.js) asks for
+ * it on each click - including why a check that cannot run lets the download
+ * through rather than blocking it - and the same check runs again when the
+ * name modal is confirmed, since that modal can sit open for a long time.
+ *
+ * @param {{checkActiveTasksLimit: function}} asyncTasks
+ * @returns {Promise<boolean>}
+ */
+export async function archiveDownloadAllowed (asyncTasks) {
+  // Same reasoning as a failed check inside the store: anything that stops
+  // this check from running must not stop the download, because the server
+  // enforces the quota itself. So a store that cannot answer at all answers
+  // "allowed" here, before the loading toast is even shown.
+  if (!asyncTasks || typeof asyncTasks.checkActiveTasksLimit !== 'function') {
+    return true;
+  }
+  // The dropdown closes the moment the item is clicked, so without this the
+  // page looks like it ignored the click for as long as the request takes.
+  const hide = message.loading('Checking active downloads...', 0);
+  try {
+    const {allowed, reason} = await asyncTasks.checkActiveTasksLimit();
+    if (!allowed) {
+      message.error(reason, 5);
+    }
+    return allowed;
+  } catch (error) {
+    // `checkActiveTasksLimit` turns a failed count into `{allowed: true}`
+    // itself, so reaching this means something unforeseen - still not a
+    // reason to refuse the download, and still not a reason to let the
+    // rejection escape into an unhandled one.
+    console.warn('Could not check the active-download limit', error);
+    return true;
+  } finally {
+    hide();
+  }
+}
+
+/**
  * Sends the confirmed archive-download request and reports the outcome.
  * Takes the already-computed `paths` and the user-confirmed `archiveName`, not
  * the raw selection: by the time this runs, the name-confirmation modal has
