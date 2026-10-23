@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.async;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskSortField;
 import com.epam.pipeline.dto.async.AsyncTask;
@@ -33,6 +34,7 @@ import com.epam.pipeline.repository.async.AsyncTaskSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -86,17 +88,22 @@ public class AsyncTaskManager {
     }
 
     /**
-     * Lists tasks matching the filter. Sorting defaults to newest created first, which is the order
-     * this method has always answered in; paging applies only for a positive page size, because zero
-     * or absent is what an untouched form sends.
+     * Lists tasks matching the filter, and how many of them there are in total. Sorting defaults to
+     * newest created first, which is the order this method has always answered in; paging applies
+     * only for a positive page size, because zero or absent is what an untouched form sends.
+     *
+     * <p>The total counts what the filter matches, not what the answer carries, so a caller asking
+     * for one page can tell how many there are. Without paging the two are the same number.</p>
      */
-    public List<AsyncTask> loadByFilter(final AsyncTaskFilterVO filter) {
+    public PagedResult<List<AsyncTask>> loadByFilter(final AsyncTaskFilterVO filter) {
         final Sort sort = sortOf(filter);
-        final List<AsyncTaskEntity> found = isPaged(filter)
-                ? repository.findAll(AsyncTaskSpecification.of(filter), pageable(filter, sort))
-                        .getContent()
-                : repository.findAll(AsyncTaskSpecification.of(filter), sort);
-        return found.stream().map(asyncTaskMapper::toDto).collect(Collectors.toList());
+        if (isPaged(filter)) {
+            final Page<AsyncTaskEntity> page = repository.findAll(AsyncTaskSpecification.of(filter),
+                    pageable(filter, sort));
+            return new PagedResult<>(toDto(page.getContent()), (int) page.getTotalElements());
+        }
+        final List<AsyncTaskEntity> found = repository.findAll(AsyncTaskSpecification.of(filter), sort);
+        return new PagedResult<>(toDto(found), found.size());
     }
 
     public long countActive(final String owner) {
@@ -158,6 +165,10 @@ public class AsyncTaskManager {
         Assert.isTrue(entity.getStatus().isActive(), messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ALREADY_FINISHED, id, entity.getStatus()));
         return asyncTaskMapper.toDto(entity);
+    }
+
+    private List<AsyncTask> toDto(final List<AsyncTaskEntity> entities) {
+        return entities.stream().map(asyncTaskMapper::toDto).collect(Collectors.toList());
     }
 
     private Sort sortOf(final AsyncTaskFilterVO filter) {

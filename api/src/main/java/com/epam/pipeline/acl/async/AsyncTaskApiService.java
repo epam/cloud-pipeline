@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.async;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
@@ -44,7 +45,7 @@ public class AsyncTaskApiService {
     private final MessageHelper messageHelper;
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
-    public List<AsyncTask> loadByFilter(final AsyncTaskFilterVO filter) {
+    public PagedResult<List<AsyncTask>> loadByFilter(final AsyncTaskFilterVO filter) {
         return asyncTaskManager.loadByFilter(restrictToCaller(filter));
     }
 

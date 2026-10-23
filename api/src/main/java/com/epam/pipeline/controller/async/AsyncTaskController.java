@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.async;
 
 import com.epam.pipeline.acl.async.AsyncTaskApiService;
 import com.epam.pipeline.controller.AbstractRestController;
+import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
@@ -53,9 +54,11 @@ public class AsyncTaskController extends AbstractRestController {
     @Operation(
             summary = "Lists asynchronous tasks of the current user.",
             description = "Lists asynchronous tasks of the current user. An administrator may leave the "
-                    + "owner empty to list tasks of all users.")
+                    + "owner empty to list tasks of all users. The answer carries the matching tasks "
+                    + "as 'elements', and how many the filter matched as 'totalCount' - which counts "
+                    + "the whole match rather than the page.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
-    public Result<List<AsyncTask>> filter(@RequestBody(required = false) final AsyncTaskFilterVO filter) {
+    public Result<PagedResult<List<AsyncTask>>> filter(@RequestBody(required = false) final AsyncTaskFilterVO filter) {
         return Result.success(asyncTaskApiService.loadByFilter(filter));
     }
 

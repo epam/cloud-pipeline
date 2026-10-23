@@ -1734,8 +1734,9 @@ class PipelineAPI:
 
         The filter is passed as given, so that a new field on the API side needs no change here.
         """
-        return self._request(endpoint=self.ASYNC_TASK_FILTER_URL, http_method='post',
-                             data=task_filter) or []
+        payload = self._request(endpoint=self.ASYNC_TASK_FILTER_URL, http_method='post',
+                                data=task_filter) or {}
+        return payload.get('elements') or []
 
     def update_async_task_status(self, task_id, status, result=None, error_message=None):
         """

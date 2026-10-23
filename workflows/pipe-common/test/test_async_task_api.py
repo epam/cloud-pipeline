@@ -19,7 +19,9 @@ No HTTP happens - `_request` is replaced. The request is the whole subject, beca
 caller can check for itself: a wrong endpoint or a field the API does not know answers 404 or a refusal
 at run time, in a deployment, and says nothing about having been asked wrongly.
 
-The executor of these tasks is `storage-async-task-service`, which is where the answers are parsed.
+The executor of these tasks is `storage-async-task-service`, which is where the answers are parsed -
+with one exception, asserted below: the filter answers with a page, and the tasks are taken out of it
+here so that every caller keeps getting a list.
 """
 
 from mock import Mock
@@ -58,7 +60,7 @@ def test_loads_one_task():
 
 
 def test_passes_the_filter_through_as_given():
-    api = _api([{'id': 'task-1'}])
+    api = _api({'elements': [{'id': 'task-1'}], 'totalCount': 1})
     task_filter = {'type': 'DOWNLOAD_ARCHIVE', 'statuses': ['RUNNING'], 'pageSize': 200}
 
     tasks = api.filter_async_tasks(task_filter)
@@ -68,9 +70,19 @@ def test_passes_the_filter_through_as_given():
     assert len(tasks) == 1
 
 
+def test_takes_the_tasks_out_of_the_page():
+    # The answer is `{"elements": [...], "totalCount": n}`, and a caller handed that whole object
+    # would iterate its two keys instead of the tasks. The count is dropped: a caller asking for a
+    # batch of two hundred works through what it got and asks again, so nothing here reads it.
+    api = _api({'elements': [{'id': 'task-1'}, {'id': 'task-2'}], 'totalCount': 500})
+
+    assert api.filter_async_tasks({'pageSize': 2}) == [{'id': 'task-1'}, {'id': 'task-2'}]
+
+
 def test_an_empty_filter_answer_is_a_list():
-    # The API omits the payload rather than sending an empty list, and a caller iterating `None` fails.
+    # The API omits the payload rather than sending an empty page, and a caller iterating `None` fails.
     assert _api(None).filter_async_tasks({}) == []
+    assert _api({'elements': [], 'totalCount': 0}).filter_async_tasks({}) == []
 
 
 def test_reports_a_status_on_its_own():
