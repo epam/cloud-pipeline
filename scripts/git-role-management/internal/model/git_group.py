@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ..compat import to_bytes
+
+
 class GitGroup(object):
     def __init__(self):
         self.id = None
@@ -23,5 +26,5 @@ class GitGroup(object):
         if 'id' in json:
             instance.id = json['id']
         if 'name' in json:
-            instance.name = json['name'].encode('utf-8')
+            instance.name = to_bytes(json['name'])
         return instance

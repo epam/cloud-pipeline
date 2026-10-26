@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -90,6 +91,7 @@ import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -123,6 +125,8 @@ public class PipelineRunManagerLaunchTest {
     private static final String TEST_USER = "user";
     private static final String TEST_USER_2 = "user2";
     private static final String IMAGE = "testImage";
+    private static final String STRING_TYPE = "string";
+    private static final String RESOLVED_VALUE = "resolved";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime TEST_PERIOD_18 = TEST_PERIOD.plusHours(18);
     private static final int HOURS_18 = 18;
@@ -515,27 +519,69 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void restartRunShouldPreserveFallbackInstanceTypes() {
         final String fallbackType = "fallback.type";
+        final PipelineRun run = getRunToRestart();
+        run.getInstance().setFallbackInstanceTypes(singletonList(fallbackType));
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNotNull(restartedRun.getInstance());
+        assertThat(restartedRun.getInstance().getFallbackInstanceTypes(), is(singletonList(fallbackType)));
+    }
+
+    @Test
+    public void restartRunShouldCopyParametersLoadedFromJson() {
+        final PipelineRun run = getRunToRestart();
+        run.setParams(null);
+        final PipelineRunParameter parameter = new PipelineRunParameter(TEST_NAME, TEST_STRING, STRING_TYPE);
+        parameter.setResolvedValue(RESOLVED_VALUE);
+        run.setPipelineRunParameters(singletonList(parameter));
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertThat(restartedRun.getPipelineRunParameters().size(), is(1));
+        final PipelineRunParameter restartedParameter = restartedRun.getPipelineRunParameters().get(0);
+        assertNotSame(parameter, restartedParameter);
+        assertEquals(TEST_NAME, restartedParameter.getName());
+        assertEquals(TEST_STRING, restartedParameter.getValue());
+        assertEquals(STRING_TYPE, restartedParameter.getType());
+        assertEquals(RESOLVED_VALUE, restartedParameter.getResolvedValue());
+    }
+
+    @Test
+    public void restartRunShouldParseParametersFromString() {
+        final PipelineRun run = getRunToRestart();
+        run.setPipelineRunParameters(null);
+        run.setParams(TEST_NAME + "=" + TEST_STRING);
+        mockRestart();
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertThat(restartedRun.getPipelineRunParameters().size(), is(1));
+        assertEquals(TEST_NAME, restartedRun.getPipelineRunParameters().get(0).getName());
+        assertEquals(TEST_STRING, restartedRun.getPipelineRunParameters().get(0).getValue());
+    }
+
+    private PipelineRun getRunToRestart() {
         final RunInstance instance = new RunInstance();
         instance.setCloudRegionId(REGION_ID);
         instance.setCloudProvider(CloudProvider.AWS);
         instance.setNodeType(INSTANCE_TYPE);
         instance.setNodeDisk(parseInt(INSTANCE_DISK));
         instance.setEffectiveNodeDisk(parseInt(INSTANCE_DISK));
-        instance.setFallbackInstanceTypes(singletonList(fallbackType));
 
         final PipelineRun run = getPipelineRun(ID, TEST_USER);
         run.setInstance(instance);
         run.setDockerImage(IMAGE);
         run.setActualDockerImage(IMAGE);
+        return run;
+    }
 
+    private void mockRestart() {
         doReturn(configuration).when(pipelineConfigurationManager).getConfigurationFromRun(any());
         doReturn(ID_2).when(pipelineRunDao).createRunId();
         doReturn(DEFAULT_COMMAND).when(pipelineLauncher).launch(any(), any(), any(), any());
-
-        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
-
-        assertNotNull(restartedRun.getInstance());
-        assertThat(restartedRun.getInstance().getFallbackInstanceTypes(), is(singletonList(fallbackType)));
     }
 
     private void mock(final InstancePrice price) {

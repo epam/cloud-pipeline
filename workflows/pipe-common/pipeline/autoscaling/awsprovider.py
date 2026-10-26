@@ -228,8 +228,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         subnet_id = None
         if allowed_networks and len(allowed_networks) > 0:
             az_num = randint(0, len(allowed_networks) - 1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
+            az_name, subnet_id = list(allowed_networks.items())[az_num]
             utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
             additional_args = {'SubnetId': subnet_id, 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
         else:

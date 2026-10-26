@@ -18,7 +18,7 @@ import sys
 import time
 import uuid
 
-from cloudprovider import AbstractInstanceProvider, \
+from .cloudprovider import AbstractInstanceProvider, \
     LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE, \
     INSUFFICIENT_CAPACITY_ERROR_MESSAGE, INSUFFICIENT_CAPACITY_EXIT_CODE
 from random import randint
@@ -357,8 +357,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         network_name = 'default'
         if allowed_networks and len(allowed_networks) > 0:
             network_num = randint(0, len(allowed_networks) - 1)
-            network_name = allowed_networks.items()[network_num][0]
-            subnet_id = allowed_networks.items()[network_num][1]
+            network_name, subnet_id = list(allowed_networks.items())[network_num]
             utils.pipe_log(
                 '- Networks list found, subnet {} in Network {} will be used'.format(subnet_id, network_name))
         else:

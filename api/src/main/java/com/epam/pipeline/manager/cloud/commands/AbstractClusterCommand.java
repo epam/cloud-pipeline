@@ -16,12 +16,17 @@
 
 package com.epam.pipeline.manager.cloud.commands;
 
+import com.epam.pipeline.manager.utils.PythonExecutableUtils;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class AbstractClusterCommand {
 
-    public static final String EXECUTABLE = "python";
+    // CP_PYTHON_PATH is set once by the pod's entrypoint before the JVM starts and never changes
+    // during the process lifetime, so resolving it at class-load time is equivalent to resolving
+    // it per call.
+    public static final String EXECUTABLE = PythonExecutableUtils.getPythonExecutable();
     protected static final String RUN_ID_PARAMETER = "--run_id";
     protected static final String REGION_PARAMETER = "--region_id";
     protected static final String INTERNAL_IP_PARAMETER = "--internal_ip";

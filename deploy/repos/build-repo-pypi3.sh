@@ -85,6 +85,7 @@ requests==2.34.2
 requests-oauthlib==1.3.0
 rsa==4.0
 six==1.15.0
+six==1.16.0
 tornado==6.4.0
 tzlocal==2.1
 urllib3==2.7.0
@@ -98,13 +99,20 @@ wheel==0.44.0
 flask==2.3.3
 Flask-HTTPAuth==4.4.0
 botocore==1.32.7
+botocore==1.34.69
 boto3==1.29.0
-azure-common==1.1.28
-azure-mgmt-compute==31.0.0
-azure-mgmt-network==26.0.0
-azure-mgmt-resource==23.1.0
+boto3==1.34.69
+azure-common==1.1.18
+azure-mgmt-compute==4.5.1
+azure-mgmt-network==2.0.0
+azure-mgmt-resource==2.0.0
 msrestazure==0.6.4
-httplib2==0.18.1"
+httplib2==0.18.1
+google-api-core==1.32.0
+google-api-python-client==1.12.11
+google-auth==1.35.0
+google-auth-httplib2==0.1.0
+googleapis-common-protos==1.52.0"
 download_list "$pypi_packages" /srv/pypi/web/
 
 python3 $WD/create_simple_index.py /srv/pypi/web/
