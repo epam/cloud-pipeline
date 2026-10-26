@@ -34,6 +34,7 @@
 - [Investigate the failure reason of a run](#investigate-the-failure-reason-of-a-run)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
+- [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 
 ***
 
@@ -641,6 +642,13 @@ In the current version, two new roles were introduced. Both cover every pipeline
 A user with both roles is able to see and launch every pipeline. As a launch also requires **READ** permission to the pipeline, **ROLE\_PIPELINE\_EXECUTOR** alone allows to launch only the pipelines the user is able to see. Any write access still has to be granted explicitly.
 
 For more details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-reader-and-executor-roles).
+
+## Access to the pipeline repositories for the pipeline roles
+
+Previously, of the roles that give full access to all pipelines regardless of their permission settings, only **ROLE\_ADMIN** got access to the pipeline repositories in the Platform GitLab. The users with the **ROLE\_PIPELINE\_ADMIN** role were able to manage all pipelines in the Platform, but not to access their repositories in GitLab, and might have no GitLab account at all.  
+In the current version, **ROLE\_PIPELINE\_ADMIN** gets the **Maintainer** access to all repositories in GitLab, as **ROLE\_ADMIN**. The new **ROLE\_PIPELINE\_READER** role (see [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)) gets the **Reporter** (read-only) access to all repositories. The users with these roles get GitLab accounts.
+
+For more details see [here](../../manual/13_Permissions/13._Permissions.md#access-to-the-pipeline-repositories-in-gitlab).
 
 ***
 
