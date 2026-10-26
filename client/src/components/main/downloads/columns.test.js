@@ -50,7 +50,7 @@ test('omits the Owner column entirely when isAdmin is false', () => {
   const columns = buildColumns(baseOptions({isAdmin: false}));
 
   expect(keysOf(columns)).toEqual([
-    'archive', 'storage', 'items', 'size', 'status', 'created', 'finished', 'actions'
+    'archive', 'storage', 'size', 'status', 'created', 'finished', 'actions'
   ]);
 });
 
@@ -58,7 +58,7 @@ test('includes the Owner column, right after Status, when isAdmin is true', () =
   const columns = buildColumns(baseOptions({isAdmin: true}));
 
   expect(keysOf(columns)).toEqual([
-    'archive', 'storage', 'items', 'size', 'status', 'owner', 'created', 'finished', 'actions'
+    'archive', 'storage', 'size', 'status', 'owner', 'created', 'finished', 'actions'
   ]);
 });
 

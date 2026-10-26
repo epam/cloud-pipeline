@@ -147,7 +147,42 @@ export default function buildColumns ({
     {
       title: 'Archive',
       key: 'archive',
-      render: (task) => displayArchiveNameOf(task)
+      // The archive's name, and how many items went into it:
+      // `my-archive.zip (2 items)`, with the count's own popover listing the
+      // archived paths on hover. The count used to be a column of its own; it
+      // belongs here, where it reads as a property of the archive rather than
+      // as a bare number under a heading. Singular for one, matching the way
+      // `data-storage/index.js` words its own item counts.
+      //
+      // A task with nothing to list renders the bare name - no count in
+      // brackets and no popover at all. The same guard the count itself
+      // already applied: an empty popover that opens on hover and shows
+      // nothing would be worse than no affordance.
+      render: (task) => {
+        const name = displayArchiveNameOf(task);
+        const paths = (task.params && task.params.paths) || [];
+        // `displayArchiveNameOf` hands back a falsy name untouched, so that an
+        // unnameable task renders an empty cell; the template below would turn
+        // that into the literal text `undefined (2 items)`.
+        if (!name || !paths.length) {
+          return name;
+        }
+        return (
+          <Popover
+            mouseEnterDelay={1}
+            trigger="hover"
+            content={
+              <div className={styles.archivePathsPopoverContainer}>
+                {paths.map((path, index) => (
+                  <div key={`${path}-${index}`}>{path}</div>
+                ))}
+              </div>
+            }
+          >
+            <span>{`${name} (${paths.length} item${paths.length > 1 ? 's' : ''})`}</span>
+          </Popover>
+        );
+      }
     },
     {
       title: 'Storage',
@@ -168,36 +203,6 @@ export default function buildColumns ({
         }
         const name = storageNamesById ? storageNamesById[Number(storageId)] : undefined;
         return name || storageId;
-      }
-    },
-    {
-      title: 'Items',
-      key: 'items',
-      // A count with no popover at all when there is nothing to list - the
-      // same guard the count itself already applies for a missing
-      // `params`/`paths`. An empty popover that opens on hover and shows
-      // nothing would be worse than no affordance.
-      render: (task) => {
-        const paths = (task.params && task.params.paths) || [];
-        const count = paths.length;
-        if (!count) {
-          return count;
-        }
-        return (
-          <Popover
-            mouseEnterDelay={1}
-            trigger="hover"
-            content={
-              <div className={styles.archivePathsPopoverContainer}>
-                {paths.map((path, index) => (
-                  <div key={`${path}-${index}`}>{path}</div>
-                ))}
-              </div>
-            }
-          >
-            <span>{count}</span>
-          </Popover>
-        );
       }
     },
     {
