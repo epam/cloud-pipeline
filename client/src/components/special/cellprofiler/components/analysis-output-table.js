@@ -18,9 +18,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {Alert} from 'antd';
+import {Alert, Icon} from 'antd';
 import styles from './cell-profiler.css';
 import LoadingView from '../../LoadingView';
+
+const ASCENDING = 'ascending';
+const DESCENDING = 'descending';
 
 function splitHeaderColumns (string) {
   if (!string || !string.length) {
@@ -73,7 +76,9 @@ class AnalysisOutputTable extends React.Component {
   state = {
     contents: undefined,
     pending: false,
-    error: undefined
+    error: undefined,
+    sortedColumn: undefined,
+    sortDirection: undefined
   };
 
   componentDidMount () {
@@ -124,11 +129,47 @@ class AnalysisOutputTable extends React.Component {
     }
   }
 
+  setSortColumn (columnIndex) {
+    const {sortedColumn, sortDirection} = this.state;
+    const direction = columnIndex !== sortedColumn ? ASCENDING : (
+      sortDirection === ASCENDING ? DESCENDING : undefined
+    );
+    const column = direction ? columnIndex : undefined;
+    this.setState({
+      sortedColumn: column,
+      sortDirection: direction
+    });
+  }
+
+  getSortedRows (rows) {
+    const {sortedColumn, sortDirection} = this.state;
+    if (sortedColumn === undefined) return rows;
+    const isLetter = rows.some((row) => {
+      return /[a-zA-Z]/i.test(row[sortedColumn]);
+    });
+    const rowsCopy = [...rows];
+    if (isLetter) {
+      rowsCopy.sort((a, b) => {
+        return a[sortedColumn].localeCompare(b[sortedColumn]);
+      });
+    } else {
+      rowsCopy.sort((a, b) => {
+        return (+a[sortedColumn] - +b[sortedColumn]);
+      });
+    }
+    if (sortDirection === DESCENDING) {
+      rowsCopy.reverse();
+    }
+    return rowsCopy;
+  }
+
   render () {
     const {
       error,
       contents,
-      pending
+      pending,
+      sortDirection,
+      sortedColumn
     } = this.state;
     const {
       className,
@@ -149,6 +190,17 @@ class AnalysisOutputTable extends React.Component {
         rows = [],
         columns = []
       } = contents;
+      const getSortIcon = (columnIndex) => {
+        if (columnIndex !== sortedColumn) {
+          return null;
+        }
+        return sortDirection
+          ? (sortDirection === ASCENDING
+            ? <Icon type="arrow-down" />
+            : <Icon type="arrow-up" />)
+          : null;
+      };
+      const sortedRows = this.getSortedRows(rows);
       return (
         <table
           className={
@@ -164,8 +216,9 @@ class AnalysisOutputTable extends React.Component {
             <tr>
               {
                 columns.map((column, index) => (
-                  <th key={`${column}-${index}`}>
+                  <th key={`${column}-${index}`} onClick={() => this.setSortColumn(index)}>
                     {column}
+                    {getSortIcon(index)}
                   </th>
                 ))
               }
@@ -173,7 +226,7 @@ class AnalysisOutputTable extends React.Component {
           </thead>
           <tbody>
             {
-              rows.map((data, rowIndex) => (
+              sortedRows.map((data, rowIndex) => (
                 <tr key={`line-${rowIndex}`}>
                   {
                     data.map((cell, columnIndex) => (
