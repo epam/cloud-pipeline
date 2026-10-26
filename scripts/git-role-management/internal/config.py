@@ -33,6 +33,8 @@ class Config(object):
         self.ssh_pub_metadata_name = 'ssh_pub'
         self.ssh_prv_metadata_name = 'ssh_prv'
         self.admins_group_name = 'ROLE_ADMIN'
+        self.pipeline_admins_group_name = 'ROLE_PIPELINE_ADMIN'
+        self.pipeline_readers_group_name = 'ROLE_PIPELINE_READER'
         self.git_group_prefix = 'PIPELINE-'
         self.git_ssh_title = 'Cloud Pipeline'
         self.resync_user_ssh_keys = str(os.environ.get("SYNC_GIT_RESYNC_USER_SSH_KEYS", "true")).lower() == "true"
@@ -59,6 +61,10 @@ class Config(object):
                     self.ssh_prv_metadata_name = data['ssh-prv-metadata-name']
                 if 'admins-group-name' in data:
                     self.admins_group_name = data['admins-group-name']
+                if 'pipeline-admins-group-name' in data:
+                    self.pipeline_admins_group_name = data['pipeline-admins-group-name']
+                if 'pipeline-readers-group-name' in data:
+                    self.pipeline_readers_group_name = data['pipeline-readers-group-name']
                 if 'git-group-prefix' in data:
                     self.git_group_prefix = data['git-group-prefix']
         elif not safe_initialization:
@@ -73,7 +79,8 @@ class Config(object):
 
     @classmethod
     def store(cls, access_key, api, proxy, email_attribute_name, name_attribute_name, ssh_pub_attribute_name,
-              ssh_prv_attribute_name, admins_group, git_group_prefix):
+              ssh_prv_attribute_name, admins_group, git_group_prefix, pipeline_admins_group,
+              pipeline_readers_group):
         current_config = Config.safe_instance()
         config = {
             'api': api if api is not None else current_config.api,
@@ -84,6 +91,8 @@ class Config(object):
             'ssh-pub-metadata-name': ssh_pub_attribute_name if ssh_pub_attribute_name is not None else current_config.ssh_pub_metadata_name,
             'ssh-prv-metadata-name': ssh_prv_attribute_name if ssh_prv_attribute_name is not None else current_config.ssh_prv_metadata_name,
             'admins-group-name': admins_group if admins_group is not None else current_config.admins_group_name,
+            'pipeline-admins-group-name': pipeline_admins_group if pipeline_admins_group is not None else current_config.pipeline_admins_group_name,
+            'pipeline-readers-group-name': pipeline_readers_group if pipeline_readers_group is not None else current_config.pipeline_readers_group_name,
             'git-group-prefix': git_group_prefix if git_group_prefix is not None else current_config.git_group_prefix
         }
         config_file = cls.config_path()

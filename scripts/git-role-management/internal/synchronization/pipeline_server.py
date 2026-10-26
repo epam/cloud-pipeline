@@ -16,7 +16,6 @@ from ..config import Config
 from ..api.users_api import Users
 from ..api.pipeline_api import Pipeline
 from ..api.metadata_api import Metadata
-from ..model.permission_model import PermissionModel
 from .git_server import GitServer
 from urlparse import urlparse
 import sys
@@ -190,11 +189,9 @@ class PipelineServer(object):
                 (pipelines, total_count) = self.__pipeline_api__.list(page + 1, page_size)
                 total = total_count
                 for pipeline in pipelines:
-                    admin_permissions = PermissionModel()
-                    admin_permissions.name = self.__config__.admins_group_name
-                    admin_permissions.principal = False
-                    admin_permissions.access_level = 40
-                    pipeline.permissions.append(admin_permissions)
+                    pipeline.add_group_permission(self.__config__.admins_group_name, 40)
+                    pipeline.add_group_permission(self.__config__.pipeline_admins_group_name, 40)
+                    pipeline.add_group_permission(self.__config__.pipeline_readers_group_name, 20)
                     yield pipeline
                 page += 1
         except RuntimeError as error:
