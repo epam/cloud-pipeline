@@ -57,6 +57,7 @@
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
+- [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 
@@ -1813,6 +1814,13 @@ Previously, the permissions could be viewed only per object - for all users and 
 In the current version, the new API method `GET /permissions/user?userId=<user ID>&aclClass=<object type>` was introduced. For the specified user, it returns all objects of the type (data storages or pipelines) with the permissions granted to the user, to the user's groups or roles - including the ones inherited from the parent folders. The method is available to admins and to the users allowed to view the specified user (**ROLE\_USER\_ADMIN**, **ROLE\_USER\_READER** or **READ** permission to that user). Admins get all objects, other users - only the objects they have read access to.
 
 More details see [here](../../manual/13_Permissions/13._Permissions.md#permissions-granted-to-a-user).
+
+## Access to the pipeline repositories for the pipeline roles
+
+Previously, of the roles that give full access to all pipelines regardless of their permission settings, only **ROLE\_ADMIN** got access to the pipeline repositories in the Platform GitLab. The users with the **ROLE\_PIPELINE\_ADMIN** role were able to manage all pipelines in the Platform, but not to access their repositories in GitLab, and might have no GitLab account at all.  
+In the current version, **ROLE\_PIPELINE\_ADMIN** gets the **Maintainer** access to all repositories in GitLab, as **ROLE\_ADMIN**. The new **ROLE\_PIPELINE\_READER** role (see [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)) gets the **Reporter** (read-only) access to all repositories. The users with these roles get GitLab accounts.
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#access-to-the-pipeline-repositories-in-gitlab).
 
 ## Checking of the Docker image version in `pipe run`
 
