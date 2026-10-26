@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+import React from 'react';
 import {message} from 'antd';
 import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
 import {ASYNC_TASK_STATUSES, normalizeStatus, archiveNameOf} from '../../models/asyncTask/statuses';
+import downloadArchiveTask from './downloads/download-archive-task';
+import DownloadsPageLink from '../special/downloads-page-link';
 
 // Announces, with an antd `message`, that one of the current user's
 // archive-download tasks has finished - whatever page the user is on. This is
@@ -33,12 +36,25 @@ import {ASYNC_TASK_STATUSES, normalizeStatus, archiveNameOf} from '../../models/
 let started = false;
 let teardown = () => {};
 
-function notify (task, messageApi) {
+function notify (task, messageApi, download) {
   const status = normalizeStatus(task && task.status);
   const archiveName = archiveNameOf(task);
   if (status === ASYNC_TASK_STATUSES.SUCCESS) {
     messageApi.success(
-      `Archive "${archiveName}" is ready. Download it from the Downloads page.`,
+      // "Download it" fetches the archive from the toast itself - the same
+      // `downloadArchiveTask` the Download button on the /downloads page
+      // calls, so the signed URL is requested at the moment of the click and
+      // the browser downloads it. The page link stays alongside it: the toast
+      // lasts five seconds, and the archive is still there afterwards.
+      <span>
+        {`Archive "${archiveName}" is ready. `}
+        <a onClick={() => download(task)}>
+          {'Download it'}
+        </a>
+        {' now, or find it later on the '}
+        <DownloadsPageLink />
+        {'.'}
+      </span>,
       5
     );
   } else if (status === ASYNC_TASK_STATUSES.FAILED) {
@@ -62,16 +78,24 @@ function notify (task, messageApi) {
  * @param {*} [store] - defaults to the CurrentUserAsyncTasks singleton
  * @param {*} [messageApi] - defaults to antd's `message`, taken as a
  *   parameter so this is testable without module mocking
+ * @param {function(*): Promise<void>} [downloadTask] - what the success
+ *   toast's "Download it" link does, defaulting to the same helper the
+ *   /downloads page's Download button uses; a parameter for the same reason
+ *   as `messageApi`, since it raises toasts of its own
  * @returns {function(): void} a teardown function
  */
-export default function startAsyncTaskNotifications (store = asyncTasks, messageApi = message) {
+export default function startAsyncTaskNotifications (
+  store = asyncTasks,
+  messageApi = message,
+  downloadTask = (task) => downloadArchiveTask(store, task)
+) {
   if (started) {
     return teardown;
   }
   if (!store || typeof store.addStatusChangeListener !== 'function') {
     return () => {};
   }
-  const handler = (task) => notify(task, messageApi);
+  const handler = (task) => notify(task, messageApi, downloadTask);
   store.addStatusChangeListener(handler);
   started = true;
   teardown = () => {

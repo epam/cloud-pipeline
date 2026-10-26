@@ -76,14 +76,100 @@ describe('archivePathsFromSelection', () => {
 });
 
 describe('defaultArchiveName', () => {
-  test('matches archive-<YYYYMMDD-HHmmss>, with no extension', () => {
-    const name = defaultArchiveName();
-    expect(name).toMatch(/^archive-\d{8}-\d{6}$/);
+  test('a single file is offered its own name with .zip, and no timestamp', () => {
+    expect(defaultArchiveName([{path: 'folder/report.csv', name: 'report.csv', type: 'File'}]))
+      .toBe('report.csv.zip');
+  });
+
+  test('a single folder is offered its own name with .zip', () => {
+    expect(defaultArchiveName([{path: 'data/reports', name: 'reports', type: 'Folder'}]))
+      .toBe('reports.zip');
+  });
+
+  // `name` is what the storage browser shows, but an item built elsewhere may
+  // carry only a path - the leaf is the same string either way.
+  test('falls back to the path\'s last segment when the item has no name', () => {
+    expect(defaultArchiveName([{path: 'a/b/reports/', type: 'Folder'}])).toBe('reports.zip');
+  });
+
+  test('matches archive-<YYYY-MM-DD HH-mm-ss> for more than one item', () => {
+    const name = defaultArchiveName([
+      {path: 'a.txt', name: 'a.txt', type: 'File'},
+      {path: 'b', name: 'b', type: 'Folder'}
+    ]);
+    expect(name).toMatch(/^archive-\d{4}-\d{2}-\d{2} \d{2}-\d{2}-\d{2}$/);
     expect(name.toLowerCase()).not.toContain('.zip');
   });
 
-  test('satisfies the server\'s ^[\\w\\-. ]+$ rule', () => {
+  test('uses the timestamp form for an empty or undefined selection', () => {
+    expect(defaultArchiveName([])).toMatch(/^archive-/);
+    expect(defaultArchiveName()).toMatch(/^archive-/);
+  });
+
+  // The same filter `archivePathsFromSelection` applies: "one item" means one
+  // item that would actually be archived.
+  test('ignores a delete marker when counting the selection', () => {
+    expect(defaultArchiveName([
+      {path: 'report.csv', name: 'report.csv', type: 'File'},
+      {path: 'gone.txt', name: 'gone.txt', type: 'File', deleteMarker: true}
+    ])).toBe('report.csv.zip');
+  });
+
+  // Offering a name the server would reject (`^[\w\-. ]+$`) would fail on OK,
+  // so a name taken from a file is folded through that set first.
+  // A run of rejected characters collapses into one underscore, so `)&`
+  // together become a single `_` rather than one each.
+  test('replaces characters the server would reject in a single item\'s name', () => {
+    expect(defaultArchiveName([{path: 'a (1)&b.txt', name: 'a (1)&b.txt', type: 'File'}]))
+      .toBe('a _1_b.txt.zip');
+  });
+
+  test('falls back to the timestamp form when nothing legal is left of the name', () => {
+    expect(defaultArchiveName([{path: '№№№', name: '№№№', type: 'Folder'}]))
+      .toMatch(/^archive-/);
+  });
+
+  // "Sanitised down to underscores" is the failure the fallback looks for,
+  // which is not the same as a name that legitimately contains them - the
+  // server accepts `_` as a word character, so an untouched name is always
+  // offered as it is.
+  test('keeps a name made of characters the server already accepts', () => {
+    expect(defaultArchiveName([{path: '__init__.py', name: '__init__.py', type: 'File'}]))
+      .toBe('__init__.py.zip');
+    expect(defaultArchiveName([{path: 'logs/___', name: '___', type: 'Folder'}]))
+      .toBe('___.zip');
+  });
+
+  // `\w` is ASCII-only, so a Cyrillic or CJK name sanitises to underscores.
+  // The extension surviving is not enough to make `_.csv.zip` worth offering
+  // over a timestamp, which is why the check looks at the name without it.
+  test('falls back to the timestamp form when only the extension survives', () => {
+    expect(defaultArchiveName([{path: 'отчет.csv', name: 'отчет.csv', type: 'File'}]))
+      .toMatch(/^archive-/);
+    expect(defaultArchiveName([{path: '报告.txt', name: '报告.txt', type: 'File'}]))
+      .toMatch(/^archive-/);
+  });
+
+  // The server appends `.zip` only where it is missing, so appending here
+  // unconditionally would hand the user a file called `backup.zip.zip`.
+  test('does not double a .zip already on the item\'s name', () => {
+    expect(defaultArchiveName([{path: 'backup.zip', name: 'backup.zip', type: 'File'}]))
+      .toBe('backup.zip');
+    expect(defaultArchiveName([{path: 'backup.ZIP', name: 'backup.ZIP', type: 'File'}]))
+      .toBe('backup.ZIP');
+  });
+
+  // A folder's name is not split on its dots: `my.data` is a folder of that
+  // name, not a `data` extension, so all of it has to survive sanitising.
+  test('treats a dotted folder name as one name', () => {
+    expect(defaultArchiveName([{path: 'logs/my.data', name: 'my.data', type: 'Folder'}]))
+      .toBe('my.data.zip');
+  });
+
+  test('every form satisfies the server\'s ^[\\w\\-. ]+$ rule', () => {
     expect(defaultArchiveName()).toMatch(/^[\w\-. ]+$/);
+    expect(defaultArchiveName([{path: 'a (1)&b.txt', name: 'a (1)&b.txt', type: 'File'}]))
+      .toMatch(/^[\w\-. ]+$/);
   });
 });
 
@@ -153,5 +239,23 @@ describe('handleDownloadArchive', () => {
     await expect(
       handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive')
     ).resolves.toBeUndefined();
+  });
+
+  // The queued toast carries a link to the page the archive will appear on.
+  // antd renders a `message` into a portal on `document.body`, which is what
+  // `screen` queries - no module mocking needed to see it (rule 2).
+  test('the queued toast links to the Downloads page', async () => {
+    const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
+
+    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive');
+
+    // `findAllByText`, and the newest one: antd's `message` is a singleton
+    // that keeps each toast on `document.body` for five seconds, so the
+    // success toasts the tests above raised are still there - the harness
+    // unmounts the trees it rendered itself, not antd's own portal.
+    const links = await screen.findAllByText('Downloads page');
+    // A hash href, so it navigates in-app and needs no router in context -
+    // which a portal does not have. See `downloads-page-link.js`.
+    expect(links[links.length - 1]).toHaveAttribute('href', '#/downloads');
   });
 });

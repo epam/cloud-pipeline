@@ -3368,7 +3368,11 @@ export default class DataStorage extends React.Component {
         />
         <DownloadArchiveModal
           visible={this.state.downloadArchiveModalVisible}
-          defaultName={defaultArchiveName()}
+          // Built from the selection, so a single file or folder is offered
+          // its own name rather than a timestamp - see `defaultArchiveName`.
+          // The modal re-seeds its field whenever it becomes visible, so this
+          // being re-evaluated on every render costs nothing.
+          defaultName={defaultArchiveName(this.state.selectedItems)}
           onCancel={this.closeDownloadArchiveModal}
           onSubmit={this.submitDownloadArchive}
         />

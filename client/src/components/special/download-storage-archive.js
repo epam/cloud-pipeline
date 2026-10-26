@@ -21,8 +21,10 @@
  * @property {boolean} [deleteMarker]
  */
 
+import React from 'react';
 import moment from 'moment-timezone';
 import {message} from 'antd';
+import DownloadsPageLink from './downloads-page-link';
 
 function isFolder (item) {
   return /^folder$/i.test((item && item.type) || '');
@@ -58,16 +60,111 @@ export function archivePathsFromSelection (selectedItems) {
   return [...new Set(paths)];
 }
 
+// What the server accepts as an archive name: `^[\w\-. ]+$`
+// (DataStorageDownloadArchiveManager). Anything else in a name built from a
+// selected item's own file name - brackets, an ampersand, a non-latin
+// letter - would be rejected on OK, so a generated default is folded through
+// this first. A name the USER types is still passed through untouched and the
+// server's own error surfaced; this is only about not offering an invalid
+// default.
+const ILLEGAL_NAME_CHARACTERS = /[^\w\-. ]+/g;
+
+// `HH-mm-ss`, not `HH:mm:ss`, for the same reason: a colon is outside the
+// pattern above (and illegal in a Windows file name). The date half matches
+// `utils/displayDate`'s own `YYYY-MM-DD HH:mm:ss` as closely as the name
+// allows, and is local time like that helper, not UTC - the timestamp is read
+// by the person who just clicked.
+const NAME_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH-mm-ss';
+
+function sanitize (value) {
+  return `${value}`.replace(ILLEGAL_NAME_CHARACTERS, '_').trim();
+}
+
+// Whether anything of the original survived sanitising. Judged on the part
+// that carries the meaning, which is why the extension is split off first:
+// `\w` is ASCII-only (no `u` flag, and adding one would not help - `\w` is
+// defined as `[A-Za-z0-9_]`), so a Cyrillic or CJK name is replaced
+// wholesale. `отчет.csv` would otherwise sanitise to `_.csv`, keep its word
+// characters in `.csv` alone, and be offered as `_.csv.zip` - strictly less
+// informative than the timestamp it refused to fall back to.
+//
+// A name sanitising to nothing but underscores is the failure this looks for,
+// which is NOT the same as a name that legitimately contains them: `__init__`
+// is a perfectly good archive name and the server accepts it, so an untouched
+// name always counts, however few letters and digits it has.
+function carriesMeaning (sanitizedBaseName, baseName) {
+  if (sanitizedBaseName === `${baseName}`) {
+    return true;
+  }
+  return /[a-z0-9]/i.test(sanitizedBaseName);
+}
+
 /**
- * A fresh, timestamped default archive name, with no extension: the server
- * appends `.zip` itself when the name does not already end in it, and treats a
- * blank name as `archive.zip`, so showing `.zip` here would only invite the
- * user to delete or duplicate it.
+ * A single item's own name, sanitised, with `.zip` on the end - or
+ * `undefined` where sanitising leaves nothing worth offering.
  *
+ * `.zip` is appended only where it is not already there, case-insensitively,
+ * the same rule the server applies (`offeredArchiveName`) and the Archive
+ * column displays (`main/downloads/columns.js`). Selecting `backup.zip` is an
+ * ordinary thing to do, and `backup.zip.zip` is what the user would otherwise
+ * receive.
+ */
+function archiveNameForItem (item) {
+  const name = nameOf(item);
+  // A folder's name is not split on its dots - `my.data` is a folder called
+  // `my.data`, not a `data` extension - so the whole thing is what has to
+  // survive sanitising. For a file, the extension comes along but does not
+  // count towards that.
+  const extensionAt = isFolder(item) ? -1 : `${name}`.lastIndexOf('.');
+  const baseName = extensionAt > 0 ? `${name}`.slice(0, extensionAt) : `${name}`;
+  const extension = extensionAt > 0 ? `${name}`.slice(extensionAt) : '';
+  const sanitizedBaseName = sanitize(baseName);
+  if (!carriesMeaning(sanitizedBaseName, baseName)) {
+    return undefined;
+  }
+  const sanitized = `${sanitizedBaseName}${sanitize(extension)}`;
+  return /\.zip$/i.test(sanitized) ? sanitized : `${sanitized}.zip`;
+}
+
+function timestampedArchiveName () {
+  return `archive-${moment().format(NAME_TIMESTAMP_FORMAT)}`;
+}
+
+function nameOf (item) {
+  if (item.name) {
+    return item.name;
+  }
+  // A selection item always has a `path`; `name` is what the browser shows
+  // and may be absent on an item built elsewhere. The leaf of the path is the
+  // same string, once a folder's trailing slash is off.
+  const segments = `${item.path}`.replace(/\/+$/, '').split('/');
+  return segments[segments.length - 1];
+}
+
+/**
+ * The name offered in the archive-name modal.
+ *
+ * One item selected: that file's or folder's own name with `.zip` on the end,
+ * since there is nothing to disambiguate and a timestamp would only be noise
+ * - `report.csv` gives `report.csv.zip`, keeping the original name intact
+ * rather than guessing which part of it to drop.
+ *
+ * Anything else: `archive-<date> <time>`, with no extension. The server
+ * appends `.zip` itself when the name does not already end in it, and treats a
+ * blank name as `archive.zip`.
+ *
+ * @param {SelectedStorageItem[]} [selectedItems]
  * @returns {string}
  */
-export function defaultArchiveName () {
-  return `archive-${moment.utc().format('YYYYMMDD-HHmmss')}`;
+export function defaultArchiveName (selectedItems = []) {
+  // The same filter `archivePathsFromSelection` applies, so "one item" here
+  // means one item that would actually be archived.
+  const items = (selectedItems || [])
+    .filter(item => item && item.path && !item.deleteMarker);
+  if (items.length !== 1) {
+    return timestampedArchiveName();
+  }
+  return archiveNameForItem(items[0]) || timestampedArchiveName();
 }
 
 /**
@@ -142,8 +239,11 @@ export default async function handleDownloadArchive (asyncTasks, storageId, path
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
     message.success(
-      'Archive download has been queued. ' +
-      'It will appear on the Downloads page once it is ready.',
+      <span>
+        {'Archive download has been queued. It will appear on the '}
+        <DownloadsPageLink />
+        {' once it is ready.'}
+      </span>,
       5
     );
   } catch (error) {
