@@ -44,6 +44,14 @@ function taskRoute (id) {
   return `/async-task/${id}`;
 }
 
+// `POST /async-task/filter` answers a paged result - `{elements, totalCount}`,
+// the total being what the FILTER matched rather than what the page carries.
+// Nothing here pages, so the two agree; `AsyncTaskFilter.test.js` is where the
+// shape itself, and the older bare-array form, are pinned.
+function filterPage (tasks) {
+  return {elements: tasks, totalCount: tasks.length};
+}
+
 function daysAgo (days) {
   return moment.utc().subtract(days, 'days').toISOString();
 }
@@ -318,7 +326,7 @@ describe('restore', () => {
   it('polls what was stored and announces a task that finished while away', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, []);
+    api.reply(FILTER_ROUTE, filterPage([]));
     api.reply(taskRoute(1), {id: 1, status: 'SUCCESS', created: YESTERDAY()});
     saveEntries([{id: '1', created: YESTERDAY(), owner: USER_NAME}]);
     const store = newStore();
@@ -334,7 +342,7 @@ describe('restore', () => {
   it('still picks up a long-forgotten entry while the cut-off is switched off', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, []);
+    api.reply(FILTER_ROUTE, filterPage([]));
     api.reply(taskRoute(1), {id: 1, status: 'RUNNING', created: LONG_AGO()});
     saveEntries([{id: '1', created: LONG_AGO(), owner: USER_NAME}]);
     const store = newStore();
@@ -351,7 +359,7 @@ describe('restore', () => {
   it('deletes another user\'s entries instead of polling them', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, []);
+    api.reply(FILTER_ROUTE, filterPage([]));
     saveEntries([{id: '1', created: YESTERDAY(), owner: 'someone-else'}]);
     const store = newStore();
 
@@ -368,10 +376,10 @@ describe('restore', () => {
   it('picks up tasks queued elsewhere from the server\'s active list', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [
+    api.reply(FILTER_ROUTE, filterPage([
       {id: 11, status: 'RUNNING', created: YESTERDAY(), owner: USER_NAME},
       {id: 12, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME}
-    ]);
+    ]));
     api.reply(taskRoute(11), {id: 11, status: 'RUNNING', created: YESTERDAY()});
     api.reply(taskRoute(12), {id: 12, status: 'PENDING', created: YESTERDAY()});
     const store = newStore();
@@ -391,7 +399,7 @@ describe('restore', () => {
   it('does not announce anything from the sync itself', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, []);
+    api.reply(FILTER_ROUTE, filterPage([]));
     const store = newStore();
     const listener = fn();
     store.addStatusChangeListener(listener);
@@ -452,7 +460,7 @@ describe('fetchActiveTasks / fetchActiveTasksCount', () => {
   it('asks for type, owner and ACTIVE_STATUSES only, with no page or pageSize', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [{id: 1, status: 'RUNNING'}]);
+    api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
     const store = newStore();
 
     const count = await store.fetchActiveTasksCount();
@@ -473,10 +481,10 @@ describe('fetchActiveTasks / fetchActiveTasksCount', () => {
   it('counts only the tasks that are really active', async () => {
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [
+    api.reply(FILTER_ROUTE, filterPage([
       {id: 1, status: 'RUNNING'},
       {id: 2, status: 'SUCCESS'}
-    ]);
+    ]));
     const store = newStore();
 
     await expect(store.fetchActiveTasksCount()).resolves.toBe(1);
@@ -488,7 +496,7 @@ describe('checkActiveTasksLimit', () => {
     await setMaxUserTasks(2);
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [{id: 1, status: 'RUNNING'}]);
+    api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
     const store = newStore();
 
     await expect(store.checkActiveTasksLimit()).resolves.toEqual({allowed: true});
@@ -498,10 +506,10 @@ describe('checkActiveTasksLimit', () => {
     await setMaxUserTasks(2);
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [
+    api.reply(FILTER_ROUTE, filterPage([
       {id: 1, status: 'RUNNING'},
       {id: 2, status: 'PENDING'}
-    ]);
+    ]));
     const store = newStore();
 
     const result = await store.checkActiveTasksLimit();
@@ -529,7 +537,7 @@ describe('startArchiveDownload', () => {
     await setMaxUserTasks(1);
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [{id: 1, status: 'RUNNING'}]);
+    api.reply(FILTER_ROUTE, filterPage([{id: 1, status: 'RUNNING'}]));
     const store = newStore();
 
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
@@ -544,7 +552,7 @@ describe('startArchiveDownload', () => {
     await setMaxUserTasks(5);
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, []);
+    api.reply(FILTER_ROUTE, filterPage([]));
     const createdTask = {
       id: 99,
       status: 'PENDING',
@@ -571,7 +579,7 @@ describe('startArchiveDownload', () => {
     await setMaxUserTasks(5);
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, []);
+    api.reply(FILTER_ROUTE, filterPage([]));
     const createdTask = {id: 99, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
     api.reply('/datastorage/7/download/archive', createdTask);
     api.reply(taskRoute(99), createdTask);
@@ -591,10 +599,10 @@ describe('startArchiveDownload', () => {
     await setMaxUserTasks(2);
     const api = stubApi();
     stubWhoAmI(api);
-    api.reply(FILTER_ROUTE, [
+    api.reply(FILTER_ROUTE, filterPage([
       {id: 1, status: 'RUNNING'},
       {id: 2, status: 'PENDING'}
-    ]);
+    ]));
     api.reply('/datastorage/7/download/archive', {id: 99});
     const store = newStore();
     expect(store.pollers.size).toBe(0);

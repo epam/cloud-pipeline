@@ -364,10 +364,17 @@ class CurrentUserAsyncTasks {
     if (request.error) {
       throw new Error(request.error);
     }
+    // `elements`, with the answer's `totalCount` deliberately ignored: this
+    // request does not page, so the two agree on the ordinary path, and where
+    // they disagree the elements are the safer number to trust. The count
+    // below gates a download, so counting one task too many stops something
+    // the user is entitled to do, while counting one too few only leaves the
+    // refusal to the server, which enforces the quota anyway.
+    const {elements = []} = request.value || {};
     // `taskIsActive` on top of the server's own `statuses` scope: belt and
     // braces, and the one place that would absorb a status arriving in a
     // different case (see `normalizeStatus` in ./statuses.js).
-    return (request.value || []).filter(taskIsActive);
+    return elements.filter(taskIsActive);
   }
 
   /**

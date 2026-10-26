@@ -91,15 +91,22 @@ const EXPIRED_TASK = {
 };
 
 // Every fixture's `archiveName` above is bare (no `.zip`), so the component's
-// own display logic always appends the suffix - this is what every `rowFor`
-// lookup below actually finds in the DOM. The dedicated ".zip suffix" suite
-// further down exercises that display logic directly.
+// own display logic always appends the suffix - and, for a task with paths,
+// the item count after it: `archive-success.zip (2 items)`. A substring match
+// is what makes `rowFor` independent of that count; the suites further down
+// exercise the suffix and the count themselves.
 function displayedArchiveName (archiveName) {
   return `${archiveName}.zip`;
 }
 
 function rowFor (archiveName) {
-  return screen.getByText(displayedArchiveName(archiveName)).closest('tr');
+  const name = displayedArchiveName(archiveName);
+  // The name exactly, or the name followed by its item count - and not a
+  // loose prefix match, which would make every lookup here ambiguous the day
+  // a fixture named `archive-success-2` is added beside `archive-success`.
+  return screen
+    .getByText((content) => content === name || content.startsWith(`${name} (`))
+    .closest('tr');
 }
 
 function authenticatedUserInfoDouble (admin = true) {
@@ -109,11 +116,13 @@ function authenticatedUserInfoDouble (admin = true) {
   });
 }
 
-test('renders a row per task, found by the archive name', () => {
+test('renders a row per task, found by the archive name and its item count', () => {
   render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
 
-  expect(screen.getByText('archive-success.zip')).toBeInTheDocument();
-  expect(screen.getByText('archive-running.zip')).toBeInTheDocument();
+  // Two paths and one path respectively - the count, and its plural, are part
+  // of what the Archive column shows.
+  expect(screen.getByText('archive-success.zip (2 items)')).toBeInTheDocument();
+  expect(screen.getByText('archive-running.zip (1 item)')).toBeInTheDocument();
 });
 
 test('shows the Download button only for a SUCCESS task', () => {
@@ -268,8 +277,8 @@ describe('the Archive column\'s .zip suffix', () => {
     const task = {...SUCCESS_TASK, params: {...SUCCESS_TASK.params, archiveName: 'my-archive'}};
     render(<AsyncTasksList tasks={[task]} />);
 
-    expect(screen.getByText('my-archive.zip')).toBeInTheDocument();
-    expect(screen.queryByText('my-archive')).not.toBeInTheDocument();
+    expect(screen.getByText('my-archive.zip (2 items)')).toBeInTheDocument();
+    expect(screen.queryByText('my-archive (2 items)')).not.toBeInTheDocument();
   });
 
   test('leaves a name that already ends in .zip unchanged, never doubled', () => {
@@ -279,8 +288,8 @@ describe('the Archive column\'s .zip suffix', () => {
     };
     render(<AsyncTasksList tasks={[task]} />);
 
-    expect(screen.getByText('my-archive.zip')).toBeInTheDocument();
-    expect(screen.queryByText('my-archive.zip.zip')).not.toBeInTheDocument();
+    expect(screen.getByText('my-archive.zip (2 items)')).toBeInTheDocument();
+    expect(screen.queryByText('my-archive.zip.zip (2 items)')).not.toBeInTheDocument();
   });
 
   test('treats the suffix check case-insensitively', () => {
@@ -290,7 +299,7 @@ describe('the Archive column\'s .zip suffix', () => {
     };
     render(<AsyncTasksList tasks={[task]} />);
 
-    expect(screen.getByText('my-archive.ZIP')).toBeInTheDocument();
+    expect(screen.getByText('my-archive.ZIP (2 items)')).toBeInTheDocument();
   });
 
   test('applies to the task-id fallback when archiveName is absent', () => {
@@ -476,74 +485,99 @@ describe('the Status column default (POLLED_STATUSES)', () => {
   );
 });
 
-// The pagination row beneath the table. `/async-task/filter` returns no
-// total, so there is no last-page button - only first/prev/next, copying
-// client/src/components/pipelines/browser/data-storage/components/
-// storage-pagination.js. Rendered only when there is something to navigate
-// (`page > 1 || hasNextPage`), per the "a single short page would be noise"
-// decision, so the absent-row cases below assert there is nothing to find
-// rather than a disabled button.
-test('renders no pagination row on page 1 with no next page', () => {
-  render(<AsyncTasksList tasks={[]} page={1} hasNextPage={false} />);
+// Paging is antd's own `Pagination`, beneath the table, driven by `total`
+// (the response's `totalCount` - every match, not this page) and `pageSize`.
+// It renders nothing at all while one page holds everything, which is the
+// "a single short page would be noise" decision the hand-rolled control
+// before it also made.
+//
+// Its page numbers are `<li title="<n>">`; its arrows take their titles from
+// antd's locale, which is the bundled zh-CN unless a `LocaleProvider` is in
+// scope - so an arrow is only ever queried through `renderWithLocale`, never
+// a bare `render`.
+test('renders no pagination while every match fits on one page', () => {
+  render(<AsyncTasksList tasks={[]} page={1} pageSize={15} total={15} />);
 
-  expect(screen.queryByRole('button', {name: /next page/i})).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', {name: /previous page/i})).not.toBeInTheDocument();
-  expect(screen.queryByRole('button', {name: /first page/i})).not.toBeInTheDocument();
+  expect(screen.queryByTitle('1')).not.toBeInTheDocument();
+  expect(screen.queryByTitle('2')).not.toBeInTheDocument();
 });
 
-test('renders the pagination row once there is a next page', async () => {
+// The way to get stranded, if the control were hidden on the total alone:
+// cancelling the last task on page 2 - or one expiring between two polls -
+// takes the total back to a single page while page 2 is still on screen, and
+// the server answers that page with nothing. The control has to stay, or
+// there is no way back to page 1 short of reloading.
+test('still renders pagination on a later page whose total has shrunk to one', () => {
+  render(<AsyncTasksList tasks={[]} page={2} pageSize={15} total={15} />);
+
+  expect(screen.getByTitle('1')).toBeInTheDocument();
+});
+
+test('clicking back from such a page asks for page 1', async () => {
   const onPageChange = fn();
-  render(
-    <AsyncTasksList tasks={[]} page={1} hasNextPage onPageChange={onPageChange} />
+  renderWithLocale(
+    <AsyncTasksList tasks={[]} page={2} pageSize={15} total={15} onPageChange={onPageChange} />
   );
 
-  expect(screen.getByText('1')).toBeInTheDocument();
-  await click(screen.getByRole('button', {name: /next page/i}));
+  await click(screen.getByTitle('Previous Page'));
 
-  expect(onPageChange).toHaveBeenCalledWith(2);
+  expect(onPageChange).toHaveBeenCalledWith(1, 15);
 });
 
-// The regression guard for a copy that took the markup and left the geometry
-// behind: with antd's two classes alone, the page number renders 28px tall
-// and bordered beside 22px buttons (see `.current-page-counter` in
-// async-tasks-list.css). Asserting on this module's OWN CSS-module class,
-// which rule 6 permits - the rule is about antd's internals - because the
-// height itself is not computed in jsdom and so cannot be asserted directly.
-test('the page number carries the class that sizes it to match the buttons', () => {
-  render(<AsyncTasksList tasks={[]} page={2} hasNextPage />);
+// `pageSize` has no sensible default, and rc-pagination divides by it
+// (`calculatePage`), so a zero would render `Infinity` pages rather than
+// nothing.
+test('renders no pagination when no page size is given', () => {
+  render(<AsyncTasksList tasks={[]} page={1} total={45} />);
 
-  expect(screen.getByText('2')).toHaveClass('currentPageCounter');
+  expect(screen.queryByTitle('1')).not.toBeInTheDocument();
+  expect(screen.queryByTitle('Infinity')).not.toBeInTheDocument();
 });
 
-test('on page 3, First calls onPageChange(1) and Previous calls onPageChange(2)', async () => {
+test('renders one page number per page of the total', () => {
+  render(<AsyncTasksList tasks={[]} page={1} pageSize={15} total={31} />);
+
+  // 31 matches over 15 per page: three pages, and no fourth.
+  expect(screen.getByTitle('1')).toBeInTheDocument();
+  expect(screen.getByTitle('3')).toBeInTheDocument();
+  expect(screen.queryByTitle('4')).not.toBeInTheDocument();
+});
+
+test('clicking a page number asks the parent for that page', async () => {
   const onPageChange = fn();
   render(
-    <AsyncTasksList tasks={[]} page={3} hasNextPage onPageChange={onPageChange} />
+    <AsyncTasksList tasks={[]} page={1} pageSize={15} total={45} onPageChange={onPageChange} />
   );
 
-  expect(screen.getByText('3')).toBeInTheDocument();
+  await click(screen.getByTitle('3'));
 
-  await click(screen.getByRole('button', {name: /first page/i}));
-  expect(onPageChange).toHaveBeenCalledWith(1);
-
-  await click(screen.getByRole('button', {name: /previous page/i}));
-  expect(onPageChange).toHaveBeenCalledWith(2);
+  // 1-based, the way the API counts and the way DownloadsManager holds it.
+  expect(onPageChange).toHaveBeenCalledWith(3, 15);
 });
 
-test('First and Previous are disabled on page 1 while Next stays enabled', () => {
-  render(<AsyncTasksList tasks={[]} page={1} hasNextPage />);
+test('clicking Next asks for the page after the current one', async () => {
+  const onPageChange = fn();
+  renderWithLocale(
+    <AsyncTasksList tasks={[]} page={2} pageSize={15} total={45} onPageChange={onPageChange} />
+  );
 
-  expect(screen.getByRole('button', {name: /first page/i})).toBeDisabled();
-  expect(screen.getByRole('button', {name: /previous page/i})).toBeDisabled();
-  expect(screen.getByRole('button', {name: /next page/i})).not.toBeDisabled();
+  await click(screen.getByTitle('Next Page'));
+
+  expect(onPageChange).toHaveBeenCalledWith(3, 15);
 });
 
-test('Next is disabled when hasNextPage is false, on a page beyond the first', () => {
-  render(<AsyncTasksList tasks={[]} page={2} hasNextPage={false} />);
+// Asserted as behaviour rather than through whatever antd 2.13 marks a
+// disabled arrow with: there is no page before the first, so clicking back
+// from it must ask for nothing at all.
+test('clicking Previous on the first page asks for nothing', async () => {
+  const onPageChange = fn();
+  renderWithLocale(
+    <AsyncTasksList tasks={[]} page={1} pageSize={15} total={45} onPageChange={onPageChange} />
+  );
 
-  expect(screen.getByRole('button', {name: /next page/i})).toBeDisabled();
-  expect(screen.getByRole('button', {name: /first page/i})).not.toBeDisabled();
-  expect(screen.getByRole('button', {name: /previous page/i})).not.toBeDisabled();
+  await click(screen.getByTitle('Previous Page'));
+
+  expect(onPageChange).not.toHaveBeenCalled();
 });
 
 // The Storage column resolves `task.params.storageId` against the
@@ -577,25 +611,28 @@ test('still resolves a name when the task\'s storageId arrives as a string', () 
   expect(within(rowFor('archive-success')).getByText('my-storage')).toBeInTheDocument();
 });
 
-// The Items column: a count, wrapped in a Popover listing the archived
-// paths. The popover is built on rc-trigger (antd's Popover), so its content
-// only mounts once hovered (client/test/AGENTS.md, "mouseenter/mouseleave do
-// not reach a component") and `mouseEnterDelay={1}` defers that open by a
-// second via setTimeout - hence the fake-timer dance below, rather than
-// waiting on wall time.
-test('shows the correct item count for a populated task', () => {
+// The item count, and its popover listing the archived paths, both live in
+// the Archive column - there is no Items column of its own any more. The
+// popover is built on rc-trigger (antd's Popover), so its content only mounts
+// once hovered (client/test/AGENTS.md, "mouseenter/mouseleave do not reach a
+// component") and `mouseEnterDelay={1}` defers that open by a second via
+// setTimeout - hence the fake-timer dance below, rather than waiting on wall
+// time.
+test('shows the item count beside the archive name, singular for one', () => {
   render(<AsyncTasksList tasks={[SUCCESS_TASK, RUNNING_TASK]} />);
 
-  expect(within(rowFor('archive-success')).getByText('2')).toBeInTheDocument();
-  expect(within(rowFor('archive-running')).getByText('1')).toBeInTheDocument();
+  expect(within(rowFor('archive-success')).getByText('archive-success.zip (2 items)'))
+    .toBeInTheDocument();
+  expect(within(rowFor('archive-running')).getByText('archive-running.zip (1 item)'))
+    .toBeInTheDocument();
 });
 
-test('hovering the count shows every archived path', async () => {
+test('hovering the archive name shows every archived path', async () => {
   useFakeTimers();
   try {
     render(<AsyncTasksList tasks={[SUCCESS_TASK]} />);
 
-    await hover(within(rowFor('archive-success')).getByText('2'));
+    await hover(within(rowFor('archive-success')).getByText('archive-success.zip (2 items)'));
     advanceTimers(1000);
 
     // The popover renders into a portal outside the table's subtree, so it
@@ -609,13 +646,16 @@ test('hovering the count shows every archived path', async () => {
 
 // All three shapes the count's own guard already treats as "nothing to
 // show": no `params` at all, `params` with no `paths`, and an empty `paths`
-// array. Each renders the bare count (0) with no Popover at all - an empty
-// popover that opens on hover and shows nothing would be worse than no
-// affordance.
+// array. Each renders the archive name alone - no count in brackets, and no
+// Popover at all, since one that opens on hover and shows nothing would be
+// worse than no affordance.
 [
   {
     description: 'params is absent entirely',
-    task: {id: 20, status: 'SUCCESS', created: '2026-10-21T13:13:02.274Z'}
+    // No `params` means no archive name either, so the name falls back to the
+    // task id - see `archiveNameOf`.
+    task: {id: 20, status: 'SUCCESS', created: '2026-10-21T13:13:02.274Z'},
+    displayedName: '20.zip'
   },
   {
     description: 'params carries no paths key',
@@ -624,7 +664,8 @@ test('hovering the count shows every archived path', async () => {
       status: 'SUCCESS',
       params: {archiveName: 'archive-no-paths-key', storageId: 7},
       created: '2026-10-21T13:13:02.274Z'
-    }
+    },
+    displayedName: 'archive-no-paths-key.zip'
   },
   {
     description: 'paths is an empty array',
@@ -633,15 +674,19 @@ test('hovering the count shows every archived path', async () => {
       status: 'SUCCESS',
       params: {archiveName: 'archive-empty-paths', storageId: 7, paths: []},
       created: '2026-10-21T13:13:02.274Z'
-    }
+    },
+    displayedName: 'archive-empty-paths.zip'
   }
-].forEach(({description, task}) => {
-  test(`renders the bare count with no popover trigger when ${description}`, async () => {
+].forEach(({description, task, displayedName}) => {
+  test(`renders the name alone, with no count and no popover, when ${description}`, async () => {
     useFakeTimers();
     try {
       render(<AsyncTasksList tasks={[task]} />);
 
-      await hover(screen.getByText('0'));
+      const cell = screen.getByText(displayedName);
+      expect(cell).toBeInTheDocument();
+
+      await hover(cell);
       advanceTimers(1000);
 
       expect(document.querySelector('.archivePathsPopoverContainer')).not.toBeInTheDocument();

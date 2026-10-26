@@ -16,13 +16,36 @@
 
 import RemotePost from '../basic/RemotePost';
 
+// `POST /async-task/filter` answers a paged result - `Result<PagedResult<
+// List<AsyncTask>>>` server-side - so the payload is
+// `{elements, totalCount}`, where `totalCount` is how many tasks the FILTER
+// matched rather than how many this page carries. The two are the same number
+// for a request that does not page (`AsyncTaskManager.loadByFilter`).
 export default class AsyncTaskFilter extends RemotePost {
   constructor () {
     super();
     this.url = '/async-task/filter';
   }
 
+  /**
+   * Always `{elements, totalCount}`, whatever the server sent, so no caller
+   * has to guess which of the two shapes it is holding.
+   *
+   * A bare array is still accepted: that is what this endpoint answered
+   * before the paged result landed, and a GUI pointed at an older API would
+   * otherwise show an empty table rather than a page of tasks. Its total can
+   * only be what it carries.
+   */
   postprocess (value) {
-    return value.payload || [];
+    const payload = value.payload || {};
+    if (Array.isArray(payload)) {
+      return {elements: payload, totalCount: payload.length};
+    }
+    const elements = Array.isArray(payload.elements) ? payload.elements : [];
+    const {totalCount} = payload;
+    return {
+      elements,
+      totalCount: typeof totalCount === 'number' ? totalCount : elements.length
+    };
   }
 }

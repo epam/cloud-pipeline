@@ -87,9 +87,13 @@ function stores (overrides = {}) {
   };
 }
 
-function stubFilter (api, tasks) {
+// `POST /async-task/filter` answers `{elements, totalCount}`, the total being
+// how many tasks the FILTER matched rather than how many this page carries -
+// which is what drives the pagination control. `total` defaults to the number
+// of rows given, i.e. "this is the only page".
+function stubFilter (api, tasks, total = (tasks || []).length) {
   api.reply(WHOAMI_ROUTE, {userName: USER_NAME});
-  api.reply(FILTER_ROUTE, tasks);
+  api.reply(FILTER_ROUTE, {elements: tasks, totalCount: total});
 }
 
 function filterCalls (api) {
@@ -118,7 +122,7 @@ function ownerFilterIcon () {
 
 // A programmatic fixture, per the "build the 20-task fixture
 // programmatically rather than by hand" instruction - a full page's worth of
-// tasks to drive `hasNextPage`.
+// tasks to drive the pagination control.
 function buildTasks (count) {
   return Array.from({length: count}, (_, index) => ({
     id: index + 1,
@@ -714,58 +718,97 @@ test('shows the loading state on a manual Refresh, not just the first load', asy
   await waitFor(() => expect(instance.wrappedInstance.state.loading).toBe(false));
 });
 
-// `hasNextPage` is derived from the current response's length, not rendered
-// unconditionally - async-tasks-list.js only shows the pagination row at all
-// when `page > 1 || hasNextPage`, so a short first page renders no row to
-// query a "disabled" state from. A full page is where there IS a button to
-// assert on; a short one is proven by the row being absent altogether, which
-// is the other half of the same derivation.
-test('a full page renders an enabled Next button', async () => {
+// Paging is antd's own `Pagination` now, driven by the response's
+// `totalCount` - so the control knows the real number of pages instead of
+// guessing from "this page is full". Its items are `<li>`s carrying a
+// `title`, which is how they are found here: a page number by its own title,
+// the arrows by "Next Page"/"Previous Page" (rule 6 - a title is a label, not
+// a CSS class).
+//
+// The arrows' titles come from antd's locale, which defaults to its bundled
+// zh-CN unless a `LocaleProvider` is in scope - the same trap the filter-icon
+// helpers above document. Every test that queries an arrow therefore renders
+// through `renderWithLocale`; a page number's title is the number itself and
+// needs no such care.
+test('renders a page number per page of the total, not of this page', async () => {
   const api = stubApi();
-  stubFilter(api, buildTasks(PAGE_SIZE));
+  // One page of rows, four pages' worth of matches.
+  stubFilter(api, buildTasks(PAGE_SIZE), PAGE_SIZE * 4);
 
   renderWithStores(<DownloadsManager />, stores());
 
-  expect(await screen.findByRole('button', {name: /next page/i})).not.toBeDisabled();
+  expect(await screen.findByTitle('4')).toBeInTheDocument();
+  expect(screen.queryByTitle('5')).not.toBeInTheDocument();
 });
 
-test('a page shorter than the page size renders no pagination row at all', async () => {
+test('renders no pagination at all when every match fits on one page', async () => {
   const api = stubApi();
   stubFilter(api, buildTasks(3));
 
-  renderWithStores(<DownloadsManager />, stores());
+  renderWithLocale(<DownloadsManager />, {stores: stores()});
 
   await waitFor(() => expect(filterCalls(api).length).toBe(1));
-  await screen.findByText('archive-1.zip');
-  expect(screen.queryByRole('button', {name: /next page/i})).not.toBeInTheDocument();
+  await screen.findByText(/^archive-1\.zip/);
+  expect(screen.queryByTitle('Next Page')).not.toBeInTheDocument();
+});
+
+// A full page of rows is no longer enough on its own: with a total that says
+// there is nothing more, there is nothing to page to.
+test('renders no pagination for a full page that is the whole match', async () => {
+  const api = stubApi();
+  stubFilter(api, buildTasks(PAGE_SIZE), PAGE_SIZE);
+
+  renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+  // Waits for a ROW, not merely for the request: asserting the absence of a
+  // control before the response has been applied would pass in the state the
+  // old `tasks.length === PAGE_SIZE` guess also showed nothing in, proving
+  // nothing about the total.
+  await screen.findByText(/^archive-1\.zip/);
+  expect(screen.queryByTitle('Next Page')).not.toBeInTheDocument();
 });
 
 test('clicking Next re-issues the request with page: 2', async () => {
   const api = stubApi();
-  stubFilter(api, buildTasks(PAGE_SIZE));
+  stubFilter(api, buildTasks(PAGE_SIZE), PAGE_SIZE * 2);
 
-  renderWithStores(<DownloadsManager />, stores());
+  renderWithLocale(<DownloadsManager />, {stores: stores()});
 
   await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
-  await click(await screen.findByRole('button', {name: /next page/i}));
+  await click(await screen.findByTitle('Next Page'));
 
   await waitFor(() => expect(filterCalls(api).length).toBe(2));
   const body = JSON.parse(filterCalls(api)[1].body);
   expect(body.page).toBe(2);
 });
 
+// The jump a hand-rolled first/prev/next row could not offer at all.
+test('clicking the last page number asks for that page', async () => {
+  const api = stubApi();
+  stubFilter(api, buildTasks(PAGE_SIZE), PAGE_SIZE * 3);
+
+  renderWithStores(<DownloadsManager />, stores());
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+
+  await click(await screen.findByTitle('3'));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  expect(JSON.parse(filterCalls(api)[1].body).page).toBe(3);
+});
+
 test(
   'changing a filter resets the body\'s page to 1, even after paging forward',
   async () => {
     const api = stubApi();
-    stubFilter(api, buildTasks(PAGE_SIZE));
+    stubFilter(api, buildTasks(PAGE_SIZE), PAGE_SIZE * 2);
 
     renderWithLocale(<DownloadsManager />, {stores: stores()});
 
     await waitFor(() => expect(filterCalls(api).length).toBe(1));
 
-    await click(await screen.findByRole('button', {name: /next page/i}));
+    await click(await screen.findByTitle('Next Page'));
     await waitFor(() => expect(filterCalls(api).length).toBe(2));
     expect(JSON.parse(filterCalls(api)[1].body).page).toBe(2);
 

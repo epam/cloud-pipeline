@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Button, Icon, Checkbox} from 'antd';
+import {Table, Pagination, Checkbox} from 'antd';
 import classNames from 'classnames';
 import {
   ASYNC_TASK_STATUSES,
@@ -291,65 +291,46 @@ class AsyncTasksList extends React.Component {
     });
   }
 
-  // `/async-task/filter` returns a bare list with no total count and no page
-  // metadata, so there is no number from which to render antd's own page
-  // numbers or a last-page jump - only "is there a previous page" and "might
-  // there be a next one". Copies the first/prev/next-with-no-total shape of
-  // client/src/components/pipelines/browser/data-storage/components/
-  // storage-pagination.js:40-75, rendered only when there is something to
-  // navigate: a single short first page would otherwise show a pointless row.
+  // antd's own `Pagination`, which `/async-task/filter` can now drive: its
+  // answer carries `totalCount` - how many tasks the filter matched, not how
+  // many this page holds - so there is a number from which to render page
+  // numbers and a last page. The hand-rolled first/prev/next row this
+  // replaces existed only because that number was missing, and could do no
+  // better than "a full page of rows might mean there are more".
   //
-  // The page-number span carries `styles.currentPageCounter` as well as the
-  // two antd classes, which is what makes it the same height as the small
-  // buttons beside it - see that rule in ./async-tasks-list.css before
-  // touching the trio.
+  // Rendered BESIDE the table rather than through `<Table pagination={...}>`,
+  // copying client/src/components/main/notification/NotificationBrowser.js:
+  // antd's `Table` slices its own `dataSource` for the current page, and the
+  // rows here are already that page, so letting it page them again would show
+  // an empty table from page two on. `pagination={false}` below is what keeps
+  // it out of the way.
+  //
+  // Nothing at all while everything fits on one page - the one thing worth
+  // keeping from the row that used to be here - UNLESS the user is past the
+  // first page, where hiding it would strand them. That happens for real: the
+  // default Status filter hides CANCELLED and EXPIRED, so cancelling the last
+  // task on page 2 of 16 matches, or one of them expiring between two polls,
+  // drops the total to a single page while page 2 is on screen. The server
+  // then answers that page with nothing, and without a control there is no
+  // way back short of reloading.
+  //
+  // No `pageSize` means no pagination either, rather than handing
+  // rc-pagination a zero it divides by (`calculatePage` would answer
+  // `Infinity` pages).
   get pagination () {
-    const {page, hasNextPage, onPageChange} = this.props;
-    if (!(page > 1 || hasNextPage)) {
+    const {page, pageSize, total, onPageChange} = this.props;
+    if (!pageSize || (total <= pageSize && page <= 1)) {
       return null;
     }
     return (
-      <div className={styles.pagination}>
-        <Button
-          id="downloads-first-page"
-          aria-label="First page"
-          size="small"
-          disabled={page <= 1}
-          onClick={() => onPageChange(1)}
-        >
-          <Icon style={{marginRight: '-3px'}} type="caret-left" />
-          <Icon type="caret-left" />
-        </Button>
-        <Button
-          id="downloads-prev-page"
-          aria-label="Previous page"
-          size="small"
-          style={{margin: 3}}
-          disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
-        >
-          <Icon type="caret-left" />
-        </Button>
-        <span
-          className={classNames(
-            styles.currentPageCounter,
-            'ant-pagination-item',
-            'ant-pagination-item-active'
-          )}
-        >
-          {page}
-        </span>
-        <Button
-          id="downloads-next-page"
-          aria-label="Next page"
-          size="small"
-          style={{margin: 3}}
-          disabled={!hasNextPage}
-          onClick={() => onPageChange(page + 1)}
-        >
-          <Icon type="caret-right" />
-        </Button>
-      </div>
+      <Pagination
+        className={styles.pagination}
+        current={page}
+        pageSize={pageSize}
+        total={total}
+        size="small"
+        onChange={onPageChange}
+      />
     );
   }
 
@@ -379,8 +360,12 @@ AsyncTasksList.propTypes = {
   disabled: PropTypes.bool,
   statusesFilter: PropTypes.array,
   onStatusesFilterChange: PropTypes.func,
+  // 1-based, matching the API and `DownloadsManager`'s own state.
   page: PropTypes.number,
-  hasNextPage: PropTypes.bool,
+  pageSize: PropTypes.number,
+  // How many tasks the filter matched, from the response's `totalCount` -
+  // not how many rows `tasks` holds.
+  total: PropTypes.number,
   onPageChange: PropTypes.func,
   storageNamesById: PropTypes.object,
   isAdmin: PropTypes.bool,
@@ -410,7 +395,8 @@ AsyncTasksList.defaultProps = {
   statusesFilter: POLLED_STATUSES,
   onStatusesFilterChange: () => {},
   page: 1,
-  hasNextPage: false,
+  pageSize: 0,
+  total: 0,
   onPageChange: () => {},
   storageNamesById: {},
   isAdmin: false,

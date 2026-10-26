@@ -31,9 +31,9 @@ import downloadArchiveTask from './download-archive-task';
 import continuousFetch from '../../../utils/continuous-fetch';
 import styles from './DownloadsManager.css';
 
-// A page's worth of rows per request. Matches the request body's `pageSize`
-// and `hasNextPage`'s `length === PAGE_SIZE` check below - both read this
-// constant, nothing else does.
+// A page's worth of rows per request: the request body's `pageSize`, and the
+// `pageSize` the pagination control is given, so the page the server cuts and
+// the page the control counts in are the same size by construction.
 const PAGE_SIZE = 15;
 
 // Matches CurrentUserAsyncTasks's own POLL_INTERVAL_MS: there is no shared
@@ -137,9 +137,10 @@ export default class DownloadsManager extends React.Component {
   // field, not state: nothing renders from it directly.
   loadedOnce = false;
 
-  // The last response that actually succeeded - what the table keeps showing
-  // when a later fetch fails. See the `tasks` getter.
-  lastLoadedTasks = [];
+  // The last response that actually succeeded - `{elements, totalCount}`,
+  // what the table keeps showing when a later fetch fails. See the `tasks`
+  // and `totalCount` getters.
+  lastLoadedPage = {};
 
   componentDidMount () {
     this.mounted = true;
@@ -293,8 +294,9 @@ export default class DownloadsManager extends React.Component {
         this.reportError(this.request.error);
       } else {
         this.lastErrorMessage = undefined;
-        // The rows to keep showing if a later fetch fails - see `tasks`.
-        this.lastLoadedTasks = this.request.value || [];
+        // The page to keep showing if a later fetch fails - see `tasks` and
+        // `totalCount`.
+        this.lastLoadedPage = this.request.value || {};
       }
     } catch (error) {
       this.reportError(error.message);
@@ -349,34 +351,40 @@ export default class DownloadsManager extends React.Component {
     return this.loadTasks({explicit: true});
   };
 
-  // The server already sorts every response newest-first, unconditionally,
-  // in both its paged and unpaged branches (`AsyncTaskManager.loadByFilter`
-  // on origin/java21_issue_4570_download_archive), with no sort parameter in
-  // the request. Passed through verbatim: a client-side re-sort would only
-  // reorder the current page among itself, which becomes an inconsistency
-  // across pages the moment anything makes the two orderings differ.
+  // The response's `{elements, totalCount}` - named for the page of results
+  // it is, and not to be confused with `state.page`, the page NUMBER asked
+  // for. Both the rows and the total come from here, so they can never
+  // disagree about which response they describe.
+  //
   // `RemotePost.update` sets `loaded` back to false on a failure, so without
-  // the fallback a single failed poll would blank the whole table until a
-  // later one succeeded - every five seconds, unprompted, where before
-  // polling only an explicit click could do that. The error is still
-  // reported, by `reportError`; the rows just stay as they were.
-  get tasks () {
+  // the fallback to the last successful page a single failed poll would blank
+  // the whole table until a later one succeeded - every five seconds,
+  // unprompted, where before polling only an explicit click could do that.
+  // The error is still reported, by `reportError`; the rows just stay as they
+  // were.
+  get loadedPage () {
     if (!this.request || !this.request.loaded) {
-      return this.lastLoadedTasks;
+      return this.lastLoadedPage;
     }
-    return this.request.value || [];
+    return this.request.value || {};
   }
 
-  // `true` when the rows on screen are exactly a full page - derived from the
-  // `tasks` getter above rather than from the request, so that a failed poll,
-  // which keeps the previous rows, keeps their pagination controls too
-  // instead of dropping the row of buttons out from under them. A full page
-  // *might* mean more exist; a short one definitely means this is the last.
-  // Deliberately optimistic: the next button can be enabled on an
-  // exactly-full last page, and clicking it then shows an empty page -
-  // recoverable, since first/prev stay enabled.
-  get hasNextPage () {
-    return this.tasks.length === PAGE_SIZE;
+  // The server already sorts every response newest-first, unconditionally, in
+  // both its paged and unpaged branches (`AsyncTaskManager.loadByFilter` on
+  // origin/java21_issue_4570_download_archive), with no sort parameter in the
+  // request. Passed through verbatim: a client-side re-sort would only
+  // reorder the current page among itself, which becomes an inconsistency
+  // across pages the moment anything makes the two orderings differ.
+  get tasks () {
+    return this.loadedPage.elements || [];
+  }
+
+  // How many tasks the filter matches in total, which is what the server
+  // answers in `totalCount` - not how many this page carries. That is what
+  // lets the pagination below show a real number of pages instead of
+  // guessing from whether this page came back full.
+  get totalCount () {
+    return this.loadedPage.totalCount || 0;
   }
 
   // Maps a task's numeric storage id to its name, for the Storage column.
@@ -385,7 +393,7 @@ export default class DownloadsManager extends React.Component {
   // models/dataStorage/DataStorages.js) - nothing here re-fetches it. A
   // plain object, not a Map, so it travels to async-tasks-list.js as plain
   // data and that file stays free of @inject and model imports. A plain
-  // getter rather than @computed: `tasks`/`hasNextPage` above are plain
+  // getter rather than @computed: `tasks`/`totalCount` above are plain
   // getters too, and nothing else in this file imports `computed` from
   // mobx - the class is already @observer, which is what makes the column
   // re-render once `dataStorages` resolves.
@@ -474,10 +482,11 @@ export default class DownloadsManager extends React.Component {
   // async-tasks-list.js's Status column filter dropdown.
   handleStatusesFilterChange = (statuses) => this.setFilter('statuses', statuses);
 
-  // Guards against a page below 1 (the first-page button already disables
-  // itself there, but a stray call should still be a no-op rather than send
-  // page: 0). `setState`'s callback is what lets `loadTasks` see the new
-  // page - the same shape `setFilter` above uses.
+  // Guards against a page below 1: antd's own pagination will not ask for one,
+  // but a stray call should be a no-op rather than send `page: 0`.
+  // `setState`'s callback is what lets `loadTasks` see the new page - the same
+  // shape `setFilter` above uses. antd hands `(page, pageSize)`; the second
+  // argument is ignored, since the size is fixed here.
   handlePageChange = (page) => {
     const nextPage = Math.max(1, page);
     this.setState({page: nextPage}, () => {
@@ -589,7 +598,8 @@ export default class DownloadsManager extends React.Component {
           statusesFilter={this.state.filters.statuses}
           onStatusesFilterChange={this.handleStatusesFilterChange}
           page={this.state.page}
-          hasNextPage={this.hasNextPage}
+          pageSize={PAGE_SIZE}
+          total={this.totalCount}
           onPageChange={this.handlePageChange}
           storageNamesById={this.storageNamesById}
         />
