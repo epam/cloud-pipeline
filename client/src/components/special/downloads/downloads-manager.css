@@ -33,7 +33,3 @@
   display: flex;
   align-items: center;
 }
-
-.heading-row-buttons button + button {
-  margin-left: 10px;
-}

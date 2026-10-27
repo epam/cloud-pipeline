@@ -484,13 +484,13 @@ class CurrentUserAsyncTasks {
     return (result || {}).url;
   }
 
-  // The Downloads modal (components/special/downloads/downloads-modal.js)
-  // calls this on mount: while the modal is open it polls the same tasks
-  // itself, in one request for the whole table, and a toast about a row the
-  // user is looking at is noise. Both halves matter - the polls stop, and
-  // `pollPaused` keeps `handleTask` from announcing anything that lands
-  // anyway (a task that finishes between the pause and the last in-flight
-  // response).
+  // The Downloads modal's body (components/special/downloads/
+  // downloads-manager.js) calls this on mount: while the modal is open it
+  // polls the same tasks itself, in one request for the whole table, and a
+  // toast about a row the user is looking at is noise. Both halves matter -
+  // the polls stop, and `pollPaused` keeps `handleTask` from announcing
+  // anything that lands anyway (a task that finishes between the pause and
+  // the last in-flight response).
   //
   // `setContinuous(false)`, not `pause()`: the poller's own `pause`/`resume`
   // are wired to the Page Visibility API (continuous-fetch/index.js's
