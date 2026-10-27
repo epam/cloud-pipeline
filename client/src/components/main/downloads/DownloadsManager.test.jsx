@@ -61,10 +61,14 @@ function asyncTasksDouble (overrides = {}) {
 // admin-only, and most of this suite exercises it. `users` is NOT needed any
 // more - the Owner column's dropdown embeds UserAutoComplete, which fetches
 // its own candidates through UserFind rather than reading a preloaded list.
-function authenticatedUserInfoDouble (admin = true) {
+function authenticatedUserInfoDouble (admin = true, roles) {
+  const value = {userName: USER_NAME, admin};
+  if (roles) {
+    value.roles = roles;
+  }
   return observable({
     loaded: true,
-    value: {userName: USER_NAME, admin}
+    value
   });
 }
 
@@ -884,5 +888,87 @@ test(
     // The seeded owner is still sent - the column controls visibility only,
     // never the request itself.
     expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
+  }
+);
+
+test(
+  'the Owner column renders for a ROLE_STORAGE_ADMIN who is not a full admin',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithLocale(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: authenticatedUserInfoDouble(
+          false,
+          [{name: 'ROLE_STORAGE_ADMIN'}]
+        ),
+        dataStorages: dataStoragesDouble()
+      }
+    });
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(screen.getByText('Owner')).toBeInTheDocument();
+  }
+);
+
+test(
+  'the Owner column is absent for a role that is not ROLE_STORAGE_ADMIN',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithLocale(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: authenticatedUserInfoDouble(
+          false,
+          [{name: 'ROLE_STORAGE_MANAGER'}]
+        ),
+        dataStorages: dataStoragesDouble()
+      }
+    });
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(screen.queryByText('Owner')).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'the Owner column is absent for a non-admin user with no roles at all, and does not throw',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithLocale(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: authenticatedUserInfoDouble(false),
+        dataStorages: dataStoragesDouble()
+      }
+    });
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(screen.queryByText('Owner')).not.toBeInTheDocument();
+  }
+);
+
+test(
+  'the Owner column is absent while authenticatedUserInfo has not loaded yet',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithLocale(<DownloadsManager />, {
+      stores: {
+        asyncTasks: asyncTasksDouble(),
+        authenticatedUserInfo: observable({loaded: false, value: undefined}),
+        dataStorages: dataStoragesDouble()
+      }
+    });
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect(screen.queryByText('Owner')).not.toBeInTheDocument();
   }
 );

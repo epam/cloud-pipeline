@@ -29,6 +29,7 @@ import {
 import AsyncTasksList from './async-tasks-list';
 import downloadArchiveTask from './download-archive-task';
 import continuousFetch from '../../../utils/continuous-fetch';
+import roleModel from '../../../utils/roleModel';
 import styles from './DownloadsManager.css';
 
 // A page's worth of rows per request: the request body's `pageSize`, and the
@@ -539,14 +540,22 @@ export default class DownloadsManager extends React.Component {
   // entirely (not merely hidden) for anyone else - see that file's `columns`
   // getter. Copies the check the deleted `async-tasks-filters.js` used to
   // make for the same reason.
+  //
+  // A `ROLE_STORAGE_ADMIN` also sees the column, even though the server
+  // still restricts what the column (and its filter) can actually show:
+  // `AsyncTaskApiService.restrictToCaller` overwrites the filter's `owner`
+  // with the caller's own name unless the caller is a full `ROLE_ADMIN`
+  // (`AuthManager.isAdmin()`). So a storage admin's Owner column reads their
+  // own name on every row, and picking another user in the filter still
+  // returns their own tasks - that is a server-side limitation, not a bug
+  // in this getter.
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
-    return !!(
-      authenticatedUserInfo &&
-      authenticatedUserInfo.loaded &&
-      authenticatedUserInfo.value &&
-      authenticatedUserInfo.value.admin
-    );
+    if (!authenticatedUserInfo || !authenticatedUserInfo.loaded || !authenticatedUserInfo.value) {
+      return false;
+    }
+    const user = authenticatedUserInfo.value;
+    return !!(user.admin || roleModel.userIs.storageAdmin(user));
   }
 
   // No cap hint here, deliberately - and nowhere else either. Any such hint
