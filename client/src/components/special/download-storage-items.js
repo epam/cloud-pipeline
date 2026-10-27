@@ -24,17 +24,10 @@ import React from 'react';
 import {message} from 'antd';
 import GenerateDownloadUrls from '../../models/dataStorage/GenerateDownloadUrls';
 import auditStorageAccessManager from '../../utils/audit-storage-access';
-import downloadFileUrl from '../../utils/download-file-url';
-
-/**
- * @typedef {Object} DownloadLink
- * @property {string} url
- * @property {string} [name]
- */
 
 /**
  * @param {StorageItem[]} items
- * @returns {Promise<DownloadLink[]>}
+ * @returns {Promise<string[]>}
  */
 async function downloadSingleStorageItems (items = []) {
   if (items.length === 0) {
@@ -48,17 +41,7 @@ async function downloadSingleStorageItems (items = []) {
   if (request.error) {
     throw new Error(request.error);
   }
-  const urls = request.value || [];
-  // `DataStorageDownloadFileUrl` carries no path of its own (`url`, `expires`,
-  // `tagValue`, `cannedACLValue`), so a URL can only be matched to the item
-  // that asked for it by its position in `urls` - the same thing the single
-  // `url` list this replaces already depended on. Where the lengths disagree
-  // - should not happen, but nothing else ties them together - every URL is
-  // still downloaded, just with no name, rather than risk mis-naming one.
-  if (urls.length !== items.length) {
-    return urls.map((o) => ({url: o.url}));
-  }
-  return urls.map((o, index) => ({url: o.url, name: items[index].name}));
+  return (request.value || []).map(o => o.url);
 }
 
 /**
@@ -75,13 +58,7 @@ async function downloadStorageItems (items) {
     ))
   );
   const links = results.reduce((r, c) => ([...r, ...c]), []);
-  // One `window.open` per link used to be a popup-free single download, and
-  // became a popup-blocked multi-download the moment the plain "Download"
-  // item started being offered for more than one file: a user gesture's
-  // transient activation is consumed by the first `window.open`, and the
-  // browser's popup blocker suppresses the rest. The anchor technique
-  // `downloadFileUrl` uses is not a popup, so a loop of them is not blocked.
-  links.forEach(({url, name}) => downloadFileUrl(url, name));
+  links.forEach((link) => window.open(link, '_blank'));
   auditStorageAccessManager.reportReadAccess(...items.map((item) => ({
     storageId: item.storageId,
     path: item.downloadOverride || item.path,
