@@ -14,15 +14,13 @@
  *  limitations under the License.
  */
 
-import {getDockerImage} from '../../../../../utils/get-docker-image';
+import {getDockerImage, parseDockerImage} from '../../../../../utils/get-docker-image';
 
 function getToolName (dockerImage) {
-  const parts = (dockerImage || '').trim().split('/');
-  if (parts.length !== 3) {
+  const {registry, group, tool} = parseDockerImage(dockerImage) || {};
+  if (!tool) {
     return undefined;
   }
-  const [registry, group, toolAndVersion] = parts;
-  const [tool] = toolAndVersion.split(':');
   return [registry, group, tool].join('/');
 }
 
@@ -65,7 +63,7 @@ export function getOptionalParametersFilterDefault (options = {}) {
   } = options;
   const launched = pipeline
     ? `pipeline:${pipeline.id}`
-    : `tool:${(getToolName(dockerImage) || '').toLowerCase()}`;
+    : `tool:${getToolName(dockerImage) || ''}`;
   const target = {launched, defaultValue};
   if (previous.launched === launched && previous.defaultValue === defaultValue) {
     return {target, value: undefined};

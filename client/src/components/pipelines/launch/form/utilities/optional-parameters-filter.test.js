@@ -49,6 +49,13 @@ describe('getOptionalParametersFilterKeys', () => {
     })).toEqual([17, 'cp-docker:443/library/ubuntu']);
   });
 
+  it('returns the tool name lower-cased', () => {
+    expect(getOptionalParametersFilterKeys({
+      dockerImage: 'CP-Docker:443/Library/Ubuntu:18.04',
+      dockerRegistries
+    })).toEqual([17, 'cp-docker:443/library/ubuntu']);
+  });
+
   it('returns the tool name alone when the tool is not in the registries', () => {
     expect(getOptionalParametersFilterKeys({
       dockerImage: 'cp-docker:443/library/centos',

@@ -452,6 +452,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   parametersNavigationRef;
   parametersNavigationIsSticky = false;
   checkRAF;
+  optionalParametersFilterTarget;
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -904,12 +905,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return tools;
   }
 
+  get optionalParametersFilterDockerImage () {
+    return this.dockerImage || this.getDefaultValue('docker_image');
+  }
+
   get optionalParametersFilterSettings () {
     const {uiNavigation} = this.props;
     const {pipeline} = this.state;
     const keys = getOptionalParametersFilterKeys({
       pipeline,
-      dockerImage: this.dockerImage || this.getDefaultValue('docker_image'),
+      dockerImage: this.optionalParametersFilterDockerImage,
       dockerRegistries: this.props.dockerRegistries
     });
     const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter(keys);
@@ -932,7 +937,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   applyOptionalParametersFilterDefault = () => {
     const {target, value} = getOptionalParametersFilterDefault({
       pipeline: this.state.pipeline,
-      dockerImage: this.dockerImage || this.getDefaultValue('docker_image'),
+      dockerImage: this.optionalParametersFilterDockerImage,
       defaultValue: this.optionalParametersFilterSettings.defaultValue,
       target: this.optionalParametersFilterTarget
     });
