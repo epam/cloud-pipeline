@@ -439,7 +439,7 @@ class UINavigation {
   get utils () {
     return {
       estimatedPriceVisible: () => estimatedPriceVisible(this.launchForm),
-      showOptionalParametersFilter: () => showOptionalParametersFilter(this.launchForm)
+      showOptionalParametersFilter: (keys) => showOptionalParametersFilter(this.launchForm, keys)
     };
   }
 

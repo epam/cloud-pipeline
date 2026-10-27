@@ -169,6 +169,9 @@ import {
   getDefaultNodeUpRetryCount,
   isNodeUpRetryCountParameter
 } from './utilities/node-up-retry-count';
+import getOptionalParametersFilterKeys, {
+  getOptionalParametersFilterDefault
+} from './utilities/optional-parameters-filter';
 import {
   buildLaunchParametersFromReservationParameters,
   findReservationParameterConfig,
@@ -901,21 +904,43 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return tools;
   }
 
-  get showOptionalParametersFilter () {
+  get optionalParametersFilterSettings () {
     const {uiNavigation} = this.props;
+    const {pipeline} = this.state;
+    const keys = getOptionalParametersFilterKeys({
+      pipeline,
+      dockerImage: this.dockerImage || this.getDefaultValue('docker_image'),
+      dockerRegistries: this.props.dockerRegistries
+    });
+    const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter(keys);
+    if (pipeline) {
+      return pipelines;
+    }
+    return tools;
+  }
+
+  get showOptionalParametersFilter () {
     const parameters = this.getParameters();
     const hasOptional = parameters
       .some(({config}) => config.visible && !config.system && !config.required);
     if (!hasOptional || this.props.editConfigurationMode) {
       return false;
     }
-    const {pipeline} = this.state;
-    const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter();
-    if (pipeline) {
-      return pipelines;
-    }
-    return tools;
+    return this.optionalParametersFilterSettings.enabled;
   }
+
+  applyOptionalParametersFilterDefault = () => {
+    const {target, value} = getOptionalParametersFilterDefault({
+      pipeline: this.state.pipeline,
+      dockerImage: this.dockerImage || this.getDefaultValue('docker_image'),
+      defaultValue: this.optionalParametersFilterSettings.defaultValue,
+      target: this.optionalParametersFilterTarget
+    });
+    this.optionalParametersFilterTarget = target;
+    if (value !== undefined && value !== this.state.showOptionalParameters) {
+      this.setState({showOptionalParameters: value});
+    }
+  };
 
   get showOptionalParameters () {
     const {showOptionalParameters} = this.state;
@@ -5712,6 +5737,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     this.props.onInitialized && this.props.onInitialized(this);
     this.initializeParametersNavigationCheck();
+    this.applyOptionalParametersFilterDefault();
   }
 
   componentDidUpdateNew (prevProps, prevState) {
@@ -6275,6 +6301,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       !this.state.estimatedPrice.pending) {
       this.evaluateEstimatedPrice({});
     }
+    this.applyOptionalParametersFilterDefault();
   }
 
   componentWillReceiveProps (nextProps) {

@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import resolveOptionalParametersFilter from './optional-parameters-filter';
+
 const SECTIONS = {
   logs: 'logs',
   tools: 'tools',
@@ -36,16 +38,16 @@ export function estimatedPriceVisible (launchFormSettings) {
   };
 }
 
-export function showOptionalParametersFilter (launchFormSettings) {
-  const getSectionVisibility = (section) => {
+export function showOptionalParametersFilter (launchFormSettings, keys = []) {
+  const getSectionSettings = (section) => {
     const config = launchFormSettings?.[section] || {};
     const {
       'optional-parameters-filter': showOptional
     } = config;
-    return `${showOptional}`.toLowerCase() === 'true';
+    return resolveOptionalParametersFilter(showOptional, keys);
   };
   return {
-    pipelines: getSectionVisibility(SECTIONS.pipelines),
-    tools: getSectionVisibility(SECTIONS.tools)
+    pipelines: getSectionSettings(SECTIONS.pipelines),
+    tools: getSectionSettings(SECTIONS.tools)
   };
 }
