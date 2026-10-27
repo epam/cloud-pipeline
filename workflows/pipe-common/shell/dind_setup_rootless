@@ -1,0 +1,270 @@
+#!/bin/bash
+
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Helpers for the rootless mode of the DinD capability (CP_CAP_DIND_CONTAINER_ROOTLESS=true):
+# dockerd runs as the run owner inside a user namespace, created by RootlessKit.
+# The file is sourced by dind_setup and docker_setup_credentials.
+
+# shellcheck disable=SC2034  # the scripts that source this file use the values
+DIND_ROOTLESS_MIN_VERSION="20.10.0"
+DIND_ROOTLESS_DEFAULT_VERSION="20.10.24"
+DIND_ROOTLESS_SUBID_START_DEFAULT="100000000"
+DIND_ROOTLESS_SUBID_COUNT="65536"
+DIND_ROOTLESS_NVIDIA_CONFIG="/etc/nvidia-container-runtime/config.toml"
+# The comment marks the setting, so a rootful run of an image committed from a rootless run restores it
+DIND_ROOTLESS_NVIDIA_NO_CGROUPS="no-cgroups = true # set by the rootless DinD"
+
+# Succeeds if the user exists and is not root: dockerd-rootless.sh refuses to run as root
+function dind_rootless_check_user {
+    local _user="$1"
+    local _uid
+    if [ -z "$_user" ]; then
+        return 1
+    fi
+    _uid=$(id -u "$_user" 2>/dev/null) || return 1
+    [ "$_uid" != "0" ]
+}
+
+# Succeeds if the docker version supports the rootless mode
+function dind_rootless_check_version {
+    local _version="$1"
+    [ -n "$_version" ] && ! util_version_compare "$_version" "$DIND_ROOTLESS_MIN_VERSION" "<"
+}
+
+# Succeeds if the value can start a subordinate id range
+function dind_rootless_check_subid_start {
+    local _start="$1"
+    [[ "$_start" =~ ^[1-9][0-9]*$ ]]
+}
+
+function dind_rootless_runtime_dir {
+    local _user="$1"
+    local _uid
+    _uid=$(id -u "$_user" 2>/dev/null) || return 1
+    echo "/run/user/$_uid"
+}
+
+function dind_rootless_docker_host {
+    local _user="$1"
+    local _runtime_dir
+    _runtime_dir=$(dind_rootless_runtime_dir "$_user") || return 1
+    echo "unix://$_runtime_dir/docker.sock"
+}
+
+# Sets the subordinate id range of the user in /etc/subuid or /etc/subgid. A range that useradd
+# may have added already is replaced: it can overlap the uids of the platform users
+function dind_rootless_set_subids {
+    local _user="$1"
+    local _start="$2"
+    local _count="$3"
+    local _file="$4"
+    local _ranges
+    touch "$_file" || return 1
+    _ranges=$(awk -F: -v user="$_user" '$1 != user' "$_file") || return 1
+    {
+        if [ -n "$_ranges" ]; then
+            echo "$_ranges"
+        fi
+        echo "$_user:$_start:$_count"
+    } > "$_file"
+}
+
+# Succeeds if the binary can write the id maps of a user namespace:
+# it has the setuid bit or a setuid/setgid file capability
+function dind_rootless_has_id_privilege {
+    local _path="$1"
+    if [ -u "$_path" ]; then
+        return 0
+    fi
+    command -v getcap > /dev/null 2>&1 && getcap "$_path" 2>/dev/null | grep -q "cap_set[ug]id"
+}
+
+# Gives the binary the file capability, or the setuid bit if setcap is not available.
+# Some images lose the file capabilities that newuidmap and newgidmap are packaged with
+function dind_rootless_ensure_id_privilege {
+    local _path="$1"
+    local _capability="$2"
+    if dind_rootless_has_id_privilege "$_path"; then
+        return 0
+    fi
+    if command -v setcap > /dev/null 2>&1 \
+        && setcap "$_capability" "$_path" \
+        && dind_rootless_has_id_privilege "$_path"; then
+        return 0
+    fi
+    chmod u+s "$_path" && dind_rootless_has_id_privilege "$_path"
+}
+
+# Installs newuidmap and newgidmap, and makes sure they can write the id maps
+# $1 - 0 for an RPM-based distribution, as IS_RPM_BASED in dind_setup
+function dind_rootless_install_idmap {
+    local _is_rpm_based="$1"
+    if ! command -v newuidmap > /dev/null 2>&1 || ! command -v newgidmap > /dev/null 2>&1; then
+        if [ "$_is_rpm_based" -eq 0 ]; then
+            yum install -y -q shadow-utils
+        else
+            apt install -y -qq uidmap
+        fi
+    fi
+    # getcap and setcap are optional: the setuid bit is the fallback
+    if ! command -v getcap > /dev/null 2>&1; then
+        if [ "$_is_rpm_based" -eq 0 ]; then
+            yum install -y -q libcap
+        else
+            apt install -y -qq libcap2-bin
+        fi
+    fi
+    local _newuidmap
+    local _newgidmap
+    _newuidmap=$(command -v newuidmap) || return 1
+    _newgidmap=$(command -v newgidmap) || return 1
+    dind_rootless_ensure_id_privilege "$_newuidmap" "cap_setuid+ep" \
+        && dind_rootless_ensure_id_privilege "$_newgidmap" "cap_setgid+ep"
+}
+
+# Installs the rootless extras of a docker version (dockerd-rootless.sh, rootlesskit, vpnkit)
+function dind_rootless_install_extras {
+    local _url="$1"
+    local _install_dir="$2"
+    local _archive
+    local _result
+    _archive=$(mktemp) || return 1
+    wget -q -O "$_archive" "$_url" \
+        && tar --extract --file "$_archive" --strip-components 1 --directory "$_install_dir"
+    _result=$?
+    rm -f "$_archive"
+    return $_result
+}
+
+# RootlessKit networks need a tap device
+function dind_rootless_ensure_tun {
+    local _tun="${1:-/dev/net/tun}"
+    if [ -c "$_tun" ]; then
+        return 0
+    fi
+    mkdir -p "$(dirname "$_tun")" && mknod "$_tun" c 10 200 && chmod 666 "$_tun"
+}
+
+# Creates the directories of the daemon, owned by the user: the runtime dir with the socket,
+# the data root, and the daemon home with its config dir. The config dir links to the registry
+# certificates in the rootful location, where docker_setup_credentials writes them
+function dind_rootless_prepare_dirs {
+    local _user="$1"
+    local _runtime_dir="$2"
+    local _data_root="$3"
+    local _home="$4"
+    local _certs_dir="$5"
+    mkdir -p "$_runtime_dir" "$_data_root" "$_home/.config/docker" "$_certs_dir" \
+        && chmod 700 "$_runtime_dir" \
+        && ln -sfn "$_certs_dir" "$_home/.config/docker/certs.d" \
+        && chown "$_user": "$_runtime_dir" "$_data_root" \
+        && chown -R "$_user": "$_home"
+}
+
+# Removes what a stopped daemon leaves in the runtime dir, e.g. in a paused or a committed run:
+# dockerd refuses to start while its pid file names a live process
+function dind_rootless_clean_runtime_dir {
+    local _runtime_dir="$1"
+    rm -rf "$_runtime_dir/docker.pid" "$_runtime_dir/dockerd-rootless"
+}
+
+# The NVIDIA runtime can't manage cgroups for a non-root daemon
+function dind_rootless_configure_nvidia {
+    local _config="${1:-$DIND_ROOTLESS_NVIDIA_CONFIG}"
+    if [ ! -f "$_config" ]; then
+        return 1
+    fi
+    sed -i "s/^#\?[[:space:]]*no-cgroups[[:space:]]*=.*/$DIND_ROOTLESS_NVIDIA_NO_CGROUPS/" "$_config" \
+        && grep -qxF "$DIND_ROOTLESS_NVIDIA_NO_CGROUPS" "$_config"
+}
+
+# Restores the NVIDIA runtime default, which dind_rootless_configure_nvidia has changed
+function dind_rootless_restore_nvidia {
+    local _config="${1:-$DIND_ROOTLESS_NVIDIA_CONFIG}"
+    if [ ! -f "$_config" ]; then
+        return 0
+    fi
+    sed -i "s/^$DIND_ROOTLESS_NVIDIA_NO_CGROUPS\$/#no-cgroups = false/" "$_config"
+}
+
+# Succeeds if the daemon socket of the docker host exists
+function dind_rootless_has_socket {
+    local _docker_host="$1"
+    [ -S "${_docker_host#unix://}" ]
+}
+
+# Links the default docker socket to the rootless one, for the processes without DOCKER_HOST:
+# sudo drops it, and the daemons that other capabilities start don't read the run environment.
+# A socket or a file at the default path, e.g. the host socket of the native mode, is kept
+function dind_rootless_link_default_socket {
+    local _socket="$1"
+    local _default_socket="${2:-/var/run/docker.sock}"
+    if [ -e "$_default_socket" ] && [ ! -L "$_default_socket" ]; then
+        return 1
+    fi
+    mkdir -p "$(dirname "$_default_socket")" && ln -sfn "$_socket" "$_default_socket"
+}
+
+# Succeeds if RootlessKit can create a user namespace with the subordinate ids of the user
+function dind_rootless_check_userns {
+    local _user="$1"
+    local _bin_dir="$2"
+    local _runtime_dir="$3"
+    su -s /bin/bash -c "XDG_RUNTIME_DIR=$(printf '%q' "$_runtime_dir") $(printf '%q' "$_bin_dir/rootlesskit") true" "$_user"
+}
+
+# Prints the command, which starts the daemon in the background, for "su -c"
+function dind_rootless_start_command {
+    local _bin_dir="$1"
+    local _home="$2"
+    local _runtime_dir="$3"
+    local _config_file="$4"
+    local _log_file="$5"
+    local _env
+    local _var
+    _env="HOME=$(printf '%q' "$_home")"
+    _env="$_env XDG_RUNTIME_DIR=$(printf '%q' "$_runtime_dir")"
+    _env="$_env XDG_CONFIG_HOME=$(printf '%q' "$_home/.config")"
+    _env="$_env PATH=$(printf '%q' "$_bin_dir:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin")"
+    for _var in http_proxy https_proxy no_proxy HTTP_PROXY HTTPS_PROXY NO_PROXY; do
+        if [ -n "${!_var}" ]; then
+            _env="$_env $_var=$(printf '%q' "${!_var}")"
+        fi
+    done
+    echo "cd / && env $_env setsid nohup dockerd-rootless.sh --config-file $(printf '%q' "$_config_file")" \
+         ">> $(printf '%q' "$_log_file") 2>&1 < /dev/null &"
+}
+
+# Starts the daemon as the user
+# $1 - user, the rest - the arguments of dind_rootless_start_command
+function dind_rootless_start {
+    local _user="$1"
+    shift
+    su -s /bin/bash -c "$(dind_rootless_start_command "$@")" "$_user"
+}
+
+# Makes the rootless socket the default one for the shells and the processes of the run
+function dind_rootless_export_docker_host {
+    local _env_file="$1"
+    local _docker_host="$2"
+    local _line="export DOCKER_HOST=\"$_docker_host\""
+    if [ -z "$_env_file" ] || [ ! -f "$_env_file" ]; then
+        return 1
+    fi
+    if ! grep -qxF "$_line" "$_env_file"; then
+        echo "$_line" >> "$_env_file"
+    fi
+}

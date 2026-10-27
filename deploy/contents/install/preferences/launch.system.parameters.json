@@ -283,6 +283,20 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_DIND_CONTAINER_ROOTLESS",
+        "type": "boolean",
+        "description": "Run the docker engine of CP_CAP_DIND_CONTAINER in the rootless mode, as the run owner",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_DIND_CONTAINER_ROOTLESS_SUBID_START",
+        "type": "int",
+        "description": "The first subordinate uid/gid of the run owner for the rootless docker engine (65536 ids are used)",
+        "defaultValue": "100000000",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_CAP_DIND_VERSION",
         "type": "string",
         "description": "Allows to select docker version, used for DIND setup",
