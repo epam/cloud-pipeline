@@ -15,9 +15,9 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import classNames from 'classnames';
-import {message, Button, Icon} from 'antd';
+import {message, Button, Icon, Modal} from 'antd';
 import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
 import whoAmI from '../../../models/user/WhoAmI';
 import {
@@ -30,7 +30,7 @@ import AsyncTasksList from './async-tasks-list';
 import downloadArchiveTask from './download-archive-task';
 import continuousFetch from '../../../utils/continuous-fetch';
 import roleModel from '../../../utils/roleModel';
-import styles from './DownloadsManager.css';
+import styles from './downloads-modal.css';
 
 // A page's worth of rows per request: the request body's `pageSize`, and the
 // `pageSize` the pagination control is given, so the page the server cuts and
@@ -39,26 +39,32 @@ const PAGE_SIZE = 15;
 
 // Matches CurrentUserAsyncTasks's own POLL_INTERVAL_MS: there is no shared
 // behaviour to factor out, just two pollers that happen to agree on a
-// cadence - and while this page is mounted the other one is paused (see
+// cadence - and while the modal is open the other one is paused (see
 // componentDidMount), so its cadence stops rather than running alongside
 // this one.
 const POLL_INTERVAL_MS = 5000;
 
-// This page issues its OWN `/async-task/filter` request: it is the one view
-// of the whole task list, with its own filters and paging, and the shared
-// `asyncTasks` store holds no list at all - it watches the user's own queued
-// tasks one by one, to announce them (models/asyncTask/
-// CurrentUserAsyncTasks.js). The injected store backs this page's
-// `cancelTask` and `consumeTask`, and has its watching paused while the page
+// This component issues its OWN `/async-task/filter` request: it is the one
+// view of the whole task list, with its own filters and paging, and the
+// shared `asyncTasks` store holds no list at all - it watches the user's own
+// queued tasks one by one, to announce them (models/asyncTask/
+// CurrentUserAsyncTasks.js). The injected store backs this component's
+// `cancelTask` and `consumeTask`, and has its watching paused while the modal
 // is open - see componentDidMount.
 //
 // The table refetches two ways: its own poller, every POLL_INTERVAL_MS while
-// the page is mounted, and `refetch()` below - the single path a manual
+// the modal is open, and `refetch()` below - the single path a manual
 // Refresh, a filter change, a page change and a cancellation all take, so
 // none of them has to wait out the interval.
+//
+// Exported named - not the module's default export - so the existing test
+// suite keeps rendering it directly, without the Modal shell around it. The
+// default export below is that shell: a plain function component (holds no
+// state, needs no lifecycle - client/AGENTS.md) that mounts this class only
+// while the modal is open.
 @inject('asyncTasks', 'dataStorages', 'authenticatedUserInfo')
 @observer
-export default class DownloadsManager extends React.Component {
+export class DownloadsManager extends React.Component {
   state = {
     // Guards against a double-click firing a second cancel/consume request
     // before the first one's `await` has resolved.
@@ -76,7 +82,7 @@ export default class DownloadsManager extends React.Component {
     // The table's loading overlay, and the reason `pending` is NOT wired
     // straight to `this.request.pending` any more: `send()` sets that on
     // every call, poll ticks included, so the overlay would flash every
-    // POLL_INTERVAL_MS for as long as the page stays open. Raised for the
+    // POLL_INTERVAL_MS for as long as the modal stays open. Raised for the
     // first load and for an explicit refetch (Refresh, a filter, a page, a
     // cancellation) - never for a poll tick, which updates the rows silently
     // through `fetchTick` above.
@@ -122,14 +128,14 @@ export default class DownloadsManager extends React.Component {
 
   // Guards `loadTasks`'s now-unconditional `setState` call (see its `finally`
   // block) against firing after unmount: `componentWillUnmount` stops this
-  // page's own poller, but that only cancels a *scheduled* fetch, not one
-  // already in flight - a poll tick, a manual Refresh, a filter/page change
-  // or a cancellation can still be awaiting `this.request.send(body)` at the
-  // exact instant the page unmounts, and its `finally` still runs once that
-  // resolves. Before `fetchTick` existed, the same `setState` call was gated
-  // to fire once ever, so this race existed only around the very first load;
-  // bumping `fetchTick` on every call widens the window to every one of them,
-  // so it earns its own guard.
+  // component's own poller, but that only cancels a *scheduled* fetch, not
+  // one already in flight - a poll tick, a manual Refresh, a filter/page
+  // change or a cancellation can still be awaiting `this.request.send(body)`
+  // at the exact instant the modal closes, and its `finally` still runs once
+  // that resolves. Before `fetchTick` existed, the same `setState` call was
+  // gated to fire once ever, so this race existed only around the very first
+  // load; bumping `fetchTick` on every call widens the window to every one of
+  // them, so it earns its own guard.
   mounted = false;
 
   // Whether a response has ever landed. Gates the first-load spinner, so the
@@ -145,8 +151,8 @@ export default class DownloadsManager extends React.Component {
 
   componentDidMount () {
     this.mounted = true;
-    // Polls this page's own request while it is mounted, so a task that
-    // finishes while the page is open updates its row instead of sitting at
+    // Polls this component's own request while it is mounted, so a task that
+    // finishes while the modal is open updates its row instead of sitting at
     // PENDING until something asks again. A distinct identifier from the
     // tracker's per-task pollers ('async-task-<id>') keeps them from
     // colliding in continuousFetch's registry. `fetchImmediate`
@@ -155,14 +161,14 @@ export default class DownloadsManager extends React.Component {
     this.poller = continuousFetch({
       call: this.pollTasks,
       intervalMS: POLL_INTERVAL_MS,
-      identifier: 'downloads-page-async-tasks'
+      identifier: 'downloads-modal-async-tasks'
     });
     // One request for this whole table covers every task the tracker watches
     // one by one (CurrentUserAsyncTasks.js), so its polls stop for as long as
-    // this page stays mounted - and with them the toasts, which would be
-    // announcing rows the user is looking at. Started AFTER this page's own
-    // poller, deliberately: that one fetches immediately on construction, so
-    // at no instant is nothing watching these tasks. Guarded for a store
+    // the modal stays open - and with them the toasts, which would be
+    // announcing rows the user is looking at. Started AFTER this component's
+    // own poller, deliberately: that one fetches immediately on construction,
+    // so at no instant is nothing watching these tasks. Guarded for a store
     // double with no `pausePolling` method (a minimal test double), so
     // rendering with one does not throw.
     const {asyncTasks} = this.props;
@@ -173,14 +179,14 @@ export default class DownloadsManager extends React.Component {
 
   componentWillUnmount () {
     this.mounted = false;
-    // Resumes the tracker BEFORE stopping this page's own poller - the mirror
-    // of componentDidMount's ordering, so there is still never an instant with
-    // nothing watching. `resumePolling` re-fetches each watched task at once
-    // and silences that first answer, so the toast is armed for what happens
-    // from here on and deliberately NOT for what finished while the page was
-    // open - see `silenced` in CurrentUserAsyncTasks.js, without which
-    // leaving this page would fire a toast for every task the user just
-    // watched finish in the table.
+    // Resumes the tracker BEFORE stopping this component's own poller - the
+    // mirror of componentDidMount's ordering, so there is still never an
+    // instant with nothing watching. `resumePolling` re-fetches each watched
+    // task at once and silences that first answer, so the toast is armed for
+    // what happens from here on and deliberately NOT for what finished while
+    // the modal was open - see `silenced` in CurrentUserAsyncTasks.js,
+    // without which closing this modal would fire a toast for every task the
+    // user just watched finish in the table.
     const {asyncTasks} = this.props;
     if (asyncTasks && typeof asyncTasks.resumePolling === 'function') {
       asyncTasks.resumePolling();
@@ -204,9 +210,9 @@ export default class DownloadsManager extends React.Component {
     }
   };
 
-  // The tail of every fetch this page has made, so the next one can queue
-  // behind it - see `loadTasks`. Never rejects: `sendFilterRequest` catches
-  // everything it can fail with.
+  // The tail of every fetch this component has made, so the next one can
+  // queue behind it - see `loadTasks`. Never rejects: `sendFilterRequest`
+  // catches everything it can fail with.
   fetchQueue = Promise.resolve();
 
   // Serialises every fetch, which is what keeps `RemotePost.send`'s in-flight
@@ -235,7 +241,7 @@ export default class DownloadsManager extends React.Component {
     // poll tick resolving mid-refetch would clear an overlay the user's own
     // request is still waiting behind. `this.mounted` for the same reason the
     // `finally` block checks it: `handleCancel` awaits a store call before it
-    // refetches, so this can be reached after the page is gone.
+    // refetches, so this can be reached after the modal has closed.
     const ownsLoading = (explicit || !this.loadedOnce) && this.mounted;
     if (ownsLoading) {
       this.setState({loading: true});
@@ -270,10 +276,10 @@ export default class DownloadsManager extends React.Component {
       }
       const body = {
         type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE,
-        // This page's request always pages - it is the only view of the whole
-        // list: `page` is 1-based state, `pageSize` is fixed. See the comment
-        // above this class for why `owner`/`statuses` are conditional while
-        // these two are not.
+        // This component's request always pages - it is the only view of
+        // the whole list: `page` is 1-based state, `pageSize` is fixed. See
+        // the comment above this class for why `owner`/`statuses` are
+        // conditional while these two are not.
         page: this.state.page,
         pageSize: PAGE_SIZE
       };
@@ -328,7 +334,7 @@ export default class DownloadsManager extends React.Component {
   // (utils/continuous-fetch/index.js), and `sendFilterRequest` deliberately
   // swallows every failure to turn it into a toast. Without this re-throw a
   // 500-ing or unreachable endpoint would be re-requested every five seconds
-  // for as long as the page stayed open, instead of the interval growing the
+  // for as long as the modal stayed open, instead of the interval growing the
   // way it does for every other poller in the app.
   pollTasks = async () => {
     await this.loadTasks();
@@ -562,14 +568,11 @@ export default class DownloadsManager extends React.Component {
   // would need a running count of the user's active tasks, which nothing
   // keeps any more: the cap is counted against the server at the moment an
   // archive is asked for (components/special/download-storage-archive.js),
-  // and reported then. Nothing can be queued from this page in any case.
+  // and reported then. Nothing can be queued from this modal in any case.
   render () {
     return (
       <div className={styles.container}>
         <div className={styles.headingRow}>
-          <h2 className={classNames('cp-title', styles.heading)}>
-            Downloads
-          </h2>
           <div className={styles.headingRowButtons}>
             {
               this.filtersChanged ? (
@@ -616,3 +619,53 @@ export default class DownloadsManager extends React.Component {
     );
   }
 }
+
+// The Modal shell shown from the storage page's presentation dropdown
+// ("Show downloads", pipelines/browser/data-storage/index.js). A plain
+// function, not a class - it holds no local state and needs no lifecycle
+// method (client/AGENTS.md).
+//
+// `{visible ? <DownloadsManager /> : null}` is load-bearing, not a style
+// choice: antd 2.13.14's Modal has no `destroyOnClose` (see this plan
+// round's own shared facts) and rc-dialog does not implement one either, so
+// a Modal's children stay mounted after it closes. `DownloadsManager`'s
+// `componentDidMount` starts a 5-second poller and pauses the shared task
+// tracker, and `componentWillUnmount` reverses both - so if it were rendered
+// unconditionally inside the Modal, that poller would start the first time
+// this shell rendered and never stop, and the shared tracker would stay
+// paused for good. Mounting it only while `visible` is true is what ties its
+// lifecycle to the modal actually being open; closing the Modal from the
+// parent instead (never rendering this shell at all while closed) was
+// rejected because it would cut the Modal's own close animation short.
+//
+// `width="80%"` is the house's convention for a wide modal (e.g.
+// settings/system-management/system-jobs/system-job-log.js). The explicit
+// `footer` is how this codebase gets a single-button footer out of antd
+// 2.13.14 - the same pattern and reason download-storage-archive-modal.js
+// already documents for its own Cancel/OK footer.
+function DownloadsModal ({visible, onClose}) {
+  return (
+    <Modal
+      visible={visible}
+      title="Downloads"
+      width="80%"
+      onCancel={onClose}
+      footer={[
+        <Button key="close" size="large" onClick={onClose}>Close</Button>
+      ]}
+    >
+      {visible ? <DownloadsManager /> : null}
+    </Modal>
+  );
+}
+
+DownloadsModal.propTypes = {
+  visible: PropTypes.bool,
+  onClose: PropTypes.func
+};
+
+DownloadsModal.defaultProps = {
+  visible: false
+};
+
+export default DownloadsModal;

@@ -57,7 +57,7 @@ const POLL_INTERVAL_MS = 5000;
 // finish - see `restore`.
 //
 // What this store does NOT do:
-//  - it does not know every task the user has. The `/downloads` page asks for
+//  - it does not know every task the user has. The Downloads modal asks for
 //    those itself, with its own filters and paging.
 //  - it does not hold a cap count. `checkActiveTasksLimit` below counts the
 //    user's active tasks against the server at the moment one is queued, which
@@ -93,7 +93,7 @@ class CurrentUserAsyncTasks {
   // finished task per session; `untrack` deliberately does NOT clear it.
   settled = new Set();
 
-  // Whether `/downloads` currently has this tracker paused.
+  // Whether the Downloads modal currently has this tracker paused.
   pollPaused = false;
 
   /**
@@ -484,17 +484,18 @@ class CurrentUserAsyncTasks {
     return (result || {}).url;
   }
 
-  // `/downloads` (DownloadsManager.js) calls this on mount: while that page is
-  // open it polls the same tasks itself, in one request for the whole table,
-  // and a toast about a row the user is looking at is noise. Both halves
-  // matter - the polls stop, and `pollPaused` keeps `handleTask` from
-  // announcing anything that lands anyway (a task that finishes between the
-  // pause and the last in-flight response).
+  // The Downloads modal (components/special/downloads/downloads-modal.js)
+  // calls this on mount: while the modal is open it polls the same tasks
+  // itself, in one request for the whole table, and a toast about a row the
+  // user is looking at is noise. Both halves matter - the polls stop, and
+  // `pollPaused` keeps `handleTask` from announcing anything that lands
+  // anyway (a task that finishes between the pause and the last in-flight
+  // response).
   //
   // `setContinuous(false)`, not `pause()`: the poller's own `pause`/`resume`
   // are wired to the Page Visibility API (continuous-fetch/index.js's
   // `attachDocumentVisibilityHandlers`), which calls `resume()` on every
-  // tab-visible event, so a tab switch while still on `/downloads` would
+  // tab-visible event, so a tab switch while the modal is still open would
   // silently undo a `pause()`. `setContinuous` is not wired to anything, and
   // with `continuous` false `scheduleNext` returns early - so a tab return
   // costs at most the single stray fetch `resume()` makes directly, and never
@@ -504,10 +505,10 @@ class CurrentUserAsyncTasks {
     this.pollers.forEach(poller => poller.setContinuous(false));
   }
 
-  // The counterpart, called on `/downloads`'s unmount. Each task's first
-  // response after this is silenced: `setContinuous(true)` fetches
+  // The counterpart, called on the Downloads modal's unmount. Each task's
+  // first response after this is silenced: `setContinuous(true)` fetches
   // immediately, and that response is the one that would otherwise announce a
-  // task the user has just watched finish in that page's own table.
+  // task the user has just watched finish in that modal's own table.
   resumePolling () {
     this.pollPaused = false;
     this.pollers.forEach((poller, id) => {

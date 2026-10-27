@@ -103,9 +103,9 @@ function carriesMeaning (sanitizedBaseName, baseName) {
  *
  * `.zip` is appended only where it is not already there, case-insensitively,
  * the same rule the server applies (`offeredArchiveName`) and the Archive
- * column displays (`main/downloads/columns.js`). Selecting `backup.zip` is an
- * ordinary thing to do, and `backup.zip.zip` is what the user would otherwise
- * receive.
+ * column displays (`special/downloads/columns.js`). Selecting `backup.zip` is
+ * an ordinary thing to do, and `backup.zip.zip` is what the user would
+ * otherwise receive.
  */
 function archiveNameForItem (item) {
   const name = nameOf(item);
@@ -244,9 +244,9 @@ export default async function handleDownloadArchive (
   const hide = messageApi.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    // Plain text, not a link: the route the page link pointed at is gone
-    // (phase 23 replaces /downloads with a modal), and the downloads view
-    // itself is still reachable without one.
+    // Plain text, not a link: the route the page link once pointed at is
+    // gone, and the downloads view itself - now a modal on the storage page
+    // rather than a page of its own - is still reachable without one.
     messageApi.info(
       'Archive download has been queued. It will appear on the Downloads page once it is ready.',
       5

@@ -37,7 +37,7 @@ export const ACTIVE_STATUSES = [
   ASYNC_TASK_STATUSES.STOPPING
 ];
 
-// The `/downloads` page's default Status filter: the active statuses plus
+// The Downloads modal's default Status filter: the active statuses plus
 // SUCCESS and FAILED. CANCELLED and EXPIRED are deliberately left out, so the
 // table hides them until the user ticks them back on — both are terminal and
 // neither is something anyone is waiting on.
@@ -92,7 +92,7 @@ export function taskArchiveIsAvailable (task) {
   return statusOf(task) === ASYNC_TASK_STATUSES.SUCCESS;
 }
 
-// The archive-name display fallback shared by the /downloads page's list and
+// The archive-name display fallback shared by the Downloads modal's list and
 // its completion toast: the name the user chose, or the task id when it
 // (or `params` itself) is missing.
 export function archiveNameOf (task) {

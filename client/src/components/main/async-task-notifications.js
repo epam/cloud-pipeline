@@ -18,7 +18,7 @@ import React from 'react';
 import {message} from 'antd';
 import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
 import {ASYNC_TASK_STATUSES, normalizeStatus, archiveNameOf} from '../../models/asyncTask/statuses';
-import downloadArchiveTask from './downloads/download-archive-task';
+import downloadArchiveTask from '../special/downloads/download-archive-task';
 
 // Announces, with an antd `message`, that one of the current user's
 // archive-download tasks has finished - whatever page the user is on. This is
@@ -47,7 +47,7 @@ function notify (task, messageApi, download) {
     let hide = () => {};
     const close = () => hide();
     // "Download it" fetches the archive from the toast itself - the same
-    // `downloadArchiveTask` the Download button on the /downloads page
+    // `downloadArchiveTask` the Download button in the Downloads modal
     // calls, so the signed URL is requested at the moment of the click and
     // the browser downloads it. `duration: 0` plus `close` means the toast
     // stays until the user dismisses it, rather than vanishing after five
@@ -85,8 +85,8 @@ function notify (task, messageApi, download) {
  *   parameter so this is testable without module mocking
  * @param {function(*): Promise<void>} [downloadTask] - what the success
  *   toast's "Download it" link does, defaulting to the same helper the
- *   /downloads page's Download button uses; a parameter for the same reason
- *   as `messageApi`, since it raises toasts of its own
+ *   Downloads modal's own Download button uses; a parameter for the same
+ *   reason as `messageApi`, since it raises toasts of its own
  * @returns {function(): void} a teardown function
  */
 export default function startAsyncTaskNotifications (

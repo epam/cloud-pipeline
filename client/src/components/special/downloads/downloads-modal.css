@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
+/* `height: 100%`/`padding: 10px` are gone - they were the old `/downloads`
+ * page's own full-screen layout, and a modal body already sizes and pads
+ * itself. */
 .container {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 10px;
 }
 
 .heading-row {
@@ -26,10 +27,6 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-}
-
-.heading {
-  margin-bottom: 0;
 }
 
 .heading-row-buttons {

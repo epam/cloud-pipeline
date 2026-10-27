@@ -658,8 +658,8 @@ describe('pausePolling / resumePolling', () => {
     expect(() => store.resumePolling()).not.toThrow();
   });
 
-  // What `/downloads` relies on: while that page is open, a task finishing is
-  // visible in its table, and a toast about it would be noise.
+  // What the Downloads modal relies on: while it is open, a task finishing
+  // is visible in its table, and a toast about it would be noise.
   it('announces nothing while paused, and stops watching the finished task', async () => {
     const api = stubApi();
     stubWhoAmI(api);
@@ -710,9 +710,9 @@ describe('pausePolling / resumePolling', () => {
 
   // Resuming re-asks about every watched task at once, and THAT answer is the
   // one that would announce a task the user has just watched finish in the
-  // `/downloads` table. Driven entirely through the poller: the silence is one
-  // answer per task, and the resume's own immediate fetch is the answer it is
-  // meant for.
+  // Downloads modal's table. Driven entirely through the poller: the silence
+  // is one answer per task, and the resume's own immediate fetch is the
+  // answer it is meant for.
   it('silences the answer the resume itself fetches', async () => {
     useFakeTimers();
     try {

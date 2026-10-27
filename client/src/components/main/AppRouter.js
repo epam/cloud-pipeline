@@ -78,7 +78,6 @@ import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import {FacetedSearchPage} from '../search';
 import {HcsImagePage} from '../special/hcs-image';
 import NotificationBrowser from './notification/NotificationBrowser';
-import DownloadsManager from './downloads/DownloadsManager';
 import TicketsBrowser from '../special/tickets/tickets-list';
 import TicketPage from '../special/tickets/ticket';
 import NewTicketPage from '../special/tickets/new-ticket-page';
@@ -177,7 +176,6 @@ function AppRouterComponent ({history, uiNavigation}) {
         </Route>
         <Route path="/chat" component={AIChatPage} />
         <Route path="/notifications" component={NotificationBrowser} />
-        <Route path="/downloads" component={DownloadsManager} />
         <Route path="/miew" component={MiewPage} />
         <Route path="/wsi" component={VSIPreviewPage} />
         <Route path="/hcs" component={HcsImagePage} />

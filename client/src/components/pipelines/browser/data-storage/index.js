@@ -115,6 +115,7 @@ import handleDownloadArchive, {
   defaultArchiveName
 } from '../../../special/download-storage-archive';
 import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
+import DownloadsModal from '../../../special/downloads/downloads-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
@@ -186,6 +187,7 @@ export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
     downloadArchiveModalVisible: false,
+    downloadsModalVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
     editDropdownVisible: false,
@@ -1078,6 +1080,10 @@ export default class DataStorage extends React.Component {
 
   closeDownloadArchiveModal = () => {
     this.setState({downloadArchiveModalVisible: false});
+  };
+
+  closeDownloadsModal = () => {
+    this.setState({downloadsModalVisible: false});
   };
 
   submitDownloadArchive = (name) => {
@@ -2881,6 +2887,20 @@ export default class DataStorage extends React.Component {
       checked: this.showVersions,
       available: this.versionControlsEnabled
     };
+    // Opens a modal rather than toggling a view, which is also why it is the
+    // only item in this menu that carries an icon (`renderAction` below
+    // draws `action.icon` on the left for any item that has one, but no
+    // other action here ever has) - a check mark on the right would be
+    // meaningless for an action with no on/off state. `available: true`:
+    // the task list is the user's own, across every storage, so there is no
+    // storage property that could make it inapplicable, omics stores
+    // included.
+    const downloadsAction = {
+      key: 'downloads',
+      title: 'Show downloads',
+      icon: 'windows',
+      available: true
+    };
     const doAction = (action) => {
       if (!action) {
         return;
@@ -2890,6 +2910,7 @@ export default class DataStorage extends React.Component {
         case 'jobs': this.onToggleJobs(); break;
         case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
+        case 'downloads': this.setState({downloadsModalVisible: true}); break;
         default:
           break;
       }
@@ -2904,6 +2925,7 @@ export default class DataStorage extends React.Component {
     appendAction(jobAction);
     appendAction(archivedFilesAction);
     appendAction(versionsAction);
+    appendAction(downloadsAction);
     if (actions.length === 0) {
       return null;
     }
@@ -3378,6 +3400,10 @@ export default class DataStorage extends React.Component {
           defaultName={defaultArchiveName(this.state.selectedItems)}
           onCancel={this.closeDownloadArchiveModal}
           onSubmit={this.submitDownloadArchive}
+        />
+        <DownloadsModal
+          visible={this.state.downloadsModalVisible}
+          onClose={this.closeDownloadsModal}
         />
         <SharedItemInfo
           visible={this.state.shareDialogVisible}

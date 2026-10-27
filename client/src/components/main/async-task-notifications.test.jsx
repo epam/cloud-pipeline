@@ -126,7 +126,7 @@ describe('startAsyncTaskNotifications', () => {
   });
 
   // The ask: "Download it" fetches the archive from the toast itself, the way
-  // the Download button on the /downloads page does, and its own click
+  // the Download button in the Downloads modal does, and its own click
   // bubbles into the content's handler, so the toast closes too.
   it('downloads the task and closes the toast when its link is clicked', async () => {
     const store = newFakeStore();
