@@ -2887,18 +2887,15 @@ export default class DataStorage extends React.Component {
       checked: this.showVersions,
       available: this.versionControlsEnabled
     };
-    // Opens a modal rather than toggling a view, which is also why it is the
-    // only item in this menu that carries an icon (`renderAction` below
-    // draws `action.icon` on the left for any item that has one, but no
-    // other action here ever has) - a check mark on the right would be
-    // meaningless for an action with no on/off state. `available: true`:
-    // the task list is the user's own, across every storage, so there is no
-    // storage property that could make it inapplicable, omics stores
-    // included.
+    // Opens a modal rather than toggling a view, so it carries no `checked`:
+    // a check mark on the right would be meaningless for an action with no
+    // on/off state. No icon either, like every other item in this menu.
+    // `available: true`: the task list is the user's own, across every
+    // storage, so there is no storage property that could make it
+    // inapplicable, omics stores included.
     const downloadsAction = {
       key: 'downloads',
       title: 'Show downloads',
-      icon: 'windows',
       available: true
     };
     const doAction = (action) => {

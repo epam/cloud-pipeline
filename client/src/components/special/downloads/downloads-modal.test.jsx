@@ -39,7 +39,7 @@ const FILTER_ROUTE = '/async-task/filter';
 const USER_NAME = 'current-user';
 // Matches DownloadsManager's own PAGE_SIZE. Not imported: that constant is
 // not part of the module's public surface.
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 // Mirrors DownloadsManager's own POLL_INTERVAL_MS, for the same reason.
 const POLL_INTERVAL_MS = 5000;
 

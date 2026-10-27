@@ -35,7 +35,7 @@ import styles from './downloads-modal.css';
 // A page's worth of rows per request: the request body's `pageSize`, and the
 // `pageSize` the pagination control is given, so the page the server cuts and
 // the page the control counts in are the same size by construction.
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 // Matches CurrentUserAsyncTasks's own POLL_INTERVAL_MS: there is no shared
 // behaviour to factor out, just two pollers that happen to agree on a
