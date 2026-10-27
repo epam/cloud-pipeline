@@ -59,9 +59,9 @@ const POLL_INTERVAL_MS = 5000;
 //
 // Exported named - not the module's default export - so the existing test
 // suite keeps rendering it directly, without the Modal shell around it. The
-// default export below is that shell: a plain function component (holds no
-// state, needs no lifecycle - client/AGENTS.md) that mounts this class only
-// while the modal is open.
+// default export below is that shell: it mounts this class only while the
+// modal is open, and holds a ref to it for its own `componentWillUnmount` -
+// see that class's own comment for why.
 @inject('asyncTasks', 'dataStorages', 'authenticatedUserInfo')
 @observer
 export class DownloadsManager extends React.Component {
@@ -178,6 +178,20 @@ export class DownloadsManager extends React.Component {
   }
 
   componentWillUnmount () {
+    this.shutdown();
+  }
+
+  // The actual teardown, idempotent so both React's own unmount and the
+  // Modal shell's `componentWillUnmount` (see DownloadsModal below) can call
+  // it without coordinating: the shell calls it directly because rc-dialog
+  // defers removing its portal to the leave animation's `afterClose`, which
+  // never fires once the shell itself has unmounted, so this is the only
+  // synchronous signal there is. Guarded on `this.mounted` so the shell's
+  // call and React's own later (or absent) one never run the teardown twice.
+  shutdown = () => {
+    if (!this.mounted) {
+      return;
+    }
     this.mounted = false;
     // Resumes the tracker BEFORE stopping this component's own poller - the
     // mirror of componentDidMount's ordering, so there is still never an
@@ -194,7 +208,7 @@ export class DownloadsManager extends React.Component {
     if (this.poller) {
       this.poller.stop();
     }
-  }
+  };
 
   // Not observable, and deliberately not reset between calls on success alone
   // (see `reportError`): plain bookkeeping for de-duplicating the toast below.
@@ -549,12 +563,16 @@ export class DownloadsManager extends React.Component {
   //
   // A `ROLE_STORAGE_ADMIN` also sees the column, even though the server
   // still restricts what the column (and its filter) can actually show:
-  // `AsyncTaskApiService.restrictToCaller` overwrites the filter's `owner`
-  // with the caller's own name unless the caller is a full `ROLE_ADMIN`
-  // (`AuthManager.isAdmin()`). So a storage admin's Owner column reads their
-  // own name on every row, and picking another user in the filter still
-  // returns their own tasks - that is a server-side limitation, not a bug
-  // in this getter.
+  // `AsyncTaskApiService.restrictToCaller` (on
+  // origin/java21_issue_4570_download_archive, which this `client/`-only
+  // branch does not depend on) overwrites the filter's `owner` with the
+  // caller's own name unless the caller is a full `ROLE_ADMIN`
+  // (`AuthManager.isAdmin()`, already on this branch -
+  // api/src/main/java/com/epam/pipeline/manager/security/AuthManager.java -
+  // pre-existing and unrelated to this feature). So a storage admin's Owner
+  // column reads their own name on every row, and picking another user in
+  // the filter still returns their own tasks - that is a server-side
+  // limitation, not a bug in this getter.
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (!authenticatedUserInfo || !authenticatedUserInfo.loaded || !authenticatedUserInfo.value) {
@@ -621,42 +639,74 @@ export class DownloadsManager extends React.Component {
 }
 
 // The Modal shell shown from the storage page's presentation dropdown
-// ("Show downloads", pipelines/browser/data-storage/index.js). A plain
-// function, not a class - it holds no local state and needs no lifecycle
-// method (client/AGENTS.md).
+// ("Show downloads", pipelines/browser/data-storage/index.js). A class, not
+// the plain function client/AGENTS.md otherwise calls for: it needs the one
+// lifecycle method below, which is exactly when that guide reaches for one.
 //
 // `{visible ? <DownloadsManager /> : null}` is load-bearing, not a style
-// choice: antd 2.13.14's Modal has no `destroyOnClose` (see this plan
-// round's own shared facts) and rc-dialog does not implement one either, so
-// a Modal's children stay mounted after it closes. `DownloadsManager`'s
+// choice: antd 2.13.14's Modal has no `destroyOnClose`
+// (node_modules/antd/lib/modal/Modal.js) and rc-dialog 6.5.11 does not
+// implement one either (node_modules/rc-dialog), so a Modal's
+// children stay mounted after it closes. `DownloadsManager`'s
 // `componentDidMount` starts a 5-second poller and pauses the shared task
-// tracker, and `componentWillUnmount` reverses both - so if it were rendered
-// unconditionally inside the Modal, that poller would start the first time
-// this shell rendered and never stop, and the shared tracker would stay
-// paused for good. Mounting it only while `visible` is true is what ties its
-// lifecycle to the modal actually being open; closing the Modal from the
-// parent instead (never rendering this shell at all while closed) was
-// rejected because it would cut the Modal's own close animation short.
+// tracker, and `componentWillUnmount`/`shutdown` reverse both - so if it were
+// rendered unconditionally inside the Modal, that poller would start the
+// first time this shell rendered and never stop, and the shared tracker
+// would stay paused for good. Mounting it only while `visible` is true is
+// what ties its lifecycle to the modal actually being open; closing the
+// Modal from the parent instead (never rendering this shell at all while
+// closed) was rejected because it would cut the Modal's own close animation
+// short.
 //
 // `width="80%"` is the house's convention for a wide modal (e.g.
 // settings/system-management/system-jobs/system-job-log.js). The explicit
 // `footer` is how this codebase gets a single-button footer out of antd
 // 2.13.14 - the same pattern and reason download-storage-archive-modal.js
 // already documents for its own Cancel/OK footer.
-function DownloadsModal ({visible, onClose}) {
-  return (
-    <Modal
-      visible={visible}
-      title="Downloads"
-      width="80%"
-      onCancel={onClose}
-      footer={[
-        <Button key="close" size="large" onClick={onClose}>Close</Button>
-      ]}
-    >
-      {visible ? <DownloadsManager /> : null}
-    </Modal>
-  );
+class DownloadsModal extends React.Component {
+  // A callback ref, not `React.createRef()`: this app is React 15
+  // (client/AGENTS.md - "Do not introduce ... a dependency that requires
+  // React 16+"), and `createRef` is a 16.3 addition.
+  bodyRef = null;
+
+  setBodyRef = (instance) => {
+    this.bodyRef = instance;
+  };
+
+  // The case this exists for: the storage page unmounts this shell (a
+  // navigation away, or its own early `LoadingView`/`Alert` return) while the
+  // modal is still open. rc-dialog's `DialogWrap.componentWillUnmount`
+  // (node_modules/rc-dialog/lib/DialogWrap.js) keeps its portal's content
+  // rendered and defers removing it to the leave animation's `afterClose`,
+  // which never fires once this shell itself is gone - so React unmounting
+  // this component is the only synchronous signal there is, and it has to
+  // drive the body's shutdown directly rather than wait on the Modal.
+  // `bodyRef` reaches the body despite the portal: the ref is set during
+  // this shell's own render, which still owns that element, regardless of
+  // which DOM container rc-dialog later renders it into.
+  componentWillUnmount () {
+    const body = this.bodyRef;
+    if (body && body.wrappedInstance) {
+      body.wrappedInstance.shutdown();
+    }
+  }
+
+  render () {
+    const {visible, onClose} = this.props;
+    return (
+      <Modal
+        visible={visible}
+        title="Downloads"
+        width="80%"
+        onCancel={onClose}
+        footer={[
+          <Button key="close" size="large" onClick={onClose}>Close</Button>
+        ]}
+      >
+        {visible ? <DownloadsManager ref={this.setBodyRef} /> : null}
+      </Modal>
+    );
+  }
 }
 
 DownloadsModal.propTypes = {

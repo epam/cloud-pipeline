@@ -163,9 +163,9 @@ test(
   }
 );
 
-// No heading assertion any more: the class itself carries no title since
-// phase 23 dropped its `<h2>` - the Modal shell's own `title` prop is what
-// shows "Downloads" now, covered below.
+// No heading assertion any more: the class itself carries no title - the
+// Modal shell's own `title` prop is what shows "Downloads" now, covered
+// below.
 test('renders the rows from its own response', async () => {
   const api = stubApi();
   stubFilter(api, [
@@ -978,10 +978,10 @@ test(
 // The Modal shell - the module's default export, wrapping the named class
 // above. These cover the conditional mounting of its body: antd 2.13.14's
 // Modal keeps its children mounted after `visible` turns false (no
-// `destroyOnClose`, see this plan round's own shared facts), which is why
-// the shell renders `{visible ? <DownloadsManager /> : null}` instead of
-// relying on the Modal to stop the class's poller and resume the shared
-// tracker by itself.
+// `destroyOnClose` in node_modules/antd/lib/modal/Modal.js or
+// node_modules/rc-dialog, 6.5.11), which is why the shell renders
+// `{visible ? <DownloadsManager /> : null}` instead of relying on the Modal
+// to stop the class's poller and resume the shared tracker by itself.
 describe('DownloadsModal', () => {
   // antd's Modal (rc-dialog) portals its content to a node it appends to
   // `document.body` itself, outside the container `render()` tracks, and
@@ -1109,6 +1109,63 @@ describe('DownloadsModal', () => {
 
       expect(resumePolling).toHaveBeenCalledTimes(1);
       expect(pausePolling).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  // The case the fix above exists for: the storage page unmounts the shell
+  // itself (a navigation away, or its own early `LoadingView`/`Alert`
+  // return) while the modal is still `visible`. Unlike the test above, rc-
+  // dialog's own `DialogWrap.componentWillUnmount` keeps the body mounted in
+  // its detached portal container (deferred to the leave animation's
+  // `afterClose`, which never fires here) - so without `DownloadsModal`'s own
+  // `componentWillUnmount` reaching the body through `bodyRef` and calling
+  // its `shutdown()` directly, neither `resumePolling` nor the poller's own
+  // stop would ever happen. `utils.unmount()` - unmounting the whole tree,
+  // not a `visible` prop change - is what actually exercises that path.
+  test(
+    'unmounting the shell while still visible shuts the body down too: the poller ' +
+    'stops and the tracker resumes',
+    async () => {
+      useFakeTimers();
+      try {
+        const api = stubApi();
+        stubFilter(api, []);
+        const pausePolling = fn();
+        const resumePolling = fn();
+        const asyncTasks = asyncTasksDouble({pausePolling, resumePolling});
+        const storeSet = {
+          asyncTasks,
+          authenticatedUserInfo: authenticatedUserInfoDouble(),
+          dataStorages: dataStoragesDouble()
+        };
+
+        const utils = renderModal({}, storeSet);
+
+        await waitFor(() => expect(filterCalls(api).length).toBe(1));
+        expect(pausePolling).toHaveBeenCalledTimes(1);
+        expect(resumePolling).not.toHaveBeenCalled();
+
+        utils.unmount();
+        // Already gone - nothing left for the suite-level `afterEach` to
+        // close.
+        openModal = null;
+
+        expect(resumePolling).toHaveBeenCalledTimes(1);
+        expect(pausePolling).toHaveBeenCalledTimes(1);
+
+        // Not merely "resumePolling fired": proves the poller itself actually
+        // stopped, the same technique the class's own "keeps refreshing on
+        // its own while mounted, and stops once unmounted" test above uses -
+        // advancing a full interval past the first call and expecting the
+        // `waitFor` for a second one to time out.
+        await expect(waitFor(() => expect(
+          filterCalls(api).length
+        ).toBe(2), {timeout: POLL_INTERVAL_MS * 2})).rejects.toThrow();
+
+        expect(filterCalls(api).length).toBe(1);
+      } finally {
+        useRealTimers();
+      }
     }
   );
 });

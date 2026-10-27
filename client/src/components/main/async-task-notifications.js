@@ -41,9 +41,11 @@ function notify (task, messageApi, download) {
   if (status === ASYNC_TASK_STATUSES.SUCCESS) {
     // The content is passed to the call that produces its own dismisser, so
     // the handler it needs cannot be built from that return value - it has
-    // to exist first, as a mutable binding `success` fills in once it
-    // returns. `close` is what both a click anywhere on the toast and a
-    // click on "Download it" (which bubbles into it) end up calling.
+    // to exist first, as a mutable binding `hide` fills in once it returns.
+    // `close` is what both a click on the message's text and a click on
+    // "Download it" (which bubbles into it) end up calling - not "anywhere
+    // on the toast": antd renders an icon and padding beside this span
+    // (node_modules/antd/lib/message/index.js) that the handler never sees.
     let hide = () => {};
     const close = () => hide();
     // "Download it" fetches the archive from the toast itself - the same
@@ -53,7 +55,7 @@ function notify (task, messageApi, download) {
     // stays until the user dismisses it, rather than vanishing after five
     // seconds whether or not it was read.
     hide = messageApi.success(
-      <span onClick={close}>
+      <span onClick={close} style={{cursor: 'pointer'}}>
         {`Archive "${archiveName}" is ready. `}
         <a onClick={() => download(task)}>
           {'Download it'}

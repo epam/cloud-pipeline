@@ -41,9 +41,10 @@ function newFakeStore () {
 
 function newFakeMessageApi () {
   return {
-    // antd's `message.success` returns a hide function (round six's shared
-    // facts); the production success branch captures it to close the toast
-    // on a click, so the fake must return one too.
+    // antd's `message.success` returns a hide function
+    // (node_modules/antd/lib/message/index.js); the production success
+    // branch captures it to close the toast on a click, so the fake must
+    // return one too.
     success: fn().mockReturnValue(fn()),
     error: fn()
   };
@@ -82,8 +83,10 @@ describe('startAsyncTaskNotifications', () => {
     expect(messageApi.error).not.toHaveBeenCalled();
   });
 
-  // `duration: 0` means the toast never dismisses itself (round six's shared
-  // facts) - it waits for the click instead.
+  // `duration: 0` means the toast never dismisses itself
+  // (node_modules/rc-notification/lib/Notice.js, which only schedules its
+  // auto-close timer when `duration` is truthy) - it waits for the click
+  // instead.
   it('calls messageApi.success with 0 as its duration', () => {
     const store = newFakeStore();
     const messageApi = newFakeMessageApi();
