@@ -285,7 +285,7 @@ export default async function handleDownloadArchive (
     // pipelines/browser/data-storage/index.js), because a user who has just
     // queued an archive otherwise has nothing to go looking for.
     messageApi.info(
-      'Archive download has been queued. It will appear under "Show downloads" once it is ready.',
+      'Archive download has been queued. Follow its progress under "Show downloads".',
       5
     );
   } catch (error) {
