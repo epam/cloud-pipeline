@@ -110,6 +110,7 @@ import handleDownloadItems, {
 } from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
 import handleDownloadArchive, {
+  archiveActionAvailable,
   archiveDownloadAllowed,
   archivePathsFromSelection,
   defaultArchiveName
@@ -2394,7 +2395,6 @@ export default class DataStorage extends React.Component {
       available: !this.isOmicsStore &&
         downloadItemsActionAvailable(itemsAvailableForDownload.length)
     };
-    const archivePaths = archivePathsFromSelection(selectedItems);
     // Deliberately carries no cap state: the item is never greyed out and
     // never explains the cap up front. Clicking it counts the user's active
     // tasks against the server (`openDownloadArchiveModal` above) and, at the
@@ -2406,7 +2406,7 @@ export default class DataStorage extends React.Component {
       key: Keys.downloadArchive,
       title: 'Download archive',
       icon: 'download',
-      available: !this.isOmicsStore && archivePaths.length > 0
+      available: !this.isOmicsStore && archiveActionAvailable(selectedItems)
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,

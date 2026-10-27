@@ -23,7 +23,7 @@ import {
 describe('downloadItemsActionAvailable', () => {
   it.each([
     [0, false],
-    [1, false],
+    [1, true],
     [2, true],
     [3, true],
     [4, false],
@@ -35,7 +35,7 @@ describe('downloadItemsActionAvailable', () => {
 
 describe('MIN_DOWNLOAD_ITEMS / MAX_DOWNLOAD_ITEMS', () => {
   it('pins the selection bounds the plain Download item is offered for', () => {
-    expect(MIN_DOWNLOAD_ITEMS).toBe(2);
+    expect(MIN_DOWNLOAD_ITEMS).toBe(1);
     expect(MAX_DOWNLOAD_ITEMS).toBe(3);
   });
 });

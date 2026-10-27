@@ -16,10 +16,69 @@
 
 import {fn, screen} from '@test';
 import handleDownloadArchive, {
+  archiveActionAvailable,
   archiveDownloadAllowed,
   archivePathsFromSelection,
   defaultArchiveName
 } from './download-storage-archive';
+
+describe('archiveActionAvailable', () => {
+  test('a single file hides it', () => {
+    expect(archiveActionAvailable([{path: 'a.txt', type: 'File'}])).toBe(false);
+  });
+
+  test('a single folder keeps it - an archive is the only way to download a folder', () => {
+    expect(archiveActionAvailable([{path: 'sub', type: 'Folder'}])).toBe(true);
+  });
+
+  test('one file and one folder keeps it', () => {
+    const selection = [
+      {path: 'a.txt', type: 'File'},
+      {path: 'sub', type: 'Folder'}
+    ];
+    expect(archiveActionAvailable(selection)).toBe(true);
+  });
+
+  test('two files keeps it', () => {
+    const selection = [
+      {path: 'a.txt', type: 'File'},
+      {path: 'b.txt', type: 'File'}
+    ];
+    expect(archiveActionAvailable(selection)).toBe(true);
+  });
+
+  test('three folders keeps it', () => {
+    const selection = [
+      {path: 'a', type: 'Folder'},
+      {path: 'b', type: 'Folder'},
+      {path: 'c', type: 'Folder'}
+    ];
+    expect(archiveActionAvailable(selection)).toBe(true);
+  });
+
+  test('an empty selection hides it', () => {
+    expect(archiveActionAvailable([])).toBe(false);
+    expect(archiveActionAvailable(undefined)).toBe(false);
+  });
+
+  // The delete-marker is filtered out first, leaving one file - the same
+  // filter archivePathsFromSelection and defaultArchiveName apply.
+  test('one file plus one delete marker hides it - one archivable item remains', () => {
+    const selection = [
+      {path: 'a.txt', type: 'File'},
+      {path: 'gone.txt', type: 'File', deleteMarker: true}
+    ];
+    expect(archiveActionAvailable(selection)).toBe(false);
+  });
+
+  // Downloadability is deliberately not consulted: the server builds the
+  // archive, so a single archived (not currently downloadable) file still
+  // hides this item.
+  test('a single non-downloadable file still hides it', () => {
+    expect(archiveActionAvailable([{path: 'a.txt', type: 'File', downloadable: false}]))
+      .toBe(false);
+  });
+});
 
 describe('archivePathsFromSelection', () => {
   test('keeps both files and folders, unlike the plain-download filter', () => {

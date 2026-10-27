@@ -66,12 +66,13 @@ async function downloadStorageItems (items) {
   })));
 }
 
-// One file is excluded because that row already carries its own download
-// button (data-storage/components/download-file-button.js), and four or
-// more is excluded because "Download archive" in the same dropdown is the
-// answer for a bigger selection. Folders never reach this count at all -
-// the caller filters them out before counting.
-export const MIN_DOWNLOAD_ITEMS = 2;
+// A single file is included: "Download archive" is the item hidden for that
+// case now (archiveActionAvailable in download-storage-archive.js), not this
+// one. Four or more is excluded because "Download archive" in the same
+// dropdown is the answer for a bigger selection. Folders never reach this
+// count at all - the caller filters them out before counting, since a folder
+// can only be downloaded as part of an archive.
+export const MIN_DOWNLOAD_ITEMS = 1;
 export const MAX_DOWNLOAD_ITEMS = 3;
 
 /**

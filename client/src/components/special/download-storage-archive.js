@@ -29,6 +29,21 @@ function isFolder (item) {
 }
 
 /**
+ * The filter every archive-related computation in this file starts from: an
+ * item is only ever archived if it carries a `path` and is not a
+ * delete-marker. Downloadability is deliberately not part of this - the
+ * server builds the archive, not the browser, so an archived (not currently
+ * downloadable) file is still archivable.
+ *
+ * @param {SelectedStorageItem[]} selectedItems
+ * @returns {SelectedStorageItem[]}
+ */
+function archivableItems (selectedItems) {
+  return (selectedItems || [])
+    .filter(item => item && item.path && !item.deleteMarker);
+}
+
+/**
  * Maps a data-storage selection to the `paths` array
  * `POST /datastorage/{id}/download/archive` expects. Unlike
  * `itemsAvailableForDownload` in the storage browser's selection dropdown, this
@@ -46,8 +61,7 @@ function isFolder (item) {
  * @returns {string[]}
  */
 export function archivePathsFromSelection (selectedItems) {
-  const paths = (selectedItems || [])
-    .filter(item => item && item.path && !item.deleteMarker)
+  const paths = archivableItems(selectedItems)
     .map(item => {
       const {path} = item;
       if (isFolder(item)) {
@@ -56,6 +70,27 @@ export function archivePathsFromSelection (selectedItems) {
       return path;
     });
   return [...new Set(paths)];
+}
+
+/**
+ * Whether the "Download archive" selection item should be offered for this
+ * selection. Hidden only when the selection is exactly one archivable file -
+ * a single folder keeps it, because an archive is the only way to download a
+ * folder. Downloadability is not consulted, for the same reason
+ * `archivePathsFromSelection` does not consult it: the server builds the
+ * archive, so a single archived (not currently downloadable) file hides this
+ * item too, and that item's own row carries the restore/download controls for
+ * that case.
+ *
+ * @param {SelectedStorageItem[]} selectedItems
+ * @returns {boolean}
+ */
+export function archiveActionAvailable (selectedItems) {
+  const items = archivableItems(selectedItems);
+  if (items.length === 0) {
+    return false;
+  }
+  return items.length > 1 || isFolder(items[0]);
 }
 
 // What the server accepts as an archive name: `^[\w\-. ]+$`
@@ -157,8 +192,7 @@ function nameOf (item) {
 export function defaultArchiveName (selectedItems = []) {
   // The same filter `archivePathsFromSelection` applies, so "one item" here
   // means one item that would actually be archived.
-  const items = (selectedItems || [])
-    .filter(item => item && item.path && !item.deleteMarker);
+  const items = archivableItems(selectedItems);
   if (items.length !== 1) {
     return timestampedArchiveName();
   }
