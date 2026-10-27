@@ -25,15 +25,44 @@ DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
 
+# In the rootless mode dockerd runs as the run owner, see dind_setup_rootless
+source "$COMMON_REPO_DIR/shell/dind_setup_rootless"
+if check_cp_cap "CP_CAP_DIND_CONTAINER_ROOTLESS"; then
+    _DIND_ROOTLESS="true"
+fi
+
 if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
     _CP_CAP_DIND_VERSION_DEFAULT="20.10.24"
 else
     _CP_CAP_DIND_VERSION_DEFAULT="18.09.6"
 fi
+if [ "$_DIND_ROOTLESS" == "true" ]; then
+    _CP_CAP_DIND_VERSION_DEFAULT="$DIND_ROOTLESS_DEFAULT_VERSION"
+fi
 export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-$_CP_CAP_DIND_VERSION_DEFAULT}"
 export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
 export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
 export CP_CAP_DIND_DISTR_PREFIX="${CP_CAP_DIND_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/distr"}"
+
+######################################################
+# Check the rootless mode requirements
+######################################################
+if [ "$_DIND_ROOTLESS" == "true" ]; then
+    pipe_log_info "Rootless mode is requested: dockerd will run as $OWNER" "$DIND_SETUP_TASK"
+    if ! dind_rootless_check_user "$OWNER"; then
+        pipe_log_fail "Rootless mode needs a non-root run owner, but the owner is '$OWNER', aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    if ! dind_rootless_check_version "$CP_CAP_DIND_VERSION"; then
+        pipe_log_fail "Rootless mode needs docker $DIND_ROOTLESS_MIN_VERSION or newer, but $CP_CAP_DIND_VERSION is requested, aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    _DIND_ROOTLESS_SUBID_START="${CP_CAP_DIND_CONTAINER_ROOTLESS_SUBID_START:-$DIND_ROOTLESS_SUBID_START_DEFAULT}"
+    if ! dind_rootless_check_subid_start "$_DIND_ROOTLESS_SUBID_START"; then
+        pipe_log_fail "CP_CAP_DIND_CONTAINER_ROOTLESS_SUBID_START shall be a positive integer, but it is '$_DIND_ROOTLESS_SUBID_START', aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+fi
 
 pipe_log_info "Installing docker: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
 
@@ -109,6 +138,31 @@ fi
 rm -f docker.tgz
 
 pipe_log_info "Docker installed" "$DIND_SETUP_TASK"
+
+######################################################
+# Install the rootless mode components
+######################################################
+if [ "$_DIND_ROOTLESS" == "true" ]; then
+    _DIND_ROOTLESS_EXTRAS_URL="${CP_CAP_DIND_DISTR_PREFIX}/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-rootless-extras-${CP_CAP_DIND_VERSION}.tgz"
+    if ! dind_rootless_install_extras "$_DIND_ROOTLESS_EXTRAS_URL" /usr/local/bin/; then
+        pipe_log_fail "Unable to install docker rootless extras from $_DIND_ROOTLESS_EXTRAS_URL, aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    if ! dind_rootless_install_idmap "$IS_RPM_BASED"; then
+        pipe_log_fail "Unable to install newuidmap and newgidmap with the privileges to write the id maps, aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    if ! dind_rootless_set_subids "$OWNER" "$_DIND_ROOTLESS_SUBID_START" "$DIND_ROOTLESS_SUBID_COUNT" /etc/subuid || \
+       ! dind_rootless_set_subids "$OWNER" "$_DIND_ROOTLESS_SUBID_START" "$DIND_ROOTLESS_SUBID_COUNT" /etc/subgid; then
+        pipe_log_fail "Unable to add the subordinate ids of $OWNER to /etc/subuid and /etc/subgid, aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    if ! dind_rootless_ensure_tun; then
+        pipe_log_fail "Unable to create /dev/net/tun, aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    pipe_log_info "Docker rootless extras installed, subordinate ids of $OWNER: $(grep "^$OWNER:" /etc/subuid)" "$DIND_SETUP_TASK"
+fi
 
 nvidia-smi &> /dev/null
 REQUIRES_GPU_DIND=$?
@@ -216,6 +270,33 @@ sed -i '1a \
   },' /etc/docker/daemon.json
 fi
 
+######################################################
+# Prepare the rootless mode daemon
+######################################################
+if [ "$_DIND_ROOTLESS" == "true" ]; then
+    if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then
+        if ! dind_rootless_configure_nvidia; then
+            pipe_log_warn "Unable to set no-cgroups = true for the NVIDIA runtime, containers with GPUs may fail to start" "$DIND_SETUP_TASK"
+        fi
+    fi
+    _DIND_ROOTLESS_RUNTIME_DIR=$(dind_rootless_runtime_dir "$OWNER")
+    _DIND_ROOTLESS_HOME="/var/lib/dind-rootless"
+    _DIND_ROOTLESS_LOG="/var/log/dockerd-rootless.log"
+    if ! dind_rootless_prepare_dirs "$OWNER" "$_DIND_ROOTLESS_RUNTIME_DIR" "$DIND_DATA_ROOT" "$_DIND_ROOTLESS_HOME" /etc/docker/certs.d \
+       || ! touch "$_DIND_ROOTLESS_LOG" || ! chown "$OWNER": "$_DIND_ROOTLESS_LOG"; then
+        pipe_log_fail "Unable to prepare the directories of the rootless docker daemon, aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    dind_rootless_clean_runtime_dir "$_DIND_ROOTLESS_RUNTIME_DIR"
+    if ! dind_rootless_check_userns "$OWNER" /usr/local/bin "$_DIND_ROOTLESS_RUNTIME_DIR"; then
+        pipe_log_fail "RootlessKit cannot create a user namespace for $OWNER (see the output above), aborting" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+elif [ $REQUIRES_GPU_DIND -eq 0 ]; then
+    # The image may be committed from a rootless run, which turned off the cgroups of the NVIDIA runtime
+    dind_rootless_restore_nvidia
+fi
+
 
 ######################################################
 # Install buildx
@@ -225,6 +306,19 @@ CP_CAP_DIND_BUILDX_VERSION="${CP_CAP_DIND_BUILDX_VERSION:-0.25.0}"
 CP_CAP_DIND_BUILDX_INSTALL_DIR="${CP_CAP_DIND_BUILDX_INSTALL_DIR:-/usr/lib/docker/cli-plugins}"
 CP_CAP_DIND_BUILDX_DISTR_PREFIX="${CP_CAP_DIND_BUILDX_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/buildx"}"
 CP_CAP_DIND_BUILDX_BUILDER_NAME="${CP_CAP_DIND_BUILDX_BUILDER_NAME:-cp-builder}"
+
+function dind_setup_buildx_proxies {
+    pipe_log_info "Setting up buildx proxies" "$DIND_SETUP_TASK"
+    docker buildx rm "$CP_CAP_DIND_BUILDX_BUILDER_NAME"
+    docker buildx create \
+        --name "$CP_CAP_DIND_BUILDX_BUILDER_NAME" \
+        --use \
+        --driver docker-container \
+        --driver-opt env.http_proxy="$http_proxy" \
+        --driver-opt env.https_proxy="$https_proxy" \
+        --driver-opt '"env.no_proxy='$no_proxy'"'
+}
+
 if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" ">" && \
     [ "$CP_CAP_DIND_BUILDX_ENABLED" != "false" ]; then
 
@@ -241,15 +335,12 @@ if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" ">" && \
         pipe_log_warn "buildx installation failed" "$DIND_SETUP_TASK"
     else
         if [ "$http_proxy" ] || [ "$https_proxy" ] || [ "$no_proxy" ]; then
-            pipe_log_info "Setting up buildx proxies" "$DIND_SETUP_TASK"
-            docker buildx rm "$CP_CAP_DIND_BUILDX_BUILDER_NAME"
-            docker buildx create \
-                --name "$CP_CAP_DIND_BUILDX_BUILDER_NAME" \
-                --use \
-                --driver docker-container \
-                --driver-opt env.http_proxy="$http_proxy" \
-                --driver-opt env.https_proxy="$https_proxy" \
-                --driver-opt '"env.no_proxy='$no_proxy'"'
+            if [ "$_DIND_ROOTLESS" == "true" ]; then
+                # The rootless daemon is started below, the builder needs it
+                _DIND_BUILDX_PROXIES_PENDING="true"
+            else
+                dind_setup_buildx_proxies
+            fi
         fi
     fi
 fi
@@ -257,13 +348,31 @@ fi
 ######################################################
 # Start dockerd
 ######################################################
-nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
+if [ "$_DIND_ROOTLESS" == "true" ]; then
+    _DIND_ROOTLESS_DOCKER_HOST="$(dind_rootless_docker_host "$OWNER")"
+    # The link goes first: RootlessKit copies /run for the daemon as it starts, and the containers
+    # that mount /var/run/docker.sock see that copy
+    if ! dind_rootless_link_default_socket "${_DIND_ROOTLESS_DOCKER_HOST#unix://}"; then
+        pipe_log_warn "/var/run/docker.sock exists and is kept, the processes without DOCKER_HOST won't reach the rootless daemon" "$DIND_SETUP_TASK"
+    fi
+    dind_rootless_start "$OWNER" /usr/local/bin "$_DIND_ROOTLESS_HOME" "$_DIND_ROOTLESS_RUNTIME_DIR" \
+                        /etc/docker/daemon.json "$_DIND_ROOTLESS_LOG"
+    export DOCKER_HOST="$_DIND_ROOTLESS_DOCKER_HOST"
+    if ! dind_rootless_export_docker_host "$CP_ENV_FILE_TO_SOURCE" "$DOCKER_HOST"; then
+        pipe_log_warn "Unable to add DOCKER_HOST to the run environment, set DOCKER_HOST=$DOCKER_HOST to use docker" "$DIND_SETUP_TASK"
+    fi
+else
+    nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
+fi
 
 pipe_log_info "Waiting for Docker daemon to be ready" "$DIND_SETUP_TASK"
 _DIND_WAIT_TIMEOUT="${CP_CAP_DIND_WAIT_TIMEOUT:-60}"
 _DIND_WAIT_ELAPSED=0
 while ! docker info > /dev/null 2>&1; do
     if [ "$_DIND_WAIT_ELAPSED" -ge "$_DIND_WAIT_TIMEOUT" ]; then
+        if [ "$_DIND_ROOTLESS" == "true" ]; then
+            tail -n 20 "$_DIND_ROOTLESS_LOG"
+        fi
         pipe_log_fail "Docker daemon did not become ready within ${_DIND_WAIT_TIMEOUT}s" "$DIND_SETUP_TASK"
         exit 1
     fi
@@ -271,4 +380,11 @@ while ! docker info > /dev/null 2>&1; do
     _DIND_WAIT_ELAPSED=$((_DIND_WAIT_ELAPSED + 2))
 done
 
+if [ "$_DIND_BUILDX_PROXIES_PENDING" == "true" ]; then
+    dind_setup_buildx_proxies
+fi
+
+if [ "$_DIND_ROOTLESS" == "true" ]; then
+    pipe_log_info "Docker daemon runs in the rootless mode as $OWNER, DOCKER_HOST=$DOCKER_HOST" "$DIND_SETUP_TASK"
+fi
 pipe_log_success "Docker daemon started" "$DIND_SETUP_TASK"

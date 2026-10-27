@@ -192,6 +192,15 @@ function check_cp_cap {
       fi
 }
 
+# Kubernetes needs a rootful docker, so it can't run on top of the rootless DinD
+function cp_cap_check_dind_rootless {
+      if check_cp_cap "CP_CAP_KUBE" && check_cp_cap "CP_CAP_DIND_CONTAINER_ROOTLESS"; then
+            echo "[ERROR] CP_CAP_DIND_CONTAINER_ROOTLESS can't be used together with CP_CAP_KUBE, exiting."
+            return 1
+      fi
+      return 0
+}
+
 function cp_cap_publish {
       if [ -z "$cluster_role" ]; then
             return 0
@@ -208,14 +217,25 @@ function cp_cap_publish {
             echo "set -e" >> $_WORKER_CAP_INIT_PATH
 
             _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
+            _DIND_CONTAINER_INIT_LINE="$_DIND_CONTAINER_INIT"
+            # Workers get only the run parameters, which the deployment passes to workers,
+            # so the init line carries the rootless mode settings itself.
+            # "set -e" ignores a failure inside "&&", hence the explicit exit: a failed rootless setup fails the run
+            if check_cp_cap "CP_CAP_DIND_CONTAINER_ROOTLESS"; then
+                  _DIND_ROOTLESS_EXPORTS="CP_CAP_DIND_CONTAINER_ROOTLESS=true"
+                  if [ "$CP_CAP_DIND_CONTAINER_ROOTLESS_SUBID_START" ]; then
+                        _DIND_ROOTLESS_EXPORTS="$_DIND_ROOTLESS_EXPORTS CP_CAP_DIND_CONTAINER_ROOTLESS_SUBID_START=$(printf '%q' "$CP_CAP_DIND_CONTAINER_ROOTLESS_SUBID_START")"
+                  fi
+                  _DIND_CONTAINER_INIT_LINE="export $_DIND_ROOTLESS_EXPORTS && $_DIND_CONTAINER_INIT || exit 1"
+            fi
             echo "Requested DinD CONTAINER mode capability, setting init scripts:"
-            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
+            echo "--> Master/Worker: $_DIND_CONTAINER_INIT_LINE"
 
             sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
-            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT_LINE" >> $_MASTER_CAP_INIT_PATH
 
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
-            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT_LINE" >> $_WORKER_CAP_INIT_PATH
       fi
 
       if check_cp_cap "CP_CAP_SGE"
@@ -1757,6 +1777,10 @@ add_self_to_no_proxy
 if check_cp_cap "CP_CAP_KUBE"; then
       export CP_CAP_DIND_CONTAINER="true"
       export CP_CAP_SYSTEMD_CONTAINER="true"
+fi
+
+if ! cp_cap_check_dind_rootless; then
+      exit_init 1
 fi
 
 # We need to make sure that the Systemd is enabled if we use DCV

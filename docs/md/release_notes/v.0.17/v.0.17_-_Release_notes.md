@@ -59,6 +59,7 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Rootless Docker-in-Docker](#rootless-docker-in-docker)
 
 ***
 
@@ -1855,6 +1856,16 @@ Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VER
 
 In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+***
+
+## Rootless Docker-in-Docker
+
+Previously, the docker engine of the `CP_CAP_DIND_CONTAINER` capability always ran as `root`, and so did the containers started with it.
+
+In **`v0.17`**, the docker engine can run as the run owner instead: set the `CP_CAP_DIND_CONTAINER_ROOTLESS` system parameter to `true` together with `CP_CAP_DIND_CONTAINER`. The engine is started with RootlessKit, inside a user namespace, so `root` of a container is not `root` of the job container. Without the parameter, the docker engine runs as before.  
+The run fails if the rootless mode can't be set up, e.g. when the run owner is `root`, or when `CP_CAP_KUBE` is also set.  
+For more details and the limitations of the mode see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#rootless-mode).
 
 ***
 
