@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import java.util.Map;
 import java.util.Optional;
@@ -36,6 +37,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.folderWithName
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.version;
+import static java.time.Duration.ofMillis;
 import static org.openqa.selenium.By.className;
 
 public class PipelineSelection extends PopupAO<PipelineSelection, Configuration> {
@@ -55,8 +57,9 @@ public class PipelineSelection extends PopupAO<PipelineSelection, Configuration>
 
     public PipelineSelection selectPipeline(final String pipeline) {
         this.pipeline = pipeline;
-        get(TABLE).shouldBe(exist);
-        context().find(pipelineWithName(pipeline, "browser__tree-item-title")).shouldBe(visible).click();
+        get(TABLE).shouldBe(exist, ofMillis(DEFAULT_TIMEOUT));
+        context().find(pipelineWithName(pipeline, "browser__tree-item-title"))
+                .shouldBe(visible, ofMillis(DEFAULT_TIMEOUT)).click();
         return this;
     }
 

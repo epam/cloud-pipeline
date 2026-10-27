@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static java.time.Duration.ofMillis;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.enabled;
@@ -67,6 +69,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.settingsButton
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.Objects.isNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 
 public class Configuration implements AccessObject<Configuration> {
 
@@ -201,7 +204,8 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration selectPipeline(final Consumer<PipelineSelection> pipeline) {
-        click(PIPELINE);
+        sleep(3, SECONDS);
+        $(className("anticon-export")).should(exist, ofMillis(DEFAULT_TIMEOUT)).click();
         pipeline.accept(new PipelineSelection(this));
         return this;
     }

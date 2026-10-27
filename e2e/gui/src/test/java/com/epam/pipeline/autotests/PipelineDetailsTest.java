@@ -38,13 +38,11 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.DocumentTabAO.fileWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.LOADING;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NEW_RULE;
-import static com.epam.pipeline.autotests.ao.Primitive.CANVAS;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
@@ -86,18 +84,18 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
 
     @Test(priority = 0)
     @TestCase(value = {"EPMCMBIBPC-343"})
-    public void luigiPipelineTabsShouldBeValid() {
+    public void defaultPipelineTabsShouldBeValid() {
         navigationMenu()
                 .library()
-                .createPipeline(Template.LUIGI, pipelineName)
+                .createPipeline(Template.DEFAULT, pipelineName)
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .codeTab()
-                .ensureVisible(CODE_TAB, CONFIGURATION_TAB, GRAPH_TAB, DOCUMENTS_TAB, HISTORY_TAB, STORAGE_RULES_TAB)
+                .ensureVisible(CODE_TAB, CONFIGURATION_TAB, DOCUMENTS_TAB, HISTORY_TAB, STORAGE_RULES_TAB)
                 .tabShouldBeActive(CODE_TAB);
     }
 
-    @Test(dependsOnMethods = {"luigiPipelineTabsShouldBeValid"})
+    @Test(dependsOnMethods = {"defaultPipelineTabsShouldBeValid"})
     @TestCase(value = {"EPMCMBIBPC-339"})
     public void shouldCreateFolderInPipeline() {
         codeTab()
@@ -113,14 +111,6 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .clickOnFolder(pipelineFolder)
                 .createFile(pipelineFile)
                 .ensure(byText(pipelineFile), visible);
-    }
-
-    @Test(enabled = false, dependsOnMethods = {"shouldCreateFileInSubfolder"})
-    @TestCase(value = {"EPMCMBIBPC-344"})
-    public void luigiGraphTabShouldBeValid() {
-        codeTab()
-                .graphTab()
-                .ensure(CANVAS, exist);
     }
 
     @Test(dependsOnMethods = {"shouldCreateFileInSubfolder"})
