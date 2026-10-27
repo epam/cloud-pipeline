@@ -114,6 +114,8 @@ issue_4538/notification_tags_gui
 
 When one person carries the whole change and it is small, a single branch with the area omitted (`issue_4538/notification_tags`) is being used instead.
 
+A branch with UI test cases takes the `_testcases` suffix in place of the area: `issue_<issue number>/<short_description>_testcases`.
+
 ### Verification
 
 After the task implementation is done, it shall be verified.  

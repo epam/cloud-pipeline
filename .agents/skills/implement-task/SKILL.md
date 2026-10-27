@@ -1,6 +1,6 @@
 ---
 name: implement-task
-description: Start here before the first edit of any file — a one-liner and a docs change included. Holds the steps a task passes through, the issue number and branch it needs, the tests and docs it owes, and where the branch ends up. The plan-change, verify-changes and commit-changes skills are steps within it.
+description: Start here before the first edit of any file — a one-liner and a docs change included. Holds the steps a task passes through, the issue number and branch it needs, the tests, docs and UI test cases it owes, and where the branch ends up. The plan-change, verify-changes and commit-changes skills are steps within it.
 ---
 
 # Implementing a task
@@ -16,7 +16,7 @@ narrate the walk through them at whoever asked.
 | 1 | Orient | you can name the files that will change *and* the ones that constrain them | the subtree's `AGENTS.md`, the module's `README.md` |
 | 2 | Plan | **attended:** the person asking has agreed to it · **unattended:** it is written down, to go in the pull request body | `plan-change` skill |
 | 3 | Workspace | the branch exists, on a base you established rather than assumed, and you are working where you were told to — **Workspace**, below | `git worktree add` |
-| 4 | Implement | the change is complete, including the tests and docs it owes — **Tests** and **Docs**, below | `CONTRIBUTIONS.md` |
+| 4 | Implement | the change is complete, including the tests and docs it owes — **Tests** and **Docs**, below — and the UI test cases it owes are written — **Test cases**, below | `CONTRIBUTIONS.md`, `testcases` skill |
 | 5 | Verify | the checks you owe for everything the diff touches, and everything it reaches, have run — or are recorded as skipped, and what was missing | `verify-changes` skill |
 | 6 | Diff review | you have read your own diff (no debug leftovers, no unrelated files, nothing outside the scope agreed at Plan), and an agent that did not write it has reviewed it — **Fresh-eyes review**, below | a fresh subagent |
 | 7 | Publish | **attended:** you were told to · **unattended:** the trigger is the instruction, and the pull request is a **draft** | `commit-changes` skill |
@@ -37,7 +37,8 @@ Skip only what this table names; an unstated skip is still an oversight.
 | Kind | May skip |
 |---|---|
 | Question / read-only | this whole skill |
-| Instruction, skill or comment text only — no product behaviour | tests, live browser, user-manual docs |
+| Instruction, skill or comment text only — no product behaviour | tests, live browser, user-manual docs, UI test cases |
+| UI test cases only | tests, live browser, user-manual docs |
 | `client/` with no user-visible pixel, route or client state | the `verify-client-live` skill |
 | Small, one module, no new behaviour, attended | a plan file |
 
@@ -141,6 +142,14 @@ under `docs/md/release_notes/`.
 A change with no user-visible surface — internal refactoring, build wiring, agent instructions — owes
 neither. Say so in the hand-back rather than leaving documentation unmentioned: deciding on your own
 that a change needs none, and staying quiet about it, is what this rule exists to catch.
+
+## Test cases
+
+**A change that reaches the GUI owes UI test cases**, wherever its code is — an API or other backend
+change the GUI shows owes them as much as a `client/` change does. They never go on this task's
+branch, unless they are the whole task. The `testcases` skill holds which cases are owed, how to
+write them, and the issue, branch and pull request they go on. The hand-back names that issue and
+branch, or says why the change reaches nothing in the GUI.
 
 ## Fresh-eyes review
 
