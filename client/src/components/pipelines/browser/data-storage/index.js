@@ -105,7 +105,9 @@ import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
-import handleDownloadItems from '../../../special/download-storage-items';
+import handleDownloadItems, {
+  downloadItemsActionAvailable
+} from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
 import handleDownloadArchive, {
   archiveDownloadAllowed,
@@ -2383,7 +2385,8 @@ export default class DataStorage extends React.Component {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
-      available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
+      available: !this.isOmicsStore &&
+        downloadItemsActionAvailable(itemsAvailableForDownload.length)
     };
     const archivePaths = archivePathsFromSelection(selectedItems);
     // Deliberately carries no cap state: the item is never greyed out and
