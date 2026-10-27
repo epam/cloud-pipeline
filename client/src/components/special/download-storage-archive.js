@@ -244,11 +244,14 @@ export default async function handleDownloadArchive (
   const hide = messageApi.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    // Plain text, not a link: the route the page link once pointed at is
-    // gone, and the downloads view itself - now a modal on the storage page
-    // rather than a page of its own - is still reachable without one.
+    // Plain text, not a link: the route the page link once pointed at is gone,
+    // and the downloads view is now a modal on the storage page. It names the
+    // menu item that opens that modal ("Show downloads", in the storage view's
+    // presentation dropdown - see renderPresentationConfiguration in
+    // pipelines/browser/data-storage/index.js), because a user who has just
+    // queued an archive otherwise has nothing to go looking for.
     messageApi.info(
-      'Archive download has been queued. It will appear on the Downloads page once it is ready.',
+      'Archive download has been queued. It will appear under "Show downloads" once it is ready.',
       5
     );
   } catch (error) {

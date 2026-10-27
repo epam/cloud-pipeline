@@ -256,7 +256,7 @@ describe('handleDownloadArchive', () => {
     await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
 
     expect(messageApi.info).toHaveBeenCalledWith(
-      'Archive download has been queued. It will appear on the Downloads page once it is ready.',
+      'Archive download has been queued. It will appear under "Show downloads" once it is ready.',
       5
     );
     expect(messageApi.success).not.toHaveBeenCalled();
