@@ -19,7 +19,6 @@ import {message} from 'antd';
 import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
 import {ASYNC_TASK_STATUSES, normalizeStatus, archiveNameOf} from '../../models/asyncTask/statuses';
 import downloadArchiveTask from './downloads/download-archive-task';
-import DownloadsPageLink from '../special/downloads-page-link';
 
 // Announces, with an antd `message`, that one of the current user's
 // archive-download tasks has finished - whatever page the user is on. This is
@@ -40,22 +39,28 @@ function notify (task, messageApi, download) {
   const status = normalizeStatus(task && task.status);
   const archiveName = archiveNameOf(task);
   if (status === ASYNC_TASK_STATUSES.SUCCESS) {
-    messageApi.success(
-      // "Download it" fetches the archive from the toast itself - the same
-      // `downloadArchiveTask` the Download button on the /downloads page
-      // calls, so the signed URL is requested at the moment of the click and
-      // the browser downloads it. The page link stays alongside it: the toast
-      // lasts five seconds, and the archive is still there afterwards.
-      <span>
+    // The content is passed to the call that produces its own dismisser, so
+    // the handler it needs cannot be built from that return value - it has
+    // to exist first, as a mutable binding `success` fills in once it
+    // returns. `close` is what both a click anywhere on the toast and a
+    // click on "Download it" (which bubbles into it) end up calling.
+    let hide = () => {};
+    const close = () => hide();
+    // "Download it" fetches the archive from the toast itself - the same
+    // `downloadArchiveTask` the Download button on the /downloads page
+    // calls, so the signed URL is requested at the moment of the click and
+    // the browser downloads it. `duration: 0` plus `close` means the toast
+    // stays until the user dismisses it, rather than vanishing after five
+    // seconds whether or not it was read.
+    hide = messageApi.success(
+      <span onClick={close}>
         {`Archive "${archiveName}" is ready. `}
         <a onClick={() => download(task)}>
           {'Download it'}
         </a>
-        {' now, or find it later on the '}
-        <DownloadsPageLink />
-        {'.'}
+        {' now.'}
       </span>,
-      5
+      0
     );
   } else if (status === ASYNC_TASK_STATUSES.FAILED) {
     const reason = task && task.errorMessage ? ` ${task.errorMessage}` : '';

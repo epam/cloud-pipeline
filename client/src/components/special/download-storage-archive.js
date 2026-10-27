@@ -21,10 +21,8 @@
  * @property {boolean} [deleteMarker]
  */
 
-import React from 'react';
 import moment from 'moment-timezone';
 import {message} from 'antd';
-import DownloadsPageLink from './downloads-page-link';
 
 function isFolder (item) {
   return /^folder$/i.test((item && item.type) || '');
@@ -228,26 +226,33 @@ export async function archiveDownloadAllowed (asyncTasks) {
  * @param {string|number} storageId
  * @param {string[]} paths
  * @param {string} archiveName
+ * @param {*} [messageApi] - defaults to antd's `message`, taken as a
+ *   parameter so this is testable without module mocking
  * @returns {Promise<void>}
  */
-export default async function handleDownloadArchive (asyncTasks, storageId, paths, archiveName) {
+export default async function handleDownloadArchive (
+  asyncTasks,
+  storageId,
+  paths,
+  archiveName,
+  messageApi = message
+) {
   if (!paths || paths.length === 0) {
-    message.info('Nothing to download: select at least one file or folder.', 5);
+    messageApi.info('Nothing to download: select at least one file or folder.', 5);
     return;
   }
-  const hide = message.loading('Starting archive download...', 0);
+  const hide = messageApi.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    message.success(
-      <span>
-        {'Archive download has been queued. It will appear on the '}
-        <DownloadsPageLink />
-        {' once it is ready.'}
-      </span>,
+    // Plain text, not a link: the route the page link pointed at is gone
+    // (phase 23 replaces /downloads with a modal), and the downloads view
+    // itself is still reachable without one.
+    messageApi.info(
+      'Archive download has been queued. It will appear on the Downloads page once it is ready.',
       5
     );
   } catch (error) {
-    message.error(error.message, 5);
+    messageApi.error(error.message, 5);
   } finally {
     hide();
   }

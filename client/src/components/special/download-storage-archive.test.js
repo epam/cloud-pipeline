@@ -241,21 +241,43 @@ describe('handleDownloadArchive', () => {
     ).resolves.toBeUndefined();
   });
 
-  // The queued toast carries a link to the page the archive will appear on.
-  // antd renders a `message` into a portal on `document.body`, which is what
-  // `screen` queries - no module mocking needed to see it (rule 2).
-  test('the queued toast links to the Downloads page', async () => {
+  // The queued toast is an `info`, not a `success` - only the icon changes,
+  // but asserting it needs a double, since antd's own class names are off
+  // limits (rule 6) and module mocking is too (rule 2).
+  test('the queued toast goes through messageApi.info, not success', async () => {
     const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
+    const messageApi = {
+      info: fn(),
+      loading: fn().mockReturnValue(fn()),
+      success: fn(),
+      error: fn()
+    };
 
-    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive');
+    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
 
-    // `findAllByText`, and the newest one: antd's `message` is a singleton
-    // that keeps each toast on `document.body` for five seconds, so the
-    // success toasts the tests above raised are still there - the harness
-    // unmounts the trees it rendered itself, not antd's own portal.
-    const links = await screen.findAllByText('Downloads page');
-    // A hash href, so it navigates in-app and needs no router in context -
-    // which a portal does not have. See `downloads-page-link.js`.
-    expect(links[links.length - 1]).toHaveAttribute('href', '#/downloads');
+    expect(messageApi.info).toHaveBeenCalledWith(
+      'Archive download has been queued. It will appear on the Downloads page once it is ready.',
+      5
+    );
+    expect(messageApi.success).not.toHaveBeenCalled();
+  });
+
+  // A failing `startArchiveDownload` still reports through `messageApi.error`.
+  test('a failing startArchiveDownload reports through messageApi.error', async () => {
+    const asyncTasks = {
+      startArchiveDownload: fn().mockRejectedValue(new Error('too many active downloads'))
+    };
+    const messageApi = {
+      info: fn(),
+      loading: fn().mockReturnValue(fn()),
+      success: fn(),
+      error: fn()
+    };
+
+    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
+
+    expect(messageApi.error).toHaveBeenCalledWith('too many active downloads', 5);
+    expect(messageApi.success).not.toHaveBeenCalled();
+    expect(messageApi.info).not.toHaveBeenCalled();
   });
 });

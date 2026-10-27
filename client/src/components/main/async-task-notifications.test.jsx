@@ -18,9 +18,9 @@ import React from 'react';
 import {fn, render, screen, click} from '@test';
 import startAsyncTaskNotifications from './async-task-notifications';
 
-// Both toasts now carry links, so they are ReactNodes rather than strings.
-// Rendering what the fake `messageApi` was handed is how their text and their
-// links are asserted - there is no DOM for a toast that antd never showed.
+// The success toast carries a link, so it is a ReactNode rather than a
+// string. Rendering what the fake `messageApi` was handed is how its text and
+// its link are asserted - there is no DOM for a toast that antd never showed.
 function renderToast (node) {
   render(<span>{node}</span>);
 }
@@ -41,7 +41,10 @@ function newFakeStore () {
 
 function newFakeMessageApi () {
   return {
-    success: fn(),
+    // antd's `message.success` returns a hide function (round six's shared
+    // facts); the production success branch captures it to close the toast
+    // on a click, so the fake must return one too.
+    success: fn().mockReturnValue(fn()),
     error: fn()
   };
 }
@@ -79,9 +82,53 @@ describe('startAsyncTaskNotifications', () => {
     expect(messageApi.error).not.toHaveBeenCalled();
   });
 
+  // `duration: 0` means the toast never dismisses itself (round six's shared
+  // facts) - it waits for the click instead.
+  it('calls messageApi.success with 0 as its duration', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi);
+
+    store.handler({id: 1, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+
+    expect(messageApi.success.mock.calls[0][1]).toBe(0);
+  });
+
+  // The link to the now-removed /downloads route is gone; "Download it" is
+  // the only link left in the toast.
+  it('carries no "Downloads page" text, and "Download it" is its only link', () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi, fn());
+
+    store.handler({id: 8, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    renderToast(messageApi.success.mock.calls[0][0]);
+
+    expect(screen.queryByText(/Downloads page/)).not.toBeInTheDocument();
+    expect(screen.getByText('Download it').tagName).toBe('A');
+    expect(screen.queryAllByText(/^Download/).map((node) => node.textContent))
+      .toEqual(['Download it']);
+  });
+
+  // Clicking anywhere on the toast's content dismisses it - the whole `<span>`
+  // carries the handler, not just the link.
+  it('closes the toast when its content is clicked', async () => {
+    const store = newFakeStore();
+    const messageApi = newFakeMessageApi();
+    start(store, messageApi, fn());
+
+    store.handler({id: 1, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
+    const hide = messageApi.success.mock.results[0].value;
+    renderToast(messageApi.success.mock.calls[0][0]);
+    await click(screen.getByText(/my-archive/));
+
+    expect(hide).toHaveBeenCalledTimes(1);
+  });
+
   // The ask: "Download it" fetches the archive from the toast itself, the way
-  // the Download button on the /downloads page does.
-  it('downloads the task when the success toast\'s link is clicked', async () => {
+  // the Download button on the /downloads page does, and its own click
+  // bubbles into the content's handler, so the toast closes too.
+  it('downloads the task and closes the toast when its link is clicked', async () => {
     const store = newFakeStore();
     const messageApi = newFakeMessageApi();
     const downloadTask = fn();
@@ -89,11 +136,13 @@ describe('startAsyncTaskNotifications', () => {
     const task = {id: 7, status: 'SUCCESS', params: {archiveName: 'my-archive'}};
 
     store.handler(task);
+    const hide = messageApi.success.mock.results[0].value;
     renderToast(messageApi.success.mock.calls[0][0]);
     await click(screen.getByText('Download it'));
 
     expect(downloadTask).toHaveBeenCalledTimes(1);
     expect(downloadTask).toHaveBeenCalledWith(task);
+    expect(hide).toHaveBeenCalledTimes(1);
   });
 
   // Without this, the production wiring - `downloadArchiveTask(store, task)`,
@@ -112,17 +161,6 @@ describe('startAsyncTaskNotifications', () => {
     await click(screen.getByText('Download it'));
 
     expect(store.consumeTask).toHaveBeenCalledWith(9);
-  });
-
-  it('offers the Downloads page as a hash link, which needs no router', () => {
-    const store = newFakeStore();
-    const messageApi = newFakeMessageApi();
-    start(store, messageApi, fn());
-
-    store.handler({id: 8, status: 'SUCCESS', params: {archiveName: 'my-archive'}});
-    renderToast(messageApi.success.mock.calls[0][0]);
-
-    expect(screen.getByText('Downloads page')).toHaveAttribute('href', '#/downloads');
   });
 
   it('calls messageApi.error with the archive name and errorMessage for a FAILED task', () => {
