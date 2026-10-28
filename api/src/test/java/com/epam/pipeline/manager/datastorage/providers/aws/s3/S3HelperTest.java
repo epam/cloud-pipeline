@@ -19,12 +19,16 @@ package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -35,8 +39,10 @@ import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,9 +80,15 @@ public class S3HelperTest {
     private final S3Helper helper = spy(new S3Helper(events, messageHelper));
     private final S3bucketDataStorage storage = new S3bucketDataStorage();
 
-    @BeforeEach    public void setUp() {
+    @BeforeEach    public void setUp() throws Exception {
         doReturn(amazonS3).when(helper).getDefaultS3Client();
         storage.setPath(BUCKET);
+        // Signing reads the object's head and hands back a url. Only the content-disposition tests
+        // reach either, and both would be a null from the mock without this.
+        when(amazonS3.getObjectMetadata(any(GetObjectMetadataRequest.class)))
+                .thenReturn(new ObjectMetadata());
+        when(amazonS3.generatePresignedUrl(any(GeneratePresignedUrlRequest.class)))
+                .thenReturn(URI.create("https://bucket.s3.amazonaws.com/signed").toURL());
     }
 
     @Test
@@ -307,5 +319,35 @@ public class S3HelperTest {
                 description.appendText("Delete object request doesn't have some of the required key-version pairs");
             }
         };
+    }
+
+    @Test
+    public void generateDownloadURLShouldOfferTheKeysOwnNameByDefault() {
+        assertEquals("attachment; filename=\"file.zip\"",
+                dispositionOf(helper.generateDownloadURL(BUCKET, "generated/file.zip", NO_VERSION,
+                        ContentDisposition.ATTACHMENT)));
+    }
+
+    @Test
+    public void generateDownloadURLShouldOfferTheNameTheCallerAsksFor() {
+        // The case this overload exists for: an object keyed by the id of the task that produced it has
+        // no name a user would recognise, and the name they asked for is held elsewhere.
+        assertEquals("attachment; filename=\"selection.zip\"",
+                dispositionOf(helper.generateDownloadURL(BUCKET, "archives/4f1a2c90.zip", NO_VERSION,
+                        ContentDisposition.ATTACHMENT, "selection.zip")));
+    }
+
+    @Test
+    public void generateDownloadURLShouldFallBackToTheKeyWhenTheNameIsBlank() {
+        assertEquals("attachment; filename=\"4f1a2c90.zip\"",
+                dispositionOf(helper.generateDownloadURL(BUCKET, "archives/4f1a2c90.zip", NO_VERSION,
+                        ContentDisposition.ATTACHMENT, null)));
+    }
+
+    private String dispositionOf(final DataStorageDownloadFileUrl ignored) {
+        final ArgumentCaptor<GeneratePresignedUrlRequest> captor =
+                ArgumentCaptor.forClass(GeneratePresignedUrlRequest.class);
+        verify(amazonS3).generatePresignedUrl(captor.capture());
+        return captor.getValue().getResponseHeaders().getContentDisposition();
     }
 }
