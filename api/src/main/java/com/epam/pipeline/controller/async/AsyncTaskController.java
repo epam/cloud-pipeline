@@ -52,11 +52,11 @@ public class AsyncTaskController extends AbstractRestController {
     @PostMapping("/filter")
     @ResponseBody
     @Operation(
-            summary = "Lists asynchronous tasks of the current user.",
-            description = "Lists asynchronous tasks of the current user. An administrator may leave the "
-                    + "owner empty to list tasks of all users. The answer carries the matching tasks "
-                    + "as 'elements', and how many the filter matched as 'totalCount' - which counts "
-                    + "the whole match rather than the page.")
+            summary = "Lists asynchronous tasks.",
+            description = "Lists asynchronous tasks of the current user. An administrator, or a storage "
+                    + "administrator, may leave the owner empty to list tasks of all users. The answer "
+                    + "carries the matching tasks as 'elements', and how many the filter matched as "
+                    + "'totalCount' - which counts the whole match rather than the page.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<PagedResult<List<AsyncTask>>> filter(@RequestBody(required = false) final AsyncTaskFilterVO filter) {
         return Result.success(asyncTaskApiService.loadByFilter(filter));
@@ -91,7 +91,9 @@ public class AsyncTaskController extends AbstractRestController {
     @Operation(
             summary = "Cancels an asynchronous task.",
             description = "Cancels an asynchronous task. A task nobody has taken is cancelled at once, "
-                    + "a running one is asked to stop and confirms the cancellation itself.")
+                    + "a running one is asked to stop and confirms the cancellation itself. Own tasks "
+                    + "may be cancelled by their owner; an administrator or a storage administrator "
+                    + "may cancel the task of any user.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<AsyncTask> cancel(@PathVariable(value = ID) final String id) {
         return Result.success(asyncTaskApiService.cancel(id));

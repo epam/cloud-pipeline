@@ -32,8 +32,9 @@ import java.util.List;
  * Which tasks to list. Every field is optional; an empty filter lists everything the caller may see.
  *
  * <p>{@code owner} is never taken from the request for a regular user: the ACL layer overwrites it
- * with the authenticated login, so a foreign login cannot be substituted. An administrator may leave
- * it empty to see everyone's tasks, or set it to look at one user.</p>
+ * with the authenticated login, so a foreign login cannot be substituted. An administrator, or a
+ * storage administrator, may leave it empty to see everyone's tasks, or set it to look at one
+ * user.</p>
  */
 @Getter
 @Setter
@@ -44,7 +45,8 @@ import java.util.List;
         + "\"page\": 1, \"pageSize\": 20}")
 public class AsyncTaskFilterVO {
 
-    @Schema(description = "Ignored for a regular user, who always sees only own tasks.")
+    @Schema(description = "Ignored for a regular user, who always sees only own tasks. Honoured for "
+            + "an administrator and for a storage administrator.")
     private String owner;
 
     private AsyncTaskType type;
