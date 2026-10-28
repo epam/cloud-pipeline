@@ -198,34 +198,30 @@ It is being performed manually. After the smoke testing, tester leaves a corresp
 
 **Test cases**  
 Test case(s) are being created for futher tests preparation, which shall check and confirm that the customer task has fully implemented as required.  
-In the **`Cloud Pipeline`** development process, test case(s) for each customer task shall be created as a separate issue. Such issue is being created from a blank template with the following features:
+In the **`Cloud Pipeline`** development process, test case(s) for each customer task are being written under `docs/testcases/UI/`, within the original task issue, in a separate branch and pull request:
 
-- issue title and description shall have links to the original task
-- issue description shall contain steps to verify implemented functionality in details
-- if the current test can't be automated, the issue description shall contain a specific note about it
-- (_optionally_) for such issue, the special label can be set - ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_11.png)
-- (_optionally_) for such issue, the Project "**E2E Tests Automation**" can be set:  
-    ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_12.png)
-- after the test case is prepared, the label shall be set to the original task issue - ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_13.png)
+- the pull request shall have links to the original task and to its implementation pull request
+- test case shall contain steps to verify implemented functionality in details
+- if the current test can't be automated, the test case title shall be marked `[MANUAL]`
+- after the test case pull request is created, the label shall be set to the original task issue - ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_13.png), with the comment `Test cases were created by #<pr> and located [here](<link to the test cases folder>)`
 
 **Tests development**  
-After the test case creation, it shall be assigned to one or more testers from the development team.  
+After the test case creation, one or more testers from the development team shall be assigned to the original task issue.  
 This action is being displayed at the issue card - at the "**Assignees**" section and in the issue card.
 
-If the test case can't be automated, its testing is being performed manually. Manual testing results are reflected in the test case issue comments. If wrong implemented functionality is being encountered during the testing, tester leaves comment(s) with the error(s) description to the original task issue and waits for their fixes.
+If the test case can't be automated, its testing is being performed manually. Manual testing results are reflected in the original task issue comments. If wrong implemented functionality is being encountered during the testing, tester leaves comment(s) with the error(s) description to the original task issue and waits for their fixes.
 
 Else if the test case can be automated, the assigned tester(s) starts the implementation of the test code:
 
-- (_optionally_) the tester changes the state of the test case issue by setting the label ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_07.png)
+- (_optionally_) the tester changes the state of the original task issue by setting the label ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_07.png)
 - after the test functionality is implemented, the tester launches the new test from the own branch and checks results
-- if the test is passed according to the current test case, tester creates a pull request with the code changes to the main Cloud Pipeline project with a link to the current test case issue
+- if the test is passed according to the current test case, tester creates a pull request with the code changes to the main Cloud Pipeline project with a link to the original task issue
 - if the test isn't passed according to wrong implemented functionality, tester leaves comment(s) with the error(s) description to the original task issue and waits for their fixes
 - when all fixes are done and conflicts are resolved, the pull request is being merged to the base branch (`develop`). So, the new test is included for the tests running on a daily basis
-- test case issue is being closed after that
 - after the test is prepared, the label shall be set to the original task issue - ![CloudPipelineContributions](docs/md/attachments/CONTRIBUTIONS/Contributions_14.png)
 
 **Tests results**  
-Regardless of testing type (manually/automated), after all fixes done and the test is being passed, tester adds link to the test results as a comment to the test case issue.  
+Regardless of testing type (manually/automated), after all fixes done and the test is being passed, tester adds link to the test results as a comment to the original task issue.  
 Full test results are also being uploaded into the `GitHub`, in a separate branch of the **`Cloud Pipeline`** project.
 
 ### Stage 4. Documenting
@@ -248,11 +244,11 @@ In general, the whole contribution procedure looks like:
 1. Task creation: new issue (title, description, assignees)
 2. Task implementation: state labels, pull request(s), comment "_to verify_"
 3. Manual testing of the implementation of the base task functionality: comment "_verified_" or errors description and return to step 2
-4. Test case(s) creation: new issue (title, description, link to original task, labels)
+4. Test case(s) creation: pull request (links to the original task and its implementation pull request), label, comment
 5. Tests implementation:
-    - _manually_ (for non-automated test cases) - testing, comment "_passed_" to the test case issue or errors description to the task issue and return to step 2
-    - _automated_ - state labels, pull request(s), comment "_passed_" to the test case issue or errors description to the task issue and return to step 2
-6. Test results: test case and test issues are closed, automated test results are being uploaded to the Cloud Pipeline repo, comment "_tests are passed_" to the original task
+    - _manually_ (for non-automated test cases) - testing, comment "_passed_" or errors description to the task issue and return to step 2
+    - _automated_ - state labels, pull request(s), comment "_passed_" or errors description to the task issue and return to step 2
+6. Test results: automated test results are being uploaded to the Cloud Pipeline repo, comment "_tests are passed_" to the original task
 7. Documentation writing: pull request(s), comment "_docs were updated_" to the original task
 8. Task is closed
 

@@ -148,8 +148,8 @@ that a change needs none, and staying quiet about it, is what this rule exists t
 **A change that reaches the GUI owes UI test cases**, wherever its code is — an API or other backend
 change the GUI shows owes them as much as a `client/` change does. They never go on this task's
 branch, unless they are the whole task. The `testcases` skill holds which cases are owed, how to
-write them, and the issue, branch and pull request they go on. The hand-back names that issue and
-branch, or says why the change reaches nothing in the GUI.
+write them, and the branch and pull request they go on. The hand-back names that branch, or says
+why the change reaches nothing in the GUI.
 
 ## Fresh-eyes review
 

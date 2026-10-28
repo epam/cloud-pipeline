@@ -16,23 +16,26 @@ Owed are the cases for **what the change touched**: existing cases it made stale
 added or changed that no case covers. That no case covers it today is the gap, not a reason to skip.
 The rest of the area's missing coverage is not owed.
 
-## Their own issue, branch and pull request
+## Their own branch and pull request
 
-**Test cases that come with other work never go on that task's branch.** They get their own issue,
-branch and draft pull request — `CONTRIBUTIONS.md` → "Test cases" — and go through the `implement-task`
-steps by themselves. The Plan is "Offer the plan", below.
+**Test cases that come with other work never go on that task's branch.** They get their own branch
+and draft pull request under the task's issue, and go through the `implement-task` steps from
+Workspace onward by themselves. The Plan is "Offer the plan", below.
 
-- **The issue links the original task.** Where none exists yet, offer to file it — the `file-issue`
-  skill; unattended, file it.
-- **Name the branch per `CONTRIBUTIONS.md` → "Branch naming"**: the test-case issue's number, with the
-  `_testcases` suffix.
+- **Name the branch per `CONTRIBUTIONS.md` → "Branch naming"**, with the `_testcases` suffix.
 - **Cut it from the same base the task's branch was cut from** — never from the task's branch itself.
-- **The pull request links its issue, the original task and the task's pull request**, and the task's
-  pull request links back to it.
-- **`state/has-case` goes on the original task's issue.**
+- **The pull request links the issue and the task's pull request**, and the task's pull request links
+  back to it.
+- **Once the pull request opens, the issue gets `state/has-case` and a comment** naming the pull
+  request and the folder the cases land in on the base branch:
+
+  ```
+  Test cases were created by #<pr> and located [here](https://github.com/epam/cloud-pipeline/tree/<base>/docs/testcases/UI/<folder>)
+  ```
 
 Asked only to add, update or fix test cases, that is the whole task: it runs the `implement-task`
-skill like any other change, and of the rules above only the `_testcases` branch name applies.
+skill like any other change, and of the rules above the `_testcases` branch name and the issue's
+label and comment apply.
 
 ## Writing them
 
