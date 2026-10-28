@@ -166,15 +166,30 @@ public class NodePoolValidator {
         final CapacityReservationType type = request.getReservationType();
         Assert.notNull(type,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED));
-        Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
-                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
 
         Assert.isTrue(vo.getCount() >= 1,
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
 
-        validateReservationSize(vo);
-        validateReservationWindow(request);
-        validateReservationInstance(vo, request);
+        if (CapacityReservationType.CAPACITY_BLOCK == type) {
+            validateCapacityBlockPurchase(request);
+            validateReservationInstance(vo, request);
+        } else {
+            Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
+                    messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
+            validateReservationSize(vo);
+            validateReservationWindow(request);
+            validateReservationInstance(vo, request);
+        }
+    }
+
+    /**
+     * A capacity block names an exact offering rather than a window to search - there is no size or lead-time
+     * policy to check against, since AWS's own 1-64 instance-count and 8-week lead limits are already enforced
+     * when the offering was searched for, not here.
+     */
+    private void validateCapacityBlockPurchase(final CapacityReservationRequest request) {
+        Assert.isTrue(StringUtils.isNotBlank(request.getCapacityBlockOfferingId()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED));
     }
 
     private void validateReservationSize(final NodePoolVO vo) {
