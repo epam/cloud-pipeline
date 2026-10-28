@@ -7,8 +7,7 @@ import {
   CP_CAP_REQUESTS_GPU,
   CP_CAP_REQUESTS_RAM
 } from '../../utilities/parameters';
-import preferences from '../../../../../../models/preferences/PreferencesLoad';
-import escapeRegExp from '../../../../../../utils/escape-reg-exp';
+import capacityBlocks from '../../../../../../models/cluster/capacity-blocks';
 import InstanceTypes from '../../../../../../models/utils/InstanceTypes';
 import {ClusterNodeResources} from '../../../../../../models/cluster/NodeResources';
 
@@ -48,31 +47,23 @@ export function reservationParametersDiffer (a, b) {
   return aCpu !== bCpu || aGpu !== bGpu || aRam !== bRam;
 }
 
-export function findReservationParameterConfig (instanceType, prefs = preferences) {
-  const {launchReservationParameters = {}} = prefs;
-  if (instanceType && launchReservationParameters) {
-    for (const [key, cfg] of Object.entries(launchReservationParameters || {})) {
-      let l = key.replace(/\*/g, '____STAR____');
-      l = escapeRegExp(l);
-      l = l.replace(/____STAR____/g, '.*');
-      const reg = new RegExp(`^${l}$`, 'i');
-      if (reg.test(instanceType)) {
-        return cfg;
-      }
-    }
+// Only an explicitly chosen pool (an encoded `pool:<id>` node-type
+// selection) has a config. A plain instance type launches without one, even
+// where a pool backs that type: picking the plain type means not reserved.
+export async function getReservationParametersConfig (poolId) {
+  // Loaded even with no pool chosen: telling a pool's `additionalParameters`
+  // apart from the run's own, to strip them from a plain launch, reads it.
+  await capacityBlocks.load();
+  if (poolId === undefined || poolId === null) {
+    return undefined;
   }
-  return undefined;
-}
-
-export async function getReservationParametersConfig (instanceType) {
-  await preferences.fetchIfNeededOrWait();
-  return findReservationParameterConfig(instanceType, preferences);
+  const pool = (capacityBlocks.pools || []).find((aPool) => aPool && aPool.id === poolId);
+  return pool && pool.launchConfig ? pool.launchConfig : undefined;
 }
 
 export async function getInstanceResources (config) {
   const {
-    kube_assign_policy: _kubeAssignPolicy = {},
-    kubeAssignPolicy = _kubeAssignPolicy
+    kubeAssignPolicy
   } = config || {};
   const {
     selector
@@ -128,10 +119,10 @@ export function getInstanceResourcesRestrictions (
     vcpu: maxCpu = Infinity
   } = instanceTypeObj || {};
   let {
-    cpu_requests_reserved: cpuReserved = 1,
-    gpu_requests_reserved: gpuReserved = 0,
-    ram_requests_reserved: ramReservedRaw = 1,
-    ram_requests_unit: ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
+    cpuRequestsReserved: cpuReserved = 1,
+    gpuRequestsReserved: gpuReserved = 0,
+    ramRequestsReserved: ramReservedRaw = 1,
+    ramRequestsUnit = DEFAULT_RAM_REQUESTS_UNIT
   } = config;
   const ramReserved = parseRAMRequest(ramReservedRaw, ramRequestsUnit);
   let maxRam = Number.isFinite(maxRamRaw)
@@ -165,9 +156,9 @@ export function correctReservationParameters (
     };
   }
   let {
-    cpu_requests_enabled: cpuEnabled = false,
-    gpu_requests_enabled: gpuEnabled = false,
-    ram_requests_enabled: ramEnabled = false
+    cpuRequestsEnabled: cpuEnabled = false,
+    gpuRequestsEnabled: gpuEnabled = false,
+    ramRequestsEnabled: ramEnabled = false
   } = config;
   let {
     cpu = 1,
@@ -202,14 +193,15 @@ export async function buildLaunchParametersFromReservationParameters (
   options = {}
 ) {
   const {
-    applyAdditionalParameters = true
+    applyAdditionalParameters = true,
+    poolId
   } = options || {};
   const [
     instanceTypeObj = {},
     cfg
   ] = await Promise.all([
     getInstanceType(instanceType),
-    getReservationParametersConfig(instanceType)
+    getReservationParametersConfig(poolId)
   ]);
   const result = {...(parameters || {})};
   for (const key of Object.keys(result || {})) {
@@ -229,11 +221,11 @@ export async function buildLaunchParametersFromReservationParameters (
     };
   }
   let {
-    cpu_requests_enabled: cpuEnabled = false,
-    gpu_requests_enabled: gpuEnabled = false,
-    ram_requests_enabled: ramEnabled = false,
-    parameters: additionalParameters = {},
-    kube_assign_policy: podAssignPolicy
+    cpuRequestsEnabled: cpuEnabled = false,
+    gpuRequestsEnabled: gpuEnabled = false,
+    ramRequestsEnabled: ramEnabled = false,
+    additionalParameters = {},
+    kubeAssignPolicy: podAssignPolicy
   } = cfg;
   const {
     cpu = 1,
@@ -270,7 +262,13 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
     payloads.map((p) => buildLaunchParametersFromReservationParameters(
       readReservationParameters(p.params),
       p.instanceType,
-      p.params
+      p.params,
+      // A caller that knows which pool the user picked - the launch form's
+      // `generateLaunchPayload`, or the launch confirmation dialog's own
+      // selector state - sets `capacityBlockPoolId` on the payload itself;
+      // this is the one place that reads it. A payload without it launches
+      // with no reservation requests at all.
+      {poolId: p.capacityBlockPoolId}
     ))
   );
   for (let i = 0; i < reservationRequests.length; i++) {
@@ -280,6 +278,11 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
     } = reservationRequests[i];
     payloads[i].params = appliedReservationParameters;
     payloads[i].podAssignPolicy = podAssignPolicy;
+    // `capacityBlockPoolId` is how a caller tells this function which pool to
+    // use - it is not a run API field, so it must never reach the request
+    // body a payload becomes. Deleting it here, rather than in every caller,
+    // keeps that one contract in one place.
+    delete payloads[i].capacityBlockPoolId;
   }
 }
 
@@ -538,9 +541,9 @@ export function getNodeAvailability (nodeResources) {
 export function getInstanceResourcesAvailability (resources, requests, config) {
   const nodesAvailability = (resources || []).map(getNodeAvailability);
   const {
-    cpu_requests_enabled: cpuRequestsEnabled = false,
-    gpu_requests_enabled: gpuRequestsEnabled = false,
-    ram_requests_enabled: ramRequestsEnabled = false
+    cpuRequestsEnabled = false,
+    gpuRequestsEnabled = false,
+    ramRequestsEnabled = false
   } = config || {};
   const {
     cpu: cpuRequest = 0,

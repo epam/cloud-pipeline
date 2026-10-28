@@ -18,6 +18,10 @@ import React from 'react';
 import {isObservableArray} from 'mobx';
 import runDefaultParameters from '../../../../../models/pipelines/PipelineRunDefaultParameters';
 import preferences from '../../../../../models/preferences/PreferencesLoad';
+import capacityBlocks from '../../../../../models/cluster/capacity-blocks';
+import {
+  getCapacityBlockAdditionalParameterNames
+} from '../../../../../models/cluster/capacity-blocks/utilities';
 import {
   systemCapabilitiesParameters,
   reservedParameters,
@@ -1884,25 +1888,14 @@ export function getCapabilitiesParameters (options = {}) {
 }
 
 /**
- * Returns all reservation request parameters
- * @param [prefs]
+ * Returns all reservation request parameters - every `additionalParameters`
+ * key across the capacity-block pools (`models/cluster/capacity-blocks`),
+ * deduped. `[]` until the store has loaded, the way this was `[]` until the
+ * now-retired `launch.reservation.parameters` preference had loaded.
  * @returns {string[]}
  */
-export function getReservationRequestParameters (prefs = preferences) {
-  if (prefs.loaded) {
-    const reservationParameters = prefs.launchReservationParameters || {};
-    const result = [];
-    for (const cfg of Object.values(reservationParameters || {})) {
-      const {
-        parameters = {}
-      } = cfg || {};
-      for (const p of Object.keys(parameters || {})) {
-        result.push(p);
-      }
-    }
-    return [...(new Set(result))];
-  }
-  return [];
+export function getReservationRequestParameters () {
+  return getCapacityBlockAdditionalParameterNames(capacityBlocks.pools);
 }
 
 /**
@@ -1919,14 +1912,10 @@ export function isCapabilityParameter (parameterName, options = {}) {
 /**
  * Checks if parameter is a reservation request parameter
  * @param {string} parameterName
- * @param {{preferences}} [options]
  * @returns {boolean}
  */
-export function isReservationRequestParameter (parameterName, options = {}) {
-  const {
-    preferences: prefs = preferences
-  } = options || {};
-  const params = getReservationRequestParameters(prefs);
+export function isReservationRequestParameter (parameterName) {
+  const params = getReservationRequestParameters();
   return params.some((p) => p.toLowerCase() === parameterName.toLowerCase());
 }
 

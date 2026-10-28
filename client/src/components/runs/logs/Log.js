@@ -104,10 +104,8 @@ import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import {isCapacityBlockRun} from '../../../models/cluster/capacity-blocks';
 import runNodeIsUnavailable from '../actions/node-availability';
-import {
-  findReservationParameterConfig
-} from '../../pipelines/launch/form/components/reservation-parameters/utilities';
 import {
   normalizeRunParameters,
   sortRunParameters
@@ -1825,8 +1823,7 @@ class Logs extends localization.LocalizedReactComponent {
       platform,
       sshPassword
     } = run || {};
-    const {nodeType: instanceType} = instance || {};
-    const isReservationParameterInstance = Boolean(findReservationParameterConfig(instanceType));
+    const isReservationParameterInstance = isCapacityBlockRun(run);
 
     if (pending || !run) {
       Title = <h1>Run </h1>;

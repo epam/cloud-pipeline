@@ -59,6 +59,8 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
+- [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
 
 ***
 
@@ -1855,6 +1857,28 @@ Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VER
 
 In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+***
+
+## Capacity blocks sourced from node pools
+
+Previously, the GUI learned about capacity blocks - reserved compute capacity that a node type can draw on at launch - from the `launch.reservation.parameters` system preference, a map keyed by an instance-type pattern. That preference is no longer read by the GUI.
+
+In the current version, the GUI reads capacity blocks directly off the node pools that back them. The node type list leads with a **Reserved capacity blocks** group, one entry per pool: only picking an entry there launches the run on the reservation, and a plain instance type launches without one. The launch form also lists the reserved capacity available right now for the selected **Cloud Region**. Configurations, launch profiles and tool settings do not offer capacity blocks.
+
+A run on a node pool, or with reservation requests, no longer shows an estimated price: a pool node outlives a single run, so a per-run price would mislead.
+
+For more details see [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#future-dated-node-pools).
+
+## Node pool managers can edit and delete the pools they own
+
+Previously, a **ROLE_NODE_POOL_MANAGER** could create a **Future dated** node pool but never reach it again - viewing, editing and removing an existing pool was restricted to administrators and **ROLE_RUN_ADMIN**.
+
+In the current version, such a user may also open, edit and remove a pool it owns - the one it created. A pool owned by somebody else, or managed only by an administrator, stays out of reach.
+
+Deleting a **Future dated** pool whose capacity reservation is still open - any status but _Requires approval_, _Finished_, _Purchase failed_, _Failed_ or _Cancelled_ - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The **DELETE** button stays disabled until a **Force deletion** checkbox is ticked, for an administrator exactly as much as for the pool's owner.
+
+For more details see [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#delete-existing-pool).
 
 ***
 

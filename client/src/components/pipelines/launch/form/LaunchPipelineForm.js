@@ -88,6 +88,7 @@ import * as validatorUtilities from './utilities/validator-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
+import {formOffersCapacityBlocks} from './utilities/capacity-blocks';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
   SubmitButton,
@@ -160,6 +161,7 @@ import {getParameterKeyClassName} from './parameters/utilities';
 import ParametersPayloadSelector from './parameters/payload/selector';
 import ReservationParameters from './components/reservation-parameters';
 import NodeUpRetryCountFormItem from './components/node-up-retry-count';
+import InstanceTypeSuggestion from './components/instance-type-suggestion';
 import {
   applyNodeUpRetryCountDefault,
   getDefaultNodeUpRetryCount,
@@ -167,9 +169,16 @@ import {
 } from './utilities/node-up-retry-count';
 import {
   buildLaunchParametersFromReservationParameters,
-  findReservationParameterConfig,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
+import capacityBlocks from '../../../../models/cluster/capacity-blocks';
+import {
+  correctCapacityBlockValue,
+  decodeInstanceTypeValue,
+  encodeCapacityBlockValue,
+  getCapacityBlockOptions
+} from '../../../../models/cluster/capacity-blocks/utilities';
+import capacityReservations from '../../../../models/cluster/CapacityReservations';
 import Markdown from '../../../special/markdown';
 import DataStorageItemSize from '../../../../models/dataStorage/DataStorageItemSize';
 import VersionFile from '../../../../models/pipelines/VersionFile';
@@ -563,7 +572,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      const instanceTypeValue = this.selectedInstanceTypeName;
+      // A capability is gated on the launch config of the pool the user
+      // chose; with no pool chosen there is none.
+      const pool = this.selectedCapacityBlockPool;
       return (
         <FormItem
           className={getFormItemClassName(styles.formItem, 'runCapabilities')}
@@ -581,6 +593,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             region={this.currentCloudRegion}
             mode={RUN_CAPABILITIES_MODE.launch}
             instanceType={instanceTypeValue}
+            poolId={pool ? pool.id : undefined}
           />
         </FormItem>
       );
@@ -725,15 +738,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return detachedConfigurations.find((d) => d.name === currentConfigurationName);
   }
 
+  // The node-type field's raw value is either a plain instance type name or a
+  // capacity-block pool encoded by `encodeCapacityBlockValue` (`pool:<id>`).
+  // These two getters are the single place that reads the field's *current*
+  // value for "what is selected" purposes - every such read elsewhere in this
+  // file goes through `selectedInstanceTypeName` rather than re-deriving the
+  // decode. A handler that already holds the value as its own argument
+  // (`instanceTypeChanged`'s `newType`, or a submitted `values[...].type`
+  // inside the two payload builders) decodes it directly instead - decoding
+  // *that* value is exactly as safe, and re-reading the field through this
+  // getter would risk a stale value depending on when it runs. Either way the
+  // raw, possibly-encoded string itself stays touched only by what *sets* it
+  // - the `Select`, and `instanceTypeSuggestionSelected` encoding a specific
+  // pool the same way - and by those few direct decodes plus
+  // `correctInstanceTypeValue` (which must see it raw to validate it).
+  get selectedInstanceTypeName () {
+    const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return decodeInstanceTypeValue(value, capacityBlocks.pools).instanceType;
+  }
+
+  get selectedCapacityBlockPool () {
+    const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+    return decodeInstanceTypeValue(value, capacityBlocks.pools).pool;
+  }
+
   getIsInstanceTypeWithReservation () {
-    const {
-      detached,
-      preferences
-    } = this.props;
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    return detached
-      ? false
-      : Boolean(findReservationParameterConfig(instanceTypeValue, preferences));
+    // Only a pool picked from "Reserved capacity blocks" is a reservation: a
+    // plain instance type launches without one, even where a pool backs it.
+    return formOffersCapacityBlocks(this.props) && !!this.selectedCapacityBlockPool;
   }
 
   getDefaultRootEntityId () {
@@ -892,6 +924,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               onSave
             } = launchProfile;
             if (onSave) {
+              // A launch profile offers no capacity blocks
+              // (`formOffersCapacityBlocks`), and `capacityBlockPoolId` is
+              // not a field a saved profile keeps.
+              delete payload.capacityBlockPoolId;
               await onSave(payload);
             }
           }
@@ -1160,11 +1196,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters,
       conditionalParameters
     } = parameterUtilities.parametersToConfigurationParams(this.getParameters());
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    // The field's own value may be a capacity-block pool encoded as `pool:<id>`
+    // (see `selectedInstanceTypeName`/`selectedCapacityBlockPool`) - decode it
+    // once here rather than anywhere downstream.
+    const {
+      instanceType,
+      poolId: capacityBlockPoolId
+    } = decodeInstanceTypeValue(values[EXEC_ENVIRONMENT].type, capacityBlocks.pools);
     const fallbackInstanceTypes = this.fallbackInstanceTypesDisabled
       ? []
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     let payload = {
+      // Always the plain instance type: a saved configuration has no field
+      // for the chosen pool's id, so it launches without a reservation. Do
+      // not "fix" this to carry the encoded value.
       instance_size: instanceType,
       fallback_instance_types: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
@@ -1207,86 +1252,86 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.dtsId = +this.state.dtsId;
     }
     if (values[ADVANCED].limitMounts && !this.isWindowsPlatform) {
-        payload.parameters[CP_CAP_LIMIT_MOUNTS] = {
+      payload.parameters[CP_CAP_LIMIT_MOUNTS] = {
+        type: 'string',
+        required: false,
+        value: values[ADVANCED].limitMounts
+      };
+    }
+    if (this.state.launchCluster && this.state.autoScaledCluster) {
+      payload.parameters[CP_CAP_AUTOSCALE] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.parameters[CP_CAP_AUTOSCALE_WORKERS] = {
+        type: 'int',
+        value: +this.state.maxNodesCount
+      };
+      if (this.state.autoScaledPriceType) {
+        payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
           type: 'string',
-          required: false,
-          value: values[ADVANCED].limitMounts
+          value: this.state.autoScaledPriceType
         };
+      } else {
+        delete payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE];
       }
-      if (this.state.launchCluster && this.state.autoScaledCluster) {
-        payload.parameters[CP_CAP_AUTOSCALE] = {
-          type: 'boolean',
-          value: true
-        };
-        payload.parameters[CP_CAP_AUTOSCALE_WORKERS] = {
-          type: 'int',
-          value: +this.state.maxNodesCount
-        };
-        if (this.state.autoScaledPriceType) {
-          payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE] = {
-            type: 'string',
-            value: this.state.autoScaledPriceType
-          };
-        } else {
-          delete payload.parameters[CP_CAP_AUTOSCALE_PRICE_TYPE];
-        }
-        if (this.state.hybridAutoScaledClusterEnabled) {
-          payload.parameters[CP_CAP_AUTOSCALE_HYBRID] = {
-            type: 'boolean',
-            value: true
-          };
-        }
-        if (this.state.gpuScalingConfiguration) {
-          payload.parameters = applyGPUScalingParameters(
-            this.state.gpuScalingConfiguration,
-            payload.parameters
-          );
-        } else if (this.state.childNodeInstanceConfiguration) {
-          applyChildNodeInstanceParameters(
-            payload.parameters,
-            this.state.childNodeInstanceConfiguration,
-            this.state.hybridAutoScaledClusterEnabled
-          );
-        }
-      }
-      if (this.state.launchCluster && this.state.gridEngineEnabled) {
-        payload.parameters[CP_CAP_SGE] = {
+      if (this.state.hybridAutoScaledClusterEnabled) {
+        payload.parameters[CP_CAP_AUTOSCALE_HYBRID] = {
           type: 'boolean',
           value: true
         };
       }
-      if (this.state.launchCluster && this.state.sparkEnabled) {
-        payload.parameters[CP_CAP_SPARK] = {
-          type: 'boolean',
-          value: true
-        };
+      if (this.state.gpuScalingConfiguration) {
+        payload.parameters = applyGPUScalingParameters(
+          this.state.gpuScalingConfiguration,
+          payload.parameters
+        );
+      } else if (this.state.childNodeInstanceConfiguration) {
+        applyChildNodeInstanceParameters(
+          payload.parameters,
+          this.state.childNodeInstanceConfiguration,
+          this.state.hybridAutoScaledClusterEnabled
+        );
       }
-      if (this.state.launchCluster && this.state.slurmEnabled) {
-        payload.parameters[CP_CAP_SLURM] = {
-          type: 'boolean',
-          value: true
-        };
-      }
-      if (this.state.launchCluster && this.state.kubeEnabled) {
-        payload.parameters[CP_CAP_KUBE] = {
-          type: 'boolean',
-          value: true
-        };
-        payload.parameters[CP_CAP_DIND_CONTAINER] = {
-          type: 'boolean',
-          value: true
-        };
-        payload.parameters[CP_CAP_SYSTEMD_CONTAINER] = {
-          type: 'boolean',
-          value: true
-        };
-      }
-      if (this.rescheduleRun !== undefined) {
-        payload.parameters[CP_CAP_RESCHEDULE_RUN] = {
-          type: 'boolean',
-          value: this.rescheduleRun
-        };
-      }
+    }
+    if (this.state.launchCluster && this.state.gridEngineEnabled) {
+      payload.parameters[CP_CAP_SGE] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.sparkEnabled) {
+      payload.parameters[CP_CAP_SPARK] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.slurmEnabled) {
+      payload.parameters[CP_CAP_SLURM] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.parameters[CP_CAP_KUBE] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.parameters[CP_CAP_DIND_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+      payload.parameters[CP_CAP_SYSTEMD_CONTAINER] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.rescheduleRun !== undefined) {
+      payload.parameters[CP_CAP_RESCHEDULE_RUN] = {
+        type: 'boolean',
+        value: this.rescheduleRun
+      };
+    }
     payload.parameters = getParametersFromFsConfig(
       this.state.fsConfig,
       payload.parameters,
@@ -1300,7 +1345,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         instanceType,
         payload.parameters,
         {
-          applyAdditionalParameters: applyAdditionalReservationParameters
+          applyAdditionalParameters: applyAdditionalReservationParameters,
+          poolId: capacityBlockPoolId
         }
       );
       payload.parameters = appliedReservationParameters;
@@ -1332,7 +1378,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } else if (this.state.startIdle) {
       cmd = 'sleep infinity';
     }
-    const instanceType = values[EXEC_ENVIRONMENT].type;
+    // See the matching comment in `generateConfigurationPayload`: decode once,
+    // and never let the encoded `pool:<id>` form reach the payload below.
+    const {
+      instanceType,
+      poolId: capacityBlockPoolId
+    } = decodeInstanceTypeValue(values[EXEC_ENVIRONMENT].type, capacityBlocks.pools);
     const tags = filterVisibleTagsSync(
       this.state.userTags,
       this.state.userTagsVisibleTags
@@ -1351,6 +1402,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     const payload = {
       instanceType,
+      // The pool backing `instanceType`, if the user picked one explicitly -
+      // not a run API field. `run()` (`ensureValidReservationParametersForLaunchPayloads`)
+      // reads this to apply that pool's launch config - without it the run
+      // has no reservation - and deletes it before the payload becomes a
+      // request body.
+      capacityBlockPoolId,
       fallbackInstanceTypes: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
         : undefined,
@@ -1535,7 +1592,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } = await buildLaunchParametersFromReservationParameters(
       this.state.reservationParameters,
       instanceType,
-      payload.params
+      payload.params,
+      {poolId: capacityBlockPoolId}
     );
     payload.params = appliedReservationParameters;
     payload.params = parameterUtilities
@@ -1783,7 +1841,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!type) {
       this.props.allowedInstanceTypes &&
       await this.props.allowedInstanceTypes.fetchIfNeededOrWait();
-      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+      type = this.selectedInstanceTypeName ||
         this.correctInstanceTypeValue(this.getDefaultValue('instance_size'));
     }
     if (!isSpot) {
@@ -1834,7 +1892,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   instanceTypeChanged = (newType) => {
-    const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
+    // `newType` is the Select's own just-picked value, so it is decoded here
+    // directly rather than through `selectedInstanceTypeName` - that getter
+    // reads the field's committed value, which this very handler is what
+    // commits. A pool is region-scoped by construction (`getCapacityBlockOptions`
+    // only offers one already matching the current region), so resolving an
+    // encoded value's instance type here cannot itself trigger the region
+    // switch below - it is already in the right region.
+    const {instanceType: newInstanceTypeName} = decodeInstanceTypeValue(
+      newType,
+      capacityBlocks.pools
+    );
+    const [instanceType] = this.instanceTypes.filter(t => t.name === newInstanceTypeName);
     if (instanceType) {
       try {
         const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
@@ -2675,10 +2744,38 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     ? (cpu / 2.0)
     : cpu;
 
+  instanceTypeSuggestionSelected = (instanceType, pool) => {
+    // `InstanceTypeSuggestion` already knows which specific pool a suggestion
+    // row belongs to and passes it here - encode it, the same way the Select's
+    // own "Reserved capacity blocks" option for that pool would. Skipping this
+    // would set the field to the plain type, which launches without a
+    // reservation.
+    const value = (pool && encodeCapacityBlockValue(pool)) || instanceType;
+    this.props.form.setFieldsValue({
+      [`${EXEC_ENVIRONMENT}.type`]: value
+    });
+    this.instanceTypeChanged(value);
+  };
+
+  get instanceTypeSelectionDisabled () {
+    return (this.props.readOnly && !this.props.canExecute) ||
+      (
+        this.props.allowedInstanceTypes &&
+        (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
+      );
+  }
+
   renderInstanceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
+    const capacityBlockPools = !formOffersCapacityBlocks(this.props)
+      ? []
+      : getCapacityBlockOptions(
+        capacityBlocks.pools,
+        this.instanceTypes,
+        {regionId: this.currentCloudRegionId}
+      );
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -2698,12 +2795,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         )(
           <Select
-            disabled={
-              (this.props.readOnly && !this.props.canExecute) ||
-              (
-                this.props.allowedInstanceTypes &&
-                (this.props.allowedInstanceTypes.changed || this.props.allowedInstanceTypes.pending)
-              )}
+            disabled={this.instanceTypeSelectionDisabled}
             showSearch
             allowClear={!!this.props.launchProfile}
             placeholder="Node type"
@@ -2719,14 +2811,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 {
                   hyperThreadingDisabled: this.hyperThreadingDisabled,
                   displayRegion: this.instanceTypesMergedForRegions,
-                  preferences: this.props.preferences,
-                  showReservationTag: !this.props.detached
+                  capacityBlockPools
                 }
               )
             }
           </Select>
         )}
       </FormItem>
+    );
+  };
+
+  // Rendered in the summary column, under the CPU/RAM/GPU figures, rather than
+  // beside the node type selector: it is wide, and it is about what the run
+  // could use rather than about the field it would set.
+  renderInstanceTypeSuggestion = () => {
+    if (!formOffersCapacityBlocks(this.props)) {
+      return undefined;
+    }
+    return (
+      <InstanceTypeSuggestion
+        currentPoolId={
+          this.selectedCapacityBlockPool ? this.selectedCapacityBlockPool.id : undefined
+        }
+        instanceTypes={this.instanceTypes}
+        pools={capacityBlocks.pools}
+        reservations={(capacityReservations.value || []).slice()}
+        regionId={this.currentCloudRegionId}
+        disabled={this.instanceTypeSelectionDisabled}
+        onSelect={this.instanceTypeSuggestionSelected}
+      />
     );
   };
 
@@ -2758,7 +2871,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             instanceTypes={this.instanceTypes}
             hyperThreadingDisabled={this.hyperThreadingDisabled}
             displayRegion={this.instanceTypesMergedForRegions}
-            showReservationTag={!this.props.detached}
           />
         )}
       </FormItem>
@@ -2794,14 +2906,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderReservationParametersSelector = () => {
-    const {
-      detached
-    } = this.props;
-    if (detached) {
+    if (!formOffersCapacityBlocks(this.props)) {
       return null;
     }
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+    const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
+    // The chosen pool (`selectedCapacityBlockPool`) drives the preview the
+    // same way it drives the payload; with no pool chosen there is none.
+    const pool = this.selectedCapacityBlockPool;
     const {
       reservationParameters
     } = this.state;
@@ -2814,6 +2925,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <ReservationParameters
         className={styles.reservationParameters}
         instanceType={instanceType}
+        poolId={pool ? pool.id : undefined}
         parameters={reservationParameters}
         onChange={onChange}
       />
@@ -3117,8 +3229,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderExecutionEnvironmentSummary = () => {
-    const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const [instanceType] = this.instanceTypes.filter(t => t.name === instanceTypeValue);
+    const [instanceType] = this.instanceTypes.filter(t => t.name === this.selectedInstanceTypeName);
     let cpu = 0;
     let ram = 0;
     let gpu = 0;
@@ -3266,14 +3377,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value !== undefined && value !== null && this.instanceTypesLoaded) {
-      const v = this.instanceTypes.find(v => v.name === value);
-      if (v !== undefined) {
-        return v.name;
-      }
-      return null;
+    if (value === undefined || value === null || !this.instanceTypesLoaded) {
+      return value;
     }
-    return value;
+    // `correctCapacityBlockValue` is the pool-aware half, tested on its own -
+    // `undefined` means `value` does not name a pool at all (plain, or
+    // nonsense), which falls through to the plain-value correction below,
+    // exactly as before this field could ever carry a pool.
+    const corrected = correctCapacityBlockValue(
+      value,
+      capacityBlocks.pools,
+      this.instanceTypes,
+      {regionId: this.currentCloudRegionId}
+    );
+    if (corrected !== undefined) {
+      return corrected;
+    }
+    const v = this.instanceTypes.find(v => v.name === value);
+    if (v !== undefined) {
+      return v.name;
+    }
+    return null;
   };
 
   correctPriceTypeValue = (value) => {
@@ -3583,7 +3707,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         currentValue = defaultValue;
       }
       const noStoragesSelected = /^none$/i.test(currentValue);
-      const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+      const instanceType = this.selectedInstanceTypeName ||
         this.getDefaultValue('instance_size');
       const instance = this.instanceTypes.find(t => t.name === instanceType);
       const toggleDoNotMountStorages = (e) => {
@@ -4124,13 +4248,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           )
         );
         if (this.state.launchCluster) {
-          const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+          const instanceType = this.selectedInstanceTypeName ||
             this.getDefaultValue('instance_size');
           descriptions.push(
             `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this, true)}`
           );
         } else {
-          descriptions.push(this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+          descriptions.push(this.selectedInstanceTypeName ||
             this.getDefaultValue('instance_size'));
         }
         descriptions.push(`${this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk') ||
@@ -4985,7 +5109,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       </Row>
                     )}
                     <ConfigureClusterDialog
-                      instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
+                      instanceName={this.selectedInstanceTypeName}
                       launchCluster={this.state.launchCluster}
                       cloudRegionProvider={this.currentCloudRegionProvider}
                       autoScaledPriceType={this.state.autoScaledPriceType}
@@ -5041,6 +5165,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         this.renderExecutionEnvironmentSummary()
                       }
                     </Row>
+                    {this.renderInstanceTypeSuggestion()}
                   </div>
                 </div>
               </Row>
@@ -5157,6 +5282,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
+    // A reservation may have started or ended since the list was loaded.
+    capacityBlocks.refresh();
     // --------------------------
     this.updateFromProps();
     this.updateConfigurationsFromProps();
@@ -5638,8 +5765,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const payloads = this.getParametersPayloads();
     const validationFn = async (payload) => {
       const {parameters} = payload;
-      const instanceTypeValue = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-      const instanceType = this.instanceTypes.find(t => t.name === instanceTypeValue);
+      const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
       const opts = {
         form: this.props.form,
         payload,

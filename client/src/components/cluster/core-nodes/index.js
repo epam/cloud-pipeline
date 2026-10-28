@@ -21,7 +21,7 @@ import CoreServicesTable from './core-services-table';
 import SubSettings from '../../settings/sub-settings';
 import ProxyState from './proxy-state';
 import whoAmI from '../../../models/user/WhoAmI';
-import {isAdmin, isClusterReader} from '../utilities/access-permissinos';
+import {isAdmin, isClusterReader} from '../utilities/access-permissions';
 import LoadingView from '../../special/LoadingView';
 
 const allowClusterReaders = false;
