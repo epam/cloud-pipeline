@@ -16,73 +16,21 @@
 
 import React from 'react';
 import {Select} from 'antd';
-import {render, screen, click, fn, stubApi} from '@test';
-import capacityBlocks from '../../../models/cluster/capacity-blocks';
+import {render, screen, click, fn} from '@test';
 import {getCapacityBlockOptions} from '../../../models/cluster/capacity-blocks/utilities';
 import {instanceInfoString, getSelectOptions} from './index';
 
-const reservedPool = {
-  id: 1,
-  name: 'reserved-pool',
-  instanceType: 'm5.large',
-  regionId: 1
-};
-
-beforeEach(() => {
-  capacityBlocks.invalidateCache();
-});
-
-describe('instanceInfoString, showReservationTag', () => {
-  it('renders the pool name as the tag for a matching type', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
-
-    render(instanceInfoString(
-      {name: 'm5.large'},
-      {showReservationTag: true, regionId: 1, plainText: false}
-    ));
+describe('instanceInfoString, tagValue', () => {
+  it('renders an explicit tag after the instance info', async () => {
+    render(instanceInfoString({name: 'm5.large'}, {tagValue: 'reserved-pool', plainText: false}));
 
     expect(screen.getByText('reserved-pool')).toBeInTheDocument();
-    expect(
-      instanceInfoString({name: 'm5.large'}, {showReservationTag: true, regionId: 1})
-    ).toBe('m5.large (reserved-pool)');
+    expect(instanceInfoString({name: 'm5.large'}, {tagValue: 'reserved-pool'}))
+      .toBe('m5.large (reserved-pool)');
   });
 
-  it('renders nothing extra for a type with no matching pool', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
-
-    render(instanceInfoString(
-      {name: 'm5.xlarge'},
-      {showReservationTag: true, regionId: 1, plainText: false}
-    ));
-
-    expect(screen.queryByText('reserved-pool')).toBeNull();
-    expect(
-      instanceInfoString({name: 'm5.xlarge'}, {showReservationTag: true, regionId: 1})
-    ).toBe('m5.xlarge');
-  });
-
-  it('renders nothing extra when the matching pool is in another region', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
-
-    render(instanceInfoString(
-      {name: 'm5.large'},
-      {showReservationTag: true, regionId: 2, plainText: false}
-    ));
-
-    expect(screen.queryByText('reserved-pool')).toBeNull();
-    expect(
-      instanceInfoString({name: 'm5.large'}, {showReservationTag: true, regionId: 2})
-    ).toBe('m5.large');
-  });
-
-  it('does not look up a pool at all when showReservationTag is not set', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
-
-    expect(instanceInfoString({name: 'm5.large'}, {regionId: 1})).toBe('m5.large');
+  it('renders nothing extra without a tag', () => {
+    expect(instanceInfoString({name: 'm5.large'})).toBe('m5.large');
   });
 });
 
@@ -151,18 +99,16 @@ describe('getSelectOptions, the "Reserved capacity blocks" group', () => {
     expect(screen.queryByText('Reserved capacity blocks')).toBeNull();
   });
 
-  it('keeps the pool tag on the plain option once the group renders', async () => {
+  it('tags only the pool entry, not the plain option of the type it backs', async () => {
     const pool = {id: 351, instanceType: 'm5.large', name: 'pool-351', regionId: 1};
-    stubApi({'/cluster/pool/filter': [pool]});
-    await capacityBlocks.load();
     const capacityBlockPools = getCapacityBlockOptions([pool], instanceTypes, {regionId: 1});
 
-    // Picking the plain m5.large still applies pool-351 at launch, so it
-    // carries the tag as well as the pool's own entry in the group.
-    renderOptions({capacityBlockPools, showReservationTag: true, regionId: 1});
+    // Picking the plain m5.large launches without a reservation, so it
+    // carries no pool tag.
+    renderOptions({capacityBlockPools});
     await click(screen.getByRole('combobox'));
 
-    expect(screen.getAllByRole('menuitem', {name: /m5\.large.*pool-351/}))
-      .toHaveLength(2);
+    expect(screen.getAllByRole('menuitem', {name: /m5\.large/})).toHaveLength(2);
+    expect(screen.getAllByRole('menuitem', {name: /pool-351/})).toHaveLength(1);
   });
 });

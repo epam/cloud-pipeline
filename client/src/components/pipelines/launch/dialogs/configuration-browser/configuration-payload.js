@@ -546,8 +546,7 @@ class ConfigurationPayload extends React.Component {
       );
     }
     const {
-      instance_size: instanceType,
-      cloudRegionId
+      instance_size: instanceType
     } = payload;
     const onChange = newInstanceType => this.setState({
       payload: {
@@ -574,10 +573,7 @@ class ConfigurationPayload extends React.Component {
           disabled={disabled || (instanceTypesPending && instanceTypes.length === 0)}
           onChange={onChange}
         >
-          {getSelectOptions(
-            instanceTypes,
-            {showReservationTag: true, regionId: cloudRegionId}
-          )}
+          {getSelectOptions(instanceTypes)}
         </Select>
       </div>
     );

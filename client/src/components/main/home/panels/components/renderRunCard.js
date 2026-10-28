@@ -28,7 +28,7 @@ import RunName from '../../../../runs/run-name';
 import PlatformIcon from '../../../../tools/platform-icon';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
-import {isCapacityBlockInstanceType} from '../../../../../models/cluster/capacity-blocks';
+import {isCapacityBlockRun} from '../../../../../models/cluster/capacity-blocks';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -141,12 +141,10 @@ function renderCommitStatus (run) {
 }
 
 function renderEstimatedPrice (run) {
-  const price = evaluateRunPrice(run);
-  const {instance} = run || {};
-  const {nodeType, cloudRegionId} = instance || {};
-  if (isCapacityBlockInstanceType(nodeType, {regionId: cloudRegionId})) {
+  if (isCapacityBlockRun(run)) {
     return null;
   }
+  const price = evaluateRunPrice(run);
   return (
     <JobEstimatedPriceInfo>
       , estimated price: <b>{price.total.toFixed(2)}$</b>

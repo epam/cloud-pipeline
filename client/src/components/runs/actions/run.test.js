@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-import {stubApi} from '@test';
+import React from 'react';
+import {observable} from 'mobx';
+import {renderWithStores, screen, stubApi, flushPromises} from '@test';
 import capacityBlocks from '../../../models/cluster/capacity-blocks';
-import {run} from './run';
+import {run, RunConfirmation, RunSpotConfirmationWithPrice} from './run';
 
 const image = 'registry/library/ubuntu:latest';
 
@@ -106,5 +108,97 @@ describe('a capacity-block pool chosen before launch', () => {
     expect(body.params.CP_CAP_HIGHER).toEqual({value: 'true'});
     expect(body.params.CP_CAP_LOWER).toBeUndefined();
     expect('capacityBlockPoolId' in body).toBe(false);
+  });
+
+  it('launches a plain instance type a pool backs with no reservation, and strips ' +
+    'the reservation parameters a relaunch carries over', async () => {
+    const api = stubApi({'/run': {id: 1}, '/cluster/pool/filter': [lowerIdPool, higherIdPool]});
+    const payload = {
+      dockerImage: image,
+      instanceType: 'm5.2xlarge',
+      cloudRegionId: 1,
+      params: {
+        CP_CAP_REQUESTS_CPU: {value: '1'},
+        CP_CAP_LOWER: {value: 'true'},
+        SOME_OTHER_PARAMETER: {value: 'kept'}
+      }
+    };
+
+    await run({props: {}})(payload, false);
+
+    const [body] = launchedBodies(api);
+    expect(body.params.CP_CAP_REQUESTS_CPU).toBeUndefined();
+    expect(body.params.CP_CAP_LOWER).toBeUndefined();
+    expect(body.params.SOME_OTHER_PARAMETER).toEqual({value: 'kept'});
+    expect(body.podAssignPolicy).toBeUndefined();
+  });
+});
+
+describe('RunConfirmation estimated price', () => {
+  const pool = {id: 30, name: 'pool-30', instanceType: 'm5.2xlarge', regionId: 1};
+  const instanceTypes = [
+    {name: 'm5.2xlarge', instanceFamily: 'General purpose', vcpu: 8, memory: 32, regionId: 1}
+  ];
+  const loaded = (value) => observable({
+    loaded: true,
+    pending: false,
+    value,
+    fetchIfNeededOrWait: () => Promise.resolve()
+  });
+
+  async function renderDialog (element) {
+    stubApi({
+      '/cluster/pool/filter': [pool],
+      '/pipeline/price': {pricePerHour: 1, minimumTimePrice: 1, maximumTimePrice: 1},
+      '/dockerRegistry/loadTree': {registries: []}
+    });
+    await capacityBlocks.load();
+    const stores = {
+      preferences: loaded([]),
+      dockerRegistries: loaded({registries: []}),
+      usersInfo: loaded([]),
+      authenticatedUserInfo: loaded({admin: true})
+    };
+    renderWithStores(React.cloneElement(element, stores), stores);
+    await flushPromises();
+  }
+
+  const confirmation = (instanceType) => (
+    <RunConfirmation
+      instanceType={instanceType}
+      instanceTypes={instanceTypes}
+      cloudRegionId={1}
+      dockerImage={image}
+      showInstanceTypeSelection={false}
+    />
+  );
+
+  it('is shown for a plain instance type, even where a pool backs it', async () => {
+    await renderDialog(confirmation('m5.2xlarge'));
+
+    expect(await screen.findByText(/Estimated price:/)).toBeInTheDocument();
+  });
+
+  it('is hidden for a pool picked from "Reserved capacity blocks"', async () => {
+    await renderDialog(confirmation('pool:30'));
+
+    expect(screen.queryByText(/Estimated price/)).toBeNull();
+  });
+
+  it('is hidden when the launch form passes the chosen pool as capacityBlockPoolId', async () => {
+    // The launch form puts only the plain type into the payload, and the
+    // chosen pool into `capacityBlockPoolId`.
+    await renderDialog(
+      <RunSpotConfirmationWithPrice
+        instanceType="m5.2xlarge"
+        capacityBlockPoolId={pool.id}
+        availableInstanceTypes={instanceTypes}
+        cloudRegionId={1}
+        dockerImage={image}
+        runInfo={{name: 'ubuntu', payload: {dockerImage: image, instanceType: 'm5.2xlarge'}}}
+      />
+    );
+
+    expect(screen.queryByText(/Estimated price/)).toBeNull();
   });
 });

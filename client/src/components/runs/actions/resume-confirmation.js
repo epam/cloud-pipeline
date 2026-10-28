@@ -307,8 +307,6 @@ function ConfirmResumeModal (props) {
   })();
   const hyperThreadingDisabled = isHyperThreadingDisabled(run);
   const fallbackDisabled = !prefs || (prefs.maximumFallbackInstanceTypes || 0) <= 0;
-  const {instance: runInstance} = run || {};
-  const {cloudRegionId: regionId} = runInstance || {};
   return (
     <Modal
       title={false}
@@ -354,9 +352,7 @@ function ConfirmResumeModal (props) {
                   instanceTypesList,
                   {
                     hyperThreadingDisabled,
-                    displayRegion: allowedInstanceTypes && allowedInstanceTypes.regionsMerged,
-                    showReservationTag: true,
-                    regionId
+                    displayRegion: allowedInstanceTypes && allowedInstanceTypes.regionsMerged
                   }
                 )
               }
@@ -373,8 +369,6 @@ function ConfirmResumeModal (props) {
                   instanceTypes={instanceTypesList}
                   displayRegion={allowedInstanceTypes && allowedInstanceTypes.regionsMerged}
                   hyperThreadingDisabled={hyperThreadingDisabled}
-                  showReservationTag
-                  regionId={regionId}
                 />
               </div>
             )

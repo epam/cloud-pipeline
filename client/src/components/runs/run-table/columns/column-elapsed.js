@@ -21,7 +21,7 @@ import evaluateRunPrice from '../../../../utils/evaluate-run-price';
 import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
-import {isCapacityBlockInstanceType} from '../../../../models/cluster/capacity-blocks';
+import {isCapacityBlockRun} from '../../../../models/cluster/capacity-blocks';
 
 const getColumnFilter = () => {};
 
@@ -29,8 +29,7 @@ const renderEstimatedPrice = (item) => {
   if (!item.pricePerHour) {
     return null;
   }
-  const {nodeType, cloudRegionId} = item.instance || {};
-  if (isCapacityBlockInstanceType(nodeType, {regionId: cloudRegionId})) {
+  if (isCapacityBlockRun(item)) {
     return null;
   }
   const info = evaluateRunPrice(item);

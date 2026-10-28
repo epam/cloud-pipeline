@@ -42,13 +42,11 @@ class ReservationParameters extends React.PureComponent {
   componentDidUpdate (prevProps, prevState, snapshot) {
     const {
       parameters: prev = {},
-      instanceType: prevInstanceType = {},
-      region: prevRegion
+      instanceType: prevInstanceType = {}
     } = prevProps;
     const {
       parameters: curr = {},
-      instanceType: currInstanceType = {},
-      region: currRegion
+      instanceType: currInstanceType = {}
     } = this.props;
     const {
       gpu: prevGpu,
@@ -73,11 +71,8 @@ class ReservationParameters extends React.PureComponent {
     const {
       name: currInstanceTypeName
     } = currInstanceType;
-    const prevRegionId = prevRegion ? prevRegion.id : undefined;
-    const currRegionId = currRegion ? currRegion.id : undefined;
     if (
       prevInstanceTypeName !== currInstanceTypeName ||
-      prevRegionId !== currRegionId ||
       prevProps.poolId !== this.props.poolId
     ) {
       this.updateConfig();
@@ -92,13 +87,11 @@ class ReservationParameters extends React.PureComponent {
   updateConfig = () => {
     const {
       instanceType: instanceTypeObj = {},
-      region,
       poolId
     } = this.props;
     const {
       name: instanceType
     } = instanceTypeObj;
-    const regionId = region ? region.id : undefined;
     const token = this.token = {};
     this.refreshResourcesToken = {};
     (async () => {
@@ -112,11 +105,9 @@ class ReservationParameters extends React.PureComponent {
           resourcesDetailsVisible: false,
           expandedResourceNodes: {}
         });
-        // `poolId` names the pool the caller already knows was explicitly
-        // chosen - its own config, not the first pool that happens to match
-        // `instanceType` and `regionId`, which is what a caller with no
-        // specific pool to name keeps getting.
-        const config = await getReservationParametersConfig(instanceType, {regionId, poolId});
+        // `poolId` names the pool the user explicitly chose. With none
+        // chosen there is no config, so no reservation requests to show.
+        const config = await getReservationParametersConfig(poolId);
         if (this.token === token) {
           const {
             parameters = {}
@@ -809,7 +800,6 @@ ReservationParameters.propTypes = {
   style: PropTypes.object,
   instanceType: PropTypes.object,
   poolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  region: PropTypes.object,
   parameters: PropTypes.object,
   onChange: PropTypes.func
 };

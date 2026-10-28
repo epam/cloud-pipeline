@@ -128,7 +128,6 @@ import {
   readReservationParameters,
   reservationParametersDiffer
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
-import {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
 import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
 import roleModel from '../../../utils/roleModel';
 import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
@@ -493,8 +492,7 @@ export default class EditToolForm extends React.Component {
           configuration.instance_size,
           configuration.parameters,
           {
-            applyAdditionalParameters: false,
-            regionId: configuration.cloudRegionId
+            applyAdditionalParameters: false
           }
         );
         configuration.parameters = appliedReservationParameters;
@@ -961,22 +959,6 @@ export default class EditToolForm extends React.Component {
       name: getSpotTypeName(isSpot, this.getCloudProvider())
     }))
       .filter(v => availableMasterNodeTypes.indexOf(v.isSpot) >= 0);
-  }
-
-  get capacityBlockRegionId () {
-    const regionIdValue = this.props.form.getFieldValue('cloudRegionId');
-    return regionIdValue !== undefined &&
-      regionIdValue !== null &&
-      regionIdValue !== regionNotConfiguredValue
-      ? +regionIdValue
-      : undefined;
-  }
-
-  get isInstanceTypeWithReservation () {
-    return isCapacityBlockInstanceType(
-      this.selectedInstanceTypeName,
-      {regionId: this.capacityBlockRegionId}
-    );
   }
 
   @computed
@@ -1596,7 +1578,6 @@ export default class EditToolForm extends React.Component {
   };
 
   renderExecutionEnvironment = () => {
-    const {isInstanceTypeWithReservation} = this;
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
       let allowSensitive = getFieldValue('allowSensitive');
@@ -1640,12 +1621,7 @@ export default class EditToolForm extends React.Component {
                       (option.props.searchValue || option.props.value)
                         .toLowerCase().indexOf(input.toLowerCase()) >= 0}
                   >
-                    {getSelectOptions(
-                      this.allowedInstanceTypes, {
-                        showReservationTag: true,
-                        regionId: this.capacityBlockRegionId
-                      }
-                    )}
+                    {getSelectOptions(this.allowedInstanceTypes)}
                   </Select>
                 )}
               </Form.Item>
@@ -1669,8 +1645,6 @@ export default class EditToolForm extends React.Component {
                           )
                         )}
                       instanceTypes={this.allowedInstanceTypes}
-                      showReservationTag
-                      regionId={this.capacityBlockRegionId}
                     />
                   )}
                 </Form.Item>
@@ -1699,7 +1673,6 @@ export default class EditToolForm extends React.Component {
                 <Col xs={24} sm={12}>
                   <ReservationParameters
                     instanceType={this.getInstanceTypeValue()}
-                    region={this.getCloudRegion()}
                     parameters={this.state.reservationParameters}
                     onChange={this.onChangeReservationParameters}
                     style={{paddingBottom: 10}}
@@ -1730,8 +1703,7 @@ export default class EditToolForm extends React.Component {
                   <Select
                     disabled={
                       this.state.pending ||
-                      this.props.readOnly ||
-                      isInstanceTypeWithReservation
+                      this.props.readOnly
                     }
                     onChange={this.handleIsSpotChange}
                   >

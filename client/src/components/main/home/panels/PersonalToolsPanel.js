@@ -42,6 +42,8 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import capacityBlocks from '../../../../models/cluster/capacity-blocks';
+import {decodeInstanceTypeValue} from '../../../../models/cluster/capacity-blocks/utilities';
 import AllowedInstancesCountWarning from
 '../../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../../../runs/run-name';
@@ -246,7 +248,16 @@ export default class PersonalToolsPanel extends React.Component {
         payload.isSpot = runToolInfo.isSpot;
       }
       if (runToolInfo.instanceType !== undefined) {
-        payload.instanceType = runToolInfo.instanceType;
+        // The dialog's select may hold a capacity-block pool (`pool:<id>`):
+        // the run API gets the plain type, and `run()` gets the pool.
+        const {instanceType, poolId} = decodeInstanceTypeValue(
+          runToolInfo.instanceType,
+          capacityBlocks.pools
+        );
+        payload.instanceType = instanceType;
+        if (poolId !== undefined) {
+          payload.capacityBlockPoolId = poolId;
+        }
       }
       if (runToolInfo.hddSize !== undefined) {
         payload.hddSize = runToolInfo.hddSize;

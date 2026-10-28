@@ -66,10 +66,7 @@ describe('isEnabledByReservationConfig, fed a pool explicitly chosen among ' +
     'sharing its type and region', async () => {
     stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
 
-    const config = await getReservationParametersConfig(
-      'm5.2xlarge',
-      {regionId: 1, poolId: higherIdPool.id}
-    );
+    const config = await getReservationParametersConfig(higherIdPool.id);
 
     expect(isEnabledByReservationConfig(privilegedCapability, config)).toBe(true);
   });
@@ -77,19 +74,16 @@ describe('isEnabledByReservationConfig, fed a pool explicitly chosen among ' +
   it('gates on the other explicitly chosen pool just as precisely', async () => {
     stubApi({'/cluster/pool/filter': [lowerIdPool, higherIdPool]});
 
-    const config = await getReservationParametersConfig(
-      'm5.2xlarge',
-      {regionId: 1, poolId: lowerIdPool.id}
-    );
+    const config = await getReservationParametersConfig(lowerIdPool.id);
 
     expect(isEnabledByReservationConfig(privilegedCapability, config)).toBe(false);
   });
 
-  it('falls back to the lowest-id pool when no poolId is given, as before', async () => {
+  it('has no reservation config at all when no poolId is given', async () => {
     stubApi({'/cluster/pool/filter': [higherIdPool, lowerIdPool]});
 
-    const config = await getReservationParametersConfig('m5.2xlarge', {regionId: 1});
+    const config = await getReservationParametersConfig(undefined);
 
-    expect(isEnabledByReservationConfig(privilegedCapability, config)).toBe(false);
+    expect(config).toBeUndefined();
   });
 });

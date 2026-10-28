@@ -18,49 +18,6 @@
 // network, no mobx, which is why the tests for this file do their work.
 
 /**
- * Finds the pool backing `instanceType`, matched exactly and case-insensitively.
- * `regionId`, when given, must match too; when it is not given, a pool is not
- * filtered by region at all. Several pools can match one instance type (and
- * region) at once - the one with a `launchConfig` wins, then the one with the
- * lowest `id`, so the choice stays stable across renders rather than depending
- * on the array's own order.
- *
- * @param {Object[]} pools
- * @param {string} instanceType
- * @param {Object} [options]
- * @param {number} [options.regionId]
- * @returns {Object|undefined} the matching pool, or `undefined`
- */
-export function findCapacityBlockPool (pools, instanceType, options = {}) {
-  const {regionId} = options || {};
-  if (!instanceType || !Array.isArray(pools) || !pools.length) {
-    return undefined;
-  }
-  const type = instanceType.toLowerCase();
-  const matched = pools.filter((pool) => pool &&
-    typeof pool.instanceType === 'string' &&
-    pool.instanceType.toLowerCase() === type &&
-    // Coerced, not `===`: callers hold `regionId` as a number in some places
-    // (`+this.capacityBlockRegionId`) and pass it straight through from a
-    // run/payload object (a string, over the wire) in others.
-    (regionId === undefined || regionId === null || `${pool.regionId}` === `${regionId}`)
-  );
-  if (!matched.length) {
-    return undefined;
-  }
-  const withConfigFirst = (pool) => (pool.launchConfig ? 0 : 1);
-  return matched
-    .slice()
-    .sort((a, b) => {
-      const configOrder = withConfigFirst(a) - withConfigFirst(b);
-      if (configOrder !== 0) {
-        return configOrder;
-      }
-      return (a.id || 0) - (b.id || 0);
-    })[0];
-}
-
-/**
  * Every `additionalParameters` key across all pools, deduped. This is the
  * successor to the preference's `parameters`: a pool with no `launchConfig`,
  * or no `additionalParameters` on it, contributes nothing.

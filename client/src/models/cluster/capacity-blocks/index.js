@@ -16,7 +16,11 @@
 
 import {action, computed, observable} from 'mobx';
 import HotNodePoolsFilter from '../HotNodePoolsFilter';
-import {findCapacityBlockPool} from './utilities';
+import {
+  CP_CAP_REQUESTS_CPU,
+  CP_CAP_REQUESTS_GPU,
+  CP_CAP_REQUESTS_RAM
+} from '../../../components/pipelines/launch/form/utilities/parameters';
 
 // The one filter the client sends: every pool backing an active capacity
 // reservation. Region is left out on purpose - the launch form's region
@@ -121,34 +125,30 @@ class CapacityBlocks {
 
 const capacityBlocks = new CapacityBlocks();
 
-/**
- * True when a pool backs `instanceType` - with or without a `launchConfig`.
- * Drives the pool-name tag, the suggestion block and hiding the price
- * estimate: a capacity block changes those even when it injects nothing into
- * the launch payload.
- *
- * @param {string} instanceType
- * @param {Object} [options]
- * @param {number} [options.regionId]
- * @returns {boolean}
- */
-export function isCapacityBlockInstanceType (instanceType, options) {
-  return !!findCapacityBlockPool(capacityBlocks.pools, instanceType, options);
-}
+const RESERVATION_REQUEST_PARAMETERS = [
+  CP_CAP_REQUESTS_CPU,
+  CP_CAP_REQUESTS_GPU,
+  CP_CAP_REQUESTS_RAM
+];
 
 /**
- * The pool's `launchConfig` for `instanceType`, camelCase, as the backend
- * sends it - or `undefined` when no matching pool carries one. Drives the
- * reservation-requests panel, the launch payload and `podAssignPolicy`.
+ * True when `run` runs on reserved capacity, where a per-run price estimate
+ * means nothing: a pool's node - a hot pool's or a capacity reservation's -
+ * lives far longer than one run on it, and a run with reservation requests
+ * takes only a share of a shared node.
  *
- * @param {string} instanceType
- * @param {Object} [options]
- * @param {number} [options.regionId]
- * @returns {Object|undefined}
+ * @param {Object} run - a run as the API returns it
+ * @returns {boolean}
  */
-export function findCapacityBlockConfig (instanceType, options) {
-  const pool = findCapacityBlockPool(capacityBlocks.pools, instanceType, options);
-  return pool && pool.launchConfig ? pool.launchConfig : undefined;
+export function isCapacityBlockRun (run) {
+  const {instance, pipelineRunParameters} = run || {};
+  const {poolId} = instance || {};
+  // A run with no pool comes back with `poolId: 0`, not `null`.
+  if (poolId) {
+    return true;
+  }
+  return (pipelineRunParameters || [])
+    .some((parameter) => parameter && RESERVATION_REQUEST_PARAMETERS.includes(parameter.name));
 }
 
 export {CapacityBlocks};

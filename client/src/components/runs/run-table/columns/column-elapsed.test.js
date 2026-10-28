@@ -14,16 +14,8 @@
  * limitations under the License.
  */
 
-import {render, screen, stubApi} from '@test';
-import capacityBlocks from '../../../../models/cluster/capacity-blocks';
+import {render, screen} from '@test';
 import {getColumn} from './column-elapsed';
-
-const reservedPool = {
-  id: 1,
-  name: 'reserved-pool',
-  instanceType: 'm5.large',
-  regionId: 1
-};
 
 function makeRun (overrides = {}) {
   return {
@@ -32,8 +24,11 @@ function makeRun (overrides = {}) {
     pricePerHour: 10,
     instance: {
       nodeType: 'm5.large',
-      cloudRegionId: 1
+      cloudRegionId: 1,
+      // The API sends 0, not null, for a run that is not on a pool node.
+      poolId: 0
     },
+    pipelineRunParameters: [],
     ...overrides
   };
 }
@@ -43,35 +38,24 @@ function renderColumn (run) {
   return render(cellRender(run));
 }
 
-beforeEach(() => {
-  capacityBlocks.invalidateCache();
-});
-
 describe('column-elapsed estimated price', () => {
-  it('shows the estimated price for an instance type with no capacity-block pool', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
-
-    renderColumn(makeRun({instance: {nodeType: 'm5.xlarge', cloudRegionId: 1}}));
+  it('shows the estimated price for a run on its own node', async () => {
+    renderColumn(makeRun());
 
     expect(await screen.findByText(/Cost:/)).toBeTruthy();
   });
 
-  it('hides the estimated price for an instance type served by a capacity-block pool', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
-
-    renderColumn(makeRun());
+  it('hides the estimated price for a run on a pool node', async () => {
+    renderColumn(makeRun({instance: {nodeType: 'm5.large', cloudRegionId: 1, poolId: 5}}));
 
     expect(screen.queryByText(/Cost:/)).toBeNull();
   });
 
-  it('shows the estimated price when the matching pool is in another region', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-    await capacityBlocks.load();
+  it('hides the estimated price for a run with reservation requests', async () => {
+    renderColumn(makeRun({
+      pipelineRunParameters: [{name: 'CP_CAP_REQUESTS_CPU', value: '2'}]
+    }));
 
-    renderColumn(makeRun({instance: {nodeType: 'm5.large', cloudRegionId: 2}}));
-
-    expect(await screen.findByText(/Cost:/)).toBeTruthy();
+    expect(screen.queryByText(/Cost:/)).toBeNull();
   });
 });

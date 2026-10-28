@@ -16,7 +16,7 @@
 
 import {autorun} from 'mobx';
 import {stubApi} from '@test';
-import capacityBlocks, {CapacityBlocks} from './index';
+import capacityBlocks, {CapacityBlocks, isCapacityBlockRun} from './index';
 
 const macrotask = () => new Promise((resolve) => setTimeout(resolve, 30));
 
@@ -177,4 +177,28 @@ test('a refresh that fails in transport keeps the last list', async () => {
   await capacityBlocks.refresh();
 
   expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
+});
+
+describe('isCapacityBlockRun', () => {
+  const run = (instance, pipelineRunParameters) => ({instance, pipelineRunParameters});
+
+  it('is true for a run on a pool node', () => {
+    expect(isCapacityBlockRun(run({nodeType: 'm5.large', poolId: 5}))).toBe(true);
+  });
+
+  it('is false for a run whose poolId is 0, as the API sends for no pool', () => {
+    expect(isCapacityBlockRun(run({nodeType: 'm5.large', poolId: 0}))).toBe(false);
+  });
+
+  it('is true for a run with any of the reservation request parameters', () => {
+    for (const name of ['CP_CAP_REQUESTS_CPU', 'CP_CAP_REQUESTS_GPU', 'CP_CAP_REQUESTS_RAM']) {
+      expect(isCapacityBlockRun(run({poolId: 0}, [{name, value: '1'}]))).toBe(true);
+    }
+  });
+
+  it('is false for a run with other parameters only, or none', () => {
+    expect(isCapacityBlockRun(run({poolId: 0}, [{name: 'CP_CAP_GPU', value: '1'}]))).toBe(false);
+    expect(isCapacityBlockRun(run({}))).toBe(false);
+    expect(isCapacityBlockRun(undefined)).toBe(false);
+  });
 });

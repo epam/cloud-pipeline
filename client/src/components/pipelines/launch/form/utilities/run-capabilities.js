@@ -272,11 +272,8 @@ class RunCapabilities extends React.Component {
     if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
     }
-    const prevRegionId = prevProps.region ? prevProps.region.id : undefined;
-    const currRegionId = this.props.region ? this.props.region.id : undefined;
     if (
       prevProps.instanceType !== this.props.instanceType ||
-      prevRegionId !== currRegionId ||
       prevProps.poolId !== this.props.poolId
     ) {
       this.setReservationConfig();
@@ -309,20 +306,16 @@ class RunCapabilities extends React.Component {
   };
 
   setReservationConfig = async () => {
-    const {instanceType, region, poolId} = this.props;
+    const {instanceType, poolId} = this.props;
     if (!instanceType || typeof instanceType !== 'string') {
       this.setState({reservationConfig: undefined});
       return;
     }
     try {
-      const regionId = region ? region.id : undefined;
-      // A caller that knows which pool the user explicitly chose passes
-      // `poolId`, so a capability is gated on *that* pool's launch config -
-      // not the first pool that happens to match `instanceType` and
-      // `regionId`, which two pools backing one instance type in one region
-      // would otherwise make ambiguous. A caller with no pool to name (the
-      // common case) keeps getting that first-matching-pool derivation.
-      const config = await getReservationParametersConfig(instanceType, {regionId, poolId});
+      // A capability is gated on the launch config of the pool the user
+      // chose (`poolId`). With no pool chosen there is no config, even where
+      // a pool backs `instanceType`.
+      const config = await getReservationParametersConfig(poolId);
       this.setState({reservationConfig: config});
     } catch (error) {
       console.error('Error retrieving reservation config:', error);

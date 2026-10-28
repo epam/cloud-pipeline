@@ -92,6 +92,7 @@ import * as validatorUtilities from './utilities/validator-utilities';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import LaunchCommand from './utilities/launch-command';
+import {formOffersCapacityBlocks} from './utilities/capacity-blocks';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
   SubmitButton,
@@ -174,9 +175,7 @@ import {
   buildLaunchParametersFromReservationParameters,
   readReservationParameters
 } from './components/reservation-parameters/utilities';
-import capacityBlocks, {
-  isCapacityBlockInstanceType
-} from '../../../../models/cluster/capacity-blocks';
+import capacityBlocks from '../../../../models/cluster/capacity-blocks';
 import {
   correctCapacityBlockValue,
   decodeInstanceTypeValue,
@@ -609,10 +608,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   renderAdditionalRunCapabilities = () => {
     if (hasPlatformSpecificCapabilities(this.toolPlatform, this.props.preferences)) {
       const instanceTypeValue = this.selectedInstanceTypeName;
-      // An explicitly chosen pool must gate a capability on its own launch
-      // config - two pools can back `instanceTypeValue` with different
-      // configs, and omitting it would gate on whichever one is matched
-      // first instead of the one the run will actually use.
+      // A capability is gated on the launch config of the pool the user
+      // chose; with no pool chosen there is none.
       const pool = this.selectedCapacityBlockPool;
       return (
         <FormItem
@@ -972,15 +969,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   getIsInstanceTypeWithReservation () {
-    const {
-      detached
-    } = this.props;
-    return detached
-      ? false
-      : isCapacityBlockInstanceType(
-        this.selectedInstanceTypeName,
-        {regionId: this.currentCloudRegionId}
-      );
+    // Only a pool picked from "Reserved capacity blocks" is a reservation: a
+    // plain instance type launches without one, even where a pool backs it.
+    return formOffersCapacityBlocks(this.props) && !!this.selectedCapacityBlockPool;
   }
 
   getDefaultRootEntityId () {
@@ -1139,15 +1130,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               onSave
             } = launchProfile;
             if (onSave) {
-              // `capacityBlockPoolId` only tells `run()`'s
-              // `ensureValidReservationParametersForLaunchPayloads` which
-              // pool to read - a step this save path never reaches, since it
-              // hands `payload` to `onSave` instead of `onLaunch`. It is not
-              // a field a saved profile keeps, and nothing reads it back out:
-              // `payloadToFormParameters` in `launch-profile-form.js` reopens
-              // a profile from `instanceType` and `cloudRegionId` alone, the
-              // same way a saved configuration re-derives its pool. Strip it
-              // before the profile is persisted.
+              // A launch profile offers no capacity blocks
+              // (`formOffersCapacityBlocks`), and `capacityBlockPoolId` is
+              // not a field a saved profile keeps.
               delete payload.capacityBlockPoolId;
               await onSave(payload);
             }
@@ -1443,10 +1428,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       ? []
       : (values[EXEC_ENVIRONMENT].fallbackInstanceTypes || []).slice();
     let payload = {
-      // Always the plain instance type: nothing persists the chosen pool's id,
-      // so a saved configuration has no field for it, and reopening one
-      // re-derives the pool from the type and region instead. Do not "fix"
-      // this to carry the encoded value.
+      // Always the plain instance type: a saved configuration has no field
+      // for the chosen pool's id, so it launches without a reservation. Do
+      // not "fix" this to carry the encoded value.
       instance_size: instanceType,
       fallback_instance_types: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
@@ -1585,7 +1569,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         payload.parameters,
         {
           applyAdditionalParameters: applyAdditionalReservationParameters,
-          regionId: payload.cloudRegionId,
           poolId: capacityBlockPoolId
         }
       );
@@ -1664,9 +1647,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       instanceType,
       // The pool backing `instanceType`, if the user picked one explicitly -
       // not a run API field. `run()` (`ensureValidReservationParametersForLaunchPayloads`)
-      // reads this to apply that pool's own launch config rather than
-      // falling back to the first pool sharing this instance type and
-      // region, and deletes it before the payload becomes a request body.
+      // reads this to apply that pool's launch config - without it the run
+      // has no reservation - and deletes it before the payload becomes a
+      // request body.
       capacityBlockPoolId,
       fallbackInstanceTypes: fallbackInstanceTypes.length > 0
         ? fallbackInstanceTypes
@@ -1853,7 +1836,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.state.reservationParameters,
       instanceType,
       payload.params,
-      {regionId: payload.cloudRegionId, poolId: capacityBlockPoolId}
+      {poolId: capacityBlockPoolId}
     );
     payload.params = appliedReservationParameters;
     payload.params = parameterUtilities
@@ -3117,9 +3100,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     // `InstanceTypeSuggestion` already knows which specific pool a suggestion
     // row belongs to and passes it here - encode it, the same way the Select's
     // own "Reserved capacity blocks" option for that pool would. Skipping this
-    // would set the field to the plain type, and two pools can back it in the
-    // same region: the field would then resolve to whichever of them the
-    // payload builders derive first, not the one the user actually clicked.
+    // would set the field to the plain type, which launches without a
+    // reservation.
     const value = (pool && encodeCapacityBlockValue(pool)) || instanceType;
     this.props.form.setFieldsValue({
       [`${EXEC_ENVIRONMENT}.type`]: value
@@ -3140,11 +3122,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
-    // Suppressed for a detached configuration for the same reason the pool
-    // tag (`showReservationTag` below) and the suggestion block are: a
-    // configuration is a template, not a live reservation commitment, so
-    // there is no specific pool to offer yet.
-    const capacityBlockPools = this.props.detached
+    const capacityBlockPools = !formOffersCapacityBlocks(this.props)
       ? []
       : getCapacityBlockOptions(
         capacityBlocks.pools,
@@ -3190,8 +3168,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 {
                   hyperThreadingDisabled: this.hyperThreadingDisabled,
                   displayRegion: this.instanceTypesMergedForRegions,
-                  showReservationTag: !this.props.detached,
-                  regionId: this.currentCloudRegionId,
                   capacityBlockPools
                 }
               )
@@ -3206,7 +3182,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   // beside the node type selector: it is wide, and it is about what the run
   // could use rather than about the field it would set.
   renderInstanceTypeSuggestion = () => {
-    if (this.props.detached) {
+    if (!formOffersCapacityBlocks(this.props)) {
       return undefined;
     }
     return (
@@ -3253,8 +3229,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             instanceTypes={this.instanceTypes}
             hyperThreadingDisabled={this.hyperThreadingDisabled}
             displayRegion={this.instanceTypesMergedForRegions}
-            showReservationTag={!this.props.detached}
-            regionId={this.currentCloudRegionId}
           />
         )}
       </FormItem>
@@ -3290,17 +3264,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderReservationParametersSelector = () => {
-    const {
-      detached
-    } = this.props;
-    if (detached) {
+    if (!formOffersCapacityBlocks(this.props)) {
       return null;
     }
     const instanceType = this.instanceTypes.find(t => t.name === this.selectedInstanceTypeName);
-    // An explicitly chosen pool (`selectedCapacityBlockPool`) drives the
-    // preview the same way it drives the payload - two pools can back
-    // `instanceType` with different launch configs, and this must show the
-    // one the payload will actually use, not whichever one is matched first.
+    // The chosen pool (`selectedCapacityBlockPool`) drives the preview the
+    // same way it drives the payload; with no pool chosen there is none.
     const pool = this.selectedCapacityBlockPool;
     const {
       reservationParameters
@@ -3315,7 +3284,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         className={styles.reservationParameters}
         instanceType={instanceType}
         poolId={pool ? pool.id : undefined}
-        region={this.currentCloudRegion}
         parameters={reservationParameters}
         onChange={onChange}
       />

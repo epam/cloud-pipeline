@@ -7,9 +7,7 @@ import {
   CP_CAP_REQUESTS_GPU,
   CP_CAP_REQUESTS_RAM
 } from '../../utilities/parameters';
-import capacityBlocks, {
-  findCapacityBlockConfig
-} from '../../../../../../models/cluster/capacity-blocks';
+import capacityBlocks from '../../../../../../models/cluster/capacity-blocks';
 import InstanceTypes from '../../../../../../models/utils/InstanceTypes';
 import {ClusterNodeResources} from '../../../../../../models/cluster/NodeResources';
 
@@ -49,18 +47,18 @@ export function reservationParametersDiffer (a, b) {
   return aCpu !== bCpu || aGpu !== bGpu || aRam !== bRam;
 }
 
-export async function getReservationParametersConfig (instanceType, options = {}) {
-  const {regionId, poolId} = options || {};
+// Only an explicitly chosen pool (an encoded `pool:<id>` node-type
+// selection) has a config. A plain instance type launches without one, even
+// where a pool backs that type: picking the plain type means not reserved.
+export async function getReservationParametersConfig (poolId) {
+  // Loaded even with no pool chosen: telling a pool's `additionalParameters`
+  // apart from the run's own, to strip them from a plain launch, reads it.
   await capacityBlocks.load();
-  // A caller that already knows which pool was chosen (an encoded `pool:<id>`
-  // node-type selection) gets that pool's own config - never the first one
-  // that happens to match the type and region, which is what the plain-type
-  // fallback below derives for a caller that does not know a pool at all.
-  if (poolId !== undefined && poolId !== null) {
-    const pool = (capacityBlocks.pools || []).find((aPool) => aPool && aPool.id === poolId);
-    return pool && pool.launchConfig ? pool.launchConfig : undefined;
+  if (poolId === undefined || poolId === null) {
+    return undefined;
   }
-  return findCapacityBlockConfig(instanceType, {regionId});
+  const pool = (capacityBlocks.pools || []).find((aPool) => aPool && aPool.id === poolId);
+  return pool && pool.launchConfig ? pool.launchConfig : undefined;
 }
 
 export async function getInstanceResources (config) {
@@ -196,7 +194,6 @@ export async function buildLaunchParametersFromReservationParameters (
 ) {
   const {
     applyAdditionalParameters = true,
-    regionId,
     poolId
   } = options || {};
   const [
@@ -204,7 +201,7 @@ export async function buildLaunchParametersFromReservationParameters (
     cfg
   ] = await Promise.all([
     getInstanceType(instanceType),
-    getReservationParametersConfig(instanceType, {regionId, poolId})
+    getReservationParametersConfig(poolId)
   ]);
   const result = {...(parameters || {})};
   for (const key of Object.keys(result || {})) {
@@ -269,10 +266,9 @@ export async function ensureValidReservationParametersForLaunchPayloads (payload
       // A caller that knows which pool the user picked - the launch form's
       // `generateLaunchPayload`, or the launch confirmation dialog's own
       // selector state - sets `capacityBlockPoolId` on the payload itself;
-      // this is the one place that reads it. A caller that omits it gets the
-      // same first-matching-pool derivation this had before any caller knew
-      // about pools at all.
-      {regionId: p.cloudRegionId, poolId: p.capacityBlockPoolId}
+      // this is the one place that reads it. A payload without it launches
+      // with no reservation requests at all.
+      {poolId: p.capacityBlockPoolId}
     ))
   );
   for (let i = 0; i < reservationRequests.length; i++) {

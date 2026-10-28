@@ -18,70 +18,10 @@ import {
   correctCapacityBlockValue,
   decodeInstanceTypeValue,
   encodeCapacityBlockValue,
-  findCapacityBlockPool,
   getCapacityBlockAdditionalParameterNames,
   getCapacityBlockOptions,
   seedInstanceTypeValue
 } from './utilities';
-
-describe('findCapacityBlockPool', () => {
-  it('matches the instance type exactly and case-insensitively', () => {
-    const pool = {id: 1, instanceType: 'M5.Large', regionId: 1};
-
-    expect(findCapacityBlockPool([pool], 'm5.large')).toBe(pool);
-    expect(findCapacityBlockPool([pool], 'm5.xlarge')).toBeUndefined();
-  });
-
-  it('requires the region to match when one is given', () => {
-    const pool = {id: 1, instanceType: 'm5.large', regionId: 1};
-
-    expect(findCapacityBlockPool([pool], 'm5.large', {regionId: 1})).toBe(pool);
-    expect(findCapacityBlockPool([pool], 'm5.large', {regionId: 2})).toBeUndefined();
-  });
-
-  it('tolerates a missing regionId rather than returning nothing', () => {
-    const pool = {id: 1, instanceType: 'm5.large', regionId: 1};
-
-    expect(findCapacityBlockPool([pool], 'm5.large')).toBe(pool);
-    expect(findCapacityBlockPool([pool], 'm5.large', {})).toBe(pool);
-  });
-
-  it('prefers the pool with a launchConfig when several match', () => {
-    const withoutConfig = {id: 1, instanceType: 'm5.large', regionId: 1};
-    const withConfig = {
-      id: 2,
-      instanceType: 'm5.large',
-      regionId: 1,
-      launchConfig: {cpuRequestsEnabled: true}
-    };
-
-    expect(findCapacityBlockPool([withoutConfig, withConfig], 'm5.large')).toBe(withConfig);
-    // order in the array must not matter
-    expect(findCapacityBlockPool([withConfig, withoutConfig], 'm5.large')).toBe(withConfig);
-  });
-
-  it('falls back to the lowest id when the launchConfig tie-break does not decide', () => {
-    const higherId = {
-      id: 5,
-      instanceType: 'm5.large',
-      regionId: 1,
-      launchConfig: {cpuRequestsEnabled: true}
-    };
-    const lowerId = {
-      id: 2,
-      instanceType: 'm5.large',
-      regionId: 1,
-      launchConfig: {cpuRequestsEnabled: true}
-    };
-
-    expect(findCapacityBlockPool([higherId, lowerId], 'm5.large')).toBe(lowerId);
-  });
-
-  it('returns undefined for an empty or missing pool list', () => {
-    expect(findCapacityBlockPool([], 'm5.large')).toBeUndefined();
-    expect(findCapacityBlockPool(undefined, 'm5.large')).toBeUndefined();
-  });
-});
 
 describe('getCapacityBlockAdditionalParameterNames', () => {
   it('collects every additionalParameters key across all pools, deduped', () => {

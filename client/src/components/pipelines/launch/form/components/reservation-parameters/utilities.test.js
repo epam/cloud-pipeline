@@ -63,7 +63,7 @@ describe('buildLaunchParametersFromReservationParameters', () => {
       readReservationParameters({}),
       'm5.large',
       {},
-      {regionId: 1}
+      {regionId: 1, poolId: reservedPool.id}
     );
 
     expect(parameters.CP_CAP_REQUESTS_CPU).toEqual({value: '1'});
@@ -73,12 +73,13 @@ describe('buildLaunchParametersFromReservationParameters', () => {
     expect(podAssignPolicy).toEqual({selector: {label: 'pool_id', value: '1'}});
   });
 
-  it('produces none of them and no podAssignPolicy for a pool without a launchConfig', async () => {
-    stubApi({'/cluster/pool/filter': [barePool]});
+  it('produces none of them and no podAssignPolicy for a plain type a pool backs', async () => {
+    stubApi({'/cluster/pool/filter': [reservedPool]});
 
+    // No poolId: the plain m5.large was picked, not the pool's own entry.
     const {parameters, podAssignPolicy} = await buildLaunchParametersFromReservationParameters(
       readReservationParameters({}),
-      'm5.xlarge',
+      'm5.large',
       {},
       {regionId: 1}
     );
@@ -86,27 +87,12 @@ describe('buildLaunchParametersFromReservationParameters', () => {
     expect(parameters.CP_CAP_REQUESTS_CPU).toBeUndefined();
     expect(parameters.CP_CAP_REQUESTS_GPU).toBeUndefined();
     expect(parameters.CP_CAP_REQUESTS_RAM).toBeUndefined();
+    expect(parameters.CP_CAP_CUSTOM).toBeUndefined();
     expect(podAssignPolicy).toBeUndefined();
   });
 
-  it('does not match a pool in another region', async () => {
-    stubApi({'/cluster/pool/filter': [reservedPool]});
-
-    const {parameters, podAssignPolicy} = await buildLaunchParametersFromReservationParameters(
-      readReservationParameters({}),
-      'm5.large',
-      {},
-      {regionId: 2}
-    );
-
-    expect(parameters.CP_CAP_REQUESTS_CPU).toBeUndefined();
-    expect(parameters.CP_CAP_REQUESTS_GPU).toBeUndefined();
-    expect(parameters.CP_CAP_REQUESTS_RAM).toBeUndefined();
-    expect(podAssignPolicy).toBeUndefined();
-  });
-
-  it('strips a previously-applied set of reservation parameters once the ' +
-    'instance type stops being a capacity block', async () => {
+  it('strips a previously-applied set of reservation parameters from a plain ' +
+    'type launch, such as a relaunch of a run that used a pool', async () => {
     stubApi({'/cluster/pool/filter': [reservedPool]});
     const previouslyApplied = {
       CP_CAP_REQUESTS_CPU: {value: '1'},
@@ -118,8 +104,8 @@ describe('buildLaunchParametersFromReservationParameters', () => {
 
     const {parameters, podAssignPolicy} = await buildLaunchParametersFromReservationParameters(
       readReservationParameters(previouslyApplied),
-      // not a capacity-block instance type - no matching pool
-      'm5.2xlarge',
+      // the type the pool backs, but no poolId
+      'm5.large',
       previouslyApplied,
       {regionId: 1}
     );
@@ -177,7 +163,8 @@ describe('buildLaunchParametersFromReservationParameters with an explicit poolId
     expect(parameters.CP_CAP_REQUESTS_CPU).toBeUndefined();
   });
 
-  it('falls back to the lowest-id pool when no poolId is given, as before', async () => {
+  it('applies no pool when no poolId is given, not the lowest id sharing ' +
+    'the type', async () => {
     stubApi({'/cluster/pool/filter': [higherIdPool, lowerIdPool]});
 
     const {parameters} = await buildLaunchParametersFromReservationParameters(
@@ -187,9 +174,9 @@ describe('buildLaunchParametersFromReservationParameters with an explicit poolId
       {regionId: 1}
     );
 
-    expect(parameters.CP_CAP_LOWER).toEqual({value: 'true'});
+    expect(parameters.CP_CAP_LOWER).toBeUndefined();
     expect(parameters.CP_CAP_HIGHER).toBeUndefined();
-    expect(parameters.CP_CAP_REQUESTS_CPU).toEqual({value: '1'});
+    expect(parameters.CP_CAP_REQUESTS_CPU).toBeUndefined();
     expect(parameters.CP_CAP_REQUESTS_GPU).toBeUndefined();
   });
 

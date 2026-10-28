@@ -18,11 +18,7 @@ import {AutoComplete, Select, Tag} from 'antd';
 import classNames from 'classnames';
 import styles from './instance-type-info.css';
 import AWSRegionTag from '../AWSRegionTag';
-import capacityBlocks from '../../../models/cluster/capacity-blocks';
-import {
-  encodeCapacityBlockValue,
-  findCapacityBlockPool
-} from '../../../models/cluster/capacity-blocks/utilities';
+import {encodeCapacityBlockValue} from '../../../models/cluster/capacity-blocks/utilities';
 
 const CAPACITY_BLOCKS_GROUP_LABEL = 'Reserved capacity blocks';
 
@@ -58,21 +54,15 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * @property {boolean} [plainText=true]
  * @property {'Select'|'AutoComplete'} [selectFamily=Select]
  * @property {function} [valueFn]
- * @property {boolean} [showReservationTag]
- * @property {number} [regionId] - narrows the capacity-block pool lookup to
- * one region, for `showReservationTag`
- * @property {string} [tagValue] - an explicit tag, used instead of the
- * `showReservationTag` lookup; `getSelectOptions` sets this itself for a
- * capacity-block option, where the pool is already known rather than looked
- * up
+ * @property {string} [tagValue] - a tag shown after the instance info;
+ * `getSelectOptions` sets it to the pool name for a capacity-block option
  * @property {{pool: Object, instanceType: InstanceInfo}[]} [capacityBlockPools]
  * - `getCapacityBlockOptions`'s output. When non-empty **and `selectFamily`
  * is `Select`** (the group renders for `Select` only - the one
  * `AutoComplete` caller is out of scope), `getSelectOptions` prepends a
- * "Reserved capacity blocks" group built from it, one option per pool. The
- * plain options below it keep `showReservationTag`: picking a plain instance
- * type a pool backs still applies that pool at launch, so it carries the
- * pool tag too.
+ * "Reserved capacity blocks" group built from it, one option per pool,
+ * tagged with the pool name. The plain options below it carry no tag:
+ * picking a plain instance type launches without a reservation.
  */
 
 /**
@@ -116,9 +106,7 @@ export function instanceInfoString (instance, options = {}) {
     hyperThreadingDisabled = false,
     displayRegion = false,
     plainText = true,
-    showReservationTag = false,
-    tagValue: explicitTagValue,
-    regionId: optionsRegionId,
+    tagValue: tagOption,
     className,
     style
   } = options;
@@ -131,10 +119,7 @@ export function instanceInfoString (instance, options = {}) {
     regionId,
     regionIds = [regionId]
   } = instance;
-  const pool = !explicitTagValue && showReservationTag
-    ? findCapacityBlockPool(capacityBlocks.pools, name, {regionId: optionsRegionId})
-    : undefined;
-  const tagValue = explicitTagValue || (pool ? String(pool.name) : undefined);
+  const tagValue = tagOption ? String(tagOption) : undefined;
   if (vcpu) {
     infoParts.push(plainText
       ? `CPU: ${cpuMapper(vcpu, hyperThreadingDisabled)}`
@@ -242,20 +227,7 @@ export function getSelectOptionForInstance (instance, options = {}) {
     sku,
     name
   } = instance;
-  const {
-    showReservationTag = false,
-    regionId
-  } = options;
-  const pool = showReservationTag
-    ? findCapacityBlockPool(capacityBlocks.pools, name, {regionId})
-    : undefined;
-  const tag = pool ? pool.name : undefined;
-  // The pool name tag is searchable, so a user who knows the pool name can type
-  // it into the select instead of the instance type.
-  const searchValue = [name, tag]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  const searchValue = (name || '').toLowerCase();
   const {
     valueFn = (o) => o.name
   } = options || {};
@@ -344,7 +316,6 @@ function getCapacityBlockSelectOption (capacityBlockOption, options = {}) {
     .toLowerCase();
   const presentationOptions = {
     ...(options || {}),
-    showReservationTag: false,
     tagValue
   };
   return (

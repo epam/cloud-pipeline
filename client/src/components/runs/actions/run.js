@@ -84,7 +84,7 @@ import {applyRunNameAliasTag} from '../run-tags/alias';
 import {
   ensureValidReservationParametersForLaunchPayloads
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
-import capacityBlocks, {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
+import capacityBlocks from '../../../models/cluster/capacity-blocks';
 import {
   decodeInstanceTypeValue,
   getCapacityBlockOptions,
@@ -874,9 +874,10 @@ export class RunConfirmation extends React.Component {
     return false;
   }
 
+  // Only a pool picked from "Reserved capacity blocks" is a reservation: a
+  // plain instance type launches without one, even where a pool backs it.
   get isInstanceTypeWithReservation () {
-    const {name} = this.currentInstanceType || {};
-    return isCapacityBlockInstanceType(name, {regionId: this.capacityBlockRegionId});
+    return !!this.selectedCapacityBlockPool;
   }
 
   setOnDemand = (onDemand) => {
@@ -1217,8 +1218,6 @@ export class RunConfirmation extends React.Component {
                     getSelectOptions(
                       this.getInstanceTypes(),
                       {
-                        showReservationTag: true,
-                        regionId: this.capacityBlockRegionId,
                         capacityBlockPools: getCapacityBlockOptions(
                           capacityBlocks.pools,
                           this.getInstanceTypes(),
@@ -1461,7 +1460,7 @@ export class RunConfirmation extends React.Component {
 }
 
 @observer
-class RunSpotConfirmationWithPrice extends React.Component {
+export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     versionErrors: PropTypes.shape({
       size: PropTypes.shape({
@@ -1716,7 +1715,10 @@ class RunSpotConfirmationWithPrice extends React.Component {
             onDemandSelectionAvailable={this.props.onDemandSelectionAvailable}
             showInstanceTypeSelection={!this.props.instanceType}
             onChangeInstanceType={this.onChangeInstanceType}
-            instanceType={this.props.instanceType}
+            // The seeded value, not the plain `props.instanceType`: it names
+            // the chosen pool (`pool:<id>`), which is what tells the inner
+            // dialog the run is reserved.
+            instanceType={this.seededInstanceTypeValue}
             instanceTypes={this.props.availableInstanceTypes}
             dataStorages={this.props.dataStorages}
             limitMounts={this.props.limitMounts}
