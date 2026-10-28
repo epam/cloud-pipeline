@@ -112,10 +112,12 @@ export function encodeCapacityBlockValue (pool) {
  * since the value alone does not carry it. Nonsense (not a string, an empty
  * value, a `pool:` with no numeric id, or an id no longer in `pools`) decodes
  * to `{instanceType: undefined, poolId: undefined}` rather than throwing.
+ * The matched pool itself comes back as `pool`, so a caller never has to
+ * look it up again.
  *
  * @param {string} value
  * @param {Object[]} [pools]
- * @returns {{instanceType: string|undefined, poolId: number|undefined}}
+ * @returns {{instanceType: string|undefined, poolId: number|undefined, pool: Object|undefined}}
  */
 export function decodeInstanceTypeValue (value, pools = []) {
   if (!value || typeof value !== 'string') {
@@ -134,7 +136,7 @@ export function decodeInstanceTypeValue (value, pools = []) {
   if (!pool) {
     return {instanceType: undefined, poolId: undefined};
   }
-  return {instanceType: pool.instanceType, poolId: pool.id};
+  return {instanceType: pool.instanceType, poolId: pool.id, pool};
 }
 
 /**

@@ -968,11 +968,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   get selectedCapacityBlockPool () {
     const value = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
-    const {poolId} = decodeInstanceTypeValue(value, capacityBlocks.pools);
-    if (poolId === undefined) {
-      return undefined;
-    }
-    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+    return decodeInstanceTypeValue(value, capacityBlocks.pools).pool;
   }
 
   getIsInstanceTypeWithReservation () {
@@ -5861,6 +5857,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
+    // A reservation may have started or ended since the list was loaded.
+    capacityBlocks.refresh();
     // --------------------------
     this.updateFromProps();
     this.updateConfigurationsFromProps();

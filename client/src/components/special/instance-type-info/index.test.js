@@ -151,18 +151,18 @@ describe('getSelectOptions, the "Reserved capacity blocks" group', () => {
     expect(screen.queryByText('Reserved capacity blocks')).toBeNull();
   });
 
-  it('suppresses the pool tag on the plain options once the group renders', async () => {
+  it('keeps the pool tag on the plain option once the group renders', async () => {
     const pool = {id: 351, instanceType: 'm5.large', name: 'pool-351', regionId: 1};
     stubApi({'/cluster/pool/filter': [pool]});
     await capacityBlocks.load();
     const capacityBlockPools = getCapacityBlockOptions([pool], instanceTypes, {regionId: 1});
 
-    // A caller is never meant to pass both, but the plain options must not
-    // carry the pool tag regardless - picking one of them means *not* a
-    // capacity block.
+    // Picking the plain m5.large still applies pool-351 at launch, so it
+    // carries the tag as well as the pool's own entry in the group.
     renderOptions({capacityBlockPools, showReservationTag: true, regionId: 1});
     await click(screen.getByRole('combobox'));
 
-    expect(screen.getAllByText('pool-351')).toHaveLength(1);
+    expect(screen.getAllByRole('menuitem', {name: /m5\.large.*pool-351/}))
+      .toHaveLength(2);
   });
 });

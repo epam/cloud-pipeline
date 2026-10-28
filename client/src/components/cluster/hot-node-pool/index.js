@@ -28,6 +28,7 @@ import EditHotNodePool from './edit-hot-node-pool';
 import clusterNodes from '../../../models/cluster/ClusterNodes';
 import pools from '../../../models/cluster/HotNodePools';
 import reservations from '../../../models/cluster/CapacityReservations';
+import capacityBlocks from '../../../models/cluster/capacity-blocks';
 import HotNodePoolUpdate from '../../../models/cluster/HotNodePoolUpdate';
 import HotNodePoolDelete from '../../../models/cluster/HotNodePoolDelete';
 import HotNodePoolScheduleUpdate from '../../../models/cluster/HotNodePoolScheduleUpdate';
@@ -160,19 +161,21 @@ class HotCluster extends React.Component {
       message.error(request.error, 5);
       return;
     }
+    // The pool is already gone at this point, so a failed schedule delete still
+    // reloads the list and closes the modal: a second DELETE would only fail
+    // with "not found".
+    let scheduleError;
     if (poolToRemove.schedule && poolToRemove.schedule.id) {
       const scheduleRequest = new HotNodePoolScheduleDelete(poolToRemove.schedule.id);
       await scheduleRequest.fetch();
-      if (scheduleRequest.error) {
-        hide();
-        message.error(scheduleRequest.error, 5);
-        return;
-      }
+      scheduleError = scheduleRequest.error;
     }
-    await pools.fetch();
-    await nodes.fetch();
+    await Promise.all([pools.fetch(), nodes.fetch(), capacityBlocks.refresh()]);
     hide();
     this.closeRemovePoolModal();
+    if (scheduleError) {
+      message.error(`Pool removed, but its schedule was not: ${scheduleError}`, 5);
+    }
   };
 
   closeEditPoolModal = () => {
@@ -216,7 +219,7 @@ class HotCluster extends React.Component {
       if (currentScheduleId && !hasSchedule) {
         await removeSchedule(currentScheduleId);
       }
-      await Promise.all([pools.fetch(), nodes.fetch(), res.fetch()]);
+      await Promise.all([pools.fetch(), nodes.fetch(), res.fetch(), capacityBlocks.refresh()]);
     } catch (error) {
       message.error(error.message, 5);
     } finally {
@@ -227,7 +230,12 @@ class HotCluster extends React.Component {
 
   refresh = async () => {
     const {pools: poolsRequest, clusterNodes: nodes, reservations: res} = this.props;
-    await Promise.all([poolsRequest.fetch(), nodes.fetch(), res.fetch()]);
+    await Promise.all([
+      poolsRequest.fetch(),
+      nodes.fetch(),
+      res.fetch(),
+      capacityBlocks.refresh()
+    ]);
   };
 
   onPoolClick = (pool) => {

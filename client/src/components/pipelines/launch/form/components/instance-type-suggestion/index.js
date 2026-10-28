@@ -105,16 +105,11 @@ class InstanceTypeSuggestion extends React.Component {
       .filter((suggestion) => available.has(suggestion.instanceType.toLowerCase()));
   }
 
-  // "Is this suggestion the one currently chosen" can only be answered by pool
-  // identity, never by instance type: the node type selector's plain option
-  // for a type a pool also backs is explicitly "not a capacity block" (see
-  // `getSelectOptions` in `instance-type-info`) - a different launch, with a
-  // different payload, from picking that pool. Matching by type name as a
-  // fallback would mark a pool "selected" while the field actually holds the
-  // plain type, and - worse - mark every pool sharing a type "selected" at
-  // once when the plain type is selected and more than one does. So this
-  // component knows only one thing a selection can be: a specific pool, by
-  // id, or nothing.
+  // "Is this suggestion the one currently chosen" is answered by pool
+  // identity, never by instance type: two pools can back the same type, and
+  // matching by type name would mark every one of them "selected" at once
+  // when the plain type is chosen. So this component knows only one thing a
+  // selection can be: a specific pool, by id, or nothing.
   isCurrentSuggestion = (suggestion) => {
     const {currentPoolId} = this.props;
     if (currentPoolId === undefined || currentPoolId === null) {

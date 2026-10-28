@@ -30,8 +30,7 @@ function ParametersRunCapabilities (props) {
     tool,
     provider,
     region,
-    instanceType,
-    poolId
+    instanceType
   } = props;
   if (!parametersStore) {
     return null;
@@ -49,7 +48,6 @@ function ParametersRunCapabilities (props) {
       values={parametersStore.capabilities}
       mode={RUN_CAPABILITIES_MODE.launch}
       instanceType={instanceType}
-      poolId={poolId}
     />
   );
 }
@@ -62,8 +60,7 @@ ParametersRunCapabilities.propTypes = {
   tool: PropTypes.object,
   provider: PropTypes.string,
   region: PropTypes.object,
-  instanceType: PropTypes.string,
-  poolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  instanceType: PropTypes.string
 };
 
 export default injectParametersStore(observer(ParametersRunCapabilities));

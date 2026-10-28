@@ -769,11 +769,7 @@ export class RunConfirmation extends React.Component {
   }
 
   get selectedCapacityBlockPool () {
-    const {poolId} = decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools);
-    if (poolId === undefined) {
-      return undefined;
-    }
-    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+    return decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools).pool;
   }
 
   @computed
@@ -1549,11 +1545,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
   }
 
   get selectedCapacityBlockPool () {
-    const {poolId} = decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools);
-    if (poolId === undefined) {
-      return undefined;
-    }
-    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+    return decodeInstanceTypeValue(this.state.instanceType, capacityBlocks.pools).pool;
   }
 
   // `props.instanceType` is always the plain name: the launch form never

@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+import {autorun} from 'mobx';
 import {stubApi} from '@test';
-import capacityBlocks from './index';
+import capacityBlocks, {CapacityBlocks} from './index';
+
+const macrotask = () => new Promise((resolve) => setTimeout(resolve, 30));
 
 // The store is a module-level singleton, so every test starts it off the same
 // way: as if nothing had been fetched yet.
@@ -90,10 +93,88 @@ test('without invalidateCache(), load() does not fetch again once loaded', async
   expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
 });
 
-test('a failed request leaves pools empty rather than throwing', async () => {
+test('a failed first request leaves pools empty rather than throwing', async () => {
+  // A fresh store: the shared one still holds a previous test's list, which a
+  // failure is meant to keep.
+  const store = new CapacityBlocks();
   stubApi().fail('/cluster/pool/filter', 'Something went wrong');
 
+  await store.load();
+
+  expect(store.pools).toEqual([]);
+});
+
+test('refresh() refetches, and an observer of .pools sees the new list', async () => {
+  stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+  await capacityBlocks.load();
+  const seen = [];
+  const dispose = autorun(() => seen.push(capacityBlocks.pools.map((pool) => pool.id)));
+
+  const api = stubApi({'/cluster/pool/filter': [{id: 2, name: 'pool-2'}]});
+  await capacityBlocks.refresh();
+  dispose();
+
+  expect(api.calls).toHaveLength(1);
+  expect(seen[seen.length - 1]).toEqual([2]);
+});
+
+test('refresh() while a load is in flight still sends its own request', async () => {
+  const api = stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+
+  const first = capacityBlocks.load();
+  const second = capacityBlocks.refresh();
+  await Promise.all([first, second]);
+
+  expect(api.calls).toHaveLength(2);
+});
+
+test('a failed request is retried by the next load()', async () => {
+  const failing = stubApi().fail('/cluster/pool/filter', 'Something went wrong');
+  await capacityBlocks.load();
+  expect(failing.calls).toHaveLength(1);
+
+  const api = stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
   await capacityBlocks.load();
 
-  expect(capacityBlocks.pools).toEqual([]);
+  expect(api.calls).toHaveLength(1);
+  expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
+});
+
+test('a failed request does not retry in a loop while .pools is observed', async () => {
+  const api = stubApi().fail('/cluster/pool/filter', 'Something went wrong');
+  const dispose = autorun(() => capacityBlocks.pools);
+
+  await macrotask();
+  await macrotask();
+  dispose();
+
+  expect(api.calls).toHaveLength(1);
+});
+
+test('load() during an in-flight refresh() shares it instead of sending again', async () => {
+  const api = stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+
+  await Promise.all([capacityBlocks.refresh(), capacityBlocks.load()]);
+
+  expect(api.calls).toHaveLength(1);
+});
+
+test('a refresh that fails in the response keeps the last list', async () => {
+  stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+  await capacityBlocks.refresh();
+
+  stubApi().fail('/cluster/pool/filter', 'Something went wrong');
+  await capacityBlocks.refresh();
+
+  expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
+});
+
+test('a refresh that fails in transport keeps the last list', async () => {
+  stubApi({'/cluster/pool/filter': [{id: 1, name: 'pool-1'}]});
+  await capacityBlocks.refresh();
+
+  stubApi().status('/cluster/pool/filter', 500);
+  await capacityBlocks.refresh();
+
+  expect(capacityBlocks.pools).toEqual([{id: 1, name: 'pool-1'}]);
 });

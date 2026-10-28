@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {computed} from 'mobx';
+import {action, computed, observable} from 'mobx';
 import HotNodePoolsFilter from '../HotNodePoolsFilter';
 import {findCapacityBlockPool} from './utilities';
 
@@ -34,20 +34,25 @@ const CAPACITY_BLOCKS_FILTER = {
  * own `value` getter works, so a component can read `capacityBlocks.pools`
  * from `render` and get a load scheduled for it, re-rendering once the list
  * arrives, instead of every caller remembering to kick off a fetch itself.
+ *
+ * The list is kept in its own observable field, because `RemotePost.value` is
+ * not observable and `loaded` stays `true` across a second request: without
+ * it, a reload would never re-render anything.
  */
 class CapacityBlocks {
   request = new HotNodePoolsFilter();
 
+  @observable.ref _pools = [];
+
   _loadRequired = true;
+  _loadFailed = false;
   _loadPromise = null;
 
   @computed
   get pools () {
     const fetchIfNeeded = this._fetchIfNeeded.bind(this);
     setTimeout(fetchIfNeeded, 0);
-    // Reading `request.loaded` (itself observable) is what makes this computed
-    // - and anything observing it - recompute once the request resolves.
-    return this.request.loaded ? (this.request.value || []) : [];
+    return this._pools;
   }
 
   get loaded () {
@@ -64,20 +69,53 @@ class CapacityBlocks {
    * Fetches the pools, unless a request is already in flight or has already
    * succeeded - two readers calling this (or reading `.pools`) at once share
    * the one request. `invalidateCache()` is what makes the next call fetch
-   * again.
+   * again. After a failed request, the next `load()` fetches again too - but
+   * a lazy read of `.pools` does not, so a failing API is not asked again on
+   * every render.
    * @returns {Promise}
    */
   load () {
-    if (this._loadRequired) {
-      this._loadRequired = false;
-      this._loadPromise = this.request.send(CAPACITY_BLOCKS_FILTER);
+    if (this._loadRequired || this._loadFailed) {
+      this._queueRequest();
     }
     return this._loadPromise || Promise.resolve();
   }
 
+  /**
+   * Fetches the pools again now - after a pool is created, changed or
+   * removed, or when a launch form opens.
+   * @returns {Promise}
+   */
+  refresh () {
+    this._queueRequest();
+    return this._loadPromise;
+  }
+
   invalidateCache () {
     this._loadRequired = true;
-    this._loadPromise = null;
+  }
+
+  // `RemotePost.send` ignores a call made while a request is in flight, so a
+  // new request waits for the previous one instead of being dropped - even
+  // one that failed.
+  _queueRequest () {
+    this._loadRequired = false;
+    this._loadFailed = false;
+    const previous = this._loadPromise || Promise.resolve();
+    this._loadPromise = previous
+      .catch(() => {})
+      .then(() => this.request.send(CAPACITY_BLOCKS_FILTER))
+      .then(() => this._onLoaded());
+  }
+
+  @action
+  _onLoaded () {
+    // A failed request keeps the last list, and is retried by the next
+    // `load()` instead of leaving capacity blocks off for the session.
+    this._loadFailed = !!this.request.error;
+    if (!this._loadFailed) {
+      this._pools = this.request.value || [];
+    }
   }
 }
 

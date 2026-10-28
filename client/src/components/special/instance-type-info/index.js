@@ -69,10 +69,10 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * - `getCapacityBlockOptions`'s output. When non-empty **and `selectFamily`
  * is `Select`** (the group renders for `Select` only - the one
  * `AutoComplete` caller is out of scope), `getSelectOptions` prepends a
- * "Reserved capacity blocks" group built from it, one option per pool, and
- * suppresses `showReservationTag` on the plain options below it - picking
- * one of those means *not* a capacity block, so it must not carry a pool tag
- * too.
+ * "Reserved capacity blocks" group built from it, one option per pool. The
+ * plain options below it keep `showReservationTag`: picking a plain instance
+ * type a pool backs still applies that pool at launch, so it carries the
+ * pool tag too.
  */
 
 /**
@@ -376,13 +376,6 @@ export function getSelectOptions (instanceTypes = [], options = {}) {
   const hasCapacityBlockGroup = selectFamily === 'Select' &&
     Array.isArray(capacityBlockPools) &&
     capacityBlockPools.length > 0;
-  // Where the capacity-block group is rendered, the plain options below it
-  // must not also carry the pool tag - picking a plain instance type means
-  // *not* a capacity block, and showing both would be a lie about what
-  // selecting the plain entry does.
-  const plainOptions = hasCapacityBlockGroup
-    ? {...options, showReservationTag: false}
-    : options;
   const instanceFamilies = [...new Set(instanceTypes.map((i) => i.instanceFamily))];
   const familyGroups = instanceFamilies
     .map((instanceFamily) => {
@@ -396,7 +389,7 @@ export function getSelectOptions (instanceTypes = [], options = {}) {
               {
                 instanceTypes
                   .filter(t => t.instanceFamily === instanceFamily)
-                  .map(t => getSelectOptionForInstance(t, plainOptions))
+                  .map(t => getSelectOptionForInstance(t, options))
               }
             </AutoComplete.OptGroup>
           );
@@ -409,7 +402,7 @@ export function getSelectOptions (instanceTypes = [], options = {}) {
               {
                 instanceTypes
                   .filter(t => t.instanceFamily === instanceFamily)
-                  .map(t => getSelectOptionForInstance(t, plainOptions))
+                  .map(t => getSelectOptionForInstance(t, options))
               }
             </Select.OptGroup>
           );
@@ -425,7 +418,7 @@ export function getSelectOptions (instanceTypes = [], options = {}) {
     >
       {
         capacityBlockPools.map(
-          (capacityBlockOption) => getCapacityBlockSelectOption(capacityBlockOption, plainOptions)
+          (capacityBlockOption) => getCapacityBlockSelectOption(capacityBlockOption, options)
         )
       }
     </Select.OptGroup>

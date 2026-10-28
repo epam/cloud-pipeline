@@ -46,11 +46,11 @@ beforeEach(() => {
   });
 });
 
-describe('resume-confirmation, the capacity-block group', () => {
-  it('shows the group and resolves the plain instance type when a pool is picked', async () => {
+describe('resume-confirmation, capacity blocks', () => {
+  it('offers no capacity-block group, and tags the plain type with its pool', async () => {
     // Pre-load the pools, the way `index.test.js` does: `capacityBlocks.pools`
     // schedules its own fetch on first read and only re-renders once it
-    // resolves, so loading it first means the group is already there on the
+    // resolves, so loading it first means the tag is already there on the
     // dialog's first render instead of requiring a `waitFor` on every click.
     await capacityBlocks.load();
 
@@ -60,9 +60,13 @@ describe('resume-confirmation, the capacity-block group', () => {
       screen.getByRole('button', {name: /RESUME/})
     ).not.toBeDisabled());
     await click(screen.getByRole('combobox'));
-    expect(screen.getByText('Reserved capacity blocks')).toBeInTheDocument();
 
-    await click(screen.getByText('pool-351'));
+    // A resumed run has no field for a pool, so a per-pool choice is not
+    // offered: the plain type carries the pool tag instead.
+    expect(screen.queryByText('Reserved capacity blocks')).toBeNull();
+    const taggedOptions = screen.getAllByRole('menuitem', {name: /pool-351/});
+    expect(taggedOptions).toHaveLength(1);
+    await click(taggedOptions[0]);
     await click(screen.getByText('RESUME'));
 
     const result = await resultPromise;

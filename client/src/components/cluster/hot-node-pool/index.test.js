@@ -618,3 +618,61 @@ test(
     await click(screen.getByText('CANCEL').closest('button'));
   }
 );
+
+test(
+  'admin: a failed schedule delete still reloads the pools and closes the modal',
+  async () => {
+    const pool = {...myPool, id: 25, name: 'to-delete-scheduled', schedule: {id: 7}};
+    const {api} = await renderClusterWithPool(pool);
+    api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
+    api.fail('/cluster/nodeSchedule/7', 'Schedule is locked');
+    const loads = (pattern) => api.calls.filter(c => pattern.test(c.path)).length;
+    const poolLoadsBefore = loads(/^\/cluster\/pool\?/);
+    const nodeLoadsBefore = loads(/^\/cluster\/node\/loadAll\?/);
+
+    const card = screen.getByText('to-delete-scheduled').closest('.cp-hot-node-pool');
+    await click(card.querySelector('.anticon-delete').closest('button'));
+    await click(screen.getByText('DELETE').closest('button'));
+    await flushPromises();
+
+    // The pool itself is gone, so a second DELETE would only fail with "not found".
+    await waitFor(() => expect(
+      screen.queryByText('Are you sure you want to delete "to-delete-scheduled" pool?')
+    ).not.toBeInTheDocument());
+    expect(loads(/^\/cluster\/pool\?/)).toBeGreaterThan(poolLoadsBefore);
+    expect(loads(/^\/cluster\/node\/loadAll\?/)).toBeGreaterThan(nodeLoadsBefore);
+    expect(await screen.findByText(/Pool removed, but its schedule was not: Schedule is locked/))
+      .toBeInTheDocument();
+  }
+);
+
+function capacityBlockLoads (api) {
+  return api.calls.filter(c => c.method === 'POST' && c.path === '/cluster/pool/filter').length;
+}
+
+test('Refresh also reloads the capacity-block pools the node type selectors offer', async () => {
+  const pool = {...myPool, id: 26, name: 'refresh-pool'};
+  const {api} = await renderClusterWithPool(pool);
+  api.reply('/cluster/pool/filter', []);
+  const loadsBefore = capacityBlockLoads(api);
+
+  await click(screen.getByText('Refresh'));
+  await flushPromises();
+
+  await waitFor(() => expect(capacityBlockLoads(api)).toBeGreaterThan(loadsBefore));
+});
+
+test('deleting a pool also reloads the capacity-block pools', async () => {
+  const pool = {...myPool, id: 27, name: 'to-delete-refresh'};
+  const {api} = await renderClusterWithPool(pool);
+  api.reply(/^\/cluster\/pool\/\d+\?force=/, pool);
+  api.reply('/cluster/pool/filter', []);
+  const loadsBefore = capacityBlockLoads(api);
+
+  const card = screen.getByText('to-delete-refresh').closest('.cp-hot-node-pool');
+  await click(card.querySelector('.anticon-delete').closest('button'));
+  await click(screen.getByText('DELETE').closest('button'));
+  await flushPromises();
+
+  await waitFor(() => expect(capacityBlockLoads(api)).toBeGreaterThan(loadsBefore));
+});

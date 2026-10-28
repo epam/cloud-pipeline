@@ -42,11 +42,6 @@ import JobNotifications from '../job-notifications';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import {mapObservableNotification} from '../job-notifications/job-notification';
 import {getSelectOptions} from '../../../../special/instance-type-info';
-import capacityBlocks from '../../../../../models/cluster/capacity-blocks';
-import {
-  decodeInstanceTypeValue,
-  getCapacityBlockOptions
-} from '../../../../../models/cluster/capacity-blocks/utilities';
 
 function getConfigurationPayload (entry) {
   if (!entry) {
@@ -383,12 +378,7 @@ class ConfigurationPayload extends React.Component {
           [names.allowedInstanceTypes]: instanceTypes = [],
           [names.allowedPriceTypes]: priceTypes = []
         } = instanceTypesRequest.value || {};
-        // `instanceTypesRequest.value` is MobX-observable, so a raw assignment here would
-        // store an ObservableArray - and `getCapacityBlockOptions`'s `Array.isArray` guard
-        // (below, via `instanceTypes` in state) silently rejects that, dropping the
-        // "Reserved capacity blocks" group for this editor alone. `.slice()` yields a plain
-        // array, matching every other instance-types getter in the launch form family.
-        newState.instanceTypes = instanceTypes.slice();
+        newState.instanceTypes = instanceTypes;
         newState.priceTypes = priceTypes;
         newState.tool = tool;
       } catch (e) {
@@ -415,18 +405,10 @@ class ConfigurationPayload extends React.Component {
       modifiedParameters,
       instance_disk: instanceDisk,
       timeout,
-      instance_size: instanceTypeRaw,
+      instance_size: instanceType,
       startIdle,
       ...rest
     } = payload;
-    // `instance_size` is this component's own raw node-type value, kept as-is
-    // in state so the Select can redisplay a chosen capacity-block pool - it
-    // may be encoded as `pool:<id>`. Decode once here, the one place this
-    // entry's outgoing `instance_size` is built, so the encoded form never
-    // reaches the saved configuration. Nothing persists the chosen pool: a
-    // saved configuration has no field for it, so reopening one re-derives
-    // the pool from the type and region instead.
-    const {instanceType} = decodeInstanceTypeValue(instanceTypeRaw, capacityBlocks.pools);
     let valid;
     try {
       valid = !!instanceType &&
@@ -567,11 +549,6 @@ class ConfigurationPayload extends React.Component {
       instance_size: instanceType,
       cloudRegionId
     } = payload;
-    const capacityBlockPools = getCapacityBlockOptions(
-      capacityBlocks.pools,
-      instanceTypes,
-      {regionId: cloudRegionId}
-    );
     const onChange = newInstanceType => this.setState({
       payload: {
         ...payload,
@@ -599,7 +576,7 @@ class ConfigurationPayload extends React.Component {
         >
           {getSelectOptions(
             instanceTypes,
-            {showReservationTag: true, regionId: cloudRegionId, capacityBlockPools}
+            {showReservationTag: true, regionId: cloudRegionId}
           )}
         </Select>
       </div>
@@ -932,12 +909,8 @@ class ConfigurationPayload extends React.Component {
     }
     const {
       docker_image: dockerImage,
-      instance_size: instanceTypeRaw
+      instance_size: instanceType
     } = payload;
-    // An explicitly chosen pool must gate a capability on its own launch
-    // config, not whichever pool happens to match `instanceType` and the
-    // region first - `poolId` carries that through to `RunCapabilities`.
-    const {instanceType, poolId} = decodeInstanceTypeValue(instanceTypeRaw, capacityBlocks.pools);
     return (
       <div
         className={styles.row}
@@ -953,7 +926,6 @@ class ConfigurationPayload extends React.Component {
           provider={this.currentProvider}
           region={this.currentCloudRegion}
           instanceType={instanceType}
-          poolId={poolId}
         />
       </div>
     );

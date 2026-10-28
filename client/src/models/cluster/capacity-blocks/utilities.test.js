@@ -140,8 +140,17 @@ describe('decodeInstanceTypeValue', () => {
 
     expect(decodeInstanceTypeValue(value, pools)).toEqual({
       instanceType: 'm5.4xlarge',
-      poolId: 351
+      poolId: 351,
+      pool
     });
+  });
+
+  it('returns the matched pool object itself, not a copy', () => {
+    expect(decodeInstanceTypeValue('pool:2', pools).pool).toBe(pools[1]);
+  });
+
+  it('returns no pool for a plain instance type name', () => {
+    expect(decodeInstanceTypeValue('m5.large', pools).pool).toBeUndefined();
   });
 
   it('never decodes an encoded value to the pool: form itself - the tripwire ' +

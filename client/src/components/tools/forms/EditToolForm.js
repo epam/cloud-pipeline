@@ -128,12 +128,7 @@ import {
   readReservationParameters,
   reservationParametersDiffer
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
-import capacityBlocks, {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
-import {
-  correctCapacityBlockValue,
-  decodeInstanceTypeValue,
-  getCapacityBlockOptions
-} from '../../../models/cluster/capacity-blocks/utilities';
+import {isCapacityBlockInstanceType} from '../../../models/cluster/capacity-blocks';
 import * as prettyUrlGenerator from '../../pipelines/launch/form/utilities/pretty-url';
 import roleModel from '../../../utils/roleModel';
 import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
@@ -470,15 +465,6 @@ export default class EditToolForm extends React.Component {
           }
         }
         const initialConfiguration = this.props.configuration || {};
-        // `values.instanceType` is the field's own raw value and may be a
-        // capacity-block pool encoded as `pool:<id>` - decode it once here.
-        // Nothing persists the chosen pool: a saved configuration has no field
-        // for it, so reopening one re-derives the pool from the type and
-        // region instead. Do not "fix" this to carry the encoded value.
-        const {
-          instanceType: decodedInstanceType,
-          poolId: capacityBlockPoolId
-        } = decodeInstanceTypeValue(values.instanceType, capacityBlocks.pools);
         const configuration = {
           ...initialConfiguration,
           parameters,
@@ -488,7 +474,7 @@ export default class EditToolForm extends React.Component {
             : +values.cloudRegionId,
           cmd_template: this.defaultCommand,
           instance_disk: values.disk,
-          instance_size: decodedInstanceType,
+          instance_size: values.instanceType,
           fallback_instance_types: !this.fallbackInstanceTypesDisabled &&
             values.fallbackInstanceTypes &&
             values.fallbackInstanceTypes.length > 0
@@ -508,8 +494,7 @@ export default class EditToolForm extends React.Component {
           configuration.parameters,
           {
             applyAdditionalParameters: false,
-            regionId: configuration.cloudRegionId,
-            poolId: capacityBlockPoolId
+            regionId: configuration.cloudRegionId
           }
         );
         configuration.parameters = appliedReservationParameters;
@@ -575,24 +560,9 @@ export default class EditToolForm extends React.Component {
       (this.props.tool && this.props.tool.friendly_url);
   };
 
-  // The field's own raw value - a plain instance type name, or a
-  // capacity-block pool encoded by `encodeCapacityBlockValue` (`pool:<id>`).
-  // These two getters are the single place this form reads "what is
-  // selected" for display and payload purposes; the raw, possibly-encoded
-  // value itself stays touched only by the `Select` and `correctInstanceTypeValue`
-  // (which must see it raw to validate it).
+  // A tool stores only a plain instance type.
   get selectedInstanceTypeName () {
-    const value = this.props.form.getFieldValue('instanceType');
-    return decodeInstanceTypeValue(value, capacityBlocks.pools).instanceType;
-  }
-
-  get selectedCapacityBlockPool () {
-    const value = this.props.form.getFieldValue('instanceType');
-    const {poolId} = decodeInstanceTypeValue(value, capacityBlocks.pools);
-    if (poolId === undefined) {
-      return undefined;
-    }
-    return (capacityBlocks.pools || []).find((pool) => pool && pool.id === poolId);
+    return this.props.form.getFieldValue('instanceType');
   }
 
   getInstanceTypeValue = () => {
@@ -1389,27 +1359,14 @@ export default class EditToolForm extends React.Component {
   };
 
   correctInstanceTypeValue = (value) => {
-    if (value === undefined || value === null) {
-      return value;
+    if (value !== undefined && value !== null) {
+      const [v] = this.allowedInstanceTypes.filter(v => v.name === value);
+      if (v !== undefined) {
+        return v.name;
+      }
+      return null;
     }
-    // `correctCapacityBlockValue` is the pool-aware half, tested on its own -
-    // `undefined` means `value` does not name a pool at all (plain, or
-    // nonsense), which falls through to the plain-value correction below,
-    // exactly as before this field could ever carry a pool.
-    const corrected = correctCapacityBlockValue(
-      value,
-      capacityBlocks.pools,
-      this.allowedInstanceTypes,
-      {regionId: this.capacityBlockRegionId}
-    );
-    if (corrected !== undefined) {
-      return corrected;
-    }
-    const [v] = this.allowedInstanceTypes.filter(v => v.name === value);
-    if (v !== undefined) {
-      return v.name;
-    }
-    return null;
+    return value;
   };
 
   correctPriceTypeValue = (value) => {
@@ -1686,12 +1643,7 @@ export default class EditToolForm extends React.Component {
                     {getSelectOptions(
                       this.allowedInstanceTypes, {
                         showReservationTag: true,
-                        regionId: this.capacityBlockRegionId,
-                        capacityBlockPools: getCapacityBlockOptions(
-                          capacityBlocks.pools,
-                          this.allowedInstanceTypes,
-                          {regionId: this.capacityBlockRegionId}
-                        )
+                        regionId: this.capacityBlockRegionId
                       }
                     )}
                   </Select>
@@ -1747,11 +1699,6 @@ export default class EditToolForm extends React.Component {
                 <Col xs={24} sm={12}>
                   <ReservationParameters
                     instanceType={this.getInstanceTypeValue()}
-                    poolId={
-                      this.selectedCapacityBlockPool
-                        ? this.selectedCapacityBlockPool.id
-                        : undefined
-                    }
                     region={this.getCloudRegion()}
                     parameters={this.state.reservationParameters}
                     onChange={this.onChangeReservationParameters}
@@ -2103,11 +2050,6 @@ export default class EditToolForm extends React.Component {
                       region={this.getCloudRegion()}
                       mode={RUN_CAPABILITIES_MODE.edit}
                       instanceType={instanceTypeValue?.name}
-                      poolId={
-                        this.selectedCapacityBlockPool
-                          ? this.selectedCapacityBlockPool.id
-                          : undefined
-                      }
                     />
                   </Form.Item>
                 )

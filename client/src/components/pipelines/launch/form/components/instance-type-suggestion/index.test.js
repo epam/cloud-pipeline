@@ -186,11 +186,9 @@ describe('InstanceTypeSuggestion', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  // The node type selector's plain option for a type a pool also backs is
-  // explicitly "not a capacity block" (`getSelectOptions` in
-  // `instance-type-info`) - a different launch from picking that pool, even
-  // where only one pool backs the type. Matching by instance type name
-  // instead of `currentPoolId` would conflate the two.
+  // A plain type carries no pool id, so nothing is marked "selected" even
+  // where a pool backs it: matching by instance type name instead of
+  // `currentPoolId` would mark every pool sharing that type at once.
   it('marks no suggestion selected when a plain type is chosen, even with a matching pool', () => {
     const matchedPool = pool();
     renderSuggestion({
