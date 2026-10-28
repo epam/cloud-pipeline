@@ -1114,7 +1114,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>System_Management</b> (27 tests, 17 automated)</summary>
+<summary><b>System_Management</b> (30 tests, 17 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -1139,6 +1139,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4024_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_1.md) | Audit mount events |  |
 | [**4024_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_2.md) | Audit run sharing event |  |
 | [**4039**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4039.md) | Data access audit - NFS |  |
+| [**4689_1**](System_Management/4689_group_ui_preferences_priority/4689_1.md) | Group with the higher priority sets the GUI settings |  |
+| [**4689_2**](System_Management/4689_group_ui_preferences_priority/4689_2.md) | Group without priority counts as priority 0 |  |
+| [**4689_3**](System_Management/4689_group_ui_preferences_priority/4689_3.md) | Groups with the same priority keep the preference order |  |
 | [**EPMCMBIBPC-3162**](System_Management/System_logging/EPMCMBIBPC-3162.md) | User authentication | :white_check_mark: |
 | [**EPMCMBIBPC-3163**](System_Management/System_logging/EPMCMBIBPC-3163.md) | User authentication. Unsuccessful attempt | :white_check_mark: |
 | [**EPMCMBIBPC-3164**](System_Management/System_logging/EPMCMBIBPC-3164.md) | User profile modifications | :white_check_mark: |
