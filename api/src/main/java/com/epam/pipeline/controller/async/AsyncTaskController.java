@@ -66,7 +66,8 @@ public class AsyncTaskController extends AbstractRestController {
     @ResponseBody
     @Operation(
             summary = "Returns an asynchronous task by id.",
-            description = "Returns an asynchronous task by id.")
+            description = "Returns an asynchronous task by id, to its owner, to an administrator and "
+                    + "to a storage administrator.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<AsyncTask> load(@PathVariable(value = ID) final String id) {
         return Result.success(asyncTaskApiService.load(id));
@@ -80,7 +81,8 @@ public class AsyncTaskController extends AbstractRestController {
                     + "the type of the task, so the answer carries the type and a payload shaped by "
                     + "it; a download-archive task hands over a signed url. Nothing is consumed in "
                     + "the sense of being used up - the task is not changed, and a second call "
-                    + "answers afresh.")
+                    + "answers afresh. Available to the task's owner, to an administrator and to a "
+                    + "storage administrator.")
     @ApiResponses(value = {@ApiResponse(description = API_STATUS_DESCRIPTION)})
     public Result<AsyncTaskConsumeResult> consume(@PathVariable(value = ID) final String id) {
         return Result.success(asyncTaskApiService.consume(id));
