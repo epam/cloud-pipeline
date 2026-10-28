@@ -205,6 +205,12 @@ class CurrentUserAsyncTasks {
     if (entryIsExpired(entry)) {
       return;
     }
+    // A task already handled as terminal is not watched again. The start-up
+    // sync can still list one as active: its answer may have been computed
+    // before the task's own poll saw it finish.
+    if (this.settled.has(entry.id)) {
+      return;
+    }
     addEntry(entry);
     this.startPolling(entry);
   }
@@ -265,7 +271,10 @@ class CurrentUserAsyncTasks {
     if (this.settled.has(id)) {
       // A second response for a task already dealt with - see `settled`. It
       // would otherwise announce the same finished archive twice, and could
-      // also spend the `silenced` token meant for its twin.
+      // also spend the `silenced` token meant for its twin. Still untracked:
+      // if a poller is somehow running for a settled task, nothing else would
+      // ever stop it.
+      this.untrack(id);
       return;
     }
     // Consumed on the first response after a resume, whatever it says - see

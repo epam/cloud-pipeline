@@ -163,6 +163,24 @@ describe('trackTask', () => {
     expect(loadEntries().map(entry => entry.id)).toEqual(['1']);
     expect(store.pollers.has('1')).toBe(true);
   });
+
+  // The start-up race: the server's active list was computed before the task
+  // finished, and arrives after the task's own poll has already announced it.
+  it('does not watch again a task already handled as terminal', async () => {
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(taskRoute(1), {id: 1, status: 'SUCCESS', created: YESTERDAY()});
+    const store = newStore();
+    const listener = fn();
+    store.addStatusChangeListener(listener);
+    await store.pollTask({id: '1', created: YESTERDAY()});
+
+    store.trackTask({id: 1, created: YESTERDAY(), owner: USER_NAME});
+
+    expect(store.pollers.has('1')).toBe(false);
+    expect(loadEntries()).toEqual([]);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('polling one task', () => {
@@ -793,6 +811,22 @@ describe('pausePolling / resumePolling', () => {
     ]);
 
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops the poller of a task that answers again after it settled', async () => {
+    const api = stubApi();
+    stubWhoAmI(api);
+    api.reply(taskRoute(1), {id: 1, status: 'SUCCESS', created: YESTERDAY()});
+    const store = newStore();
+    const entry = {id: '1', created: YESTERDAY(), owner: USER_NAME};
+    await store.pollTask(entry);
+    store.startPolling(entry);
+    expect(store.pollers.has('1')).toBe(true);
+
+    await store.pollTask(entry);
+
+    expect(store.pollers.has('1')).toBe(false);
+    expect(loadEntries()).toEqual([]);
   });
 });
 

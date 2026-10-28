@@ -31,6 +31,21 @@ describe('downloadItemsActionAvailable', () => {
   ])('answers %s for a selection of %s items', (count, expected) => {
     expect(downloadItemsActionAvailable(count)).toBe(expected);
   });
+
+  // On a storage the archive worker cannot read, "Download archive" is not
+  // offered, so plain Download must cover every selection size.
+  it.each([
+    [0, false],
+    [1, true],
+    [4, true],
+    [10, true]
+  ])('%s items answer %s when archives are not supported', (count, expected) => {
+    expect(downloadItemsActionAvailable(count, {archiveSupported: false})).toBe(expected);
+  });
+
+  it('keeps the upper bound when archives are supported', () => {
+    expect(downloadItemsActionAvailable(4, {archiveSupported: true})).toBe(false);
+  });
 });
 
 describe('MIN_DOWNLOAD_ITEMS / MAX_DOWNLOAD_ITEMS', () => {

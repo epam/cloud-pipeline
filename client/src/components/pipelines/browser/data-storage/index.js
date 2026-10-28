@@ -113,6 +113,7 @@ import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
   archivePathsFromSelection,
+  archiveStorageSupported,
   defaultArchiveName
 } from '../../../special/download-storage-archive';
 import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
@@ -1055,10 +1056,9 @@ export default class DataStorage extends React.Component {
     this.setState({createFile: false});
   };
 
-  // The cap is re-checked against the server here, on the click itself, and
+  // The cap is checked against the server here, on the click itself, and
   // the modal opens only if there is room - see `archiveDownloadAllowed`
-  // (special/download-storage-archive.js) for why the greyed-out menu item is
-  // not enough on its own. The same check runs again inside
+  // (special/download-storage-archive.js). The same check runs again inside
   // `startArchiveDownload` when OK is pressed, since this modal can sit open
   // for as long as the user likes.
   // Invoked fire-and-forget from the selection dropdown's click handler, so
@@ -2388,25 +2388,26 @@ export default class DataStorage extends React.Component {
       title: 'Clear selection',
       available: this.clearSelectionVisible
     };
+    const archiveSupported = !this.isOmicsStore &&
+      archiveStorageSupported(this.storage.info, this.fileShareMount);
     const downloadAction = {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
       available: !this.isOmicsStore &&
-        downloadItemsActionAvailable(itemsAvailableForDownload.length)
+        downloadItemsActionAvailable(itemsAvailableForDownload.length, {archiveSupported})
     };
-    // Deliberately carries no cap state: the item is never greyed out and
-    // never explains the cap up front. Clicking it counts the user's active
-    // tasks against the server (`openDownloadArchiveModal` above) and, at the
-    // cap, shows a message instead of opening the name modal. A hint here
-    // could only come from a background poll of the task list, which the
-    // notification tracker no longer keeps (models/asyncTask/
-    // CurrentUserAsyncTasks.js polls the user's own queued tasks one by one).
+    // Carries no cap state. Clicking it counts the user's active tasks against
+    // the server (`openDownloadArchiveModal` above) and, at the cap, shows a
+    // message instead of opening the name modal. A hint here could only come
+    // from a background poll of the task list, which the notification tracker
+    // no longer keeps (models/asyncTask/CurrentUserAsyncTasks.js polls the
+    // user's own queued tasks one by one).
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',
       icon: 'download',
-      available: !this.isOmicsStore && archiveActionAvailable(selectedItems)
+      available: archiveSupported && archiveActionAvailable(selectedItems)
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2562,24 +2563,16 @@ export default class DataStorage extends React.Component {
     };
     if (actions.length === 1) {
       const action = actions[0];
-      // `title` sits on this wrapping span, not the Button itself: a disabled
-      // native <button> does not raise its own `title` tooltip in Chrome or
-      // Safari (Firefox is the odd one out), so the reason would be invisible
-      // for exactly the disabled case it exists to explain. An always-enabled
-      // ancestor shows it regardless.
       return (
-        <span title={action.description}>
-          <Button
-            size="small"
-            id={`selection-action-${action.key}`}
-            onClick={(event) => doAction(action, event)}
-            disabled={action.disabled}
-            style={{lineHeight: 1}}
-          >
-            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
-            {action.title}
-          </Button>
-        </span>
+        <Button
+          size="small"
+          id={`selection-action-${action.key}`}
+          onClick={(event) => doAction(action, event)}
+          style={{lineHeight: 1}}
+        >
+          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.title}
+        </Button>
       );
     }
     const title = selectedItems && selectedItems.length > 0
@@ -2595,21 +2588,11 @@ export default class DataStorage extends React.Component {
         <MenuItem
           id={`selection-action-${action.key}`}
           key={action.key}
-          disabled={action.disabled}
           className={classNames(action.className, `selection-action-${action.key}`)}
         >
-          <div>
-            <div style={{display: 'flex', alignItems: 'center'}}>
-              {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
-              {action.title}
-            </div>
-            {
-              action.description && (
-                <div className="cp-text-not-important">
-                  {action.description}
-                </div>
-              )
-            }
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+            {action.title}
           </div>
         </MenuItem>
       );

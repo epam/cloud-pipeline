@@ -42,11 +42,18 @@ export default class DownloadArchiveModal extends React.Component {
     name: this.props.defaultName
   };
 
+  // Set by the first submit and cleared when the modal opens again. The modal
+  // stays clickable while it animates closed, so without it a double-click on
+  // OK, or Enter pressed twice, queues two archives. An instance field, not
+  // state: the second click must see it at once.
+  submitted = false;
+
   componentDidUpdate (prevProps) {
     // Seed from `defaultName` whenever the modal BECOMES visible, the same
     // trigger EditItemForm.componentDidUpdate uses — so reopening it offers a
     // fresh timestamped default rather than whatever the user typed last time.
     if (!prevProps.visible && this.props.visible) {
+      this.submitted = false;
       this.resetName();
     }
   }
@@ -61,9 +68,10 @@ export default class DownloadArchiveModal extends React.Component {
 
   handleSubmit = () => {
     const name = (this.state.name || '').trim();
-    if (!name) {
+    if (!name || this.submitted) {
       return;
     }
+    this.submitted = true;
     if (this.props.onSubmit) {
       this.props.onSubmit(name);
     }

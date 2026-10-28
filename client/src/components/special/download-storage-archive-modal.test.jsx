@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {render, screen, click, type, clear, fn} from '@test';
+import {render, screen, click, type, clear, keyDown, fn} from '@test';
 import DownloadArchiveModal from './download-storage-archive-modal';
 
 // antd's Modal (rc-dialog) portals its content to a node it appends to
@@ -105,4 +105,42 @@ test('reopening the modal with a new defaultName shows the new one, not the type
   utils.rerender(<DownloadArchiveModal visible defaultName="archive-20261022-090000" />);
 
   expect(screen.getByLabelText('Archive name')).toHaveValue('archive-20261022-090000');
+});
+
+// The modal stays clickable while it animates closed, so a second OK, or a
+// second Enter, must not queue a second archive.
+test('a second OK click does not call onSubmit again', async () => {
+  const onSubmit = fn();
+  renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+
+  await click(screen.getByRole('button', {name: 'OK'}));
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+});
+
+test('a second Enter does not call onSubmit again', async () => {
+  const onSubmit = fn();
+  renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+  const input = screen.getByLabelText('Archive name');
+
+  await keyDown(input, {key: 'Enter', keyCode: 13});
+  await keyDown(input, {key: 'Enter', keyCode: 13});
+
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+});
+
+test('reopening the modal allows one more submit', async () => {
+  const onSubmit = fn();
+  const utils = renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  utils.rerender(<DownloadArchiveModal visible={false} onSubmit={onSubmit} />);
+  utils.rerender(
+    <DownloadArchiveModal visible defaultName="archive-20261022-090000" onSubmit={onSubmit} />
+  );
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  expect(onSubmit).toHaveBeenCalledTimes(2);
+  expect(onSubmit).toHaveBeenLastCalledWith('archive-20261022-090000');
 });

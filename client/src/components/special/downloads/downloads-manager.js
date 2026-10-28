@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {message, Button} from 'antd';
 import AsyncTaskFilter from '../../../models/asyncTask/AsyncTaskFilter';
@@ -286,19 +287,22 @@ class DownloadsManager extends React.Component {
   }
 
   // `dataStorages` is the shared Provider singleton; nothing here re-fetches
-  // it. A plain object (not a Map) and a plain getter (not `@computed`): it
-  // travels to async-tasks-list.js as plain data, keeping that file free of
-  // `@inject`/model imports - this class's own `@observer` is what re-renders
-  // the column once `dataStorages` resolves.
+  // it. A plain object (not a Map): it travels to async-tasks-list.js as plain
+  // data, keeping that file free of `@inject`/model imports - this class's own
+  // `@observer` is what re-renders the column once `dataStorages` resolves.
+  // `@computed`, so it is built once per `dataStorages` load rather than on
+  // every render, and the polling re-renders the modal every few seconds.
+  @computed
   get storageNamesById () {
     const {dataStorages} = this.props;
+    const names = {};
     if (!dataStorages || !dataStorages.loaded) {
-      return {};
+      return names;
     }
-    return (dataStorages.value || []).reduce((result, storage) => ({
-      ...result,
-      [storage.id]: storage.name
-    }), {});
+    (dataStorages.value || []).forEach(storage => {
+      names[storage.id] = storage.name;
+    });
+    return names;
   }
 
   handleCancel = async (task) => {
@@ -396,12 +400,9 @@ class DownloadsManager extends React.Component {
   };
 
   // The Owner column (async-tasks-list.js) is admin-only and omitted, not
-  // merely hidden, for anyone else. A `ROLE_STORAGE_ADMIN` also sees it, even
-  // though the server still restricts what it shows:
-  // `AsyncTaskApiService.restrictToCaller` (origin/java21_issue_4570_
-  // download_archive, not this branch) overwrites `owner` with the caller's
-  // own name unless they are a full `ROLE_ADMIN` - a server-side limitation,
-  // not a bug here.
+  // merely hidden, for anyone else. A `ROLE_STORAGE_ADMIN` sees it too: the
+  // server lets that role reach any owner's tasks, the same as a full admin
+  // (`AsyncTaskApiService.mayReachForeignTask`).
   get isAdmin () {
     const {authenticatedUserInfo} = this.props;
     if (!authenticatedUserInfo || !authenticatedUserInfo.loaded || !authenticatedUserInfo.value) {

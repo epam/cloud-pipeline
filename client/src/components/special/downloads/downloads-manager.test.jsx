@@ -241,6 +241,33 @@ test(
   }
 );
 
+// The name lookup is cached between renders, so this proves the cache is
+// rebuilt when `dataStorages` finishes loading.
+test('shows the storage name once dataStorages loads after the first render', async () => {
+  const api = stubApi();
+  stubFilter(api, [
+    {
+      id: 1,
+      status: 'SUCCESS',
+      params: {archiveName: 'archive-one', storageId: 7},
+      created: '2026-10-21T13:00:00.000Z'
+    }
+  ]);
+  const dataStorages = dataStoragesDouble({loaded: false, value: []});
+
+  renderWithStores(<DownloadsManager />, {
+    asyncTasks: asyncTasksDouble(),
+    authenticatedUserInfo: authenticatedUserInfoDouble(),
+    dataStorages
+  });
+  expect(await screen.findByText('7')).toBeInTheDocument();
+
+  dataStorages.value = [{id: 7, name: 'my-storage'}];
+  dataStorages.loaded = true;
+
+  expect(await screen.findByText('my-storage')).toBeInTheDocument();
+});
+
 // The cap hint this component used to render is gone, and so is the store
 // member it read: nothing counts the user's active tasks in the background
 // any more, and nothing can be queued from this modal for a hint to warn

@@ -19,8 +19,38 @@ import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
   archivePathsFromSelection,
+  archiveStorageSupported,
   defaultArchiveName
 } from './download-storage-archive';
+
+describe('archiveStorageSupported', () => {
+  test.each([
+    [{type: 'S3'}, true],
+    [{type: 'AZ'}, false],
+    [{type: 'GS'}, false],
+    [{type: 'AWS_OMICS_SEQ'}, false],
+    [{}, false],
+    [undefined, false]
+  ])('%j answers %s', (storageInfo, expected) => {
+    expect(archiveStorageSupported(storageInfo)).toBe(expected);
+  });
+
+  // The worker mounts only a share whose mount type is NFS.
+  test.each([
+    [{type: 'NFS'}, {mountType: 'NFS'}, true],
+    [{storageType: 'nfs', type: 'NFS'}, {mountType: 'nfs'}, true],
+    [{type: 'NFS'}, {mountType: 'SMB'}, false],
+    [{type: 'NFS'}, {mountType: 'LUSTRE'}, false],
+    [{type: 'NFS'}, {}, false],
+    [{type: 'NFS'}, undefined, false]
+  ])('%j on share %j answers %s', (storageInfo, fileShareMount, expected) => {
+    expect(archiveStorageSupported(storageInfo, fileShareMount)).toBe(expected);
+  });
+
+  test('prefers storageType over type', () => {
+    expect(archiveStorageSupported({storageType: 'AZ', type: 'S3'})).toBe(false);
+  });
+});
 
 describe('archiveActionAvailable', () => {
   test('a single file hides it', () => {

@@ -73,6 +73,29 @@ export function archivePathsFromSelection (selectedItems) {
 }
 
 /**
+ * Whether the archive worker can read this storage at all. It reads S3
+ * storages, and NFS storages on a share mounted as NFS - not SMB or Lustre
+ * (`open_source` and `NfsSource` in storage-async-task-service). On any other
+ * storage an archive task is queued and then always fails.
+ *
+ * @param {{storageType: string, type: string}} storageInfo
+ * @param {{mountType: string}} [fileShareMount] the share an NFS storage is on
+ * @returns {boolean}
+ */
+export function archiveStorageSupported (storageInfo, fileShareMount) {
+  if (!storageInfo) {
+    return false;
+  }
+  const type = storageInfo.storageType || storageInfo.type || '';
+  if (/^s3$/i.test(type)) {
+    return true;
+  }
+  return /^nfs$/i.test(type) &&
+    !!fileShareMount &&
+    /^nfs$/i.test(fileShareMount.mountType || '');
+}
+
+/**
  * Whether the "Download archive" selection item should be offered for this
  * selection. Hidden only when the selection is exactly one archivable file -
  * a single folder keeps it, because an archive is the only way to download a
