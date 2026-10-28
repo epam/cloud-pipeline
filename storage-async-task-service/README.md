@@ -116,6 +116,12 @@ The pod is privileged, because the service mounts NFS shares itself. The scratch
 for `--slots` archives of up to `maxSizeBytes` each, so point
 `CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME` at a node with a disk for it.
 
+An assembled artefact reports the platform's version, the build number and the commit included:
+`sats --version` answers `0.25.0.42.<commit>`. The installed package carries the same version in the
+form packaging accepts, with the part that is not a number after a `+`, so `pip show sats` in the
+image answers `0.25.0.42+<commit>` instead. The two differ by that character and nothing else - see
+`sats.util.version.pep440`, which exists because setuptools refuses the first form outright.
+
 ## Tests
 
 ```bash

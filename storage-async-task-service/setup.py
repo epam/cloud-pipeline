@@ -16,11 +16,13 @@
 
 from setuptools import find_packages, setup
 
-from sats.util.version import __version__
+from sats.util.version import __version__, pep440
 
 setup(
     name='sats',
-    version=__version__,
+    # The version the build stamps names the commit it was built from, which packaging cannot parse
+    # - see `pep440`. The service keeps reporting the stamped one; only the metadata is rewritten.
+    version=pep440(__version__),
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
     # The service uses `StrEnum`, `match` and `datetime.UTC`, so an older interpreter fails at

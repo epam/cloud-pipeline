@@ -24,17 +24,26 @@ task build(type: Exec) {
         // `project.version`, not a bare `version`: inside a task action the delegate is the task,
         // and an `Exec` has no `version` property.
         setVersion(project.version.toString())
+        // Last assembly's source distributions, both the versioned name and the fixed one: the
+        // versioned so the one produced below is the only `sats-*` to find, the fixed so a failed
+        // assembly leaves none for the distribution to pick up instead of the one it meant to ship.
+        project.delete(project.fileTree(distDir()) { include 'sats*.tar.gz' })
     }
     commandLine pythonExecutable, "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
     doLast {
+        // The sdist is named after the version setuptools recorded, which is the PEP 440 form of the
+        // stamped one rather than the stamped one itself - see sats.util.version.pep440. So it is
+        // found rather than named, and the previous assembly's is cleared away above to leave one.
         copy {
-            from "$project.rootDir/storage-async-task-service/dist/sats-${project.version}.tar.gz"
-            into "$project.rootDir/storage-async-task-service/dist/"
-            rename { String fileName ->
-                fileName.replace("sats-${project.version}", "sats")
-            }
+            from project.fileTree(distDir()) { include 'sats-*.tar.gz' }.singleFile
+            into distDir()
+            rename { 'sats.tar.gz' }
         }
     }
+}
+
+def distDir() {
+    return "$project.rootDir/storage-async-task-service/dist"
 }
 
 def versionFile() {

@@ -2,3 +2,6 @@
 -r requirements.txt
 pytest==8.3.3
 flake8==7.1.1
+# Named because a test imports it, to validate a version the way setuptools does. It also arrives
+# with pytest, so an environment built before this line still has it.
+packaging==26.3
