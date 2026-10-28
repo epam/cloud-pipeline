@@ -105,8 +105,19 @@ import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
-import handleDownloadItems from '../../../special/download-storage-items';
+import handleDownloadItems, {
+  downloadItemsActionAvailable
+} from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
+import handleDownloadArchive, {
+  archiveActionAvailable,
+  archiveDownloadAllowed,
+  archivePathsFromSelection,
+  archiveStorageSupported,
+  defaultArchiveName
+} from '../../../special/download-storage-archive';
+import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
+import DownloadsModal from '../../../special/downloads/downloads-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
@@ -149,7 +160,8 @@ const SUBMITTED_STATUS = 'SUBMITTED';
   'folders',
   'pipelinesLibrary',
   'dataStorageCache',
-  'preferences'
+  'preferences',
+  'asyncTasks'
 )
 @HiddenObjects.checkStorages(props => props.params.id)
 @inject(({routing}, {params, onReloadTree}) => {
@@ -176,6 +188,8 @@ const SUBMITTED_STATUS = 'SUBMITTED';
 export default class DataStorage extends React.Component {
   state = {
     editDialogVisible: false,
+    downloadArchiveModalVisible: false,
+    downloadsModalVisible: false,
     restoreDialogVisible: false,
     lifeCycleRestoreMode: undefined,
     editDropdownVisible: false,
@@ -1040,6 +1054,49 @@ export default class DataStorage extends React.Component {
 
   closeCreateFileDialog = () => {
     this.setState({createFile: false});
+  };
+
+  // The cap is checked against the server here, on the click itself, and
+  // the modal opens only if there is room - see `archiveDownloadAllowed`
+  // (special/download-storage-archive.js). The same check runs again inside
+  // `startArchiveDownload` when OK is pressed, since this modal can sit open
+  // for as long as the user likes.
+  // Invoked fire-and-forget from the selection dropdown's click handler, so
+  // it catches for itself: an escaping rejection would become an unhandled
+  // one and the click would look like it did nothing at all.
+  // `archiveDownloadAllowed` answers true for anything it cannot check, so
+  // this only ever hides a bug, never a refusal.
+  openDownloadArchiveModal = async () => {
+    const {asyncTasks} = this.props;
+    let allowed = true;
+    try {
+      allowed = await archiveDownloadAllowed(asyncTasks);
+    } catch (error) {
+      console.warn('Could not check the active-download limit', error);
+    }
+    if (allowed) {
+      this.setState({downloadArchiveModalVisible: true});
+    }
+  };
+
+  closeDownloadArchiveModal = () => {
+    this.setState({downloadArchiveModalVisible: false});
+  };
+
+  closeDownloadsModal = () => {
+    this.setState({downloadsModalVisible: false});
+  };
+
+  submitDownloadArchive = (name) => {
+    const {asyncTasks, storageId} = this.props;
+    const {selectedItems = []} = this.state;
+    this.closeDownloadArchiveModal();
+    handleDownloadArchive(
+      asyncTasks,
+      storageId,
+      archivePathsFromSelection(selectedItems),
+      name
+    );
   };
 
   createFolder = async ({name}) => {
@@ -2320,6 +2377,7 @@ export default class DataStorage extends React.Component {
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
       download: 'download',
+      downloadArchive: 'download-archive',
       restoreOmics: 'restoreOmics',
       downloadOmics: 'downloadOmics',
       permissions: 'permissions',
@@ -2330,11 +2388,26 @@ export default class DataStorage extends React.Component {
       title: 'Clear selection',
       available: this.clearSelectionVisible
     };
+    const archiveSupported = !this.isOmicsStore &&
+      archiveStorageSupported(this.storage.info, this.fileShareMount);
     const downloadAction = {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
-      available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
+      available: !this.isOmicsStore &&
+        downloadItemsActionAvailable(itemsAvailableForDownload.length, {archiveSupported})
+    };
+    // Carries no cap state. Clicking it counts the user's active tasks against
+    // the server (`openDownloadArchiveModal` above) and, at the cap, shows a
+    // message instead of opening the name modal. A hint here could only come
+    // from a background poll of the task list, which the notification tracker
+    // no longer keeps (models/asyncTask/CurrentUserAsyncTasks.js polls the
+    // user's own queued tasks one by one).
+    const downloadArchiveAction = {
+      key: Keys.downloadArchive,
+      title: 'Download archive',
+      icon: 'download',
+      available: archiveSupported && archiveActionAvailable(selectedItems)
     };
     const downloadOmicsAction = {
       key: Keys.downloadOmics,
@@ -2431,6 +2504,7 @@ export default class DataStorage extends React.Component {
     appendAction(generateURLAction);
     appendAction(copyPathsAction);
     appendAction(downloadAction);
+    appendAction(downloadArchiveAction);
     appendAction(downloadOmicsAction);
     if (this.userCanChangeStorageItemsPermissions) {
       appendAction(permissionsAction);
@@ -2470,6 +2544,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
+          break;
+        case Keys.downloadArchive:
+          this.openDownloadArchiveModal();
           break;
         case Keys.copyPaths:
           this.copyPathsToClipboard(selectedItems);
@@ -2793,6 +2870,17 @@ export default class DataStorage extends React.Component {
       checked: this.showVersions,
       available: this.versionControlsEnabled
     };
+    // Opens a modal rather than toggling a view, so it carries no `checked`:
+    // a check mark on the right would be meaningless for an action with no
+    // on/off state. No icon either, like every other item in this menu.
+    // `available: true`: the task list is the user's own, across every
+    // storage, so there is no storage property that could make it
+    // inapplicable, omics stores included.
+    const downloadsAction = {
+      key: 'downloads',
+      title: 'Show downloads',
+      available: true
+    };
     const doAction = (action) => {
       if (!action) {
         return;
@@ -2802,6 +2890,7 @@ export default class DataStorage extends React.Component {
         case 'jobs': this.onToggleJobs(); break;
         case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
+        case 'downloads': this.setState({downloadsModalVisible: true}); break;
         default:
           break;
       }
@@ -2816,6 +2905,7 @@ export default class DataStorage extends React.Component {
     appendAction(jobAction);
     appendAction(archivedFilesAction);
     appendAction(versionsAction);
+    appendAction(downloadsAction);
     if (actions.length === 0) {
       return null;
     }
@@ -3280,6 +3370,20 @@ export default class DataStorage extends React.Component {
               />
             ) : null;
           }}
+        />
+        <DownloadArchiveModal
+          visible={this.state.downloadArchiveModalVisible}
+          // Built from the selection, so a single file or folder is offered
+          // its own name rather than a timestamp - see `defaultArchiveName`.
+          // The modal re-seeds its field whenever it becomes visible, so this
+          // being re-evaluated on every render costs nothing.
+          defaultName={defaultArchiveName(this.state.selectedItems)}
+          onCancel={this.closeDownloadArchiveModal}
+          onSubmit={this.submitDownloadArchive}
+        />
+        <DownloadsModal
+          visible={this.state.downloadsModalVisible}
+          onClose={this.closeDownloadsModal}
         />
         <SharedItemInfo
           visible={this.state.shareDialogVisible}

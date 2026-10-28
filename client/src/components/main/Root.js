@@ -22,6 +22,7 @@ import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
 import userNotifications from '../../models/notifications/CurrentUserNotifications';
+import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
 import runDefaultParameters from '../../models/pipelines/PipelineRunDefaultParameters';
@@ -67,6 +68,7 @@ import ApplicationInfo from '../../models/utils/application-info';
 import SystemJobs from '../../utils/system-jobs';
 import uiLaunchParametersConfiguration from '../../utils/ui-launch-parameters-configuration';
 import {gcpSpotInstanceType} from '../../models/utils/gcp-spot-instance-type';
+import startAsyncTaskNotifications from './async-task-notifications';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -111,6 +113,8 @@ const applicationInfo = new ApplicationInfo();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
 (() => { return applicationInfo.fetchIfNeededOrWait(); })();
 
+startAsyncTaskNotifications();
+
 const themes = new CloudPipelineThemes();
 
 const systemJobs = new SystemJobs();
@@ -142,6 +146,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       userNotifications,
+      asyncTasks,
       authenticatedUserInfo,
       [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,

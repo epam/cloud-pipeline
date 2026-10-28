@@ -66,6 +66,35 @@ async function downloadStorageItems (items) {
   })));
 }
 
+// A single file is included: "Download archive" is the item hidden for that
+// case now (archiveActionAvailable in download-storage-archive.js), not this
+// one. Four or more is excluded because "Download archive" in the same
+// dropdown is the answer for a bigger selection - but only on a storage the
+// archive worker can read (archiveStorageSupported); anywhere else there is
+// no upper bound. Folders never reach this count at all - the caller filters
+// them out before counting.
+export const MIN_DOWNLOAD_ITEMS = 1;
+export const MAX_DOWNLOAD_ITEMS = 3;
+
+/**
+ * Whether the plain "Download" selection item should be offered for a
+ * selection of this size. This only decides whether the item exists; the
+ * `faceted.filter.download` preference's `maximum` (read below, in
+ * handleDownloadItems) is a separate, deployment-configured cap that still
+ * applies on top of this one and decides what a click actually does.
+ * @param {number} count
+ * @param {{archiveSupported: boolean}} [options] whether "Download archive"
+ * is offered on this storage, and so covers the bigger selections
+ * @returns {boolean}
+ */
+export function downloadItemsActionAvailable (count, options = {}) {
+  const {archiveSupported = true} = options;
+  if (count < MIN_DOWNLOAD_ITEMS) {
+    return false;
+  }
+  return !archiveSupported || count <= MAX_DOWNLOAD_ITEMS;
+}
+
 export default async function handleDownloadItems (preferences, items = []) {
   const hide = message.loading('Downloading...', 0);
   try {

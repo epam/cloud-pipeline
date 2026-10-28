@@ -33,6 +33,11 @@ const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operatio
 // (SystemPreferences.CLUSTER_NODEUP_RETRY_COUNT)
 export const DEFAULT_NODE_UP_RETRY_COUNT = 5;
 
+// fallback when "storage.download.archive.config" (or its "maxUserTasks" key) is absent;
+// mirrors the api's own default for `storage.download.archive.config`
+// (SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG)
+export const DEFAULT_STORAGE_DOWNLOAD_ARCHIVE_MAX_USER_TASKS = 3;
+
 const SYSTEM_CAPABILITY_PARAMETER_TO_DISPLAY = Object.entries(RUN_CAPABILITIES_PARAMETERS)
   .reduce((acc, [name, parameter]) => ({
     ...acc,
@@ -227,6 +232,30 @@ class PreferencesLoad extends Remote {
   @computed
   get storageAllowSignedUrls () {
     return `${this.getPreferenceValue('storage.allow.signed.urls')}` !== 'false';
+  }
+
+  @computed
+  get storageDownloadArchiveConfig () {
+    const value = this.getPreferenceValue('storage.download.archive.config');
+    let config = {};
+    if (value) {
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          config = parsed;
+        }
+      } catch (e) {
+        console.warn('Error parsing "storage.download.archive.config" preference:', e.message);
+      }
+    }
+    const {maxUserTasks} = config;
+    const parsedMaxUserTasks = Number(maxUserTasks);
+    return {
+      ...config,
+      maxUserTasks: Number.isFinite(parsedMaxUserTasks) && parsedMaxUserTasks > 0
+        ? parsedMaxUserTasks
+        : DEFAULT_STORAGE_DOWNLOAD_ARCHIVE_MAX_USER_TASKS
+    };
   }
 
   @computed
