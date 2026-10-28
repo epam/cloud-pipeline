@@ -16,13 +16,5 @@
 
 package com.epam.pipeline.entity.security.acl;
 
-import lombok.Value;
-
-@Value
-public class AclEntitySummary {
-
-    private Long aclEntityId;
-    private Long objectId;
-    private String aclClass;
-
+public record AclEntitySummary(Long aclEntityId, Long objectId, String aclClass) {
 }

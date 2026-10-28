@@ -19,8 +19,10 @@ package com.epam.pipeline.billingreportagent.model.storage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class StorageDescription {
 

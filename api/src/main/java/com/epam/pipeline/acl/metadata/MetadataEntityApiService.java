@@ -18,7 +18,6 @@ package com.epam.pipeline.acl.metadata;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.metadata.MetadataEntityVO;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -35,7 +34,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -64,11 +62,6 @@ public class MetadataEntityApiService {
     @PreAuthorize(ADMIN_ONLY)
     public MetadataClass deleteMetadataClass(Long id) {
         return metadataEntityManager.deleteMetadataClass(id);
-    }
-
-    @PreAuthorize(ADMIN_ONLY)
-    public MetadataClass updateExternalClassName(Long classId, FireCloudClass externalClassName) {
-        return metadataEntityManager.updateExternalClassName(classId, externalClassName);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#metadataEntityVO.parentId, "
@@ -147,11 +140,6 @@ public class MetadataEntityApiService {
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#projectId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
     public void deleteMetadataFromProject(Long projectId, String entityClassName) {
         metadataEntityManager.deleteMetadataEntitiesInProject(projectId, entityClassName);
-    }
-
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.metadataEntitiesPermission(#entitiesIds, 'READ')")
-    public Map<String, String> loadEntitiesData(Set<Long> entitiesIds) {
-        return metadataEntityManager.loadEntitiesData(entitiesIds);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#folderId, "

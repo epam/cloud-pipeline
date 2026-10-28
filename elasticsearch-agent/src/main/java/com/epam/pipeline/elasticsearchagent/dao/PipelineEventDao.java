@@ -19,7 +19,6 @@ import com.epam.pipeline.elasticsearchagent.model.EventType;
 import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -115,17 +114,14 @@ public class PipelineEventDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setCreateEventQuery(String createEventQuery) {
         this.createEventQuery = createEventQuery;
     }
 
-    @Required
     public void setLoadAllEventsByObjectTypeQuery(String loadAllEventsByObjectTypeQuery) {
         this.loadAllEventsByObjectTypeQuery = loadAllEventsByObjectTypeQuery;
     }
 
-    @Required
     public void setDeleteEventQuery(String deleteEventQuery) {
         this.deleteEventQuery = deleteEventQuery;
     }

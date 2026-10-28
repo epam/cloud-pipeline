@@ -17,9 +17,8 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.region.GCPRegion;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,6 +28,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static com.epam.pipeline.manager.execution.SystemParams.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GCPInstanceServiceTest {
 
@@ -50,8 +50,7 @@ public class GCPInstanceServiceTest {
     private GCPInstanceService service = new GCPInstanceService(
             null, null, null, null, null, null, null, null, null);
 
-    @Before
-    public void setup() throws IOException {
+    @BeforeEach    public void setup() throws IOException {
         String auth = writeAuthFile("test_region_auth", CRED_TEMPLATE);
         region = new GCPRegion();
         region.setAuthFile(auth);
@@ -72,24 +71,24 @@ public class GCPInstanceServiceTest {
     @Test
     public void credFileExistsInEnvVars() throws IOException {
         Map<String, String> envVars = service.buildContainerCloudEnvVars(region);
-        Assert.assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + region.getId()));
-        Assert.assertTrue(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId()));
+        assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + region.getId()));
+        assertTrue(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId()));
         String expected = String.join("", Files.readAllLines(Paths.get(region.getAuthFile())));
         String actual = envVars.get(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId());
-        Assert.assertEquals(expected, actual);
+        assertEquals(expected, actual);
     }
 
     @Test
     public void noCredFileInEnvVarsIfNoRegionAuthFile() {
         Map<String, String> envVars = service.buildContainerCloudEnvVars(regionWithoutAuthFile);
         if (System.getenv(GCPInstanceService.GOOGLE_APPLICATION_CREDENTIALS) == null) {
-            Assert.assertFalse(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
+            assertFalse(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
                     + regionWithoutAuthFile.getId()));
         } else {
-            Assert.assertTrue(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
+            assertTrue(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
                     + regionWithoutAuthFile.getId()));
         }
-        Assert.assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + regionWithoutAuthFile.getId()));
+        assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + regionWithoutAuthFile.getId()));
     }
 
 }

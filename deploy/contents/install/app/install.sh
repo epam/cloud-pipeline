@@ -384,6 +384,11 @@ CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME=${CP_STORAGE_LIFECYCLE_SERVICE_KUBE_
 print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME"
 kubectl label nodes "$CP_STORAGE_LIFECYCLE_SERVICE_KUBE_NODE_NAME" cloud-pipeline/cp-storage-lifecycle-service="true" --overwrite
 
+# Allow to schedule Storage Async Task Service to the master
+CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME=${CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-storage-async-task-service to $CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME"
+kubectl label nodes "$CP_STORAGE_ASYNC_TASK_SERVICE_KUBE_NODE_NAME" cloud-pipeline/cp-storage-async-task-service="true" --overwrite
+
 # Allow to schedule MLFlow to the master
 MLFLOW_KUBE_NODE_NAME=${MLFLOW_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-storage-lifecycle-service to $MLFLOW_KUBE_NODE_NAME"
@@ -1583,6 +1588,25 @@ if is_service_requested cp-storage-lifecycle-service; then
         wait_for_deployment "cp-storage-lifecycle-service"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-storage-lifecycle-service: deployed"
+    fi
+    echo
+fi
+
+# Storage Async Task Service
+if is_service_requested cp-storage-async-task-service; then
+    print_ok "[Starting Storage Async Task Service deployment]"
+
+    print_info "-> Deleting existing instance of Storage Async Task Service service"
+    delete_deployment_and_service   "cp-storage-async-task-service" \
+                                    "/opt/cp-sats"
+    if is_install_requested; then
+        print_info "-> Deploying cp-storage-async-task-service service"
+        create_kube_resource $K8S_SPECS_HOME/cp-storage-async-task-service/cp-storage-async-task-service-dpl.yaml
+
+        print_info "-> Waiting for cp-storage-async-task-service to initialize"
+        wait_for_deployment "cp-storage-async-task-service"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-storage-async-task-service: deployed"
     fi
     echo
 fi

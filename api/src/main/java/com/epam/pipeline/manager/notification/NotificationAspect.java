@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.notification;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatusInfo;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
@@ -81,6 +82,10 @@ public class NotificationAspect {
                 .runId(run.getId()).status(run.getStatus())
                 .timestamp(DateUtils.nowUTC())
                 .reason(run.getStateReasonMessage())
+                .runStatusInfo(RunStatusInfo.of(
+                        run.getPricePerHour(),
+                        run.getComputePricePerHour(),
+                        run.getDiskPricePerHour()))
                 .build();
 
         final boolean updated = runStatusManager.saveStatus(newStatus);

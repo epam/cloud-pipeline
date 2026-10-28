@@ -17,7 +17,7 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -25,6 +25,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class DocumentGenerationPropertyDao extends NamedParameterJdbcDaoSupport {
 
@@ -95,33 +97,43 @@ public class DocumentGenerationPropertyDao extends NamedParameterJdbcDaoSupport 
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createDocumentGenerationPropertyQuery,
+                "Required query createDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(updateDocumentGenerationPropertyQuery,
+                "Required query updateDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(deleteDocumentGenerationPropertyQuery,
+                "Required query deleteDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(loadDocumentGenerationPropertyQuery,
+                "Required query loadDocumentGenerationPropertyQuery is not set");
+        Assert.notNull(loadAllDocumentGenerationPropertiesQuery,
+                "Required query loadAllDocumentGenerationPropertiesQuery is not set");
+        Assert.notNull(loadDocumentGenerationPropertiesByPipelineIdQuery,
+                "Required query loadDocumentGenerationPropertiesByPipelineIdQuery is not set");
+    }
 
-    @Required
+
     public void setCreateDocumentGenerationPropertyQuery(String query) {
         this.createDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setUpdateDocumentGenerationPropertyQuery(String query) {
         this.updateDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setDeleteDocumentGenerationPropertyQuery(String query) {
         this.deleteDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setLoadDocumentGenerationPropertyQuery(String query) {
         this.loadDocumentGenerationPropertyQuery = query;
     }
 
-    @Required
     public void setLoadAllDocumentGenerationPropertiesQuery(String query) {
         this.loadAllDocumentGenerationPropertiesQuery = query;
     }
 
-    @Required
     public void setLoadDocumentGenerationPropertiesByPipelineIdQuery(String query) {
         this.loadDocumentGenerationPropertiesByPipelineIdQuery = query;
     }

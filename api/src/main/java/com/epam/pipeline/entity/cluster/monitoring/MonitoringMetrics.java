@@ -18,9 +18,11 @@ package com.epam.pipeline.entity.cluster.monitoring;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 @Data
 @Builder
+@Jacksonized
 public class MonitoringMetrics {
     private Double average;
     private Double min;

@@ -17,14 +17,27 @@ package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.InstanceImage;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
+import com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationCloudFacade;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
@@ -34,8 +47,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.Comparator;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -49,12 +71,22 @@ public class NodePoolValidator {
     private static final double HUNDRED_PERCENT = 100.0;
     private static final String WINDOWS = "windows";
 
+    private static final int MIN_RESERVATION_LEAD_DAYS = AwsCapacityReservationService.MINIMUM_LEAD_DAYS;
+    private static final int MAX_RESERVATION_LEAD_DAYS = 120;
+    private static final long MIN_RESERVATION_COMMITMENT_SECONDS = 14 * 24 * 3600L;
+    private static final int MIN_RESERVATION_VCPUS = 32;
+
+    private static final Set<String> SUPPORTED_INSTANCE_PLATFORMS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("Linux/UNIX", "Red Hat Enterprise Linux", "SUSE Linux")));
+
     private final MessageHelper messageHelper;
     private final CloudRegionManager regionManager;
     private final InstanceOfferManager instanceOfferManager;
     private final NodeScheduleManager scheduleManager;
     private final ToolManager toolManager;
     private final CloudFacade cloudFacade;
+    private final PreferenceManager preferenceManager;
+    private final CapacityReservationCloudFacade reservationCloudFacade;
 
     public void validate(final NodePoolVO vo) {
         Assert.notNull(vo.getRegionId(),
@@ -86,21 +118,188 @@ public class NodePoolValidator {
         Optional.ofNullable(vo.getDockerImages())
                 .ifPresent(images -> images.forEach(this::validatePoolImage));
 
-        validateInstanceImage(vo);
+        validateInstanceImage(vo.getRegionId(), vo.getInstanceImage());
 
         if (vo.isAutoscaled()) {
             validateAutoscalingParams(vo);
         }
+        Optional.ofNullable(vo.getCapacityReservationRequest())
+                .ifPresent(request -> validateCapacityReservation(vo, request));
     }
 
-    private void validateInstanceImage(final NodePoolVO vo) {
-        final boolean isWindowsInstanceImage = Optional.ofNullable(vo.getInstanceImage())
-            .map(image -> cloudFacade.getInstanceImageDescription(vo.getRegionId(), image))
+    @SuppressWarnings("deprecation")
+    public void validateReservationPoolUpdate(final NodePool existing, final NodePoolVO vo) {
+        validateUnchanged(existing, "count", existing.getCount(), vo.getCount());
+        validateUnchanged(existing, "price type", existing.getPriceType(), vo.getPriceType());
+        Assert.isTrue(!vo.isAutoscaled(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+        Assert.isNull(vo.getScheduleId(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED));
+        if (StringUtils.isNotBlank(vo.getInstanceImage())) {
+            validateUnchanged(existing, "instance image", existing.getInstanceImage(), vo.getInstanceImage());
+        }
+        if (vo.getAmiConfiguration() != null) {
+            validateUnchanged(existing, "launch configuration", existing.getAmiConfiguration(),
+                    vo.getAmiConfiguration());
+        }
+    }
+
+    private void validateUnchanged(final NodePool pool, final String field, final Object current,
+                                   final Object requested) {
+        Assert.isTrue(Objects.equals(current, requested),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_POOL_IMMUTABLE,
+                        pool.getId(), field));
+    }
+
+    private void validateCapacityReservation(final NodePoolVO vo, final CapacityReservationRequest request) {
+        final CloudProvider provider = regionManager.load(vo.getRegionId()).getProvider();
+        Assert.isTrue(reservationCloudFacade.isSupported(provider),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PROVIDER_NOT_SUPPORTED,
+                        provider));
+        Assert.isTrue(!PriceType.SPOT.equals(vo.getPriceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED));
+        Assert.isTrue(!vo.isAutoscaled(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_AUTOSCALING_NOT_SUPPORTED));
+        Assert.isNull(vo.getScheduleId(),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_SCHEDULE_NOT_SUPPORTED));
+
+        final CapacityReservationType type = request.getReservationType();
+        Assert.notNull(type,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED));
+        Assert.isTrue(CapacityReservationType.FUTURE_DATED == type,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED, type));
+
+        Assert.isTrue(vo.getCount() >= 1,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_INSTANCE_COUNT_INVALID));
+
+        validateReservationSize(vo);
+        validateReservationWindow(request);
+        validateReservationInstance(vo, request);
+    }
+
+    private void validateReservationSize(final NodePoolVO vo) {
+        final int instances = vo.getCount();
+        instanceOfferManager.findOffer(vo.getInstanceType(), vo.getRegionId())
+                .map(InstanceOffer::getVCPU)
+                .filter(vcpus -> vcpus > 0)
+                .ifPresent(vcpus -> Assert.isTrue((long) vcpus * instances >= MIN_RESERVATION_VCPUS,
+                        messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_TOO_FEW_VCPUS,
+                                instances, vo.getInstanceType(), vcpus, MIN_RESERVATION_VCPUS)));
+    }
+
+    private void validateReservationInstance(final NodePoolVO vo, final CapacityReservationRequest request) {
+        final String platform = StringUtils.defaultIfBlank(request.getInstancePlatform(),
+                CapacityReservation.DEFAULT_INSTANCE_PLATFORM);
+        Assert.isTrue(SUPPORTED_INSTANCE_PLATFORMS.contains(platform),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED,
+                        platform));
+
+        final String family = instanceFamily(vo.getInstanceType());
+        final Set<String> supportedFamilies = supportedInstanceFamilies();
+        Assert.isTrue(supportedFamilies.isEmpty() || supportedFamilies.contains(family),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED,
+                        vo.getInstanceType(), String.join(", ", supportedFamilies)));
+    }
+
+    private static String instanceFamily(final String instanceType) {
+        if (StringUtils.isBlank(instanceType)) {
+            return StringUtils.EMPTY;
+        }
+        final int firstDigit = StringUtils.indexOfAny(instanceType, "0123456789".split(StringUtils.EMPTY));
+        return (firstDigit < 0 ? instanceType : instanceType.substring(0, firstDigit)).toLowerCase(Locale.ROOT);
+    }
+
+    private Set<String> supportedInstanceFamilies() {
+        return Arrays.stream(StringUtils.split(StringUtils.defaultString(preferenceManager.getPreference(
+                                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)), ','))
+                .map(family -> family.trim().toLowerCase(Locale.ROOT))
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
+    }
+
+    private void validateReservationWindow(final CapacityReservationRequest request) {
+        final LocalDateTime start = request.getRequestedStartDate();
+        final LocalDateTime end = request.getRequestedEndDate();
+        Assert.isTrue(Objects.nonNull(start) && Objects.nonNull(end),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DATES_REQUIRED,
+                        request.getReservationType()));
+        Assert.isTrue(start.isAfter(DateUtils.nowUTC()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST,
+                        start));
+        Assert.isTrue(end.isAfter(start),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_INVALID,
+                        end, start));
+
+        final Long duration = request.getCommitmentDuration();
+        Assert.isTrue(Objects.nonNull(duration) && duration > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_DURATION_INVALID));
+        Assert.isTrue(!start.plusSeconds(duration).isAfter(end),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_WINDOW_TOO_NARROW,
+                        start, end, duration, Duration.ofSeconds(duration).toDays()));
+
+        validateProviderLimits(start, duration);
+    }
+
+    private void validateProviderLimits(final LocalDateTime start, final long duration) {
+        final long leadDays = Duration.between(DateUtils.nowUTC(), start).toDays();
+        Assert.isTrue(leadDays >= MIN_RESERVATION_LEAD_DAYS && leadDays <= MAX_RESERVATION_LEAD_DAYS,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_LEAD_TIME_INVALID,
+                        start, MIN_RESERVATION_LEAD_DAYS, MAX_RESERVATION_LEAD_DAYS));
+
+        Assert.isTrue(duration >= MIN_RESERVATION_COMMITMENT_SECONDS,
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_COMMITMENT_TOO_SHORT,
+                        duration, Duration.ofSeconds(duration).toDays(), MIN_RESERVATION_COMMITMENT_SECONDS,
+                        Duration.ofSeconds(MIN_RESERVATION_COMMITMENT_SECONDS).toDays()));
+    }
+
+    private void validateInstanceImage(final Long regionId, final String instanceImage) {
+        final boolean isWindowsInstanceImage = Optional.ofNullable(instanceImage)
+            .filter(StringUtils::isNotBlank)
+            .map(image -> cloudFacade.getInstanceImageDescription(regionId, image))
             .map(InstanceImage::getPlatform)
             .filter(WINDOWS::equalsIgnoreCase)
             .isPresent();
         Assert.isTrue(!isWindowsInstanceImage,
                       messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_WIN_INSTANCES_ARE_NOT_ALLOWED));
+    }
+
+    /**
+     * A launch configuration given for a pool. Its image has to be one a pool may launch, and on AWS its zone and
+     * subnet ones its region's networks configure.
+     */
+    public void validateAmiConfiguration(final Long regionId, final AMIConfiguration configuration) {
+        if (configuration == null) {
+            return;
+        }
+        validateInstanceImage(regionId, configuration.getAmi());
+        final AbstractCloudRegion region = regionManager.load(regionId);
+        if (CloudProvider.AWS != region.getProvider()) {
+            return;
+        }
+        final String regionCode = region.getRegionCode();
+        final Map<String, String> networks = allowedNetworks(regionCode);
+        if (networks.isEmpty()) {
+            return;
+        }
+        final String zone = configuration.getAvailabilityZone();
+        if (StringUtils.isNotBlank(zone)) {
+            Assert.isTrue(networks.containsKey(zone),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_ZONE_NOT_CONFIGURED,
+                            zone, regionCode, networks.keySet()));
+        }
+        final String subnet = configuration.getSubnet();
+        if (StringUtils.isBlank(subnet)) {
+            return;
+        }
+        if (StringUtils.isBlank(zone)) {
+            Assert.isTrue(networks.containsValue(subnet),
+                    messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS,
+                            subnet, regionCode, networks.values()));
+            return;
+        }
+        Assert.isTrue(subnet.equals(networks.get(zone)),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED,
+                        subnet, regionCode, zone, networks.get(zone)));
     }
 
     private void validatePoolImage(final String image) {
@@ -149,5 +348,11 @@ public class NodePoolValidator {
 
     private boolean validPercentValue(double value) {
         return DoubleUtils.between(0.0, HUNDRED_PERCENT, value);
+    }
+
+    private Map<String, String> allowedNetworks(final String regionCode) {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_NETWORKS_CONFIG))
+                .map(configuration -> configuration.allowedNetworks(regionCode))
+                .orElseGet(Collections::emptyMap);
     }
 }

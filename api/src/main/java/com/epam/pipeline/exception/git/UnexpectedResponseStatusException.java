@@ -16,25 +16,25 @@
 
 package com.epam.pipeline.exception.git;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
 /**
  * Created by kite on 21.03.17.
  */
 public class UnexpectedResponseStatusException extends GitClientException {
-    private HttpStatus status;
+    private HttpStatusCode status;
 
-    public UnexpectedResponseStatusException(HttpStatus status) {
+    public UnexpectedResponseStatusException(HttpStatusCode status) {
         super("Unexpected response status code: " + status);
         this.status = status;
     }
 
-    public UnexpectedResponseStatusException(HttpStatus status, String message) {
+    public UnexpectedResponseStatusException(HttpStatusCode status, String message) {
         super("Unexpected response status code: " + status + " Message: " + message);
         this.status = status;
     }
 
-    public HttpStatus getStatus() {
+    public HttpStatusCode getStatus() {
         return status;
     }
 }

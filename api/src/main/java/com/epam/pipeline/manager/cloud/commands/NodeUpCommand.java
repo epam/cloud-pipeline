@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.commands;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Builder
+@Jacksonized
 public class NodeUpCommand extends AbstractClusterCommand {
 
     private static final int MIN_LENGTH = 18;

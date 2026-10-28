@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.metadata.CategoricalAttributeValue;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
 
@@ -343,67 +345,73 @@ public class CategoricalAttributeDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createAttributeQuery, "Required query createAttributeQuery is not set");
+        Assert.notNull(insertAttributeValueQuery, "Required query insertAttributeValueQuery is not set");
+        Assert.notNull(loadAllAttributesValuesQuery, "Required query loadAllAttributesValuesQuery is not set");
+        Assert.notNull(loadAllAttributesValuesWithoutLinksQuery,
+                "Required query loadAllAttributesValuesWithoutLinksQuery is not set");
+        Assert.notNull(loadAttributeValuesQuery, "Required query loadAttributeValuesQuery is not set");
+        Assert.notNull(loadAttributesValuesQuery, "Required query loadAttributesValuesQuery is not set");
+        Assert.notNull(deleteAttributeValuesQuery, "Required query deleteAttributeValuesQuery is not set");
+        Assert.notNull(deleteAttributeValueQuery, "Required query deleteAttributeValueQuery is not set");
+        Assert.notNull(insertAttributeValueLinkQuery, "Required query insertAttributeValueLinkQuery is not set");
+        Assert.notNull(deleteAttributeValueLinkQuery, "Required query deleteAttributeValueLinkQuery is not set");
+        Assert.notNull(updateAttributeQuery, "Required query updateAttributeQuery is not set");
+        Assert.notNull(loadAttributeValuesByAttributeIdQuery,
+                "Required query loadAttributeValuesByAttributeIdQuery is not set");
+        Assert.notNull(categoricalAttributeSequence, "Required query categoricalAttributeSequence is not set");
+    }
 
-    @Required
+
     public void setCreateAttributeQuery(String createAttributeQuery) {
         this.createAttributeQuery = createAttributeQuery;
     }
 
-    @Required
     public void setInsertAttributeValueQuery(String insertAttributeValueQuery) {
         this.insertAttributeValueQuery = insertAttributeValueQuery;
     }
 
-    @Required
     public void setLoadAllAttributesValuesQuery(String loadAllAttributesValuesQuery) {
         this.loadAllAttributesValuesQuery = loadAllAttributesValuesQuery;
     }
-    @Required
     public void setLoadAllAttributesValuesWithoutLinksQuery(String loadAllAttributesValuesWithoutLinksQuery) {
         this.loadAllAttributesValuesWithoutLinksQuery = loadAllAttributesValuesWithoutLinksQuery;
     }
 
-    @Required
     public void setLoadAttributeValuesQuery(String loadAttributeValuesQuery) {
         this.loadAttributeValuesQuery = loadAttributeValuesQuery;
     }
 
-    @Required
     public void setLoadAttributesValuesQuery(String loadAttributesValuesQuery) {
         this.loadAttributesValuesQuery = loadAttributesValuesQuery;
     }
 
-    @Required
     public void setDeleteAttributeValuesQuery(String deleteAttributeValuesQuery) {
         this.deleteAttributeValuesQuery = deleteAttributeValuesQuery;
     }
 
-    @Required
     public void setDeleteAttributeValueQuery(String deleteAttributeValueQuery) {
         this.deleteAttributeValueQuery = deleteAttributeValueQuery;
     }
 
-    @Required
     public void setInsertAttributeValueLinkQuery(String insertAttributeValueLinkQuery) {
         this.insertAttributeValueLinkQuery = insertAttributeValueLinkQuery;
     }
 
-    @Required
     public void setDeleteAttributeValueLinkQuery(String deleteAttributeValueLinkQuery) {
         this.deleteAttributeValueLinkQuery = deleteAttributeValueLinkQuery;
     }
 
-    @Required
     public void setUpdateAttributeQuery(String updateAttributeQuery) {
         this.updateAttributeQuery = updateAttributeQuery;
     }
 
-    @Required
     public void setLoadAttributeValuesByAttributeIdQuery(String loadAttributeValuesByAttributeIdQuery) {
         this.loadAttributeValuesByAttributeIdQuery = loadAttributeValuesByAttributeIdQuery;
     }
 
-    @Required
     public void setCategoricalAttributeSequence(String categoricalAttributeSequence) {
         this.categoricalAttributeSequence = categoricalAttributeSequence;
     }

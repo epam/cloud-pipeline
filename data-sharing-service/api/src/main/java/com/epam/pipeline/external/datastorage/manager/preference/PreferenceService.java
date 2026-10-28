@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -87,7 +87,7 @@ public class PreferenceService {
         }
     }
 
-    public <T> T getValue(final String name, final TypeReference type) {
+    public <T> T getValue(final String name, final TypeReference<T> type) {
         return parseData(getValue(name), type);
     }
 
@@ -130,7 +130,7 @@ public class PreferenceService {
     }
 
     public <T> T parseData(final String data,
-                           final TypeReference type) {
+                           final TypeReference<T> type) {
         if (StringUtils.isBlank(data)) {
             return null;
         }

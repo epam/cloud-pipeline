@@ -19,8 +19,10 @@ package com.epam.pipeline.entity.utils;
 import java.util.Map;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class ControlEntry {
     private String key;
     private String defaultValue;

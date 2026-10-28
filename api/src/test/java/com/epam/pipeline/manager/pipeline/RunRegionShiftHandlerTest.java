@@ -34,8 +34,8 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
@@ -55,7 +55,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -63,6 +62,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 public class RunRegionShiftHandlerTest {
 
@@ -87,8 +87,7 @@ public class RunRegionShiftHandlerTest {
     private static final Long NOT_AVAILABLE_REGION_ID = 5L;
     private static final String INSTANCE_TYPE = "instance.type";
 
-    @Before
-    public void setup() {
+    @BeforeEach    public void setup() {
         doReturn(true).when(preferenceManager).getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_ENABLED);
         doReturn(false).when(preferenceManager)
                 .getPreference(SystemPreferences.LAUNCH_RUN_RESCHEDULE_WORKER_ENABLED);

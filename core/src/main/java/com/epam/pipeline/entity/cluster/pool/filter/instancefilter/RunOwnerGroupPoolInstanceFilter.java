@@ -18,8 +18,10 @@ package com.epam.pipeline.entity.cluster.pool.filter.instancefilter;
 import com.epam.pipeline.entity.cluster.pool.filter.value.StringCaseInsensitiveValueMatcher;
 import com.epam.pipeline.entity.cluster.pool.filter.value.ValueMatcher;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class RunOwnerGroupPoolInstanceFilter implements StringInstanceFilter {
 
     private PoolInstanceFilterOperator operator;

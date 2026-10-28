@@ -6,12 +6,12 @@ import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.test.creator.security.SecurityCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.util.CustomMatchers.matches;
-import static org.mockito.Matchers.argThat;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
