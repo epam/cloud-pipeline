@@ -141,7 +141,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $(byText("config.json")).shouldBe(visible);
         $(".ant-table-tbody")
                 .findAll("tr")
-                .shouldHave(size(3))
+                .shouldHave(size(2))
                 .get(0).shouldHave(text(folderName));
         return this;
     }
