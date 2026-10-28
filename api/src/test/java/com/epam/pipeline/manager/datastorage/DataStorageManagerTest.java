@@ -143,10 +143,12 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public static final long SECS_IN_MIN = 60L;
     private static final String STORAGE_OWNER = "storage_owner";
     private static final String STORAGE_READER = "storage_reader";
+    private static final String STORAGE_USER = "storage_user";
     private static final String ROLE_STORAGE_READER = "ROLE_STORAGE_READER";
     private static final String TEST_FILE_PATH = "folder/file";
     private static final String TEST_FILE_COPY_PATH = "another_folder/file";
     private static final String TEST_FOLDER = "folder";
+    private static final String TEST_FOLDER_PATH = "folder/";
 
     private Long testFileShareMountId;
 
@@ -835,6 +837,98 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
             storageManager.getDataStorageItemContent(storage.getId(), TEST_FILE_PATH, null);
 
+            verify(storagePathPermissionsService, never()).canReadFile(anyLong(), anyString());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void checkReadPermissionsOnPathsShouldAskForEachPathByItsKind() {
+        // A trailing slash is the only thing telling a folder from a file here, and the two are asked
+        // about by different calls: a folder checked as a file is a check against a path that does not
+        // exist, which answers nothing useful.
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_USER);
+            doNothing().when(storagePathPermissionsService).canReadFolder(anyLong(), anyString());
+            doNothing().when(storagePathPermissionsService).canReadFile(anyLong(), anyString());
+
+            storageManager.checkReadPermissionsOnPaths(storage, Arrays.asList(TEST_FOLDER_PATH, TEST_FILE_PATH));
+
+            verify(storagePathPermissionsService).canReadFolder(storage.getId(), TEST_FOLDER_PATH);
+            verify(storagePathPermissionsService).canReadFile(storage.getId(), TEST_FILE_PATH);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void checkReadPermissionsOnPathsShouldRejectWhenOnePathIsDenied() {
+        // The selection is archived by a service, on its own, long after the user has gone. One path
+        // denied has to stop the request while the user is still there to be told.
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_USER);
+            doNothing().when(storagePathPermissionsService).canReadFile(anyLong(), anyString());
+            doThrow(new AccessDeniedException("Access is denied")).when(storagePathPermissionsService)
+                    .canReadFolder(anyLong(), anyString());
+
+            assertThrows(AccessDeniedException.class, () -> storageManager.checkReadPermissionsOnPaths(
+                    storage, Arrays.asList(TEST_FILE_PATH, TEST_FOLDER_PATH)));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void checkReadPermissionsOnPathsShouldAskNothingWhenThereAreNoPaths() {
+        // An empty selection is refused a layer above, where the user can still be told. Here it is
+        // simply nothing to ask about, and a null is not where this method fails.
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_USER);
+
+            storageManager.checkReadPermissionsOnPaths(storage, null);
+            storageManager.checkReadPermissionsOnPaths(storage, Collections.emptyList());
+
+            verify(storagePathPermissionsService, never()).canReadFolder(anyLong(), anyString());
+            verify(storagePathPermissionsService, never()).canReadFile(anyLong(), anyString());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void checkReadPermissionsOnPathsShouldNotCheckPathPermissionsForStorageReader() {
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(true);
+            authenticate(STORAGE_READER, ROLE_STORAGE_READER);
+
+            storageManager.checkReadPermissionsOnPaths(storage, Arrays.asList(TEST_FOLDER_PATH, TEST_FILE_PATH));
+
+            verify(storagePathPermissionsService, never()).canReadFolder(anyLong(), anyString());
+            verify(storagePathPermissionsService, never()).canReadFile(anyLong(), anyString());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void checkReadPermissionsOnPathsShouldNotCheckPathsOfStorageWithoutPathPermissions() {
+        // Storage level READ is the whole of the answer there, and it has been given already.
+        try {
+            final AbstractDataStorage storage = createStorageOwnedByAnotherUser(false);
+            authenticate(STORAGE_USER);
+
+            storageManager.checkReadPermissionsOnPaths(storage, Arrays.asList(TEST_FOLDER_PATH, TEST_FILE_PATH));
+
+            verify(storagePathPermissionsService, never()).canReadFolder(anyLong(), anyString());
             verify(storagePathPermissionsService, never()).canReadFile(anyLong(), anyString());
         } finally {
             SecurityContextHolder.clearContext();

@@ -49,6 +49,7 @@ import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.repository.access.AccessCodeRepository;
+import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
@@ -231,6 +232,9 @@ public class TestApplication {
 
     @MockBean
     public PlatformUsageCreditsEventService platformUsageCreditsEventService;
+
+    @MockBean
+    public AsyncTaskRepository asyncTaskRepository;
 
     @Bean
     public WebServerFactoryCustomizer<TomcatServletWebServerFactory> webServerFactoryCustomizer() {

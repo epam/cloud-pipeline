@@ -19,6 +19,8 @@ package com.epam.pipeline.controller.datastorage;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.controller.vo.DownloadArchiveVO;
+import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
@@ -807,5 +809,20 @@ public class DataStorageController extends AbstractRestController {
     public Result callOffDataStorageDavMount(@PathVariable(value = ID) final Long id) {
         dataStorageApiService.callOffDataStorageDavMount(id);
         return Result.success();
+    }
+
+    @PostMapping(value = "/datastorage/{id}/download/archive")
+    @ResponseBody
+    @Operation(
+            summary = "Requests an archive of the given storage paths.",
+            description = "Accepts the request, records it as an asynchronous task and returns that "
+                    + "task. The archive is built by an executor service; follow the task to learn "
+                    + "when it is ready and ask it for a download url then.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<AsyncTask> createDownloadArchiveTask(@PathVariable(value = ID) final Long id,
+                                                       @RequestBody final DownloadArchiveVO request) {
+        return Result.success(dataStorageApiService.createDownloadArchiveTask(id, request));
     }
 }
