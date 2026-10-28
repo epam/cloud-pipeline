@@ -747,7 +747,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Role_Based_Access_Control</b> (30 tests, 14 automated)</summary>
+<summary><b>Role_Based_Access_Control</b> (34 tests, 14 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -774,6 +774,10 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**3751_2**](Role_Based_Access_Control/3751_allow_to_grant_permissions_to_group/3751_2.md) | WRITE grant permissions to User Group | :white_check_mark: |
 | [**3970_1**](Role_Based_Access_Control/3970_storage_permissions_restrictions/3970_1.md) | Storage permissions restrictions |  |
 | [**3970_2**](Role_Based_Access_Control/3970_storage_permissions_restrictions/3970_2.md) | Storage permissions restrictions for all groups/roles |  |
+| [**4110_1**](Role_Based_Access_Control/4110_permission_resolving_priority/4110_1.md) | Direct user permission has priority over Group and Role permissions |  |
+| [**4110_2**](Role_Based_Access_Control/4110_permission_resolving_priority/4110_2.md) | Group permission has priority over Role permission |  |
+| [**4110_3**](Role_Based_Access_Control/4110_permission_resolving_priority/4110_3.md) | [Negative] Deny permission has priority over Allow permission within the same SID type |  |
+| [**4110_4**](Role_Based_Access_Control/4110_permission_resolving_priority/4110_4.md) | A direct non-inherited permission on an object overrides an inherited permission from its parent |  |
 | [**4146_3_1**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_1.md) | ROLE_TOOL_ADMIN: edit Instance management items |  |
 | [**4146_3_2**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_2.md) | ROLE_TOOL: managing permissions of existing pipeline |  |
 | [**4146_3_3**](Role_Based_Access_Control/4146_Admin_privileges/4146_role_tool_admin/4146_3_3.md) | ROLE_TOOL_ADMIN: edit Instance management items |  |
