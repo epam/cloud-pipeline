@@ -68,6 +68,10 @@
         <td>Requested by</td>
         <td>${CP_DOLLAR}!templateParameters.get("owner")</td>
     </tr>
+    <tr>
+        <td>Offering ID</td>
+        <td>${CP_DOLLAR}!templateParameters.get("capacityBlockOfferingId")</td>
+    </tr>
 </table>
 
 <p>An administrator can approve or cancel the request in the <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/cluster/hot">$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</a>. You will be notified when its status changes.</p>

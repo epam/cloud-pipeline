@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.acl.cluster.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -36,6 +40,8 @@ import java.util.List;
  *   <li>{@link #load(Long)} - readable by whoever may read the node pool the reservation backs.</li>
  *   <li>{@link #approve(Long)} - administrators only: an approval commits the platform to paying for capacity.</li>
  *   <li>{@link #cancel(Long)} - the owner of that node pool, or an administrator.</li>
+ *   <li>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} - open to the same role
+ *       that may create a reservation-backed pool, since there is no pool yet to check a permission against.</li>
  * </ul>
  *
  * <p>A reservation is not created here. One exists only as part of the node pool it backs, so it is created with
@@ -48,6 +54,7 @@ import java.util.List;
 public class CapacityReservationApiService {
 
     private final CapacityReservationService reservationService;
+    private final CapacityBlockOfferingService offeringService;
     private final AuthManager authManager;
 
     public List<CapacityReservation> loadAll() {
@@ -69,5 +76,15 @@ public class CapacityReservationApiService {
     @PreAuthorize(AclExpressions.CAPACITY_RESERVATION_ID_OWNER)
     public CapacityReservation cancel(final Long id) {
         return reservationService.cancel(id);
+    }
+
+    @PreAuthorize(AclExpressions.CAPACITY_BLOCK_OFFERING_READ)
+    public List<CapacityBlockOffering> listCapacityBlockOfferings(final CapacityBlockOfferingRequest request) {
+        return offeringService.listOfferings(request);
+    }
+
+    @PreAuthorize(AclExpressions.CAPACITY_BLOCK_OFFERING_READ)
+    public List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(final Long regionId) {
+        return offeringService.listInstanceTypes(regionId);
     }
 }

@@ -23,6 +23,7 @@
 - [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
+- [Node pools backed by an AWS capacity reservation or capacity block](#node-pools-backed-by-an-aws-capacity-reservation-or-capacity-block)
 - [FS quotas](#fs-quotas)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
@@ -927,6 +928,19 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 **_Note_**: pools management is available only for admins. Usage of pool nodes is available for any user.
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
+
+## Node pools backed by an AWS capacity reservation or capacity block
+
+A node pool can now be backed by a cloud provider's own capacity reservation, so its nodes are guaranteed rather than subject to the usual on-demand availability. An administrator, or a user with the **ROLE_NODE_POOL_MANAGER** role, creates such a pool with its reservation request alongside the usual pool settings; whether it then needs an administrator's approval is decided by the **`cluster.capacity.reservation.policies`** system preference.
+
+Two kinds of reservation are supported, both AWS-only for now:
+
+- a **future-dated** reservation, for a date and zone the platform searches for and reserves on the requester's behalf, sliding to the next candidate on a refusal
+- an **AWS Capacity Block for ML**, bought whole for an exact, already-searched window - the highest-guarantee capacity AWS sells, with no cancelling it once bought
+
+The pool takes no nodes before its reservation is active, and stops taking new runs once the reservation is ending; jobs already running keep running until it actually ends. The owner is notified as the reservation's status changes.
+
+For the full behaviour - including how a pool backed by either kind can be edited, cancelled or deleted - see [Pools backed by a capacity reservation](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-reservation) and [Pools backed by a capacity block](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-block).
 
 ## FS quotas
 

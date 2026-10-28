@@ -244,6 +244,8 @@ public final class AclExpressions {
             + "@capacityReservationPermissionManager.reservationPermission(#id, 'READ')";
     public static final String CAPACITY_RESERVATION_ID_OWNER = ADMIN_ONLY + OR
             + "@capacityReservationPermissionManager.reservationOwner(#id)";
+    public static final String CAPACITY_BLOCK_OFFERING_READ = ADMIN_ONLY + OR + RUN_ADMIN_ONLY + OR
+            + NODE_POOL_MANAGER_ONLY;
 
     private AclExpressions() {
         // no op

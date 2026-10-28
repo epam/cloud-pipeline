@@ -19,6 +19,9 @@ package com.epam.pipeline.controller.cluster.capacityreservation;
 import com.epam.pipeline.acl.cluster.capacityreservation.CapacityReservationApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -30,7 +33,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
@@ -40,7 +45,8 @@ import java.util.List;
  *
  * <p>Reading is a list and a single reservation; writing is the two decisions a human makes about a request -
  * approving one that waits for it, and cancelling one that is no longer wanted. Creation belongs to the node pool
- * endpoint, since a reservation only ever exists for a pool.
+ * endpoint, since a reservation only ever exists for a pool. {@code offerings} and {@code instance-types} stand
+ * apart from the rest: they search AWS's capacity block catalogue before any reservation or pool exists.
  *
  * <p>Every method delegates to {@link CapacityReservationApiService}, which is where the authorization is.
  */
@@ -81,5 +87,22 @@ public class CapacityReservationController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<CapacityReservation> cancel(final @PathVariable Long id) {
         return Result.success(apiService.cancel(id));
+    }
+
+    @PostMapping("offerings")
+    @ApiOperation(value = "Searches current capacity block offerings",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<CapacityBlockOffering>> listOfferings(
+            final @RequestBody CapacityBlockOfferingRequest request) {
+        return Result.success(apiService.listCapacityBlockOfferings(request));
+    }
+
+    @GetMapping("instance-types")
+    @ApiOperation(value = "Lists the instance types a region currently sells as capacity blocks, with their specs",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<CapacityBlockInstanceTypeInfo>> listInstanceTypes(final @RequestParam Long regionId) {
+        return Result.success(apiService.listCapacityBlockInstanceTypes(regionId));
     }
 }

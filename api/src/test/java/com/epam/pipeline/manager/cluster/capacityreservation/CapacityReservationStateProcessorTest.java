@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.cluster.capacityreservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
-import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservationState;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -238,6 +237,24 @@ public class CapacityReservationStateProcessorTest {
         processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
 
         assertThat(reservation.getStartDate()).isEqualTo(chosen);
+    }
+
+    @Test
+    public void shouldResubmitAFutureDatedReservationAfterItSlidToAnotherCandidate() {
+        final CapacityReservation reservation = approved();
+        reservation.setAttempt(1);
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        givenSubmissionReturns(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .build());
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        assertThat(reservation.getCloudReservationId()).isEqualTo(CLOUD_ID);
+        verify(statusService)
+                .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+        verify(statusService, never()).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), any());
     }
 
     @Test
@@ -908,16 +925,188 @@ public class CapacityReservationStateProcessorTest {
     }
 
     @Test
-    public void shouldRejectUnsupportedReservationTypeWithoutCallingTheProvider() {
-        final CapacityReservation reservation = approved();
-        reservation.setReservationType(CapacityReservationType.CAPACITY_BLOCK);
+    public void shouldPurchaseACapacityBlockWithoutPickingDatesOrZones() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        givenSubmissionReturns(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .build());
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        assertThat(reservation.getCloudReservationId()).isEqualTo(CLOUD_ID);
+        verify(statusService)
+                .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+        verify(cloudFacade, never()).candidateZones(any());
+        verify(cloudFacade, never()).earliestAcceptedStart(any());
+    }
+
+    @Test
+    public void shouldRecordAnUnconfirmedCapacityBlockPurchaseAttempt() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.create(any())).thenThrow(
+                new CapacityReservationSubmissionUncertainException(TIMED_OUT, new IllegalStateException()));
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        verify(statusService).recordRetry(reservation, TIMED_OUT);
+        verify(statusService, never()).transition(any(), any(), any());
+        assertThat(reservation.getAttempt()).isEqualTo(1);
+    }
+
+    @Test
+    public void shouldNotCountAnUncertainLookupAsAPurchaseAttemptForACapacityBlock() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.findSubmitted(any())).thenThrow(
+                new CapacityReservationSubmissionUncertainException(TIMED_OUT, new IllegalStateException()));
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        verify(statusService).recordRetry(reservation, TIMED_OUT);
+        verify(cloudFacade, never()).create(any());
+        assertThat(reservation.getAttempt()).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldNotPurchaseACapacityBlockAgainWithinTheGracePeriod() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        reservation.setAttempt(1);
+        reservation.setUpdated(DateUtils.nowUTC().minusMinutes(1));
         givenStatus(CapacityReservationStatus.APPROVED, reservation);
 
         processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
 
-        verify(cloudFacade, never()).findSubmitted(any());
         verify(cloudFacade, never()).create(any());
-        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.PURCHASE_FAILED), any());
+        verify(statusService, never()).transition(any(), any(), any());
+        verify(statusService, never()).recordRetry(any(), any());
+    }
+
+    @Test
+    public void shouldFailACapacityBlockOnceTheGracePeriodElapsesWithoutConfirmation() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        reservation.setAttempt(1);
+        reservation.setUpdated(DateUtils.nowUTC()
+                .minus(CapacityReservationStateProcessor.PURCHASE_CONFIRMATION_GRACE_PERIOD)
+                .minusMinutes(1));
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), any());
+        verify(cloudFacade, never()).create(any());
+    }
+
+    @Test
+    public void shouldAdoptAConfirmedCapacityBlockPurchaseRegardlessOfTheGracePeriod() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        reservation.setAttempt(1);
+        reservation.setUpdated(DateUtils.nowUTC()
+                .minus(CapacityReservationStateProcessor.PURCHASE_CONFIRMATION_GRACE_PERIOD)
+                .minusMinutes(1));
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        when(cloudFacade.findSubmitted(reservation)).thenReturn(Optional.of(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .build()));
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        assertThat(reservation.getCloudReservationId()).isEqualTo(CLOUD_ID);
+        verify(cloudFacade, never()).create(any());
+        verify(statusService)
+                .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+    }
+
+    @Test
+    public void shouldFailACapacityBlockRefusalFromSubmissionOutrightInsteadOfSliding() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        givenSubmissionReturns(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.FAILED)
+                .stateReason(REFUSAL_REASON)
+                .build());
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), eq(REFUSAL_REASON));
+        verify(cloudFacade, never()).candidateZones(any());
+    }
+
+    @Test
+    public void shouldFailACapacityBlockRefusalFromAPollOutrightInsteadOfSliding() {
+        final CapacityReservation reservation = assessingCapacityBlock();
+        givenStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, reservation);
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.UNSUPPORTED)
+                .stateReason(REFUSAL_REASON)
+                .build());
+
+        processor.poll(RESERVATION_ID, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
+
+        verify(statusService).transition(eq(reservation), eq(CapacityReservationStatus.FAILED), eq(REFUSAL_REASON));
+        verify(cloudFacade, never()).candidateZones(any());
+    }
+
+    @Test
+    public void shouldFinishACapacityBlockWithoutCancellingAtTheProvider() {
+        final CapacityReservation reservation = assessingCapacityBlock();
+        reservation.setStatus(CapacityReservationStatus.FINALIZING);
+        reservation.setEndDate(DateUtils.nowUTC().minusMinutes(1));
+        givenStatus(CapacityReservationStatus.FINALIZING, reservation);
+
+        processor.finishIfEnded(RESERVATION_ID, CapacityReservationStatus.FINALIZING);
+
+        verify(statusService).transition(reservation, CapacityReservationStatus.FINISHED, null);
+        verify(reservationService).deactivatePool(reservation);
+        verify(cloudFacade, never()).cancel(any());
+    }
+
+    @Test
+    public void shouldDriveACapacityBlockThroughItsFullLifecycleWithoutEverSliding() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        givenStatus(CapacityReservationStatus.APPROVED, reservation);
+        givenSubmissionReturns(CloudCapacityReservation.builder()
+                .cloudReservationId(CLOUD_ID)
+                .state(CloudCapacityReservationState.PENDING)
+                .build());
+
+        processor.submit(RESERVATION_ID, CapacityReservationStatus.APPROVED);
+
+        verify(statusService)
+                .transition(reservation, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER, null);
+        reservation.setStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
+
+        final LocalDateTime start = DateUtils.nowUTC();
+        when(cloudFacade.describe(reservation)).thenReturn(CloudCapacityReservation.builder()
+                .state(CloudCapacityReservationState.ACTIVE)
+                .startDate(start)
+                .endDate(start.plusMinutes(WITHIN_LEAD_MINUTES))
+                .availabilityZone(ZONE)
+                .build());
+
+        processor.poll(RESERVATION_ID, CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
+
+        verify(statusService).transition(reservation, CapacityReservationStatus.ACTIVE, null);
+        verify(reservationService).activatePool(reservation);
+        reservation.setStatus(CapacityReservationStatus.ACTIVE);
+
+        processor.finalizeIfEnding(RESERVATION_ID, CapacityReservationStatus.ACTIVE);
+
+        verify(statusService).transition(reservation, CapacityReservationStatus.FINALIZING, null);
+        reservation.setStatus(CapacityReservationStatus.FINALIZING);
+        reservation.setEndDate(DateUtils.nowUTC().minusMinutes(1));
+
+        processor.finishIfEnded(RESERVATION_ID, CapacityReservationStatus.FINALIZING);
+
+        verify(statusService).transition(reservation, CapacityReservationStatus.FINISHED, null);
+        verify(reservationService).deactivatePool(reservation);
+        verify(cloudFacade, never()).cancel(any());
+        verify(cloudFacade, never()).candidateZones(any());
+        verify(cloudFacade, never()).earliestAcceptedStart(any());
     }
 
     @Test
@@ -967,6 +1156,20 @@ public class CapacityReservationStateProcessorTest {
         reservation.setCloudReservationId(CLOUD_ID);
         reservation.setStartDate(reservation.getRequestedStartDate());
         reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
+        return reservation;
+    }
+
+    private CapacityReservation approvedCapacityBlock() {
+        final CapacityReservation reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(POOL_ID);
+        reservation.setId(RESERVATION_ID);
+        reservation.setStatus(CapacityReservationStatus.APPROVED);
+        return reservation;
+    }
+
+    private CapacityReservation assessingCapacityBlock() {
+        final CapacityReservation reservation = approvedCapacityBlock();
+        reservation.setStatus(CapacityReservationStatus.ASSESSING_BY_CLOUD_PROVIDER);
+        reservation.setCloudReservationId(CLOUD_ID);
         return reservation;
     }
 

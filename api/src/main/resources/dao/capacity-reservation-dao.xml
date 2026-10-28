@@ -47,7 +47,8 @@
                         commitment_duration,
                         instance_platform,
                         attempt,
-                        granted_commitment_duration
+                        granted_commitment_duration,
+                        capacity_block_offering_id
                         )
                     VALUES (
                         :NODE_POOL_ID,
@@ -73,7 +74,8 @@
                         :COMMITMENT_DURATION,
                         :INSTANCE_PLATFORM,
                         :ATTEMPT,
-                        :GRANTED_COMMITMENT_DURATION)
+                        :GRANTED_COMMITMENT_DURATION,
+                        :CAPACITY_BLOCK_OFFERING_ID)
                 ]]>
             </value>
         </constructor-arg>
@@ -140,7 +142,8 @@
                         r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -177,7 +180,8 @@
                         r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -214,7 +218,8 @@
                         r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -251,7 +256,8 @@
                         r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
                     FROM
                         pipeline.capacity_reservation AS r
                     ORDER BY
@@ -288,7 +294,8 @@
                         r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -327,7 +334,8 @@
                         r.commitment_duration AS COMMITMENT_DURATION,
                         r.instance_platform AS INSTANCE_PLATFORM,
                         r.attempt AS ATTEMPT,
-                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION
+                        r.granted_commitment_duration AS GRANTED_COMMITMENT_DURATION,
+                        r.capacity_block_offering_id AS CAPACITY_BLOCK_OFFERING_ID
                     FROM
                         pipeline.capacity_reservation AS r
                     WHERE
@@ -346,7 +354,8 @@
                         updated = :UPDATED,
                         start_date = :START_DATE,
                         end_date = :END_DATE,
-                        availability_zone = :AVAILABILITY_ZONE
+                        availability_zone = :AVAILABILITY_ZONE,
+                        attempt = :ATTEMPT
                     WHERE
                         id = :ID
                         AND status = :STATUS

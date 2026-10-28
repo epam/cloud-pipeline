@@ -50,6 +50,7 @@ public class CapacityReservationTemplatesTest {
     private static final String REASON = "No available start date in the requested window";
     private static final long COMMITMENT_DURATION = 14 * 24 * 3600L;
     private static final long SIX_HOURS = 6 * 3600L;
+    private static final String CAPACITY_BLOCK_OFFERING_ID = "cbr-0123456789abcdef0";
 
     private final TemplateService templateService = new TemplateService();
 
@@ -89,6 +90,25 @@ public class CapacityReservationTemplatesTest {
             final String body = render(type, parameters).getBody();
             assertFalse(body.contains("null"));
             assertFalse(body.contains("$"));
+        }
+    }
+
+    @Test
+    public void shouldRenderTheOfferingIdForACapacityBlock() throws IOException {
+        final Map<String, Object> parameters = parameters(null);
+        parameters.put("capacityBlockOfferingId", CAPACITY_BLOCK_OFFERING_ID);
+
+        for (final String type : TYPES) {
+            assertTrue(type, render(type, parameters).getBody().contains(CAPACITY_BLOCK_OFFERING_ID));
+        }
+    }
+
+    @Test
+    public void shouldLeaveTheOfferingIdRowEmptyForAFutureDatedReservation() throws IOException {
+        for (final String type : TYPES) {
+            final String body = render(type, parameters(null)).getBody();
+            assertFalse(type, body.contains(CAPACITY_BLOCK_OFFERING_ID));
+            assertFalse(type + " left a reference unrendered", body.contains("$"));
         }
     }
 

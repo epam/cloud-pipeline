@@ -166,11 +166,19 @@ public class CapacityReservationApprovalService {
     private boolean sameEssentials(final CapacityReservation origin, final CapacityReservation retry) {
         return Objects.equals(origin.getInstanceType(), retry.getInstanceType())
                 && origin.getInstanceCount() == retry.getInstanceCount()
-                && Objects.equals(origin.getCommitmentDuration(), retry.getCommitmentDuration())
+                && isNoLongerThanOrigin(origin.getCommitmentDuration(), retry.getCommitmentDuration())
                 && Objects.equals(origin.getReservationType(), retry.getReservationType())
                 && Objects.equals(origin.getCloudProvider(), retry.getCloudProvider())
                 && Objects.equals(origin.getRegionId(), retry.getRegionId())
                 && Objects.equals(origin.getOwner(), retry.getOwner());
+    }
+
+    /**
+     * A retry asking for no more than what the origin was already approved for is not a bigger ask, so it may
+     * inherit that approval too - only asking for longer than the origin needs a fresh decision.
+     */
+    private static boolean isNoLongerThanOrigin(final Long originDuration, final Long retryDuration) {
+        return originDuration != null && retryDuration != null && retryDuration <= originDuration;
     }
 
     private boolean matchesAny(final List<CapacityReservationPolicy> policies,

@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.cluster.capacityreservation.CapacityReservationDao;
 import com.epam.pipeline.entity.cluster.AMIConfiguration;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -70,9 +71,12 @@ import java.util.Set;
  *
  * <p>The human decisions live here too. {@link #approve(Long)} succeeds only while the request is waiting for one -
  * the monitor re-approves a sliding request itself, and a second human approval would drop the provider's last
- * answer from it. {@link #cancel(Long)} gives the capacity back and empties the pool. {@link #onPoolDeletion} is
- * the opposite direction: deleting a pool deletes its reservation, and a reservation that has not ended yet is
- * given up first - which it refuses to do unless the request is still waiting for approval or the caller insists.
+ * answer from it. {@link #cancel(Long)} gives the capacity back and empties the pool - except a capacity block
+ * already purchased, which it refuses outright, since no provider lets one be given back once bought.
+ * {@link #onPoolDeletion} is the opposite direction: deleting a pool deletes its reservation, and a reservation
+ * that has not ended yet is given up first - which it refuses to do unless the request is still waiting for
+ * approval or the caller insists, and which inherits {@link #cancel(Long)}'s own refusal for a purchased capacity
+ * block, so such a pool cannot be deleted either until it ends on its own.
  */
 @Service
 @Slf4j
@@ -208,6 +212,9 @@ public class CapacityReservationService {
     @Transactional
     public CapacityReservation cancel(final Long id) {
         final CapacityReservation reservation = loadForUpdate(id);
+        Assert.isTrue(CapacityReservationType.CAPACITY_BLOCK != reservation.getReservationType()
+                        || StringUtils.isBlank(reservation.getCloudReservationId()),
+                messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_BLOCK_NOT_CANCELLABLE, id));
         cloudFacade.cancel(reservation);
         final CapacityReservation cancelled =
                 statusService.transition(reservation, CapacityReservationStatus.CANCELLED, null);
@@ -268,7 +275,7 @@ public class CapacityReservationService {
 
     private CapacityReservation build(final CapacityReservationRequest request) {
         final AbstractCloudRegion region = regionManager.load(request.getRegionId());
-        return CapacityReservation.builder()
+        final CapacityReservation.CapacityReservationBuilder reservation = CapacityReservation.builder()
                 .nodePoolId(request.getNodePoolId())
                 .originId(request.getOriginId())
                 .name(request.getName())
@@ -284,8 +291,15 @@ public class CapacityReservationService {
                 .requestedEndDate(request.getRequestedEndDate())
                 .commitmentDuration(request.getCommitmentDuration())
                 .instancePlatform(StringUtils.defaultIfBlank(request.getInstancePlatform(),
-                        CapacityReservation.DEFAULT_INSTANCE_PLATFORM))
-                .build();
+                        CapacityReservation.DEFAULT_INSTANCE_PLATFORM));
+        if (CapacityReservationType.CAPACITY_BLOCK == request.getReservationType()) {
+            // the offering names an exact slot, not a window to search, so what was asked for is already granted
+            reservation.capacityBlockOfferingId(request.getCapacityBlockOfferingId())
+                    .availabilityZone(request.getAvailabilityZone())
+                    .startDate(request.getRequestedStartDate())
+                    .endDate(request.getRequestedEndDate());
+        }
+        return reservation.build();
     }
 
     private Map<String, String> allowedNetworks(final String regionCode) {

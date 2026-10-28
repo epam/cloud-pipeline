@@ -31,7 +31,8 @@ import java.time.LocalDateTime;
  * <ul>
  *   <li><b>what was asked for</b> - {@code instanceType}, {@code instanceCount} and {@code instancePlatform}, the
  *       window ({@code requestedStartDate}, {@code requestedEndDate}) and the {@code commitmentDuration}, in
- *       seconds, the capacity is to be held for;</li>
+ *       seconds, the capacity is to be held for; for a {@link CapacityReservationType#CAPACITY_BLOCK}, also
+ *       {@code capacityBlockOfferingId}, the offering it buys;</li>
  *   <li><b>what the platform decided</b> - {@code status} with the {@code statusReason} behind it, the
  *       {@code attempt} the request is on, and the {@code originId} of the reservation this one replaces;</li>
  *   <li><b>what the provider answered</b> - {@code cloudReservationId}, the {@code availabilityZone} and the
@@ -62,6 +63,8 @@ public class CapacityReservation {
     private String cloudReservationId;
 
     private String availabilityZone;
+
+    private String capacityBlockOfferingId;
 
     private String clientToken;
 

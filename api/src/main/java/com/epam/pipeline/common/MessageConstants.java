@@ -795,12 +795,16 @@ public final class MessageConstants {
             "error.capacity.reservation.not.terminal";
     public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
             "error.capacity.reservation.illegal.transition";
+    public static final String ERROR_CAPACITY_RESERVATION_BLOCK_NOT_CANCELLABLE =
+            "error.capacity.reservation.block.not.cancellable";
     public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
             "error.capacity.reservation.spot.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
             "error.capacity.reservation.type.required";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =
             "error.capacity.reservation.type.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED =
+            "error.capacity.reservation.offering.id.required";
     public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
             "error.capacity.reservation.dates.required";
     public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =
@@ -823,6 +827,18 @@ public final class MessageConstants {
             "error.capacity.reservation.platform.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED =
             "error.capacity.reservation.family.not.supported";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED =
+            "error.capacity.block.offering.region.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED =
+            "error.capacity.block.offering.instance.type.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_COUNT_REQUIRED =
+            "error.capacity.block.offering.instance.count.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_DURATION_REQUIRED =
+            "error.capacity.block.offering.duration.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_START_DATE_REQUIRED =
+            "error.capacity.block.offering.start.date.required";
+    public static final String ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED =
+            "error.capacity.block.resource.type.not.supported";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";

@@ -22,8 +22,9 @@ package com.epam.pipeline.entity.cluster.capacityreservation;
  * <ul>
  *   <li>{@link #FUTURE_DATED} - capacity held for a window that starts in the future, committed to for a duration.
  *       The only type the platform submits today.</li>
- *   <li>{@link #CAPACITY_BLOCK} - a provider's pre-sold block of accelerated capacity, bought whole. A request of
- *       this type is refused rather than sent to the provider.</li>
+ *   <li>{@link #CAPACITY_BLOCK} - a provider's pre-sold block of accelerated capacity, bought whole, named by the
+ *       offering id it buys rather than a window to search. Accepted by validation and persisted; the platform does
+ *       not yet submit it to the provider for purchase.</li>
  * </ul>
  */
 public enum CapacityReservationType {
