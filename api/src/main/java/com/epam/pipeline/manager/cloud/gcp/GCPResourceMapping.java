@@ -16,20 +16,11 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import lombok.Value;
-
 /**
  * Google Cloud Provider group of SKUs mapping.
+ *
+ * @param prefix SKUs description prefix.
+ * @param group SKUs resource group.
  */
-@Value
-public class GCPResourceMapping {
-    /**
-     * SKUs description prefix.
-     */
-    private final String prefix;
-
-    /**
-     * SKUs resource group.
-     */
-    private final String group;
+public record GCPResourceMapping(String prefix, String group) {
 }

@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.cluster.writer;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
-import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
@@ -49,7 +48,7 @@ public abstract class AbstractMonitoringStatsWriter {
     protected List<String[]> extractTable(final List<MonitoringStats> stats) {
         final List<String[]> allLines = new ArrayList<>();
         final MonitoringStatsHeader header = extractHeader(stats);
-        allLines.add(header.getColumnNames().toArray(new String[0]));
+        allLines.add(header.columnNames().toArray(new String[0]));
         final List<String[]> entities = stats.stream()
             .map(stat -> createNewLine(header, stat))
             .collect(Collectors.toList());
@@ -114,7 +113,7 @@ public abstract class AbstractMonitoringStatsWriter {
 
     private void fillDisksColumns(final MonitoringStats stat, final MonitoringStatsHeader header,
                                   final List<String> newLine) {
-        final List<String> diskNames = header.getDiskNames();
+        final List<String> diskNames = header.diskNames();
         final List<String> newEmptyColumns = IntStream.range(0, 2 * diskNames.size())
             .mapToObj(i -> StringUtils.EMPTY)
             .collect(Collectors.toList());
@@ -130,8 +129,8 @@ public abstract class AbstractMonitoringStatsWriter {
 
     private void fillNetworkingColumns(final MonitoringStats stat, final MonitoringStatsHeader header,
                                        final List<String> newLine) {
-        final int disksColumnShift = 2 * header.getDiskNames().size();
-        final List<String> interfaceNames = header.getInterfaceNames();
+        final int disksColumnShift = 2 * header.diskNames().size();
+        final List<String> interfaceNames = header.interfaceNames();
         final List<String> newEmptyColumns = IntStream.range(0, 2 * interfaceNames.size())
             .mapToObj(i -> StringUtils.EMPTY)
             .collect(Collectors.toList());
@@ -144,11 +143,8 @@ public abstract class AbstractMonitoringStatsWriter {
         });
     }
 
-    @Value
-    private static class MonitoringStatsHeader {
-
-        private List<String> diskNames;
-        private List<String> interfaceNames;
-        private List<String> columnNames;
+    private record MonitoringStatsHeader(List<String> diskNames,
+                                         List<String> interfaceNames,
+                                         List<String> columnNames) {
     }
 }

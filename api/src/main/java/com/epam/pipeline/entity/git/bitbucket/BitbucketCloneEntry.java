@@ -18,10 +18,12 @@ package com.epam.pipeline.entity.git.bitbucket;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 @AllArgsConstructor
 public class BitbucketCloneEntry {
     private String href;

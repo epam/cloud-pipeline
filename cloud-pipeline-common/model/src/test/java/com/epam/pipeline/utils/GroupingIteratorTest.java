@@ -1,65 +1,42 @@
 package com.epam.pipeline.utils;
 
 import org.apache.commons.collections4.IteratorUtils;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
-@RunWith(Parameterized.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class GroupingIteratorTest {
 
-    private final Integer[] data;
-    private final Integer expectedSize;
-    private final Integer[] groupSizes;
-
-    public GroupingIteratorTest(final Integer[] data, final Integer expectedSize, final Integer[] groupSizes) {
-        this.data = data;
-        this.expectedSize = expectedSize;
-        this.groupSizes = groupSizes;
-    }
-
-    @Parameterized.Parameters
-    public static Collection<Object[]> provideData() {
-        return Arrays.asList(new Object[][] {
-            {
-                new Integer[]{1, 1, 1, 2, 3},
-                3,
-                new Integer[]{3, 1, 1}
-            },
-            {
-                new Integer[]{1, 2, 2, 3},
-                3,
-                new Integer[]{1, 2, 1}
-            },
-            {
-                new Integer[]{1, 2, 3},
-                3,
-                new Integer[]{1, 1, 1}
-            },
-            {
-                new Integer[]{},
-                0,
-                new Integer[]{0}
-            }
-        });
-    }
-
-    @Test
-    public void iteratorShouldGroupObjects() {
+    @ParameterizedTest(name = "[{index}] Groups: {1}")
+    @MethodSource("provideData")
+    void iteratorShouldGroupObjects(Integer[] data, Integer expectedSize, Integer[] groupSizes) {
         final GroupingIterator<Integer> groupingIterator = new GroupingIterator<>(
                 IteratorUtils.arrayIterator(data), Integer::compareTo);
         final List<List<Integer>> result = new ArrayList<>();
         groupingIterator.forEachRemaining(result::add);
-        Assert.assertEquals(expectedSize.intValue(), result.size());
+
+        assertEquals(expectedSize.intValue(), result.size(), "Group count mismatch");
         for (int i = 0; i < result.size(); i++) {
-            Assert.assertEquals(groupSizes[i].intValue(), result.get(i).size());
+            assertEquals(groupSizes[i].intValue(), result.get(i).size(),
+                    String.format("Mismatch at group %d", i));
         }
     }
 
+    static Stream<org.junit.jupiter.params.provider.Arguments> provideData() {
+        return Stream.of(
+                org.junit.jupiter.params.provider.Arguments.of(
+                        new Integer[]{1, 1, 1, 2, 3}, 3, new Integer[]{3, 1, 1}),
+                org.junit.jupiter.params.provider.Arguments.of(
+                        new Integer[]{1, 2, 2, 3}, 3, new Integer[]{1, 2, 1}),
+                org.junit.jupiter.params.provider.Arguments.of(
+                        new Integer[]{1, 2, 3}, 3, new Integer[]{1, 1, 1}),
+                org.junit.jupiter.params.provider.Arguments.of(
+                        new Integer[]{}, 0, new Integer[]{0})
+        );
+    }
 }

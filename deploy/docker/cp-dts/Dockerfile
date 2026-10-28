@@ -21,7 +21,9 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 
 RUN mkdir -p /opt/dts
 
-RUN yum install java-1.8.0-openjdk -y
+# OpenJDK upstream does not publish JDK 21 packages for CentOS/RHEL 7; use Amazon Corretto (OpenJDK-based) which does.
+RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
+    yum install -y java-21-amazon-corretto-devel
 
 COPY data-transfer-service.jar /opt/dts/data-transfer-service.jar
 COPY dts.sh /opt/dts/dts.sh

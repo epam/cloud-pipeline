@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.region;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Map;
 
 @Data
+@NoArgsConstructor
 public class ClusterStateRegionProperties {
     /**
      * If clusterInclude enabled this value can be used to filter out cloud instances

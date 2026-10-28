@@ -23,24 +23,8 @@
         <property name="createMetadataClassQuery">
             <value>
                 <![CDATA[
-                    INSERT INTO pipeline.metadata_entity_class (
-                        class_id,
-                        class_name,
-                        external_class_name)
-                    VALUES (
-                        :CLASS_ID,
-                        :CLASS_NAME,
-                        :EXTERNAL_CLASS_NAME)
-                ]]>
-            </value>
-        </property>
-        <property name="updateMetadataClassExternalNameQuery">
-            <value>
-                <![CDATA[
-                    UPDATE pipeline.metadata_entity_class SET
-                        external_class_name = :EXTERNAL_CLASS_NAME
-                    WHERE
-                        class_id = :CLASS_ID
+                    INSERT INTO pipeline.metadata_entity_class (class_id, class_name)
+                    VALUES (:CLASS_ID,:CLASS_NAME)
                 ]]>
             </value>
         </property>
@@ -49,8 +33,7 @@
                 <![CDATA[
                      SELECT
                         class_id,
-                        class_name,
-                        external_class_name
+                        class_name
                      FROM
                         pipeline.metadata_entity_class
                 ]]>
@@ -61,8 +44,7 @@
                 <![CDATA[
                      SELECT
                         class_id,
-                        class_name,
-                        external_class_name
+                        class_name
                      FROM
                         pipeline.metadata_entity_class
                      WHERE
@@ -75,8 +57,7 @@
                 <![CDATA[
                      SELECT
                         class_id,
-                        class_name,
-                        external_class_name
+                        class_name
                      FROM
                         pipeline.metadata_entity_class
                      WHERE

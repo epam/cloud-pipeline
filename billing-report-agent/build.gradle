@@ -1,29 +1,29 @@
 plugins {
-    id "java"
-    id "jacoco"
-    id "io.spring.dependency-management" version "1.0.6.RELEASE"
-    id "org.springframework.boot" version "2.0.2.RELEASE"
-    id "org.sonarqube" version "2.6.1"
+    id 'java'
+    id 'jacoco'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'org.sonarqube' version '2.6.1'
 }
 
 group "com.epam.pipeline"
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
-
-bootJar {
-    archiveName "billing-report-agent.jar"
-    manifest {
-        attributes(
-                "Implementation-Version": "$version")
-    }
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
-bootRun {
-    main = 'com.epam.pipeline.billingreportagent.BillingReportAgentApplication'
+bootJar {
+    archiveFileName = 'billing-report-agent.jar'
+    manifest { attributes 'Implementation-Version': version }
+}
+
+jar {
+    enabled = false
 }
 
 repositories {
+    gradlePluginPortal()
     mavenCentral()
 }
 
@@ -34,64 +34,51 @@ dependencies {
 
     configurations {
         all*.exclude module : 'spring-boot-starter-logging'
+        all*.exclude group: 'commons-logging', module: 'commons-logging'
     }
 
-    //SpringBoot
-    implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
-    implementation group: "org.springframework.boot", name: "spring-boot-starter-web", version: springBootVersion
+    // SpringBoot
+    implementation "org.springframework.boot:spring-boot-starter:$springBootVersion"
+    implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
+    implementation "org.springframework.boot:spring-boot-starter-log4j2:$springBootVersion"
 
-    // Logging
-    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
-    implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
-
+    // Elasticsearch
     implementation project(path: ":elasticsearch-common", configuration: "shadow")
 
     // Apache Commons
-    implementation group: "commons-io", name: "commons-io", version: apacheCommonsIOVersion
-    implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
-    implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
+    implementation "commons-io:commons-io:$apacheCommonsIOVersion"
+    implementation "org.apache.commons:commons-lang3:$apacheCommonsLangVersion"
+    implementation "org.apache.commons:commons-collections4:$apacheCommonsCollectionsVersion"
 
     // Azure
-    implementation group: 'com.microsoft.azure', name: 'azure-client-authentication', version: azureAuthVersion
+    implementation "com.microsoft.azure:azure-client-authentication:$azureAuthVersion"
 
     // AWS
-    implementation group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: awsSdkVersion
+    implementation "com.amazonaws:aws-java-sdk-pricing:$awsSdkVersion"
 
     // GCP
-    implementation group:'com.google.apis', name:'google-api-services-cloudbilling', version: gcpBillingSdkVersion
+    implementation "com.google.apis:google-api-services-cloudbilling:$gcpBillingSdkVersion"
 
-    //Lombok
-    implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
+    // Lombok
+    implementation "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 
     // Retrofit
-    implementation group: "com.squareup.retrofit2", name: "retrofit", version: retrofitVersion
-    implementation group: "com.squareup.retrofit2", name: "converter-jackson", version: retrofitVersion
-    implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttpVersion
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-jackson:$retrofitVersion"
+    implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
 
     // Jackson
-    implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jaksonVersion
-
-    // Swagger
-    implementation group: "io.springfox", name: "springfox-swagger2", version: swaggerVersion
-    implementation group: "io.springfox", name: "springfox-swagger-ui", version: swaggerVersion
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jaksonVersion"
 
     //Tests
-    implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
-    testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-api", version: junitVersion
-    testImplementation group: "org.junit.jupiter", name: "junit-jupiter-engine", version: junitVersion
-    testImplementation group: "org.hamcrest", name: "hamcrest-all", version: hamcrestVersion
-
-    testImplementation group: "org.mockito", name: "mockito-core", version: mockitoVersion
-    testImplementation group: "org.mockito", name: "mockito-junit-jupiter", version: mockitoVersion
+    testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+    testImplementation "org.projectlombok:lombok:$lombokVersion"
+    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    testImplementation "org.hamcrest:hamcrest-all:$hamcrestVersion"
 }
 
 test {
     useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
+    reports.html.required = true
 }

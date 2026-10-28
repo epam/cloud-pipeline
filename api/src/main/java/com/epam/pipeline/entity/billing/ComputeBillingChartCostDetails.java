@@ -18,9 +18,11 @@ package com.epam.pipeline.entity.billing;
 
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Builder
 @Value
+@Jacksonized
 public class ComputeBillingChartCostDetails implements BillingChartDetails {
 
     Long diskCost;

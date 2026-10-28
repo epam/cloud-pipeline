@@ -242,7 +242,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request,
                            final Map<String, String> tags) {
-        vmService.createAndAttachVolume(String.valueOf(runId), request.getSize(), region);
+        vmService.createAndAttachVolume(String.valueOf(runId), request.size(), region);
     }
 
     @Override

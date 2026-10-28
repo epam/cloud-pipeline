@@ -1395,7 +1395,8 @@ function validateParameter (parameter, parameters, rawEdit = false) {
             .find((o) => o.visible && o.value === value);
           value = matched ? matched.value : undefined;
         }
-        if (!actualConfig.multiple && !value) {
+        // a multi-select enum the user cleared stays empty, unless its config has just changed
+        if (!value && (!actualConfig.multiple || configChanged)) {
           value = actualConfig.value;
         }
       } else if (configChanged) {

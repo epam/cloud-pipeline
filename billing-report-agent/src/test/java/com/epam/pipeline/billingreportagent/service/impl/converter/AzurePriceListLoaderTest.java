@@ -18,12 +18,13 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
 import com.epam.pipeline.billingreportagent.model.pricing.AzurePricingEntity;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("checkstyle:magicnumber")
 public class AzurePriceListLoaderTest {
@@ -46,7 +47,7 @@ public class AzurePriceListLoaderTest {
         final Map<String, StoragePricing> storagePricing = loader.extractPrices(
                 Collections.singletonList(pricingEntity
         ));
-        Assert.assertEquals(BigDecimal.valueOf(
+        assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() * AbstractAzureStoragePriceListLoader.HRS_PER_MONTH
                 / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
                 storagePricing.get(TEST_REGION)
@@ -70,7 +71,7 @@ public class AzurePriceListLoaderTest {
         final Map<String, StoragePricing> storagePricing = loader.extractPrices(
                 Collections.singletonList(pricingEntity
                 ));
-        Assert.assertEquals(BigDecimal.valueOf(
+        assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
                 storagePricing.get(TEST_REGION)
                         .getPrices(StoragePriceListLoader.DEFAULT_STORAGE_CLASS).get(0).getPriceCentsPerGb()
@@ -94,7 +95,7 @@ public class AzurePriceListLoaderTest {
         final Map<String, StoragePricing> storagePricing = loader.extractPrices(
                 Collections.singletonList(pricingEntity
                 ));
-        Assert.assertEquals(BigDecimal.valueOf(
+        assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
                 storagePricing.get(TEST_REGION)
                         .getPrices(StoragePriceListLoader.DEFAULT_STORAGE_CLASS).get(0).getPriceCentsPerGb()

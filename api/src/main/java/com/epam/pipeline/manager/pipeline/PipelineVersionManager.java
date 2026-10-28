@@ -44,6 +44,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -62,7 +63,7 @@ import java.util.stream.Collectors;
 import static com.google.common.base.Predicates.not;
 
 @Service
-public class PipelineVersionManager {
+public class PipelineVersionManager implements InitializingBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineVersionManager.class);
     private static final String CONFIG_FILE_NAME = "config.json";
@@ -90,7 +91,8 @@ public class PipelineVersionManager {
     @Value("${luigi.graph.script}")
     private String graphScript;
 
-    @PostConstruct public void init() {
+    @Override
+    public void afterPropertiesSet() {
         mapper.setSerializationInclusion(Include.NON_EMPTY)
                 .configure(SerializationFeature.WRITE_NULL_MAP_VALUES, true)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

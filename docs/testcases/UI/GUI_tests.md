@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (141 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -254,6 +254,10 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-2603**](Data_storages/NFS_mount/EPMCMBIBPC-2603.md) | Validation of NFS storage creation with spaces in path | :white_check_mark: |
 | [**EPMCMBIBPC-2604**](Data_storages/NFS_mount/EPMCMBIBPC-2604.md) | Create files and folders with spaces in name | :white_check_mark: |
 | [**EPMCMBIBPC-2605**](Data_storages/NFS_mount/EPMCMBIBPC-2605.md) | Remove files and folders with spaces in name | :white_check_mark: |
+| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md) | Exclude NFS storage from file indexing by metadata attribute |  |
+| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md) | Resume NFS storage file indexing after removing the exclusion attribute |  |
+| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md) | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report |  |
+| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md) | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing |  |
 | [**EPMCMBIBPC-2401**](Data_storages/Shared_storages/EPMCMBIBPC-2401.md) | [MANUAL] Validation of shared bucket creation |  |
 | [**EPMCMBIBPC-2402**](Data_storages/Shared_storages/EPMCMBIBPC-2402.md) | [MANUAL] Check access to shared bucket |  |
 | [**EPMCMBIBPC-2403**](Data_storages/Shared_storages/EPMCMBIBPC-2403.md) | [MANUAL] Upload files on shared bucket |  |
@@ -857,7 +861,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (136 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (145 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -923,6 +927,15 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4512_7**](Run_tools_in_sandbox/4512/4512_7.md) | Check PAUSE_OR_STOP action for a on-demand GPU run with no GPU activity |  |
 | [**4512_8**](Run_tools_in_sandbox/4512/4512_8.md) | Run is NOT marked IDLE when CPU config is disabled |  |
 | [**4512_9**](Run_tools_in_sandbox/4512/4512_9.md) | Run is NOT marked IDLE when GPU config is disabled and only CPU would be idle |  |
+| [**4608_1**](Run_tools_in_sandbox/4608_capacity_retries/4608_1.md) | CP_NODEUP_RETRY_COUNT works as a regular parameter when `ui.launch.allow.nodeup.count` is off |  |
+| [**4608_2**](Run_tools_in_sandbox/4608_capacity_retries/4608_2.md) | "Capacity retries" field appears on the Tool launch form when `ui.launch.allow.nodeup.count` is on |  |
+| [**4608_3**](Run_tools_in_sandbox/4608_capacity_retries/4608_3.md) | "Capacity retries" field validation |  |
+| [**4608_4**](Run_tools_in_sandbox/4608_capacity_retries/4608_4.md) | A "Capacity retries" value is sent to the run as the CP_NODEUP_RETRY_COUNT parameter |  |
+| [**4608_5**](Run_tools_in_sandbox/4608_capacity_retries/4608_5.md) | CP_NODEUP_RETRY_COUNT name is reserved when `ui.launch.allow.nodeup.count` is on |  |
+| [**4608_6**](Run_tools_in_sandbox/4608_capacity_retries/4608_6.md) | "Capacity retries" field is available for a Pipeline, a Detached configuration, a Launch profile and a Rerun |  |
+| [**4608_7**](Run_tools_in_sandbox/4608_capacity_retries/4608_7.md) | "Capacity retries" field in the Tool settings |  |
+| [**4608_8**](Run_tools_in_sandbox/4608_capacity_retries/4608_8.md) | "Capacity retries" limits the number of node-up attempts after `Insufficient instance capacity` |  |
+| [**4608_9**](Run_tools_in_sandbox/4608_capacity_retries/4608_9.md) | "Capacity retries" applies to every "Fallback node types" entry too |  |
 | [**223**](Run_tools_in_sandbox/Launch_parameters/223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) | :white_check_mark: |
 | [**2234**](Run_tools_in_sandbox/Launch_parameters/2234.md) | "Custom" capabilities implementation | :white_check_mark: |
 | [**2295**](Run_tools_in_sandbox/Launch_parameters/2295.md) | "Custom" capabilities with configured job parameters | :white_check_mark: |

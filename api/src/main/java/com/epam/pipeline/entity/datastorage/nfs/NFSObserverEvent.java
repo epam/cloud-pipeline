@@ -16,14 +16,9 @@
 
 package com.epam.pipeline.entity.datastorage.nfs;
 
-import lombok.Value;
-
-@Value
-public class NFSObserverEvent {
-    private final Long timestamp;
-    private final NFSObserverEventType eventType;
-    private final String storage;
-    private final String filePathFrom;
-    private final String filePathTo;
-
+public record NFSObserverEvent(Long timestamp,
+                               NFSObserverEventType eventType,
+                               String storage,
+                               String filePathFrom,
+                               String filePathTo) {
 }

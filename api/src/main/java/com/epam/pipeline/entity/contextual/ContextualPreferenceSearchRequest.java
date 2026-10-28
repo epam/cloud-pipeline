@@ -17,10 +17,8 @@
 package com.epam.pipeline.entity.contextual;
 
 import java.util.List;
-import lombok.Value;
 
-@Value
-public class ContextualPreferenceSearchRequest {
-    private final List<String> preferences;
-    private final ContextualPreferenceExternalResource resource;
+public record ContextualPreferenceSearchRequest(
+        List<String> preferences,
+        ContextualPreferenceExternalResource resource) {
 }

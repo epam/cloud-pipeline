@@ -1,0 +1,77 @@
+// Builds the source distribution, as storage-lifecycle-service does: stamp the root build's version
+// into sats/util/version.py, run `setup.py sdist`, copy the result to a fixed name.
+//
+// version.py is tracked, so `finalizedBy` puts the original text back even when the build fails.
+
+// `python3`, not `python`: on RHEL and CentOS 7 `python` is still 2.7, and the sdist then fails
+// inside distutils. This service needs 3.12 anyway. Override with `-PsatsPython=/path/to/python` or
+// the CP_SATS_PYTHON environment variable.
+def pythonExecutable = project.findProperty('satsPython') ?: System.getenv('CP_SATS_PYTHON') ?: 'python3'
+
+ext.savedVersionText = null
+
+task restoreVersionFile {
+    doLast {
+        restoreVersion()
+    }
+}
+
+task build(type: Exec) {
+    group = 'build'
+    finalizedBy restoreVersionFile
+    doFirst {
+        saveVersion()
+        // `project.version`, not a bare `version`: inside a task action the delegate is the task,
+        // and an `Exec` has no `version` property.
+        setVersion(project.version.toString())
+        // Last assembly's source distributions, both the versioned name and the fixed one: the
+        // versioned so the one produced below is the only `sats-*` to find, the fixed so a failed
+        // assembly leaves none for the distribution to pick up instead of the one it meant to ship.
+        project.delete(project.fileTree(distDir()) { include 'sats*.tar.gz' })
+    }
+    commandLine pythonExecutable, "$project.rootDir/storage-async-task-service/setup.py", 'sdist'
+    doLast {
+        // The sdist is named after the version setuptools recorded, which is the PEP 440 form of the
+        // stamped one rather than the stamped one itself - see sats.util.version.pep440. So it is
+        // found rather than named, and the previous assembly's is cleared away above to leave one.
+        copy {
+            from project.fileTree(distDir()) { include 'sats-*.tar.gz' }.singleFile
+            into distDir()
+            rename { 'sats.tar.gz' }
+        }
+    }
+}
+
+def distDir() {
+    return "$project.rootDir/storage-async-task-service/dist"
+}
+
+def versionFile() {
+    return file('sats/util/version.py')
+}
+
+def saveVersion() {
+    project.ext.savedVersionText = versionFile().getText('UTF-8')
+}
+
+def setVersion(String value) {
+    def target = versionFile()
+    def text = target.getText('UTF-8')
+    text = text.replaceAll(/(__version__ = '.+')/, "__version__ = \'$value\'")
+    target.write(text, 'UTF-8')
+}
+
+def restoreVersion() {
+    if (project.ext.savedVersionText != null) {
+        versionFile().write(project.ext.savedVersionText, 'UTF-8')
+        project.ext.savedVersionText = null
+    }
+}
+
+task clean(type: Delete) {
+    group = 'build'
+    doLast {
+        delete("$project.rootDir/storage-async-task-service/sats.egg-info")
+        delete("$project.rootDir/storage-async-task-service/dist")
+    }
+}

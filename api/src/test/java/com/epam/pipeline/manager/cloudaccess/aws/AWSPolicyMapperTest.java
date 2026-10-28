@@ -20,10 +20,13 @@ import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyAction;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyEffect;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyStatement;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class AWSPolicyMapperTest {
@@ -49,9 +52,9 @@ public class AWSPolicyMapperTest {
                 "    ]" +
                 "}";
         CloudAccessPolicy cloudAccessPolicy = AWSPolicyMapper.toCloudUserAccessPolicy("", policy);
-        Assert.assertFalse(cloudAccessPolicy.getStatements().isEmpty());
-        Assert.assertFalse(cloudAccessPolicy.getStatements().get(0).getActions().isEmpty());
-        Assert.assertEquals(cloudAccessPolicy.getStatements().get(0).getActions().get(0), CloudAccessPolicyAction.READ);
+        assertFalse(cloudAccessPolicy.getStatements().isEmpty());
+        assertFalse(cloudAccessPolicy.getStatements().get(0).getActions().isEmpty());
+        assertEquals(cloudAccessPolicy.getStatements().get(0).getActions().get(0), CloudAccessPolicyAction.READ);
     }
 
     @Test
@@ -68,9 +71,9 @@ public class AWSPolicyMapperTest {
                 "    ]" +
                 "}";
         CloudAccessPolicy cloudAccessPolicy = AWSPolicyMapper.toCloudUserAccessPolicy("", policy);
-        Assert.assertFalse(cloudAccessPolicy.getStatements().isEmpty());
-        Assert.assertFalse(cloudAccessPolicy.getStatements().get(0).getActions().isEmpty());
-        Assert.assertEquals(cloudAccessPolicy.getStatements().get(0).getActions().get(0),
+        assertFalse(cloudAccessPolicy.getStatements().isEmpty());
+        assertFalse(cloudAccessPolicy.getStatements().get(0).getActions().isEmpty());
+        assertEquals(cloudAccessPolicy.getStatements().get(0).getActions().get(0),
                 CloudAccessPolicyAction.WRITE);
     }
 
@@ -95,7 +98,7 @@ public class AWSPolicyMapperTest {
                 "    ]" +
                 "}";
         CloudAccessPolicy cloudAccessPolicy = AWSPolicyMapper.toCloudUserAccessPolicy("", policy);
-        Assert.assertTrue(cloudAccessPolicy.getStatements().isEmpty());
+        assertTrue(cloudAccessPolicy.getStatements().isEmpty());
     }
 
     @Test
@@ -112,7 +115,7 @@ public class AWSPolicyMapperTest {
                 "    ]" +
                 "}";
         CloudAccessPolicy cloudAccessPolicy = AWSPolicyMapper.toCloudUserAccessPolicy("", policy);
-        Assert.assertTrue(cloudAccessPolicy.getStatements().isEmpty());
+        assertTrue(cloudAccessPolicy.getStatements().isEmpty());
     }
 
     @Test
@@ -127,7 +130,7 @@ public class AWSPolicyMapperTest {
                 ).build();
 
         String policy = AWSPolicyMapper.toPolicyDocument(accessPolicy);
-        Assert.assertEquals("{" +
+        assertEquals("{" +
                 "\"Version\":\"2012-10-17\"," +
                 "\"Statement\":[" +
                 "{" +
@@ -156,7 +159,7 @@ public class AWSPolicyMapperTest {
                 ).build();
 
         String policy = AWSPolicyMapper.toPolicyDocument(accessPolicy);
-        Assert.assertEquals("{" +
+        assertEquals("{" +
                 "\"Version\":\"2012-10-17\"," +
                 "\"Statement\":[" +
                 "{" +

@@ -17,11 +17,13 @@
 package com.epam.pipeline.entity.git.gitreader;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Represents Gitlab repository browsing request result
  */
 @Data
+@NoArgsConstructor
 public class GitReaderObject {
     private String id;
     private String name;

@@ -28,6 +28,7 @@ import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import getCommitAllowedForTool from './get-commit-allowed-for-tool';
 import {diskSizeAllowsPause} from './warnings/disk-size-warning';
 import {checkRunActionAvailable, runActions} from './actions-availability';
+import runNodeIsUnavailable from './node-availability';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -46,6 +47,7 @@ export function canCommitRun (run) {
   // Checks only run state, not user permissions
   return canStopRun(run) &&
     runIsCommittable(run) &&
+    !runNodeIsUnavailable(run) &&
     checkRunActionAvailable(run, runActions.commit);
 }
 
@@ -104,6 +106,7 @@ export function canPauseRun (run, preferences) {
       preferences,
       instance ? instance.nodeDisk : 0
     ) &&
+    !runNodeIsUnavailable(run) &&
     checkRunActionAvailable(run, runActions.pause);
 }
 

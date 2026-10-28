@@ -17,8 +17,6 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
-import com.epam.pipeline.entity.cluster.pool.NodePoolWithUsage;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -47,15 +45,14 @@ public class KubernetesPoolService {
         }
     }
 
-    public List<NodePoolInfo> attachUsage(final List<NodePool> pools) {
+    public List<NodePool> attachUsage(final List<NodePool> pools) {
         //TODO: This is extremely inefficient for large clusters, fix
         try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
             final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
             final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);
-            return pools.stream()
-                    .map(pool -> new NodePoolWithUsage(pool,
-                            determineActiveNodesCount(availableNodes, activePodIds, pool.getId())))
-                    .collect(Collectors.toList());
+            pools.forEach(pool -> pool.setUsage(
+                    determineActiveNodesCount(availableNodes, activePodIds, pool.getId())));
+            return pools;
         }
     }
 

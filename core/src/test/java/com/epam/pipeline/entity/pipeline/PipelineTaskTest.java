@@ -16,8 +16,9 @@
 
 package com.epam.pipeline.entity.pipeline;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class PipelineTaskTest {
 
@@ -27,15 +28,15 @@ public class PipelineTaskTest {
     @Test
     public void createWithoutParameters() {
         PipelineTask task = new PipelineTask(TASK_NAME);
-        Assert.assertEquals(TASK_NAME, task.getName());
-        Assert.assertNull(task.getParameters());
+        assertEquals(TASK_NAME, task.getName());
+        assertNull(task.getParameters());
     }
 
     @Test
     public void createWithParameters() {
         String name = PipelineTask.buildTaskId(TASK_NAME, TASK_PARAMS);
         PipelineTask task = new PipelineTask(name);
-        Assert.assertEquals(TASK_NAME, task.getName());
-        Assert.assertEquals(TASK_PARAMS, task.getParameters());
+        assertEquals(TASK_NAME, task.getName());
+        assertEquals(TASK_PARAMS, task.getParameters());
     }
 }

@@ -363,7 +363,11 @@ class InputDataTask:
                         )
 
                         not_localized_value_part = None
-                        original_parts = map(str.strip, re.split(location.delimiter, location.original_value))
+                        if location.delimiter:
+                            original_parts = map(str.strip, re.split(re.escape(location.delimiter),
+                                                                       location.original_value))
+                        else:
+                            original_parts = [location.original_value.strip()]
                         localized_original_parts = [path.path for path in location.paths]
                         for original_part in original_parts:
                             if original_part not in localized_original_parts:

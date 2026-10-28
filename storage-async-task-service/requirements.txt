@@ -1,0 +1,7 @@
+# Runtime dependencies, pinned. Keep in step with `install_requires` in setup.py.
+#
+# **pipe-common is required and not here.** It is on no package index: the container installs it from
+# the API distribution, a developer from the checkout - see the README. It brings its own `requests`
+# and `urllib3`, which is why neither is pinned here.
+boto3==1.35.49
+botocore==1.35.49

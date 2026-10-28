@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RunStatusDao;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 public class RunStatusManager {
 
     private final RunStatusDao runStatusDao;
+    private final PipelineRunDao pipelineRunDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public boolean saveStatus(final RunStatus runStatus) {
@@ -60,5 +63,11 @@ public class RunStatusManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteRunStatus(final Long runId) {
         runStatusDao.deleteRunStatus(runId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updatePriceForCurrentActiveRunStatus(Long runId) {
+        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        runStatusDao.updatePriceForCurrentActiveRunStatus(pipelineRun);
     }
 }

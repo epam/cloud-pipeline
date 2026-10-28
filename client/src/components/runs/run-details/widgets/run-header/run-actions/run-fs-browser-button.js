@@ -8,9 +8,9 @@ import cache from '../../../../../../models/pipelines/PipelineRunFSBrowserCache'
 import MultizoneUrl from '../../../../../special/multizone-url';
 import styles from './run-actions.css';
 import {checkRunActionAvailable, runActions} from '../../../../actions/actions-availability';
+import runNodeIsUnavailable from '../../../../actions/node-availability';
 import {Icon} from 'antd';
 
-const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 @inject('preferences')
@@ -62,13 +62,6 @@ class RunFsBrowserButton extends React.Component {
   }
 
   @computed
-  get isFireCloudEnvironment () {
-    const {run} = this.props;
-    return run && run.executionPreferences &&
-      run.executionPreferences.environment === FIRE_CLOUD_ENVIRONMENT;
-  }
-
-  @computed
   get initializeEnvironmentFinished () {
     const {run} = this.props;
     return run && run.initialized;
@@ -101,6 +94,7 @@ class RunFsBrowserButton extends React.Component {
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(run) &&
         podIP &&
+        !runNodeIsUnavailable(run) &&
         checkRunActionAvailable(run, runActions.browse);
     }
     return false;

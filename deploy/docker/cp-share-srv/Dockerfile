@@ -27,10 +27,13 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
 RUN yum install -y \
                 wget \
                 curl \
-                java-1.8.0-openjdk \
                 python \
                 unzip \
                 openssl
+
+# OpenJDK upstream does not publish JDK 21 packages for CentOS/RHEL 7; use Amazon Corretto (OpenJDK-based) which does.
+RUN curl -L -o /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo && \
+    yum install -y java-21-amazon-corretto-devel
 
 ENV CP_SHARE_HOME="/opt/share-srv"
 RUN mkdir -p $CP_SHARE_HOME

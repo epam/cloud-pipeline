@@ -34,7 +34,7 @@ import com.epam.pipeline.elasticsearch.model.v6.action.search.MultiSearchRespons
 import com.epam.pipeline.elasticsearch.model.v6.action.search.SearchRequestV6;
 import com.epam.pipeline.elasticsearch.model.v6.action.search.SearchResponseV6;
 import com.epam.pipeline.elasticsearch.model.v6.search.ScrollV6;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -80,7 +80,7 @@ public class ElasticsearchServiceClientV6 implements ElasticsearchServiceClient 
                                         final int elasticsearchPort,
                                         final String elasticsearchScheme,
                                         final String elasticsearchAuth) {
-       this(elasticsearchUrl, elasticsearchPort, elasticsearchScheme, null, elasticsearchAuth);
+        this(elasticsearchUrl, elasticsearchPort, elasticsearchScheme, null, elasticsearchAuth);
     }
 
     public ElasticsearchServiceClientV6(final String elasticsearchUrl,
