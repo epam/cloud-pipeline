@@ -20,8 +20,10 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
+import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
 import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -45,14 +47,15 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Runs through the real security layer, so the {@code @PreAuthorize} annotations are exercised rather
- * than assumed. Three rules are worth that cost: only an administrator claims a task or reports its
- * status; a task is read, and its archive taken, only by its owner or an administrator; and listing
- * tasks or cancelling one reaches every owner for an administrator and for a storage administrator.
+ * than assumed. Two rules are worth that cost: only an administrator claims a task or reports its
+ * status, and everything else - listing, reading, cancelling, taking the archive - reaches a task of
+ * another user for an administrator and for a storage administrator, and nobody else.
  */
 public class AsyncTaskApiServiceTest extends AbstractAclTest {
 
     private static final String TASK_ID = "4f1a2c90-0000-4000-8000-000000000001";
     private static final String STORAGE_ADMIN_ROLE = "STORAGE_ADMIN";
+    private static final String ARCHIVE_URL = "https://bucket.s3.amazonaws.com/archives/selection.zip";
     private static final int TOTAL_COUNT = 50;
 
     @Autowired
@@ -114,17 +117,19 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
-        assertThrows(() -> asyncTaskApiService.cancel(TASK_ID));
+        assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.cancel(TASK_ID));
         verify(mockAsyncTaskManager, never()).cancel(TASK_ID);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldNotLetOneUserSeeAnotherUsersTask() {
+        // The whole owner boundary rests on these refusals now, so they name the exception: an untyped
+        // assertion would also pass if the call were refused by `@PreAuthorize` instead.
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
-        assertThrows(() -> asyncTaskApiService.load(TASK_ID));
+        assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.load(TASK_ID));
     }
 
     @Test
@@ -133,19 +138,14 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
-        assertThrows(() -> asyncTaskApiService.consume(TASK_ID));
+        assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.consume(TASK_ID));
         verify(mockDownloadArchiveManager, never()).consume(any());
     }
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLetAdminSeeAnotherUsersTask() {
-        // The administrator half of `isOwnerOrAdmin`, which reads the role out of the security context:
-        // `mockSecurityContext()` is what lets this layer see it. `mockUser` is needed as well, because
-        // that check establishes the caller's login before it ever looks at the role - an unknown login
-        // is refused whatever the role.
-        mockSecurityContext();
-        mockUser(SIMPLE_USER);
+        asAdmin();
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
         assertEquals(TASK_ID, asyncTaskApiService.load(TASK_ID).getId());
@@ -254,28 +254,27 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
 
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = {GENERAL_USER_ROLE, STORAGE_ADMIN_ROLE})
-    public void shouldNotLetStorageAdminSeeAnotherUsersTask() {
-        // The boundary of what the role buys: listing and cancelling, not loading one task by id. The
-        // typed assertion matters here - an untyped one would also pass if the refusal came from
-        // `@PreAuthorize`, which would say nothing about the owner check this test is about.
+    public void shouldLetStorageAdminSeeAnotherUsersTask() {
         mockSecurityContext();
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
-        assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.load(TASK_ID));
+        assertEquals(TASK_ID, asyncTaskApiService.load(TASK_ID).getId());
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER, roles = {GENERAL_USER_ROLE, STORAGE_ADMIN_ROLE})
-    public void shouldNotLetStorageAdminDownloadAnotherUsersArchive() {
-        // Not widened either. It buys little in itself - a storage administrator may sign a url for
-        // any storage through the storage API - but this endpoint does not do it for them.
+    public void shouldLetStorageAdminDownloadAnotherUsersArchive() {
         mockSecurityContext();
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
+        doReturn(DownloadArchiveConsumable.builder().url(ARCHIVE_URL).build())
+                .when(mockDownloadArchiveManager).consume(any());
 
-        assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.consume(TASK_ID));
-        verify(mockDownloadArchiveManager, never()).consume(any());
+        final AsyncTaskConsumeResult consumed = asyncTaskApiService.consume(TASK_ID);
+
+        assertEquals(AsyncTaskType.DOWNLOAD_ARCHIVE, consumed.getType());
+        verify(mockDownloadArchiveManager).consume(any());
     }
 
     @Test

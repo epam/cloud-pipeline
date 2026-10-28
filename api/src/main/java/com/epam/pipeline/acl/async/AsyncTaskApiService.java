@@ -54,18 +54,18 @@ public class AsyncTaskApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTask load(final String id) {
-        return ownedByCaller(id);
+        return reachableByCaller(id);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTask cancel(final String id) {
-        manageableByCaller(id);
+        reachableByCaller(id);
         return asyncTaskManager.cancel(id);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTaskConsumeResult consume(final String id) {
-        return AsyncTaskConsumeResult.of(downloadArchiveManager.consume(ownedByCaller(id)));
+        return AsyncTaskConsumeResult.of(downloadArchiveManager.consume(reachableByCaller(id)));
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
@@ -89,17 +89,9 @@ public class AsyncTaskApiService {
         return restricted;
     }
 
-    private AsyncTask ownedByCaller(final String id) {
-        return reachableByCaller(id, false);
-    }
-
-    private void manageableByCaller(final String id) {
-        reachableByCaller(id, mayReachForeignTask());
-    }
-
-    private AsyncTask reachableByCaller(final String id, final boolean foreignAllowed) {
+    private AsyncTask reachableByCaller(final String id) {
         final AsyncTask task = asyncTaskManager.load(id);
-        if (foreignAllowed || permissionHelper.isOwnerOrAdmin(task.getOwner())) {
+        if (mayReachForeignTask() || permissionHelper.isOwner(task.getOwner())) {
             return task;
         }
         throw new IllegalArgumentException(messageHelper.getMessage(
