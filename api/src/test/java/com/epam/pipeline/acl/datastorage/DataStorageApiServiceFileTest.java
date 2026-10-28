@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.acl.datastorage;
 
+import com.epam.pipeline.controller.vo.DownloadArchiveVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskStatus;
+import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -48,11 +52,13 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING_SET;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
@@ -74,6 +80,15 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
     private final List<DataStorageFile> dataStorageFileList = DatastorageCreatorUtils.getDataStorageFileList();
     private final List<DataStorageDownloadFileUrl> downloadFileUrlList =
             DatastorageCreatorUtils.getDataStorageDownloadFileUrlList();
+    private final DownloadArchiveVO archiveRequest = DownloadArchiveVO.builder()
+            .paths(TEST_STRING_LIST)
+            .archiveName(TEST_STRING)
+            .build();
+    private final AsyncTask archiveTask = AsyncTask.builder()
+            .type(AsyncTaskType.DOWNLOAD_ARCHIVE)
+            .owner(SIMPLE_USER)
+            .status(AsyncTaskStatus.PENDING)
+            .build();
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -1234,6 +1249,55 @@ public class DataStorageApiServiceFileTest extends AbstractDataStorageAclTest {
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService
                 .getStreamingContent(ID, TEST_STRING, TEST_STRING));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldCreateDownloadArchiveTaskForAdmin() {
+        doReturn(archiveTask).when(mockDownloadArchiveManager).createTask(eq(ID), eq(archiveRequest), any());
+        mockUserContext(context);
+        mockAuthUser(OWNER_USER);
+
+        assertThat(dataStorageApiService.createDownloadArchiveTask(ID, archiveRequest)).isEqualTo(archiveTask);
+        verify(mockDownloadArchiveManager).createTask(ID, archiveRequest, OWNER_USER);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldCreateDownloadArchiveTaskWhenPermissionIsGranted() {
+        initAclEntity(s3bucket, AclPermission.READ);
+        doReturn(archiveTask).when(mockDownloadArchiveManager).createTask(eq(ID), eq(archiveRequest), any());
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
+
+        assertThat(dataStorageApiService.createDownloadArchiveTask(ID, archiveRequest)).isEqualTo(archiveTask);
+        // Nothing in the request says whose task it is, so the owner is taken from the caller here.
+        verify(mockDownloadArchiveManager).createTask(ID, archiveRequest, SIMPLE_USER);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyCreateDownloadArchiveTaskWhenStoragePermissionIsNotGranted() {
+        initAclEntity(s3bucket);
+        doReturn(archiveTask).when(mockDownloadArchiveManager).createTask(eq(ID), eq(archiveRequest), any());
+        initUserAndEntityMocks(ANOTHER_SIMPLE_USER, s3bucket, context);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.createDownloadArchiveTask(ID, archiveRequest));
+        // The request is refused rather than queued: a task accepted here would be archived later, by a
+        // service running on its own, with nobody left to deny it.
+        verify(mockDownloadArchiveManager, never()).createTask(any(), any(), any());
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldDenyCreateDownloadArchiveTaskWhenSharedPermissionIsNotGranted() {
+        initAclEntity(notSharedS3bucket, AclPermission.READ);
+        doReturn(archiveTask).when(mockDownloadArchiveManager).createTask(eq(ID), eq(archiveRequest), any());
+        initUserAndEntityMocks(ANOTHER_SIMPLE_USER, notSharedS3bucket, externalContext);
+
+        assertThrows(AccessDeniedException.class, () ->
+                dataStorageApiService.createDownloadArchiveTask(ID, archiveRequest));
+        verify(mockDownloadArchiveManager, never()).createTask(any(), any(), any());
     }
 
     private void mockDataStorageTagRestrictedMode(final boolean enabled, final List<String> excludeTags) {

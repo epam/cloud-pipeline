@@ -94,10 +94,12 @@ import com.epam.pipeline.manager.pipeline.PipelineRunResultManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.mapper.async.AsyncTaskMapper;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.git.AzureDevOpsMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.mapper.git.GitHubMapper;
+import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -587,4 +589,10 @@ public class AspectTestBeans {
 
     @MockBean
     protected PlatformUsageCreditsEventService platformUsageCreditsEventService;
+
+    @MockBean
+    protected AsyncTaskRepository asyncTaskRepository;
+
+    @MockBean
+    protected AsyncTaskMapper asyncTaskMapper;
 }

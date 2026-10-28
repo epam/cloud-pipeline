@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.test.web;
 
+import com.epam.pipeline.acl.async.AsyncTaskApiService;
 import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
@@ -326,4 +327,8 @@ public class ControllerTestBeans {
 
     @MockBean
     protected UnsecuredAccessService unsecuredAccessService;
+
+    @MockBean
+    protected AsyncTaskApiService asyncTaskApiService;
+
 }
