@@ -132,6 +132,8 @@ Every image checks the version of the data it starts on, and stops when a requir
     * a pipeline repository to clone in the checks, as `<namespace>/<project>`
 * A Cloud Pipeline build that has the GitLab 19 support, deployed to the `api` before the first stop (see the checks).
 * The `lifescience/cloud-pipeline:git-19-<version>` image of the same build in the registry of the deployment.
+* The `lifescience/cloud-pipeline:cp-bkp-worker-<version>` image of the same build, for the backup workers. An older
+  worker image has no backup script for `cp-gitlab-db`.
 
 ### Session setup
 
@@ -381,7 +383,7 @@ bbm
 kubectl exec "$(git_pod)" -- gitlab-rails runner -e production 'puts Gitlab::BackgroundMigration.remaining'
 ```
 
-**The `api` has the GitLab 19 support.** The version of the `api` is `0.16.0.<build>.<commit>`. In a checkout of the
+**The `api` has the GitLab 19 support.** The version of the `api` is `<version>.<build>.<commit>`. In a checkout of the
 Cloud Pipeline repository, the second command lists the GitLab fixes up to that commit: token rotation, the release
 description, the project deletion, the temporary fork group, the missing tree path, the fork namespace, the token
 expiry cap, the version check and the token format. The third command must return the preference.
@@ -884,9 +886,14 @@ kubectl get endpoints cp-git
 Sign in to `$GIT_URL` in a browser with **SSO Login**, as a platform user: this checks SAML through `cp-idp`. Sign in
 as `root` too, and check that all migrations are finished in **Admin** > **Monitoring** > **Background migrations**.
 
-**Services.** Scale the services of the freeze back up, and set **`git.token.rotation.enabled`** back to `true`.
+**Services.** Set the image of the backup workers to the one of the same build (see [What you need](#what-you-need)).
+Then scale the services of the freeze back up, and set **`git.token.rotation.enabled`** back to `true`.
 
 ```bash
+for s in cp-git cp-gitlab-db; do
+  kubectl set image "deployment/cp-bkp-worker-$s" \
+      "cp-bkp-worker-$s=<registry prefix>lifescience/cloud-pipeline:cp-bkp-worker-<version>"
+done
 for d in cp-git-sync cp-gitlab-reader cp-bkp-worker-cp-git cp-bkp-worker-cp-gitlab-db; do
   kubectl scale deployment "$d" --replicas=1
 done
@@ -911,6 +918,17 @@ tail -20 /opt/bkp-worker/logs/backup-cp-git.log
 git_stop
 kubectl patch deployment cp-git -p "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"cloud-pipeline/restarted\": \"$(date +%s)\"}}}}}"
 kubectl scale deployment cp-git --replicas=1
+```
+
+Back up the GitLab database with its own worker too. It runs `pg_dump` in the `cp-gitlab-db` pod, now on PostgreSQL
+17, with the user that the PostgreSQL upgrade re-created. The backup must exit with `0`. The log is on the
+`cp-gitlab-db` node.
+
+```bash
+gdb_bkp_pod() { kubectl get po -l cloud-pipeline/cp-bkp-worker=cp-gitlab-db -o jsonpath='{.items[0].metadata.name}'; }
+until kubectl exec "$(gdb_bkp_pod)" -- test -f /backup.env 2>/dev/null; do sleep 10; done
+kubectl exec "$(gdb_bkp_pod)" -- bash /backup.sh; echo "backup exit $?"
+tail -20 /opt/bkp-worker/logs/backup-cp-gitlab-db.log
 ```
 
 **Token.** `smoke` shows `expires_at` of `git.token`: `null` means no expiry, and the rotation has nothing to do. The

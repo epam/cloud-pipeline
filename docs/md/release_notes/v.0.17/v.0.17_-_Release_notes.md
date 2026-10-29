@@ -66,6 +66,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
@@ -1910,6 +1911,13 @@ Other fixes keep the platform working with the new GitLab versions:
 ***
 
 ## Notable Bug fixes
+
+### The backup worker of the GitLab database always fails
+
+[#4618](https://github.com/epam/cloud-pipeline/issues/4618)
+
+Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
+In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services. A failure of `pg_dump` fails the backup, so an empty dump does not replace the good ones.
 
 ### Storage files are not indexed when an object key is longer than 512 bytes
 
