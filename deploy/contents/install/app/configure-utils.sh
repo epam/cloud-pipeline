@@ -529,6 +529,14 @@ function api_register_gitlab {
     api_preference_append_array "$(api_preference_get_templated "git.token"          "$gitlab_root_token"                                        "false")"
     api_preference_append_array "$(api_preference_get_templated "git.user.id"        "1"                                                         "false")"
     api_preference_append_array "$(api_preference_get_templated "git.host"           "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_INTERNAL_PORT" "true")"
+    if [ "$CP_GITLAB_VERSION" != "9" ]; then
+        api_preference_append_array "$(api_preference_get_templated "git.gitlab.api.version" "v4" "false")"
+    fi
+    # From GitLab 14.0 every repository is in hashed storage, and git-reader finds it there only with this preference on.
+    # It is set for GitLab 17 and later only, so that the 9 and 15 installs keep their behaviour
+    if [[ "$CP_GITLAB_VERSION" =~ ^[0-9]+$ ]] && [ "$CP_GITLAB_VERSION" -ge 17 ]; then
+        api_preference_append_array "$(api_preference_get_templated "git.gitlab.hashed.repo.support" "true" "false")"
+    fi
     api_set_preference "$(api_preference_get_array)"
     api_preference_drop_array
 }

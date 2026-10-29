@@ -24,6 +24,8 @@ spec:
           args:
             - --shared_buffers=${GITLAB_DATABASE_SHARED_BUFFERS}
             - --max_connections=${GITLAB_DATABASE_MAX_CONNECTIONS}
+            # The value GitLab's bundled PostgreSQL uses. With the default 64, loading the GitLab 19 schema fails with "out of shared memory"
+            - --max_locks_per_transaction=128
           ports:
             - containerPort: ${PSG_PORT}
           env:

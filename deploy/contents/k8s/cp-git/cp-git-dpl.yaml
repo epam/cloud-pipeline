@@ -39,6 +39,9 @@ spec:
               name: common-pki
             - mountPath: /etc/gitlab
               name: git-config
+            # GitLab recommends at least 256 MB of /dev/shm, and the container default is 64 MB
+            - mountPath: /dev/shm
+              name: git-dshm
           # With SSO enabled - readiness probe gets redirect to IdP and fails, switched to manual ping in install.sh
           # readinessProbe:
           #   httpGet:
@@ -65,5 +68,9 @@ spec:
         - name: git-config
           hostPath:
             path: /opt/gitlab/config
+        - name: git-dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

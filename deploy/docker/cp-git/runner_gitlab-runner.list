@@ -1,0 +1,2 @@
+deb [trusted=yes] https://packages.gitlab.com/runner/gitlab-runner/ubuntu/ xenial main
+deb-src [trusted=yes] https://packages.gitlab.com/runner/gitlab-runner/ubuntu/ xenial main
