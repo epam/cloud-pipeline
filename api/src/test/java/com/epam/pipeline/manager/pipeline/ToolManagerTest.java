@@ -17,9 +17,17 @@
 package com.epam.pipeline.manager.pipeline;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import javax.sql.DataSource;
 
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
+import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.*;
 import com.epam.pipeline.entity.preference.Preference;
@@ -47,8 +55,13 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.test.context.transaction.TestTransaction;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.is;
@@ -112,6 +125,15 @@ public class ToolManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @SpyBean
+    private ToolVulnerabilityDao toolVulnerabilityDao;
 
     @SpyBean
     private ToolVersionManager toolVersionManager;
@@ -706,6 +728,116 @@ public class ToolManagerTest extends AbstractManagerTest {
         versionScan = toolManager.loadToolVersionScan(tool.getId(), LATEST_TAG).get();
         Assert.assertEquals(newScanDate, versionScan.getScanDate());
         Assert.assertEquals(scanDate, versionScan.getSuccessScanDate());
+    }
+
+    /**
+     * Regression test for issue #4172: two concurrent callers racing to report a scan result
+     * for the same (tool_id, version) that has never been scanned before must not end up
+     * with more than one row in pipeline.tool_version_scan, and neither caller should see an
+     * unhandled exception.
+     */
+    @Test
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testConcurrentUpdateToolVersionScanStatusDoesNotCreateDuplicateRows() throws Exception {
+        TestTransaction.end();
+
+        final String racePath = "race-4172-registry";
+        final String raceGroupName = "race-4172-group";
+        final String raceVersion = "race-4172-tag";
+        final int racerCount = 2;
+
+        final DockerRegistry raceRegistry = new DockerRegistry();
+        raceRegistry.setPath(racePath);
+        raceRegistry.setOwner(TEST_USER);
+
+        final ToolGroup raceGroup = new ToolGroup();
+        raceGroup.setName(raceGroupName);
+
+        final Tool raceTool = generateTool(racePath + "/" + raceGroupName);
+
+        runInNewTransaction(() -> {
+            registryDao.createDockerRegistry(raceRegistry);
+            raceGroup.setRegistryId(raceRegistry.getId());
+            toolGroupManager.create(raceGroup);
+            raceTool.setToolGroupId(raceGroup.getId());
+            toolManager.create(raceTool, true);
+        });
+
+        final CountDownLatch bothPastRead = new CountDownLatch(racerCount);
+        Mockito.doAnswer(invocation -> {
+            final Object result = invocation.callRealMethod();
+            bothPastRead.countDown();
+            bothPastRead.await(10, TimeUnit.SECONDS);
+            return result;
+        }).when(toolVulnerabilityDao).loadToolVersionScan(eq(raceTool.getId()), eq(raceVersion));
+
+        final ExecutorService executor = Executors.newFixedThreadPool(racerCount);
+        try {
+            final CountDownLatch readyLatch = new CountDownLatch(racerCount);
+            final CountDownLatch startLatch = new CountDownLatch(1);
+
+            final Callable<Exception> racer = () -> {
+                readyLatch.countDown();
+                startLatch.await();
+                try {
+                    toolManager.updateToolVersionScanStatus(raceTool.getId(), ToolScanStatus.COMPLETED,
+                            new Date(), raceVersion, new ToolOSVersion(TEST, TEST), LAYER_REF, DIGEST,
+                            new HashMap<>(), null, null, false);
+                    return null;
+                } catch (Exception e) {
+                    return e;
+                }
+            };
+
+            final List<Future<Exception>> futures = new ArrayList<>();
+            for (int i = 0; i < racerCount; i++) {
+                futures.add(executor.submit(racer));
+            }
+            readyLatch.await();
+            startLatch.countDown();
+
+            final List<Exception> failures = new ArrayList<>();
+            for (Future<Exception> future : futures) {
+                final Exception failure = future.get(30, TimeUnit.SECONDS);
+                if (failure != null) {
+                    failures.add(failure);
+                }
+            }
+
+            final int rowCount = countToolVersionScanRows(raceTool.getId(), raceVersion);
+            Assert.assertEquals(
+                    "Concurrent updateToolVersionScanStatus calls for the same (tool_id, version) "
+                            + "must not create more than one pipeline.tool_version_scan row",
+                    1, rowCount);
+            Assert.assertTrue(
+                    "updateToolVersionScanStatus must not throw when racing another caller "
+                            + "for the same (tool_id, version), but got: " + failures,
+                    failures.isEmpty());
+        } finally {
+            executor.shutdownNow();
+            Mockito.reset(toolVulnerabilityDao);
+            runInNewTransaction(() -> {
+                toolManager.delete(raceTool);
+                toolGroupManager.delete(String.valueOf(raceGroup.getId()), false);
+                registryDao.deleteDockerRegistry(raceRegistry.getId());
+            });
+        }
+    }
+
+    private void runInNewTransaction(final Runnable work) {
+        final TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.execute(status -> {
+            work.run();
+            return null;
+        });
+    }
+
+    private int countToolVersionScanRows(final Long toolId, final String version) {
+        return new JdbcTemplate(dataSource).queryForObject(
+                "SELECT COUNT(*) FROM pipeline.tool_version_scan WHERE tool_id = ? AND version = ?",
+                Integer.class, toolId, version);
     }
 
     @Test

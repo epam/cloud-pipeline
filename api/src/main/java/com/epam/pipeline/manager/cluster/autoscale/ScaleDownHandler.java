@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -123,6 +123,11 @@ public class ScaleDownHandler {
             return;
         }
 
+        if (!isAvailable(node)) {
+            log.debug("Skipping node {} #{} which has not reported its readiness yet...", name, label);
+            return;
+        }
+
         if (isRecovered(node)) {
             log.debug("Processing recovered node {} #{}...", name, label);
             processRecoveredNode(node);
@@ -158,9 +163,13 @@ public class ScaleDownHandler {
         return kubernetesManager.isNodeUnavailable(node);
     }
 
+    private boolean isAvailable(final Node node) {
+        return kubernetesManager.isNodeAvailable(node);
+    }
+
     private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration defaultGrace) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        final LocalDateTime timestamp = kubernetesManager.getReadyTransitionDateTime(node).orElse(now);
 
         final Optional<PipelineRun> pipelineRun = findRun(node);
         final Duration grace = findNodeUnavailableGraceDuration(pipelineRun, defaultGrace);
@@ -259,7 +268,7 @@ public class ScaleDownHandler {
 
     private void processRecoveredNode(final Node node) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+        final LocalDateTime timestamp = kubernetesManager.getReadyTransitionDateTime(node).orElse(now);
         log.debug("Marking recovered node {} #{}", getNodeName(node), getNodeLabel(node));
         labelRecoveredNode(node);
         findRun(node).ifPresent(run -> {

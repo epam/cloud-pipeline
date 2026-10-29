@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.DockerMount;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -102,13 +101,6 @@ public final class KubernetesConstants {
                     .collect(Collectors.toSet());
 
     protected static final String TCP = "TCP";
-
-    public static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
-
-    static {
-        NODE_OUT_OF_ORDER_REASONS.add("KubeletOutOfDisk");
-        NODE_OUT_OF_ORDER_REASONS.add("NodeStatusUnknown");
-    }
 
     public static final List<DockerMount> DEFAULT_DOCKER_IN_DOCKER_MOUNTS = new ArrayList<>();
 

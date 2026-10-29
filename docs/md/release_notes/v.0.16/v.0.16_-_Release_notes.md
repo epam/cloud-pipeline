@@ -32,6 +32,9 @@
 - [Node start retries for a specific run](#node-start-retries-for-a-specific-run)
 - [Group permissions](#group-permissions)
 - [Investigate the failure reason of a run](#investigate-the-failure-reason-of-a-run)
+- [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
+- [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
 
 ***
@@ -59,6 +62,10 @@
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
     - [Tool version with upper case letters is launched in lower case](#tool-version-with-upper-case-letters-is-launched-in-lower-case)
+    - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
+    - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
+    - [A run is restarted in a region where its instance type is not available](#a-run-is-restarted-in-a-region-where-its-instance-type-is-not-available)
+    - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
 
 ***
 
@@ -617,6 +624,33 @@ If `roles` is set, only the members of these roles/groups see the link. Otherwis
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#investigate-failure-reason).
 
+## Run controls for an unavailable node
+
+When the compute node of a run stops reporting its status, the run gets the `NODE_UNAVAILABLE` tag. If the node does not recover within the grace period (the `cluster.node.unavailable.grace.period.minutes` system preference, or the `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` run parameter), the node is terminated.  
+Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VERSIONED STORAGE** controls for such a run, though these operations cannot complete without the node.
+
+In the current version, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+## Read and launch access to all pipelines
+
+Previously, access to all pipelines of the Platform could be given only by the permission settings of the pipelines (or of their parent folders) - or by the **ROLE\_ADMIN**/**ROLE\_PIPELINE\_ADMIN** roles, which also give write and owner access.  
+In the current version, two new roles were introduced. Both cover every pipeline in the Platform, versioned storages included:
+
+- **ROLE\_PIPELINE\_READER** gives the user **READ** permission to every pipeline, regardless of the pipeline permission settings: the user is able to see all pipelines, their versions, code, documents, attributes and permission settings. The user is also able to view all runs of all pipelines, regardless of the run visibility policy
+- **ROLE\_PIPELINE\_EXECUTOR** gives the user **EXECUTE** permission to every pipeline, regardless of the pipeline permission settings. This permission is not passed on to the runs: changes of the runs of other users still require the permissions the user would need without the role
+
+A user with both roles is able to see and launch every pipeline. As a launch also requires **READ** permission to the pipeline, **ROLE\_PIPELINE\_EXECUTOR** alone allows to launch only the pipelines the user is able to see. Any write access still has to be granted explicitly.
+
+For more details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-reader-and-executor-roles).
+
+## Access to the pipeline repositories for the pipeline roles
+
+Previously, of the roles that give full access to all pipelines regardless of their permission settings, only **ROLE\_ADMIN** got access to the pipeline repositories in the Platform GitLab. The users with the **ROLE\_PIPELINE\_ADMIN** role were able to manage all pipelines in the Platform, but not to access their repositories in GitLab, and might have no GitLab account at all.  
+In the current version, **ROLE\_PIPELINE\_ADMIN** gets the **Maintainer** access to all repositories in GitLab, as **ROLE\_ADMIN**. The new **ROLE\_PIPELINE\_READER** role (see [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)) gets the **Reporter** (read-only) access to all repositories. The users with these roles get GitLab accounts.
+
+For more details see [here](../../manual/13_Permissions/13._Permissions.md#access-to-the-pipeline-repositories-in-gitlab).
+
 ## GitLab 19 support
 
 The platform now supports GitLab CE **19.5.3** for its embedded Git (`cp-git`), with PostgreSQL 17 for the GitLab database (`cp-gitlab-db`).
@@ -790,3 +824,35 @@ Some of the other page layouts also were broken.
 [#4616](https://github.com/epam/cloud-pipeline/issues/4616)
 
 Previously, when a **Tool** version with upper case letters in its tag (e.g. `2023R1`) was launched from the GUI, the launch form converted the tag to lower case (`2023r1`). Docker tags are case-sensitive, so such a run could not pull its image and hung in `ImagePullBackOff`. Also, the launch form did not lock the cloud region set for such a version. Currently, the launch form keeps the tag as it is in the registry.
+
+### Launch: a run name alias replaces the run's custom and required tags
+
+[#4626](https://github.com/epam/cloud-pipeline/issues/4626)
+
+Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
+Now, the alias is added to the run's tags alongside the tags set in the launch form.
+
+### New nodes stop being created after failed restarts in another region
+
+[#4641](https://github.com/epam/cloud-pipeline/issues/4641)
+
+Previously, when a run was restarted in another region in case of insufficient capacity, the original run was stopped first, and only then the new run was launched.
+If the launch of the new run failed - e.g. the instance type of the run was not allowed or not offered in the new region - the error was not logged, and the autoscaler kept counting a node creation for the stopped run until the API service was restarted.
+After `cluster.nodeup.max.threads` such failures, no new nodes were created for any run.
+Now, the original run is stopped only after the new run is launched. If the launch fails, the original run fails and the reason is shown in its `RestartPipelineRun` task logs. A failed restart no longer blocks the creation of new nodes.
+
+### A run is restarted in a region where its instance type is not available
+
+[#4642](https://github.com/epam/cloud-pipeline/issues/4642)
+
+Previously, when a run was restarted in another region in case of insufficient capacity, the first region with the enabled option "**Run shift policy**" was taken, even if the instance type of the run was not allowed or not offered there. The restart in such a region always failed.
+Now, such regions are skipped. If no remaining region allows and offers the instance type, the `RestartPipelineRun` task logs of the original run show the message `Cannot restart run '<run ID>': instance type '<type>' is not available in any of the remaining regions.`
+
+### Unavailable cluster nodes are not detected
+
+[#4647](https://github.com/epam/cloud-pipeline/issues/4647)
+
+Previously, the platform checked only the first Kubernetes condition of a node to find out whether the node is unavailable. On clusters with `Flannel`, the first condition is `NetworkUnavailable`, which does not change when a node stops reporting its status. So such nodes were never detected as unavailable: their runs did not get the `NODE_UNAVAILABLE` tag, and the nodes were not terminated after the grace period.
+Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grace period (**`cluster.node.unavailable.grace.period.minutes`**) is counted from the moment Kubernetes marked the node unavailable.
+Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
+Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.

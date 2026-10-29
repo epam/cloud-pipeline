@@ -52,3 +52,21 @@ export function factory (defaults) {
     overrides
   );
 }
+
+const nextRunId = sequence();
+
+/**
+ * A run as `/run/{id}` returns it: running and initialized on an on-demand
+ * node, owned by the current user (`mask` 15 grants every permission).
+ */
+export const pipelineRun = factory(() => ({
+  id: nextRunId(),
+  status: 'RUNNING',
+  initialized: true,
+  podIP: '10.0.0.1',
+  platform: 'linux',
+  instance: {nodeName: 'node-1', spot: false},
+  pipelineRunParameters: [],
+  tags: {},
+  mask: 15
+}));
