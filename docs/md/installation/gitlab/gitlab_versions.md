@@ -12,7 +12,7 @@ the install config select their versions:
 | `9` (the default) | 9.4.0 | `9.6` (the default) |
 | `15` | 15.5.4 | `12.4` |
 | `17` | 17.4.1 | `14.11` |
-| `19` | 19.4.1 | `17`, or a `17.x` tag |
+| `19` | 19.5.3 | `17`, or a `17.x` tag |
 
 Take both values from one row. If they do not match, `pipectl` prints a warning and goes on, and the install may fail.
 For `19` it checks only the PostgreSQL major version. The `17` tag gives the latest PostgreSQL 17 release at the time
@@ -42,7 +42,7 @@ When `CP_GITLAB_VERSION` is `17` or later, the installer also does the following
 
 * **It creates its tokens with an expiry date, 364 days ahead.** These are the personal access token of `root`, which
   only the installer uses, and the impersonation token of `root`, which becomes the **`git.token`** preference. GitLab
-  19.4 does not create a token without an expiry date, and accepts at most 365 days. One day less leaves a margin for
+  19.5 does not create a token without an expiry date, and accepts at most 365 days. One day less leaves a margin for
   a time zone difference. The platform rotates **`git.token`** before it expires: see the **`git.token.rotation.*`**
   preferences in [Manage system-level settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
   The personal access token of `root` is not rotated.
@@ -66,7 +66,7 @@ them. It also turns off the sign-up of new users in GitLab (`signup_enabled`).
 
 ## The GitLab 19 image
 
-* It is built on `gitlab/gitlab-ce:19.4.1-ce.0`.
+* It is built on `gitlab/gitlab-ce:19.5.3-ce.0`.
 * It has no GitLab runner. The `9`, `15` and `17` images still have it.
 * When the LFS object storage is on (`CP_GITLAB_OBJ_STORE_ENABLED=true`, AWS only; it is off by default), its region
   is `CP_GITLAB_OBJ_STORE_REGION`, or the region of the deployment (`CP_CLOUD_REGION_ID`) when that is not set. The
@@ -89,9 +89,9 @@ requests or limits, so pick a node with this much free CPU and memory.
 ## An existing deployment
 
 `pipectl` does not upgrade GitLab. GitLab must pass through a list of required versions, one at a time, and its
-database must be upgraded to new PostgreSQL major versions between them. For example, the GitLab 19.4 image does not
+database must be upgraded to new PostgreSQL major versions between them. For example, the GitLab 19.5 image does not
 start on data older than GitLab 19.2. So do not change `CP_GITLAB_VERSION` of an existing deployment and re-deploy
-`cp-git`. To move a deployment from GitLab 15.5 to 19.4, follow [Upgrade GitLab 15.5 to 19.4](upgrade_gitlab_15_to_19.md).
+`cp-git`. To move a deployment from GitLab 15.5 to 19.5, follow [Upgrade GitLab 15.5 to 19.5](upgrade_gitlab_15_to_19.md).
 
 Without the `-e` (`--erase-data`) option, a re-deploy of `cp-git` keeps the existing GitLab data. On `17` or later,
 before such a re-deploy:

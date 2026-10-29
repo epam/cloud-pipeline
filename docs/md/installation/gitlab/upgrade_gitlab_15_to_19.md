@@ -1,7 +1,7 @@
-# Upgrade GitLab 15.5 to 19.4
+# Upgrade GitLab 15.5 to 19.5
 
 This page moves an existing Cloud Pipeline deployment from GitLab CE 15.5.4 (`CP_GITLAB_VERSION=15`, PostgreSQL 12)
-to GitLab CE 19.4.1 (`CP_GITLAB_VERSION=19`, PostgreSQL 17), and keeps all its repositories, users and tokens.
+to GitLab CE 19.5.3 (`CP_GITLAB_VERSION=19`, PostgreSQL 17), and keeps all its repositories, users and tokens.
 
 `pipectl` cannot do this upgrade: it deletes and re-creates the `cp-git` deployment. GitLab must pass through a
 list of required versions ("stops"), one at a time. The external PostgreSQL database of GitLab (`cp-gitlab-db`)
@@ -41,17 +41,19 @@ image. The stops in between use the plain `gitlab/gitlab-ce:<version>-ce.0` imag
 | `10-18.2.8` | `gitlab/gitlab-ce:18.2.8-ce.0` | 16 | |
 | `11-18.5.7` | `gitlab/gitlab-ce:18.5.7-ce.0` | 16 | |
 | `12-18.8.11` | `gitlab/gitlab-ce:18.8.11-ce.0` | 16 | |
-| `13-18.11.12` | `gitlab/gitlab-ce:18.11.12-ce.0` | 16 | upgrade PostgreSQL 16 to 17 |
-| `14-19.2.7` | `gitlab/gitlab-ce:19.2.7-ce.0` | 17 | |
-| `15-19.4.1` | `gitlab/gitlab-ce:19.4.1-ce.0` | 17 | |
+| `13-18.11.14` | `gitlab/gitlab-ce:18.11.14-ce.0` | 16 | upgrade PostgreSQL 16 to 17 |
+| `14-19.2.10` | `gitlab/gitlab-ce:19.2.10-ce.0` | 17 | |
+| `15-19.5.3` | `gitlab/gitlab-ce:19.5.3-ce.0` | 17 | |
 | `16-git-19` | `lifescience/cloud-pipeline:git-19-<version>` | 17 | switch to the Cloud Pipeline image |
 
 Each PostgreSQL upgrade happens at a stop that supports both the old and the new major version. No GitLab version
 supports both 12 and 16, so the database cannot move in one step.
 
 The path is from the GitLab [upgrade path tool](https://gitlab-com.gitlab.io/support/toolbox/upgrade-path/) and
-[upgrade paths](https://docs.gitlab.com/update/upgrade_paths/) page, for a target of 19.4.1. GitLab 19.5 is a
-required stop: if the target is later than 19.4, check the path again and add 19.5.
+[upgrade paths](https://docs.gitlab.com/update/upgrade_paths/) page, for a target of 19.5.3. Each stop is the latest
+patch of its version at the time of writing. The last stop must be the exact version of the GitLab 19 image (see
+[Switch to the GitLab 19 image](#switch-to-the-gitlab-19-image)). If the target is later than 19.5, check the path
+again: the next required stop is 19.8.
 
 Why the stops matter for this deployment:
 
@@ -69,12 +71,13 @@ Why the stops matter for this deployment:
 * **18.5.7**: from 18.4 GitLab requires the `amcheck` extension in its database. The procedure creates it before the
   first stop.
 * **18.8.11**: every batched background migration must finish here, before 18.9 or later.
-* **18.11.12**: this version upgrades a bundled PostgreSQL to 17 on its own. The bundled PostgreSQL is disabled
+* **18.11.14**: this version upgrades a bundled PostgreSQL to 17 on its own. The bundled PostgreSQL is disabled
   before the first stop, so this does not happen.
-* **19.2.7**: the first 19.x. PostgreSQL 17 is required.
+* **19.2.10**: the first 19.x. PostgreSQL 17 is required.
+* **19.5.3**: a required stop, and the target. Its background migrations must finish before any later upgrade.
 
 Every image checks the version of the data it starts on, and stops when a required stop was skipped. For example,
-19.2.7 needs 18.11 or later, and 19.4.1 needs 19.2 or later.
+19.2.10 needs 18.11 or later, and 19.5.3 needs 19.2 or later.
 
 ## Known risks and limits
 
@@ -100,11 +103,11 @@ Every image checks the version of the data it starts on, and stops when a requir
 * **`/dev/shm`.** GitLab needs at least 256 MB of `/dev/shm`, and the container default is 64 MB. The procedure mounts
   a 1 GiB memory `emptyDir`, as the current `cp-git-dpl.yaml` does. On Kubernetes older than 1.22 `sizeLimit` does
   not set the size of that memory file system (it is half of the node RAM), but the kubelet evicts the pod when it
-  uses more than 1 GiB. An idle GitLab 19.4 uses about 11 MB.
+  uses more than 1 GiB. An idle GitLab 19.4 used about 11 MB: measure 19.5 in the rehearsal.
 * **Tokens.** The upgrade does not add an expiry date to an existing token that has none: every stop of the path is a
   patch release at or after the ones that stopped doing so (see
   [Non-expiring access tokens](https://docs.gitlab.com/update/deprecations/#non-expiring-access-tokens)). So
-  `git.token` keeps working after the upgrade. On GitLab 19.4 a new token must have an expiry date, at most 365 days
+  `git.token` keeps working after the upgrade. On GitLab 19.5 a new token must have an expiry date, at most 365 days
   ahead. The platform rotates `git.token` before it expires (the `git.token.rotation.*` preferences). A token without
   an expiry date is never rotated.
 
@@ -233,7 +236,7 @@ which `smoke` removes at once.
 
 The backup of a stop dumps the database with the `pg_dump` of `cp-gitlab-db` itself, which always matches the
 server. `stop_backup` then reads the whole dump with `pg_restore`, which fails on a dump that was cut short.
-`gitlab-backup create` is used only on 15.5.4 and on 19.4.1: the `pg_dump` bundled in the intermediate GitLab images
+`gitlab-backup create` is used only on 15.5.4 and on 19.5.3: the `pg_dump` bundled in the intermediate GitLab images
 is older than the database server at several stops, and it refuses to dump a newer server. During the stops nobody
 can reach GitLab through its service, so the repositories do not change, and the copy of the repositories taken at
 the freeze stays valid for every stop.
@@ -345,7 +348,7 @@ grep -n "object_store" /opt/gitlab/config/gitlab.rb
 db_sql -c "SELECT file_store, count(*) FROM lfs_objects GROUP BY 1;"
 ```
 
-* Each GitLab image is 1.4 to 1.5 GB to download and 3.5 to 5.5 GB on disk. The Docker disk needs room for two stop
+* Each GitLab image is 1.3 to 1.9 GB to download and 3.5 to 5.5 GB on disk. The Docker disk needs room for two stop
   images at a time.
 * From 16.x the GitLab images are based on Ubuntu 22.04, and from 18.x on 24.04. With Docker's default seccomp
   profile they need Docker 20.10.10 or later. By default Kubernetes runs pods without a seccomp profile, unless an
@@ -391,12 +394,15 @@ curl -ksSf -H "Authorization: Bearer <admin JWT>" "https://<api host>/pipeline/r
 
 **The images are there.** Pull the first stop image on the `cp-git` node, and check the GitLab 19 image of the same
 build as the `api`. The registry prefix is the one of the current `cp-git` image, and the version is the one of the
-`api-srv` image:
+`api-srv` image. The last command must print the GitLab version of the last stop, `19.5.3`. An older build of the
+platform has a `git-19` image on GitLab 19.4.1, and that image must not start on 19.5.3 data.
 
 ```bash
 docker pull gitlab/gitlab-ce:15.11.13-ce.0
 kubectl get deploy cp-api-srv -o jsonpath='{.spec.template.spec.containers[*].image}'; echo
 docker pull <registry prefix>lifescience/cloud-pipeline:git-19-<version>
+docker run --rm --entrypoint cat <registry prefix>lifescience/cloud-pipeline:git-19-<version> \
+    /opt/gitlab/embedded/service/gitlab-rails/VERSION; echo
 ```
 
 Find the latest minor of each PostgreSQL major with the command below. At the time of writing they were 12.22, 14.24,
@@ -667,8 +673,8 @@ db_sql -c "UPDATE personal_access_tokens SET scopes = E'---\n- api\n' WHERE id =
 
 ## Run the stops
 
-Run [One stop](#one-stop) for each line of [the path](#the-path), from `01-15.11.13` to `15-19.4.1`. After
-`01-15.11.13`, `09-17.11.7` and `13-18.11.12`, run [Upgrade PostgreSQL](#upgrade-postgresql) before the next stop.
+Run [One stop](#one-stop) for each line of [the path](#the-path), from `01-15.11.13` to `15-19.5.3`. After
+`01-15.11.13`, `09-17.11.7` and `13-18.11.14`, run [Upgrade PostgreSQL](#upgrade-postgresql) before the next stop.
 
 The procedure can pause after the backup of any stop. To give GitLab back to the users in a pause, start the same
 stop again, open the `cp-git` service, scale the services of the freeze back up, and turn the token rotation back on
@@ -719,7 +725,7 @@ db_sql -c "SELECT count(*) FROM pg_stat_activity;"
   pipeline repository. `expires_at` of `git.token` must stay `null`, and the SAML count must be at least 1. The count
   only shows that GitLab loaded the SAML settings, not that a sign-in works. A real SAML sign-in needs the service
   open, so it is checked after the upgrade. The certificate checks before the freeze cover the OpenSSL 3 change of
-  17.8.7. If the SAML sign-in fails after the upgrade, fix the certificates or the settings on 19.4.1: it is no reason
+  17.8.7. If the SAML sign-in fails after the upgrade, fix the certificates or the settings on 19.5.3: it is no reason
   to roll back.
 * `gitlab:git:fsck` must report no error. It checks every repository, so it takes time: the rehearsal shows how much.
 * Record the connection count, and compare it with `max_connections`.
@@ -737,7 +743,7 @@ current `cp-git` image of 15.5.4 until the upgrade is done: a full rollback need
 
 ### Upgrade PostgreSQL
 
-Run this after the backup of `01-15.11.13` (12 to 14), `09-17.11.7` (14 to 16) and `13-18.11.12` (16 to 17). `cp-git`
+Run this after the backup of `01-15.11.13` (12 to 14), `09-17.11.7` (14 to 16) and `13-18.11.14` (16 to 17). `cp-git`
 is stopped, and the backup of the stop is the dump to restore.
 
 The procedure dumps the database and restores it into an empty data directory of the new version. The old data
@@ -815,20 +821,20 @@ db_start <the old tag>
 
 ## Switch to the GitLab 19 image
 
-After the backup of `15-19.4.1`, switch to the Cloud Pipeline image of the same GitLab version. This image writes
+After the backup of `15-19.5.3`, switch to the Cloud Pipeline image of the same GitLab version. This image writes
 `gitlab.rb` again from the environment at start: the new nginx settings with the SSL ciphers, the object storage with
-its region, no GitLab runner. The GitLab data is already on 19.4.1, so no migration runs.
+its region, no GitLab runner. The GitLab data is already on 19.5.3, so no migration runs.
 
 This image comes from the registry of the deployment, so set the image pull policy back to `Always`, as
 `cp-git-dpl.yaml` has it. `cp-git` is stopped after the backup of the stop.
 
 ```bash
 GIT19_IMAGE=<registry prefix>lifescience/cloud-pipeline:git-19-<version>
-cp -p /opt/gitlab/config/gitlab.rb "$BKP_DIR/15-19.4.1/gitlab.rb"
+cp -p /opt/gitlab/config/gitlab.rb "$BKP_DIR/15-19.5.3/gitlab.rb"
 kubectl patch deployment cp-git --type=json -p '[{"op": "replace",
     "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "Always"}]'
 git_start "$GIT19_IMAGE"
-diff "$BKP_DIR/15-19.4.1/gitlab.rb" /opt/gitlab/config/gitlab.rb
+diff "$BKP_DIR/15-19.5.3/gitlab.rb" /opt/gitlab/config/gitlab.rb
 ```
 
 The diff shows secrets: read it on the node only. Expect the `nginx` settings under `gitlab_rails['nginx']`, the SSL
@@ -936,7 +942,7 @@ again.
 **The system event.** Remove the system event of the window.
 
 **Clean up.** After the agreed time, remove what the upgrade left: the `data-pg12`, `data-pg14` and `data-pg16`
-directories, the GitLab stop images on the node, and the old backups. Keep the backup of `15-19.4.1` and the freeze
+directories, the GitLab stop images on the node, and the old backups. Keep the backup of `15-19.5.3` and the freeze
 copy until then.
 
 On GitLab 18.0 and later, the temporary `TMP_FORK_*` group that a pipeline copy uses is only scheduled for deletion,
@@ -995,8 +1001,8 @@ the install config to `S_TAG`.
 The repositories do not change between the stops. If `gitlab:git:fsck` reports damage, restore
 `gitlab/data/git-data` from `opt-trees.tar` of the freeze, or from the copy taken after a pause.
 
-For a rollback to `15-19.4.1` after the switch to the GitLab 19 image, run `git_stop`, then
-`git_start gitlab/gitlab-ce:19.4.1-ce.0`. The pull policy is `Always` again by then, so the node pulls the image from
+For a rollback to `15-19.5.3` after the switch to the GitLab 19 image, run `git_stop`, then
+`git_start gitlab/gitlab-ce:19.5.3-ce.0`. The pull policy is `Always` again by then, so the node pulls the image from
 Docker Hub.
 
 ### To 15.5.4

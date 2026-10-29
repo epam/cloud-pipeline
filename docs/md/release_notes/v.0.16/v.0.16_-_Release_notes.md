@@ -619,7 +619,7 @@ For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#inves
 
 ## GitLab 19 support
 
-The platform now supports GitLab CE **19.4.1** for its embedded Git (`cp-git`), with PostgreSQL 17 for the GitLab database (`cp-gitlab-db`).
+The platform now supports GitLab CE **19.5.3** for its embedded Git (`cp-git`), with PostgreSQL 17 for the GitLab database (`cp-gitlab-db`).
 
 A new deployment selects it with the install config values `CP_GITLAB_VERSION=19` and `GITLAB_DATABASE_VERSION=17`. On GitLab 17 and later, the installer:
 
@@ -631,11 +631,11 @@ A new deployment selects it with the install config values `CP_GITLAB_VERSION=19
 The GitLab runner is not part of the GitLab 19 image (`git-19`). The images of the earlier GitLab versions keep it.  
 For more details see [GitLab versions](../../installation/gitlab/gitlab_versions.md).
 
-An existing deployment on GitLab 15.5 moves to 19.4 by a manual procedure: GitLab passes through a list of required versions, and its database is upgraded three times, from PostgreSQL 12 to 17. See [Upgrade GitLab 15.5 to 19.4](../../installation/gitlab/upgrade_gitlab_15_to_19.md).
+An existing deployment on GitLab 15.5 moves to 19.5 by a manual procedure: GitLab passes through a list of required versions, and its database is upgraded three times, from PostgreSQL 12 to 17. See [Upgrade GitLab 15.5 to 19.5](../../installation/gitlab/upgrade_gitlab_15_to_19.md).
 
 The platform also changes the way it works with GitLab. These changes do not break the earlier GitLab versions, so a deployment gets them before it upgrades GitLab:
 
-- **`git.token` rotation** (GitLab 15.5 and later). On GitLab 19.4, a new access token must have an expiry date, at most 365 days ahead. The platform now checks the expiry of **`git.token`** on a schedule (every day by default). When the token is close to its expiry, the platform issues a new impersonation token, saves it to **`git.token`**, and revokes the old one. A token without an expiry date is never rotated. The rotation is set by the new preferences **`git.token.rotation.enabled`**, **`git.token.rotation.schedule`**, **`git.token.rotation.threshold.days`** and **`git.token.rotation.lifetime.days`**.  
+- **`git.token` rotation** (GitLab 15.5 and later). On GitLab 19.5, a new access token must have an expiry date, at most 365 days ahead. The platform now checks the expiry of **`git.token`** on a schedule (every day by default). When the token is close to its expiry, the platform issues a new impersonation token, saves it to **`git.token`**, and revokes the old one. A token without an expiry date is never rotated. The rotation is set by the new preferences **`git.token.rotation.enabled`**, **`git.token.rotation.schedule`**, **`git.token.rotation.threshold.days`** and **`git.token.rotation.lifetime.days`**.  
     **_Note_**: a run gets the **`git.token`** value when it starts. After a rotation, the old value no longer works in the runs that are still active.  
     For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
 - **Pipeline version descriptions are saved again.** GitLab 14.0 removed the release description from the tag creation, so the `releaseDescription` of a new pipeline version (`POST /pipeline/version/register`) was lost. In the current version, on GitLab 14.0 and later, it is saved as the GitLab release of the version tag, with the GitLab Releases API.
@@ -645,7 +645,7 @@ The platform also changes the way it works with GitLab. These changes do not bre
 Other fixes keep the platform working with the new GitLab versions:
 
 - a missing folder of a repository is treated as an empty one: GitLab 17.7 and later answer `404` for it
-- tokens with dots, as GitLab 19.4 issues them, are accepted in repository URLs
+- tokens with dots, as GitLab 19.5 issues them, are accepted in repository URLs
 - saving the Git preferences no longer rejects GitLab 18.0-18.2 and 19.5-19.9
 
 ***

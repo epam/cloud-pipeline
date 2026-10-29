@@ -123,4 +123,4 @@ nav:
     - GCP: 'installation/prerequisites/gcp.md'
   - GitLab:
     - GitLab versions: 'installation/gitlab/gitlab_versions.md'
-    - Upgrade GitLab 15.5 to 19.4: 'installation/gitlab/upgrade_gitlab_15_to_19.md'
+    - Upgrade GitLab 15.5 to 19.5: 'installation/gitlab/upgrade_gitlab_15_to_19.md'
