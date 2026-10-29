@@ -219,12 +219,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 --build-arg BASE_IMAGE="gitlab/gitlab-ce:17.4.1-ce.0"
 docker push "$CP_GITLAB_17_DIST_NAME"
 
-# 19.4.1 version
+# 19.5.3 version
 CP_GITLAB_19_DIST_NAME=${CP_GITLAB_19_DIST_NAME:-"$CP_DIST_REPO_NAME:git-19-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_19_DIST_NAME" \
-                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.19.4 \
-                --build-arg BASE_IMAGE="gitlab/gitlab-ce:19.4.1-ce.0"
+                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.19.5 \
+                --build-arg BASE_IMAGE="gitlab/gitlab-ce:19.5.3-ce.0"
 docker push "$CP_GITLAB_19_DIST_NAME"
 
 # Notifier

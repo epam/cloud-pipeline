@@ -77,7 +77,7 @@ public class GitlabClientTest {
     private static final String TAGS_URL = PROJECT_URL + "/repository/tags";
     private static final String RELEASES_URL = PROJECT_URL + "/releases";
     private static final String VERSION_URL = "/api/v4/version";
-    private static final String LATEST_VERSION = "19.4.1";
+    private static final String LATEST_VERSION = "19.5.3";
     private static final String GITLAB_9_VERSION = "9.4.0";
     private static final String GITLAB_15_VERSION = "15.5.4";
     private static final int HTTP_ACCEPTED = 202;
