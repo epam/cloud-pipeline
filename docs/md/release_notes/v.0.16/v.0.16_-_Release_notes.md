@@ -66,6 +66,8 @@
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [A run is restarted in a region where its instance type is not available](#a-run-is-restarted-in-a-region-where-its-instance-type-is-not-available)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
+    - [Backup workers cannot copy the backups to the storage](#backup-workers-cannot-copy-the-backups-to-the-storage)
+    - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
 
 ***
 
@@ -856,3 +858,17 @@ Previously, the platform checked only the first Kubernetes condition of a node t
 Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grace period (**`cluster.node.unavailable.grace.period.minutes`**) is counted from the moment Kubernetes marked the node unavailable.
 Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
 Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
+
+### Backup workers cannot copy the backups to the storage
+
+[#4618](https://github.com/epam/cloud-pipeline/issues/4618)
+
+Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI is built on Rocky Linux 8 with Python 3.12, and requires `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
+In the current version, the backup worker image is based on Rocky Linux 9.8.
+
+### The backup worker of the GitLab database always fails
+
+[#4618](https://github.com/epam/cloud-pipeline/issues/4618)
+
+Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
+In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services.
