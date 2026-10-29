@@ -254,6 +254,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#run-controls-for-an-unavailable-node">Run controls for an unavailable node</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#priority-of-group-gui-settings">Priority of group GUI settings</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a>
@@ -705,6 +709,8 @@
 <li><a href="#permissions-granted-to-a-user">Permissions granted to a user</a></li>
 <li><a href="#python-3-support-for-backend-services">Python 3 support for backend services</a></li>
 <li><a href="#run-controls-for-an-unavailable-node">Run controls for an unavailable node</a></li>
+<li><a href="#priority-of-group-gui-settings">Priority of group GUI settings</a></li>
+<li><a href="#show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</a></li>
 </ul>
 <hr />
 <ul>
@@ -2179,6 +2185,14 @@ The parameter also defines when a run is relaunched in another region in case of
 Previously, the GUI still showed the <strong>PAUSE</strong>, <strong>COMMIT</strong>, <strong>BROWSE</strong> and <strong>VERSIONED STORAGE</strong> controls for such a run, though these operations cannot complete without the node.</p>
 <p>In <strong><code>v0.17</code></strong>, these controls are hidden while the run has the <code>NODE_UNAVAILABLE</code> tag - at the <strong>Run logs</strong> page, at the <strong>ACTIVE RUNS</strong> tab, at the <strong>Home</strong> page and in the actions of in-app notifications. The <strong>STOP</strong> dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.<br />
 For more details see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#controls">here</a>.</p>
+<hr />
+<h2 id="priority-of-group-gui-settings">Priority of group GUI settings</h2>
+<p>The <strong><code>misc.groups.ui.preferences</code></strong> system preference sets GUI settings per group or role. In <strong><code>v0.17</code></strong>, each group's settings accept a <code>priority</code> number: if a user is in several of the listed groups, each setting comes from the group with the highest <code>priority</code> that sets it.<br />
+For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#miscellaneous">here</a>.</p>
+<hr />
+<h2 id="show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</h2>
+<p>The <code>optional-parameters-filter</code> launch form setting can now set the default state of the <strong>Show optional parameters</strong> checkbox, and override it for a single pipeline or tool.<br />
+For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#miscellaneous">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</h3>

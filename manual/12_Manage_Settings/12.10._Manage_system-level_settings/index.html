@@ -1356,6 +1356,10 @@
 <td>Allows to specify the list of the metadata that will not be exported during the users export operation</td>
 </tr>
 <tr>
+<td><strong><code>misc.groups.ui.preferences</code></strong></td>
+<td>Sets GUI settings per group or role, e.g. <code>{"ROLE_ADVANCED_USER": {"priority": 10, "ui-home-page": "runs"}}</code>. If a user is in several of the listed groups, each setting comes from the group with the highest <code>priority</code> that sets it (a missing <code>priority</code> counts as <code>0</code>). <code>ui-pages</code> lists of all the groups are intersected. <code>ui-launch-form</code> → <code>pipelines</code>/<code>tools</code> → <code>optional-parameters-filter</code> shows the <strong>Show optional parameters</strong> checkbox of the launch form: <code>true</code>, or e.g. <code>{"default_value": true, "overrides": {"42": false, "my-pipeline": {"default_value": false}}}</code> to check it by default, hide it for <code>42</code> and leave it unchecked for <code>my-pipeline</code>. An override key is a pipeline id or name, or a tool id or <code>registry/group/tool</code>, in any case; a key of digits only is an id</td>
+</tr>
+<tr>
 <td><strong><code>misc.max.tool.icon.size.kb</code></strong></td>
 <td>Sets maximum size (in Kb) of the uploaded icon for the tool</td>
 </tr>
