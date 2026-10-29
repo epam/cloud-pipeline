@@ -31,6 +31,8 @@ const SEARCH_PAGE_SECTIONS = 'ui-search-document-types';
 const LAUNCH_FORM_ATTRIBUTE = 'ui-launch-form';
 const RUN_LOGS_MAIN_TASK = 'ui-run-logs-main-task';
 
+const GROUP_PRIORITY_KEY = 'priority';
+
 const LIBRARY_EXPANDED_STORAGE_KEY = 'library_expanded';
 
 function parseAttributes (data, ignore = {}) {
@@ -152,13 +154,13 @@ function joinAttributes (values, options) {
       if (parsedSearchDocumentTypes && !searchDocumentTypes) {
         searchDocumentTypes = parsedSearchDocumentTypes;
       }
-      if (parsedLibraryExpanded !== undefined) {
+      if (parsedLibraryExpanded !== undefined && libraryExpanded === undefined) {
         libraryExpanded = parsedLibraryExpanded;
       }
       if (parsedLaunchForm && !launchForm) {
         launchForm = parsedLaunchForm;
       }
-      if (parsedRunLogsMainTask && runLogsMainTask === undefined) {
+      if (parsedRunLogsMainTask !== undefined && runLogsMainTask === undefined) {
         runLogsMainTask = parsedRunLogsMainTask;
       }
     });
@@ -198,17 +200,27 @@ function fetchRolesAttributes (roles, options = {}) {
   });
 }
 
-function fetchGroupsAttributes (preferences, groups, options = {}) {
+function getGroupPriority (groupPreferences) {
+  const priority = Number((groupPreferences || {})[GROUP_PRIORITY_KEY]);
+  return Number.isNaN(priority) ? 0 : priority;
+}
+
+export function fetchGroupsAttributes (preferences, groups, options = {}) {
   return new Promise((resolve) => {
     preferences.fetchIfNeededOrWait()
       .then(() => {
         const groupsPreferences = Object
           .entries(preferences.groupsUIPreferences || {})
           .filter(([group]) => (groups || []).includes(group))
-          .map(([, groupPreferences]) => groupPreferences)
-          .map(o => Object.entries(o || {})
-            .map(([key, value]) => ({[key]: {value}}))
-            .reduce((r, c) => ({...r, ...c}))
+          .map(([, groupPreferences], index) => ({
+            groupPreferences,
+            index,
+            priority: getGroupPriority(groupPreferences)
+          }))
+          .sort((a, b) => (b.priority - a.priority) || (a.index - b.index))
+          .map(({groupPreferences}) => Object.entries(groupPreferences || {})
+            .filter(([key]) => key !== GROUP_PRIORITY_KEY)
+            .reduce((r, [key, value]) => ({...r, [key]: {value}}), {})
           );
         resolve(
           joinAttributes(

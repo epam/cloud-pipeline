@@ -59,6 +59,7 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Priority of group GUI settings](#priority-of-group-gui-settings)
 
 ***
 
@@ -1855,6 +1856,13 @@ Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VER
 
 In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+***
+
+## Priority of group GUI settings
+
+The **`misc.groups.ui.preferences`** system preference sets GUI settings per group or role. In **`v0.17`**, each group's settings accept a `priority` number: if a user is in several of the listed groups, each setting comes from the group with the highest `priority` that sets it.  
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
 ***
 
