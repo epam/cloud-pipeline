@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import resolveOptionalParametersFilter from './optional-parameters-filter';
+import {observable} from 'mobx';
+import resolveOptionalParametersFilter from './resolve-optional-parameters-filter';
 
 const hidden = {enabled: false, defaultValue: false};
 const shown = {enabled: true, defaultValue: false};
@@ -37,6 +38,11 @@ describe('resolveOptionalParametersFilter with a boolean', () => {
   it('hides the checkbox for false or any other value', () => {
     expect(resolveOptionalParametersFilter(false)).toEqual(hiddenNoDefault);
     expect(resolveOptionalParametersFilter('yes')).toEqual(hiddenNoDefault);
+    expect(resolveOptionalParametersFilter(['x'])).toEqual(hiddenNoDefault);
+  });
+
+  it('hides the checkbox for an observable array', () => {
+    expect(resolveOptionalParametersFilter(observable(['x']))).toEqual(hiddenNoDefault);
   });
 
   it('ignores the keys', () => {
@@ -65,6 +71,13 @@ describe('resolveOptionalParametersFilter with a config', () => {
   it('ignores overrides that are not an object', () => {
     expect(resolveOptionalParametersFilter({overrides: ['pipeline']}, ['pipeline']))
       .toEqual(shown);
+    expect(resolveOptionalParametersFilter({overrides: observable(['pipeline'])}, ['pipeline']))
+      .toEqual(shown);
+  });
+
+  it('reads an observable config', () => {
+    const value = observable({enabled: true, overrides: {pipeline: {default_value: true}}});
+    expect(resolveOptionalParametersFilter(value, ['pipeline'])).toEqual(shownChecked);
   });
 });
 
@@ -97,10 +110,5 @@ describe('resolveOptionalParametersFilter with overrides', () => {
     const value = {overrides: {pipeline: false, 1: {default_value: true}}};
     expect(resolveOptionalParametersFilter(value, [1, 'pipeline'])).toEqual(shownChecked);
     expect(resolveOptionalParametersFilter(value, [2, 'pipeline'])).toEqual(hidden);
-  });
-
-  it('skips empty keys', () => {
-    const value = {overrides: {undefined: false, null: false}};
-    expect(resolveOptionalParametersFilter(value, [undefined, null])).toEqual(shown);
   });
 });

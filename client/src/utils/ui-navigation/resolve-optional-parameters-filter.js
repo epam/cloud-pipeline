@@ -14,8 +14,13 @@
  *  limitations under the License.
  */
 
+import {isObservableArray} from 'mobx';
+
 function isObject (value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
+  return value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    !isObservableArray(value);
 }
 
 function parseBoolean (value, defaultValue) {
@@ -45,7 +50,7 @@ function parseConfig (value, base) {
  * pipeline or tool identifier to a boolean (`enabled`) or to `{enabled, default_value}`;
  * a field an override leaves out is taken from the top level
  * @param {Array<string|number>} keys - identifiers of the launched pipeline or tool,
- * in priority order; matched case-insensitively
+ * in priority order, none of them empty; matched case-insensitively
  * @returns {{enabled: boolean, defaultValue: boolean|undefined}} - `defaultValue` is undefined
  * for a boolean `value`, which sets no default
  */
@@ -62,7 +67,6 @@ export default function resolveOptionalParametersFilter (value, keys = []) {
       .map(([key, override]) => [key.toLowerCase(), override])
   );
   const key = keys
-    .filter(k => k !== undefined && k !== null)
     .map(k => `${k}`.toLowerCase())
     .find(k => overrides.has(k));
   if (key === undefined) {

@@ -169,7 +169,9 @@ import {
   getDefaultNodeUpRetryCount,
   isNodeUpRetryCountParameter
 } from './utilities/node-up-retry-count';
-import getOptionalParametersFilterKeys, {
+import {
+  createOptionalParametersFilterSettings,
+  forgetOptionalParametersFilterTarget,
   getOptionalParametersFilterDefault
 } from './utilities/optional-parameters-filter';
 import {
@@ -453,6 +455,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   parametersNavigationIsSticky = false;
   checkRAF;
   optionalParametersFilterTarget;
+  getOptionalParametersFilterSettings = createOptionalParametersFilterSettings();
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -910,18 +913,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   get optionalParametersFilterSettings () {
-    const {uiNavigation} = this.props;
-    const {pipeline} = this.state;
-    const keys = getOptionalParametersFilterKeys({
-      pipeline,
+    const {dockerRegistries, uiNavigation} = this.props;
+    return this.getOptionalParametersFilterSettings({
+      pipeline: this.state.pipeline,
       dockerImage: this.optionalParametersFilterDockerImage,
-      dockerRegistries: this.props.dockerRegistries
+      dockerRegistries,
+      launchForm: uiNavigation.launchForm,
+      resolve: uiNavigation.utils.showOptionalParametersFilter
     });
-    const {tools, pipelines} = uiNavigation.utils.showOptionalParametersFilter(keys);
-    if (pipeline) {
-      return pipelines;
-    }
-    return tools;
   }
 
   get showOptionalParametersFilter () {
@@ -939,6 +938,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       pipeline: this.state.pipeline,
       dockerImage: this.optionalParametersFilterDockerImage,
       defaultValue: this.optionalParametersFilterSettings.defaultValue,
+      checked: this.state.showOptionalParameters,
       target: this.optionalParametersFilterTarget
     });
     this.optionalParametersFilterTarget = target;
@@ -4321,6 +4321,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.codeEditor.reset();
       this.cmdTemplateValue = undefined;
     }
+    this.optionalParametersFilterTarget = forgetOptionalParametersFilterTarget(
+      this.optionalParametersFilterTarget
+    );
     this.resetState(keepPipeline);
   };
 
@@ -5742,7 +5745,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     this.props.onInitialized && this.props.onInitialized(this);
     this.initializeParametersNavigationCheck();
-    this.applyOptionalParametersFilterDefault();
   }
 
   componentDidUpdateNew (prevProps, prevState) {

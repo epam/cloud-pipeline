@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import resolveOptionalParametersFilter from './optional-parameters-filter';
+import resolveOptionalParametersFilter from './resolve-optional-parameters-filter';
 
 const SECTIONS = {
   logs: 'logs',
