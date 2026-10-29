@@ -37,4 +37,6 @@ credential store — don't open it. `password.txt` is the VNC password `recordin
 ## Test cases
 
 A test automates a case written under `docs/testcases/UI/`. Keep the two in step, and read the cases
-beside the one you change.
+beside the one you change. A test names the case IDs it automates in `@TestCase`; a newly automated
+case gets `:white_check_mark:` under `Automated` in `docs/testcases/UI/GUI_tests.md`, and its
+section's automated count goes up, on the test's own branch.
