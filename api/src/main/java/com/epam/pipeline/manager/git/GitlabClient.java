@@ -26,9 +26,11 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitProjectRequest;
 import com.epam.pipeline.entity.git.GitProjectStorage;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
+import com.epam.pipeline.entity.git.GitReleaseEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabUser;
@@ -45,6 +47,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.util.UriUtils;
 import retrofit2.HttpException;
@@ -62,6 +65,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
@@ -70,6 +74,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.git.RestApiUtils.execute;
@@ -108,6 +114,11 @@ public class GitlabClient {
     public static final String EMAIL_SEPARATOR = "@";
     public static final String TOTAL_HEADER = "X-Total";
     public static final int MAX_PAGE_SIZE = 100;
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d+)\\.");
+    private static final int NAMESPACE_PATH_MAJOR_VERSION = 13;
+    private static final int RELEASES_API_MAJOR_VERSION = 14;
+    private static final int DELAYED_DELETION_MAJOR_VERSION = 18;
+    private static final long MAX_TOKEN_LIFETIME_DAYS = 365;
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -224,7 +235,26 @@ public class GitlabClient {
                                                           String revision,
                                                           boolean recursive) throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.getRepositoryTree(projectId, path, revision, recursive));
+        try {
+            return execute(gitLabApi.getRepositoryTree(projectId, path, revision, recursive));
+        } catch (UnexpectedResponseStatusException e) {
+            // Gitlab 17.7 and later answers 404 for a path that does not exist, where older versions return
+            // an empty list. The root tree tells a missing path from a missing project or revision.
+            if (e.getStatus() == HttpStatus.NOT_FOUND && StringUtils.isNotBlank(path)
+                    && rootTreeExists(projectId, revision)) {
+                return Collections.emptyList();
+            }
+            throw e;
+        }
+    }
+
+    private boolean rootTreeExists(final String projectId, final String revision) throws GitClientException {
+        try {
+            execute(gitLabApi.getRepositoryTree(projectId, null, revision, false));
+            return true;
+        } catch (UnexpectedResponseStatusException e) {
+            return false;
+        }
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
@@ -283,9 +313,35 @@ public class GitlabClient {
         return execute(gitLabApi.getProject(apiVersion, String.valueOf(id)));
     }
 
+    /**
+     * Deletes the project. Gitlab 18.0 and later only marks a project for deletion and renames it, while the old
+     * path still redirects to it and keeps the name taken. There the marked project is then removed permanently,
+     * under the path it got at the marking.
+     */
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        execute(gitLabApi.deleteProject(apiVersion, projectId));
+        if (getMajorVersion() < DELAYED_DELETION_MAJOR_VERSION) {
+            execute(gitLabApi.deleteProject(apiVersion, projectId));
+            return;
+        }
+        final String id = String.valueOf(execute(gitLabApi.getProject(apiVersion, projectId)).getId());
+        execute(gitLabApi.deleteProject(apiVersion, id));
+        final Optional<GitProject> markedProject = findProject(id);
+        if (!markedProject.isPresent()) {
+            return;
+        }
+        execute(gitLabApi.removeProjectPermanently(apiVersion, id, true, markedProject.get().getPath()));
+    }
+
+    private Optional<GitProject> findProject(final String id) throws GitClientException {
+        try {
+            return Optional.ofNullable(execute(gitLabApi.getProject(apiVersion, id)));
+        } catch (UnexpectedResponseStatusException e) {
+            if (e.getStatus() == HttpStatus.NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
+        }
     }
 
     public GitTagEntry getRepositoryRevision(String tag) throws GitClientException {
@@ -308,10 +364,31 @@ public class GitlabClient {
         return getRepositoryRevisions(namespace, projectName);
     }
 
+    /**
+     * Creates a tag. A non-blank release description is saved as the release of the tag: with the Releases API
+     * on Gitlab 14.0 and later, which ignores the release_description parameter of the tag creation.
+     * A failure to create the release is logged, and the created tag is returned without it.
+     */
     public GitTagEntry createRepositoryRevision(String name, String ref, String message, String releaseDescription)
             throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
-        return execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, releaseDescription));
+        if (StringUtils.isBlank(releaseDescription) || getMajorVersion() < RELEASES_API_MAJOR_VERSION) {
+            return execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, releaseDescription));
+        }
+        final GitTagEntry tag = execute(gitLabApi.createRevision(apiVersion, projectId, name, ref, message, null));
+        final GitReleaseEntry release = new GitReleaseEntry();
+        release.setTagName(name);
+        release.setDescription(releaseDescription);
+        try {
+            final GitReleaseEntry createdRelease = execute(gitLabApi.createRelease(apiVersion, projectId, release));
+            if (tag != null) {
+                tag.setRelease(createdRelease);
+            }
+        } catch (GitClientException e) {
+            LOGGER.warn("The tag {} of the project {} is created, but its release description is not saved: {}",
+                    name, projectId, e.getMessage());
+        }
+        return tag;
     }
 
     public List<GitCommitEntry> getCommits() throws GitClientException {
@@ -341,6 +418,20 @@ public class GitlabClient {
      */
     public GitlabVersion getVersion() throws GitClientException {
         return execute(gitLabApi.getVersion());
+    }
+
+    /**
+     * Loads the major number of the Gitlab version.
+     * @return the major version, or -1 if the version cannot be parsed
+     */
+    private int getMajorVersion() throws GitClientException {
+        final String version = Optional.ofNullable(getVersion()).map(GitlabVersion::getVersion).orElse(null);
+        final Matcher matcher = VERSION_PATTERN.matcher(StringUtils.defaultString(version));
+        if (!matcher.find()) {
+            LOGGER.warn("Cannot parse the Gitlab version '{}'.", version);
+            return -1;
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     public GitCommitEntry commit(GitPushCommitEntry commitEntry) throws GitClientException {
@@ -421,14 +512,25 @@ public class GitlabClient {
                         .build()));
     }
 
+    /**
+     * Deletes a group. GitLab 18.0 and later only schedules a top-level group for deletion, and renames it.
+     * The group and its projects are removed after the deletion delay, 30 days by default.
+     */
     public GitGroup deleteGroup(final String groupName) throws GitClientException {
         return execute(gitLabApi.deleteGroup(apiVersion, groupName));
     }
 
+    /**
+     * Forks a project. The namespace is passed as namespace_path on Gitlab 13.0 and later: the namespace parameter
+     * of older versions is deprecated there. Gitlab 12.10 already has namespace_path: 13.0 is on the safe side.
+     */
     public GitProject forkProject(final String projectName, final String namespaceFrom, final String namespaceTo)
             throws GitClientException {
-        return execute(gitLabApi.forkProject(apiVersion,
-                makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName)), namespaceTo));
+        final String projectId = makeProjectId(namespaceFrom, GitUtils.convertPipeNameToProject(projectName));
+        if (getMajorVersion() < NAMESPACE_PATH_MAJOR_VERSION) {
+            return execute(gitLabApi.forkProject(apiVersion, projectId, namespaceTo, null));
+        }
+        return execute(gitLabApi.forkProject(apiVersion, projectId, null, namespaceTo));
     }
 
     public Optional<GitlabUser> findUser(final String userName) throws GitClientException {
@@ -516,11 +618,28 @@ public class GitlabClient {
         //issue adminToken for one day
         final String tokenName = repositoryName + "-adminToken";
         final LocalDate endDay = LocalDate.now().plusDays(duration);
-        return createImpersonationToken(tokenName, userId, endDay);
+        // Recent Gitlab versions reject a token, that expires in more than 365 days. Gitlab counts the days
+        // from its own date, which is UTC by default.
+        final LocalDate maxEndDay = LocalDate.now(ZoneOffset.UTC).plusDays(MAX_TOKEN_LIFETIME_DAYS);
+        return createImpersonationToken(tokenName, userId, endDay.isAfter(maxEndDay) ? maxEndDay : endDay);
     }
 
     private String createImpersonationToken(String tokenName, Long userId, LocalDate expires)
             throws GitClientException {
+        return issueImpersonationToken(tokenName, userId, expires, Collections.singletonList("api")).getToken();
+    }
+
+    /**
+     * Issues an impersonation token for a user.
+     * @param tokenName a name of the new token
+     * @param userId an ID of the Gitlab user
+     * @param expires a date when the token expires
+     * @param scopes scopes of the new token
+     * @return the issued token, including its value and ID
+     * @throws GitClientException if the request fails
+     */
+    public GitToken issueImpersonationToken(final String tokenName, final Long userId, final LocalDate expires,
+                                            final List<String> scopes) throws GitClientException {
         if (adminId == null) {
             throw new IllegalArgumentException("Token may be issued only for local Gitlab.");
         }
@@ -530,8 +649,27 @@ public class GitlabClient {
                 GitTokenRequest.builder()
                         .name(tokenName)
                         .expires(DATE_TIME_FORMATTER.format(expires))
-                        .scopes(Collections.singletonList("api")).build(),
-                adminToken)).getToken();
+                        .scopes(scopes).build(),
+                adminToken));
+    }
+
+    /**
+     * Loads the token, that this client authenticates with.
+     * @return the token info without its value
+     * @throws GitClientException if the request fails, e.g. on Gitlab older than 15.5
+     */
+    public GitToken getCurrentToken() throws GitClientException {
+        return execute(gitLabApi.getCurrentToken());
+    }
+
+    /**
+     * Revokes an impersonation token of a user.
+     * @param userId an ID of the Gitlab user
+     * @param tokenId an ID of the token
+     * @throws GitClientException if the request fails
+     */
+    public void revokeImpersonationToken(final Long userId, final Long tokenId) throws GitClientException {
+        execute(gitLabApi.revokeImpersonationToken(apiVersion, String.valueOf(userId), String.valueOf(tokenId)));
     }
 
     private List<String> generateGitLabUsernames(final String userName) {
