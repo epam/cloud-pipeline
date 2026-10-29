@@ -69,6 +69,8 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     private String dockerImage;
     private String actualDockerImage;
+    // the digest the run's pod was pinned to, empty when the pod was created with the image tag
+    private String actualDockerImageDigest;
     private String platform;
     private String cmdTemplate;
     private String actualCmd;

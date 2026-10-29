@@ -85,6 +85,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.docker.DockerImageDigestResolver;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
@@ -264,6 +265,9 @@ public class PipelineRunManager {
 
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
+
+    @Autowired
+    private DockerImageDigestResolver dockerImageDigestResolver;
 
     @Autowired
     private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
@@ -489,6 +493,8 @@ public class PipelineRunManager {
         final PipelineRun run = createPipelineRun(pipelineVersion.orElse(null), configuration, pipeline,
                 tool, toolVersion.orElse(null),
                 region, parentRun.orElse(null), entityIds, configurationId, sensitive);
+        run.setActualDockerImageDigest(dockerImageDigestResolver.findDigestToPin(run.getActualDockerImage())
+                .orElse(null));
 
         // If there is no podAssignPolicy, then run is scheduled to a dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
@@ -1367,6 +1373,9 @@ public class PipelineRunManager {
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final PipelineRun restartedRun = createRestartRun(run);
         final Tool tool = getToolForRun(configuration);
+        // a restarted run is pinned the same way a new run is, its tag may point to another digest by now
+        restartedRun.setActualDockerImageDigest(
+                dockerImageDigestResolver.findDigestToPin(restartedRun.getActualDockerImage()).orElse(null));
         final List<String> endpoints = configuration.isEraseRunEndpoints() ?
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());

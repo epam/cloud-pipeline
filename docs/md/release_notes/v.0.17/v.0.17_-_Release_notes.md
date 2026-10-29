@@ -59,6 +59,7 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
 
 ***
 
@@ -1855,6 +1856,25 @@ Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VER
 
 In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+***
+
+## Pinning a run to the Docker image digest
+
+Previously, the pod of a run was always created with the Docker image tag, e.g. `library/centos:7`. If the tag was moved to another image after the launch - e.g. while the run's node was still starting - the run could get another image than the one it was launched with.
+
+In **`v0.17`**, a run can be pinned to the exact image its tag points to at the launch. It is enabled by the system preference `launch.docker.image.pin.digest` (`false` by default):
+
+- a new or a restarted run asks the registry for the digest of its image tag, stores it, and its pod pulls the image by the digest (`<registry>/<group>/<tool>@sha256:...`). The image name with the tag is kept in the `docker_image` annotation of the pod
+- the digest is shown at the **Run logs** page (the **Instance** section), and by `pipe view-runs <run-id>`. It is also returned by the API as the `actualDockerImageDigest` field of a run
+- if the digest cannot be obtained from the registry, the run is launched with the tag, as before
+- a paused run is always resumed with the tag, since the pause saves the container under it. The digest of such a run still names the image it was launched with, not the image saved by the pause
+
+The preference applies when a run is launched or restarted. The runs launched before the preference was enabled keep using the tag, and disabling the preference does not affect the runs that are already pinned.
+
+> **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
+
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
 
 ***
 
