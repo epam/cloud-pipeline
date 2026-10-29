@@ -60,6 +60,7 @@
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
+- [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 
 ***
 
@@ -1862,6 +1863,13 @@ For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#contr
 ## Priority of group GUI settings
 
 The **`misc.groups.ui.preferences`** system preference sets GUI settings per group or role. In **`v0.17`**, each group's settings accept a `priority` number: if a user is in several of the listed groups, each setting comes from the group with the highest `priority` that sets it.  
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
+
+***
+
+## Show optional parameters per pipeline or tool
+
+The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
 ***

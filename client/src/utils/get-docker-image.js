@@ -1,3 +1,19 @@
+/**
+ * Splits a `registry/group/tool[:version]` docker image, lower-cased.
+ * @param {string} dockerImage
+ * @returns {{registry: string, group: string, tool: string, version: string}|undefined} -
+ * undefined for an image in any other format
+ */
+export function parseDockerImage (dockerImage) {
+  const parts = (dockerImage || '').trim().toLowerCase().split('/');
+  if (parts.length !== 3) {
+    return undefined;
+  }
+  const [registry, group, toolAndVersion] = parts;
+  const [tool, version = 'latest'] = toolAndVersion.split(':');
+  return {registry, group, tool, version};
+}
+
 export function getDockerImage (dockerImage, dockerRegistries) {
   if (!dockerImage || !dockerRegistries) {
     return undefined;
@@ -7,12 +23,16 @@ export function getDockerImage (dockerImage, dockerRegistries) {
     return undefined;
   }
   const {registries = []} = dockerRegistries.value;
-  const parts = dockerImage.trim().toLowerCase().split('/');
-  if (parts.length !== 3) {
+  const parsed = parseDockerImage(dockerImage);
+  if (!parsed) {
     return undefined;
   }
-  const [diRegistry, diGroup, diToolAndVersion] = parts;
-  const [diTool, diVersion = 'latest'] = diToolAndVersion.split(':');
+  const {
+    registry: diRegistry,
+    group: diGroup,
+    tool: diTool,
+    version: diVersion
+  } = parsed;
   const registry = registries.find((r) => r.path.toLowerCase() === diRegistry);
   if (!registry) {
     return undefined;
