@@ -62,6 +62,7 @@
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
 - [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
+- [Priority of group GUI settings](#priority-of-group-gui-settings)
 
 ***
 
@@ -1888,6 +1889,13 @@ In the current version, such a user may also open, edit and remove a pool it own
 Deleting a **Future dated** pool whose capacity reservation is still open - any status but _Requires approval_, _Finished_, _Purchase failed_, _Failed_ or _Cancelled_ - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The **DELETE** button stays disabled until a **Force deletion** checkbox is ticked, for an administrator exactly as much as for the pool's owner.
 
 For more details see [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#delete-existing-pool).
+
+***
+
+## Priority of group GUI settings
+
+The **`misc.groups.ui.preferences`** system preference sets GUI settings per group or role. In **`v0.17`**, each group's settings accept a `priority` number: if a user is in several of the listed groups, each setting comes from the group with the highest `priority` that sets it.  
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
 ***
 
