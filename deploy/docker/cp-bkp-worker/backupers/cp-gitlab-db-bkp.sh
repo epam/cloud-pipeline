@@ -21,4 +21,6 @@ sql_bkp_file="$bkp_dir/cp-bkp-gitlab-db-dump-$(date +%Y%m%d).sql.gz"
 db_user="${GITLAB_DATABASE_USERNAME:-gitlab}"
 db_name="${GITLAB_DATABASE_DATABASE:-gitlabhq_production}"
 
+# Fail when pg_dump fails, not only gzip: otherwise an empty dump is uploaded, and the rotation removes the good ones
+set -o pipefail
 pg_dump -U "$db_user" "$db_name" | gzip > "$sql_bkp_file"
