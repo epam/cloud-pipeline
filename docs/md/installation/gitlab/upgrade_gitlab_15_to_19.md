@@ -59,6 +59,9 @@ Why the stops matter for this deployment:
   [Edit gitlab.rb](#3-edit-gitlabrb)). PostgreSQL 12 must be 12.10 or later here.
 * **The first 16.x stop** (16.3.9, or a conditional one before it): PostgreSQL 12 is no longer supported. GitLab now
   opens a second (`ci`) database connection pool, which doubles its database connections.
+* **16.7.10**: finalizes a background migration, queued at 15.11.13, that adds the `admin_mode` scope to the active
+  tokens of admin users, `git.token` too. The migration fails on a token whose scopes are a Ruby object: the procedure
+  rewrites them before the first stop (see [Token scopes](#4-token-scopes)).
 * **17.1.8**: the first 17.x. `omnibus_gitconfig` in `gitlab.rb` now stops reconfigure with an error.
 * **17.8.7**: the first stop with OpenSSL 3: TLS 1.2 or later, and RSA keys of at least 2048 bits.
 * **18.2.8**: the first 18.x. PostgreSQL 16.5 or later is required. In GitLab CE, deleting a project or a group now
@@ -134,6 +137,7 @@ session is lost, run it again, and set `DB_COLLATE` and `DB_CTYPE` again (see [O
 
 ```bash
 set -o pipefail
+set +H                                      # no history expansion: some SQL below contains "!"
 export BKP_DIR=/mnt/gitlab-upgrade          # off the file system of /opt/gitlab and /opt/gitlab-postgresql
 export GIT_URL=https://git.example.com:443  # the git.external.url preference
 export GIT_PORT=30080                       # CP_GITLAB_INTERNAL_PORT
@@ -628,6 +632,39 @@ EOF
 grep -n -E "omnibus_gitconfig|^postgresql\[|packSizeLimit" /opt/gitlab/config/gitlab.rb
 ```
 
+### 4. Token scopes
+
+GitLab stores the scopes of each access token as YAML text. GitLab 9 stored the scopes of a token created through its
+REST API as a Ruby `Hashie::Array` object, not as a plain list. `pipectl` creates `git.token` through the REST API, so
+a deployment first installed on GitLab 9 can still have such rows. The `01-15.11.13` stop queues a background
+migration that reads the scopes of every active token of an admin user, and the `03-16.7.10` stop finalizes it. The
+migration fails on such a row (see [Troubleshooting](#tried-to-load-unspecified-class-hashiearray)).
+
+Rewrite these scopes as plain lists, as GitLab writes them. The first command lists the rows, and keeps a record in the
+backup directory. Where there is no such row, it prints nothing, and the update changes nothing.
+
+```bash
+db_sql -c "SELECT id, user_id, name, impersonation, revoked, expires_at, replace(scopes, E'\n', ' ')
+           FROM personal_access_tokens WHERE scopes LIKE '%!ruby/%' ORDER BY id;" | tee -a "$BKP_DIR/00-freeze/pat-scopes.txt"
+db_sql -c "UPDATE personal_access_tokens SET scopes = replace(scopes, '--- !ruby/array:Hashie::Array', '---')
+           WHERE scopes LIKE '--- !ruby/array:Hashie::Array%' RETURNING id;"
+```
+
+Then count what is left on the tokens that the migration reads. This must print `0`:
+
+```bash
+db_sql -c "SELECT count(*) FROM personal_access_tokens t JOIN users u ON u.id = t.user_id
+           WHERE u.admin AND t.revoked IS NOT TRUE AND (t.expires_at IS NULL OR t.expires_at > now())
+             AND t.scopes LIKE '%!ruby/%';"
+```
+
+If it does not, one of the listed rows holds another Ruby object. Write its scopes by hand as a plain list of the same
+scopes, then count again. For example, for a token with the `api` scope only:
+
+```bash
+db_sql -c "UPDATE personal_access_tokens SET scopes = E'---\n- api\n' WHERE id = <id>;"
+```
+
 ## Run the stops
 
 Run [One stop](#one-stop) for each line of [the path](#the-path), from `01-15.11.13` to `15-19.4.1`. After
@@ -1029,7 +1066,23 @@ git_start "gitlab/gitlab-ce:$STOP-ce.0"
 
 A stop was skipped. Start the stop that was skipped.
 
+### "Tried to load unspecified class: Hashie::Array"
+
+A token still has its scopes as a Ruby object: [Token scopes](#4-token-scopes) was skipped, or a backup taken before
+that step was restored. The background migration `BackfillAdminModeScopeForPersonalAccessTokens` then fails:
+
+* From `01-15.11.13` to `02-16.3.9`, `bbm` shows it with status `4`, and a retry fails again.
+* At `03-16.7.10`, reconfigure fails in the migration `FinalizeBackfillAdminModeScopeForPersonalAccessTokens`, and the
+  pod restarts.
+
+Run `git_stop`, then the commands of that step, and start the stop again. At `03-16.7.10` GitLab retries the failed
+batch on its own. At an earlier stop, retry the migration (see
+[A background migration failed](#a-background-migration-failed-status-4)).
+
 ### A background migration failed (status 4)
+
+If its `job_class_name` is `BackfillAdminModeScopeForPersonalAccessTokens`, fix the token scopes first (see
+["Tried to load unspecified class: Hashie::Array"](#tried-to-load-unspecified-class-hashiearray)).
 
 Retry it in **Admin** > **Monitoring** > **Background migrations**, or finish it with the values that `bbm` prints:
 `gitlab-rake gitlab:background_migrations:finalize[<job_class_name>,<table_name>,<column_name>,'<job_arguments>']`.
