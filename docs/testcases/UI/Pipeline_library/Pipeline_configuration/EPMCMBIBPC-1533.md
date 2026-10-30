@@ -9,5 +9,5 @@ Test verifies that a configuration name edited on the Configuration tab is refle
 | 3 | Open the **Configuration** tab |  |
 | 4 | Modify the configuration name in the **Name** field |  |
 | 5 | Save |  |
-| 6 | Click the **Run** button |  |
+| 6 | Click the **RUN** button |  |
 | 7 | See the configuration name shown on the opened form | The configuration name equals the name modified at step 4 |

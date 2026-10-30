@@ -15,4 +15,4 @@ Test verifies that removing the ROLE_ADMIN role hides the admin-only settings ta
 | 6 | Click **OK** |  |
 | 7 | Log out |  |
 | 8 | Login as the non-admin user from the prerequisites of the [EPMCMBIBPC-3017](EPMCMBIBPC-3017.md) case |  |
-| 9 | Repeat step 2 | The **System events**, **User management**, **Email notifications**, **Preferences**, **Cloud Region** tabs are invisible |
+| 9 | Repeat step 2 | The **System events**, **User management**, **Email notifications**, **Preferences**, **Cloud regions** tabs are invisible |
