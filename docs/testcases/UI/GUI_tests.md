@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (151 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -223,6 +223,12 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**2233_3**](Data_storages/2233/2233_3.md) | Check Disable link | :white_check_mark: |
 | [**2233_4**](Data_storages/2233/2233_4.md) | Check "Remove all" button | :white_check_mark: |
 | [**2233_5**](Data_storages/2233/2233_5.md) | Check help tooltip | :white_check_mark: |
+| [**4570_1**](Data_storages/4570/4570_1.md) | "Download"/"Download archive" selection items depend on what is selected |  |
+| [**4570_2**](Data_storages/4570/4570_2.md) | "Download archive" name pop-up: defaults and validation |  |
+| [**4570_3**](Data_storages/4570/4570_3.md) | Queue, track and download an archive |  |
+| [**4570_4**](Data_storages/4570/4570_4.md) | Downloads window: cancel a task, Status filter, paging |  |
+| [**4570_5**](Data_storages/4570/4570_5.md) | Downloads window: the Owner column is admin/ROLE_STORAGE_ADMIN-only |  |
+| [**4570_6**](Data_storages/4570/4570_6.md) | [MANUAL] The per-user archive-download task cap blocks queueing |  |
 | [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
 | [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
 | [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
