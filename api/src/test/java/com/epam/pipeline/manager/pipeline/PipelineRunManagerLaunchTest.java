@@ -35,10 +35,13 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
@@ -96,6 +99,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -207,6 +211,9 @@ public class PipelineRunManagerLaunchTest {
 
     @Mock
     private RestartRunManager restartRunManager;
+
+    @Mock
+    private NodePoolManager nodePoolManager;
 
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
@@ -558,6 +565,153 @@ public class PipelineRunManagerLaunchTest {
         );
         pipelineRun = launchTool(configuration, INSTANCE_TYPE);
         assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+    }
+
+    @Test
+    public void launchPipelineRejectsAnUnknownPool() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.empty()).when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineRejectsAPoolWhoseInstanceTypeDoesNotMatchTheRun() {
+        configuration.setInstanceType(INSTANCE_TYPE);
+        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(anyString(), anyLong());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType("other.type"))).when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineSucceedsWhenThePoolsInstanceTypeMatchesTheRun() {
+        configuration.setInstanceType(INSTANCE_TYPE);
+        doReturn(Optional.empty()).when(instanceOfferManager).findOffer(anyString(), anyLong());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType(INSTANCE_TYPE))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineDoesNotCheckInstanceTypeWhenTheRunDoesNotRequestOne() {
+        // configuration.getInstanceType() is null by default in this fixture - nothing to compare,
+        // so a pool with any instance type must not be rejected on the platform's behalf.
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType("other.type"))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineRejectsAPoolWhoseRegionDoesNotMatchTheRun() {
+        // the shared `configuration` fixture already requests defaultAwsRegion (ID)
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithRegion(NON_DEFAULT_REGION_ID))).when(nodePoolManager).find(ID_2);
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineSucceedsWhenThePoolsRegionMatchesTheRun() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithRegion(REGION_ID))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+    }
+
+    @Test
+    public void launchPipelineRejectsAMalformedPoolId() {
+        setPoolIdParameter(configuration, "not-a-number");
+
+        assertThrows(IllegalArgumentException.class, () -> launchPipeline(configuration, INSTANCE_TYPE));
+        verify(nodePoolManager, never()).find(any());
+    }
+
+    @Test
+    public void launchPipelineDoesNotValidateAnyPoolWhenTheParameterIsAbsent() {
+        launchPipeline(configuration, INSTANCE_TYPE);
+
+        verify(nodePoolManager, never()).find(any());
+    }
+
+    @Test
+    public void launchPipelineUsesThePoolsOwnPodAssignPolicyWhenOneExists() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAssignPolicy(poolIdSelectorPolicy(ID_2)))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy()
+                .isMatch(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(ID_2)));
+    }
+
+    @Test
+    public void launchPipelineOverridesAClientSuppliedPodAssignPolicyWithThePoolsOwn() {
+        configuration.setPodAssignPolicy(RunContainerSpec.builder()
+                .selector(RunContainerSpec.PodAssignSelector.builder()
+                        .label("custom-label").value("custom-value").build())
+                .build());
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithAssignPolicy(poolIdSelectorPolicy(ID_2)))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy()
+                .isMatch(KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(ID_2)));
+    }
+
+    @Test
+    public void launchPipelineKeepsTheDefaultPodAssignPolicyWhenThePoolHasNoLaunchConfig() {
+        setPoolIdParameter(configuration, String.valueOf(ID_2));
+        doReturn(Optional.of(poolWithInstanceType(null))).when(nodePoolManager).find(ID_2);
+
+        assertNotNull(launchPipeline(configuration, INSTANCE_TYPE));
+
+        assertTrue(configuration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL));
+    }
+
+    private void setPoolIdParameter(final PipelineConfiguration configuration, final String value) {
+        final Map<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(PipelineRunManager.CP_CAP_POOL_ID, new PipeConfValueVO(value));
+        configuration.setParameters(parameters);
+    }
+
+    private NodePool poolWithInstanceType(final String instanceType) {
+        final NodePool pool = new NodePool();
+        pool.setId(ID_2);
+        pool.setName("pool");
+        pool.setInstanceType(instanceType);
+        return pool;
+    }
+
+    private NodePool poolWithRegion(final Long regionId) {
+        final NodePool pool = new NodePool();
+        pool.setId(ID_2);
+        pool.setName("pool");
+        pool.setRegionId(regionId);
+        return pool;
+    }
+
+    private NodePool poolWithAssignPolicy(final RunContainerSpec policy) {
+        final NodePool pool = new NodePool();
+        pool.setId(ID_2);
+        pool.setName("pool");
+        final NodePoolLaunchConfig launchConfig = new NodePoolLaunchConfig();
+        launchConfig.setKubeAssignPolicy(policy);
+        pool.setLaunchConfig(launchConfig);
+        return pool;
+    }
+
+    private RunContainerSpec poolIdSelectorPolicy(final Long poolId) {
+        return RunContainerSpec.builder()
+                .selector(RunContainerSpec.PodAssignSelector.builder()
+                        .label(KubernetesConstants.NODE_POOL_ID_LABEL)
+                        .value(String.valueOf(poolId))
+                        .build())
+                .build();
     }
 
     @Test

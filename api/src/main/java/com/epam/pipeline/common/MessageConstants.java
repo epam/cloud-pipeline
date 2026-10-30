@@ -863,6 +863,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
+    public static final String ERROR_NODE_POOL_INSTANCE_MISMATCH = "error.node.pool.instance.mismatch";
+    public static final String ERROR_NODE_POOL_REGION_MISMATCH = "error.node.pool.region.mismatch";
+    public static final String ERROR_CAPACITY_POOL_ID_INVALID = "error.capacity.pool.id.invalid";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";

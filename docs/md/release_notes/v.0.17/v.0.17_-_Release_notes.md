@@ -1004,6 +1004,8 @@ Two kinds of reservation are supported, both AWS-only for now:
 
 The pool takes no nodes before its reservation is active, and stops taking new runs once the reservation is ending; jobs already running keep running until it actually ends. The owner is notified as the reservation's status changes.
 
+A run can also be bound to one of these pools exclusively, rather than merely becoming eligible for it: setting the `CP_CAP_POOL_ID` parameter to the pool's ID restricts the run to that pool's own free nodes only, and fails the run rather than launching it off the pool if none becomes available within a few autoscaler cycles. A launch naming an unknown pool, or an instance type or region the pool doesn't itself provide, is rejected immediately instead of waiting for that. Naming a shareable pool this way reuses that pool's own node selector automatically, the same one its launch form picker already applies - see [Guaranteeing a run's capacity](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#guaranteeing-a-runs-capacity).
+
 For the full behaviour - including how a pool backed by either kind can be edited, cancelled or deleted - see [Pools backed by a capacity reservation](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-reservation) and [Pools backed by a capacity block](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#pools-backed-by-a-capacity-block).
 
 ## FS quotas
