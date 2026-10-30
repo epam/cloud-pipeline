@@ -120,10 +120,14 @@ export function archiveActionAvailable (selectedItems) {
 // (DataStorageDownloadArchiveManager). Anything else in a name built from a
 // selected item's own file name - brackets, an ampersand, a non-latin
 // letter - would be rejected on OK, so a generated default is folded through
-// this first. A name the USER types is still passed through untouched and the
-// server's own error surfaced; this is only about not offering an invalid
-// default.
-const ILLEGAL_NAME_CHARACTERS = /[^\w\-. ]+/g;
+// this first.
+//
+// Both regexes below are built from this one character-class string, so that
+// sanitising a generated default and validating a user-typed name can never
+// disagree about what is legal.
+const NAME_CHARACTERS = '\\w\\-. ';
+const ILLEGAL_NAME_CHARACTERS = new RegExp(`[^${NAME_CHARACTERS}]+`, 'g');
+const SAFE_ARCHIVE_NAME = new RegExp(`^[${NAME_CHARACTERS}]+$`);
 
 // `HH-mm-ss`, not `HH:mm:ss`, for the same reason: a colon is outside the
 // pattern above (and illegal in a Windows file name). The date half matches
@@ -223,6 +227,40 @@ export function defaultArchiveName (selectedItems = []) {
 }
 
 /**
+ * Validates a name the user typed. Its illegal-character half mirrors the
+ * server's own rule exactly: built from `NAME_CHARACTERS` above, it is the
+ * same character class as `SAFE_ARCHIVE_NAME` in
+ * `DataStorageDownloadArchiveManager` - both `\w`s are ASCII `[A-Za-z0-9_]` -
+ * so it can never disagree with the sanitiser that folds a generated default
+ * through that same class either.
+ *
+ * Its empty-name half does NOT mirror the server: `validArchiveName` there
+ * accepts a blank name and falls back to `archive.zip` (see
+ * `defaultArchiveName`'s doc comment above), but silently renaming what the
+ * user asked for is worse than asking them to type something, so this
+ * rejects it instead.
+ *
+ * The name is trimmed first, because trimming is what the modal submits.
+ *
+ * @param {string} name
+ * @returns {string|undefined} the message to show, or `undefined` when the
+ *   trimmed name is acceptable
+ */
+export function archiveNameError (name) {
+  const trimmed = `${name || ''}`.trim();
+  if (!trimmed) {
+    return 'Archive name is required.';
+  }
+  // No `g` flag on SAFE_ARCHIVE_NAME, so `.test` is safe to call repeatedly -
+  // a `g` regex would carry `lastIndex` between calls and answer differently
+  // on alternate renders. Do not add one.
+  if (!SAFE_ARCHIVE_NAME.test(trimmed)) {
+    return 'Only letters, digits, spaces, dot, dash and underscore are allowed.';
+  }
+  return undefined;
+}
+
+/**
  * The cap check that runs when the user clicks "Download archive", before the
  * archive-name modal opens. Toasts the reason and answers `false` when the
  * user is already at the limit, so the caller can decline to open it.
@@ -279,6 +317,11 @@ export async function archiveDownloadAllowed (asyncTasks) {
  * SUCCESS/FAILED transition; it is not re-implemented here, and this toast is
  * not redundant with it.
  *
+ * On failure this both toasts the error AND re-throws it, so the
+ * name-confirmation modal above it can tell a queued archive from a refused
+ * one and decide whether to close: the modal closes on resolution alone, and
+ * stays open - with this toast already shown - on rejection.
+ *
  * @param {{startArchiveDownload: function}} asyncTasks
  * @param {string|number} storageId
  * @param {string[]} paths
@@ -313,6 +356,7 @@ export default async function handleDownloadArchive (
     );
   } catch (error) {
     messageApi.error(error.message, 5);
+    throw error;
   } finally {
     hide();
   }
