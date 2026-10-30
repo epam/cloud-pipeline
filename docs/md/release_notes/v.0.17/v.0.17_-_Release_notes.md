@@ -65,6 +65,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
@@ -1875,6 +1876,14 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 ***
 
 ## Notable Bug fixes
+
+### Storage files are not indexed when an object key is longer than 512 bytes
+
+[#4698](https://github.com/epam/cloud-pipeline/issues/4698)
+
+Previously, if an object storage (`S3`, `GCS`, `Azure`) held a file whose path was longer than 512 bytes, the search service failed to index the files of the whole storage.
+The search kept showing the files of that storage from its last successful indexing, or none if it was never indexed.
+Now, such storages are indexed as usual, and the files with long paths can be found via the search as well.
 
 ### Launch form: a conditional multi-select enum parameter is shown empty
 
