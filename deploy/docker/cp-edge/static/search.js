@@ -260,7 +260,8 @@ window.addEventListener('DOMContentLoaded', () => {
     const lastDocument = (documents || [])[documents.length - 1];
     if (loadMore && lastDocument) {
       scrollingParameters = {
-        docId: lastDocument.elasticId,
+        // results are sorted by the document's `id` field, which may differ from `elasticId`
+        docId: lastDocument.id || lastDocument.elasticId,
         docScore: lastDocument.score,
         scrollingBackward: false
       };

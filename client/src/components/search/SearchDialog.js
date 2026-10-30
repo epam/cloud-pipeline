@@ -36,7 +36,7 @@ import getStyle from '../../utils/browserDependentStyle';
 import {facetedQueryString} from './faceted-search/utilities';
 import {DocumentTypeFilterName} from './faceted-search/filter';
 import getItemUrl from './faceted-search/utilities/get-item-url';
-import {getSearchPrompt} from './utilities/search-utilities';
+import {getScrollingDocumentId, getSearchPrompt} from './utilities/search-utilities';
 import '../../staticStyles/Search.css';
 
 const PAGE_SIZE = 50;
@@ -494,7 +494,11 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         await this.props.searchEngine.send(
           query,
           lastResult
-            ? {docId: lastResult.elasticId, docScore: lastResult.score, scrollingBackward: false}
+            ? {
+              docId: getScrollingDocumentId(lastResult),
+              docScore: lastResult.score,
+              scrollingBackward: false
+            }
             : undefined,
           PAGE_SIZE,
           this.generateSearchTypes()
