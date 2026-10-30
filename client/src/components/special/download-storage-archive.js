@@ -227,10 +227,18 @@ export function defaultArchiveName (selectedItems = []) {
 }
 
 /**
- * Validates a name the user typed against the same rule the server applies
- * (`SAFE_ARCHIVE_NAME` in `DataStorageDownloadArchiveManager`) - built from
- * `NAME_CHARACTERS` above, so it can never disagree with the sanitiser that
- * folds a generated default through the same class.
+ * Validates a name the user typed. Its illegal-character half mirrors the
+ * server's own rule exactly: built from `NAME_CHARACTERS` above, it is the
+ * same character class as `SAFE_ARCHIVE_NAME` in
+ * `DataStorageDownloadArchiveManager` - both `\w`s are ASCII `[A-Za-z0-9_]` -
+ * so it can never disagree with the sanitiser that folds a generated default
+ * through that same class either.
+ *
+ * Its empty-name half does NOT mirror the server: `validArchiveName` there
+ * accepts a blank name and falls back to `archive.zip` (see
+ * `defaultArchiveName`'s doc comment above), but silently renaming what the
+ * user asked for is worse than asking them to type something, so this
+ * rejects it instead.
  *
  * The name is trimmed first, because trimming is what the modal submits.
  *

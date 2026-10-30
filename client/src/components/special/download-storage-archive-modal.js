@@ -24,9 +24,13 @@ import {archiveNameError} from './download-storage-archive';
 // to its `name` prop, which would make accepting the offered default — the
 // common case here — impossible, and its pattern validator allows `@`, which
 // the server's `^[\w\-. ]+$` rule does not. This modal validates instead with
-// `archiveNameError`, the same rule `download-storage-archive.js` folds a
-// generated default through, so what the field accepts and what the server
-// accepts can never disagree.
+// `archiveNameError`. Its illegal-character half mirrors the server's own
+// `SAFE_ARCHIVE_NAME` exactly — both `\w`s are ASCII `[A-Za-z0-9_]` — but its
+// empty-name half is deliberately stricter than the server: the server's own
+// answer to a blank name is to accept it and call the archive `archive.zip`
+// (`download-storage-archive.js` already says so, near `handleDownloadArchive`),
+// and silently renaming what the user asked for is worse than asking them to
+// type something.
 export default class DownloadArchiveModal extends React.Component {
   static propTypes = {
     visible: PropTypes.bool,
@@ -82,12 +86,26 @@ export default class DownloadArchiveModal extends React.Component {
     this.setState({pending: true});
     try {
       await this.props.onSubmit(name);
-      // Nothing clears `pending` here: the parent closes the modal on
-      // resolution, and it animates closed with its controls still blocked -
-      // which avoids a flash of an enabled form on the way out.
+      // `pending` clears here too, not only on rejection: `defaultProps`
+      // supplies a resolving no-op `onSubmit`, and any future caller that
+      // resolves without ever flipping `visible` to `false` would otherwise
+      // leave this modal blocked forever with no way out. Clearing it is
+      // safe - no flash of an enabled form on the way out - because today's
+      // only caller, `submitDownloadArchive`
+      // (pipelines/browser/data-storage/index.js), calls
+      // `closeDownloadArchiveModal()` BEFORE the promise this modal awaited
+      // resolves, so `visible` is already `false` by the time this line
+      // runs. `submitted` is NOT reset here on either path, and still is
+      // what actually stops a second submit: React 15 batches `setState`
+      // inside a handler, so a synchronous second click or Enter would not
+      // yet observe `state.pending` and would slip through if `submitted`
+      // - a plain instance field, visible the instant it is set - were not
+      // guarding it too.
+      this.setState({pending: false});
     } catch (error) {
-      // Reported by the caller's own toast. Clearing both guards is what lets
-      // the user fix the name and press OK again.
+      // Reported by the caller's own toast. Resetting `submitted` as well as
+      // `pending` here is what lets the user fix the name and press OK
+      // again.
       this.submitted = false;
       this.setState({pending: false});
     }

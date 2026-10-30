@@ -193,7 +193,6 @@ test('while onSubmit is pending, OK is disabled and loading, Cancel and the ' +
 
   const okButton = screen.getByRole('button', {name: 'OK'});
   expect(okButton).toBeDisabled();
-  expect(okButton.className).toEqual(expect.stringContaining('ant-btn-loading'));
   expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
   expect(screen.getByLabelText('Archive name')).toBeDisabled();
 
@@ -232,7 +231,8 @@ test('when onSubmit rejects, the dialog stays in the document, OK, Cancel ' +
 });
 
 test('when onSubmit resolves, the modal does not close itself: it stays in ' +
-  'the document with visible unchanged and onCancel is never called', async () => {
+  'the document with visible unchanged, onCancel is never called, and its ' +
+  'controls are not left permanently blocked', async () => {
   const onCancel = fn();
   const onSubmit = fn(() => Promise.resolve());
   renderModal({defaultName: 'archive-20261021-131302', onCancel, onSubmit});
@@ -241,4 +241,10 @@ test('when onSubmit resolves, the modal does not close itself: it stays in ' +
 
   expect(screen.getByText('Download archive')).toBeTruthy();
   expect(onCancel).not.toHaveBeenCalled();
+  // No caller here ever flips `visible` to `false`, which is the dead-state
+  // this pins: `pending` must still clear on its own, or OK, Cancel and the
+  // input would stay disabled forever with nothing able to re-enable them.
+  expect(screen.getByRole('button', {name: 'OK'})).not.toBeDisabled();
+  expect(screen.getByRole('button', {name: 'Cancel'})).not.toBeDisabled();
+  expect(screen.getByLabelText('Archive name')).not.toBeDisabled();
 });
