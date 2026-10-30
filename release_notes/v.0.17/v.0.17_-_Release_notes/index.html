@@ -260,6 +260,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a>
@@ -715,6 +717,7 @@
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</a></li>
 <li><a href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a></li>
 <li><a href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a></li>
 <li><a href="#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user">Restarted runs lose parameters and get an API token of another user</a></li>
@@ -2195,6 +2198,11 @@ For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_s
 For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#miscellaneous">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4698">#4698</a></p>
+<p>Previously, if an object storage (<code>S3</code>, <code>GCS</code>, <code>Azure</code>) held a file whose path was longer than 512 bytes, the search service failed to index the files of the whole storage.
+The search kept showing the files of that storage from its last successful indexing, or none if it was never indexed.
+Now, such storages are indexed as usual, and the files with long paths can be found via the search as well.</p>
 <h3 id="launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4673">#4673</a></p>
 <p>Previously, a multi-select enum parameter defined under <code>conditional_parameters</code> did not get its default value when its condition matched.
