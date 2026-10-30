@@ -80,7 +80,8 @@ test('typing a different name and pressing OK calls onSubmit with the edited val
   expect(onSubmit).toHaveBeenCalledWith('my custom name');
 });
 
-test('an empty or whitespace-only name disables OK and does not call onSubmit', async () => {
+test('an empty or whitespace-only name disables OK, shows its own message ' +
+  'and does not call onSubmit', async () => {
   const onSubmit = fn();
   renderModal({defaultName: 'archive-20261021-131302', onSubmit});
   const input = screen.getByLabelText('Archive name');
@@ -92,10 +93,43 @@ test('an empty or whitespace-only name disables OK and does not call onSubmit', 
   // when it cannot submit — antd 2.13.14's Modal does not support
   // `okButtonProps`, so this depends on the modal's own explicit footer.
   expect(screen.getByRole('button', {name: 'OK'})).toBeDisabled();
+  expect(screen.getByText('Archive name is required.')).toBeTruthy();
 
   await click(screen.getByRole('button', {name: 'OK'}));
 
   expect(onSubmit).not.toHaveBeenCalled();
+});
+
+test('a name with an illegal character disables OK and shows its message', async () => {
+  const onSubmit = fn();
+  renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+  const input = screen.getByLabelText('Archive name');
+
+  await clear(input);
+  await type(input, 'a@b');
+
+  expect(screen.getByRole('button', {name: 'OK'})).toBeDisabled();
+  expect(screen.getByText(
+    'Only letters, digits, spaces, dot, dash and underscore are allowed.'
+  )).toBeTruthy();
+
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  expect(onSubmit).not.toHaveBeenCalled();
+});
+
+test('a valid name shows no message and leaves OK enabled', async () => {
+  renderModal({defaultName: 'archive-20261021-131302'});
+  const input = screen.getByLabelText('Archive name');
+
+  await clear(input);
+  await type(input, 'my valid-name.1');
+
+  expect(screen.getByRole('button', {name: 'OK'})).not.toBeDisabled();
+  expect(screen.queryByText('Archive name is required.')).toBeNull();
+  expect(screen.queryByText(
+    'Only letters, digits, spaces, dot, dash and underscore are allowed.'
+  )).toBeNull();
 });
 
 test('reopening the modal with a new defaultName shows the new one, not the typed value', () => {
@@ -143,4 +177,68 @@ test('reopening the modal allows one more submit', async () => {
 
   expect(onSubmit).toHaveBeenCalledTimes(2);
   expect(onSubmit).toHaveBeenLastCalledWith('archive-20261022-090000');
+});
+
+// `onSubmit`'s promise is the pending signal: the modal blocks every control
+// until it settles, and does not let a second click or Enter queue a second
+// request while it is still in flight.
+test('while onSubmit is pending, OK is disabled and loading, Cancel and the ' +
+  'input are disabled, and a second OK click or Enter does not call onSubmit again', async () => {
+  let resolveSubmit;
+  const promise = new Promise((resolve) => { resolveSubmit = resolve; });
+  const onSubmit = fn(() => promise);
+  renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  const okButton = screen.getByRole('button', {name: 'OK'});
+  expect(okButton).toBeDisabled();
+  expect(okButton.className).toEqual(expect.stringContaining('ant-btn-loading'));
+  expect(screen.getByRole('button', {name: 'Cancel'})).toBeDisabled();
+  expect(screen.getByLabelText('Archive name')).toBeDisabled();
+
+  await click(okButton);
+  await keyDown(screen.getByLabelText('Archive name'), {key: 'Enter', keyCode: 13});
+
+  expect(onSubmit).toHaveBeenCalledTimes(1);
+
+  // Settles the promise so nothing is left pending once the test ends.
+  resolveSubmit();
+  await Promise.resolve();
+});
+
+test('when onSubmit rejects, the dialog stays in the document, OK, Cancel ' +
+  'and the input re-enable, and editing the name and pressing OK calls ' +
+  'onSubmit a second time', async () => {
+  const onSubmit = fn()
+    .mockImplementationOnce(() => Promise.reject(new Error('queueing failed')))
+    .mockImplementationOnce(() => Promise.resolve());
+  renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  expect(screen.getByText('Download archive')).toBeTruthy();
+  expect(screen.getByRole('button', {name: 'OK'})).not.toBeDisabled();
+  expect(screen.getByRole('button', {name: 'Cancel'})).not.toBeDisabled();
+  expect(screen.getByLabelText('Archive name')).not.toBeDisabled();
+
+  const input = screen.getByLabelText('Archive name');
+  await clear(input);
+  await type(input, 'retry name');
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  expect(onSubmit).toHaveBeenCalledTimes(2);
+  expect(onSubmit).toHaveBeenLastCalledWith('retry name');
+});
+
+test('when onSubmit resolves, the modal does not close itself: it stays in ' +
+  'the document with visible unchanged and onCancel is never called', async () => {
+  const onCancel = fn();
+  const onSubmit = fn(() => Promise.resolve());
+  renderModal({defaultName: 'archive-20261021-131302', onCancel, onSubmit});
+
+  await click(screen.getByRole('button', {name: 'OK'}));
+
+  expect(screen.getByText('Download archive')).toBeTruthy();
+  expect(onCancel).not.toHaveBeenCalled();
 });
