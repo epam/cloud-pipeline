@@ -65,7 +65,7 @@ import {
 } from './utilities/get-storage-file-display-name-templates';
 import getUserSearchColumnsOrder from './utilities/get-user-search-columns-order';
 import roleModel from '../../utils/roleModel';
-import {getSearchPrompt} from './utilities/search-utilities';
+import {getScrollingDocumentId, getSearchPrompt} from './utilities/search-utilities';
 
 function getDomainKey (domain) {
   return `domain-${domain || ''}`;
@@ -782,7 +782,7 @@ class FacetedSearch extends React.Component {
         [field]: document[field] || ''
       }), {});
       this.doSearch({
-        docId: document.elasticId,
+        docId: getScrollingDocumentId(document),
         docScore: document.score,
         scrollingBackward: !forward,
         ...(Object.keys(docSortFields).length && {docSortFields})
