@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +55,9 @@ public class ReassignHandlerTest {
 
     private static final String WINDOWS = "windows";
     private static final String POOL_NODE_ID = "p-12345";
+    private static final String PLAIN_NODE_ID = "1";
     private static final String ANOTHER_OWNER = "ANOTHER_USER";
+    private static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
 
     private final AutoscalerService autoscalerService = mock(AutoscalerService.class);
     private final CloudFacade cloudFacade = mock(CloudFacade.class);
@@ -169,9 +172,77 @@ public class ReassignHandlerTest {
         verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
     }
 
-    private boolean tryReassignOnto(final NodePool pool) {
+    @Test
+    public void shouldNotReassignADifferentPoolsNodeToARunExclusivelyBoundToAnotherPool() {
+        final NodePool pool = activePool();
+
+        assertThat(tryReassignOnto(pool, poolIdParameter(ID_2))).isFalse();
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldReassignTheNamedPoolsNodeToARunExclusivelyBoundToIt() {
+        final NodePool pool = activePool();
+        doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
+
+        assertThat(tryReassignOnto(pool, poolIdParameter(ID))).isTrue();
+    }
+
+    @Test
+    public void shouldNotReassignAPlainNodeToARunExclusivelyBoundToAPool() {
+        final PipelineRun pipelineRun = getPipelineRun(ID);
+        pipelineRun.setPipelineRunParameters(poolIdParameter(ID_2));
+        doReturn(Optional.of(pipelineRun)).when(pipelineRunManager).findRun(ID);
+        final RunningInstance plainInstance = new RunningInstance();
+        plainInstance.setInstance(new RunInstance());
+        doReturn(plainInstance).when(autoscalerService).getPreviousRunInstance(Mockito.anyString(), Mockito.any());
+        doReturn(true).when(autoscalerService).requirementsMatch(any(), any());
+        final InstanceRequest request = new InstanceRequest();
+        request.setInstance(new RunInstance());
+
+        final boolean result = reassignHandler.tryReassignNode(null, new HashSet<>(), new HashSet<>(),
+                String.valueOf(ID), ID, request, Collections.singletonList(PLAIN_NODE_ID));
+
+        assertThat(result).isFalse();
+        verify(cloudFacade, never()).reassignNode(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    public void requiredPoolIdReadsTheCpCapPoolIdParameter() {
+        final PipelineRun pipelineRun = getPipelineRun(ID);
+        pipelineRun.setPipelineRunParameters(poolIdParameter(ID_2));
+
+        assertThat(reassignHandler.requiredPoolId(pipelineRun)).isEqualTo(Optional.of(ID_2));
+    }
+
+    @Test
+    public void requiredPoolIdIsEmptyForAnOrdinaryRun() {
         final PipelineRun pipelineRun = getPipelineRun(ID);
         pipelineRun.setPipelineRunParameters(Collections.emptyList());
+
+        assertThat(reassignHandler.requiredPoolId(pipelineRun)).isEqualTo(Optional.empty());
+    }
+
+    @Test
+    public void requiredPoolIdIsEmptyForAMalformedParameterValueRatherThanThrowing() {
+        final PipelineRun pipelineRun = getPipelineRun(ID);
+        pipelineRun.setPipelineRunParameters(Collections.singletonList(
+                new PipelineRunParameter(CP_CAP_POOL_ID, "not-a-number")));
+
+        assertThat(reassignHandler.requiredPoolId(pipelineRun)).isEqualTo(Optional.empty());
+    }
+
+    private List<PipelineRunParameter> poolIdParameter(final Long poolId) {
+        return Collections.singletonList(new PipelineRunParameter(CP_CAP_POOL_ID, String.valueOf(poolId)));
+    }
+
+    private boolean tryReassignOnto(final NodePool pool) {
+        return tryReassignOnto(pool, Collections.emptyList());
+    }
+
+    private boolean tryReassignOnto(final NodePool pool, final List<PipelineRunParameter> parameters) {
+        final PipelineRun pipelineRun = getPipelineRun(ID);
+        pipelineRun.setPipelineRunParameters(parameters);
         doReturn(Optional.of(pipelineRun)).when(pipelineRunManager).findRun(ID);
         final RunningInstance poolInstance = pool.toRunningInstance();
         poolInstance.getInstance().setNodeId(POOL_NODE_ID);
@@ -191,6 +262,13 @@ public class ReassignHandlerTest {
         pool.setCount(1);
         pool.setStartDate(DateUtils.nowUTC().minusDays(2));
         pool.setEndDate(DateUtils.nowUTC().minusMinutes(1));
+        return pool;
+    }
+
+    /** A pool that is active now - its window has not passed, unlike {@link #inactivePool()}. */
+    private static NodePool activePool() {
+        final NodePool pool = inactivePool();
+        pool.setEndDate(DateUtils.nowUTC().plusDays(1));
         return pool;
     }
 

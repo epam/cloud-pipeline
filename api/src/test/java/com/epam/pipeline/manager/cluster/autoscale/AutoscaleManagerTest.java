@@ -75,6 +75,7 @@ public class AutoscaleManagerTest {
     private static final Long TEST_RUN_ID = 111L;
     private static final String PRIMARY_INSTANCE_TYPE = "primary.type";
     private static final String FALLBACK_INSTANCE_TYPE = "fallback.type";
+    private static final Long TEST_POOL_ID = 777L;
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -146,6 +147,9 @@ public class AutoscaleManagerTest {
             .thenReturn(SystemPreferences.CLUSTER_HIGH_NON_BATCH_PRIORITY.getDefaultValue());
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN))
                 .thenReturn(false);
+
+        // Every run in this suite is an ordinary one; the pool-exclusive tests below override this.
+        when(reassignHandler.requiredPoolId(any())).thenReturn(Optional.empty());
 
         when(kubernetesManager.getKubernetesClient(any(Config.class))).thenReturn(kubernetesClient);
 
@@ -306,6 +310,31 @@ public class AutoscaleManagerTest {
         haCoreIsMaster.runAutoscaling();
 
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID), any(), any(), any());
+    }
+
+    @Test
+    public void testExclusivePoolRunNeverFallsBackToGenericNode() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager, never())
+            .updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunEventuallyFailsWhenNeverClaimed() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+
+        autoscaleManagerCore.runAutoscaling(); // attempt 1 of 2 (CLUSTER_NODEUP_RETRY_COUNT)
+        autoscaleManagerCore.runAutoscaling(); // attempt 2 of 2
+        autoscaleManagerCore.runAutoscaling(); // retry budget exceeded - same bound an ordinary nodeup uses
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 
     @Test
