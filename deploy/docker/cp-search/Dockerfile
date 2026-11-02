@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,34 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+# procps-ng: pgrep for liveness.sh. yum-utils: package-cleanup for the Lustre client.
+# glibc-langpack-en: the deployment sets LANG=en_US.UTF-8, and the base image has only C.UTF-8.
+# Without that locale, java decodes the file names of the mounted storages as ASCII
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
                 unzip \
                 sudo \
+                procps-ng \
+                yum-utils \
+                glibc-langpack-en \
                 nfs-utils \
                 samba \
                 samba-client \
                 cifs-utils
 
-ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
 RUN cd /tmp && \
-    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    wget -q "$LUSTRE_CLIENT_URL" -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
-    yum install -y lustre-client/*.rpm && \
+    dnf install -y lustre-client/*.rpm && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,21 +16,15 @@
 #   -t ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:share-srv-latest \
 #   --build-arg CP_API_DIST_URL="https://..."
 
-FROM centos:7
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
                 unzip \
-                openssl
+                openssl && \
+    dnf clean all
 
 ENV CP_SHARE_HOME="/opt/share-srv"
 RUN mkdir -p $CP_SHARE_HOME

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ export CP_DOLLAR='$'
 # Mirrors scripts/pipeline-launch/launch.sh's CP_PYTHON_VERSION/CP_PYTHON_PATH resolution (issue #4589),
 # so Java call sites resolving CP_PYTHON_PATH behave the same in this pod as in a job container.
 # CP_PYTHON_VERSION=2 (default) keeps existing behavior; both interpreters are already on the image.
-# The "|| command -v python" fallback (launch.sh has none) is needed here: this image's yum install
-# only provides "python" (Dockerfile:29-43), not a "python2" binary.
+# The "|| command -v python" fallback (launch.sh has none) covers an image that only has a "python"
+# binary. This image links both "python" and "python2" to its Miniconda2 install (see the Dockerfile).
 export CP_PYTHON_VERSION="${CP_PYTHON_VERSION:-2}"
 export CP_PYTHON2_PATH="${CP_PYTHON2_PATH:-$(command -v python2 || command -v python)}"
 export CP_PYTHON3_PATH="${CP_PYTHON3_PATH:-$(command -v python3.12 || command -v python3)}"
