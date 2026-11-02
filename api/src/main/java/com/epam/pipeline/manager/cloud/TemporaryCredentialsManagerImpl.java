@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
@@ -106,6 +107,9 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         final AbstractDataStorage loadedDataStorage = storagesById.get(action.getId());
         action.setBucketName(loadedDataStorage.getRoot());
         action.setPath(loadedDataStorage.getPath());
+        if (loadedDataStorage instanceof S3bucketDataStorage) {
+            action.setAccessPointArn(((S3bucketDataStorage) loadedDataStorage).getAccessPointArn());
+        }
         return action;
     }
 

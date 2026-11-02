@@ -40,7 +40,8 @@ public abstract class AbstractDataStorageFactory {
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
             List<String> allowedCidrs, Long regionId, Long fileShareMountId, boolean mountExactPath,
-            String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus);
+            String kmsKey, String tempRole, boolean useAssumedCreds, String accessPointArn,
+            String mountStatus);
 
     public AbstractDataStorage convertToDataStorage(DataStorageVO vo, final CloudProvider provider) {
         DataStorageType type = determineStorageType(vo, provider);
@@ -49,6 +50,7 @@ public abstract class AbstractDataStorageFactory {
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
                         vo.getRegionId(), vo.getFileShareMountId(), vo.isMountExactPath(),
                         vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
+                        vo.getAccessPointArn(),
                         NFSStorageMountStatus.ACTIVE.name());
         storage.setDescription(vo.getDescription());
         storage.setParentFolderId(vo.getParentFolderId());
@@ -80,6 +82,7 @@ public abstract class AbstractDataStorageFactory {
                                                         final boolean mountExactPath,
                                                         final String kmsKey, final String tempRole,
                                                         final boolean useAssumedCreds,
+                                                        final String accessPointArn,
                                                         final String mountStatus) {
             switch (type) {
                 case S3:
@@ -89,6 +92,7 @@ public abstract class AbstractDataStorageFactory {
                     bucket.setKmsKeyArn(kmsKey);
                     bucket.setTempCredentialsRole(tempRole);
                     bucket.setUseAssumedCredentials(useAssumedCreds);
+                    bucket.setAccessPointArn(accessPointArn);
                     return bucket;
                 case NFS:
                     NFSDataStorage storage = new NFSDataStorage(id, name, path, policy, mountPoint);
