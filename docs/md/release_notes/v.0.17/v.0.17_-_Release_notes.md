@@ -61,6 +61,7 @@
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
+- [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 
 ***
 
@@ -1874,6 +1875,12 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
+
+## VS Code extension: the folder opened on connect
+
+On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
+In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
+For more details see [here](../../manual/15_Interactive_services/15.5._VSCode_interactions.md).
 
 ***
 
