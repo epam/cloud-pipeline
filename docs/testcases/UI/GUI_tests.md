@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (148 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (151 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -226,6 +226,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4570_1**](Data_storages/4570/4570_1.md) | [Negative] Validate the Archive name field in the Download archive pop-up |  |
 | [**4570_2**](Data_storages/4570/4570_2.md) | Download archive pop-up blocks its controls while queuing and closes only once the archive is queued |  |
 | [**4570_3**](Data_storages/4570/4570_3.md) | [Negative] Download archive pop-up stays open when the per-user download cap is hit on confirm |  |
+| [**4570_7**](Data_storages/4570/4570_7.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" |  |
+| [**4570_8**](Data_storages/4570/4570_8.md) | Downloads window: unselecting every status applies no status filter at all |  |
+| [**4570_9**](Data_storages/4570/4570_9.md) | Downloads window: clearing the Owner filter by hand, and "Reset to defaults" |  |
 | [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
 | [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
 | [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
