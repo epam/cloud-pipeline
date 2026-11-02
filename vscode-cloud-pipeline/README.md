@@ -35,3 +35,13 @@ The list **updates automatically** so you can see when something finishes starti
 - **Connect** — When the run is ready for SSH: **Connect via SSH** from the context menu, or open the run from the tree (same as your list open mode). Opens a remote window on the machine. **Sensitive** runs cannot be connected.
 - **Stop run** — Ends the job in Cloud Pipeline (with confirmation) and closes any SSH tunnel for that run.
 - **Stop SSH Tunnel** — Closes only the local tunnel and remote session; the run keeps running. If nothing is selected, choose which tunnel to close.
+
+---
+
+## Folder opened on connect
+
+The remote window opens the home folder of the user it connects as:
+
+- **The run owner** — the folder in the run's `OWNER_HOME` environment variable. If it is not set, or cannot be read, `/home/<user name>`.
+- **`root`** — `/root`.
+- **Any other user** (for example, on a shared run) — `/home/<user name>`.

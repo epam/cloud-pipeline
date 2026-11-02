@@ -2,6 +2,8 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Client, ConnectConfig } from 'ssh2';
+import { getBrandName } from './extensionEnv';
+import { OWNER_ENV_PROBE_COMMAND, parseOwnerEnvProbe, RemoteOwnerEnv } from './remoteWorkspacePath';
 
 function randomKeyName(runId: number): string {
   return `vscode-cp-${runId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -14,6 +16,8 @@ export interface KeyProvisionResult {
   sshConfigUser: string;
   /** One line OpenSSH format for host key (key type + base64), without [host]:port prefix */
   hostRsaPubKeyBody: string;
+  /** `$OWNER` and `$OWNER_HOME` as the SSH user's session sees them; undefined when they could not be read */
+  ownerEnv?: RemoteOwnerEnv;
 }
 
 function execCommand(client: Client, cmd: string): Promise<{ code: number; stdout: string; stderr: string }> {
@@ -51,6 +55,23 @@ function sftpReadFile(client: Client, remotePath: string): Promise<Buffer> {
   });
 }
 
+/** Reads `$OWNER` and `$OWNER_HOME` in the SSH user's session; undefined, and logged, on any failure. */
+export async function readOwnerEnv(client: Client, runId: number): Promise<RemoteOwnerEnv | undefined> {
+  try {
+    const { code, stdout, stderr } = await execCommand(client, OWNER_ENV_PROBE_COMMAND);
+    if (code !== 0) {
+      throw new Error(`exit ${code}: ${stderr || stdout}`);
+    }
+    return parseOwnerEnvProbe(stdout);
+  } catch (e) {
+    console.warn(
+      `[${getBrandName()}] Could not read OWNER_HOME of run ${runId}, the default home folder opens: ` +
+        (e instanceof Error ? e.message : String(e))
+    );
+    return undefined;
+  }
+}
+
 /** Safe for embedding in a double-quoted remote shell fragment. */
 function shellEscapeDoubleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
@@ -59,6 +80,8 @@ function shellEscapeDoubleQuoted(s: string): string {
 /**
  * Provisions a throwaway RSA key on the run, adds to authorized_keys for sshUsers, downloads private key.
  * Mirrors pipe-cli generate_remote_openssh_and_putty_keys + copy keys (OpenSSH path only, no putty).
+ * Also reads the run's `$OWNER` and `$OWNER_HOME`, to pick the folder to open; a failure there is
+ * logged and does not fail the key provisioning.
  */
 export async function provisionPasswordlessKey(
   connect: ConnectConfig,
@@ -129,6 +152,7 @@ done
 `.trim();
 
   let hostRsaPubKeyBody = '';
+  let ownerEnv: RemoteOwnerEnv | undefined;
   try {
     const { code, stdout, stderr } = await execCommand(client, script);
     if (code !== 0) {
@@ -143,6 +167,8 @@ done
     const hostBody = hostRsa.toString('utf8').trim();
     const parts = hostBody.split(/\s+/);
     hostRsaPubKeyBody = parts.length >= 2 ? `${parts[0]} ${parts[1]}` : hostBody;
+
+    ownerEnv = await readOwnerEnv(client, runId);
   } finally {
     client.end();
   }
@@ -152,5 +178,6 @@ done
     publicKeyPath: localPublic,
     sshConfigUser,
     hostRsaPubKeyBody,
+    ownerEnv,
   };
 }
