@@ -2751,8 +2751,17 @@ export default class DataStorage extends React.Component {
                   path={this.props.path}
                   storageInfo={this.storage.info}
                   region={this.regionName}
+                  // `archiveStorageSupported` currently stands in for a gate
+                  // the extract worker itself does not expose yet: it is
+                  // documented (download-storage-archive.js) as what the
+                  // *download archive* worker can read, not what a future
+                  // extract worker can. The two are the same storage types
+                  // today (S3, and NFS on a share mounted as NFS), but they
+                  // could legitimately diverge - if they do, this is the
+                  // expression to change, to whatever gate the real extract
+                  // endpoint needs. `!this.isOmicsStore` is not repeated
+                  // here: the enclosing block above already requires it.
                   extractArchivesAvailable={
-                    !this.isOmicsStore &&
                     archiveStorageSupported(this.storage.info, this.fileShareMount)
                   }
                   // synchronous

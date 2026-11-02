@@ -156,8 +156,12 @@ class UploadButton extends React.Component {
     this.setState({
       uploadInfoClosable: allDone
     }, () => {
-      if (allDone && !haveRetry) {
-        this.extractOrCloseDelayed();
+      if (allDone) {
+        // A retryable failure must keep the modal open regardless of
+        // whether extraction also runs - `skipAutoClose` tells
+        // `extractOrCloseDelayed` not to arm the close timer either way,
+        // which is the behaviour this had before extraction existed.
+        this.extractOrCloseDelayed(!!haveRetry);
       }
     });
   };
@@ -169,11 +173,19 @@ class UploadButton extends React.Component {
    * still goes straight to that timer. One that was, and that uploaded at
    * least one archive successfully, extracts those archives first and
    * closes afterwards instead.
+   *
+   * @param {boolean} [skipAutoClose=false] true when a file in the batch
+   *   still offers a retry (the S3 path's own affordance). The modal must
+   *   not auto-close while a retry is still possible, so neither branch
+   *   below arms the close timer in that case - extraction, if any, still
+   *   runs over whatever already landed.
    */
-  extractOrCloseDelayed = () => {
+  extractOrCloseDelayed = (skipAutoClose = false) => {
     const {extractAfterUpload, uploadingFiles} = this.state;
     if (!extractAfterUpload) {
-      setTimeout(this.hideUploadInfo, 2000);
+      if (!skipAutoClose) {
+        setTimeout(this.hideUploadInfo, 2000);
+      }
       return;
     }
     // Idempotency guard: this function can be reached more than once for
@@ -186,7 +198,9 @@ class UploadButton extends React.Component {
     if (paths.length === 0) {
       // Every archive in the batch failed or was aborted - nothing landed
       // in the storage to extract, so the API is not called at all.
-      setTimeout(this.hideUploadInfo, 2000);
+      if (!skipAutoClose) {
+        setTimeout(this.hideUploadInfo, 2000);
+      }
       return;
     }
     this.extractionStarted = true;
@@ -199,9 +213,11 @@ class UploadButton extends React.Component {
         await extract(this.props.storageId, paths);
         // The files were uploaded and are now extracted - close the same
         // way a batch without extraction would have, after the same
-        // short grace period.
+        // short grace period, unless a retry is still on offer.
         this.setState({extracting: false, uploadInfoClosable: true}, () => {
-          setTimeout(this.hideUploadInfo, 2000);
+          if (!skipAutoClose) {
+            setTimeout(this.hideUploadInfo, 2000);
+          }
         });
       } catch (error) {
         // The files were still uploaded; only extraction failed. Leave the
@@ -296,7 +312,16 @@ class UploadButton extends React.Component {
       : this.onUploadStatusChangedSynchronous;
     this.setState({
       pendingConfirmation: false,
-      extractAfterUpload
+      extractAfterUpload,
+      // The confirmation state leaves `uploadInfoClosable: true` behind (the
+      // modal is dismissable while it only lists the selection). The
+      // progress state that follows must not inherit that: before this
+      // confirmation step existed, the initial `false` was never touched
+      // until a batch actually finished, so it is reset here to restore
+      // that - without it the close X rendered mid-upload, and dismissing it
+      // ran `hideUploadInfo`, which cleared `extractAfterUpload` under an
+      // in-flight batch.
+      uploadInfoClosable: false
     }, startUpload);
   };
 
@@ -321,7 +346,14 @@ class UploadButton extends React.Component {
           uploadInfoVisible: false,
           uploadInfoClosable: false,
           uploadingFiles: [],
-          synchronousUploadingFiles: []
+          synchronousUploadingFiles: [],
+          // `pendingConfirmation` and `extractAfterUpload` are independent
+          // of what `validateAndFilter` decided; left set, they would
+          // survive with the modal hidden until some later `hideUploadInfo`
+          // clears them, and arm extraction for a batch that never
+          // actually uploaded.
+          pendingConfirmation: false,
+          extractAfterUpload: false
         });
         return;
       }
@@ -332,7 +364,9 @@ class UploadButton extends React.Component {
           uploadInfoVisible: false,
           uploadInfoClosable: false,
           uploadingFiles: [],
-          synchronousUploadingFiles: []
+          synchronousUploadingFiles: [],
+          pendingConfirmation: false,
+          extractAfterUpload: false
         });
         return;
       }
@@ -517,7 +551,11 @@ class UploadButton extends React.Component {
           uploadInfoVisible: false,
           uploadInfoClosable: false,
           uploadingFiles: [],
-          synchronousUploadingFiles: []
+          synchronousUploadingFiles: [],
+          // See the matching comment in `onUploadStatusChangedSynchronous`:
+          // these two are independent of `validate`'s own outcome.
+          pendingConfirmation: false,
+          extractAfterUpload: false
         });
         return;
       }

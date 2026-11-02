@@ -188,6 +188,29 @@ describe('UploadButton - the paused confirmation modal', () => {
     expect(screen.queryByRole('button', {name: 'Cancel'})).not.toBeInTheDocument();
     expect(screen.getByText('Uploading files...')).toBeInTheDocument();
   });
+
+  test(
+    'the progress state is not closable while the batch is still uploading',
+    async () => {
+      useFakeTimers();
+      const {input} = renderUploadButton({extractArchivesAvailable: true});
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await settleSelection();
+      expect(screen.getByRole('button', {name: 'Upload'})).toBeInTheDocument();
+
+      await click(screen.getByRole('button', {name: 'Upload'}));
+
+      // `rc-dialog` renders its close button with `aria-label="Close"`
+      // (`node_modules/rc-dialog/lib/Dialog.js`) - an accessible name, not
+      // an antd-internal class, so this satisfies rule 6. Its absence is
+      // the assertion: before this batch finishes, the modal must not
+      // offer a way to dismiss it mid-upload, as it never did before the
+      // confirmation step existed.
+      expect(screen.getByText('Uploading files...')).toBeInTheDocument();
+      expect(screen.queryByRole('button', {name: 'Close'})).not.toBeInTheDocument();
+    }
+  );
 });
 
 // With no `extractArchives` prop passed, `UploadButton` falls through to its
@@ -206,6 +229,12 @@ describe('UploadButton - extraction after upload', () => {
       instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
       instance = null;
     }
+    // Restored here rather than as the last statement of the one test that
+    // needs fake timers: an assertion failing earlier in that test would
+    // otherwise skip the real `useRealTimers()` call it has today, and fake
+    // timers would leak into the next describe block, whose `waitFor(...,
+    // {timeout: 5000})` would then hang on a timer that never advances.
+    useRealTimers();
   });
 
   test(
@@ -266,7 +295,9 @@ describe('UploadButton - extraction after upload', () => {
       expect(screen.getByText('Uploading files...')).toBeInTheDocument();
       expect(screen.getByText(/^archive\.zip - /)).toBeInTheDocument();
       expect(screen.getByText(/^notes\.txt - /)).toBeInTheDocument();
-      useRealTimers();
+      // Real timers are restored in this block's own `afterEach`, above -
+      // not here, so a failed assertion above this line still leaves them
+      // restored for the next test.
     }
   );
 });
@@ -438,5 +469,97 @@ describe('UploadButton - the injectable extraction call', () => {
         ['folder/one.zip', 'folder/two.zip']
       );
     }
+  );
+
+  test(
+    'a retryable failure in the batch still extracts the archive that landed, ' +
+    'without arming the auto-close timer',
+    async () => {
+      // Driven through the instance for the same reason the idempotency
+      // test above is: this is the S3 path's own completion state (one
+      // archive done, one file done-but-retryable), reached honestly by
+      // calling the same method `uploadItemToStorageSDK`'s callbacks call.
+      const extractArchives = fn(() => Promise.resolve());
+      const onRefresh = fn();
+      renderUploadButton({
+        extractArchivesAvailable: true,
+        uploadToS3: true,
+        uploadToNFS: false,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      await act(async () => {
+        instance.setState({
+          uploadInfoVisible: true,
+          extractAfterUpload: true,
+          uploadingFiles: [
+            {uid: '1', name: 'one.zip', status: 'done', done: true},
+            {
+              uid: '2',
+              name: 'two.bin',
+              status: 'error',
+              done: true,
+              error: 'boom',
+              retryCb: fn()
+            }
+          ]
+        });
+      });
+
+      await act(async () => {
+        instance.hideUploadInfoDelayedIfDone();
+      });
+
+      await waitFor(() => {
+        expect(extractArchives).toHaveBeenCalledTimes(1);
+      }, {timeout: 5000});
+      // Only the archive that actually landed - the retryable file is not
+      // an archive and did not succeed either way.
+      expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/one.zip']);
+
+      // A batch with a retryable failure never auto-closed before
+      // extraction existed, and that must still hold: if a close timer had
+      // been armed anyway, it would have fired well within this real delay
+      // and called `onRefresh`.
+      await new Promise((resolve) => setTimeout(resolve, 2200));
+      expect(onRefresh).not.toHaveBeenCalled();
+    },
+    10000
+  );
+
+  test(
+    'plain Upload never calls the injectable extraction function',
+    async () => {
+      const extractArchives = fn(() => Promise.resolve());
+      const onRefresh = fn();
+      const {input} = renderUploadButton({
+        extractArchivesAvailable: true,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Upload'})).toBeInTheDocument();
+      });
+
+      // The "Upload" button, not "Upload and extract" - exactly what the
+      // earlier "clicking Upload replaces the three buttons with the
+      // progress state" test clicks, but that test would still pass if
+      // `confirmUpload(false)` wrongly set `extractAfterUpload: true`. This
+      // one would not: it waits the batch out to a real close and checks
+      // the seam was never touched.
+      await click(screen.getByRole('button', {name: 'Upload'}));
+
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      }, {timeout: 5000});
+
+      expect(extractArchives).not.toHaveBeenCalled();
+    },
+    10000
   );
 });
