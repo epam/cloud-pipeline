@@ -1,4 +1,4 @@
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Building 'maintenance' page
-FROM node:20-alpine AS maintenance
+FROM node:26-alpine3.24 AS maintenance
 
 ENV CP_MAINTENANCE_PUBLIC_URL="/maintenance"
 
@@ -27,7 +27,7 @@ COPY ./maintenance/ui .
 
 RUN npm run build
 
-FROM rockylinux:8
+FROM rockylinux/rockylinux:9.8
 
 ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v20.17.0-linux-x64/bin/
 
@@ -35,17 +35,17 @@ ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh
 ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
-RUN yum install -y python2 \
-                   unzip \
+# nmap-ncat provides "nc" on Rocky Linux 9, gettext the "envsubst" that init calls,
+# openssh-clients the "ssh" that wetty runs through sshpass
+RUN dnf install -y unzip \
                    git \
-                   curl \
                    wget \
                    epel-release \
                    zlib-devel \
                    cronie \
                    sshpass \
                    perl \
-                   nc \
+                   nmap-ncat \
                    gcc \
                    make \
                    bzip2 \
@@ -53,26 +53,40 @@ RUN yum install -y python2 \
                    xz \
                    xz-devel \
                    ncurses-devel \
-                   procps \
-                   patch && \
-    yum group install -y "Development Tools" && \
-    yum clean all && \
-    ln -sf /usr/bin/python2 /usr/bin/python && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
+                   procps-ng \
+                   patch \
+                   gettext \
+                   openssh-clients && \
+    dnf group install -y "Development Tools" && \
+    dnf clean all
+
+# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as cp-api-srv does. It is built for
+# the /opt/conda prefix. Link it as the python/python2/pip that init resolves for sync-routes.py and maintenance.py;
+# /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
+    tar -xzf python2.tgz -C /opt/ && \
+    rm -f python2.tgz && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
+    ln -sf /opt/conda/bin/pip /usr/local/bin/pip && \
     pip install rsa==4.0 \
                 pykube==0.15.0
 
+# This Python 3.12 build links libffi.so.6, which Rocky Linux 9 does not ship (it has libffi.so.8), so its
+# "ctypes" module would not load: link the libffi.so.6 of the Miniconda2 install above.
 ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
 RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     tar -xzf python3.tgz -C /usr/local/ && \
     rm -f python3.tgz && \
     ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
     ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    ln -s /opt/conda/lib/libffi.so.6 /usr/lib64/libffi.so.6 && \
     pip3 install rsa==4.0 \
                  pykube-ng==23.6.0
 
 # Openresty + http_connect module
-RUN yum install -y  pcre-devel \
+RUN dnf install -y  pcre-devel \
                     openssl-devel \
                     perl-Digest-MD5
 
@@ -182,5 +196,5 @@ RUN chmod go-w /opt/filebeat-oss/*
 
 # Install SQUID
 
-RUN yum install -y squid
+RUN dnf install -y squid
 COPY squid.conf.tmpl /etc/squid/squid.conf.tmpl

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
-RUN apt update && \
-        apt install -y \
-                    wget \
-                    curl \
-                    unzip \
-                    gcc \
-                    python3 python3-venv python3-pip python3-dev \
-                    build-essential libssl-dev libffi-dev python3-setuptools
+FROM rockylinux/rockylinux:9.8
+# bzip2 unpacks micromamba, gcc builds the C extensions of the packages that come as sources, procps-ng provides pgrep for liveness.sh
+RUN dnf install -y \
+                wget \
+                unzip \
+                gcc \
+                bzip2 \
+                procps-ng
+
+# Python 3.6, the python3 of the Ubuntu 18.04 image this one replaces: the pipe-common and sls pins are for it.
+# Rocky Linux 9 has no Python 3.6 package, so it comes from conda-forge, via micromamba. Its bin goes first in PATH,
+# as the python3 and pip of the steps below and of start.sh; /usr/bin/python3 stays the system one, for dnf.
+ENV MAMBA_ROOT_PREFIX=/opt/local/mamba
+ENV CP_SLS_PYTHON_HOME=$MAMBA_ROOT_PREFIX/envs/sls
+ENV PATH=$CP_SLS_PYTHON_HOME/bin:$PATH
+RUN mkdir -p $MAMBA_ROOT_PREFIX && \
+    cd $MAMBA_ROOT_PREFIX && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    bin/micromamba create -y --prefix $CP_SLS_PYTHON_HOME -c conda-forge python=3.6 pip && \
+    bin/micromamba clean -a -y
 RUN python3 -m pip install --upgrade pip && python3 -m pip install setuptools_rust
 
 # API distribution

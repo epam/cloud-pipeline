@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM rockylinux:8.7
+FROM rockylinux/rockylinux:9.8
 
 # Setup httpd
-RUN yum install -y  gettext \
+RUN dnf install -y  gettext \
                     wget \
                     expat-devel \
                     make \
@@ -32,8 +32,8 @@ RUN yum install -y  gettext \
                     ncurses-devel \
                     procps \
                     patch && \
-    yum group install -y "Development Tools" && \
-    yum clean all
+    dnf group install -y "Development Tools" && \
+    dnf clean all
 
 ARG APACHE_BUILD_DIR=/opt/httpd-build
 ARG APACHE_VERSION=2.4.41
@@ -46,8 +46,8 @@ ENV CFLAGS="-DBIG_SECURITY_HOLE -O2"
 COPY httpd/conf /tmp/
 COPY httpd/modules.shared ${APACHE_BUILD_DIR}/
 COPY httpd/modules.static ${APACHE_BUILD_DIR}/
-RUN yum install -y epel-release && \
-    rpm -Uvh https://packages.microsoft.com/config/rhel/8/packages-microsoft-prod.rpm
+RUN dnf install -y epel-release && \
+    rpm -Uvh https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
 RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
@@ -65,6 +65,9 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     mv apr-${APR_VERSION} ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION}/srclib/apr && \
     mv apr-util-${APR_UTIL_VERSION} ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION}/srclib/apr-util && \
     cd ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION} && \
+    # OpenSSL 3 removed ERR_GET_FUNC (its function codes are always 0): without this, mod_ssl.so keeps an
+    # undefined ERR_GET_FUNC symbol and httpd fails to load it
+    sed -i 's/ERR_GET_FUNC(ERR_peek_last_error())/0/' modules/ssl/ssl_engine_init.c && \
     ./configure --prefix=${APACHE_HOME} \
                 --with-included-apr \
                 --with-included-apr-util \
@@ -76,19 +79,40 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     rm -rf ${APACHE_BUILD_DIR}
 
 # Setup nfs sync
-RUN yum install -y cronie \
+# blobfuse (v1) has no el9 package, the Microsoft rhel/9 repo has only blobfuse2 (it pulls in fuse3):
+# syncmounts.sh mounts the Azure storages with its v1-compatible "blobfuse2 mountv1"
+RUN dnf install -y cronie \
                    nfs-utils \
                    cifs-utils \
-                   python2 blobfuse fuse && \
-    ln -sf /usr/bin/python2 /usr/bin/python
+                   blobfuse2 fuse
+
+# Rocky 9's pam_unix checks an account through its unix_chkpwd helper. Where the host's AppArmor has the
+# unix-chkpwd profile (Ubuntu 24.04 has it), the helper cannot read /etc/shadow and crond refuses to run
+# root's jobs. Let root pass the account check of crond
+RUN sed -i '/^account\s\+include\s\+system-auth/i account    sufficient pam_succeed_if.so uid = 0 quiet' /etc/pam.d/crond && \
+    grep -q pam_succeed_if /etc/pam.d/crond
+
+# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as cp-api-srv does. It is built for
+# the /opt/conda prefix. Link it as the python/python2/pip that the steps below and "init" find;
+# /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
+    tar -xzf python2.tgz -C /opt/ && \
+    rm -f python2.tgz && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
+    ln -sf /opt/conda/bin/pip /usr/local/bin/pip
+
 ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+# yum-utils provides package-cleanup
 RUN cd /tmp && \
+    dnf install -y yum-utils && \
     wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
-    yum install -y lustre-client/*.rpm && \
+    dnf install -y lustre-client/*.rpm && \
     (package-cleanup --cleandupes -y || true) && \
     rm -rf lustre-client*
 
@@ -99,12 +123,16 @@ RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get
 
 # Python 3.12, alongside the Python 2 install above (not a replacement): CP_PYTHON_VERSION selects
 # between them at container start, and the SMB server keeps its own separate micromamba env either way.
+# This Python 3.12 build links libffi.so.6, which Rocky Linux 9 does not ship (it has libffi.so.8), so its
+# "ctypes" module (and "watchdog.observers", which watch_mount_shares.py imports) would not load: link the
+# libffi.so.6 of the Miniconda2 install above.
 ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
 RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     tar -xzf python3.tgz -C /usr/local/ && \
     rm -f python3.tgz && \
     ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
     ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    ln -s /opt/conda/lib/libffi.so.6 /usr/lib64/libffi.so.6 && \
     pip3 install -I requests==2.34.2
 
 ENV SYNC_HOME=/opt/sync

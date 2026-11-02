@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN apt update && \
-    apt install -y \
+# gobject-introspection-devel is in the crb repository, and is only needed to build PyGObject below
+RUN dnf install -y --enablerepo=crb \
                 wget \
-                curl \
                 git \
-                nginx gcc \
-                python3 python3-venv python3-pip python3-dev \
-                build-essential libssl-dev libffi-dev python3-setuptools
+                nginx gcc make \
+                bzip2 xz which \
+                libffi-devel gobject-introspection-devel && \
+    dnf clean all
+
+# Python 3.6, as on Ubuntu 18.04: gitreader's setup.py pins packages for it, e.g. dataclasses==0.8 (Python <3.7)
+ENV CP_GITLAB_READER_PYTHON_HOME="/opt/local/mamba/envs/gitreader"
+ENV PATH="$CP_GITLAB_READER_PYTHON_HOME/bin:$PATH"
+RUN mkdir -p /opt/local/mamba && \
+    cd /opt/local/mamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    bin/micromamba create -y \
+        --prefix $CP_GITLAB_READER_PYTHON_HOME \
+        --root-prefix /opt/local/mamba \
+        -c conda-forge \
+        python=3.6
+
+# gitreader's setup.py pins PyGObject==3.26.1, which Ubuntu 18.04 shipped as python3-gi.
+# PyPI has no 3.26.1 release, so it is built from the GNOME source
+RUN cd /tmp && \
+    wget -q https://download.gnome.org/sources/pygobject/3.26/pygobject-3.26.1.tar.xz && \
+    echo "f5577b9b9c70cabb9a60d81b855d488b767c66f867432e7fb64aa7269b04d1a9  pygobject-3.26.1.tar.xz" | sha256sum -c && \
+    tar -xJf pygobject-3.26.1.tar.xz && \
+    cd pygobject-3.26.1 && \
+    ./configure --prefix=$CP_GITLAB_READER_PYTHON_HOME PYTHON=$CP_GITLAB_READER_PYTHON_HOME/bin/python3 --disable-cairo && \
+    make && \
+    make install && \
+    rm -rf /tmp/pygobject-3.26.1*
 
 RUN python3 -m pip install --upgrade pip && pip3 install setuptools_rust==0.12.1
 
@@ -46,9 +70,12 @@ RUN cd /tmp && \
     mv gitreader* gitreader && \
     chown -R root:root gitreader && chmod -R 777 gitreader
 
+# The env's static libpython3.6m.a holds LTO bytecode of an older GCC, which GCC 11 cannot link.
+# The symlink makes the uwsgi build link the shared libpython instead, and the rpath lets uwsgi find it
 RUN cd $CP_GITLAB_READER_HOME/gitreader && \
     python3 -m pip install wheel && \
-    python3 -m pip install uwsgi==2.0.20 && \
+    ln -s ../../libpython3.6m.so $CP_GITLAB_READER_PYTHON_HOME/lib/python3.6/config-3.6m-x86_64-linux-gnu/libpython3.6m.so && \
+    LDFLAGS="-Wl,-rpath,$CP_GITLAB_READER_PYTHON_HOME/lib" python3 -m pip install uwsgi==2.0.20 && \
     python3 setup.py install
 
 CMD ["/init.sh"]

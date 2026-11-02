@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE="python:3.9.14-slim"
+ARG BASE_IMAGE="rockylinux/rockylinux:9.8"
 
 FROM $BASE_IMAGE
 
@@ -21,19 +21,40 @@ ENV CP_NODE_REPORTER_OOM_HOME="$CP_NODE_REPORTER_HOME/oom" \
     CP_NODE_REPORTER_STATS_HOME="$CP_NODE_REPORTER_HOME/stats" \
     CP_NODE_REPORTER_COMMON_HOME="$CP_NODE_REPORTER_HOME/common"
 
-ENV CP_PYTHON2_PATH=python
+# pipe_log and pipe_tag of pipe-common call $CP_PYTHON_PATH
+ENV CP_PYTHON2_PATH=python \
+    CP_PYTHON_PATH=python
 
 RUN mkdir -p "$CP_NODE_REPORTER_HOME" \
              "$CP_NODE_REPORTER_OOM_HOME" \
              "$CP_NODE_REPORTER_STATS_HOME"
 
-RUN apt-get update && \
-    apt-get install -y unzip \
-                       curl
+# bzip2: unpacks micromamba below
+RUN dnf install -y unzip \
+                   bzip2 && \
+    dnf clean all
 
 # Install jq
 RUN curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq && \
     chmod +x /usr/bin/jq
+
+# Python 3.9 (conda-forge, via micromamba). Its bin goes first on PATH, as /usr/local/bin was on python:3.9-slim,
+# so "python", "python3", "pip" and "gunicorn" are the env's. dnf keeps /usr/bin/python3.
+# setuptools stays below 60, as python:3.9-slim had: from 60 on, its distutils hack is on by default, and
+# pipe-common's "pip install -I" of setuptools 44.1.1 over it leaves "import setuptools" broken
+ENV CP_NODE_REPORTER_PYTHON_HOME="/opt/local/mamba/envs/node-reporter"
+ENV PATH="$CP_NODE_REPORTER_PYTHON_HOME/bin:$PATH"
+
+RUN mkdir -p /opt/local/mamba && \
+    cd /opt/local/mamba && \
+    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
+    /opt/local/mamba/bin/micromamba create -y \
+        --prefix "$CP_NODE_REPORTER_PYTHON_HOME" \
+        --root-prefix /opt/local/mamba \
+        -c conda-forge \
+        python=3.9 \
+        "setuptools<60" && \
+    MAMBA_ROOT_PREFIX=/opt/local/mamba /opt/local/mamba/bin/micromamba clean -y --all
 
 # Install "pipeline/CommonRepo" python package
 ARG CP_API_DIST_URL
