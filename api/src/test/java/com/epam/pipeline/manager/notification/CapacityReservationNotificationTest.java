@@ -112,6 +112,36 @@ public class CapacityReservationNotificationTest {
     }
 
     @Test
+    public void shouldAddressOwnerAndCopyAdminsForACapacityBlock() {
+        reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
+        reservation.setId(10L);
+
+        notificationManager.notifyCapacityReservation(reservation,
+                NotificationType.CAPACITY_RESERVATION_STATUS_CHANGED, Collections.emptyList());
+
+        final NotificationMessage message = captureMessage();
+        assertThat(message.getToUserId()).isEqualTo(OWNER_ID);
+        assertThat(message.getCopyUserIds()).containsExactly(ADMIN_ID);
+        assertThat(message.getTemplate().getId()).isEqualTo(TEMPLATE_ID);
+    }
+
+    @Test
+    public void shouldCopyExtraRecipientsAlongsideAdminsForACapacityBlock() {
+        reservation = CapacityReservationCreatorUtils.getCapacityBlockReservation(1L);
+        reservation.setId(10L);
+        when(userManager.loadUsersByNames(anyList()))
+                .thenReturn(Arrays.asList(user(RUN_OWNER_ID, RUN_OWNER),
+                        user(OTHER_RUN_OWNER_ID, OTHER_RUN_OWNER)));
+
+        notificationManager.notifyCapacityReservation(reservation,
+                NotificationType.CAPACITY_RESERVATION_FINALIZING,
+                Arrays.asList(RUN_OWNER, OTHER_RUN_OWNER));
+
+        assertThat(captureMessage().getCopyUserIds())
+                .containsExactlyInAnyOrder(ADMIN_ID, RUN_OWNER_ID, OTHER_RUN_OWNER_ID);
+    }
+
+    @Test
     public void shouldCopyExtraRecipientsAlongsideAdmins() {
         when(userManager.loadUsersByNames(anyList()))
                 .thenReturn(Arrays.asList(user(RUN_OWNER_ID, RUN_OWNER),

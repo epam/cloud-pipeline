@@ -358,6 +358,16 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                         return;
                     }
                 }
+                if (reassignHandler.requiredPoolId(run).isPresent()) {
+                    // A run exclusively bound to a pool never falls through to a generic or on-demand node -
+                    // it waits for that pool specifically, bounded the same way an ordinary nodeup attempt
+                    // already is: this cycle counts against the same retry budget checked at the top of this
+                    // method, so a pool that can never satisfy the run still ends it, just not on this cycle.
+                    log.debug("Run {} is exclusively bound to a pool; no free node matched it this cycle.", runId);
+                    nodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal + 1);
+                    labelPendingRun(run);
+                    return;
+                }
                 if (!hasClusterCapacity(nodeCount, maxClusterSize)) {
                     labelPendingRun(run);
                     return;

@@ -49,10 +49,10 @@ import java.util.function.Consumer;
  * JDBC DAO here does. Writes come in two shapes:
  * <ul>
  *   <li>{@link #update(CapacityReservation)} - writes every column that can change, from the caller's copy.</li>
- *   <li>{@link #updateRetry(CapacityReservation)} - writes only what another attempt chooses, its reason, its
- *       dates and its zone, and only while the row still carries the status the caller's copy showed, so those
- *       fields never land on a reservation another transaction has already moved on. It answers whether it
- *       wrote.</li>
+ *   <li>{@link #updateRetry(CapacityReservation)} - writes only what another attempt chooses: its reason, its
+ *       dates, its zone and its attempt count, and only while the row still carries the status the caller's copy
+ *       showed, so those fields never land on a reservation another transaction has already moved on. It answers
+ *       whether it wrote.</li>
  * </ul>
  *
  * <p>The requested window a request was created with is never written again: it is the envelope every later
@@ -174,7 +174,8 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
         COMMITMENT_DURATION,
         INSTANCE_PLATFORM,
         ATTEMPT,
-        GRANTED_COMMITMENT_DURATION;
+        GRANTED_COMMITMENT_DURATION,
+        CAPACITY_BLOCK_OFFERING_ID;
 
         static MapSqlParameterSource getParameters(final CapacityReservation reservation) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -206,6 +207,7 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
             params.addValue(ATTEMPT.name(), reservation.getAttempt());
             params.addValue(GRANTED_COMMITMENT_DURATION.name(),
                     reservation.getGrantedCommitmentDuration());
+            params.addValue(CAPACITY_BLOCK_OFFERING_ID.name(), reservation.getCapacityBlockOfferingId());
             return params;
         }
 
@@ -239,6 +241,7 @@ public class CapacityReservationDao extends NamedParameterJdbcDaoSupport {
                 reservation.setAttempt(rs.getInt(ATTEMPT.name()));
                 applyLong(rs, GRANTED_COMMITMENT_DURATION.name(),
                         reservation::setGrantedCommitmentDuration);
+                reservation.setCapacityBlockOfferingId(rs.getString(CAPACITY_BLOCK_OFFERING_ID.name()));
                 return reservation;
             };
         }

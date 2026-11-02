@@ -66,7 +66,17 @@ public class NodePoolApiServiceTest extends AbstractAclTest {
     public void shouldCreateAReservationBackedPoolForANodePoolManager() {
         doReturn(pool).when(mockNodePoolManager).create(any(NodePoolVO.class));
 
-        assertThat(nodePoolApiService.create(reservationPoolVO())).isEqualTo(pool);
+        assertThat(nodePoolApiService.create(reservationPoolVO(CapacityReservationType.FUTURE_DATED)))
+                .isEqualTo(pool);
+    }
+
+    @Test
+    @WithMockUser(roles = NODE_POOL_MANAGER_ROLE)
+    public void shouldCreateACapacityBlockBackedPoolForANodePoolManager() {
+        doReturn(pool).when(mockNodePoolManager).create(any(NodePoolVO.class));
+
+        assertThat(nodePoolApiService.create(reservationPoolVO(CapacityReservationType.CAPACITY_BLOCK)))
+                .isEqualTo(pool);
     }
 
     @Test
@@ -78,13 +88,14 @@ public class NodePoolApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser
     public void shouldDenyAnOrdinaryUserAReservationBackedPool() {
-        assertThrows(AccessDeniedException.class, () -> nodePoolApiService.create(reservationPoolVO()));
+        assertThrows(AccessDeniedException.class,
+            () -> nodePoolApiService.create(reservationPoolVO(CapacityReservationType.FUTURE_DATED)));
     }
 
-    private static NodePoolVO reservationPoolVO() {
+    private static NodePoolVO reservationPoolVO(final CapacityReservationType type) {
         final NodePoolVO vo = new NodePoolVO();
         final CapacityReservationRequest request = new CapacityReservationRequest();
-        request.setReservationType(CapacityReservationType.FUTURE_DATED);
+        request.setReservationType(type);
         vo.setCapacityReservationRequest(request);
         return vo;
     }

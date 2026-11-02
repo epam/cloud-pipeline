@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceF
 import com.epam.pipeline.entity.cluster.pool.filter.instancefilter.PoolInstanceFilterType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
@@ -54,6 +55,7 @@ import java.util.function.BiFunction;
 public class ReassignHandler {
     private static final String CP_CREATE_NEW_NODE = "CP_CREATE_NEW_NODE";
     private static final String CP_CAP_DEDICATED_INSTANCE = "CP_CAP_DEDICATED_INSTANCE";
+    private static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -102,17 +104,43 @@ public class ReassignHandler {
             return false;
         }
 
+        final Optional<Long> requiredPoolId = pipelineRun.flatMap(this::requiredPoolId);
+
         // Try to find match with pre-pulled image
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
                 autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
-                pipelineRun, scheduledRuns, reassignedNodes);
+                pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes);
         if (reassignedWithMatchingImage) {
             return true;
         }
         return attemptReassign(freeInstances,
                 autoscalerService::requirementsMatch, requiredInstance, runId, longId,
-                pipelineRun, scheduledRuns, reassignedNodes);
+                pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes);
 
+    }
+
+    /**
+     * A run naming a pool via {@code CP_CAP_POOL_ID} is exclusively bound to it: only that pool's own free
+     * nodes may take it, never an unrelated node or a different pool's - the opposite of every other run's
+     * free pick of any matching pool or plain node. {@link AutoscaleManager} reads this too, to keep such a
+     * run from ever falling through to a generic on-demand/spot node when this method can't satisfy it.
+     */
+    public Optional<Long> requiredPoolId(final PipelineRun run) {
+        return run.getPipelineRunParameters().stream()
+                .filter(parameter -> Objects.equals(parameter.getName(), CP_CAP_POOL_ID))
+                .map(PipelineRunParameter::getValue)
+                .filter(StringUtils::isNotBlank)
+                .findAny()
+                .flatMap(this::parsePoolId);
+    }
+
+    private Optional<Long> parsePoolId(final String value) {
+        try {
+            return Optional.of(Long.valueOf(value));
+        } catch (NumberFormatException e) {
+            log.warn("CP_CAP_POOL_ID parameter '{}' is not a valid pool id - treating the run as unbound.", value);
+            return Optional.empty();
+        }
     }
 
     private boolean attemptReassign(final Map<String, RunningInstance> freeInstances,
@@ -121,6 +149,7 @@ public class ReassignHandler {
                                     final String runId,
                                     final Long longId,
                                     final Optional<PipelineRun> pipelineRun,
+                                    final Optional<Long> requiredPoolId,
                                     final Set<String> scheduledRuns,
                                     final Set<String> reassignedNodes) {
         return freeInstances.entrySet()
@@ -132,14 +161,19 @@ public class ReassignHandler {
                         return false;
                     }
                     final boolean passedPoolFilter = Optional.ofNullable(previousInstance.getPool())
-                            .map(pool -> isReusable(pool) && matchesPoolFilter(pool, pipelineRun))
-                            .orElse(true);
+                            .map(pool -> matchesRequiredPool(pool.getId(), requiredPoolId)
+                                    && isReusable(pool) && matchesPoolFilter(pool, pipelineRun))
+                            .orElse(!requiredPoolId.isPresent());
                     if (!passedPoolFilter) {
                         return false;
                     }
                     return reassignInstance(runId, longId, scheduledRuns, reassignedNodes,
                             previousId, previousInstance, pipelineRun);
                 });
+    }
+
+    private boolean matchesRequiredPool(final Long poolId, final Optional<Long> requiredPoolId) {
+        return requiredPoolId.map(poolId::equals).orElse(true);
     }
 
     /**

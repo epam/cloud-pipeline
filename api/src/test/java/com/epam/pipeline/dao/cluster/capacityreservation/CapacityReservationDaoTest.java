@@ -79,6 +79,7 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         retried.setStartDate(created.getRequestedStartDate());
         retried.setEndDate(created.getRequestedEndDate());
         retried.setAvailabilityZone(CapacityReservationCreatorUtils.AVAILABILITY_ZONE);
+        retried.setAttempt(created.getAttempt() + 1);
         retried.setName("not written by a retry");
 
         assertThat(reservationDao.updateRetry(retried)).isTrue();
@@ -88,6 +89,7 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         created.setStartDate(retried.getStartDate());
         created.setEndDate(retried.getEndDate());
         created.setAvailabilityZone(retried.getAvailabilityZone());
+        created.setAttempt(retried.getAttempt());
         assertFound(reservationDao.find(created.getId()), created);
     }
 
@@ -128,6 +130,16 @@ public class CapacityReservationDaoTest extends AbstractJdbcTest {
         created.setAttempt(created.getAttempt() + 1);
         reservationDao.update(created);
 
+        assertFound(reservationDao.find(created.getId()), created);
+    }
+
+    @Test
+    public void shouldRoundTripACapacityBlockOfferingId() {
+        final CapacityReservation created = reservationDao.create(
+                CapacityReservationCreatorUtils.getCapacityBlockReservation(createPool().getId()));
+
+        assertThat(created.getCapacityBlockOfferingId())
+                .isEqualTo(CapacityReservationCreatorUtils.CAPACITY_BLOCK_OFFERING_ID);
         assertFound(reservationDao.find(created.getId()), created);
     }
 

@@ -50,6 +50,8 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityBlockOfferingService;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationPermissionManager;
 import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
@@ -150,6 +152,7 @@ import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.resource.StaticResourcesService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.JwtTokenRevocationManager;
 import com.epam.pipeline.manager.security.NamedJwtTokenManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -179,6 +182,7 @@ import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.AclAuthorizationStrategy;
 import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.model.AclCache;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import javax.sql.DataSource;
 import java.util.concurrent.Executor;
@@ -514,6 +518,9 @@ public class AclTestBeans {
     protected CapacityReservationService capacityReservationService;
 
     @MockBean
+    protected CapacityBlockOfferingService capacityBlockOfferingService;
+
+    @MockBean
     protected InfrastructureManager infrastructureManager;
 
     @MockBean
@@ -684,5 +691,16 @@ public class AclTestBeans {
         grantPermissionManager.setPermissionEvaluator(permissionEvaluator);
         grantPermissionManager.setPermissionFactory(permissionFactory);
         return spy(grantPermissionManager);
+    }
+
+    @Bean
+    public CapacityReservationPermissionManager capacityReservationPermissionManager(
+            final CapacityReservationService capacityReservationService,
+            final CheckPermissionHelper checkPermissionHelper,
+            final NodePoolManager nodePoolManager) {
+        final CapacityReservationPermissionManager permissionManager =
+                new CapacityReservationPermissionManager(capacityReservationService, checkPermissionHelper);
+        ReflectionTestUtils.setField(permissionManager, "poolManager", nodePoolManager);
+        return permissionManager;
     }
 }

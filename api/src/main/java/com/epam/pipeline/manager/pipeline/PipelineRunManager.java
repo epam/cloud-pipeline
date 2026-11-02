@@ -34,6 +34,8 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolLaunchConfig;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -176,6 +178,7 @@ public class PipelineRunManager {
     public static final String CP_CAP_REQUESTS_CPU = "CP_CAP_REQUESTS_CPU";
     public static final String CP_CAP_REQUESTS_GPU = "CP_CAP_REQUESTS_GPU";
     public static final String CP_CAP_REQUESTS_RAM = "CP_CAP_REQUESTS_RAM";
+    public static final String CP_CAP_POOL_ID = "CP_CAP_POOL_ID";
     public static final long BYTES_PER_GIB = 1024L * 1024L * 1024L;
     public static final String GIB_UNIT = "GiB";
     private static final String RESOLVE_ACTION_MSG =
@@ -477,6 +480,7 @@ public class PipelineRunManager {
         final Optional<InstanceOffer> instance = instanceOfferManager.findOffer(instanceType, region.getId());
         checkGPUInstance(configuration, instance);
         checkCapacityRequirements(configuration, instance);
+        checkCapacityPoolCompatibility(configuration);
 
         final List<String> endpoints = configuration.isEraseRunEndpoints()
                 ? Collections.emptyList() : tool.getEndpoints();
@@ -551,6 +555,59 @@ public class PipelineRunManager {
             }
             Assert.isTrue(violations.isEmpty(), String.join("; ", violations));
         });
+    }
+
+    /**
+     * A run naming a pool via {@link #CP_CAP_POOL_ID} can be rejected here, immediately, for the things
+     * knowable without waiting for a live free node: the pool doesn't exist, or the run explicitly asked for
+     * an instance type or region the pool's own nodes don't provide (every node in a pool is provisioned
+     * alike, from the pool's own static config, so this needs no live node to check). Plain field
+     * comparisons only - deliberately not reusing {@code AutoscalerService}'s default-filling
+     * (`configurationToInstance`), since a run that didn't explicitly ask for a type or region has nothing
+     * concrete to compare and must not be rejected on a platform default it never requested. A pool that
+     * merely has no free node *right now*, or whose filter the run doesn't match, is not checked here -
+     * those stay the asynchronous, retry-bounded autoscaler's job ({@code ReassignHandler}), since "no free
+     * node yet" is often transient (a reservation pool is legitimately empty before its window starts) and
+     * filter-matching lives there, not here.
+     *
+     * <p>Once the pool passes every check above, its own launch configuration - set only for a shareable
+     * pool, see {@code NodePoolLaunchConfigBuilder} - is applied to {@code configuration}: it names the
+     * pool's own node selector (`pool_id`) and is the authoritative source for it, overriding whatever
+     * {@code podAssignPolicy} the caller supplied, the same way the launch form already does for a pool it
+     * offers. Every other pool type has no launch configuration, so this step is a no-op for them and
+     * today's default/caller-supplied policy is untouched.
+     */
+    private void checkCapacityPoolCompatibility(final PipelineConfiguration configuration) {
+        final PipeConfValueVO poolIdParam = MapUtils.emptyIfNull(configuration.getParameters()).get(CP_CAP_POOL_ID);
+        if (poolIdParam == null || StringUtils.isBlank(poolIdParam.getValue())) {
+            return;
+        }
+        final String poolIdValue = poolIdParam.getValue();
+        final Long poolId = parsePoolId(poolIdValue);
+        Assert.notNull(poolId, messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_POOL_ID_INVALID, poolIdValue));
+        final NodePool pool = nodePoolManager.find(poolId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_NOT_FOUND, poolId)));
+        final String instanceType = configuration.getInstanceType();
+        Assert.isTrue(StringUtils.isBlank(instanceType) || StringUtils.equals(instanceType, pool.getInstanceType()),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_MISMATCH, pool.getName()));
+        final Long regionId = configuration.getCloudRegionId();
+        Assert.isTrue(regionId == null || pool.getRegionId() == null || regionId.equals(pool.getRegionId()),
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_REGION_MISMATCH, pool.getName()));
+        Optional.ofNullable(pool.getLaunchConfig())
+                .map(NodePoolLaunchConfig::getKubeAssignPolicy)
+                .ifPresent(configuration::setPodAssignPolicy);
+    }
+
+    private Long parsePoolId(final String value) {
+        if (!NumberUtils.isDigits(value)) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static void calculateDynamicParameterValues(final PipelineConfiguration configuration) {
