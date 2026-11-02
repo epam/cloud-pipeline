@@ -2751,6 +2751,10 @@ export default class DataStorage extends React.Component {
                   path={this.props.path}
                   storageInfo={this.storage.info}
                   region={this.regionName}
+                  extractArchivesAvailable={
+                    !this.isOmicsStore &&
+                    archiveStorageSupported(this.storage.info, this.fileShareMount)
+                  }
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}
                   uploadToNFS={/^nfs$/i.test(type)}
