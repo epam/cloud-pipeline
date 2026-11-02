@@ -59,11 +59,14 @@
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Priority of group GUI settings](#priority-of-group-gui-settings)
+- [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
+    - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
@@ -1859,6 +1862,20 @@ For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#contr
 
 ***
 
+## Priority of group GUI settings
+
+The **`misc.groups.ui.preferences`** system preference sets GUI settings per group or role. In **`v0.17`**, each group's settings accept a `priority` number: if a user is in several of the listed groups, each setting comes from the group with the highest `priority` that sets it.  
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
+
+***
+
+## Show optional parameters per pipeline or tool
+
+The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
+
+***
+
 ## Notable Bug fixes
 
 ### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
@@ -1869,6 +1886,14 @@ Previously, an `S3` storage registered with an access point alias as its path - 
 AWS checks such requests against the access point ARN, and the issued credentials allowed only the bucket name. So the `pipe storage` commands, and file downloads and uploads in the GUI, failed with an `AccessDenied` error.
 Now, an `S3` storage has an optional `accessPointArn` field, set via the REST API. If it is set, the temporary credentials also allow access via this access point.
 See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#register-an-s3-access-point-alias).
+
+### Storage files are not indexed when an object key is longer than 512 bytes
+
+[#4698](https://github.com/epam/cloud-pipeline/issues/4698)
+
+Previously, if an object storage (`S3`, `GCS`, `Azure`) held a file whose path was longer than 512 bytes, the search service failed to index the files of the whole storage.
+The search kept showing the files of that storage from its last successful indexing, or none if it was never indexed.
+Now, such storages are indexed as usual, and the files with long paths can be found via the search as well.
 
 ### Launch form: a conditional multi-select enum parameter is shown empty
 

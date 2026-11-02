@@ -120,6 +120,8 @@ Things that have gone wrong here before, or that are expensive to undo:
   `implement-task` skill → "Tests".
 - **Don't conclude that a change needs no documentation.** An area with no page today is the gap
   itself, not the exemption — the `implement-task` skill → "Docs".
+- **Don't decide a change has no GUI effect because it is outside `client/`.** A change that reaches
+  the GUI owes UI test cases — the `implement-task` skill → "Test cases".
 - **Don't review your own diff.** It goes to an agent that did not write it; where none can be
   spawned, review it as its own pass and say so — the `implement-task` skill → "Fresh-eyes review".
 - **Don't commit without reading the `commit-changes` skill.**
