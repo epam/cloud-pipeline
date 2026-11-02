@@ -44,3 +44,15 @@ class PipelineModel(object):
                 if not permission_exists and permission.access_level > 0:
                     instance.permissions.append(permission)
         return instance
+
+    def add_group_permission(self, name, access_level):
+        # A second entry for the same group would make its share access level flip on every sync pass
+        matches = [x for x in self.permissions if not x.principal and x.name.lower() == name.lower()]
+        if len(matches) > 0:
+            matches[0].access_level = max(matches[0].access_level, access_level)
+            return
+        permission = PermissionModel()
+        permission.name = name
+        permission.principal = False
+        permission.access_level = access_level
+        self.permissions.append(permission)
