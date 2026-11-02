@@ -3,7 +3,7 @@
 This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder.
 
 <details>
-<summary><b>Advanced_Search</b> (12 tests, 0 automated)</summary>
+<summary><b>Advanced_Search</b> (13 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -19,6 +19,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**1838_1**](Advanced_Search/1838_1.md) | Advanced Search results: Default Table view for different entities |  |
 | [**1838_2**](Advanced_Search/1838_2.md) | Add columns to the Search results table |  |
 | [**1838_3**](Advanced_Search/1838_3.md) | Keeping of the Search results format for the current user. |  |
+| [**4698**](Advanced_Search/4698.md) | Scrolling of search results with files with long paths |  |
 
 </details>
 
@@ -334,10 +335,11 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Global_search</b> (22 tests, 22 automated)</summary>
+<summary><b>Global_search</b> (23 tests, 22 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
+| [**4698**](Global_search/4698.md) | Search for files with paths longer than 512 bytes |  |
 | [**EPMCMBIBPC-2653**](Global_search/EPMCMBIBPC-2653.md) | Prepare for search | :white_check_mark: |
 | [**EPMCMBIBPC-2654**](Global_search/EPMCMBIBPC-2654.md) | Search for folder | :white_check_mark: |
 | [**EPMCMBIBPC-2655**](Global_search/EPMCMBIBPC-2655.md) | Search for folder by Enter key | :white_check_mark: |
