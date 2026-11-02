@@ -23,8 +23,8 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 import { Server, utils } from 'ssh2';
 import type { Client, Connection, SFTPWrapper } from 'ssh2';
-import { provisionPasswordlessKey, readOwnerEnv } from '../keyProvisioning';
-import { OWNER_ENV_PROBE_COMMAND } from '../remoteWorkspacePath';
+import { provisionPasswordlessKey, readRunEnv } from '../keyProvisioning';
+import { RUN_ENV_PROBE_COMMAND } from '../remoteWorkspacePath';
 
 class FakeStream extends EventEmitter {
   readonly stderr = new EventEmitter();
@@ -56,7 +56,7 @@ function fakeClient(result: ExecResult, commands: string[]): Client {
   } as unknown as Client;
 }
 
-describe('readOwnerEnv', () => {
+describe('readRunEnv', () => {
   let warn: ReturnType<typeof mock.method>;
 
   beforeEach(() => {
@@ -67,19 +67,40 @@ describe('readOwnerEnv', () => {
     mock.restoreAll();
   });
 
-  it('reads OWNER and OWNER_HOME with the probe command', async () => {
+  it('reads OWNER, OWNER_HOME and CP_VSCODE_WORKSPACE_DIR with the probe command', async () => {
     const commands: string[] = [];
-    const client = fakeClient({ code: 0, stdout: 'CP_OWNER=U1037187\nCP_OWNER_HOME=/data/users/U1037187\n' }, commands);
+    const client = fakeClient(
+      {
+        code: 0,
+        stdout:
+          'CP_OWNER=U1037187\nCP_OWNER_HOME=/data/users/U1037187\n' +
+          'CP_PROBE_WORKSPACE_DIR=/data/projects/p1\nCP_PROBE_WORKSPACE_DIR_USABLE=1\n',
+      },
+      commands
+    );
 
-    assert.deepEqual(await readOwnerEnv(client, 42), { owner: 'U1037187', ownerHome: '/data/users/U1037187' });
-    assert.deepEqual(commands, [OWNER_ENV_PROBE_COMMAND]);
+    assert.deepEqual(await readRunEnv(client, 42), {
+      owner: 'U1037187',
+      ownerHome: '/data/users/U1037187',
+      workspaceDir: '/data/projects/p1',
+      workspaceDirUsable: true,
+    });
+    assert.deepEqual(commands, [RUN_ENV_PROBE_COMMAND]);
     assert.equal(warn.mock.callCount(), 0);
+  });
+
+  it('has no result, and warns, if the probe does not answer in time', async () => {
+    const hanging = { exec: (_cmd: string, _callback: unknown) => undefined } as unknown as Client;
+
+    assert.equal(await readRunEnv(hanging, 42, 20), undefined);
+    assert.equal(warn.mock.callCount(), 1);
+    assert.match(String(warn.mock.calls[0].arguments[0]), /run 42.*no answer in 20 ms/);
   });
 
   it('has no result, and warns, if the command fails', async () => {
     const client = fakeClient({ code: 1, stderr: 'sh: printf: not found' }, []);
 
-    assert.equal(await readOwnerEnv(client, 42), undefined);
+    assert.equal(await readRunEnv(client, 42), undefined);
     assert.equal(warn.mock.callCount(), 1);
     assert.match(String(warn.mock.calls[0].arguments[0]), /run 42.*exit 1: sh: printf: not found/);
   });
@@ -87,7 +108,7 @@ describe('readOwnerEnv', () => {
   it('has no result, and warns, if the command cannot be run', async () => {
     const client = fakeClient(new Error('channel open failure'), []);
 
-    assert.equal(await readOwnerEnv(client, 42), undefined);
+    assert.equal(await readRunEnv(client, 42), undefined);
     assert.equal(warn.mock.callCount(), 1);
     assert.match(String(warn.mock.calls[0].arguments[0]), /channel open failure/);
   });
@@ -157,7 +178,7 @@ function execReply(command: string, probe: ProbeReply): ProbeReply {
   if (command.startsWith('getent passwd')) {
     return { code: 0, stdout: `${RUN_HOME}\n` };
   }
-  if (command === OWNER_ENV_PROBE_COMMAND) {
+  if (command === RUN_ENV_PROBE_COMMAND) {
     return probe;
   }
   return command.includes('ssh-keygen') ? { code: 0 } : { code: 127 };
@@ -236,14 +257,21 @@ describe('provisionPasswordlessKey', () => {
     }
   }
 
-  it('returns OWNER and OWNER_HOME, read in the SSH session of the key provisioning', async () => {
+  it('returns OWNER, OWNER_HOME and CP_VSCODE_WORKSPACE_DIR, read in the SSH session of the key provisioning', async () => {
     const { result, commands } = await provision({
       code: 0,
-      stdout: 'CP_OWNER=U1037187\nCP_OWNER_HOME=/data/users/U1037187\n',
+      stdout:
+        'CP_OWNER=U1037187\nCP_OWNER_HOME=/data/users/U1037187\n' +
+        'CP_PROBE_WORKSPACE_DIR=/data/projects/p1\nCP_PROBE_WORKSPACE_DIR_USABLE=1\n',
     });
 
-    assert.deepEqual(result.ownerEnv, { owner: 'U1037187', ownerHome: '/data/users/U1037187' });
-    assert.ok(commands.includes(OWNER_ENV_PROBE_COMMAND));
+    assert.deepEqual(result.runEnv, {
+      owner: 'U1037187',
+      ownerHome: '/data/users/U1037187',
+      workspaceDir: '/data/projects/p1',
+      workspaceDirUsable: true,
+    });
+    assert.ok(commands.includes(RUN_ENV_PROBE_COMMAND));
     assert.equal(result.sshConfigUser, RUN_USER);
     assert.equal(result.hostRsaPubKeyBody, 'ssh-rsa AAAAHOSTKEY');
     assert.equal(readFileSync(result.privateKeyPath, 'utf8'), 'PRIVATE KEY\n');
@@ -253,7 +281,7 @@ describe('provisionPasswordlessKey', () => {
   it('still provisions the key, with no OWNER_HOME, if the probe fails', async () => {
     const { result } = await provision({ code: 1 });
 
-    assert.equal(result.ownerEnv, undefined);
+    assert.equal(result.runEnv, undefined);
     assert.equal(result.hostRsaPubKeyBody, 'ssh-rsa AAAAHOSTKEY');
     assert.equal(readFileSync(result.privateKeyPath, 'utf8'), 'PRIVATE KEY\n');
     assert.equal(warn.mock.callCount(), 1);
