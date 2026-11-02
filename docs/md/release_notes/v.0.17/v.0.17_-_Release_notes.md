@@ -64,6 +64,7 @@
 - [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
+- [Upload and extract archives](#upload-and-extract-archives)
 
 ***
 
@@ -1904,6 +1905,17 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
+
+***
+
+## Upload and extract archives
+
+Previously, uploading a batch of files that included an archive uploaded the archive like any other file, with no way to unpack it on the platform's side.
+
+In **`v0.17`**, uploading a batch that includes an archive - one of `ZIP`, `TAR`, `TAR.GZ`, `TGZ`, `TAR.BZ2`, `TAR.XZ`, `GZ`, `BZ2` or `XZ` - on a data storage on AWS S3, or on an NFS storage whose share is mounted as NFS, pauses the upload with a pop-up that lists the selected files and offers a choice: **Upload**, which uploads everything exactly as before, or **Upload and extract**, which uploads everything and then asks the platform to extract the archives among them that uploaded successfully.  
+**_Note_**: extraction itself is not available on the server yet. The GUI already offers the choice, and the extraction step is queued to run once the server supports it.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#upload-data).
 
 ***
 
