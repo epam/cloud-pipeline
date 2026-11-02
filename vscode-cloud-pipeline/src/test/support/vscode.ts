@@ -17,10 +17,11 @@
 /**
  * Stands in for the `vscode` module, which exists only inside the editor, once
  * `registerVscodeStub` is loaded. Holds only the part of the API the tested code calls,
- * and records the commands it executes.
+ * and records the commands it executes and the warnings it shows.
  */
 
 export const executedCommands: unknown[][] = [];
+export const shownWarnings: string[] = [];
 
 export const Uri = {
   from(components: { scheme: string; authority?: string; path?: string }): object {
@@ -32,5 +33,13 @@ export const commands = {
   async executeCommand(...args: unknown[]): Promise<undefined> {
     executedCommands.push(args);
     return undefined;
+  },
+};
+
+export const window = {
+  /** As in the editor, settles only when the user closes the warning: here, never. */
+  showWarningMessage(message: string): Promise<undefined> {
+    shownWarnings.push(message);
+    return new Promise(() => undefined);
   },
 };

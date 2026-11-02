@@ -13,7 +13,7 @@ import {
 import { getBrandName } from './extensionEnv';
 import { KeyProvisionResult, provisionPasswordlessKey } from './keyProvisioning';
 import { ensureRemoteSshForConnect } from './remoteSshExtension';
-import { RemoteOwnerEnv, remoteWorkspacePath } from './remoteWorkspacePath';
+import { RemoteRunEnv, remoteWorkspacePath, WORKSPACE_DIR_PARAMETER, workspaceDirNotOpenedReason } from './remoteWorkspacePath';
 import { isSshBlockedByPauseState } from './runPauseResume';
 import {
   isSshInitialized,
@@ -51,20 +51,36 @@ const HEALTH_CHECK_INTERVAL_MS = 60_000;
  * Remote-SSH folder URI built with {@link vscode.Uri.from} so `ssh-remote+<host>` is not
  * misparsed by {@link vscode.Uri.parse}. The folder is picked by {@link remoteWorkspacePath}.
  */
-function remoteSshWorkspaceUri(hostAlias: string, remoteUser: string, ownerEnv?: RemoteOwnerEnv): vscode.Uri {
+function remoteSshWorkspaceUri(hostAlias: string, remoteUser: string, runEnv?: RemoteRunEnv): vscode.Uri {
   return vscode.Uri.from({
     scheme: 'vscode-remote',
     authority: `ssh-remote+${hostAlias}`,
-    path: remoteWorkspacePath(remoteUser, ownerEnv),
+    path: remoteWorkspacePath(remoteUser, runEnv),
   });
 }
 
 /**
  * Opens a new Remote-SSH window to `hostAlias`, in the folder picked for the SSH user of `keyResult`.
+ * If the run asks for a folder (`requestedWorkspaceDir`, the run parameter) that is not opened, says why,
+ * in a warning and in the log; the warning is not awaited, so it does not hold up the connect.
  * `vscode.openFolder` stays in-process (Cursor or VS Code).
  */
-export async function openRemoteWindow(hostAlias: string, keyResult: KeyProvisionResult): Promise<void> {
-  const remoteUri = remoteSshWorkspaceUri(hostAlias, keyResult.sshConfigUser, keyResult.ownerEnv);
+export async function openRemoteWindow(
+  hostAlias: string,
+  keyResult: KeyProvisionResult,
+  runId: number,
+  requestedWorkspaceDir?: string
+): Promise<void> {
+  const reason = workspaceDirNotOpenedReason(keyResult.runEnv, requestedWorkspaceDir);
+  if (reason) {
+    const workspaceDir = keyResult.runEnv ? keyResult.runEnv.workspaceDir : requestedWorkspaceDir;
+    const message =
+      `${WORKSPACE_DIR_PARAMETER} of run ${runId} (${workspaceDir}) is not opened ` +
+      `for ${keyResult.sshConfigUser}: ${reason}. The home folder opens.`;
+    console.warn(`[${getBrandName()}] ${message}`);
+    void vscode.window.showWarningMessage(message);
+  }
+  const remoteUri = remoteSshWorkspaceUri(hostAlias, keyResult.sshConfigUser, keyResult.runEnv);
   await vscode.commands.executeCommand('vscode.openFolder', remoteUri, true);
 }
 
@@ -427,7 +443,7 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
           void runHealthCheck(runId);
         }, HEALTH_CHECK_INTERVAL_MS);
 
-        await openRemoteWindow(hostAlias, keyResult);
+        await openRemoteWindow(hostAlias, keyResult, runId, params[WORKSPACE_DIR_PARAMETER]);
         vscode.window.showInformationMessage(
           `Tunnel active on 127.0.0.1:${server.localPort} for run ${runId}. Use "Stop SSH Tunnel" when done.`
         );

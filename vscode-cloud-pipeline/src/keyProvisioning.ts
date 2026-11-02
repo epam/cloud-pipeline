@@ -3,7 +3,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Client, ConnectConfig } from 'ssh2';
 import { getBrandName } from './extensionEnv';
-import { OWNER_ENV_PROBE_COMMAND, parseOwnerEnvProbe, RemoteOwnerEnv } from './remoteWorkspacePath';
+import { parseRunEnvProbe, RemoteRunEnv, RUN_ENV_PROBE_COMMAND, WORKSPACE_DIR_PARAMETER } from './remoteWorkspacePath';
+
+/**
+ * How long the probe of the run's environment may take. It checks a folder the run names, which may be
+ * on a storage mount that does not answer; the connect then goes on with the default folder.
+ */
+export const RUN_ENV_PROBE_TIMEOUT_MS = 10_000;
 
 function randomKeyName(runId: number): string {
   return `vscode-cp-${runId}-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -16,8 +22,8 @@ export interface KeyProvisionResult {
   sshConfigUser: string;
   /** One line OpenSSH format for host key (key type + base64), without [host]:port prefix */
   hostRsaPubKeyBody: string;
-  /** `$OWNER` and `$OWNER_HOME` as the SSH user's session sees them; undefined when they could not be read */
-  ownerEnv?: RemoteOwnerEnv;
+  /** What the run's environment holds for picking the folder to open; undefined when it could not be read */
+  runEnv?: RemoteRunEnv;
 }
 
 function execCommand(client: Client, cmd: string): Promise<{ code: number; stdout: string; stderr: string }> {
@@ -55,17 +61,33 @@ function sftpReadFile(client: Client, remotePath: string): Promise<Buffer> {
   });
 }
 
-/** Reads `$OWNER` and `$OWNER_HOME` in the SSH user's session; undefined, and logged, on any failure. */
-export async function readOwnerEnv(client: Client, runId: number): Promise<RemoteOwnerEnv | undefined> {
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer in ${timeoutMs} ms`)), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Reads `$OWNER`, `$OWNER_HOME` and `$CP_VSCODE_WORKSPACE_DIR` in the SSH user's session; undefined, and
+ * logged, on any failure, or if there is no answer in `timeoutMs`.
+ */
+export async function readRunEnv(
+  client: Client,
+  runId: number,
+  timeoutMs: number = RUN_ENV_PROBE_TIMEOUT_MS
+): Promise<RemoteRunEnv | undefined> {
   try {
-    const { code, stdout, stderr } = await execCommand(client, OWNER_ENV_PROBE_COMMAND);
+    const { code, stdout, stderr } = await withTimeout(execCommand(client, RUN_ENV_PROBE_COMMAND), timeoutMs);
     if (code !== 0) {
       throw new Error(`exit ${code}: ${stderr || stdout}`);
     }
-    return parseOwnerEnvProbe(stdout);
+    return parseRunEnvProbe(stdout);
   } catch (e) {
     console.warn(
-      `[${getBrandName()}] Could not read OWNER_HOME of run ${runId}, the default home folder opens: ` +
+      `[${getBrandName()}] Could not read OWNER_HOME and ${WORKSPACE_DIR_PARAMETER} of run ${runId}, ` +
+        `the default home folder opens: ` +
         (e instanceof Error ? e.message : String(e))
     );
     return undefined;
@@ -80,8 +102,8 @@ function shellEscapeDoubleQuoted(s: string): string {
 /**
  * Provisions a throwaway RSA key on the run, adds to authorized_keys for sshUsers, downloads private key.
  * Mirrors pipe-cli generate_remote_openssh_and_putty_keys + copy keys (OpenSSH path only, no putty).
- * Also reads the run's `$OWNER` and `$OWNER_HOME`, to pick the folder to open; a failure there is
- * logged and does not fail the key provisioning.
+ * Also reads the run's `$OWNER`, `$OWNER_HOME` and `$CP_VSCODE_WORKSPACE_DIR`, to pick the folder to open;
+ * a failure there is logged and does not fail the key provisioning.
  */
 export async function provisionPasswordlessKey(
   connect: ConnectConfig,
@@ -152,7 +174,7 @@ done
 `.trim();
 
   let hostRsaPubKeyBody = '';
-  let ownerEnv: RemoteOwnerEnv | undefined;
+  let runEnv: RemoteRunEnv | undefined;
   try {
     const { code, stdout, stderr } = await execCommand(client, script);
     if (code !== 0) {
@@ -168,7 +190,7 @@ done
     const parts = hostBody.split(/\s+/);
     hostRsaPubKeyBody = parts.length >= 2 ? `${parts[0]} ${parts[1]}` : hostBody;
 
-    ownerEnv = await readOwnerEnv(client, runId);
+    runEnv = await readRunEnv(client, runId);
   } finally {
     client.end();
   }
@@ -178,6 +200,6 @@ done
     publicKeyPath: localPublic,
     sshConfigUser,
     hostRsaPubKeyBody,
-    ownerEnv,
+    runEnv,
   };
 }
