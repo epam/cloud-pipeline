@@ -1849,7 +1849,7 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 
 The `data_loader` system pipeline and the `Python` pipeline template now resolve their interpreter via `CP_PYTHON_PATH` as well, instead of a hardcoded `python`, so they also run under either Python version. The `pipe-demo` NGS demo pipelines and the `Luigi` pipeline template, which still only ran under Python 2, were removed.
 
-The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got the same `CP_PYTHON_VERSION`/Python 3.12 support, covering its NFS-synchronization scripts and the storage `chown`/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.
+The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 9.8 (see [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)) and got the same `CP_PYTHON_VERSION`/Python 3.12 support, covering its NFS-synchronization scripts and the storage `chown`/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.
 
 ***
 
@@ -1879,26 +1879,42 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 
 ## Rocky Linux 9.8 for the platform services
 
-The images of these platform services moved from CentOS 7, which has reached its end of life, to Rocky Linux 9.8:
+The images of these platform services moved to Rocky Linux 9.8.
+
+From CentOS 7, which has reached its end of life:
 
 - the API (`cp-api-srv`) and the search service (`cp-search`)
 - the notifier (`cp-notifier`), the billing service (`cp-billing-srv`), the monitoring service (`cp-monitoring-srv`) and the VM monitor (`cp-vm-monitor`)
 - the data sharing service (`cp-share-srv`) and the docker components scanner (`cp-docker-comp`)
 - the node logger (`cp-node-logger`), the leader elector (`cp-leader-elector`) and the run policy manager (`cp-run-policy-manager`)
 - the test SAML identity provider (`cp-idp`)
+- the WebDAV service (`cp-dav`)
+
+From Rocky Linux 8: the EDGE service (`cp-edge`).
+
+From Ubuntu 18.04 and Debian:
+
+- the Git reader (`cp-gitlab-reader`) and the storage lifecycle service (`cp-storage-lifecycle-service`)
+- the node reporter (`cp-node-reporter`) and the cleanup job of the runs (`cp-run-cleanup-job`)
+
+The images that are new in this version are built on Rocky Linux 9.8 as well: the curator of the search logs (`cp-search-elk-curator`), the MLflow server (`cp-mlflow-server`) and the MLflow tool (`library/mlflow`).
 
 Rocky Linux 9 has no Python 2 package:
 
-- The API image takes Python 2 from the platform's Miniconda2 distribution, as a job container does. It is installed into `/opt/conda` and linked as `python` and `python2`. Python 3.12 stays next to it.
+- The API, EDGE, WebDAV and MLflow images take Python 2 from the platform's Miniconda2 distribution, as a job container does. It is installed into `/opt/conda` and linked as `python` and `python2`. In the API, EDGE and WebDAV images, Python 3.12 stays next to it.
 - The other images that installed Python 2 no longer do, because nothing in them used it.
+
+The images that were on Ubuntu or Debian keep their Python version, now installed with `micromamba`: 3.9 for the node reporter and the cleanup job of the runs, 3.6 for the Git reader and the storage lifecycle service.
 
 Other changes:
 
 - The Lustre client in the API and search images is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.
 - The Java services follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject SHA-1 signatures, and RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, the limit was 1024 bits). So a server that a service connects to, for example an SMTP server, must have a certificate that meets these limits. This does not apply to the 1024-bit JWT signing keys that the installer creates.
 - The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
-- The Filebeat log shippers of the API run with `seccomp` disabled. Their `seccomp` policies do not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
-
+- The maintenance page of the EDGE service is built with Node.js 26 (`node:26-alpine3.24`).
+- The Filebeat log shippers of the API and EDGE services run with `seccomp` disabled. Their `seccomp` policies do not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
+- The cron jobs of the search logs curator and of the WebDAV service skip the PAM account check of `root`. Otherwise, on hosts whose AppArmor confines the `unix_chkpwd` helper (for example, Ubuntu 24.04), `crond` would not run them.
+- The WebDAV service mounts the Azure blob storages with `blobfuse2`, because `blobfuse` 1 has no Rocky Linux 9 package. It uses the `mountv1` command of `blobfuse2`, with the options that keep the behavior of `blobfuse` 1: a 1-second metadata cache, no online version check, and a mount over a non-empty temporary folder.
 ***
 
 ## Notable Bug fixes
