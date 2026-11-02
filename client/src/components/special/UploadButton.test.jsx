@@ -15,7 +15,16 @@
  */
 
 import React from 'react';
-import {render, screen, click, fn, useFakeTimers, useRealTimers, advanceTimers} from '@test';
+import {
+  render,
+  screen,
+  click,
+  fn,
+  waitFor,
+  useFakeTimers,
+  useRealTimers,
+  advanceTimers
+} from '@test';
 import UploadButton from './UploadButton';
 
 // Clicking "Upload" or "Upload and extract" runs the same synchronous/NFS
@@ -178,4 +187,85 @@ describe('UploadButton - the paused confirmation modal', () => {
     expect(screen.queryByRole('button', {name: 'Cancel'})).not.toBeInTheDocument();
     expect(screen.getByText('Uploading files...')).toBeInTheDocument();
   });
+});
+
+// Extraction itself cannot be driven end to end here: `extractArchives` is
+// not injectable and rule 2 forbids a module mock, and jsdom's XHR against
+// `/upload` has no server to answer it, so every upload in this harness
+// fails. That failure is not wasted, though - it is exactly the "nothing to
+// extract" branch (every archive in the batch failed, so the batch has
+// nothing to send), and it is covered below with real timers, since closing
+// the modal this way waits out the component's own 2 s grace period. The
+// resolved- and rejected-extraction branches, and the idempotency guard
+// against calling the API twice, go untested: reaching them honestly would
+// need a real server or a module mock, and this harness has neither.
+describe('UploadButton - extraction after upload', () => {
+  afterEach(() => {
+    if (instance) {
+      instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
+      instance = null;
+    }
+  });
+
+  test(
+    'Upload and extract on a batch whose uploads all fail extracts nothing ' +
+    'and closes the modal the ordinary way',
+    async () => {
+      const onRefresh = fn();
+      const {input} = renderUploadButton({extractArchivesAvailable: true, onRefresh});
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+      });
+
+      await click(screen.getByRole('button', {name: 'Upload and extract'}));
+
+      // The row reaching its own error marker means the real, unmocked XHR
+      // against `/upload` has failed, as it always does in this harness.
+      // Matched by the app's own `cp-error` class (not an antd internal),
+      // and by its exact text, so it cannot also match the title text next
+      // to it in the same row.
+      await waitFor(() => {
+        expect(screen.getByText('- error', {selector: '.cp-error'})).toBeInTheDocument();
+      }, {timeout: 5000});
+
+      // With nothing to extract, the title never switches to the
+      // extracting state - this text never rendered at any point, which
+      // `antd`'s own CSS-based hiding of a closed modal does not affect.
+      expect(screen.queryByText('Extracting archives...')).not.toBeInTheDocument();
+
+      // The modal closes the same way it always did before this mode
+      // existed - after its own 2 s grace period - which calls `onRefresh`
+      // because the upload attempt itself happened. `onRefresh` only fires
+      // from inside that close, so waiting on it is the real signal here;
+      // the modal's own visibility is `antd`'s CSS, not a DOM removal, so
+      // it is not what this test asserts on.
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      }, {timeout: 5000});
+    },
+    10000
+  );
+
+  test(
+    'the progress state still renders a row per file after Upload and extract',
+    async () => {
+      useFakeTimers();
+      const {input} = renderUploadButton({extractArchivesAvailable: true});
+
+      await selectFiles(input, [zipFile('archive.zip'), textFile('notes.txt')]);
+      await settleSelection();
+
+      await click(screen.getByRole('button', {name: 'Upload and extract'}));
+
+      // Anchored at the start of the row's own text, so this still matches
+      // only the row itself even if the real XHR has already failed and
+      // added its own error marker right after.
+      expect(screen.getByText('Uploading files...')).toBeInTheDocument();
+      expect(screen.getByText(/^archive\.zip - /)).toBeInTheDocument();
+      expect(screen.getByText(/^notes\.txt - /)).toBeInTheDocument();
+      useRealTimers();
+    }
+  );
 });
