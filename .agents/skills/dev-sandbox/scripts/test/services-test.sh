@@ -190,7 +190,7 @@ test_key_pair() {
 }
 
 test_services_prepare() {
-  local name=dev-svc dir commands cert_before base_before
+  local name=dev-svc dir cert_before base_before
   reset_stubs
   fake_repo
   up_state "$name"
@@ -198,13 +198,7 @@ test_services_prepare() {
   CP_SANDBOX_DISTRIBUTION_URL=https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz \
     run_command cmd_services_prepare --name "$name" --docker-subnets "172.18.0.0/16 "
   check "services-prepare succeeds" "$RUN_STATUS" 0
-  commands=$(cat "$SSM_COMMANDS")
-  check "it copies install-services.sh and the tool's Dockerfile to the master, then runs it there with the address, the Dockerfile and the build" \
-    "$(grep -c '^# copy install-services.sh tool.Dockerfile to /opt/cp-sandbox' <<<"$commands") $(grep -c 'bash /opt/cp-sandbox/install-services.sh 10.0.0.7 /opt/cp-sandbox/tool.Dockerfile https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz >>/var/log/cp-sandbox/install-services.log' <<<"$commands")" \
-    '1 1'
-  check "it fetches the registry's certificate over SSH, as root" \
-    "$(grep -c '^sudo cat /etc/cp-sandbox/registry/registry.crt$' "$SSH_COMMANDS") $(head -n 1 "$(registry_cert_file "$name")")" \
-    '1 -----BEGIN CERTIFICATE-----'
+  check "and leaves the master to services-master" "$(wc -l <"$SSM_COMMANDS") $(wc -l <"$SSH_COMMANDS")" '0 0'
   check "it records the VPC, the zone, the key pair, the build, the registry and the API's address" \
     "$(jq -c '[.vpc_cidrs, .subnet_zone, .key_pair, .distribution_source, .distribution_url, .registry_path, .api_url]' "$(state_file "$name")")" \
     '["10.0.0.0/16 10.1.0.0/16","eu-west-1a","cp-sandbox-dev-svc","https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz","http://10.0.0.7:8090/","10.0.0.7:5000","https://10.0.0.7:9999/pipeline/restapi/"]'
@@ -263,6 +257,101 @@ test_services_prepare() {
   run_command cmd_services_prepare --name "$name"
   check "services-prepare needs the join token up fetched" \
     "$RUN_STATUS $(logged 'has no kube-join-token.secret in its local state: run up')" '1 1'
+  state_remove "$name"
+  reset_stubs
+}
+
+# master_state <name>: the local state services-master starts from: what up, connect and
+# services-prepare leave, and the registry's token the host mints.
+master_state() {
+  up_state "$1"
+  state_set "$1" distribution_source https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz
+  printf 'eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJub3RpZnkifQ.c2ln\n' >"$(registry_token_file "$1")"
+  printf 'the API certificate\n' >"$(api_tls_cert_file "$1")"
+}
+
+test_services_master() {
+  local name=dev-mst commands password
+  reset_stubs
+  master_state "$name"
+  run_command cmd_services_master --name "$name"
+  check "services-master succeeds" "$RUN_STATUS" 0
+  check "it copies the registry's token to the master over SSH, for root only, and never through Run Command" \
+    "$(grep -c "^sudo sh -c 'umask 077 && mkdir -p /etc/cp-sandbox/registry && cat >/etc/cp-sandbox/registry/notify-token.secret.part && mv -f /etc/cp-sandbox/registry/notify-token.secret.part /etc/cp-sandbox/registry/notify-token.secret'$" "$SSH_COMMANDS") $(cat "$STUB_DIR/ssh-file.notify-token.secret") $(grep -c 'eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJub3RpZnkifQ' "$SSM_COMMANDS" || true)" \
+    '1 eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJub3RpZnkifQ.c2ln 0'
+  commands=$(cat "$SSM_COMMANDS")
+  check "it copies install-services.sh, the tool's Dockerfile and the API's certificate, then runs it with the address, the Dockerfile, the build, and where the registry notifies the API" \
+    "$(grep -c '^# copy install-services.sh tool.Dockerfile api-tls.crt to /opt/cp-sandbox' <<<"$commands") $(grep -c 'bash /opt/cp-sandbox/install-services.sh 10.0.0.7 /opt/cp-sandbox/tool.Dockerfile https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz --notify-url https://10.0.0.7:9999/pipeline/restapi/dockerRegistry/notify --api-cert /opt/cp-sandbox/api-tls.crt >>/var/log/cp-sandbox/install-services.log' <<<"$commands")" \
+    '1 1'
+  check "it fetches the registry's certificate over SSH, as root" \
+    "$(grep -c '^sudo cat /etc/cp-sandbox/registry/registry.crt$' "$SSH_COMMANDS") $(head -n 1 "$(registry_cert_file "$name")")" \
+    '1 -----BEGIN CERTIFICATE-----'
+  password=$(registry_password_file "$name")
+  check "and its user's password, into the local state, for its owner only" \
+    "$(grep -c '^sudo cat /etc/cp-sandbox/registry/password.secret$' "$SSH_COMMANDS") $(cat "$password") $(stat -c %a "$password")" \
+    "1 $FAKE_REGISTRY_PASSWORD 600"
+  check "the state says the runs get the build's pipe-common, and no output holds the token or the password" \
+    "$(state_get "$name" distribution_pipe_common) $(logged 'eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJub3RpZnkifQ') $(logged "$FAKE_REGISTRY_PASSWORD")" 'published 0 0'
+
+  FAKE_REGISTRY_PASSWORD='not a password' run_command cmd_services_master --name "$name"
+  check "a master that holds no password for the registry fails, and says so" \
+    "$RUN_STATUS $(logged '/etc/cp-sandbox/registry/password.secret on i-master holds no password')" '1 1'
+  rm "$(registry_token_file "$name")"
+  run_command cmd_services_master --name "$name"
+  check "without the registry's token, it fails before anything reaches the master" \
+    "$RUN_STATUS $(logged "sandbox $name has no registry-token.secret: run sandbox.sh services") $(wc -l <"$SSM_COMMANDS") $(wc -l <"$SSH_COMMANDS")" \
+    '1 1 0 0'
+  rm -f "$STUB_DIR"/ssh-file.*
+  state_remove "$name"
+  reset_stubs
+}
+
+# fake_pipe_common: the checkout's workflows/pipe-common, with the caches Python and pytest leave.
+fake_pipe_common() {
+  local dir=$SANDBOX_REPO_ROOT/$PIPE_COMMON_DIR
+  rm -rf "$dir"
+  mkdir -p "$dir/pipeline/__pycache__" "$dir/shell" "$dir/.pytest_cache"
+  printf 'from setuptools import setup\n' >"$dir/setup.py"
+  printf '# the package\n' >"$dir/pipeline/__init__.py"
+  printf 'cache\n' | tee "$dir/pipeline/__pycache__/__init__.cpython-312.pyc" "$dir/pipeline/old.pyc" \
+    "$dir/.pytest_cache/v" >/dev/null
+  printf '#!/bin/bash\n' >"$dir/shell/script.sh"
+  chmod 0755 "$dir/shell/script.sh"
+}
+
+test_pipe_common_from_checkout() {
+  local name=dev-pc archive hash
+  reset_stubs
+  fake_repo
+  fake_pipe_common
+  master_state "$name"
+  run_command cmd_services_master --name "$name" --pipe-common-from-checkout
+  check "services-master --pipe-common-from-checkout succeeds" "$RUN_STATUS" 0
+  check "it copies the checkout's pipe-common to the master over SSH, for root only" \
+    "$(grep -c "^sudo sh -c 'umask 077 && mkdir -p /opt/cp-sandbox && cat >/opt/cp-sandbox/pipe-common.tar.gz.part && mv -f /opt/cp-sandbox/pipe-common.tar.gz.part /opt/cp-sandbox/pipe-common.tar.gz'$" "$SSH_COMMANDS")" 1
+  archive=$STUB_DIR/ssh-file.pipe-common.tar.gz
+  check "the archive holds what the directory holds, at its root, without the caches, owned by root" \
+    "$(tar -tzf "$archive" | paste -sd ' ') | $(tar -tvzf "$archive" | awk '{print $2}' | sort -u | paste -sd ' ') | $(tar -tvzf "$archive" shell/script.sh | cut -c1-10)" \
+    'pipeline/ pipeline/__init__.py setup.py shell/ shell/script.sh | 0/0 | -rwxr-xr-x'
+  hash=$(sha256sum "$archive" | cut -d' ' -f1)
+  check "install-services.sh serves it in place of the build's" \
+    "$(grep -c 'bash /opt/cp-sandbox/install-services.sh 10.0.0.7 /opt/cp-sandbox/tool.Dockerfile https://example.com/builds/cloud-pipeline.0.17.0.1.abc.tgz --notify-url https://10.0.0.7:9999/pipeline/restapi/dockerRegistry/notify --api-cert /opt/cp-sandbox/api-tls.crt --pipe-common /opt/cp-sandbox/pipe-common.tar.gz >>' "$SSM_COMMANDS")" 1
+  check "the state records the archive's hash, and says where the runs get pipe-common" \
+    "$(state_get "$name" distribution_pipe_common) $(logged 'and pipe-common from this checkout.')" "checkout $hash 1"
+  pack_pipe_common "$STUB_DIR/again.tar.gz"
+  check "the same files make the same archive" "$(sha256sum "$STUB_DIR/again.tar.gz" | cut -d' ' -f1)" "$hash"
+
+  run_command cmd_services_master --name "$name"
+  check "without it, nothing is copied, the build's is served, and the state says so" \
+    "$RUN_STATUS $(grep -c 'pipe-common.tar.gz' "$SSH_COMMANDS") $(grep -c -- '--pipe-common' "$SSM_COMMANDS") $(state_get "$name" distribution_pipe_common)" \
+    '0 0 0 published'
+
+  rm "$SANDBOX_REPO_ROOT/$PIPE_COMMON_DIR/setup.py"
+  run_command cmd_services_master --name "$name" --pipe-common-from-checkout
+  check "a checkout without pipe-common's setup.py is refused, before install-services.sh runs" \
+    "$RUN_STATUS $(logged "$PIPE_COMMON_DIR in $SANDBOX_REPO_ROOT has no setup.py") $(grep -c 'bash /opt/cp-sandbox/install-services.sh' "$SSM_COMMANDS")" \
+    '1 1 0'
+  rm -rf "${SANDBOX_REPO_ROOT:?}/$PIPE_COMMON_DIR" "$STUB_DIR"/ssh-file.* "$STUB_DIR/again.tar.gz"
   state_remove "$name"
   reset_stubs
 }
@@ -466,6 +555,7 @@ test_api_call() {
     # shellcheck disable=SC2329 # called by api_call
     curl() {
       printf '%s\n' "$*" >>"$STUB_DIR/curl-args"
+      [[ " $* " != *' --data-binary @- '* ]] || cat >"$STUB_DIR/curl-input"
       next_answer curl "$(printf '{"status": "OK", "payload": {"id": 7}}\n200')" | tr '|' '\n'
     }
     : >"$STUB_DIR/curl-args"
@@ -477,6 +567,11 @@ test_api_call() {
     check "the call trusts the API's own certificate, at api on the network" \
       "$(grep -c -- "--cacert $(api_tls_cert_file dev-call) " "$STUB_DIR/curl-args") $(grep -c 'https://api:9999/pipeline/restapi/whoami$' "$STUB_DIR/curl-args")" \
       '1 1'
+    : >"$STUB_DIR/curl-args"
+    api_call '' POST dockerRegistry/register '{"password": "pw-of-the-registry"}' >/dev/null
+    check "a body goes to curl on its input, never on its command line" \
+      "$(grep -c -- '--data-binary @- ' "$STUB_DIR/curl-args") $(grep -c pw-of-the-registry "$STUB_DIR/curl-args" || true) $(cat "$STUB_DIR/curl-input")" \
+      '1 0 {"password": "pw-of-the-registry"}'
     queue curl '{"status": "ERROR", "message": "Preference base.api.host is invalid"}|200'
     run_command api_call '' POST preferences '[]'
     check "an answer that is not OK fails, with the API's message" \
@@ -521,8 +616,10 @@ test_services_configure() {
   up_state "$name"
   state_set "$name" subnet_zone eu-west-1a key_pair cp-sandbox-dev-conf registry_path 10.0.0.7:5000 \
     api_url https://10.0.0.7:9999/pipeline/restapi/ distribution_url http://10.0.0.7:8090/ \
-    distribution_source https://example.com/cloud-pipeline.1.tgz run_id_base 123400000
+    distribution_source https://example.com/cloud-pipeline.1.tgz distribution_pipe_common published \
+    run_id_base 123400000
   printf '%s\n' '-----BEGIN CERTIFICATE-----' 'ZmFrZQ==' '-----END CERTIFICATE-----' >"$(registry_cert_file "$name")"
+  printf '%s\n' "$FAKE_REGISTRY_PASSWORD" >"$(registry_password_file "$name")"
   SANDBOX_REPO_ROOT=/repo
   CP_SANDBOX_WORKER_INSTANCE_PROFILE=arn:aws:iam::123456789012:instance-profile/worker
   CP_SANDBOX_SECURITY_GROUP_IDS='sg-0a, sg-0b'
@@ -556,22 +653,43 @@ test_services_configure() {
   check "and tags them as the sandbox's workers, without a Name, which the node scripts set to the run ID" \
     "$(jq -c '.tags, .regions[0].tags' <<<"$networks" | sort -u)" \
     "{\"cp-sandbox\":\"dev-conf\",\"cp-sandbox-owner\":\"$ME\",\"cp-sandbox-role\":\"worker\",\"cp-sandbox-expires\":\"2030-01-01T00:00:00Z\"}"
-  check "it registers the master's registry, with its certificate and without the platform's auth" \
-    "$(api_called 'POST dockerRegistry/register' | cut -d' ' -f3- | jq -c '[.path, .caCert, .pipelineAuth, .securityScanEnabled]')" \
-    '["10.0.0.7:5000","-----BEGIN CERTIFICATE-----\nZmFrZQ==\n-----END CERTIFICATE-----",false,false]'
+  check "it registers the master's registry, with its certificate and its user's login, without the platform's auth" \
+    "$(api_called 'POST dockerRegistry/register' | cut -d' ' -f3- | jq -c '[.path, .caCert, .userName, .password, .pipelineAuth, .securityScanEnabled]')" \
+    "[\"10.0.0.7:5000\",\"-----BEGIN CERTIFICATE-----\\nZmFrZQ==\\n-----END CERTIFICATE-----\",\"pipe_admin\",\"$FAKE_REGISTRY_PASSWORD\",false,false]"
+  check "and says so, with no password in what it prints" \
+    "$(logged '                its login: pipe_admin, ') $(logged '                it notifies https://10.0.0.7:9999/pipeline/restapi/dockerRegistry/notify') $(logged "$FAKE_REGISTRY_PASSWORD")" '1 1 0'
   check "then the tool group in it, and the tool in the group" \
     "$(api_called 'POST toolGroup' | cut -d' ' -f3- | jq -c '[.name, .registryId]') $(api_called 'POST tool/register' | cut -d' ' -f3- | jq -c '[.image, .toolGroupId, .cpu, .ram]')" \
     '["library",5] ["library/centos",6,"1","1Gi"]'
   check "it reads every preference back, and shows them, and the registries" \
     "$(api_called 'GET preferences/' | wc -l) $(logged '  cluster.max.size = 2') $(logged 'Registries, tool groups and tools')" '13 1 1'
+  check "it says the runs get the build's pipe-common" "$(logged "  pipe-common   the build's")" 1
+  state_set "$name" distribution_pipe_common 'checkout 0123abcd'
+  run_command cmd_services_configure --name "$name"
+  check "or the checkout's, by its hash" "$(logged "  pipe-common   the checkout's, 0123abcd, in place of the build's")" 1
+  state_set "$name" distribution_pipe_common published
+  : >"$STUB_DIR/jq-args"
+  # shellcheck disable=SC2329 # called by services-configure
+  jq() {
+    printf '%s\n' "$*" >>"$STUB_DIR/jq-args"
+    command jq "$@"
+  }
+  run_command cmd_services_configure --name "$name"
+  unset -f jq
+  check "no jq call is given the password on its command line" \
+    "$RUN_STATUS $(grep -c "$FAKE_REGISTRY_PASSWORD" "$STUB_DIR/jq-args" || true) $([[ -s $STUB_DIR/jq-args ]] && echo called)" \
+    '0 0 called'
 
   : >"$API_CALLS"
   API_ANSWERS=(["GET cloud/region"]='[{"id": 4, "regionId": "eu-west-1"}]'
     ["GET dockerRegistry/loadTree"]='{"registries": [{"id": 5, "path": "10.0.0.7:5000", "groups": [{"id": 6, "name": "library", "tools": [{"id": 7, "image": "library/centos"}]}]}]}')
   run_command cmd_services_configure --name "$name"
-  check "a second services-configure sets the preferences again, and creates nothing" \
+  check "a second services-configure sets the preferences and the registry's login again, and creates nothing" \
     "$RUN_STATUS $(api_called POST | cut -d' ' -f1-2 | sort | uniq -c | awk '{print $1, $3}' | paste -sd ',')" \
-    '0 2 preferences'
+    '0 1 dockerRegistry/updateCredentials,2 preferences'
+  check "the login goes to the registry registered, with its certificate, as the API's update takes them all" \
+    "$(api_called 'POST dockerRegistry/updateCredentials' | cut -d' ' -f3- | jq -c '[.id, .path, .userName, .password, (.caCert | startswith("-----BEGIN")), .pipelineAuth]')" \
+    "[5,\"10.0.0.7:5000\",\"pipe_admin\",\"$FAKE_REGISTRY_PASSWORD\",true,false]"
   check "and lists the registry with its tool" \
     "$(logged '  10.0.0.7:5000 (ID 5)') $(logged '    library: library/centos')" '1 1'
 
@@ -598,6 +716,7 @@ test_services_configure_with() {
     api_url https://10.0.0.7:9999/pipeline/restapi/ distribution_url http://10.0.0.7:8090/ \
     distribution_source https://example.com/cloud-pipeline.1.tgz run_id_base 123400000
   printf '%s\n' '-----BEGIN CERTIFICATE-----' 'ZmFrZQ==' '-----END CERTIFICATE-----' >"$(registry_cert_file "$name")"
+  printf '%s\n' "$FAKE_REGISTRY_PASSWORD" >"$(registry_password_file "$name")"
   SANDBOX_REPO_ROOT=$REAL_REPO_ROOT
   API_ANSWERS=(["GET cloud/region"]='[{"id": 4, "regionId": "eu-west-1"}]'
     ["GET dockerRegistry/loadTree"]='{"registries": [{"id": 5, "path": "10.0.0.7:5000", "groups": [{"id": 6, "name": "library", "tools": [{"id": 7, "image": "library/centos"}]}]}]}'
@@ -708,6 +827,8 @@ test_cidrs_overlap
 test_newest_distribution
 test_key_pair
 test_services_prepare
+test_services_master
+test_pipe_common_from_checkout
 test_optional_services
 test_service_settings
 test_billing_schedule

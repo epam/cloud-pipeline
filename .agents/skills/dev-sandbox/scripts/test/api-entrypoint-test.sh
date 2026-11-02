@@ -5,8 +5,9 @@
 # with ip, tun2socks, keytool and curl replaced by stubs that record their calls, and with what it
 # hands over to replaced by one that records the environment it gets. openssl is real, and so are
 # the keys and the certificate it reads. Then of docker/service-entrypoint.sh, which the optional
-# services' containers start with, the same way. Runs in the tools image, in a container of its
-# own, which sandbox-test.sh starts as root and throws away.
+# services' containers start with, and of docker/ui-entrypoint.sh, which the GUI's dev server starts
+# with, the same way. Runs in the tools image, in a container of its own, which sandbox-test.sh
+# starts as root and throws away.
 set -euo pipefail
 
 TEST_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
@@ -197,9 +198,43 @@ EOF
     '1 1 '
 }
 
+# docker/ui-entrypoint.sh, which the GUI's dev server starts with: it hands the command over with
+# the admin's token as the dev proxy's bearer token, and nothing else.
+test_ui_entrypoint() {
+  local entrypoint admin=header.payload.signature token=$WORK/ui/admin-token.secret
+  entrypoint=$(dirname "$ENTRYPOINT")/ui-entrypoint.sh
+  mkdir -p "$(dirname "$token")"
+  printf '%s\n' "$admin" >"$token"
+  cat >"$STUBS/ui-handed-to" <<'EOF'
+#!/bin/bash
+printf 'args=%s\nPROXY_BEARER_TOKEN=%s\n' "$*" "${PROXY_BEARER_TOKEN-}" >"$HANDED"
+EOF
+  chmod +x "$STUBS/ui-handed-to"
+  rm -f "$HANDED"
+  if SANDBOX_TOKEN_FILE=$token bash "$entrypoint" "$STUBS/ui-handed-to" start >"$OUTPUT" 2>&1; then
+    STATUS=0
+  else
+    STATUS=$?
+  fi
+  check "the GUI's entrypoint hands the command over, with the admin's token for the dev proxy, without its newline" \
+    "$STATUS $(handed args) $(handed PROXY_BEARER_TOKEN)" "0 start $admin"
+  check "and prints nothing" "$(wc -c <"$OUTPUT" | tr -d ' ')" 0
+
+  rm -f "$HANDED" "$token"
+  if SANDBOX_TOKEN_FILE=$token bash "$entrypoint" "$STUBS/ui-handed-to" >"$OUTPUT" 2>&1; then
+    STATUS=0
+  else
+    STATUS=$?
+  fi
+  check "without the token, it says so and runs nothing" \
+    "$STATUS $(grep -c "no admin token in $token: run sandbox.sh services" "$OUTPUT") $([[ -e $HANDED ]] && echo ran)" \
+    '1 1 '
+}
+
 set_up
 test_entrypoint
 test_service_entrypoint
+test_ui_entrypoint
 rm -rf "$WORK"
 if ((FAILURES)); then
   printf '%s check(s) failed\n' "$FAILURES"
