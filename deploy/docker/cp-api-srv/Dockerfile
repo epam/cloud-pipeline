@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,19 +18,13 @@
 #   --build-arg OPENSSL_DIST_URL="https://..." \
 #   --build-arg OSSLSIGNCODE_DIST_URL="https://..."
 
-FROM centos:7
-
-RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+# libxcrypt-compat provides libcrypt.so.1, which the Python 2 psycopg2 wheel and the "crypt" modules of both Pythons link
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
                 zip \
                 unzip \
                 openssl \
@@ -40,23 +34,25 @@ RUN yum install -y \
                 samba \
                 samba-client \
                 cifs-utils \
-                gettext
+                gettext \
+                libxcrypt-compat
 
-ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+# yum-utils provides package-cleanup
 RUN cd /tmp && \
-    yum install nfs-utils cifs-utils -y && \
-    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    dnf install nfs-utils cifs-utils yum-utils -y && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
-    yum install -y lustre-client/*.rpm && \
+    dnf install -y lustre-client/*.rpm && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 
 # Prebuild version of openssl v1.1.x which is required by osslsigncode.
 # As long as its compatibility is proven for osslsigncode tool only
-# openssl v1.0.x installed with package manager will be used by default.
+# openssl v3.x installed with package manager will be used by default.
 ARG OPENSSL_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/openssl/openssl-1.1.1c.tar.gz"
 RUN wget $OPENSSL_DIST_URL -O openssl.tgz && \
     tar -xzf openssl.tgz -C /opt/ && \
@@ -67,14 +63,28 @@ RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
 
+# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as a job container does
+# (scripts/pipeline-launch/launch.sh). It is built for the /opt/conda prefix. Link it as the python/python2/pip
+# that the steps below and init-api/init-git-sync find; /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
+    tar -xzf python2.tgz -C /opt/ && \
+    rm -f python2.tgz && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
+    ln -sf /opt/conda/bin/pip /usr/local/bin/pip
+
 # Python 3.12, alongside the Python 2 install above (not a replacement): CP_PYTHON_VERSION selects
 # between them at container start, and packages/scripts not yet migrated still run under Python 2.
+# This Python 3.12 build links libffi.so.6, which Rocky Linux 9 does not ship (it has libffi.so.8), so its
+# "ctypes" module would not load: link the libffi.so.6 of the Miniconda2 install above.
 ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
 RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     tar -xzf python3.tgz -C /usr/local/ && \
     rm -f python3.tgz && \
     ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
-    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    ln -s /opt/conda/lib/libffi.so.6 /usr/lib64/libffi.so.6
 
 RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I  requests==2.21.0 \
@@ -190,6 +200,10 @@ RUN mkdir -p /tmp/pipe-temp && \
     pip3 install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp
+
+# Since 2.35.2, git refuses to work in a repository owned by another user. The API runs git as root
+# in the folders of the mounted storages (transfer_path.sh), which may belong to the storage user
+RUN git config --system --add safe.directory '*'
 
 WORKDIR $CP_API_HOME
 

@@ -23,3 +23,6 @@ processors:
       fail_on_error: false
   - drop_fields:
       fields: ["instant", "beat", "log", "loggerFqcn", "threadId", "offset", "threadPriority", "endOfBatch", "agent", "log.offset", "esc" ]
+
+# The seccomp policy of filebeat 7.10 does not allow clone3, which glibc 2.34+ (Rocky Linux 9) uses to start threads
+seccomp.enabled: false

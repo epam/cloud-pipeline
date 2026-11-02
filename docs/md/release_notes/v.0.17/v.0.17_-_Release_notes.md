@@ -61,6 +61,7 @@
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
+- [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 
 ***
 
@@ -1874,6 +1875,30 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
+
+***
+
+## Rocky Linux 9.8 for the platform services
+
+The images of these platform services moved from CentOS 7, which has reached its end of life, to Rocky Linux 9.8:
+
+- the API (`cp-api-srv`) and the search service (`cp-search`)
+- the notifier (`cp-notifier`), the billing service (`cp-billing-srv`), the monitoring service (`cp-monitoring-srv`) and the VM monitor (`cp-vm-monitor`)
+- the data sharing service (`cp-share-srv`) and the docker components scanner (`cp-docker-comp`)
+- the node logger (`cp-node-logger`), the leader elector (`cp-leader-elector`) and the run policy manager (`cp-run-policy-manager`)
+- the test SAML identity provider (`cp-idp`)
+
+Rocky Linux 9 has no Python 2 package:
+
+- The API image takes Python 2 from the platform's Miniconda2 distribution, as a job container does. It is installed into `/opt/conda` and linked as `python` and `python2`. Python 3.12 stays next to it.
+- The other images that installed Python 2 no longer do, because nothing in them used it.
+
+Other changes:
+
+- The Lustre client in the API and search images is now the el8 build of version 2.10.8, as in the Rocky Linux tool images. It replaces the el7 build of version 2.12.5.
+- The Java services follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject SHA-1 signatures, and RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, the limit was 1024 bits). So a server that a service connects to, for example an SMTP server, must have a certificate that meets these limits. This does not apply to the 1024-bit JWT signing keys that the installer creates.
+- The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
+- The Filebeat log shippers of the API run with `seccomp` disabled. Their `seccomp` policies do not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
 
 ***
 
