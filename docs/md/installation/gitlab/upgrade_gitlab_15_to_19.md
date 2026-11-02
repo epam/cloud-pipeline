@@ -8,6 +8,10 @@ list of required versions ("stops"), one at a time. The external PostgreSQL data
 must be upgraded three times on the way, from 12 to 17. So this is a manual procedure. An administrator with root
 access to the cluster runs it.
 
+The procedure is for a deployment that keeps the GitLab data on the host paths of its nodes, `/opt/gitlab` and
+`/opt/gitlab-postgresql`. An `aws-native` deployment keeps it on the `cp-system-pvc` volume instead, and this page
+does not cover it.
+
 **Rehearse it first.** Run the whole procedure on a copy of `/opt/gitlab` and `/opt/gitlab-postgresql`, in an
 isolated cluster, on the same storage type as the real deployment. The copy holds the real SMTP, webhook and SAML
 settings: the isolated cluster must not reach the real SMTP server, the platform services or the IdP. Write down how
@@ -390,7 +394,7 @@ expiry cap, the version check and the token format. The third command must retur
 
 ```bash
 curl -ksSf -H "Authorization: Bearer <admin JWT>" "https://<api host>/pipeline/restapi/app/info"
-git log --oneline --grep 'Issue 4618' <commit> -- api core
+git log --format=%B --grep 'Issue 4618' <commit> -- api core | grep 'Issue 4618'
 curl -ksSf -H "Authorization: Bearer <admin JWT>" "https://<api host>/pipeline/restapi/preferences/git.token.rotation.enabled"
 ```
 
