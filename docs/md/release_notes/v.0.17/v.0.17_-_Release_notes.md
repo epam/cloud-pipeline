@@ -65,6 +65,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
@@ -1877,6 +1878,15 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 ***
 
 ## Notable Bug fixes
+
+### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
+
+[#4707](https://github.com/epam/cloud-pipeline/issues/4707)
+
+Previously, an `S3` storage registered with an access point alias as its path - e.g. the alias of an access point attached to an `FSx for NetApp ONTAP` volume - could not be accessed with the temporary credentials issued by the platform.
+AWS checks such requests against the access point ARN, and the issued credentials allowed only the bucket name. So the `pipe storage` commands, and file downloads and uploads in the GUI, failed with an `AccessDenied` error.
+Now, an `S3` storage has an optional `accessPointArn` field, set via the REST API. If it is set, the temporary credentials also allow access via this access point.
+See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#register-an-s3-access-point-alias).
 
 ### VS Code extension: the run owner's home folder is not opened on connect
 
