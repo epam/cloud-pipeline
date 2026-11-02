@@ -30,6 +30,8 @@ import {
 } from 'antd';
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
+import {isArchive, hasArchives} from './extract-storage-archives';
+import displaySize from '../../utils/displaySize';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -51,14 +53,17 @@ class UploadButton extends React.Component {
     owner: PropTypes.string,
     onInitialized: PropTypes.func,
     style: PropTypes.object,
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+    extractArchivesAvailable: PropTypes.bool
   };
 
   state = {
     uploadInfoVisible: false,
     uploadInfoClosable: false,
     uploadingFiles: [],
-    synchronousUploadingFiles: []
+    synchronousUploadingFiles: [],
+    pendingConfirmation: false,
+    extractAfterUpload: false
   };
 
   @observable s3Storage;
@@ -147,12 +152,74 @@ class UploadButton extends React.Component {
       uploadInfoVisible: false,
       uploadInfoClosable: false,
       uploadingFiles: [],
-      synchronousUploadingFiles: []
+      synchronousUploadingFiles: [],
+      pendingConfirmation: false,
+      extractAfterUpload: false
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
       }
     });
+  };
+
+  /**
+   * The decision point a selected batch goes through once the 100 ms
+   * debounce settles, before anything uploads. When the caller has enabled
+   * `extractArchivesAvailable` and the batch holds at least one archive, the
+   * upload is paused: the modal opens in its confirmation state and
+   * `startUpload` is not called until the user picks "Upload" or "Upload and
+   * extract". Otherwise `startUpload` runs immediately, exactly as before
+   * this mode existed.
+   *
+   * @param {function} startUpload the handler the caller would have gone to
+   *   directly - `startUploadToS3` or `onUploadStatusChangedSynchronous`.
+   */
+  onFilesSelected = (startUpload) => {
+    const {extractArchivesAvailable} = this.props;
+    const {synchronousUploadingFiles} = this.state;
+    if (extractArchivesAvailable && hasArchives(synchronousUploadingFiles)) {
+      this.setState({
+        uploadInfoVisible: true,
+        pendingConfirmation: true,
+        uploadInfoClosable: true,
+        uploadingFiles: []
+      });
+      return;
+    }
+    startUpload();
+  };
+
+  /**
+   * Cancels a paused batch: nothing was uploaded, so `onRefresh` is not
+   * called, and every bit of selection state is cleared so the next pick
+   * starts clean.
+   */
+  cancelConfirmation = () => {
+    this.setState({
+      uploadInfoVisible: false,
+      uploadInfoClosable: false,
+      pendingConfirmation: false,
+      extractAfterUpload: false,
+      uploadingFiles: [],
+      synchronousUploadingFiles: []
+    });
+  };
+
+  /**
+   * "Upload" and "Upload and extract" both land here, only disagreeing on
+   * `extractAfterUpload`. Starts through the same handler the batch would
+   * have used had the confirmation step never shown.
+   *
+   * @param {boolean} extractAfterUpload
+   */
+  confirmUpload = (extractAfterUpload) => () => {
+    const startUpload = this.props.uploadToS3
+      ? this.startUploadToS3
+      : this.onUploadStatusChangedSynchronous;
+    this.setState({
+      pendingConfirmation: false,
+      extractAfterUpload
+    }, startUpload);
   };
 
   onUploadStatusChangedSynchronous = async () => {
@@ -347,7 +414,10 @@ class UploadButton extends React.Component {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    this.uploadTimeout = setTimeout(this.onUploadStatusChangedSynchronous, 100);
+    this.uploadTimeout = setTimeout(
+      () => this.onFilesSelected(this.onUploadStatusChangedSynchronous),
+      100
+    );
   };
 
   startUploadToS3Timeout = () => {
@@ -355,7 +425,10 @@ class UploadButton extends React.Component {
       clearTimeout(this.uploadTimeout);
       this.uploadTimeout = null;
     }
-    this.uploadTimeout = setTimeout(this.startUploadToS3, 100);
+    this.uploadTimeout = setTimeout(
+      () => this.onFilesSelected(this.startUploadToS3),
+      100
+    );
   };
 
   startUploadToS3 = async () => {
@@ -542,6 +615,53 @@ class UploadButton extends React.Component {
     return doUpload();
   };
 
+  renderConfirmationFooter = () => {
+    return (
+      <Row type="flex" justify="end">
+        <Button
+          id="upload-cancel-button"
+          style={{marginRight: 8}}
+          onClick={this.cancelConfirmation}
+        >
+          Cancel
+        </Button>
+        <Button
+          id="upload-and-extract-button"
+          style={{marginRight: 8}}
+          onClick={this.confirmUpload(true)}
+        >
+          Upload and extract
+        </Button>
+        <Button
+          id="upload-button-confirm"
+          type="primary"
+          onClick={this.confirmUpload(false)}
+        >
+          Upload
+        </Button>
+      </Row>
+    );
+  };
+
+  renderConfirmationList = () => {
+    const {synchronousUploadingFiles = []} = this.state;
+    return synchronousUploadingFiles.map(file => (
+      <Row
+        style={{marginBottom: 10}}
+        type="flex"
+        align="middle"
+        key={file.uid}
+      >
+        {
+          isArchive(file.name) &&
+          <Icon type="file-zip" style={{marginRight: 5}} />
+        }
+        <span style={{flex: 1}}>{file.name}</span>
+        <span style={{marginLeft: 10}}>{displaySize(file.size)}</span>
+      </Row>
+    ));
+  };
+
   render () {
     const uploadProps = {
       multiple: this.props.multiple,
@@ -571,6 +691,11 @@ class UploadButton extends React.Component {
         return false;
       };
     } else {
+      // Not routed through `onFilesSelected`: `antd`'s own `Upload` owns the
+      // start here (a GCP storage posts as soon as a file is picked), and no
+      // caller that enables `extractArchivesAvailable` uses this path. If
+      // that ever changes, the pause has to be built here too - enabling the
+      // prop for such a storage today does nothing, the upload just starts.
       uploadProps.onChange = this.onUploadStatusChanged;
     }
     const button = (
@@ -620,13 +745,16 @@ class UploadButton extends React.Component {
           }
         </Upload>
         <Modal
-          footer={false}
-          title="Uploading files..."
-          closable={this.state.uploadInfoClosable}
-          onCancel={this.hideUploadInfo}
+          footer={this.state.pendingConfirmation ? this.renderConfirmationFooter() : false}
+          title={this.state.pendingConfirmation ? 'Upload files' : 'Uploading files...'}
+          closable={this.state.pendingConfirmation ? true : this.state.uploadInfoClosable}
+          onCancel={this.state.pendingConfirmation ? this.cancelConfirmation : this.hideUploadInfo}
           visible={this.state.uploadInfoVisible}>
           {
-            this.state.uploadingFiles.map(f => {
+            this.state.pendingConfirmation && this.renderConfirmationList()
+          }
+          {
+            !this.state.pendingConfirmation && this.state.uploadingFiles.map(f => {
               let status = 'active';
               if (f.error) {
                 status = 'exception';
