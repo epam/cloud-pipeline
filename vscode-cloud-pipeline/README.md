@@ -38,6 +38,16 @@ The list **updates automatically** so you can see when something finishes starti
 
 ---
 
+## Folder opened on connect
+
+The remote window opens the home folder of the user it connects as:
+
+- **The run owner** — the folder in the run's `OWNER_HOME` environment variable. If it is not set, or cannot be read, `/home/<user name>`.
+- **`root`** — `/root`.
+- **Any other user** (for example, on a shared run) — `/home/<user name>`.
+
+---
+
 ## Remote settings on connect
 
 The remote window opens your home folder on the run, and `~/cloud-data` there links to the mounted data storages. Searching them is very slow, so without extra settings a chat assistant (for example GitHub Copilot Chat) can wait for a very long time while it collects workspace context.
