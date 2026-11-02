@@ -40,8 +40,12 @@ The list **updates automatically** so you can see when something finishes starti
 
 ## Folder opened on connect
 
-The remote window opens the home folder of the user it connects as:
+The remote window opens the folder in the run's **`CP_VSCODE_WORKSPACE_DIR`** parameter, for any user, if it is an absolute path to a folder that user can open. Set it at launch, or as a default parameter of a tool, for example to open a project folder in the image. Do not point it into a mounted data storage (under `/cloud-data`): search and file watching there are very slow.
+
+Otherwise, it opens the home folder of the user it connects as:
 
 - **The run owner** — the folder in the run's `OWNER_HOME` environment variable. If it is not set, or cannot be read, `/home/<user name>`.
 - **`root`** — `/root`.
 - **Any other user** (for example, on a shared run) — `/home/<user name>`.
+
+If `CP_VSCODE_WORKSPACE_DIR` cannot be opened, a warning says why, and the home folder opens.
