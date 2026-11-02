@@ -36,6 +36,7 @@
 - [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
 - [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
+- [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 
 ***
 
@@ -686,6 +687,12 @@ Other fixes keep the platform working with the new GitLab versions:
 - a missing folder of a repository is treated as an empty one: GitLab 17.7 and later answer `404` for it
 - tokens with dots, as GitLab 19.5 issues them, are accepted in repository URLs
 - saving the Git preferences no longer rejects GitLab 18.0-18.2 and 19.5-19.9
+
+## VS Code extension: the folder opened on connect
+
+On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
+In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
+On a deployment that is updated, not installed anew, the parameter is offered in the list of system parameters only after an admin adds it to the **`launch.system.parameters`** preference. Until then, it can be set as a regular parameter of a run.
 
 ***
 
