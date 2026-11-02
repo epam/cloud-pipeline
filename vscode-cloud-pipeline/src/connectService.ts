@@ -11,8 +11,9 @@ import {
   sshConfigFragmentPath,
 } from './config';
 import { getBrandName } from './extensionEnv';
-import { provisionPasswordlessKey } from './keyProvisioning';
+import { KeyProvisionResult, provisionPasswordlessKey } from './keyProvisioning';
 import { ensureRemoteSshForConnect } from './remoteSshExtension';
+import { RemoteOwnerEnv, remoteWorkspacePath } from './remoteWorkspacePath';
 import { isSshBlockedByPauseState } from './runPauseResume';
 import {
   isSshInitialized,
@@ -48,16 +49,23 @@ const HEALTH_CHECK_INTERVAL_MS = 60_000;
 
 /**
  * Remote-SSH folder URI built with {@link vscode.Uri.from} so `ssh-remote+<host>` is not
- * misparsed by {@link vscode.Uri.parse}.
+ * misparsed by {@link vscode.Uri.parse}. The folder is picked by {@link remoteWorkspacePath}.
  */
-function remoteSshWorkspaceUri(hostAlias: string, remoteUser: string): vscode.Uri {
-  const u = (remoteUser.trim() || 'root').split('@')[0];
-  const remotePath = u === 'root' ? '/root' : `/home/${u}`;
+function remoteSshWorkspaceUri(hostAlias: string, remoteUser: string, ownerEnv?: RemoteOwnerEnv): vscode.Uri {
   return vscode.Uri.from({
     scheme: 'vscode-remote',
     authority: `ssh-remote+${hostAlias}`,
-    path: remotePath,
+    path: remoteWorkspacePath(remoteUser, ownerEnv),
   });
+}
+
+/**
+ * Opens a new Remote-SSH window to `hostAlias`, in the folder picked for the SSH user of `keyResult`.
+ * `vscode.openFolder` stays in-process (Cursor or VS Code).
+ */
+export async function openRemoteWindow(hostAlias: string, keyResult: KeyProvisionResult): Promise<void> {
+  const remoteUri = remoteSshWorkspaceUri(hostAlias, keyResult.sshConfigUser, keyResult.ownerEnv);
+  await vscode.commands.executeCommand('vscode.openFolder', remoteUri, true);
 }
 
 export function getActiveTunnel(runId: number): ActiveTunnel | undefined {
@@ -419,9 +427,7 @@ export async function connectToRun(auth: ResolvedAuth, runId: number): Promise<v
           void runHealthCheck(runId);
         }, HEALTH_CHECK_INTERVAL_MS);
 
-        // Open remote in this app. `vscode.openFolder` stays in-process (Cursor or VS Code).
-        const remoteUri = remoteSshWorkspaceUri(hostAlias, keyResult.sshConfigUser);
-        await vscode.commands.executeCommand('vscode.openFolder', remoteUri, true);
+        await openRemoteWindow(hostAlias, keyResult);
         vscode.window.showInformationMessage(
           `Tunnel active on 127.0.0.1:${server.localPort} for run ${runId}. Use "Stop SSH Tunnel" when done.`
         );
