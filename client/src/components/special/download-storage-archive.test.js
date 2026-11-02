@@ -19,6 +19,7 @@ import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
   archivePathsFromSelection,
+  archiveSelectionAvailable,
   archiveStorageSupported,
   defaultArchiveName
 } from './download-storage-archive';
@@ -49,6 +50,53 @@ describe('archiveStorageSupported', () => {
 
   test('prefers storageType over type', () => {
     expect(archiveStorageSupported({storageType: 'AZ', type: 'S3'})).toBe(false);
+  });
+});
+
+describe('archiveSelectionAvailable', () => {
+  const supported = {archiveSupported: true, downloadEnabled: true, sensitive: false};
+
+  // The regression this exists for: a read-only user (or a ROLE_STORAGE_READER)
+  // sees no checkbox on a folder row, so the archive they are allowed to
+  // download cannot be assembled.
+  test('a folder is selectable, even though no folder is downloadable', () => {
+    expect(archiveSelectionAvailable({path: 'sub', type: 'Folder'}, supported)).toBe(true);
+  });
+
+  test('a lowercase "folder" type counts too', () => {
+    expect(archiveSelectionAvailable({path: 'sub', type: 'folder'}, supported)).toBe(true);
+  });
+
+  // Folders only: a file row's checkbox stays with `downloadable`, so this flag
+  // changes nothing about any row that is not a folder - including a
+  // lifecycle-archived file, which a read-only user could not select before
+  // this flag either.
+  test('a file is not selectable through this flag', () => {
+    expect(archiveSelectionAvailable({path: 'a.txt', type: 'File'}, supported)).toBe(false);
+  });
+
+  test('a lifecycle-archived file is not selectable through this flag either', () => {
+    const item = {path: 'cold.txt', type: 'File', downloadable: false, archived: true};
+    expect(archiveSelectionAvailable(item, supported)).toBe(false);
+  });
+
+  test('a delete-marker is not selectable', () => {
+    const item = {path: 'gone', type: 'Folder', deleteMarker: true};
+    expect(archiveSelectionAvailable(item, supported)).toBe(false);
+  });
+
+  test('an item with no path is not selectable - the ".." navigation row', () => {
+    expect(archiveSelectionAvailable({type: 'Folder'}, supported)).toBe(false);
+    expect(archiveSelectionAvailable(undefined, supported)).toBe(false);
+  });
+
+  test.each([
+    ['the storage cannot be archived', {...supported, archiveSupported: false}],
+    ['downloads are denied to this user', {...supported, downloadEnabled: false}],
+    ['the storage is sensitive', {...supported, sensitive: true}],
+    ['nothing is known about the storage', undefined]
+  ])('nothing is selectable when %s', (_, options) => {
+    expect(archiveSelectionAvailable({path: 'sub', type: 'Folder'}, options)).toBe(false);
   });
 });
 

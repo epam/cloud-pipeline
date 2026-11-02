@@ -113,6 +113,7 @@ import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
   archivePathsFromSelection,
+  archiveSelectionAvailable,
   archiveStorageSupported,
   defaultArchiveName
 } from '../../../special/download-storage-archive';
@@ -128,7 +129,10 @@ import {
 } from './components/storage-item-permissions';
 import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
 import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
-import {checkStorageOperationsEnabled} from './utils';
+import {
+  checkStorageOperationsEnabled,
+  storageItemSelectionAvailable
+} from './utils';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -334,6 +338,17 @@ export default class DataStorage extends React.Component {
       preferences.loaded &&
       preferences.sharedStoragesSystemDirectory &&
       preferences.dataSharingEnabled;
+  }
+
+  /**
+   * Whether an archive download can succeed on this storage at all. Read both
+   * by the "Download archive" selection action and by the `archiveSelectable`
+   * flag every row carries, so that a row is never offered a checkbox for an
+   * action the storage cannot perform.
+   */
+  get archiveDownloadSupported () {
+    return !this.isOmicsStore &&
+      archiveStorageSupported(this.storage.info, this.fileShareMount);
   }
 
   @computed
@@ -620,6 +635,13 @@ export default class DataStorage extends React.Component {
       this.storage.info.type
     );
     const {sensitive} = info;
+    // The storage-level half of `archiveSelectable`, the same for every row -
+    // see `archiveSelectionAvailable`.
+    const archiveOptions = {
+      archiveSupported: this.archiveDownloadSupported,
+      downloadEnabled: downloadable,
+      sensitive
+    };
     const items = [];
     const documentPreviewAvailable = (item) => {
       const {preferences} = this.props;
@@ -638,6 +660,7 @@ export default class DataStorage extends React.Component {
         editable: false,
         selectable: false,
         shareAvailable: false,
+        archiveSelectable: false,
         navigationBackward: true
       });
     }
@@ -671,6 +694,11 @@ export default class DataStorage extends React.Component {
             deletable: roleModel.writeAllowed(versions[version]),
             selectable: false,
             shareAvailable: false,
+            // A version row is a file's version, and only a folder is ever
+            // archive-selectable - plus it is never selected at all
+            // (`selectable: false` above). The archive request carries paths
+            // only, with no version field.
+            archiveSelectable: false,
             latest,
             isVersion: true,
             archived,
@@ -720,6 +748,7 @@ export default class DataStorage extends React.Component {
         downloadable: isDownloadable,
         editable: !i.deleteMarker && roleModel.writeAllowed(i),
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
+        archiveSelectable: archiveSelectionAvailable(i, archiveOptions),
         deletable: roleModel.writeAllowed(i),
         children: getChildList(i, i.versions, sensitive),
         selectable: !i.deleteMarker,
@@ -1760,8 +1789,7 @@ export default class DataStorage extends React.Component {
         ? styles.checkboxCellVersions
         : styles.checkboxCell,
       render: (item) => {
-        if (item.selectable &&
-          (item.downloadable || item.editable || item.shareAvailable) &&
+        if (storageItemSelectionAvailable(item) &&
           (!this.isOmicsStore || this.isSequenceStorage)) {
           return (
             <Checkbox
@@ -2138,7 +2166,9 @@ export default class DataStorage extends React.Component {
 
   selectAll = (type) => {
     const selectedItems = this.items.filter(item => {
-      if (!item.editable && !item.downloadable && !item.shareAvailable) {
+      // The same predicate the row's own checkbox goes through, so "Select
+      // page" can never select a row that has no checkbox to unselect it with.
+      if (!storageItemSelectionAvailable(item)) {
         return false;
       }
       if (type) {
@@ -2388,8 +2418,7 @@ export default class DataStorage extends React.Component {
       title: 'Clear selection',
       available: this.clearSelectionVisible
     };
-    const archiveSupported = !this.isOmicsStore &&
-      archiveStorageSupported(this.storage.info, this.fileShareMount);
+    const archiveSupported = this.archiveDownloadSupported;
     const downloadAction = {
       key: Keys.download,
       title: 'Download',

@@ -42,6 +42,39 @@ function getMetadataEntryValueString (entry) {
   return String(raw).trim().toLowerCase();
 }
 
+/**
+ * Whether a row of the storage listing carries a selection checkbox, and
+ * whether "Select page" picks it up - the two places that must agree, because
+ * a row selected in bulk but with no checkbox of its own cannot be unselected.
+ *
+ * `selectable` is the row's own veto (the `..` navigation row, a version child
+ * row, a delete-marker). Past it, a row is only worth selecting when at least
+ * one of the selection actions could act on it:
+ *
+ * - `downloadable` - "Download"; false for every folder on a non-Omics storage
+ * - `editable` - "Remove all" and the rest of the write actions
+ * - `shareAvailable` - "Share"
+ * - `archiveSelectable` - "Download archive" (`archiveSelectionAvailable` in
+ *   `components/special/download-storage-archive.js`). Folders only, and the
+ *   one flag that makes a folder selectable for a user who cannot write to the
+ *   storage.
+ *
+ * @param {{selectable: boolean, downloadable: boolean, editable: boolean,
+ *   shareAvailable: boolean, archiveSelectable: boolean}} item
+ * @returns {boolean}
+ */
+export function storageItemSelectionAvailable (item) {
+  if (!item || !item.selectable) {
+    return false;
+  }
+  return !!(
+    item.downloadable ||
+    item.editable ||
+    item.shareAvailable ||
+    item.archiveSelectable
+  );
+}
+
 export function checkStorageOperationsEnabled (metadata = {}) {
   if (!metadata?.data) {
     return true;

@@ -35,12 +35,72 @@ function isFolder (item) {
  * server builds the archive, not the browser, so an archived (not currently
  * downloadable) file is still archivable.
  *
+ * @param {SelectedStorageItem} item
+ * @returns {boolean}
+ */
+function isArchivableItem (item) {
+  return !!item && !!item.path && !item.deleteMarker;
+}
+
+/**
  * @param {SelectedStorageItem[]} selectedItems
  * @returns {SelectedStorageItem[]}
  */
 function archivableItems (selectedItems) {
-  return (selectedItems || [])
-    .filter(item => item && item.path && !item.deleteMarker);
+  return (selectedItems || []).filter(isArchivableItem);
+}
+
+/**
+ * Whether a listed storage item carries a selection checkbox for an archive
+ * download's sake - the `archiveSelectable` flag the storage browser hangs on
+ * every row.
+ *
+ * **Folders only**, and deliberately so. A folder is never `downloadable` (the
+ * browser cannot download one), and a user with READ alone on the storage gets
+ * neither `editable` nor `shareAvailable`, so before this flag a read-only user
+ * - or a `ROLE_STORAGE_READER` - had no checkbox on any folder row and no way
+ * to put a folder into an archive, which is the one thing the feature exists
+ * for. The server asks for READ and nothing more
+ * (`DataStorageApiService.createDownloadArchiveTask`), so the checkbox matches
+ * what it will accept.
+ *
+ * A FILE row is left exactly as it was, to `downloadable`. That leaves one case
+ * behind: a lifecycle-archived, not-yet-restored file, which
+ * `archivePathsFromSelection` would happily archive but which a read-only user
+ * still cannot select. That was equally true before this flag existed, its row
+ * carries its own restore control, and widening it here would change what rows
+ * a user may select for reasons that have nothing to do with folders.
+ *
+ * Past `isFolder`, the item-level part is `isArchivableItem` above: a path, and
+ * not a delete-marker.
+ *
+ * The storage-level part comes in as options, because none of it is visible on
+ * an item:
+ * - `archiveSupported` - `archiveStorageSupported` below, on a non-Omics
+ *   storage. Without it the request would be queued and then always fail, so
+ *   offering the checkbox would be offering a broken action.
+ * - `downloadEnabled` / `sensitive` - the two gates the storage's own
+ *   `downloadable` already applies to every file row, applied here so a folder
+ *   row is no more selectable than a file row on the same storage. Note this is
+ *   a consistency rule and not a control: the "Download archive" action itself
+ *   consults neither (and a user with WRITE has a checkbox on every row
+ *   regardless), so neither gate is what keeps an archive off a sensitive
+ *   storage.
+ *
+ * @param {SelectedStorageItem} item
+ * @param {{archiveSupported: boolean, downloadEnabled: boolean, sensitive: boolean}} [options]
+ * @returns {boolean}
+ */
+export function archiveSelectionAvailable (item, options = {}) {
+  const {
+    archiveSupported = false,
+    downloadEnabled = false,
+    sensitive = false
+  } = options;
+  if (!archiveSupported || !downloadEnabled || sensitive) {
+    return false;
+  }
+  return isFolder(item) && isArchivableItem(item);
 }
 
 /**
