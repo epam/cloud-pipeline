@@ -18,6 +18,7 @@ import {fn, screen} from '@test';
 import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
+  archiveDownloadAvailable,
   archivePathsFromSelection,
   archiveSelectionAvailable,
   archiveStorageSupported,
@@ -50,6 +51,36 @@ describe('archiveStorageSupported', () => {
 
   test('prefers storageType over type', () => {
     expect(archiveStorageSupported({storageType: 'AZ', type: 'S3'})).toBe(false);
+  });
+});
+
+describe('archiveDownloadAvailable', () => {
+  const supported = {archiveSupported: true, downloadEnabled: true, sensitive: false};
+
+  test('a supported storage this user may download from offers the archive', () => {
+    expect(archiveDownloadAvailable(supported)).toBe(true);
+  });
+
+  // A sensitive storage is not readable outside a sensitive run, which is why no
+  // row on one is downloadable. The archive worker reads it with the storage's
+  // own cloud role, so an offered archive would be the one way data leaves it.
+  test('a sensitive storage offers no archive', () => {
+    expect(archiveDownloadAvailable({...supported, sensitive: true})).toBe(false);
+  });
+
+  // An archive is a download, so the storage's download attribute applies to it
+  // exactly as it applies to a file row's own Download button.
+  test('a storage whose download is denied to this user offers no archive', () => {
+    expect(archiveDownloadAvailable({...supported, downloadEnabled: false})).toBe(false);
+  });
+
+  test('a storage the archive worker cannot read offers no archive', () => {
+    expect(archiveDownloadAvailable({...supported, archiveSupported: false})).toBe(false);
+  });
+
+  test('knowing nothing about the storage offers no archive', () => {
+    expect(archiveDownloadAvailable()).toBe(false);
+    expect(archiveDownloadAvailable({})).toBe(false);
   });
 });
 

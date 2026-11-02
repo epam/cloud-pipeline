@@ -112,6 +112,7 @@ import handleDownloadOmicsItems from '../../../special/download-omics-storage-it
 import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
+  archiveDownloadAvailable,
   archivePathsFromSelection,
   archiveSelectionAvailable,
   archiveStorageSupported,
@@ -341,14 +342,35 @@ export default class DataStorage extends React.Component {
   }
 
   /**
-   * Whether an archive download can succeed on this storage at all. Read both
-   * by the "Download archive" selection action and by the `archiveSelectable`
-   * flag every row carries, so that a row is never offered a checkbox for an
-   * action the storage cannot perform.
+   * Whether the archive worker can read this storage at all - the storage's
+   * type, and nothing about the user.
    */
-  get archiveDownloadSupported () {
+  get archiveStorageTypeSupported () {
     return !this.isOmicsStore &&
       archiveStorageSupported(this.storage.info, this.fileShareMount);
+  }
+
+  /**
+   * What `archiveDownloadAvailable` and `archiveSelectionAvailable` need to
+   * know about this storage. Read by the "Download archive" selection action
+   * and by every row's `archiveSelectable` flag, so the item a user can reach
+   * and the rows they can select for it always agree.
+   *
+   * `downloadEnabled` starts false and is only assigned once the storage, its
+   * metadata, the preferences and the user have all loaded
+   * (`models/dataStorage/data-storage-listing.js`), so this fails closed: while
+   * that is in flight - and permanently, if one of those requests rejects,
+   * since nothing retries it - the archive is not offered. That is the same
+   * window in which a file row shows no Download button today, which is why it
+   * is left as it is rather than given a third, "still loading" state.
+   */
+  get archiveDownloadOptions () {
+    const {sensitive} = this.storage.info || {};
+    return {
+      archiveSupported: this.archiveStorageTypeSupported,
+      downloadEnabled: !!this.storage.downloadEnabled,
+      sensitive: !!sensitive
+    };
   }
 
   @computed
@@ -637,11 +659,7 @@ export default class DataStorage extends React.Component {
     const {sensitive} = info;
     // The storage-level half of `archiveSelectable`, the same for every row -
     // see `archiveSelectionAvailable`.
-    const archiveOptions = {
-      archiveSupported: this.archiveDownloadSupported,
-      downloadEnabled: downloadable,
-      sensitive
-    };
+    const archiveOptions = this.archiveDownloadOptions;
     const items = [];
     const documentPreviewAvailable = (item) => {
       const {preferences} = this.props;
@@ -2418,7 +2436,10 @@ export default class DataStorage extends React.Component {
       title: 'Clear selection',
       available: this.clearSelectionVisible
     };
-    const archiveSupported = this.archiveDownloadSupported;
+    // Not merely "can the worker read this storage": a sensitive storage, or one
+    // whose download is denied to this user, offers no archive either - the same
+    // gate every row's `archiveSelectable` flag goes through.
+    const archiveSupported = archiveDownloadAvailable(this.archiveDownloadOptions);
     const downloadAction = {
       key: Keys.download,
       title: 'Download',

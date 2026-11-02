@@ -51,6 +51,44 @@ function archivableItems (selectedItems) {
 }
 
 /**
+ * Whether an archive download may be offered on this storage, to this user, at
+ * all - the gate both the "Download archive" selection item and every row's
+ * `archiveSelectable` flag go through, so the two can never disagree.
+ *
+ * - `archiveSupported` - `archiveStorageSupported` below, on a non-Omics
+ *   storage. Without it the request would be queued and then always fail, so
+ *   offering the item would be offering a broken action.
+ * - `sensitive` - a sensitive storage's data is readable only from inside a
+ *   sensitive run, which is why no row on one is ever `downloadable`. The API's
+ *   data-leakage aspect enforces that on the methods that read a storage
+ *   directly (`@SensitiveStorageOperation` on `StorageProviderManager`'s
+ *   `generateDownloadURL`, `getFile`, `getFileStream`), and an archive request
+ *   calls none of them - it queues a task for a worker that reads the storage
+ *   with its own cloud role. So this is the only thing keeping the GUI from
+ *   offering an archive of a sensitive storage.
+ * - `downloadEnabled` - the storage's download attribute, which the GUI applies
+ *   to every file row already (`downloadEnabled` in
+ *   `models/dataStorage/data-storage-listing.js`). An archive is a download, so
+ *   a storage that refuses downloads to this user refuses this one too.
+ *
+ * Neither of the last two is enforced by the server for an archive request:
+ * `POST /datastorage/{id}/download/archive` asks for READ and nothing else, so
+ * both are GUI rules for the archive exactly as the download attribute is a GUI
+ * rule for the plain download. Hiding the item is not a control.
+ *
+ * @param {{archiveSupported: boolean, downloadEnabled: boolean, sensitive: boolean}} [options]
+ * @returns {boolean}
+ */
+export function archiveDownloadAvailable (options = {}) {
+  const {
+    archiveSupported = false,
+    downloadEnabled = false,
+    sensitive = false
+  } = options;
+  return archiveSupported && downloadEnabled && !sensitive;
+}
+
+/**
  * Whether a listed storage item carries a selection checkbox for an archive
  * download's sake - the `archiveSelectable` flag the storage browser hangs on
  * every row.
@@ -72,35 +110,18 @@ function archivableItems (selectedItems) {
  * a user may select for reasons that have nothing to do with folders.
  *
  * Past `isFolder`, the item-level part is `isArchivableItem` above: a path, and
- * not a delete-marker.
- *
- * The storage-level part comes in as options, because none of it is visible on
- * an item:
- * - `archiveSupported` - `archiveStorageSupported` below, on a non-Omics
- *   storage. Without it the request would be queued and then always fail, so
- *   offering the checkbox would be offering a broken action.
- * - `downloadEnabled` / `sensitive` - the two gates the storage's own
- *   `downloadable` already applies to every file row, applied here so a folder
- *   row is no more selectable than a file row on the same storage. Note this is
- *   a consistency rule and not a control: the "Download archive" action itself
- *   consults neither (and a user with WRITE has a checkbox on every row
- *   regardless), so neither gate is what keeps an archive off a sensitive
- *   storage.
+ * not a delete-marker. The storage-level part is `archiveDownloadAvailable`
+ * above, whose options this passes straight through - a row is never selectable
+ * for an archive the storage would not produce.
  *
  * @param {SelectedStorageItem} item
  * @param {{archiveSupported: boolean, downloadEnabled: boolean, sensitive: boolean}} [options]
  * @returns {boolean}
  */
 export function archiveSelectionAvailable (item, options = {}) {
-  const {
-    archiveSupported = false,
-    downloadEnabled = false,
-    sensitive = false
-  } = options;
-  if (!archiveSupported || !downloadEnabled || sensitive) {
-    return false;
-  }
-  return isFolder(item) && isArchivableItem(item);
+  return archiveDownloadAvailable(options) &&
+    isFolder(item) &&
+    isArchivableItem(item);
 }
 
 /**
