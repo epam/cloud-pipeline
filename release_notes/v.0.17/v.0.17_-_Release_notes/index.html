@@ -260,6 +260,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect">VS Code extension: the run owner's home folder is not opened on connect</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a>
@@ -717,6 +719,7 @@
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect">VS Code extension: the run owner's home folder is not opened on connect</a></li>
 <li><a href="#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</a></li>
 <li><a href="#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty">Launch form: a conditional multi-select enum parameter is shown empty</a></li>
 <li><a href="#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags">Launch: a run name alias replaces the run's custom and required tags</a></li>
@@ -2198,6 +2201,10 @@ For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_s
 For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#miscellaneous">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect">VS Code extension: the run owner's home folder is not opened on connect</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/4708">#4708</a></p>
+<p>Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened <code>/home/&lt;user name&gt;</code>, even if the run owner's home folder (the <code>OWNER_HOME</code> environment variable of the run) was another one.
+Now, the extension opens the folder from <code>OWNER_HOME</code> for the run owner, and <code>/home/&lt;user name&gt;</code> only if <code>OWNER_HOME</code> is not set or cannot be read. The folder opened for <code>root</code> (<code>/root</code>) and for other users (<code>/home/&lt;user name&gt;</code>) is not changed.</p>
 <h3 id="storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes">Storage files are not indexed when an object key is longer than 512 bytes</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/4698">#4698</a></p>
 <p>Previously, if an object storage (<code>S3</code>, <code>GCS</code>, <code>Azure</code>) held a file whose path was longer than 512 bytes, the search service failed to index the files of the whole storage.
