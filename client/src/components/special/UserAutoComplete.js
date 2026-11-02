@@ -27,6 +27,13 @@ export default class UserAutoComplete extends React.Component {
 
   static propTypes = {
     onChange: PropTypes.func,
+    // Called when the user empties the input by hand. `onChange` cannot
+    // carry that: it fires only from `onUserSelect`, so it only ever reports
+    // a user who was picked, and a caller watching it alone can never tell
+    // "no user is chosen any more" from "the value I passed in is still
+    // current". Opt-in - a caller that does not pass it behaves exactly as
+    // before.
+    onClear: PropTypes.func,
     value: PropTypes.string,
     readOnly: PropTypes.bool,
     placeholder: PropTypes.string,
@@ -54,6 +61,13 @@ export default class UserAutoComplete extends React.Component {
   };
   lastFetchId = 0;
   findUser = (value) => {
+    // Reported before the lookup below, and regardless of what it answers:
+    // an emptied input is a decision the user has already made, not
+    // something to wait on the server for. See the `onClear` propType above
+    // for why this cannot go through `onChange`.
+    if (!value && this.props.onClear) {
+      this.props.onClear();
+    }
     this.lastFetchId += 1;
     const fetchId = this.lastFetchId;
     this.setState({

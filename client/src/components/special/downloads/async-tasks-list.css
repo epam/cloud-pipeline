@@ -31,6 +31,15 @@
   margin: 5px;
 }
 
+/* The rule between the Status filter's "Select/Unselect all" box and the
+ * per-status list it controls. Geometry only: the line itself is the themable
+ * `cp-divider`/`horizontal` pair from client/src/themes/styles/layout.less,
+ * applied alongside this class, so it follows the user's theme instead of
+ * carrying a colour that would not. */
+.filter-divider {
+  margin: 5px 0;
+}
+
 .filter-actions-buttons-container {
   display: flex;
   justify-content: space-between;

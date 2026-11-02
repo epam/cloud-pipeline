@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {Table, Pagination, Checkbox} from 'antd';
 import classNames from 'classnames';
 import {
-  ASYNC_TASK_STATUSES,
+  ALL_ASYNC_TASK_STATUSES,
   POLLED_STATUSES,
   statusesAreFiltered,
   ownerIsFiltered
@@ -27,10 +27,6 @@ import {
 import UserAutoComplete from '../../special/UserAutoComplete';
 import buildColumns from './columns';
 import styles from './async-tasks-list.css';
-
-// All eight statuses, in the vocabulary's own declaration order - the
-// checkbox list the Status column's filter dropdown offers.
-const ALL_STATUSES = Object.keys(ASYNC_TASK_STATUSES);
 
 // Presentational: no @inject and no model import of its own. Everything it
 // needs arrives as props, so most of it is testable without a Provider or a
@@ -52,10 +48,11 @@ const ALL_STATUSES = Object.keys(ASYNC_TASK_STATUSES);
 
 class AsyncTasksList extends React.Component {
   // Pure UI mechanics: whether the Status column's filter dropdown is open,
-  // and which boxes are ticked while it is - "pending" until OK or Clear
-  // commits them. The *committed* filter (`this.props.statusesFilter`) is
-  // owned by the parent, which is what actually drives the server request -
-  // this component stays free of @inject and model imports either way.
+  // and which boxes are ticked while it is - "pending" until OK or
+  // Reset to defaults commits them. The *committed* filter
+  // (`this.props.statusesFilter`) is owned by the parent, which is what
+  // actually drives the server request - this component stays free of
+  // @inject and model imports either way.
   state = {
     statusesFilterVisible: false,
     pendingStatuses: [],
@@ -118,20 +115,43 @@ class AsyncTasksList extends React.Component {
     this.setState({pendingStatuses: [...nextStatuses]});
   };
 
-  // Commits `statuses` as the filter. Unlike every other filter in this
-  // feature, an empty selection does NOT omit the key: it commits
-  // POLLED_STATUSES (every status except CANCELLED/EXPIRED) instead of
-  // `undefined`. "Untick every box, then OK" is the same gesture as `Clear`
-  // (both below), and mapping either to `undefined` would delete the filter
-  // and so show MORE rows than before unticking - the opposite of the
-  // gesture. So `Clear` and "untick everything, OK" both land on the same
-  // default. This is a named exception to the general key-omission rule the
-  // Owner filter below still follows.
+  // The dropdown's own select-all box (see `statusesFilterDropdown` below
+  // for the tri-state it renders with, and for the label that names whichever
+  // of the two it is about to do): ticks every known status, or unticks the
+  // lot. Driven by antd's own `event.target.checked`, which an indeterminate
+  // Checkbox reports as `false` - so a click from the half-ticked state
+  // selects everything, which is the gesture anyone expects of it.
+  toggleAllStatuses = (event) => {
+    this.setState({pendingStatuses: event.target.checked ? [...ALL_ASYNC_TASK_STATUSES] : []});
+  };
+
+  // Commits `statuses` as the filter, verbatim - an **empty array included**.
+  // That is the whole point of the empty case here: unticking every box
+  // reaches the server as `statuses: []` rather than being quietly turned
+  // back into a default the user did not ask for. The parent
+  // (downloads-manager.js's `setFilter`/`sendFilterRequest`) carries that
+  // empty array through to the request body for the same reason.
+  //
+  // **What the user then sees is not an empty table.**
+  // `AsyncTaskSpecification.of` only adds a status predicate for a NON-empty
+  // list (`CollectionUtils.isNotEmpty`), so an empty one filters nothing and
+  // the table shows every status, CANCELLED and EXPIRED included - MORE rows
+  // than before unticking, not fewer. That is deliberate and agreed, and it
+  // is not something to "fix" at either end: the request says what the user
+  // chose, the server decides what that matches. It is also why
+  // `Reset to defaults` below is a separate gesture - it is the only thing
+  // that puts POLLED_STATUSES back.
+  //
+  // `|| []` guards a caller passing `undefined`: the parent treats an array
+  // (empty or not) as the committed value, and handing it `undefined`
+  // instead would delete the key and send no `statuses` at all - the same
+  // request as `[]` today, but by a different route, and a confusing one to
+  // debug if the server's handling of an empty list ever changes.
   commitStatusesFilter = (statuses) => {
     const {onStatusesFilterChange} = this.props;
     this.setState({statusesFilterVisible: false, pendingStatuses: []});
     if (onStatusesFilterChange) {
-      onStatusesFilterChange(statuses && statuses.length ? statuses : POLLED_STATUSES);
+      onStatusesFilterChange(statuses || []);
     }
   };
 
@@ -139,42 +159,95 @@ class AsyncTasksList extends React.Component {
     this.commitStatusesFilter(this.state.pendingStatuses);
   };
 
-  handleStatusesFilterClear = () => {
-    this.commitStatusesFilter(undefined);
+  // "Reset to defaults" - what `Clear` used to be, renamed because that is
+  // what it has always actually done here: it commits POLLED_STATUSES (every
+  // status but CANCELLED/EXPIRED), the table's own default, rather than
+  // clearing the filter. The rename matters more now that unticking
+  // everything genuinely commits an empty list: the two gestures are no
+  // longer the same one, and a link labelled `Clear` would be the wrong name
+  // for either.
+  handleStatusesFilterResetToDefaults = () => {
+    this.commitStatusesFilter(POLLED_STATUSES);
   };
 
   // Called by antd's Table filter Dropdown itself - on open (seed the
   // pending checkboxes from the committed filter) and on close by any means
-  // other than our own OK/Clear links, e.g. a click outside the dropdown,
-  // which commits whatever is currently ticked. Copies
+  // other than our own OK/Reset links, e.g. a click outside the dropdown,
+  // which commits whatever is currently ticked - now including nothing at
+  // all, which closing on an empty selection commits as an empty list. Copies
   // client/src/components/runs/run-table/columns/state-utilities.js's
   // onDropdownVisibilityChanged "commit on close" shape, reimplemented
   // locally for this single-parameter case rather than imported: that file's
   // helpers are shaped around a host table's own `{filters, filtersState}`
   // state (and a `search` sub-feature this column does not need), built for
   // column-run.js's two-parameter statuses+regions combo.
+  //
+  // The `statusesFilterVisible` guard on the close branch is what keeps
+  // "commit on close" from firing twice. Our own OK/Reset links close the
+  // dropdown themselves (`commitStatusesFilter` lowers the flag and empties
+  // `pendingStatuses`), so a second close - whether antd reports the
+  // controlled prop going false, or the user clicks away afterwards - would
+  // otherwise commit that emptied `pendingStatuses` straight over the
+  // selection just made. The old code survived this by accident, mapping an
+  // empty list back onto the default; that mapping is gone on purpose now,
+  // so the guard has to be explicit.
   handleStatusesFilterVisibleChange = (visible) => {
     if (visible) {
       this.openStatusesFilter();
-    } else {
+    } else if (this.state.statusesFilterVisible) {
       this.commitStatusesFilter(this.state.pendingStatuses);
     }
   };
 
-  // Copies the Checkbox-list-plus-OK/Clear shape of
+  // Copies the Checkbox-list-plus-OK shape of
   // client/src/components/runs/run-table/columns/column-run.js's
   // StatusesRegionsFilterComponent (lines 31-143), minus the regions half
   // this column has no equivalent of. `cp-filter-popover-container` is the
-  // existing theme class that component also reuses - no new `cp-*` class.
+  // existing theme class that component also reuses - no new `cp-*` class,
+  // and the divider below reuses the themable `cp-divider`/`horizontal` pair
+  // from src/themes/styles/layout.less rather than hard-coding a border
+  // colour in this module's own CSS, where it would not follow the theme.
   get statusesFilterDropdown () {
     const {pendingStatuses} = this.state;
     const pendingSet = new Set(pendingStatuses);
+    // How many of the known statuses are ticked. Counted against
+    // ALL_ASYNC_TASK_STATUSES rather than read off `pendingStatuses.length`, so neither
+    // a duplicate nor a status the parent committed that this vocabulary
+    // does not know can make "every box is ticked" read as true.
+    const selectedCount = ALL_ASYNC_TASK_STATUSES.filter((status) => pendingSet.has(status)).length;
+    const allSelected = selectedCount === ALL_ASYNC_TASK_STATUSES.length;
     return (
       <div
         className={classNames(styles.filterPopoverContainer, 'cp-filter-popover-container')}
       >
+        {/*
+          * The tri-state "select everything / nothing" box, above the list
+          * it controls and separated from it by the divider below - the same
+          * `checked`+`indeterminate` pair client/src/components/cluster/
+          * Cluster.js's own node-selection header checkbox uses. `checked`
+          * only once every status is ticked; `indeterminate` for any
+          * non-empty partial selection, which is what the default
+          * (POLLED_STATUSES - six of the eight) opens as.
+          *
+          * Its label names the action the next click performs rather than
+          * describing the control, so it always reads as true: everything is
+          * ticked only in the `allSelected` case, which is the only one where
+          * clicking unticks. antd reports an indeterminate box's `checked` as
+          * false, so a partial selection - the default included - selects
+          * everything on the next click, and says so.
+          */}
+        <div className={styles.filterItem}>
+          <Checkbox
+            checked={allSelected}
+            indeterminate={selectedCount > 0 && !allSelected}
+            onChange={this.toggleAllStatuses}
+          >
+            {allSelected ? 'Unselect all' : 'Select all'}
+          </Checkbox>
+        </div>
+        <div className={classNames(styles.filterDivider, 'cp-divider', 'horizontal')} />
         {
-          ALL_STATUSES.map((status) => (
+          ALL_ASYNC_TASK_STATUSES.map((status) => (
             <div key={status} className={styles.filterItem}>
               <Checkbox
                 checked={pendingSet.has(status)}
@@ -187,7 +260,7 @@ class AsyncTasksList extends React.Component {
         }
         <div className={styles.filterActionsButtonsContainer}>
           <a onClick={this.handleStatusesFilterOk}>{'OK'}</a>
-          <a onClick={this.handleStatusesFilterClear}>{'Clear'}</a>
+          <a onClick={this.handleStatusesFilterResetToDefaults}>{'Reset to defaults'}</a>
         </div>
       </div>
     );
@@ -204,12 +277,24 @@ class AsyncTasksList extends React.Component {
     this.setState({pendingOwner: owner});
   };
 
+  // The user emptying the Owner input by hand, reported by
+  // UserAutoComplete's own `onClear` (its `onChange` fires only from a
+  // selection, so it cannot carry this). An emptied input means "every
+  // user's tasks" and is committed as exactly that - `undefined`, so no
+  // `owner` key is sent - rather than falling back to the current user:
+  // putting the default back is `Reset to defaults`'s job, and nothing else
+  // here should do it behind the user's back.
+  handlePendingOwnerClear = () => {
+    this.setState({pendingOwner: undefined});
+  };
+
   // Commits `owner` as the filter - a string, or `undefined` to mean "any
-  // user". Unlike the Status filter above, an empty/cleared owner DOES omit
-  // the key (the general rule): `owner` is a single `String` server-side, so
-  // there is no "everything except two values" default to fall back to the
-  // way POLLED_STATUSES is for statuses - "any user" already is the absence
-  // of a filter.
+  // user". An emptied owner omits the key from the request entirely, where
+  // an emptied status selection sends `statuses: []`: `owner` is a single
+  // `String` server-side, so "any user" genuinely IS the absence of this
+  // filter and there is no empty-list shape for it to take. Either way,
+  // neither falls back to its default - that is `Reset to defaults`'s job
+  // alone, on both columns.
   commitOwnerFilter = (owner) => {
     const {onOwnerFilterChange} = this.props;
     this.setState({ownerFilterVisible: false, pendingOwner: undefined});
@@ -222,15 +307,32 @@ class AsyncTasksList extends React.Component {
     this.commitOwnerFilter(this.state.pendingOwner);
   };
 
-  handleOwnerFilterClear = () => {
-    this.commitOwnerFilter(undefined);
+  // "Reset to defaults" - puts the owner back to the current user, which is
+  // what DownloadsManager seeds it to on first load and what `ownerFiltered`
+  // above compares against. It REPLACES the `Clear` link this dropdown used
+  // to carry, the same rename the Status column got: "every user's tasks" is
+  // now asked for by emptying the input instead (`handlePendingOwnerClear`
+  // above), which is the gesture that reads as clearing, and leaves this one
+  // link meaning only what its label says.
+  //
+  // `defaultOwner` is `undefined` until DownloadsManager's first `/whoami`
+  // resolves, in which window this clears the filter rather than guessing at
+  // a user name. `ownerFiltered` reports "not filtered" in that same window
+  // for the same reason, so the two agree.
+  handleOwnerFilterResetToDefaults = () => {
+    this.commitOwnerFilter(this.props.defaultOwner);
   };
 
-  // Same "commit on close" shape as handleStatusesFilterVisibleChange above.
+  // Same "commit on close" shape as handleStatusesFilterVisibleChange above,
+  // including its `ownerFilterVisible` guard, and for the same reason: both
+  // links below close the dropdown themselves and empty `pendingOwner`, so
+  // an unguarded second close would commit `undefined` over the owner just
+  // committed - clearing the filter instead of setting the user that
+  // `Reset to defaults` had asked for.
   handleOwnerFilterVisibleChange = (visible) => {
     if (visible) {
       this.openOwnerFilter();
-    } else {
+    } else if (this.state.ownerFilterVisible) {
       this.commitOwnerFilter(this.state.pendingOwner);
     }
   };
@@ -240,10 +342,13 @@ class AsyncTasksList extends React.Component {
   // UserAutoComplete rather than a checkbox list, because `owner` is a single
   // `String` server-side while `statuses` above is a `List` - a checkbox list
   // here would let an admin tick several users and then send only one of
-  // them, promising something the API cannot do. UserAutoComplete cannot
-  // itself signal "cleared" (its `onChange` only fires from a selection), but
-  // that stops mattering inside a column-filter dropdown: the `Clear` link
-  // below carries that signal externally, the same way the precedent's does.
+  // them, promising something the API cannot do.
+  //
+  // There is no `Clear` link, unlike that precedent: emptying the input by
+  // hand is what clears this filter, carried by UserAutoComplete's own
+  // `onClear` (added for exactly this - its `onChange` fires only from a
+  // selection, so it cannot report an emptied field). That leaves the one
+  // remaining link meaning only "back to the current user".
   get ownerFilterDropdown () {
     const {pendingOwner} = this.state;
     return (
@@ -255,11 +360,12 @@ class AsyncTasksList extends React.Component {
           placeholder="Owner"
           value={pendingOwner}
           onChange={this.handlePendingOwnerChange}
+          onClear={this.handlePendingOwnerClear}
           onPressEnter={this.handleOwnerFilterOk}
         />
         <div className={styles.filterActionsButtonsContainer}>
           <a onClick={this.handleOwnerFilterOk}>{'OK'}</a>
-          <a onClick={this.handleOwnerFilterClear}>{'Clear'}</a>
+          <a onClick={this.handleOwnerFilterResetToDefaults}>{'Reset to defaults'}</a>
         </div>
       </div>
     );

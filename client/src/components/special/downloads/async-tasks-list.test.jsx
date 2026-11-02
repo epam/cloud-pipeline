@@ -22,14 +22,17 @@ import {
   screen,
   within,
   click,
+  clear,
   hover,
   fn,
+  stubApi,
+  flushPromises,
   useFakeTimers,
   useRealTimers,
   advanceTimers
 } from '@test';
 import AsyncTasksList from './async-tasks-list';
-import {POLLED_STATUSES} from '../../../models/asyncTask/statuses';
+import {ALL_ASYNC_TASK_STATUSES, POLLED_STATUSES} from '../../../models/asyncTask/statuses';
 
 const SUCCESS_TASK = {
   id: 1,
@@ -312,8 +315,10 @@ describe('the Archive column\'s .zip suffix', () => {
 
 // The Status column's own filter dropdown - a custom antd Table column
 // filter, copying client/src/components/runs/run-table/columns/
-// column-run.js's StatusesRegionsFilterComponent (a Checkbox per value, OK/
-// Clear links). Its own open/pending-checkbox state is local UI mechanics;
+// column-run.js's StatusesRegionsFilterComponent (a Checkbox per value, with
+// its own commit links; that precedent's pair is `OK`/`Clear`, where this
+// column's is `OK`/`Reset to defaults` and the cases below say why).
+// Its own open/pending-checkbox state is local UI mechanics;
 // the *committed* filter is owned by the parent through `statusesFilter`/
 // `onStatusesFilterChange`, so this component stays free of @inject and a
 // model import either way. The dropdown's overlay renders through rc-trigger
@@ -359,7 +364,8 @@ test(
 );
 
 test(
-  'clicking Clear calls onStatusesFilterChange with POLLED_STATUSES, never undefined',
+  'clicking Reset to defaults calls onStatusesFilterChange with POLLED_STATUSES, ' +
+  'never undefined and never an empty list',
   async () => {
     const onStatusesFilterChange = fn();
     renderWithLocale(
@@ -371,11 +377,240 @@ test(
     );
 
     await openStatusesFilter();
-    await click(screen.getByText('Clear'));
+    await click(screen.getByText('Reset to defaults'));
 
     expect(onStatusesFilterChange).toHaveBeenCalledWith(POLLED_STATUSES);
   }
 );
+
+// There is no `Clear` link on this column any more: it never cleared
+// anything (it committed POLLED_STATUSES), and now that unticking every box
+// genuinely commits an empty list, the two gestures are different and the
+// old label would be wrong for both. Asserted explicitly so the rename
+// cannot be half-reverted - a stale `Clear` alongside the new link would
+// otherwise pass every other case in this file.
+test('the Status filter offers no Clear link, only OK and Reset to defaults', async () => {
+  renderWithLocale(<AsyncTasksList tasks={[]} />);
+
+  await openStatusesFilter();
+
+  expect(screen.getByText('OK')).toBeInTheDocument();
+  expect(screen.getByText('Reset to defaults')).toBeInTheDocument();
+  expect(screen.queryByText('Clear')).not.toBeInTheDocument();
+});
+
+// The dropdown's own select-all box.
+//
+// Its label is the action the next click performs - `Select all` unless
+// every status is already ticked, where the next click unticks them and it
+// reads `Unselect all` - so these cases find it by whichever of the two the
+// state under test calls for. That label is also the box's accessible name,
+// which is why `selectAllBox` below takes it as an argument rather than
+// hard-coding one.
+//
+// Its `checked`/`indeterminate` pair is read off this component's own output
+// - the props it hands antd's `Checkbox`, reached through the
+// `statusesFilterDropdown` getter via a ref - the same way the suites above
+// read `filteredValue` off `columns`, and for the same reason. antd 2.13
+// renders `indeterminate` as a class on its own internal wrapper
+// (`ant-checkbox-indeterminate`, see node_modules/antd/lib/checkbox/
+// Checkbox.js) and sets no native `indeterminate` property on the `<input>`,
+// so the DOM offers no platform-level hook for it: the only DOM-level
+// assertion available would be on that antd class, which is exactly the
+// antd-internals coupling rule 6 forbids. What the box *does* - select or
+// clear every status - is driven and asserted through the real DOM below,
+// where the per-status boxes give `toBeChecked` something real to read.
+describe('the Status filter\'s select-all box', () => {
+  const SELECT_ALL = 'Select all';
+  const UNSELECT_ALL = 'Unselect all';
+
+  function selectAllBox (name = SELECT_ALL) {
+    return screen.getByRole('checkbox', {name});
+  }
+
+  // Walks the dropdown's own element tree for whichever of the two labels is
+  // rendered, and hands back that Checkbox's props. By label rather than by
+  // position, so adding anything else to the popover does not silently point
+  // this at the wrong element.
+  function selectAllProps (instance) {
+    let found;
+    const walk = (node) => {
+      if (found || !node || typeof node !== 'object') {
+        return;
+      }
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+        return;
+      }
+      if (!node.props) {
+        return;
+      }
+      if (node.props.children === SELECT_ALL || node.props.children === UNSELECT_ALL) {
+        found = node.props;
+        return;
+      }
+      walk(node.props.children);
+    };
+    walk(instance.statusesFilterDropdown);
+    return found;
+  }
+
+  function renderAndOpen (props = {}) {
+    let instance;
+    renderWithLocale(
+      <AsyncTasksList tasks={[]} {...props} ref={(r) => { instance = r; }} />
+    );
+    return openStatusesFilter().then(() => instance);
+  }
+
+  test('is indeterminate at the default, where six of the eight are ticked', async () => {
+    const instance = await renderAndOpen();
+
+    expect(selectAllProps(instance)).toMatchObject({
+      checked: false,
+      indeterminate: true,
+      // A partial selection's next click selects everything, so the label
+      // names that rather than the control.
+      children: SELECT_ALL
+    });
+  });
+
+  test('is ticked, and not indeterminate, when every status is already selected', async () => {
+    const instance = await renderAndOpen({statusesFilter: ALL_ASYNC_TASK_STATUSES});
+
+    expect(selectAllProps(instance)).toMatchObject({
+      checked: true,
+      indeterminate: false,
+      // The one state whose next click unticks - and the only one that reads
+      // `Unselect all`.
+      children: UNSELECT_ALL
+    });
+  });
+
+  test('is unticked, and not indeterminate, when nothing is selected', async () => {
+    const instance = await renderAndOpen({statusesFilter: []});
+
+    expect(selectAllProps(instance)).toMatchObject({
+      checked: false,
+      indeterminate: false,
+      children: SELECT_ALL
+    });
+  });
+
+  // The label is the only thing in the dropdown that says which way the next
+  // click goes, so it has to follow the selection rather than be rendered
+  // once. Driven through the real DOM: the previous cases assert the label
+  // for a given committed filter, this one asserts it CHANGES as the user
+  // ticks boxes without committing anything.
+  test('its label follows the selection as the boxes are ticked', async () => {
+    renderWithLocale(<AsyncTasksList tasks={[]} statusesFilter={[]} />);
+
+    await openStatusesFilter();
+    expect(screen.getByText(SELECT_ALL)).toBeInTheDocument();
+    expect(screen.queryByText(UNSELECT_ALL)).not.toBeInTheDocument();
+
+    await click(selectAllBox(SELECT_ALL));
+    expect(screen.getByText(UNSELECT_ALL)).toBeInTheDocument();
+    expect(screen.queryByText(SELECT_ALL)).not.toBeInTheDocument();
+
+    // One status off the full set is a partial selection again, so it goes
+    // back to offering "select all" - the half-ticked state.
+    await click(screen.getByRole('checkbox', {name: 'EXPIRED'}));
+    expect(screen.getByText(SELECT_ALL)).toBeInTheDocument();
+    expect(screen.queryByText(UNSELECT_ALL)).not.toBeInTheDocument();
+  });
+
+  // A status the vocabulary does not know must not count towards "all eight
+  // are ticked" - `selectedCount` is counted against ALL_ASYNC_TASK_STATUSES rather
+  // than read off `pendingStatuses.length`, which a longer list would
+  // otherwise satisfy by length alone.
+  test('is not ticked when an unknown status pads the committed list out', async () => {
+    const instance = await renderAndOpen({
+      statusesFilter: [...ALL_ASYNC_TASK_STATUSES.slice(1), 'SOMETHING_ELSE']
+    });
+
+    expect(selectAllProps(instance)).toMatchObject({
+      checked: false,
+      indeterminate: true
+    });
+  });
+
+  test('clicking it from the indeterminate default ticks every status', async () => {
+    const onStatusesFilterChange = fn();
+    renderWithLocale(
+      <AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />
+    );
+
+    await openStatusesFilter();
+    await click(selectAllBox());
+
+    // Every per-status box, not just the summary one - this is what the
+    // gesture is actually for. antd reports an indeterminate checkbox's
+    // `checked` as false, which is what makes one click mean "select all".
+    ALL_ASYNC_TASK_STATUSES.forEach((status) => {
+      expect(screen.getByRole('checkbox', {name: status})).toBeChecked();
+    });
+
+    await click(screen.getByText('OK'));
+
+    const [committed] = onStatusesFilterChange.mock.calls[0];
+    expect([...committed].sort()).toEqual([...ALL_ASYNC_TASK_STATUSES].sort());
+  });
+
+  test('clicking it again unticks every status, and OK commits an empty list', async () => {
+    const onStatusesFilterChange = fn();
+    renderWithLocale(
+      <AsyncTasksList tasks={[]} onStatusesFilterChange={onStatusesFilterChange} />
+    );
+
+    await openStatusesFilter();
+    // First click selects everything (the indeterminate default), the second
+    // clears it - and the box is found by a different label each time,
+    // because the label names whichever of the two is about to happen.
+    await click(selectAllBox(SELECT_ALL));
+    await click(selectAllBox(UNSELECT_ALL));
+
+    ALL_ASYNC_TASK_STATUSES.forEach((status) => {
+      expect(screen.getByRole('checkbox', {name: status})).not.toBeChecked();
+    });
+
+    await click(screen.getByText('OK'));
+
+    expect(onStatusesFilterChange).toHaveBeenCalledWith([]);
+  });
+
+  // The divider the box is separated from the list by. `filterDivider` is
+  // this module's own CSS class (identity-obj-proxy under jest), while
+  // `cp-divider`/`horizontal` are the themable classes from
+  // src/themes/styles/layout.less that draw the actual line - asserting on
+  // both is what catches a divider that renders but follows no theme.
+  test('is separated from the status list by a themable divider', async () => {
+    renderWithLocale(<AsyncTasksList tasks={[]} />);
+
+    await openStatusesFilter();
+
+    // Through `document.body`, not the render's own `container`: antd's
+    // filter dropdown renders its overlay into a portal of its own, outside
+    // the container this component was mounted into.
+    const divider = document.body.querySelector('.filterDivider');
+    expect(divider).toBeInTheDocument();
+    expect(divider).toHaveClass('cp-divider');
+    expect(divider).toHaveClass('horizontal');
+
+    // Position, not just presence: a divider rendered somewhere else in the
+    // popover would satisfy the classes above while separating nothing.
+    // `compareDocumentPosition` is the platform's own ordering check -
+    // PRECEDING/FOLLOWING are relative to the node it is called on.
+    const box = selectAllBox(SELECT_ALL);
+    const firstStatus = screen.getByRole('checkbox', {name: 'PENDING'});
+    /* eslint-disable no-bitwise */
+    expect(divider.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_PRECEDING)
+      .toBeTruthy();
+    expect(divider.compareDocumentPosition(firstStatus) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy();
+    /* eslint-enable no-bitwise */
+  });
+});
 
 test('ticking a box without clicking OK does not call onStatusesFilterChange', async () => {
   const onStatusesFilterChange = fn();
@@ -464,8 +699,16 @@ describe('the Status column default (POLLED_STATUSES)', () => {
     expect(statusFilteredValue(instance)).toEqual(['filtered']);
   });
 
+  // The former behaviour was the opposite of this: an empty selection was
+  // mapped back onto POLLED_STATUSES, on the reasoning that showing MORE
+  // rows than before unticking is not the gesture. The decision changed - an
+  // empty selection now goes to the server as `statuses: []`, so the request
+  // says what the user actually chose. What the server then shows for an
+  // empty list is its own business (`AsyncTaskSpecification.of` adds no
+  // predicate for one), and `Reset to defaults` is the gesture that puts the
+  // default back.
   test(
-    'ticking everything off and pressing OK reports the default, not an empty list',
+    'ticking everything off and pressing OK reports an empty list, not the default',
     async () => {
       const onStatusesFilterChange = fn();
       renderWithLocale(
@@ -480,9 +723,48 @@ describe('the Status column default (POLLED_STATUSES)', () => {
       await click(screen.getByRole('checkbox', {name: 'PENDING'}));
       await click(screen.getByText('OK'));
 
-      expect(onStatusesFilterChange).toHaveBeenCalledWith(POLLED_STATUSES);
+      expect(onStatusesFilterChange).toHaveBeenCalledWith([]);
     }
   );
+
+  test('an empty selection reads as filtered, so the header icon lights up', () => {
+    let instance;
+    render(<AsyncTasksList tasks={[]} statusesFilter={[]} ref={(r) => { instance = r; }} />);
+
+    expect(statusFilteredValue(instance)).toEqual(['filtered']);
+  });
+
+  // The guard in `handleStatusesFilterVisibleChange`. Committing used to be
+  // safe to repeat because an empty `pendingStatuses` was mapped back to the
+  // default; now it is not, so a second close must not fire at all - it
+  // would commit the emptied pending list straight over the selection OK
+  // just made. Driven through the instance's own handler for the same reason
+  // the Owner column's commit-on-close case is: antd's outside-click
+  // dismissal has no accessible hook this harness can reach.
+  test('a second close after OK does not commit again over the selection', async () => {
+    const onStatusesFilterChange = fn();
+    let instance;
+    renderWithLocale(
+      <AsyncTasksList
+        tasks={[]}
+        statusesFilter={['PENDING']}
+        onStatusesFilterChange={onStatusesFilterChange}
+        ref={(r) => { instance = r; }}
+      />
+    );
+
+    await openStatusesFilter();
+    await click(screen.getByRole('checkbox', {name: 'CANCELLED'}));
+    await click(screen.getByText('OK'));
+
+    expect(onStatusesFilterChange).toHaveBeenCalledTimes(1);
+    const [committed] = onStatusesFilterChange.mock.calls[0];
+    expect([...committed].sort()).toEqual(['CANCELLED', 'PENDING']);
+
+    instance.handleStatusesFilterVisibleChange(false);
+
+    expect(onStatusesFilterChange).toHaveBeenCalledTimes(1);
+  });
 });
 
 // Paging is antd's own `Pagination`, beneath the table, driven by `total`
@@ -708,12 +990,18 @@ test('hovering the archive name shows every archived path', async () => {
 // in antd's `<LocaleProvider>`, needed for the same reason the Status
 // column's own suite above does: opening the dropdown goes through the
 // column's own default filter icon, found by its real English `title`
-// ("Filter menu") rather than antd's bundled zh-CN default. These cases
-// stay to the commit paths (OK/Clear/visibility) and leave
-// UserAutoComplete's own search-as-you-type behaviour (which issues its own
-// `UserFind` request) covered by that component's own tests - exercising it
-// here would mean stubbing the network for a component this file does not
-// own.
+// ("Filter menu") rather than antd's bundled zh-CN default.
+//
+// These cases stay to the commit paths - OK, Reset to defaults, clearing the
+// field, and the dropdown's own visibility. The one that empties the field
+// does reach into UserAutoComplete far enough to need `stubApi` (that
+// component fires a `UserFind` on every search, the empty string included),
+// which is unavoidable: emptying the field is now the Owner filter's only
+// clearing gesture, so the wiring between the two components is this
+// column's behaviour rather than a detail of the other one. Its
+// search-as-you-type behaviour proper - typing a name and picking a
+// candidate out of the results - is left to UserAutoComplete's own test
+// file, which covers the `onClear` contract this column depends on.
 describe('the Owner column', () => {
   function renderList (props = {}) {
     return renderWithLocale(
@@ -747,20 +1035,93 @@ describe('the Owner column', () => {
     expect(screen.getAllByTitle('Filter menu')).toHaveLength(2);
   });
 
-  test('opening the dropdown renders the autocomplete and the OK/Clear links', async () => {
-    renderList({isAdmin: true});
+  test(
+    'opening the dropdown renders the autocomplete, OK and Reset to defaults, ' +
+    'and no Clear link',
+    async () => {
+      renderList({isAdmin: true});
+
+      await openOwnerFilter();
+
+      // antd's AutoComplete fakes its placeholder with a sibling `<div>`
+      // rather than the native HTML attribute (it has to, to keep showing it
+      // once a value is selected but the text input itself is empty), so
+      // `getByPlaceholderText` cannot find it - `combobox` is this control's
+      // own ARIA role, and the only one in this popover (the Status column's
+      // own dropdown has none).
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByText('OK')).toBeInTheDocument();
+      expect(screen.getByText('Reset to defaults')).toBeInTheDocument();
+      // No `Clear` link on either column any more. "Every user's tasks" is
+      // asked for by emptying the input instead - the case below.
+      expect(screen.queryByText('Clear')).not.toBeInTheDocument();
+    }
+  );
+
+  // Emptying the input by hand, which is now the only way to ask for every
+  // user's tasks. It reaches this component through UserAutoComplete's own
+  // `onClear` - added for this, because its `onChange` fires only from a
+  // selection and so cannot report an emptied field. Typed through the real
+  // combobox rather than by calling the handler: the wiring between the two
+  // components is the part that would break silently.
+  test('emptying the input by hand commits undefined, not the default owner', async () => {
+    // UserAutoComplete issues a `UserFind` request from its own `onSearch`,
+    // the empty string included - `stubApi` is what keeps that from tripping
+    // the harness's network guard. Its answer is irrelevant here: `onClear`
+    // fires before the lookup and regardless of what it returns.
+    stubApi();
+    const onOwnerFilterChange = fn();
+    renderList({
+      isAdmin: true,
+      ownerFilter: 'someone-else',
+      defaultOwner: 'current-user',
+      onOwnerFilterChange
+    });
 
     await openOwnerFilter();
+    // `combobox` is the role antd puts on the control's own wrapper, not on
+    // the field the user types in - the `textbox` inside it is that, and the
+    // only one in this popover. `clear` from `@test` then fires the change
+    // event with an empty value, which is what deleting the text produces;
+    // UserAutoComplete turns that into `onClear`.
+    await clear(within(screen.getByRole('combobox')).getByRole('textbox'));
+    // UserAutoComplete sets state when its own `UserFind` settles, and it
+    // has no unmount guard - letting that land before this test ends keeps
+    // the "setState on an unmounted component" warning out of the run. It is
+    // not what the case is about: `onClear` has already fired by here.
+    await flushPromises();
+    await click(screen.getByText('OK'));
 
-    // antd's AutoComplete fakes its placeholder with a sibling `<div>`
-    // rather than the native HTML attribute (it has to, to keep showing it
-    // once a value is selected but the text input itself is empty), so
-    // `getByPlaceholderText` cannot find it - `combobox` is this control's
-    // own ARIA role, and the only one in this popover (the Status column's
-    // own dropdown has none).
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(screen.getByText('OK')).toBeInTheDocument();
-    expect(screen.getByText('Clear')).toBeInTheDocument();
+    expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
+  });
+
+  test('Reset to defaults commits defaultOwner, not undefined', async () => {
+    const onOwnerFilterChange = fn();
+    renderList({
+      isAdmin: true,
+      ownerFilter: 'someone-else',
+      defaultOwner: 'current-user',
+      onOwnerFilterChange
+    });
+
+    await openOwnerFilter();
+    await click(screen.getByText('Reset to defaults'));
+
+    expect(onOwnerFilterChange).toHaveBeenCalledWith('current-user');
+  });
+
+  // Before the first `/whoami` resolves there is no default to go back to,
+  // so this clears the filter rather than guessing at a user name - the same
+  // window in which `ownerFiltered` reports "not filtered", so the two
+  // agree.
+  test('Reset to defaults commits undefined while defaultOwner is unknown', async () => {
+    const onOwnerFilterChange = fn();
+    renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
+
+    await openOwnerFilter();
+    await click(screen.getByText('Reset to defaults'));
+
+    expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
   });
 
   test('OK commits the already-selected owner as a string, never an array', async () => {
@@ -771,16 +1132,6 @@ describe('the Owner column', () => {
     await click(screen.getByText('OK'));
 
     expect(onOwnerFilterChange).toHaveBeenCalledWith('someone-else');
-  });
-
-  test('Clear commits undefined, regardless of the committed owner', async () => {
-    const onOwnerFilterChange = fn();
-    renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
-
-    await openOwnerFilter();
-    await click(screen.getByText('Clear'));
-
-    expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
   });
 
   // No accessible way to drive antd's own outside-click dismissal from this

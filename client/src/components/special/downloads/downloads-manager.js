@@ -214,7 +214,20 @@ class DownloadsManager extends React.Component {
       if (filters.owner) {
         body.owner = filters.owner;
       }
-      if (Array.isArray(filters.statuses) && filters.statuses.length > 0) {
+      // `statuses` is the one exception to the rule above: an array goes out
+      // verbatim, an EMPTY one included, rather than being dropped from the
+      // body. Unticking every box in the Status column's filter is a
+      // deliberate gesture, and the request has to carry it rather than
+      // substituting the default the user just cleared.
+      //
+      // `AsyncTaskSpecification.of` adds a status predicate only for a
+      // non-empty list, so `statuses: []` matches EVERY status (CANCELLED
+      // and EXPIRED included) rather than nothing - so the table shows more
+      // rows after unticking everything, not fewer. Agreed, and the same
+      // answer as omitting the key today. It is still sent explicitly: the
+      // request then says what the user actually chose, and a future server
+      // that distinguishes the two needs no GUI change.
+      if (Array.isArray(filters.statuses)) {
         body.statuses = filters.statuses;
       }
       await this.request.send(body);
@@ -332,17 +345,20 @@ class DownloadsManager extends React.Component {
     }
   };
 
-  // Shared by both filter sources below: a falsy/empty value deletes its key
-  // rather than storing `[]`/`undefined` - the same rule `sendFilterRequest`
-  // applies to the request body. Refetches from `setState`'s callback so the
-  // new filter is live at once, not on the next tick.
+  // Shared by both filter sources below, and it keeps exactly the same rule
+  // `sendFilterRequest` applies to the request body: a falsy scalar (a
+  // cleared owner) deletes its key, while an ARRAY is stored verbatim,
+  // including an empty one. An empty array is a real selection now - "no
+  // status is ticked" - so collapsing it to a missing key here would lose
+  // the user's choice before the request is ever built. Refetches from
+  // `setState`'s callback so the new filter is live at once, not on the next
+  // tick.
   setFilter = (key, value) => {
     const next = {...this.state.filters};
-    const isEmpty = !value || (Array.isArray(value) && value.length === 0);
-    if (isEmpty) {
-      delete next[key];
-    } else {
+    if (Array.isArray(value) || value) {
       next[key] = value;
+    } else {
+      delete next[key];
     }
     // Marks the owner seeded the moment it's touched at all - closes a race
     // `sendFilterRequest`'s own guard can't: clearing it while the very

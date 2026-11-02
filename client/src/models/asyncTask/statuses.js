@@ -30,6 +30,22 @@ export const ASYNC_TASK_STATUSES = {
   EXPIRED: 'EXPIRED'
 };
 
+// Every status, in the vocabulary's own declaration order - the checkbox
+// list the Downloads modal's Status filter offers, and what its select-all
+// box ticks. It lives here rather than in that dropdown's own file because
+// it is the vocabulary itself, and because the filter's tests need the same
+// list the component uses: deriving it twice is how the two would come to
+// disagree after a status is added.
+//
+// Named for its vocabulary rather than called `ALL_STATUSES`, because
+// client/src/models/pipelines/RunCount.js already exports an `ALL_STATUSES`
+// holding RUN statuses, imported bare (`import RunCount, {ALL_STATUSES}`) in
+// components/runs/logs/misc/fetch-run-info.js. Two same-named exports with
+// different vocabularies is the trap the root AGENTS.md calls out for `core`
+// vs `cloud-pipeline-common:model`, and an editor's auto-import would pick
+// between them silently.
+export const ALL_ASYNC_TASK_STATUSES = Object.values(ASYNC_TASK_STATUSES);
+
 export const ACTIVE_STATUSES = [
   ASYNC_TASK_STATUSES.PENDING,
   ASYNC_TASK_STATUSES.RUNNING,

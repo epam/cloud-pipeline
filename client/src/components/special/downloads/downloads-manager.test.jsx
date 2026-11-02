@@ -22,6 +22,7 @@ import {
   screen,
   within,
   click,
+  clear,
   waitFor,
   fn,
   stubApi,
@@ -32,7 +33,7 @@ import {
   useRealTimers
 } from '@test';
 import DownloadsManager from './downloads-manager';
-import {POLLED_STATUSES} from '../../../models/asyncTask/statuses';
+import {ALL_ASYNC_TASK_STATUSES, POLLED_STATUSES} from '../../../models/asyncTask/statuses';
 
 const WHOAMI_ROUTE = '/whoami';
 const FILTER_ROUTE = '/async-task/filter';
@@ -116,8 +117,47 @@ function statusFilterIcon () {
   return within(screen.getByText('Status').closest('th')).getByTitle('Filter menu');
 }
 
+// `getAllByText`, unlike the Status helper above: antd's AutoComplete fakes
+// its placeholder with a `<div>` holding the same word ("Owner"), so once
+// this dropdown has been opened the text matches twice. Only one of the two
+// sits in a header cell, which is what picks it out.
 function ownerFilterIcon () {
-  return within(screen.getByText('Owner').closest('th')).getByTitle('Filter menu');
+  const header = screen.getAllByText('Owner')
+    .map((node) => node.closest('th'))
+    .find(Boolean);
+  return within(header).getByTitle('Filter menu');
+}
+
+// The field inside the Owner dropdown's autocomplete. `combobox` is the role
+// antd puts on the control's wrapper; the `textbox` within it is what the
+// user actually types in, and emptying it is now the only way to ask for
+// every user's tasks (the `Clear` link that used to do it is gone - see
+// async-tasks-list.js's own comment on `ownerFilterDropdown`).
+//
+// Emptying it makes UserAutoComplete fire its own `UserFind`, which this
+// file never registers a route for, and that component sets state when the
+// request settles with no unmount guard of its own. No explicit flush is
+// needed here even so: every case below goes on to `waitFor` the resulting
+// `/async-task/filter` call, which settles the pending lookup while the tree
+// is still mounted. `flushPromises` could NOT be used in the fake-timer case
+// anyway - it is built on `setImmediate`, which modern fake timers fake, so
+// awaiting it under `useFakeTimers` would never resolve.
+// UserAutoComplete's own test file covers the clear in isolation, where the
+// flush is both possible and necessary.
+function ownerInput () {
+  return within(screen.getByRole('combobox')).getByRole('textbox');
+}
+
+function ownerPopover () {
+  return screen.getByRole('combobox').closest('.filterPopoverContainer');
+}
+
+// The Status dropdown's select-all box. Its label is the action the next
+// click performs - "Select all" unless every status is already ticked, where
+// it reads "Unselect all" - and that label is also its accessible name, so
+// the caller says which of the two it expects to be looking at.
+function selectAllBox (name) {
+  return screen.getByRole('checkbox', {name});
 }
 
 // A programmatic fixture, per the "build the 20-task fixture
@@ -309,15 +349,92 @@ test(
   }
 );
 
+// The empty-selection path, end to end from the dropdown to the request
+// body. This is the half of the change that lives in DownloadsManager rather
+// than in the list: `setFilter` has to STORE the empty array instead of
+// deleting the key, and `sendFilterRequest` has to SEND it instead of
+// dropping it from the body - two independent places that would each
+// silently turn `statuses: []` back into "no statuses key at all", which is
+// the same request the old default-substituting behaviour produced. Asserted
+// on the body rather than on the rows, because what the server shows for an
+// empty list is the server's own business (`AsyncTaskSpecification.of` adds
+// no predicate for one, so it matches every status).
+test(
+  'unselecting every status sends statuses as an empty array, not the default ' +
+  'and not a missing key',
+  async () => {
+    const api = stubApi();
+    stubFilter(api, []);
+
+    renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(1));
+    expect([...JSON.parse(filterCalls(api)[0].body).statuses].sort())
+      .toEqual([...POLLED_STATUSES].sort());
+
+    // The dropdown opens at the default - six of the eight ticked, so the
+    // select-all box is indeterminate and offers "Select all". One click on
+    // it ticks everything, which flips its label to "Unselect all"; the
+    // second clears the lot. That is the only gesture that empties the
+    // selection without clicking eight boxes by hand.
+    await click(statusFilterIcon());
+    await click(selectAllBox('Select all'));
+    const selectAll = selectAllBox('Unselect all');
+    await click(selectAll);
+    await click(within(selectAll.closest('.filterPopoverContainer')).getByText('OK'));
+
+    await waitFor(() => expect(filterCalls(api).length).toBe(2));
+    const body = JSON.parse(filterCalls(api)[1].body);
+    expect(body).toHaveProperty('statuses');
+    expect(body.statuses).toEqual([]);
+    // Back to page 1, like every other filter change.
+    expect(body.page).toBe(1);
+
+    // And the column reads as filtered, so "Reset filters" is reachable -
+    // without it, an empty selection would be a state with no way back short
+    // of ticking statuses again.
+    expect(screen.getByRole('button', {name: /reset filters/i})).toBeInTheDocument();
+  }
+);
+
+// "Reset to defaults", the Status dropdown's own link (renamed from `Clear`,
+// which never cleared anything here), is the way back from the empty
+// selection above.
+test('Reset to defaults in the Status dropdown re-sends POLLED_STATUSES', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
+
+  renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+
+  await click(statusFilterIcon());
+  const selectAll = selectAllBox('Select all');
+  await click(selectAll);
+  await click(within(selectAll.closest('.filterPopoverContainer')).getByText('OK'));
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  expect([...JSON.parse(filterCalls(api)[1].body).statuses].sort())
+    .toEqual([...ALL_ASYNC_TASK_STATUSES].sort());
+
+  await click(statusFilterIcon());
+  await click(within(selectAll.closest('.filterPopoverContainer'))
+    .getByText('Reset to defaults'));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(3));
+  expect([...JSON.parse(filterCalls(api)[2].body).statuses].sort())
+    .toEqual([...POLLED_STATUSES].sort());
+});
+
 // Covers both the "default is the current user" and the "a cleared owner
 // sends no `owner` key, and nothing re-seeds it" requirements, now through
 // the Owner column's own dropdown (async-tasks-list.js) rather than the
 // deleted filter bar. Clearing, not picking a different user, is what this
-// drives: unlike the old bare `Select`, the dropdown's `Clear` link is
-// reachable under test/AGENTS.md rule 6 (a bare antd Select's clear icon
-// is not - see the equivalent test this one replaces, previously blocked by
-// exactly that), and it reaches the same `setFilter`/`ownerSeeded` guard
-// without needing to drive UserAutoComplete's own UserFind-backed search.
+// drives: it reaches the `setFilter`/`ownerSeeded` guard without needing to
+// drive UserAutoComplete's own UserFind-backed *search*, and emptying the
+// field is the gesture that carries it now that the dropdown has no `Clear`
+// link - through UserAutoComplete's `onClear`, which is reachable from the
+// real field under rule 6 (a bare antd Select's own clear icon, which the
+// test before this one had to work around, is not).
 test(
   'the owner filter defaults to the current user, and clearing it sends no owner key, ' +
   'surviving both a later poll tick and a later filter commit',
@@ -333,7 +450,8 @@ test(
       expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
 
       await click(ownerFilterIcon());
-      await click(screen.getByText('Clear'));
+      await clear(ownerInput());
+      await click(within(ownerPopover()).getByText('OK'));
 
       await waitFor(() => expect(filterCalls(api).length).toBe(2));
       expect(JSON.parse(filterCalls(api)[1].body)).not.toHaveProperty('owner');
@@ -369,6 +487,41 @@ test(
   }
 );
 
+// The round trip between the Owner dropdown's two gestures: emptying the
+// field asks for every user's tasks, `Reset to defaults` goes back to the
+// current user. Driving both in one test is the only thing that proves the
+// link reaches `defaultOwner` rather than merely repeating what clearing
+// already did - and that `ownerSeeded`, which exists to stop a cleared owner
+// being re-seeded by a later fetch, does not get in its way.
+test('the Owner dropdown\'s Reset to defaults sends the current user again', async () => {
+  const api = stubApi();
+  stubFilter(api, []);
+
+  renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(1));
+  expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
+
+  // Emptying the field by hand, then OK - the gesture that replaced the
+  // `Clear` link. Scoped with `within` from here on: antd's `Dropdown` hides
+  // rather than unmounts a closed popover, so a bare `getByText` would match
+  // both columns' links once each dropdown has been opened.
+  await click(ownerFilterIcon());
+  await clear(ownerInput());
+  await click(within(ownerPopover()).getByText('OK'));
+  await waitFor(() => expect(filterCalls(api).length).toBe(2));
+  expect(JSON.parse(filterCalls(api)[1].body)).not.toHaveProperty('owner');
+
+  await click(ownerFilterIcon());
+  await click(within(ownerPopover()).getByText('Reset to defaults'));
+
+  await waitFor(() => expect(filterCalls(api).length).toBe(3));
+  expect(JSON.parse(filterCalls(api)[2].body).owner).toBe(USER_NAME);
+  // Both filters are back at their defaults, so there is nothing left to
+  // reset and the bar's own button goes away again.
+  expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+});
+
 // "Reset filters" - visible only once either column's own filter differs
 // from its default, reusing exactly the comparisons the columns' own filter
 // icon highlight is built from (DownloadsManager's `filtersChanged`):
@@ -399,8 +552,8 @@ test(
     // dropdowns have been opened at least once, a bare `getByText('OK')`
     // matches both - one visible, one hidden - and throws for ambiguity.
     await click(ownerFilterIcon());
-    await click(within(screen.getByRole('combobox').closest('.filterPopoverContainer'))
-      .getByText('Clear'));
+    await clear(ownerInput());
+    await click(within(ownerPopover()).getByText('OK'));
     await waitFor(() => expect(filterCalls(api).length).toBe(2));
 
     expect(screen.getByRole('button', {name: /reset filters/i})).toBeInTheDocument();
