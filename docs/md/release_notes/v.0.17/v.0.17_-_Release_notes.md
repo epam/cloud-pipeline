@@ -65,6 +65,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
@@ -1876,6 +1877,13 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 ***
 
 ## Notable Bug fixes
+
+### VS Code extension: the run owner's home folder is not opened on connect
+
+[#4708](https://github.com/epam/cloud-pipeline/issues/4708)
+
+Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
+Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
 
 ### Storage files are not indexed when an object key is longer than 512 bytes
 
