@@ -59,7 +59,12 @@ class UploadButton extends React.Component {
     onInitialized: PropTypes.func,
     style: PropTypes.object,
     disabled: PropTypes.bool,
-    extractArchivesAvailable: PropTypes.bool
+    extractArchivesAvailable: PropTypes.bool,
+    // A seam for tests, which cannot reach the module's own `extractArchives`
+    // without a module mock: a test passes a `fn()` here instead. Also the
+    // place the real `RemotePost` model goes once `POST
+    // /datastorage/{id}/extract` exists - no caller passes this today.
+    extractArchives: PropTypes.func
   };
 
   state = {
@@ -185,9 +190,13 @@ class UploadButton extends React.Component {
       return;
     }
     this.extractionStarted = true;
+    // `this.props.extractArchives` is the test seam described on the
+    // propType above; no caller sets it today, so this falls through to the
+    // module's own mock in every real render.
+    const extract = this.props.extractArchives || extractArchives;
     this.setState({extracting: true, uploadInfoClosable: false}, async () => {
       try {
-        await extractArchives(this.props.storageId, paths);
+        await extract(this.props.storageId, paths);
         // The files were uploaded and are now extracted - close the same
         // way a batch without extraction would have, after the same
         // short grace period.

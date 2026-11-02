@@ -23,7 +23,8 @@ import {
   waitFor,
   useFakeTimers,
   useRealTimers,
-  advanceTimers
+  advanceTimers,
+  act
 } from '@test';
 import UploadButton from './UploadButton';
 
@@ -189,16 +190,16 @@ describe('UploadButton - the paused confirmation modal', () => {
   });
 });
 
-// Extraction itself cannot be driven end to end here: `extractArchives` is
-// not injectable and rule 2 forbids a module mock, and jsdom's XHR against
-// `/upload` has no server to answer it, so every upload in this harness
-// fails. That failure is not wasted, though - it is exactly the "nothing to
-// extract" branch (every archive in the batch failed, so the batch has
-// nothing to send), and it is covered below with real timers, since closing
+// With no `extractArchives` prop passed, `UploadButton` falls through to its
+// own module-level mock, which is not injectable - rule 2 forbids reaching
+// the resolved- or rejected-extraction branches by mocking that module. What
+// this describe block covers without it: jsdom's XHR against `/upload` has
+// no server to answer it, so every upload here fails, which is exactly the
+// "nothing to extract" branch (every archive in the batch failed, so the
+// batch has nothing to send) - covered below with real timers, since closing
 // the modal this way waits out the component's own 2 s grace period. The
-// resolved- and rejected-extraction branches, and the idempotency guard
-// against calling the API twice, go untested: reaching them honestly would
-// need a real server or a module mock, and this harness has neither.
+// resolved- and rejected-extraction branches, and the idempotency guard, are
+// covered in the next describe block instead, through the injectable prop.
 describe('UploadButton - extraction after upload', () => {
   afterEach(() => {
     if (instance) {
@@ -266,6 +267,176 @@ describe('UploadButton - extraction after upload', () => {
       expect(screen.getByText(/^archive\.zip - /)).toBeInTheDocument();
       expect(screen.getByText(/^notes\.txt - /)).toBeInTheDocument();
       useRealTimers();
+    }
+  );
+});
+
+// `extractArchives` is a prop on the component (see its propType in
+// UploadButton.js) precisely so a test can reach the branches above: pass a
+// `fn()` and the component calls that instead of its own module-level mock.
+// No caller does this in the real app; it is a seam.
+//
+// All three tests below still need an upload that actually finishes, since
+// extraction only ever runs over files that uploaded. The synchronous/NFS
+// path posts through a real `XMLHttpRequest`, and jsdom's is real but talks
+// to no server - every request in the describe block above fails for that
+// reason. Rather than stand up a server, this block installs a test-local
+// `XMLHttpRequest` stub on `window` that answers every request with a
+// successful `{status: 'OK'}` response. That is the "stub the object on
+// window" option: nothing under `src/` is replaced, only the global
+// constructor the browser itself provides, so it is not a module mock.
+class SucceedingXMLHttpRequest {
+  constructor () {
+    this.upload = {};
+    this.readyState = 0;
+  }
+
+  open () {}
+
+  setRequestHeader () {}
+
+  send () {
+    this.readyState = 4;
+    this.status = 200;
+    this.responseText = JSON.stringify({status: 'OK'});
+    if (this.onreadystatechange) {
+      this.onreadystatechange();
+    }
+  }
+}
+
+describe('UploadButton - the injectable extraction call', () => {
+  let OriginalXMLHttpRequest;
+
+  beforeEach(() => {
+    OriginalXMLHttpRequest = window.XMLHttpRequest;
+    window.XMLHttpRequest = SucceedingXMLHttpRequest;
+  });
+
+  afterEach(() => {
+    window.XMLHttpRequest = OriginalXMLHttpRequest;
+    if (instance) {
+      instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
+      instance = null;
+    }
+  });
+
+  test(
+    'a resolved extraction is called with the uploaded archive\'s path, shows ' +
+    'the in-flight count, then closes the modal and refreshes',
+    async () => {
+      let resolveExtraction;
+      const extractArchives = fn(() => new Promise((resolve) => {
+        resolveExtraction = resolve;
+      }));
+      const onRefresh = fn();
+      const {input} = renderUploadButton({
+        extractArchivesAvailable: true,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+      });
+
+      await click(screen.getByRole('button', {name: 'Upload and extract'}));
+
+      await waitFor(() => {
+        expect(extractArchives).toHaveBeenCalledTimes(1);
+      }, {timeout: 5000});
+      expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/archive.zip']);
+      expect(screen.getByText('Extracting 1 archive...')).toBeInTheDocument();
+      expect(onRefresh).not.toHaveBeenCalled();
+
+      resolveExtraction();
+
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      }, {timeout: 5000});
+    },
+    10000
+  );
+
+  test(
+    'a rejected extraction renders the error and leaves the modal open; ' +
+    'closing it still refreshes',
+    async () => {
+      const extractArchives = fn(() => Promise.reject(new Error('extraction failed')));
+      const onRefresh = fn();
+      const {input} = renderUploadButton({
+        extractArchivesAvailable: true,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+      });
+
+      await click(screen.getByRole('button', {name: 'Upload and extract'}));
+
+      await waitFor(() => {
+        expect(screen.getByText('extraction failed')).toBeInTheDocument();
+      }, {timeout: 5000});
+      expect(onRefresh).not.toHaveBeenCalled();
+
+      await act(async () => {
+        instance.hideUploadInfo();
+      });
+
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      });
+    },
+    10000
+  );
+
+  test(
+    'the idempotency guard: a two-archive S3-style batch calls the prop exactly once',
+    async () => {
+      // Driven directly through the instance rather than a real upload: the
+      // S3 path's own completion method (`uploadItemToStorageSDK`'s
+      // onDone/onError/abort callbacks) calls `hideUploadInfoDelayedIfDone`
+      // once per finished file, which is the scenario this guard exists
+      // for - but reaching it through a genuine S3 upload would need real
+      // AWS credentials and a network call the unit suite's network guard
+      // blocks, which reads as a hack rather than a stub. Calling the same
+      // method the real path calls, with the state a finished two-archive
+      // batch would carry, reaches the same guard honestly.
+      const extractArchives = fn(() => new Promise(() => {}));
+      renderUploadButton({
+        extractArchivesAvailable: true,
+        uploadToS3: true,
+        uploadToNFS: false,
+        storageId: 'storage-1',
+        extractArchives
+      });
+
+      await act(async () => {
+        instance.setState({
+          extractAfterUpload: true,
+          uploadingFiles: [
+            {uid: '1', name: 'one.zip', status: 'done', done: true},
+            {uid: '2', name: 'two.zip', status: 'done', done: true}
+          ]
+        });
+      });
+
+      await act(async () => {
+        instance.hideUploadInfoDelayedIfDone();
+        instance.hideUploadInfoDelayedIfDone();
+      });
+
+      expect(extractArchives).toHaveBeenCalledTimes(1);
+      expect(extractArchives).toHaveBeenCalledWith(
+        'storage-1',
+        ['folder/one.zip', 'folder/two.zip']
+      );
     }
   );
 });
