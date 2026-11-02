@@ -35,6 +35,7 @@ public abstract class AbstractDataStorageMapper {
     @Mapping(target = "kmsKeyArn", ignore = true)
     @Mapping(target = "tempCredentialsRole", ignore = true)
     @Mapping(target = "useAssumedCredentials", ignore = true)
+    @Mapping(target = "accessPointArn", ignore = true)
     public abstract DataStorageVO toDataStorageVO(AbstractDataStorage dataStorage);
 
     @AfterMapping
@@ -51,6 +52,8 @@ public abstract class AbstractDataStorageMapper {
             dataStorageVO.setKmsKeyArn(s3bucketDataStorage.getKmsKeyArn());
             dataStorageVO.setTempCredentialsRole(s3bucketDataStorage.getTempCredentialsRole());
             dataStorageVO.setUseAssumedCredentials(s3bucketDataStorage.isUseAssumedCredentials());
+            // accessPointArn is not copied: a storage built from this VO gets a new bucket,
+            // and the access point belongs to the source storage only
         }
     }
 }

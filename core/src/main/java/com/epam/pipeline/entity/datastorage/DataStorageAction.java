@@ -36,6 +36,8 @@ public class DataStorageAction {
     private String bucketName;
     @JsonIgnore
     private String path;
+    @JsonIgnore
+    private String accessPointArn;
 
     private String itemPath;
     private DataStorageItemType itemType;

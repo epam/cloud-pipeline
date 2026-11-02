@@ -99,6 +99,15 @@ public final class AclExpressions {
             "(" + ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY + OR
                     + "@storagePermissionManager.storagePermissionById(#id, 'OWNER')" + ")" + AND + STORAGE_SHARED;
 
+    /**
+     * An S3 access point ARN widens the temporary credentials issued for a storage,
+     * so only admins may set or clear it on an existing storage.
+     */
+    public static final String STORAGE_UPDATE_WITH_ACCESS_POINT =
+            "(" + ADMIN_ONLY + OR + "@storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')"
+                    + ")" + AND
+                    + "(#dataStorageVO.accessPointArn == null" + OR + ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY + ")";
+
     public static final String STORAGE_ID_TAGS_WRITE =
             "(" + ADMIN_ONLY + OR + STORAGE_ADMIN_ONLY
                     + OR + "@storagePermissionManager.storageTagsPermission(#id, #tags, 'WRITE')" + ")"

@@ -49,6 +49,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     ) VALUES (
@@ -77,6 +78,7 @@
                         :S3_KMS_KEY_ARN,
                         :S3_USE_ASSUMED_CREDS,
                         :S3_TEMP_CREDS_ROLE,
+                        :S3_ACCESS_POINT_ARN,
                         :MOUNT_STATUS,
                         :PATH_PERMISSIONS_ENABLED
                     )
@@ -97,7 +99,8 @@
                         enable_versioning = :ENABLE_VERSIONING,
                         backup_duration = :BACKUP_DURATION,
                         mount_point = :MOUNT_POINT,
-                        mount_options = :MOUNT_OPTIONS
+                        mount_options = :MOUNT_OPTIONS,
+                        s3_access_point_arn = :S3_ACCESS_POINT_ARN
                     WHERE
                         datastorage_id = :DATASTORAGE_ID
                 ]]>
@@ -139,6 +142,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -177,6 +181,7 @@
                         d.s3_kms_key_arn,
                         d.s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         d.mount_status,
                         d.source_datastorage_id,
                         d.masking_rules,
@@ -218,6 +223,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -258,6 +264,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -297,6 +304,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -335,6 +343,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -373,6 +382,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -411,6 +421,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -449,6 +460,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -488,6 +500,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -526,6 +539,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM
@@ -580,6 +594,7 @@
                             d.s3_kms_key_arn,
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
+                            d.s3_access_point_arn,
                             d.mount_status,
                             d.mount_exact_path,
                             d.path_permissions_enabled,
@@ -618,6 +633,7 @@
                             null as s3_kms_key_arn,
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
+                            null as s3_access_point_arn,
                             null as mount_status,
                             null as path_permissions_enabled,
 		                    m.folder_id,
@@ -657,6 +673,7 @@
                             d.s3_kms_key_arn,
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
+                            d.s3_access_point_arn,
                             d.mount_status,
                             d.path_permissions_enabled,
                             c.folder_id,
@@ -690,6 +707,7 @@
                             null as s3_kms_key_arn,
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
+                            null as s3_access_point_arn,
                             null as mount_status,
                             null as path_permissions_enabled,
 		                    m.folder_id,
@@ -807,6 +825,7 @@
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
+                        s3_access_point_arn,
                         mount_status,
                         path_permissions_enabled
                     FROM

@@ -262,6 +262,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_NAME_IS_EMPTY = "error.datastorage.name.is.empty";
     public static final String ERROR_DATASTORAGE_NOT_SUPPORTED = "error.datastorage.not.supported";
     public static final String ERROR_DATASTORAGE_PATH_IS_EMPTY = "error.datastorage.path.is.empty";
+    public static final String ERROR_DATASTORAGE_ACCESS_POINT_ARN_INVALID =
+            "error.datastorage.access.point.arn.invalid";
     public static final String ERROR_DATASTORAGE_RULE_NOT_FOUND = "error.datastorage.rule.not.found";
     public static final String ERROR_DATASTORAGE_RULE_STS_OR_LTS_REQUIRED =
             "error.datastorage.rule.sts.or.lts.required";
