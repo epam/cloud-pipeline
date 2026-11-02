@@ -1389,7 +1389,7 @@ then
       # Crop OWNER account by @ if present
 	IFS='@' read -r -a owner_info <<< "$OWNER"
 	export OWNER="${owner_info[0]}"
-	export OWNER_HOME="/home/$OWNER"
+	export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
 
       export _OWNER_CONFIGURED=1
 
@@ -1399,9 +1399,9 @@ then
 		echo "User ${OWNER} already exists"
 	else
             if check_installed "useradd"; then
-                  useradd -s "/bin/bash" "$OWNER" -G root -d $OWNER_HOME
+                  useradd -s "/bin/bash" "$OWNER" -G root -d "$OWNER_HOME"
             elif check_installed "adduser"; then
-                  adduser -s "/bin/bash" $OWNER -d $OWNER_HOME -D -G root
+                  adduser -s "/bin/bash" $OWNER -d "$OWNER_HOME" -D -G root
             else
                   echo "Cannot add user $OWNER. useradd and adduser commands not installed"
                   export _OWNER_CONFIGURED=0
