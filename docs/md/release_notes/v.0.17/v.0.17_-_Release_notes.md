@@ -62,6 +62,7 @@
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 - [GitLab 19 support](#gitlab-19-support)
+- [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 
 ***
 
@@ -1907,6 +1908,15 @@ Other fixes keep the platform working with the new GitLab versions:
 - a missing folder of a repository is treated as an empty one: GitLab 17.7 and later answer `404` for it
 - tokens with dots, as GitLab 19.5 issues them, are accepted in repository URLs
 - saving the Git preferences no longer rejects GitLab 18.0-18.2 and 19.5-19.9
+
+***
+
+## Rocky Linux 9.8 for the proxy and the backup workers
+
+The images of the proxy service (`cp-tinyproxy`) and of the backup workers (`cp-bkp-worker-*`) moved from CentOS 7, which has reached its end of life, to Rocky Linux 9.8.
+
+- The SMTP authentication helper of the proxy keeps Python 3.7, in its own `micromamba` environment.
+- The Filebeat log shippers of the proxy (`6.8` for Elasticsearch, `7.10` for OpenSearch) run with `seccomp` disabled: their `seccomp` policies do not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
 
 ***
 
