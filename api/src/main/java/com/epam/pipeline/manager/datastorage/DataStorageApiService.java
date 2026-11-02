@@ -235,7 +235,7 @@ public class DataStorageApiService {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
+    @PreAuthorize(AclExpressions.STORAGE_UPDATE_WITH_ACCESS_POINT)
     @AclMask
     public AbstractDataStorage update(DataStorageVO dataStorageVO) {
         return dataStorageManager.update(dataStorageVO);

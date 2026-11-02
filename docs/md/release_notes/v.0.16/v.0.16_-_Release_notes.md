@@ -66,8 +66,10 @@
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [A run is restarted in a region where its instance type is not available](#a-run-is-restarted-in-a-region-where-its-instance-type-is-not-available)
     - [Unavailable cluster nodes are not detected](#unavailable-cluster-nodes-are-not-detected)
+    - [The `OWNER_HOME` parameter of a run is ignored](#the-owner_home-parameter-of-a-run-is-ignored)
     - [Backup workers cannot copy the backups to the storage](#backup-workers-cannot-copy-the-backups-to-the-storage)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
+    - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
 
 ***
@@ -860,6 +862,20 @@ Now, a node is unavailable when its `Ready` condition is `Unknown`, and the grac
 Also, a free node is reused for a new run only if its `Ready` condition is `True`. Before, a node that was not ready, or not reachable at all, could be reused, and the new run could get stuck on it.
 Please note: after the update, nodes that have already been unavailable for longer than the grace period are terminated during the first autoscaler cycle, and their runs fail.
 
+### The `OWNER_HOME` parameter of a run is ignored
+
+[#4708](https://github.com/epam/cloud-pipeline/issues/4708)
+
+Previously, the `OWNER_HOME` parameter of a run was ignored: the `OWNER_HOME` environment variable of the run was always `/home/<user name>`, and the run created the owner account with that home folder.
+Now, if a run is launched with the `OWNER_HOME` parameter, the `OWNER_HOME` environment variable holds its value, and the run creates the owner account with that home folder. The `cloud-data` and `workdir` links are created in that folder. Without the parameter, `/home/<user name>` is used, as before.
+
+Please note:
+
+- if the image already has the owner account, the home folder of that account is not changed, but the `cloud-data` and `workdir` links are still created in the `OWNER_HOME` folder
+- if the parent folder of `OWNER_HOME` does not exist, the home folder may not be created
+- the worker nodes of a cluster run do not get the parameter by default, so their owner home folder is `/home/<user name>`
+- the SSH keys of the owner account (for the SSH between the nodes of a cluster, and the personal SSH keys) are still put into `/home/<user name>/.ssh`, so they are not used when the home folder of the account is another one
+
 ### Backup workers cannot copy the backups to the storage
 
 [#4618](https://github.com/epam/cloud-pipeline/issues/4618)
@@ -873,6 +889,15 @@ In the current version, the backup worker image is based on Rocky Linux 9.8.
 
 Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
 In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services.
+
+### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
+
+[#4707](https://github.com/epam/cloud-pipeline/issues/4707)
+
+Previously, an `S3` storage registered with an access point alias as its path - e.g. the alias of an access point attached to an `FSx for NetApp ONTAP` volume - could not be accessed with the temporary credentials issued by the platform.
+AWS checks such requests against the access point ARN, and the issued credentials allowed only the bucket name. So the `pipe storage` commands, and file downloads and uploads in the GUI, failed with an `AccessDenied` error.
+Now, an `S3` storage has an optional `accessPointArn` field, set via the REST API. If it is set, the temporary credentials also allow access via this access point.
+See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#register-an-s3-access-point-alias).
 
 ### VS Code extension: the run owner's home folder is not opened on connect
 

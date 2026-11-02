@@ -135,6 +135,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
@@ -148,6 +149,8 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_NAME_TEMPLATE = "@@-home";
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
+    private static final Pattern ACCESS_POINT_ARN_PATTERN =
+            Pattern.compile("arn:aws(-[a-z]+)*:s3:[a-z0-9-]+:\\d{12}:accesspoint/[a-z0-9-]+");
 
     @Autowired
     private MessageHelper messageHelper;
@@ -402,6 +405,7 @@ public class DataStorageManager implements SecuredEntityManager {
         assertToolsToMount(dataStorageVO);
 
         dataStorageVO.setName(dataStorageVO.getName().trim());
+        dataStorageVO.setAccessPointArn(validateAccessPointArn(dataStorageVO.getAccessPointArn()));
 
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
@@ -1119,6 +1123,12 @@ public class DataStorageManager implements SecuredEntityManager {
         if (dataStorageVO.getToolsToMount() != null) {
             dataStorage.setToolsToMount(dataStorageVO.getToolsToMount());
         }
+
+        // null keeps the current value, a blank value clears it
+        if (dataStorage instanceof S3bucketDataStorage && dataStorageVO.getAccessPointArn() != null) {
+            ((S3bucketDataStorage) dataStorage).setAccessPointArn(
+                    validateAccessPointArn(dataStorageVO.getAccessPointArn()));
+        }
         return dataStorage;
     }
 
@@ -1209,6 +1219,15 @@ public class DataStorageManager implements SecuredEntityManager {
             Assert.isTrue(dataStorage.isVersioningEnabled(), messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
+    }
+
+    private String validateAccessPointArn(final String accessPointArn) {
+        if (StringUtils.isBlank(accessPointArn)) {
+            return null;
+        }
+        Assert.isTrue(ACCESS_POINT_ARN_PATTERN.matcher(accessPointArn).matches(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ACCESS_POINT_ARN_INVALID, accessPointArn));
+        return accessPointArn;
     }
 
     private void assertToolsToMount(final DataStorageVO dataStorageVO) {
