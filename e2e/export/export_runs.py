@@ -128,7 +128,7 @@ def main(script_name, argv):
         ]
         role_model_columns = []
         if not skip_groups:
-            role_model_columns.extend(map(lambda r: r[len('ROLE_'):] if r.startswith('ROLE_') else r, roles))
+            role_model_columns.extend([r[len('ROLE_'):] if r.startswith('ROLE_') else r for r in roles])
         if not skip_ad:
             role_model_columns.extend(ad_groups)
         columns.extend(role_model_columns)

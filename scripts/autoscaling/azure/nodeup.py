@@ -389,7 +389,7 @@ def get_os_profile(instance_name, ssh_pub_key, user, user_data_script, computer_
             },
             "disablePasswordAuthentication": True,
         },
-        "custom_data": base64.b64encode(user_data_script)
+        "custom_data": base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8')
     }
     return profile
 

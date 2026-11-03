@@ -32,7 +32,7 @@ class SampleSheetParser:
     def parse_sample_sheet(self):
         samples = []
         columns_to_idx = {}
-        with open(self.path, 'rb') as f:
+        with open(self.path, 'r', newline='') as f:
             reader = csv.reader(f)
             data_section_started = False
             read_header = False

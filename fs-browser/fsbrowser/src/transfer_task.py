@@ -204,9 +204,16 @@ class TransferTask(object):
 
     @staticmethod
     def compress_directory(output_filename, source_dir, follow_symlinks, exclude_list):
+        # TarFile.add() has no "exclude" since Python 3.7: its "filter" drops an item by returning None. A member is
+        # named after its path, without the leading "/", and the exclude patterns are written for the path itself.
+        def _filter(tarinfo):
+            path = os.path.join(os.sep, tarinfo.name) if os.path.isabs(source_dir) else tarinfo.name
+            if PatternMatcher.match_any(path, exclude_list):
+                return None
+            return TransferTask.set_permissions(tarinfo)
+
         with tarfile.open(output_filename, "w:gz", dereference=follow_symlinks) as tar:
-            tar.add(source_dir, exclude=lambda x: PatternMatcher.match_any(x, exclude_list),
-                    filter=TransferTask.set_permissions)
+            tar.add(source_dir, filter=_filter)
 
     @staticmethod
     def check_cyclic_symlinks(source_dir):

@@ -661,9 +661,12 @@ function install_python3_packages {
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
-      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
-
-      tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
+      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"; then
+            rm -f "${_tmp_install_dir}/python3.tgz"
+            echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL"
+            return 1
+      fi
       rm -f "${_tmp_install_dir}/python3.tgz"
 
       ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
@@ -834,6 +837,10 @@ echo "-"
 if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
+
+# The location of the platform's tools distributions: the Python 3.12 distribution and the pypi3 mirror are taken from it
+export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
+echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
 
 # Check jq is installed
 if ! jq --version > /dev/null 2>&1; then

@@ -19,6 +19,7 @@
 import glob
 import os
 import py_compile
+import re
 import shutil
 import stat
 import subprocess
@@ -138,6 +139,16 @@ class CpPythonPathResolutionTest(unittest.TestCase):
             self.assertNotIn('RESOLVED=', out)
         finally:
             shutil.rmtree(tmp)
+
+
+class CpEdgeScriptsLazyIteratorsTest(unittest.TestCase):
+    # Python 3's filter() and map() return one-pass iterators: len() and indexing fail on them. sync-routes.py
+    # reads the Kubernetes service account when it is imported, so the check is on its source.
+
+    def test_sync_routes_keeps_no_filter_or_map_result(self):
+        with open(os.path.join(CP_EDGE_DIR, 'sync-routes.py')) as f:
+            assignments = [line.strip() for line in f if re.search(r'=\s*(filter|map)\(', line)]
+        self.assertEqual([], assignments)
 
 
 class CpEdgeScriptsCompileTest(unittest.TestCase):

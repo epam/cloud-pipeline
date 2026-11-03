@@ -103,7 +103,8 @@ class CreateWorkerNodes(Task):
               '--docker-image {} --cmd-template \"{}\" --parent-id {}'.format(disk, type, image, cmd, parent_id)
         Logger.info(cmd, task_name=self.task_name)
         for i in range(0, nodes_number):
-            p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            p = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 universal_newlines=True)
             for line in p.stderr.readlines():
                 Logger.warn(line, task_name=self.task_name)
             for line in p.stdout.readlines():

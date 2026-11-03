@@ -48,4 +48,4 @@ class TestPipelineRunSync(object):
         except BaseException as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))

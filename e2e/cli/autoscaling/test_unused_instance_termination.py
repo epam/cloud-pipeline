@@ -57,9 +57,9 @@ class TestUnusedInstanceTermination(object):
             wait_for_instance_termination(run_id, MAX_REP_COUNT)
             logging.info("Instance {} terminated.".format(run_id))
         except BaseException as e:
-            logging.error(e.message)
+            logging.error(str(e))
             cls.teardown_class()
-            raise RuntimeError(e.message)
+            raise RuntimeError(str(e))
 
     @classmethod
     def teardown_class(cls):
@@ -77,7 +77,7 @@ class TestUnusedInstanceTermination(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     def test_cluster_should_not_have_node_without_label(self):
         try:
@@ -85,4 +85,4 @@ class TestUnusedInstanceTermination(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))

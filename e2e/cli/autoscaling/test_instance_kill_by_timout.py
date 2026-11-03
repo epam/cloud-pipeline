@@ -39,9 +39,9 @@ class TestTerminateNodeByTimeout(object):
             cls.run_id = run_pipe(pipeline_name, "-id", "13")[0]
             logging.info("Pipeline run with ID {}.".format(cls.run_id))
         except BaseException as e:
-            logging.error(e.message)
+            logging.error(str(e))
             cls.teardown_class()
-            raise RuntimeError(e.message)
+            raise RuntimeError(str(e))
 
     @classmethod
     def teardown_class(cls):
@@ -61,7 +61,7 @@ class TestTerminateNodeByTimeout(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_node_should_be_terminated(self):
@@ -79,7 +79,7 @@ class TestTerminateNodeByTimeout(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_instance_should_be_terminated(self):
@@ -90,7 +90,7 @@ class TestTerminateNodeByTimeout(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     @pytest.mark.run(order=4)
     def test_cluster_should_not_have_node_without_label(self):
@@ -100,7 +100,7 @@ class TestTerminateNodeByTimeout(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     @staticmethod
     def __wait_timeout(run_id):

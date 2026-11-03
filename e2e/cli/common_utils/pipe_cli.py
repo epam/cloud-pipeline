@@ -183,7 +183,7 @@ def pipe_storage_rm_piped(source, delete=True):
         echo_command = ['echo', 'N']
     echo_process = subprocess.Popen(echo_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pipe_process = subprocess.Popen(pipe_command, stdout=subprocess.PIPE, stdin=echo_process.stdout,
-                                    stderr=subprocess.PIPE)
+                                    stderr=subprocess.PIPE, universal_newlines=True)
     echo_process.stdout.close()
     process = pipe_process.communicate()
     stdout = process[0]
@@ -194,7 +194,8 @@ def pipe_storage_rm_piped(source, delete=True):
 def pipe_storage_policy(bucket_name, sts="", lts="", backup_duration=""):
     process = subprocess.Popen(["pipe", "storage", "policy", "-n", bucket_name, "-v"],
                                stdin=subprocess.PIPE,
-                               stdout=subprocess.PIPE)
+                               stdout=subprocess.PIPE,
+                               universal_newlines=True)
     process.stdin.write("{}\n".format(sts))
     process.stdin.write("{}\n".format(lts))
     process.stdin.write("{}\n".format(backup_duration))

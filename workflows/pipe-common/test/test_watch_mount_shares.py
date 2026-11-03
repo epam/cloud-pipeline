@@ -116,5 +116,39 @@ class CurrentUtcTimeMillisTest(unittest.TestCase):
         self.assertLess(millis, 7000000000000)
 
 
+def _file_event(event_type, path='/mnt/nfs/file.txt'):
+    return types.SimpleNamespace(is_directory=False, event_type=event_type, src_path=path)
+
+
+class DispatchRecordsOnlyFileChangesTest(unittest.TestCase):
+    # watchdog 6 reports file accesses too: "closed_no_write" starts with "c", the code of a created file
+
+    def setUp(self):
+        self.handler = object.__new__(wms.CloudBucketDumpingEventHandler)
+        self.handler._active_events = wms.OrderedDict()
+
+    def test_a_read_of_a_file_records_nothing(self):
+        for event_type in ('opened', 'closed_no_write', 'closed'):
+            self.handler.dispatch(_file_event(event_type))
+        self.assertEqual({}, dict(self.handler._active_events))
+
+    def test_a_modification_is_recorded(self):
+        self.handler.dispatch(_file_event('opened'))
+        self.handler.dispatch(_file_event('modified'))
+        self.handler.dispatch(_file_event('closed'))
+        self.assertEqual([wms.MODIFY_EVENT],
+                         [event.event_type for event in self.handler._active_events.values()])
+
+
+class RemoveUnmountedWatchersTest(unittest.TestCase):
+
+    def test_removes_several_mounts_in_one_pass(self):
+        watcher = object.__new__(wms.NFSMountWatcher)
+        watcher._target_path_mapping = {'/mnt/a': 'src-a', '/mnt/b': 'src-b', '/mnt/c': 'src-c'}
+        watcher.try_to_remove_path_from_observer = lambda mnt_dest: True
+        watcher._remove_unmounted_watchers({'/mnt/b': 'src-b'})
+        self.assertEqual({'/mnt/b': 'src-b'}, watcher._target_path_mapping)
+
+
 if __name__ == '__main__':
     unittest.main()

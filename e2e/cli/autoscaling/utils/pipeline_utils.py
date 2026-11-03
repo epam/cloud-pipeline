@@ -41,7 +41,7 @@ def get_client():
     if provider in _clients:
         return _clients[provider]()
     else:
-        raise RuntimeError('Provider must be one of %s' % _clients.keys())
+        raise RuntimeError('Provider must be one of %s' % list(_clients.keys()))
 
 
 class FailureIndicator(object):
@@ -56,7 +56,7 @@ def get_pipe_status(run_id):
 
 def view_cluster_for_node(node_name):
     cluster_info = {}
-    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stdout=subprocess.PIPE)
+    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stdout=subprocess.PIPE, universal_newlines=True)
     line = process.stdout.readline()
     while line != '':
         __fill_record(line, cluster_info, "Pipeline")
@@ -68,7 +68,7 @@ def view_cluster_for_node(node_name):
             process.stdout.readline()  # skip the header
             line = process.stdout.readline()
             while not line.startswith("+"):
-                splitted = filter(None, line.replace(" ", "").split("|"))
+                splitted = [_f for _f in line.replace(" ", "").split("|") if _f]
                 if len(splitted) > 2 and splitted[1] == "default" and 'runid' in cluster_info and \
                         cluster_info['runid'] in splitted[0]:
                     cluster_info["IsNodeJobRunning"] = splitted[0]
@@ -100,7 +100,7 @@ def view_runs(run_id, *args):
     command = ['pipe', 'view-runs', run_id]
     for arg in args:
         command.append(arg)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     line = process.stdout.readline()
     while line != '':
         __fill_record(line, pipe_info, "Pipeline")
@@ -135,7 +135,7 @@ def run_pipe(pipeline_name, *args):
 
     for arg in args:
         command.append(arg)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, universal_newlines=True)
     process.wait()
     line = process.stdout.readline()
     run_id = None
@@ -215,13 +215,13 @@ def get_node_name_from_cluster_state(node_state):
 
 def view_cluster():
     cluster_state = []
-    process = subprocess.Popen(['pipe', 'view-cluster'], stdout=subprocess.PIPE)
+    process = subprocess.Popen(['pipe', 'view-cluster'], stdout=subprocess.PIPE, universal_newlines=True)
     process.stdout.readline()
     process.stdout.readline()
     process.stdout.readline()  # skip header
     line = process.stdout.readline()
     while not line.startswith("+"):
-        splitted = filter(None, line.replace(" ", "").split("|"))
+        splitted = [_f for _f in line.replace(" ", "").split("|") if _f]
         cluster_item = {}
         addresses = []
         while splitted[0] != "\n":
@@ -233,7 +233,7 @@ def view_cluster():
             else:
                 addresses.append(splitted[0])
             line = process.stdout.readline()
-            splitted = filter(None, line.replace(" ", "").split("|"))
+            splitted = [_f for _f in line.replace(" ", "").split("|") if _f]
         ip = [ip for ip in addresses if "InternalIP" in ip]
         if len(ip) == 1:
             cluster_item["InternalIP"] = re.findall(IP_PATTERN, ip[0])[0]
@@ -243,7 +243,7 @@ def view_cluster():
 
 
 def view_cluster_errors(node_name):
-    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stderr=subprocess.PIPE)
+    process = subprocess.Popen(['pipe', 'view-cluster', node_name], stderr=subprocess.PIPE, universal_newlines=True)
     return process.stderr.read()
 
 
@@ -372,7 +372,7 @@ def pipe_test(instance_method):
         except BaseException as e:
             self.__class__.state.failure = True
             logging.info("Case %s failed!" % self.test_case)
-            pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
+            pytest.fail("Test case %s failed.\n%s" % (self.test_case, str(e)))
 
     return test_method_wrapper
 

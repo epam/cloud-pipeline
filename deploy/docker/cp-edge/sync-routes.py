@@ -557,9 +557,9 @@ def load_pods_for_runs_with_endpoints():
                         and 'env' in pod['spec']['containers'][0] \
                         and pod['spec']['containers'][0]['env']:
                         pipeline_env_parameters = pod['spec']['containers'][0]['env']
-                        matched_sys_endpoints = filter(lambda env_var: env_var['name'] in SYSTEM_ENDPOINTS.keys()
-                                                                       and env_var['value'] == 'true',
-                                                       pipeline_env_parameters)
+                        matched_sys_endpoints = [env_var for env_var in pipeline_env_parameters
+                                                 if env_var['name'] in SYSTEM_ENDPOINTS.keys()
+                                                 and env_var['value'] == 'true']
                         if len(matched_sys_endpoints) > 0:
                                 pods_with_endpoints.append(pod)
         return pods_with_endpoints

@@ -28,7 +28,7 @@ def read_output(output):
 
 
 def execute_command(cmd, env=None):
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, universal_newlines=True)
     stdout = read_output(process.stdout)
     stderr = read_output(process.stderr)
     exit_code = process.wait()

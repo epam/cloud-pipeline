@@ -86,7 +86,7 @@ class TestLsFolder(object):
                                               recursive=recursive)
             compare_listing(actual_listing, expected_listing, length, show_details=show_details)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     bucket_parameters_without_delimiter = [
         (True, False, 1, [
@@ -115,7 +115,7 @@ class TestLsFolder(object):
                                               recursive=recursive)
             compare_listing(actual_listing, expected_listing, length, show_details=show_details)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_without_delimiter, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_without_delimiter, str(e)))
 
     test_paths_with_delimiter = [
         (resources_root, True, False, 2, [
@@ -146,7 +146,7 @@ class TestLsFolder(object):
                                               recursive=recursive)
             compare_listing(actual_listing, expected_listing, length, show_details=show_details)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_with_delimiter, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_with_delimiter, str(e)))
 
     bucket_parameters_with_delimiter = [
         (True, False, 1, [
@@ -175,7 +175,7 @@ class TestLsFolder(object):
                                               recursive=recursive)
             compare_listing(actual_listing, expected_listing, length, show_details=show_details)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_with_delimiter, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_with_delimiter, str(e)))
 
     @pytest.mark.run()
     def test_list_not_existing_bucket(self):
@@ -186,7 +186,7 @@ class TestLsFolder(object):
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format(bucket_name, file_name))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_non_existing_bucket, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_non_existing_bucket, str(e)))
 
     @pytest.mark.run()
     def test_list_with_wrong_scheme(self):
@@ -194,7 +194,7 @@ class TestLsFolder(object):
             error = pipe_storage_ls("s4://{}/".format(self.bucket_name), recursive=True, expected_status=1)[1]
             assert_error_message_is_present(error, 'Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_wrong_scheme, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_wrong_scheme, str(e)))
 
     non_existing_paths = [
         ("does-not-exist.txt", False),
@@ -210,7 +210,7 @@ class TestLsFolder(object):
             assert len(listing) == 0, \
                 "Returned non empty result: '{}' for non existing path '{}'".format(str(listing), path)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_non_existing_path, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_non_existing_path, str(e)))
 
     @pytest.mark.run()
     def test_last_modification_date_listing(self):
@@ -222,4 +222,4 @@ class TestLsFolder(object):
             expected_listing = [expected_file, d('test_folder/')]
             compare_listing(actual_listing, expected_listing, 2, show_details=True, check_last_modified=True)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_with_delimiter, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_folder_with_delimiter, str(e)))

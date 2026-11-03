@@ -17,7 +17,10 @@
 # The "pipeline" package (pipe-common) is replaced with a stub when it is not installed.
 
 import os
+import shutil
 import sys
+import tarfile
+import tempfile
 import types
 import unittest
 
@@ -52,6 +55,38 @@ class TransferTaskCommandTest(unittest.TestCase):
         with self.assertRaises(RuntimeError) as error:
             task.get_command_output([SHELL, '-c', 'echo out; echo err 1>&2; exit 3'], False)
         self.assertEqual("stdout: out\nstderr: ['err']", str(error.exception))
+
+
+class TransferTaskCompressTest(unittest.TestCase):
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.source = os.path.join(self.tmp, 'data')
+        os.makedirs(os.path.join(self.source, 'keep'))
+        os.makedirs(os.path.join(self.source, 'skip'))
+        for name in ('keep/a.txt', 'skip/b.txt', 'c.log'):
+            with open(os.path.join(self.source, name), 'w') as f:
+                f.write(name)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def _compress(self, exclude_list):
+        archive = os.path.join(self.tmp, 'out.tar.gz')
+        TransferTask.compress_directory(archive, self.source, False, exclude_list)
+        with tarfile.open(archive) as tar:
+            members = tar.getmembers()
+        prefix = self.source.lstrip(os.sep)
+        return dict((member.name[len(prefix):] or '/', member.mode) for member in members)
+
+    def test_archives_the_folder_with_the_download_permissions(self):
+        members = self._compress([])
+        self.assertEqual(['/', '/c.log', '/keep', '/keep/a.txt', '/skip', '/skip/b.txt'], sorted(members))
+        self.assertEqual({0o774}, set(members.values()))
+
+    def test_skips_the_excluded_folders_and_files(self):
+        members = self._compress([os.path.join(self.source, 'skip') + '/', '*.log'])
+        self.assertEqual(['/', '/keep', '/keep/a.txt'], sorted(members))
 
 
 if __name__ == '__main__':

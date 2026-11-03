@@ -33,10 +33,10 @@ def execute(command, logger=None):
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
     if executable:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable,
-                             universal_newlines=True)
+                             universal_newlines=True, errors='replace')
     else:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=True, errors='replace')
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)
@@ -48,10 +48,10 @@ def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=
 def execute_cmd_command(command, silent=False, executable=None):
     if executable:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable,
-                             universal_newlines=True)
+                             universal_newlines=True, errors='replace')
     else:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=True, errors='replace')
     for line in p.stderr.readlines():
         if not silent:
             print(line)
@@ -64,10 +64,10 @@ def execute_cmd_command(command, silent=False, executable=None):
 def get_cmd_command_output(command, executable=None):
     if executable:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable,
-                             universal_newlines=True)
+                             universal_newlines=True, errors='replace')
     else:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=True, errors='replace')
     output, error = p.communicate()
     exit_code = p.returncode
     if error: print(error)

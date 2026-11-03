@@ -48,9 +48,9 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
             wait_for_instance_termination(run_id, MAX_REP_COUNT)
             logging.info("Instance {} terminated.".format(run_id))
         except BaseException as e:
-            logging.error(e.message)
+            logging.error(str(e))
             cls.teardown_class()
-            raise RuntimeError(e.message)
+            raise RuntimeError(str(e))
 
     @classmethod
     def teardown_class(cls):
@@ -74,7 +74,7 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     @pytest.mark.run(order=1)
     def test_new_node_should_be_created(self):
@@ -86,7 +86,7 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_cluster_should_not_have_node_without_label(self):
@@ -96,4 +96,4 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
         except AssertionError as e:
             logging.info("Case {} failed!".format(self.test_case))
             self.state.failure = True
-            pytest.fail("Test case {} failed.\n{}".format(self.test_case, e.message))
+            pytest.fail("Test case {} failed.\n{}".format(self.test_case, str(e)))

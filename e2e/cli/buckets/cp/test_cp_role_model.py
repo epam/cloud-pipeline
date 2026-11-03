@@ -55,7 +55,7 @@ class TestCpWithRoleModel(object):
             assert_copied_object_does_not_exist(ObjectInfo(True).build(
                 self.output_folder + self.test_file), self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=1)
     def test_upload_file_without_permission(self):
@@ -70,7 +70,7 @@ class TestCpWithRoleModel(object):
                                                                         os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_copy_between_buckets_without_permission(self):
@@ -87,7 +87,7 @@ class TestCpWithRoleModel(object):
                 self.other_bucket_name, os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_download_from_bucket_with_read_permission(self):
@@ -103,7 +103,7 @@ class TestCpWithRoleModel(object):
                                                                           self.test_file)),
                                       self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_upload_file_with_read_permission(self):
@@ -118,7 +118,7 @@ class TestCpWithRoleModel(object):
                                                                         os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_write_from_bucket_to_bucket_with_read_permission(self):
@@ -134,7 +134,7 @@ class TestCpWithRoleModel(object):
                                                                         os.path.join(case, self.test_file)),
                                                 self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_upload_file_with_write_permission(self):
@@ -148,7 +148,7 @@ class TestCpWithRoleModel(object):
                                                               os.path.join(case, self.test_file)),
                                       self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_write_from_bucket_to_bucket_with_write_permission(self):
@@ -163,4 +163,4 @@ class TestCpWithRoleModel(object):
                                                               os.path.join(case, self.test_file)),
                                       self.epam_test_case)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))

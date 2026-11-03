@@ -52,7 +52,7 @@ class CmdExecutor:
 
     def execute(self, command):
         process = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                                   universal_newlines=True)
+                                   universal_newlines=True, errors='replace')
         out, err = process.communicate()
         exit_code = process.wait()
         if exit_code != 0:

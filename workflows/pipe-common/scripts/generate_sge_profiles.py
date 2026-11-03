@@ -130,7 +130,7 @@ def _enhance_secondary_profiles(common_profile, profiles):
                 profile['CP_CAP_SGE_QUEUE_NAME'] = '{}.q'.format(os.environ['instance_size'])
         if 'CP_CAP_AUTOSCALE' not in profile:
             profile['CP_CAP_AUTOSCALE'] = 'false'
-    profile_indexes = profiles.keys()
+    profile_indexes = list(profiles.keys())
     profile_queues = [profiles[index]['CP_CAP_SGE_QUEUE_NAME'] for index in profile_indexes]
     unique_profile_queues = suffix_non_unique(profile_queues, suffix_func=_append_suffix)
     for profile_index, profile in profiles.items():

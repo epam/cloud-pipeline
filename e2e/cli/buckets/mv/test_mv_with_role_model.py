@@ -64,7 +64,7 @@ class TestMvWithRoleModel(object):
                 self.output_folder + self.test_file), self.epam_test_case)
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=1)
     def test_upload_file_without_permission(self):
@@ -80,7 +80,7 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(None, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_move_between_buckets_without_permission(self):
@@ -98,7 +98,7 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_download_from_bucket_with_read_permission(self):
@@ -115,7 +115,7 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_upload_file_with_read_permission(self):
@@ -131,7 +131,7 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(None, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=2)
     def test_write_from_bucket_to_bucket_with_read_permission(self):
@@ -148,7 +148,7 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=3)
     def test_write_from_bucket_to_bucket_with_write_read_permission(self):
@@ -168,7 +168,7 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(self.bucket_name, self.test_file)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=4)
     def test_upload_file_with_write_permission(self):
@@ -185,7 +185,7 @@ class TestMvWithRoleModel(object):
                                       self.epam_test_case)
             assert_files_deleted(None, source)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=5)
     def test_write_from_bucket_to_bucket_with_write_permission(self):
@@ -206,7 +206,7 @@ class TestMvWithRoleModel(object):
                                       self.epam_test_case)
             assert_files_deleted(self.bucket_name, key)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))
 
     @pytest.mark.run(order=6)
     def test_write_from_bucket_to_bucket_with_read_write_permission(self):
@@ -226,4 +226,4 @@ class TestMvWithRoleModel(object):
                                                 self.epam_test_case)
             assert_files_skipped(self.bucket_name, key)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case, str(e)))

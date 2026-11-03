@@ -68,7 +68,7 @@ class TestRmFileFolder(object):
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path))
             assert not object_exists(self.bucket_name, path), "Failed to delete s3 file object {}".format(path)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_file, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_file, str(e)))
 
     test_rm_folder_without_recursive = [
         os.path.join(resources_root, TestFiles.TEST_FOLDER)[:-1],
@@ -84,7 +84,7 @@ class TestRmFileFolder(object):
             error_text = pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path), expected_status=1)[1]
             assert_error_message_is_present(error_text, 'Flag --recursive (-r) is required to remove folders.')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_folder, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_folder, str(e)))
 
     test_rm_folder = [
         os.path.join(resources_root, TestFiles.TEST_FOLDER),
@@ -98,7 +98,7 @@ class TestRmFileFolder(object):
             pipe_storage_rm("cp://{}/{}".format(self.bucket_name, path), recursive=True, expected_status=0)
             assert not folder_exists(self.bucket_name, path), "Failed to delete s3 folder {}".format(path)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_folder, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_folder, str(e)))
 
     test_rm_root = [
         (bucket_name, True),
@@ -114,7 +114,7 @@ class TestRmFileFolder(object):
             error = pipe_storage_rm("cp://{}".format(path), recursive=recursive, expected_status=1)[1]
             assert_error_message_is_present(error, "Cannot remove root folder 'cp://{}'".format(path))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_root, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_root, str(e)))
 
     test_rm_not_existing = [
         "file_does_not_exists.txt",
@@ -129,7 +129,7 @@ class TestRmFileFolder(object):
             assert_error_message_is_present(error,
                                             'Storage path "cp://{}/{}" was not found'.format(self.bucket_name, path))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_not_existing_item, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_not_existing_item, str(e)))
 
     @pytest.mark.run(order=5)
     @pytest.mark.parametrize("path", test_rm_not_existing)
@@ -139,7 +139,7 @@ class TestRmFileFolder(object):
             assert_error_message_is_present(error,
                                             'Storage path "cp://{}/{}" was not found'.format(self.empty_bucket_name, path))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_from_non_existing_bucket, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_from_non_existing_bucket, str(e)))
 
     test_rm_not_existing = [
         "file_does_not_exists.txt",
@@ -155,7 +155,7 @@ class TestRmFileFolder(object):
             assert_error_message_is_present(error, "Error: data storage with id: '{}/{}' was not found."
                                             .format(bucket_name, path))
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_from_non_existing_bucket, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_from_non_existing_bucket, str(e)))
 
     @pytest.mark.run(order=5)
     def test_remove_from_wrong_scheme(self):
@@ -163,7 +163,7 @@ class TestRmFileFolder(object):
             error = pipe_storage_rm("s4://{}/test.txt".format(self.bucket_name), expected_status=1)[1]
             assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_wrong_scheme, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_wrong_scheme, str(e)))
 
     @pytest.mark.run(order=5)
     def test_remove_with_confirmation(self):
@@ -180,7 +180,7 @@ class TestRmFileFolder(object):
             aws_output = []
             compare_listing(pipe_output, aws_output, 0)
         except AssertionError as e:
-            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_with_confirmation, e.message))
+            pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_with_confirmation, str(e)))
 
     @pytest.mark.run(order=5)
     def test_remove_folder_with_same_name_as_file(self):
@@ -195,7 +195,7 @@ class TestRmFileFolder(object):
             assert object_exists(self.bucket_name, "%s/%s" % (case, self.file_in_root))
             assert not object_exists(self.bucket_name, "%s/%s/%s" % (case, self.file_in_root, self.file_in_root))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))
 
     @pytest.mark.run(order=5)
     def test_remove_file_with_same_name_as_folder(self):
@@ -210,4 +210,4 @@ class TestRmFileFolder(object):
             assert not object_exists(self.bucket_name, "%s/%s" % (case, self.file_in_root))
             assert object_exists(self.bucket_name, "%s/%s/%s" % (case, self.file_in_root, self.file_in_root))
         except BaseException as e:
-            pytest.fail("Test case {} failed. {}".format(case, e.message))
+            pytest.fail("Test case {} failed. {}".format(case, str(e)))

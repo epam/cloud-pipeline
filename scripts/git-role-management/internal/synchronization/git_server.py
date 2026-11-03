@@ -755,4 +755,5 @@ class GitServer(object):
             encoding=serialization.Encoding.OpenSSH,
             format=serialization.PublicFormat.OpenSSH
         )
-        return private_key, public_key
+        # The keys go to JSON request bodies (GitLab, the platform metadata), which take text, not bytes
+        return private_key.decode('utf-8'), public_key.decode('utf-8')

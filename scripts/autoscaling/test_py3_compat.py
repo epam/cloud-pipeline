@@ -22,6 +22,7 @@
 # which workflows/pipe-common's own imports pull in transitively. Install into an isolated virtualenv,
 # never the interpreter running the rest of the toolchain.
 
+import base64
 import os
 import re
 import sys
@@ -258,6 +259,15 @@ class AzureNodeupTagsTest(unittest.TestCase):
         with mock.patch.object(azure_nodeup, 'load_cloud_config', return_value=(None, {'a': '1', 'b': '2'})):
             tags = azure_nodeup.resource_tags()
         self.assertEqual(tags, {'a': '1', 'b': '2'})
+
+
+class AzureNodeupCustomDataTest(unittest.TestCase):
+    # Regression test: base64.b64encode() takes bytes on Python 3, and the user data script is a str.
+    def test_os_profile_custom_data_is_the_base64_text_of_the_script(self):
+        azure_nodeup = load_azure_module('azure_nodeup_custom_data_test', 'azure/nodeup.py')
+        profile = azure_nodeup.get_os_profile('instance', 'ssh-rsa AAAA', 'pipeline', '#!/bin/bash\necho ok\n',
+                                              'computer_name')
+        self.assertEqual(base64.b64encode(b'#!/bin/bash\necho ok\n').decode('utf-8'), profile['custom_data'])
 
 
 class AzureClusterScriptsImportTest(unittest.TestCase):

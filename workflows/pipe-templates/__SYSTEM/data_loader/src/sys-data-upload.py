@@ -85,7 +85,7 @@ if __name__ == '__main__':
     metadata_entities = []
     file_name_format_column = None
     if 'METADATA_ENTITIES' in os.environ:
-        metadata_entities = map(lambda e: e.strip(), os.environ['METADATA_ENTITIES'].split(','))
+        metadata_entities = list(map(lambda e: e.strip(), os.environ['METADATA_ENTITIES'].split(',')))
     if metadata_columns_str is None:
             metadata_columns_str = ''
     if 'FILE_NAME_FORMAT_COLUMN' in os.environ:
@@ -121,19 +121,19 @@ if __name__ == '__main__':
         if el.data is not None:
             for column in metadata_columns:
                 if column in el.data and 'value' in el.data[column]:
-                    value = el.data[column]['value'].encode("utf-8")
+                    value = el.data[column]['value']
                     if not value.lower().startswith('http://') and not value.lower().startswith('https://') and not value.lower().startswith('ftp://'):
                         Logger.info('Skipping {} ({}, #{}) - not http, https or ftp source'.format(
-                                                el.data[column]['value'].encode("utf-8"),column,el.external_id),
+                                                el.data[column]['value'],column,el.external_id),
                                     task_name=METADATA_TASK_NAME)
                         continue
                     column_type = el.data[column]['type']
                     file_name_format = None
                     if file_name_format_column is not None and file_name_format_column in el.data and 'value' in el.data[file_name_format_column]:
-                        file_name_format = el.data[file_name_format_column]['value'].encode("utf-8") + '_{}' if not create_folders_for_columns else el.data[file_name_format_column]['value'].encode("utf-8")
+                        file_name_format = el.data[file_name_format_column]['value'] + '_{}' if not create_folders_for_columns else el.data[file_name_format_column]['value']
                     metadata_columns_values[column].append((el.external_id, el.id, value, column_type, file_name_format))
                     Logger.info('{} ({}, #{})'.format(
-                                    el.data[column]['value'].encode("utf-8"),
+                                    el.data[column]['value'],
                                     column,
                                     el.external_id
                                 ), task_name=METADATA_TASK_NAME)

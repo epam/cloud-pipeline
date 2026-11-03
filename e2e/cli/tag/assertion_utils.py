@@ -138,7 +138,7 @@ def parse_output_table(get_result):
     get_result.pop(0)  # skip header
     result_tags = list()
     for item in get_result:
-        splitted = filter(None, item.replace(" ", "").split("|"))
+        splitted = [_f for _f in item.replace(" ", "").split("|") if _f]
         if not str(splitted[0]).startswith("+"):
             result_tags.append((splitted[0], splitted[1], splitted[2]))
     return result_tags

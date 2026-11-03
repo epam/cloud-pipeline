@@ -57,14 +57,14 @@ def assert_copied_object_info(source, destination, case):
             "Last modified time of destination file must be more than last modified time for source file.\n" \
             "Expected {}\nActual {}".format(source.last_modified, destination.last_modified)
     except AssertionError as e:
-        pytest.fail("The test case {} failed.\n{}".format(case, e.message))
+        pytest.fail("The test case {} failed.\n{}".format(case, str(e)))
 
 
 def assert_copied_object_does_not_exist(destination, case):
     try:
         assert not destination.exists, "Object {} exists.".format(destination.path)
     except AssertionError as e:
-        pytest.fail("The test case {} failed.\n{}".format(case, e.message))
+        pytest.fail("The test case {} failed.\n{}".format(case, str(e)))
 
 
 def create_file_on_bucket(bucket_name, key, source):

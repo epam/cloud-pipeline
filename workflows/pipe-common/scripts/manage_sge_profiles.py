@@ -427,7 +427,8 @@ done
 
     def _compare_file(self, before_path, after_path):
         try:
-            return subprocess.check_output(['diff', before_path, after_path], stderr=subprocess.STDOUT)
+            return subprocess.check_output(['diff', before_path, after_path], stderr=subprocess.STDOUT,
+                                           universal_newlines=True)
         except subprocess.CalledProcessError as e:
             return e.output
 

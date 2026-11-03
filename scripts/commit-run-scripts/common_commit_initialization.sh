@@ -93,6 +93,25 @@ configure_pip() {
     echo "Using pypi repository $CP_REPO_PYPI3_BASE_URL_DEFAULT ($CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT)..."
 }
 
+# This runs on the node host, not in the run's container. The node images built by deploy/infra/aws have the platform's
+# Python 3.12 in /usr/local/python3.12; on other hosts it is installed there, as a run does in its container.
+install_python() {
+    export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
+    if [ ! -x "$CP_PYTHON_PATH" ]; then
+        local _python3_distro_url="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL:-https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/}tools/python/3/python3.12.tar.gz"}"
+        echo "Python 3.12 is not found, installing it from $_python3_distro_url"
+        rm -rf /usr/local/python3.12
+        { wget -q --no-check-certificate "$_python3_distro_url" -O /tmp/cp-python3.12.tgz \
+            || curl -s -k -f "$_python3_distro_url" -o /tmp/cp-python3.12.tgz; } \
+            && tar -xzf /tmp/cp-python3.12.tgz -C /usr/local
+        rm -f /tmp/cp-python3.12.tgz
+    fi
+    if [ ! -x "$CP_PYTHON_PATH" ]; then
+        echo "[ERROR] Python 3.12 is not found and cannot be installed. Exiting"
+        exit 1
+    fi
+}
+
 install_pip() {
     $CP_PYTHON_PATH -m pip --version
     if [[ "$?" -ne 0 ]]; then
