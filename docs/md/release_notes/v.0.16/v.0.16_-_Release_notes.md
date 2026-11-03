@@ -586,10 +586,10 @@ The platform no longer uses Python 2. Its Python code runs on Python 3.12, both 
 
 In a run:
 
-- When the run starts, it installs the platform's Python 3.12 distribution into `/usr/local/python3.12`. Python 2 (Miniconda2) is no longer installed. The distribution is downloaded from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL` (by default, the public Cloud Pipeline bucket). The new `CP_PYTHON3_DISTRO_URL` parameter sets another location. If the download fails, the run uses a `python3.12` that the tool image has in `PATH`. If the image has none, the run fails at startup.
+- When the run starts, it installs the platform's Python 3.12 distribution into `/usr/local/python3.12`. Python 2 (Miniconda2) is no longer installed. The distribution is downloaded from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL` (by default, the public Cloud Pipeline bucket). The new `CP_PYTHON3_DISTRO_URL` parameter sets another location. If the download fails, the run keeps the `/usr/local/python3.12` of the tool image (e.g. of a committed run) or uses a `python3.12` that the image has in `PATH`. If the image has neither, the run fails at startup.
 - `CP_PYTHON_PATH` points to this Python 3.12. The `pipeline` package (`pipe-common`), the FS Browser and the platform's scripts run with it. They require Python 3.10 or later.
 - The run links `/usr/local/bin/python3` and `/usr/local/bin/pip3` to this Python 3.12. So in a run, `python3` is the platform's Python 3.12, unless the tool image puts another `python3` before `/usr/local/bin` in `PATH` (e.g. `/opt/conda/bin`). This also applies to the images that keep their own Python in `/usr/local/bin`, e.g. the `python` images from Docker Hub. To use the Python of the image, call it by its full path (e.g. `/usr/bin/python3`) or by its version (e.g. `python3.11`). The run does not link `python`: to call the platform's Python 3.12, use `$CP_PYTHON_PATH`.
-- The run removes `/usr/local/python3.12` and `/usr/local/openssl` of the tool image, if it has them, before it installs its own.
+- The run replaces `/usr/local/python3.12` and `/usr/local/openssl` of the tool image, if it has them, with its own.
 - `CP_PYTHON2_PATH` is no longer set. A script that calls `$CP_PYTHON2_PATH` must use `$CP_PYTHON_PATH`, and must run on Python 3.
 - The `CP_CAP_INSTALL_PRIVATE_DEPS` and `CP_CONDA_DISTRO_URL` parameters no longer have an effect.
 - The **Python** and **Luigi** pipeline templates run their scripts with `$CP_PYTHON_PATH` instead of `python`.
@@ -604,7 +604,7 @@ The Python 3.12 distribution is built for `glibc` 2.17, and some of its modules 
 
 For more details see [Image requirements](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#image-requirements).
 
-Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. The AWS node images that the installer builds have it already. On node hosts with `glibc` older than 2.26, e.g. CentOS 7 (the default base of the Azure node image), the `pipeline` package cannot be installed, so committing and pausing a run do not work.
+Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. The AWS node images that the installer of this version builds have it already. On node hosts with `glibc` older than 2.26, e.g. CentOS 7 (the default base of the Azure node image), the `pipeline` package cannot be installed, so committing and pausing a run do not work.
 
 In the platform services:
 
