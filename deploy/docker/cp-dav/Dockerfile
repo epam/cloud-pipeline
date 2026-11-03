@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7
+FROM rockylinux/rockylinux:9.8
 
 # Setup httpd
-RUN yum update -y && \
-    yum install -y  gettext \
+# procps-ng provides the "sysctl" that init calls and the "ps" that nfs-watcher.sh calls
+RUN dnf update -y && \
+    dnf install -y  gettext \
                     wget \
                     expat-devel \
                     make \
@@ -25,7 +26,10 @@ RUN yum update -y && \
                     zlib-devel \
                     libcurl-devel \
                     libxml2-devel \
-                    openssl-devel
+                    openssl-devel \
+                    procps-ng && \
+    dnf clean all
+
 ARG APACHE_BUILD_DIR=/opt/httpd-build
 ARG APACHE_VERSION=2.4.41
 ARG APR_VERSION=1.7.0
@@ -37,7 +41,7 @@ ENV CFLAGS="-DBIG_SECURITY_HOLE -O2"
 COPY httpd/conf /tmp/
 COPY httpd/modules.shared ${APACHE_BUILD_DIR}/
 COPY httpd/modules.static ${APACHE_BUILD_DIR}/
-RUN rpm -Uvh https://packages.microsoft.com/config/rhel/7/packages-microsoft-prod.rpm
+RUN rpm -Uvh https://packages.microsoft.com/config/rhel/9/packages-microsoft-prod.rpm
 RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     modules_static="$(echo $(cat ${APACHE_BUILD_DIR}/modules.static))" && \
     mkdir -p ${APACHE_BUILD_DIR} && \
@@ -55,6 +59,9 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     mv apr-${APR_VERSION} ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION}/srclib/apr && \
     mv apr-util-${APR_UTIL_VERSION} ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION}/srclib/apr-util && \
     cd ${APACHE_BUILD_DIR}/httpd-${APACHE_VERSION} && \
+    # OpenSSL 3 removed ERR_GET_FUNC (its function codes are always 0): without this, mod_ssl.so keeps an
+    # undefined ERR_GET_FUNC symbol and httpd fails to load it
+    sed -i 's/ERR_GET_FUNC(ERR_peek_last_error())/0/' modules/ssl/ssl_engine_init.c && \
     ./configure --prefix=${APACHE_HOME} \
                 --with-included-apr \
                 --with-included-apr-util \
@@ -66,18 +73,43 @@ RUN modules_shared="$(echo $(cat ${APACHE_BUILD_DIR}/modules.shared))" && \
     rm -rf ${APACHE_BUILD_DIR}
 
 # Setup nfs sync
-RUN yum install -y cronie \
+# blobfuse (v1) has no el9 package, the Microsoft rhel/9 repo has only blobfuse2 (it pulls in fuse3):
+# syncmounts.sh mounts the Azure storages with its v1-compatible "blobfuse2 mountv1"
+RUN dnf install -y cronie \
                    nfs-utils \
                    cifs-utils \
-                   python blobfuse fuse
-ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+                   blobfuse2 fuse
+
+# Rocky 9's pam_unix checks an account through its unix_chkpwd helper. Where the host's AppArmor has the
+# unix-chkpwd profile (Ubuntu 24.04 has it), the helper cannot read /etc/shadow and crond refuses to run
+# root's jobs. Let root pass the account check of crond
+RUN sed -i '/^account\s\+include\s\+system-auth/i account    sufficient pam_succeed_if.so uid = 0 quiet' /etc/pam.d/crond && \
+    grep -q pam_succeed_if /etc/pam.d/crond
+
+# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as a job container does
+# (scripts/pipeline-launch/launch.sh). It is built for the /opt/conda prefix. Link it as python/python2/pip.
+# The cron jobs run with the PATH of crond (/usr/bin:/bin): sync-nfs.sh sources env.sh, which has /usr/local/bin,
+# but nfs-watcher.sh does not, so "python" is linked into /usr/bin as well, where CentOS 7 had it.
+# /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
+    tar -xzf python2.tgz -C /opt/ && \
+    rm -f python2.tgz && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
+    ln -sf /opt/conda/bin/python2 /usr/bin/python && \
+    ln -sf /opt/conda/bin/pip /usr/local/bin/pip
+
+ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+# yum-utils provides package-cleanup
 RUN cd /tmp && \
-    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    dnf install -y yum-utils && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
-    yum install -y lustre-client/*.rpm && \
+    dnf install -y lustre-client/*.rpm && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 

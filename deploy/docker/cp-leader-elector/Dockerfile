@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +13,25 @@
 # limitations under the License.
 
 
-FROM centos:7
+FROM rockylinux/rockylinux:9.8
 
-
-RUN yum update -y && \
-    yum install -y \
+RUN dnf update -y && \
+    dnf install -y \
                 python3 \
-                curl
+                python3-pip && \
+    dnf clean all
 
-RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python3 - && \
-     pip3 install -I  \
+# Flask 1.1.2 does not cap its dependencies, and fails on import with their current versions:
+# pin the ones that pip resolved on CentOS 7 (Python 3.6)
+RUN  pip3 install -I  \
                 rsa==4.0 \
                 pykube==0.15.0 \
-                flask==1.1.2
+                flask==1.1.2 \
+                jinja2==3.0.3 \
+                markupsafe==2.0.1 \
+                werkzeug==2.0.3 \
+                itsdangerous==2.0.1 \
+                click==8.0.4
 
 RUN mkdir /elector
 

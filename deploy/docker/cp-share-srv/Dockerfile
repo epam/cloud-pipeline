@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,16 +16,15 @@
 #   -t lifescience/cloud-pipeline:share-srv-latest \
 #   --build-arg CP_API_DIST_URL="https://..."
 
-FROM centos:7
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
                 unzip \
-                openssl
+                openssl && \
+    dnf clean all
 
 
 # SHARE distribution

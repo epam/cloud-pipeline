@@ -17,3 +17,6 @@ filebeat:
 processors:
   - drop_fields:
       fields: ["log", "offset", "beat", "agent", "log.offset", "esc" ]
+
+# The seccomp policy of filebeat 6.8 does not allow clone3, which glibc 2.34+ (Rocky Linux 9) uses to start threads
+seccomp.enabled: false

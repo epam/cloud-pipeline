@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM rockylinux/rockylinux:9.8
 
 # 1. TinyProxy (HTTP proxy)
-RUN yum install wget \
+RUN dnf install wget \
                 gcc \
                 make -y
 
@@ -31,9 +31,8 @@ RUN mkdir -p /opt/tinyproxy && \
     make install
 
 # 2. NGINX (TCP/UDP forward proxy)
-RUN yum install -y epel-release
 # Since 1.20 we shall install "stream" explicitly
-RUN yum install -y nginx nginx-mod-stream
+RUN dnf install -y nginx nginx-mod-stream
 
 ADD init /init
 RUN chmod +x /init

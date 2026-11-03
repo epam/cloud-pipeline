@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,14 +18,13 @@
 #   --build-arg OPENSSL_DIST_URL="https://..." \
 #   --build-arg OSSLSIGNCODE_DIST_URL="https://..."
 
-FROM centos:7
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+# libxcrypt-compat provides libcrypt.so.1, which the Python 2 psycopg2 wheel and the "crypt" module link
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
                 zip \
                 unzip \
                 openssl \
@@ -35,23 +34,25 @@ RUN yum install -y \
                 samba \
                 samba-client \
                 cifs-utils \
-                gettext
+                gettext \
+                libxcrypt-compat
 
-ARG LUSTRE_VERSION="2.12.5-1.el7.x86_64"
+ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+# yum-utils provides package-cleanup
 RUN cd /tmp && \
-    yum install nfs-utils cifs-utils -y && \
-    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.12.5-1.el7.x86_64.tar.gz -O lustre-client.tar.gz && \
+    dnf install nfs-utils cifs-utils yum-utils -y && \
+    wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz && \
     mkdir -p lustre-client && \
     tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
     rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
-    yum install -y lustre-client/*.rpm && \
+    dnf install -y lustre-client/*.rpm && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 
 # Prebuild version of openssl v1.1.x which is required by osslsigncode.
 # As long as its compatibility is proven for osslsigncode tool only
-# openssl v1.0.x installed with package manager will be used by default.
+# openssl v3.x installed with package manager will be used by default.
 ARG OPENSSL_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/openssl/openssl-1.1.1c.tar.gz"
 RUN wget $OPENSSL_DIST_URL -O openssl.tgz && \
     tar -xzf openssl.tgz -C /opt/ && \
@@ -61,6 +62,17 @@ ARG OSSLSIGNCODE_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/to
 RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
+
+# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as a job container does
+# (scripts/pipeline-launch/launch.sh). It is built for the /opt/conda prefix. Link it as the python/python2/pip
+# that the steps below and init-git-sync find; /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
+RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
+    tar -xzf python2.tgz -C /opt/ && \
+    rm -f python2.tgz && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
+    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
+    ln -sf /opt/conda/bin/pip /usr/local/bin/pip
 
 RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
     pip install -I  requests==2.21.0 \

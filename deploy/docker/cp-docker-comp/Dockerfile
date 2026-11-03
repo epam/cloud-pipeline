@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-RUN yum install -y \
+RUN dnf install -y \
                 wget \
-                curl \
                 java-1.8.0-openjdk \
-                python \
                 unzip
 
 # API distribution
