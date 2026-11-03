@@ -178,7 +178,8 @@ Every image checks the version of the data it starts on, and stops when a requir
 * A Cloud Pipeline build that has the GitLab 19 support, deployed to the `api` before the freeze (see the checks).
   The Git users synchronization (`cp-git-sync`) runs from the `api-srv` image, so it gets the support with it.
 * The `git-19-<version>` image of the same build in the registry of the deployment, under the same prefix as the
-  current `cp-git` image (`<registry prefix>:git-<version>`).
+  current `cp-git` image (`<registry prefix>:git-<version>`, or `<registry prefix>:git-9-<version>` once a build with
+  the GitLab 19 support has deployed `cp-git`).
 * The `cp-bkp-worker-<version>` image of the same build, for the backup workers. An older worker image is based on
   CentOS 7: it cannot run the `pipe` of this build, and has no backup script for `cp-gitlab-db`.
 
@@ -415,7 +416,8 @@ DB_CTYPE=$(api_db_sql -c "SELECT datctype FROM pg_database WHERE datname = '$DB_
 export DB_COLLATE DB_CTYPE
 ```
 
-* The image of `cp-git` is `<registry prefix>:git-<version>`. Note the `<registry prefix>`: the GitLab 19 image is
+* The image of `cp-git` is `<registry prefix>:git-<version>`, or `<registry prefix>:git-9-<version>` once a build with
+  the GitLab 19 support has deployed `cp-git`. Note the `<registry prefix>`: the GitLab 19 image is
   `<registry prefix>:git-19-<version>`.
 * Each GitLab image is 0.5 GB (9.5) to 1.9 GB to download, and up to 5.5 GB on disk. The Docker disk needs room for two stop
   images at a time.
@@ -489,14 +491,14 @@ docker pull <registry prefix>:git-19-<version>
 docker run --rm --entrypoint cat <registry prefix>:git-19-<version> /opt/gitlab/embedded/service/gitlab-rails/VERSION; echo
 ```
 
-Find the latest minor of each PostgreSQL major with the command below. At the time of writing they were 9.6.24,
-11.16, 12.22, 14.24, 16.15 and 17.11. Docker Hub has no later 11.x image than 11.16. Use 14.14 or later, and 16.5 or
-later. Use the same tags in the rehearsal and in the real run.
+Use the latest minor of each PostgreSQL major. At the time of writing they were 9.6.24, 11.22, 12.22, 14.24, 16.15
+and 17.11. The latest 11.x images have only tags with the Debian release, so the tag for 11 is `11.22-bookworm`: the
+plain `11.x` tags end at 11.16. Use 14.14 or later, and 16.5 or later. Check that each tag exists on Docker Hub: every
+line must end with `200`. Use the same tags in the rehearsal and in the real run.
 
 ```bash
-for m in 9.6 11 12 14 16 17; do
-  curl -s "https://hub.docker.com/v2/repositories/library/postgres/tags?page_size=100&name=$m." |
-      grep -o "\"name\":\"$m\.[0-9]*\"" | cut -d'"' -f4 | sort -V | tail -1
+for t in 9.6.24 11.22-bookworm 12.22 14.24 16.15 17.11; do
+  echo "$t $(curl -s -o /dev/null -w '%{http_code}' "https://hub.docker.com/v2/repositories/library/postgres/tags/$t")"
 done
 ```
 
@@ -904,7 +906,7 @@ Set the versions, the stop and its backup label, then stop the database and star
 directory. The first upgrade, for example:
 
 ```bash
-OLD=9.6 NEW_TAG=11.16 STOP=12.10.14 LABEL=08-12.10.14
+OLD=9.6 NEW_TAG=11.22-bookworm STOP=12.10.14 LABEL=08-12.10.14
 db_stop
 mv /opt/gitlab-postgresql/data "/opt/gitlab-postgresql/data-pg$OLD"
 mkdir /opt/gitlab-postgresql/data

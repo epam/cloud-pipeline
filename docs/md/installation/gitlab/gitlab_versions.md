@@ -11,7 +11,8 @@
 | `9` (the default) | 9.4.0 | in `cp-api-db`, the PostgreSQL 9.6 server of the API. `GITLAB_DATABASE_VERSION` is not used |
 | `19` | 19.5.3 | in `cp-gitlab-db`, on `GITLAB_DATABASE_VERSION`: `17` (the default), or a `17.x` tag |
 
-`19` is the latest GitLab version the platform supports.
+`19` is the latest GitLab version the platform supports. `pipectl` stops with an error on any other value. An install
+config without `CP_GITLAB_VERSION`, from an earlier version of the platform, gets `9`.
 
 For `19`, `pipectl` prints a warning and goes on if `GITLAB_DATABASE_VERSION` is not a PostgreSQL 17 tag, and the
 install may fail. The `17` tag gives the latest PostgreSQL 17 release at the time the node first pulls the image. To
@@ -42,7 +43,7 @@ Kubernetes master by default. Its data is in `/opt/gitlab-postgresql/data` of th
 When `CP_GITLAB_VERSION` is `19`, the installer also does the following.
 
 * **It deploys `cp-gitlab-db`**, with its backup worker `cp-bkp-worker-cp-gitlab-db`, which dumps the GitLab database
-  with `pg_dump` and copies the dump to the backup storages. For `9`, `cp-gitlab-db` is not deployed.
+  with `pg_dump` and copies the dump to the system storage, as the other backup workers do. For `9`, `cp-gitlab-db` is not deployed.
 
 * **It generates the GitLab `root` password**, if `GITLAB_ROOT_PASSWORD` has its default value `Passw0rd`. GitLab
   rejects that password as too weak. The installer writes the new password to `GITLAB_ROOT_PASSWORD` in the install
