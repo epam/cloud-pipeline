@@ -19,13 +19,17 @@ package com.epam.pipeline.entity.git;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 public class GitPushCommitEntry {
+    private static final String DEFAULT_BRANCH = "master";
+
     @JsonProperty("branch_name")
+    private String branchName;
     private String branch;
     @JsonProperty("commit_message")
     private String commitMessage;
@@ -37,8 +41,18 @@ public class GitPushCommitEntry {
     private String authorName;
     private List<GitPushCommitActionEntry> actions;
 
+    public void setBranch(final String branch) {
+        this.branch = branch;
+        this.branchName = branch;
+    }
+
+    public String getBranch() {
+        return StringUtils.isBlank(branchName) ? branch : branchName;
+    }
+
     public GitPushCommitEntry() {
-        this.branch = "master";
+        this.branch = DEFAULT_BRANCH;
+        this.branchName = DEFAULT_BRANCH;
         this.actions = new ArrayList<>();
     }
 }
