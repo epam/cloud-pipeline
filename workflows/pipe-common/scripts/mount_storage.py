@@ -187,7 +187,7 @@ class MountStorageTask:
                             available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
                     Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
                 except Exception as limited_storages_ex:
-                    Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
+                    Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex)), task_name=self.task_name)
 
             if not available_storages_with_mounts:
                 Logger.success('No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none', task_name=self.task_name)
@@ -231,11 +231,11 @@ class MountStorageTask:
                     mnt.mount(mount_root, self.task_name)
                 except RuntimeError as e:
                     Logger.warn(
-                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e.message),
+                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, str(e)),
                         task_name=self.task_name)
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
-            Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
+            Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
 
 
 class StorageMounter:

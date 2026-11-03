@@ -32,9 +32,11 @@ def execute(command, logger=None):
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
     if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable,
+                             universal_newlines=True)
     else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             universal_newlines=True)
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)
@@ -45,9 +47,11 @@ def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=
 
 def execute_cmd_command(command, silent=False, executable=None):
     if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable,
+                             universal_newlines=True)
     else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             universal_newlines=True)
     for line in p.stderr.readlines():
         if not silent:
             print(line)
@@ -59,9 +63,11 @@ def execute_cmd_command(command, silent=False, executable=None):
 
 def get_cmd_command_output(command, executable=None):
     if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable,
+                             universal_newlines=True)
     else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             universal_newlines=True)
     output, error = p.communicate()
     exit_code = p.returncode
     if error: print(error)
@@ -84,7 +90,7 @@ def pack_script_contents(script_contents, embedded_scripts=None):
         compressed.addfile(*_tarfile('init.sh', script_contents))
         for name, contents in embedded_scripts.items():
             compressed.addfile(*_tarfile(name, contents))
-    b64_contents = base64.b64encode(compressed_stream.getvalue())
+    b64_contents = base64.b64encode(compressed_stream.getvalue()).decode('utf-8')
 
     packed_template = """#!/bin/bash
 o=$(mktemp -d)

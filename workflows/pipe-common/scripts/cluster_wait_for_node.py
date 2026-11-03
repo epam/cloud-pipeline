@@ -62,7 +62,7 @@ class WaitForNode(Task):
             Logger.success('Attached to node (run id {})'.format(master.name), task_name=self.task_name)
             return master
         except Exception as e:
-            self.fail_task(e.message)
+            self.fail_task(str(e))
 
     def get_node_info(self, task_name, run_id, parameters=None):
         if not parameters:
@@ -149,7 +149,7 @@ def main():
         print(node.name + " " + node.ip)
         exit(0)
     except Exception as e:
-        Logger.warn(e.message)
+        Logger.warn(str(e))
         status = StatusEntry(TaskStatus.FAILURE)
     if status.status == TaskStatus.FAILURE:
         raise RuntimeError('Failed to setup cluster')

@@ -14,6 +14,7 @@
 
 import os
 import subprocess
+import sys
 
 _ENV_VAR_PLACEHOLDER = '${%s}'
 _ENV_VAR_PATTERN = r'\${(\w*|_)}'
@@ -26,7 +27,8 @@ def replace_all_system_variables_in_path(path):
 
     try:
         # Try to evaluate any expression in the path. E.g. for the complex: s3://bucket/$(date)/...
-        return subprocess.check_output('echo {}'.format(path), shell=True).strip()
+        result = subprocess.check_output('echo {}'.format(path), shell=True).strip()
+        return result.decode('utf-8') if sys.version_info[0] >= 3 else result
     except:
         # If it subprocess fails - try a simplier option with environment variables only
         # Note, that any unset variables won't be substituted with empty value, e.g.:

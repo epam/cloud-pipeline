@@ -35,10 +35,11 @@ _SSH_FILE_PATHS = ['id_rsa', 'id_rsa.pub', 'authorized_keys']
 def _get_run_shared_users_and_groups(api, run_id):
     run = api.load_run(run_id) or {}
     run_sids = run.get('runSids', [])
-    return reduce(
-        lambda (us, gs), sid: (us + [sid['name']], gs) if sid['isPrincipal'] else (us, gs + [sid['name']]),
-        run_sids,
-        ([], []))
+
+    def _split_by_principality(acc, sid):
+        return (acc[0] + [sid['name']], acc[1]) if sid['isPrincipal'] else (acc[0], acc[1] + [sid['name']])
+
+    return reduce(_split_by_principality, run_sids, ([], []))
 
 
 def _get_group_users(api, run_groups):

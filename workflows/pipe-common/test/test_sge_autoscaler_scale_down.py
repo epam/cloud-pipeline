@@ -126,7 +126,7 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
 
     for i in range(0, len(inactive_hosts) * 2):
         grid_engine.get_host_to_scale_down = MagicMock(return_value=inactive_hosts[i % 2])
-        print inactive_hosts[i % 2]
+        print(inactive_hosts[i % 2])
         autoscaler.scale()
 
     for inactive_host in inactive_hosts:

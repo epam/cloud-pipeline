@@ -206,7 +206,7 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 entries.append(command_pattern.format(url=url, cert=cert))
             return " && ".join(entries)
     return ""
@@ -332,7 +332,7 @@ def poll_instance(sock, timeout, ip, port):
     try:
         result = sock.connect_ex((ip, port))
     except Exception as e:
-        print e
+        print(e)
     sock.settimeout(None)
     return result
 
