@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Covers the Python 3.12 installation of scripts/pipeline-launch/launch.sh: where the distribution is downloaded from,
-# and what a failed download leaves behind. Runs the install_python3_packages function of launch.sh with bash and a
+# and what a failed download leaves behind (no temporary folder, and the Python the image already has). Runs the install_python3_packages function of launch.sh with bash and a
 # stub "wget" first on PATH. Needs bash and tar.
 
 import os
@@ -56,6 +56,7 @@ class LaunchPythonInstallTest(unittest.TestCase):
         for name in ('python3.12', 'pip3.12'):
             with open(os.path.join(python_bin, name), 'w') as f:
                 f.write('#!/bin/sh\n')
+            os.chmod(os.path.join(python_bin, name), 0o755)
         with tarfile.open(self.tarball, 'w:gz') as tar:
             tar.add(os.path.join(self.tmp, 'dist', 'python3.12'), arcname='python3.12')
 
@@ -90,6 +91,36 @@ class LaunchPythonInstallTest(unittest.TestCase):
         self.assertEqual(['https://dist.example.com/tools/python/3/python3.12.tar.gz'], self._downloaded_urls())
         self.assertEqual(os.path.join(self.install_path, 'python3.12', 'bin', 'python3.12'),
                          os.readlink(os.path.join(self.install_path, 'bin', 'python3')))
+
+    def _existing_install(self):
+        python_bin = os.path.join(self.install_path, 'python3.12', 'bin')
+        os.makedirs(python_bin)
+        with open(os.path.join(python_bin, 'python3.12'), 'w') as f:
+            f.write('#!/bin/sh\necho existing\n')
+        os.makedirs(os.path.join(self.install_path, 'openssl'))
+        os.symlink(os.path.join(python_bin, 'python3.12'), os.path.join(self.install_path, 'bin', 'python3'))
+
+    def test_a_failed_download_keeps_the_python_the_image_has(self):
+        # E.g. the image of a committed run: its /usr/local/python3.12 keeps working without the distribution
+        self._existing_install()
+        self._stub_wget(succeed=False)
+        out = self._install({'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/'})
+        self.assertIn('RC=1', out)
+        with open(os.path.join(self.install_path, 'python3.12', 'bin', 'python3.12')) as f:
+            self.assertIn('existing', f.read())
+        self.assertTrue(os.path.isdir(os.path.join(self.install_path, 'openssl')))
+        self.assertTrue(os.path.exists(os.path.join(self.install_path, 'bin', 'python3')))
+        self.assertEqual(['bin', 'openssl', 'python3.12'], sorted(os.listdir(self.install_path)))
+
+    def test_a_download_replaces_the_python_the_image_has(self):
+        self._existing_install()
+        self._stub_wget(succeed=True)
+        out = self._install({'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/'})
+        self.assertIn('RC=0', out)
+        with open(os.path.join(self.install_path, 'python3.12', 'bin', 'python3.12')) as f:
+            self.assertNotIn('existing', f.read())
+        self.assertFalse(os.path.exists(os.path.join(self.install_path, 'openssl')))
+        self.assertEqual(['bin', 'python3.12'], sorted(os.listdir(self.install_path)))
 
     def test_a_failed_download_reports_an_error_and_leaves_no_links(self):
         self._stub_wget(succeed=False)

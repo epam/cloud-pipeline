@@ -100,11 +100,23 @@ install_python() {
     if [ ! -x "$CP_PYTHON_PATH" ]; then
         local _python3_distro_url="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL:-https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/}tools/python/3/python3.12.tar.gz"}"
         echo "Python 3.12 is not found, installing it from $_python3_distro_url"
-        rm -rf /usr/local/python3.12
-        { wget -q --no-check-certificate "$_python3_distro_url" -O /tmp/cp-python3.12.tgz \
-            || curl -s -k -f "$_python3_distro_url" -o /tmp/cp-python3.12.tgz; } \
-            && tar -xzf /tmp/cp-python3.12.tgz -C /usr/local
-        rm -f /tmp/cp-python3.12.tgz
+        # Each commit or pause of the host's runs downloads into its own folder, and the distro is moved in place
+        # only when it is complete
+        local _python3_tmp_dir
+        _python3_tmp_dir="$(mktemp -d /usr/local/.cp-python3.XXXXXX)"
+        if [ -n "$_python3_tmp_dir" ] \
+                && { wget -q --no-check-certificate "$_python3_distro_url" -O "$_python3_tmp_dir/python3.tgz" \
+                     || curl -s -k -f "$_python3_distro_url" -o "$_python3_tmp_dir/python3.tgz"; } \
+                && tar -xzf "$_python3_tmp_dir/python3.tgz" -C "$_python3_tmp_dir" \
+                && [ -x "$_python3_tmp_dir/python3.12/bin/python3.12" ] \
+                && [ ! -x "$CP_PYTHON_PATH" ]; then
+            rm -rf /usr/local/python3.12 /usr/local/openssl
+            mv "$_python3_tmp_dir/python3.12" /usr/local/python3.12
+            if [ -d "$_python3_tmp_dir/openssl" ]; then
+                mv "$_python3_tmp_dir/openssl" /usr/local/openssl
+            fi
+        fi
+        [ -n "$_python3_tmp_dir" ] && rm -rf "$_python3_tmp_dir"
     fi
     if [ ! -x "$CP_PYTHON_PATH" ]; then
         echo "[ERROR] Python 3.12 is not found and cannot be installed. Exiting"

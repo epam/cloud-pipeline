@@ -656,18 +656,29 @@ function initialise_wrappers {
 # This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
 function install_python3_packages {
       local _install_path="$1"
-      local _tmp_install_dir="/tmp/"
-      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
+      # The distro is extracted next to its place and swapped in only when it is complete: a failed download keeps
+      # a Python 3.12 the image already has (e.g. a committed run)
+      local _tmp_install_dir
+      _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")" || {
+            echo "[WARN] Unable to create a temporary folder in ${_install_path} for the python3 distro"
+            return 1
+      }
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
       if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
-            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"; then
-            rm -f "${_tmp_install_dir}/python3.tgz"
+            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
+            || [ ! -x "${_tmp_install_dir}/python3.12/bin/python3.12" ]; then
+            rm -rf "${_tmp_install_dir}"
             echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL"
             return 1
       fi
-      rm -f "${_tmp_install_dir}/python3.tgz"
+      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"
+      if [ -d "${_tmp_install_dir}/openssl" ]; then
+            mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
+      fi
+      rm -rf "${_tmp_install_dir}"
 
       ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
       ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
@@ -838,7 +849,8 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
-# The location of the platform's tools distributions: the Python 3.12 distribution and the pypi3 mirror are taken from it
+# The location of the platform's tools distributions: the Python 3.12 distribution is taken from it, and so is the
+# pypi3 mirror, when it is a regional S3 bucket URL
 export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
 echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
 
