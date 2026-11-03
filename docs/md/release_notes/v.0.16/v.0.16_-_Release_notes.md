@@ -37,6 +37,7 @@
 - [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [`pipe` CLI dependency versions](#pipe-cli-dependency-versions)
 
 ***
 
@@ -693,6 +694,13 @@ Other fixes keep the platform working with the new GitLab versions:
 On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
 In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
 On a deployment that is updated, not installed anew, the parameter is offered in the list of system parameters only after an admin adds it to the **`launch.system.parameters`** preference. Until then, it can be set as a regular parameter of a run.
+
+## `pipe` CLI dependency versions
+
+The `pipe` CLI requires newer versions of several Python dependencies, as the earlier versions have published security advisories, e.g. `requests` 2.33.0, `cryptography` 50.0.0 and `PyJWT` 2.15.0 or later.  
+Because of that, the installation of `pipe` CLI from the source tarball (**Operation System** → **Source** in **Settings** → **CLI**) requires Python 3.10 or later. The Linux, Windows and macOS builds of `pipe` CLI include Python, so they need nothing installed.  
+On a deployment that is updated, not installed anew, the hint of the **Source** option still names Python 2 or Python 3 until an admin updates the **`ui.pipe.cli.install.template`** preference.  
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
 
 ***
 
