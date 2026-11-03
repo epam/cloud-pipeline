@@ -23,7 +23,9 @@ import urllib3
 from time import sleep
 import time
 from multiprocessing.pool import ThreadPool as Pool
+from datetime import timezone
 
+UTC = timezone.utc
 
 try:
         from pykube.config import KubeConfig
@@ -137,7 +139,7 @@ def call_api(method_url, data=None):
 
 def log_task_event(task_name, message, run_id, instance, status="RUNNING"):
         do_log("Log run log: " + message)
-        now = datetime.datetime.utcfromtimestamp(time.time()).strftime(DATE_FORMAT)
+        now = datetime.datetime.fromtimestamp(time.time(), UTC).strftime(DATE_FORMAT)
         date = now[0:len(now) - 3]
         log_entry = json.dumps({"runId": run_id,
                              "date": date,
@@ -602,7 +604,7 @@ def create_service_dns_record(service_spec, added_route):
                 create_dns_record(service_spec)
                 return added_route, True
         except ValueError as e:
-                do_log(e.message)
+                do_log(str(e))
                 return added_route, False
 
 def create_service_location(service_spec, added_route, service_url_dict):

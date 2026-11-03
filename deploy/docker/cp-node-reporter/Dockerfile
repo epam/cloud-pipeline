@@ -21,7 +21,7 @@ ENV CP_NODE_REPORTER_OOM_HOME="$CP_NODE_REPORTER_HOME/oom" \
     CP_NODE_REPORTER_STATS_HOME="$CP_NODE_REPORTER_HOME/stats" \
     CP_NODE_REPORTER_COMMON_HOME="$CP_NODE_REPORTER_HOME/common"
 
-ENV CP_PYTHON2_PATH=python
+ENV CP_PYTHON_PATH=python
 
 RUN mkdir -p "$CP_NODE_REPORTER_HOME" \
              "$CP_NODE_REPORTER_OOM_HOME" \
@@ -36,10 +36,8 @@ RUN dnf install -y unzip \
 RUN curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq && \
     chmod +x /usr/bin/jq
 
-# Python 3.9 (conda-forge, via micromamba). Its bin goes first on PATH, as /usr/local/bin was on python:3.9-slim,
-# so "python", "python3", "pip" and "gunicorn" are the env's. dnf keeps /usr/bin/python3.
-# setuptools stays below 60, as python:3.9-slim had: from 60 on, its distutils hack is on by default, and
-# pipe-common's "pip install -I" of setuptools 44.1.1 over it leaves "import setuptools" broken
+# Python 3.12 (conda-forge, via micromamba), the version pipe-common pins its dependencies for. Its bin goes first
+# on PATH, so "python", "python3", "pip" and "gunicorn" are the env's. dnf keeps /usr/bin/python3.
 ENV CP_NODE_REPORTER_PYTHON_HOME="/opt/local/mamba/envs/node-reporter"
 ENV PATH="$CP_NODE_REPORTER_PYTHON_HOME/bin:$PATH"
 
@@ -50,8 +48,7 @@ RUN mkdir -p /opt/local/mamba && \
         --prefix "$CP_NODE_REPORTER_PYTHON_HOME" \
         --root-prefix /opt/local/mamba \
         -c conda-forge \
-        python=3.9 \
-        "setuptools<60" && \
+        python=3.12 && \
     MAMBA_ROOT_PREFIX=/opt/local/mamba /opt/local/mamba/bin/micromamba clean -y --all
 
 # Install "pipeline/CommonRepo" python package

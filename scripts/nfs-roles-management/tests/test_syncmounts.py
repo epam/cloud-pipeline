@@ -16,8 +16,7 @@
 # Rocky Linux 9, which has no blobfuse 1 package, so the branch mounts with blobfuse2's v1-compatible
 # "blobfuse2 mountv1". The test runs the real script with stub "curl", "mountpoint" and "blobfuse2" first on
 # PATH, and checks the exact blobfuse2 command line and the credentials in its environment. Run with
-# `python -m unittest test_syncmounts` from inside scripts/nfs-roles-management/tests, under Python 2.7 or
-# Python 3. It needs bash and jq on PATH.
+# `python3 -m unittest test_syncmounts` from inside scripts/nfs-roles-management/tests. It needs bash and jq on PATH.
 
 import json
 import os

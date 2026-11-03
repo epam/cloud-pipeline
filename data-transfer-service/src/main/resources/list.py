@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #

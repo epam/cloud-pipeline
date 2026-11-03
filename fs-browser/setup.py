@@ -21,9 +21,10 @@ setup(
     py_modules=['fsbrowser'],
     packages=find_packages(),
     include_package_data=True,
+    python_requires='>=3.10',
     install_requires=[
-        'flask==1.1.1',
-        'Flask-HTTPAuth==3.3.0'
+        'flask==2.3.3',
+        'Flask-HTTPAuth==4.4.0'
     ],
     entry_points='''
         [console_scripts]

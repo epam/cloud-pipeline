@@ -4,7 +4,7 @@ FS Browser is the `python/flask` service that allows to expose compute node's fi
 
 ## Requirements
 
-- Python 2.7
+- Python 3.10 or later (job containers run it on the bundled Python 3.12)
 - pipe cli
 - pipe common
 - flask
@@ -13,7 +13,7 @@ FS Browser is the `python/flask` service that allows to expose compute node's fi
 
 To run app use the following command:
 ```
-python <path to project>/app.py --working_directory=/root/ --host=0.0.0.0 --port=8080 --log_dir=/root/logs --transfer_storage <stoarge path>
+python3 <path to project>/app.py --working_directory=/root/ --host=0.0.0.0 --port=8080 --log_dir=/root/logs --transfer_storage <stoarge path>
 ```
 
 ## Command line options

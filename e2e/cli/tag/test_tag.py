@@ -14,7 +14,7 @@
 
 import pytest
 
-from assertion_utils import *
+from .assertion_utils import *
 from common_utils.entity_managers import EntityManager
 from common_utils.pipe_cli import *
 

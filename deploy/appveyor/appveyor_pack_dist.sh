@@ -18,9 +18,8 @@
 # https://www.docker.com/increase-rate-limit
 docker login -u "$DOCKER_USER" -p "$DOCKER_TOKEN"
 
-source ~/venv2.7.18/bin/activate
-pip install PyYAML==3.12
-pip install mkdocs==1.0.4
+source ~/venv3.8.17/bin/activate
+pip install setuptools==68.0.0 mkdocs==1.6.1
 
 API_STATIC_PATH=api/src/main/resources/static
 rm -rf ${API_STATIC_PATH}/*
@@ -33,9 +32,6 @@ mkdir -p ${API_STATIC_PATH}
                     -Pfast \
                     --no-daemon
 
-deactivate
-
-source ~/venv3.8.17/bin/activate
 pip install awscli
 
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then

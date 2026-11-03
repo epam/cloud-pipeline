@@ -48,7 +48,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-python $SYNC_HOME/nfs-roles-management/syncnfs.py sync \
+"${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}" $SYNC_HOME/nfs-roles-management/syncnfs.py sync \
                                 --api=$API \
                                 --key=$API_TOKEN \
                                 --users-root=$CP_DAV_SERVE_DIR \

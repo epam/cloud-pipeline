@@ -18,7 +18,7 @@ import os
 import pytest
 
 from common_utils.entity_managers import PipelineManager
-from utils.pipeline_utils import *
+from .utils.pipeline_utils import *
 
 MAX_REP_COUNT = 120
 

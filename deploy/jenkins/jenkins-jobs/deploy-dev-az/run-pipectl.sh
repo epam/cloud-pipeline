@@ -29,8 +29,9 @@ if ! kubectl version &> /dev/null || ! kubectl get po 2>/dev/null | grep -q cp-a
 fi
 
 # Install awscli if not available
-curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
-    pip install awscli
+if ! command -v aws > /dev/null 2>&1; then
+    python3 -m pip install awscli
+fi
 
 # Grab required files from the S3
 export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"

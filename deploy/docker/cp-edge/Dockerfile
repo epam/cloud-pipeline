@@ -46,18 +46,16 @@ RUN dnf install -y python3 \
     dnf group install -y "Development Tools" && \
     dnf clean all
 
-# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as cp-api-srv does. It is built for
-# the /opt/conda prefix. Link it as the python/python2/pip that sync-routes.sh runs sync-routes.py with;
+# Python 3.12 runs sync-routes.py: the build a job container installs (scripts/pipeline-launch/launch.sh).
 # /usr/bin/python3 stays the system one, for dnf.
-ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
-RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
-    tar -xzf python2.tgz -C /opt/ && \
-    rm -f python2.tgz && \
-    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
-    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
-    ln -sf /opt/conda/bin/pip /usr/local/bin/pip && \
-    pip install rsa==4.0 \
-                pykube==0.15.0
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    pip3 install rsa==4.0 \
+                 pykube-ng==23.6.0
 
 # Openresty + http_connect module
 RUN dnf install -y  pcre-devel \

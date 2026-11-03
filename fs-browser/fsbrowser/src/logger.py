@@ -37,4 +37,4 @@ class BrowserLogger(object):
                         log_dir=None,
                         omit_console=True)
         else:
-            print message
+            print(message)

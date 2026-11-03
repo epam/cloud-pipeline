@@ -17,13 +17,12 @@
 CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUMBER))
 
-# Setup python2
-cd /opt
-wget -q "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
-tar -zxf Miniconda2-4.7.12.1-Linux-x86_64.tar.gz
-source /opt/conda/etc/profile.d/conda.sh
-conda activate
-cd -
+# Setup python3: the build runs "python setup.py sdist" (pipe-cli, fs-browser) and "mkdocs build" in a virtual
+# environment of the runner's own python3
+if ! python3 -m venv /opt/py3-build; then
+    apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv --clear /opt/py3-build
+fi
+source /opt/py3-build/bin/activate
 #
 
 # Setup node
@@ -43,8 +42,7 @@ function download_gradle_dependencies() {
     fi
 }
 
-pip install PyYAML==3.12
-pip install mkdocs==1.0.4
+pip install setuptools==68.0.0 mkdocs==1.6.1
 
 _BUILD_EXIT_CODE=1
 try_count=0

@@ -23,6 +23,23 @@ export APACHE_LOG_DIR="${APACHE_LOG_DIR:-/var/log/dav/httpd}"
 export SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
 export APACHE_DAV_LOCK_DB="${APACHE_DAV_LOCK_DB:-$APACHE_HOME/dav/DavLock}"
 
+# --- Python interpreter selection ---
+# The sync scripts and the NFS mount watcher run with the Python 3.12 the Dockerfile installs into CP_PYTHON3_HOME.
+# Not "command -v python3.12": the distro can bring a bare /usr/bin/python3.12 (no pip, none of the image's packages).
+CP_PYTHON3_HOME="${CP_PYTHON3_HOME:-/usr/local/python3.12}"
+export CP_PYTHON_PATH="${CP_PYTHON_PATH:-$CP_PYTHON3_HOME/bin/python3.12}"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    echo "Python 3.12 is not found at $CP_PYTHON_PATH, exiting."
+    exit 1
+fi
+export PATH="$CP_PYTHON3_HOME/bin:$PATH"
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
+# pipe-common is installed from the pypi3 mirror, as in a job container
+CP_REPO_PYPI3_BASE_URL_DEFAULT="${CP_REPO_PYPI3_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple}"
+CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com}"
+CP_PIP_PACKAGE_INDEX_ARGS="--index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+
 function download_file {
     local _FILE_URL=$1
     echo "Downloading ${_FILE_URL}"
@@ -69,8 +86,11 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
   if [ $? -eq 0 ]; then
         echo "'pipe-common' package was downloaded successfully."
         inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
+        # watch_mount_shares.py imports the "pipeline" package, "watchdog" and "psutil": install pipe-common for them
         tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
         mv watch_mount_shares.py $SYNC_HOME/ && \
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==68.0.0 && \
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
         rm -rf pipe-common.tar.gz && \
         sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
         sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \

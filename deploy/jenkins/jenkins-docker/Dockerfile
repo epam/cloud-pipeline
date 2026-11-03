@@ -17,7 +17,8 @@ FROM jenkins/jenkins:lts
 USER root
 RUN apt-get update && \
     apt-get install -y  libltdl7 \
-                        python \
+                        python3 \
+                        awscli \
                         gettext \
                         rsync \
                         curl \
@@ -27,9 +28,6 @@ RUN apt-get update && \
 
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
-
-RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
-    pip install awscli
 
 RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
     gpg --dearmor | \

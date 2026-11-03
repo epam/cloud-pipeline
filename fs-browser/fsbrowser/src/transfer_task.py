@@ -23,7 +23,7 @@ from fsbrowser.src.pattern_utils import PatternMatcher
 
 TAR_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
-TAR_GZ_PERMISSIONS = 0774  # -rwxrwxr--
+TAR_GZ_PERMISSIONS = 0o774  # -rwxrwxr--
 
 
 class TaskStatus(object):
@@ -167,7 +167,7 @@ class TransferTask(object):
         return stdout, stderr
 
     def execute_command(self, cmd, process_task):
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         if process_task:
             self.process = process
         stdout = self.read_stdout(process.stdout)

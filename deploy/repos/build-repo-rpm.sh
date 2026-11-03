@@ -74,15 +74,15 @@ localedef -v -c -i en_US -f UTF-8 en_US.UTF-8
 
 yum install curl \
             wget \
-            python \
-            python-pip \
+            python3 \
+            python3-pip \
             yum-priorities \
             yum-utils \
             createrepo -y
 
 if ! aws --version > /dev/null 2>&1; then
     echo "INFO: awscli is not installed, proceeding with installation"
-    pip install awscli==1.18.213
+    pip3 install awscli==1.18.213
 fi
 
 CP_REPOS_LOCAL_DIR=$(mktemp -d)

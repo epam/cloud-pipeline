@@ -86,19 +86,15 @@ RUN dnf install -y cronie \
 RUN sed -i '/^account\s\+include\s\+system-auth/i account    sufficient pam_succeed_if.so uid = 0 quiet' /etc/pam.d/crond && \
     grep -q pam_succeed_if /etc/pam.d/crond
 
-# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as a job container does
-# (scripts/pipeline-launch/launch.sh). It is built for the /opt/conda prefix. Link it as python/python2/pip.
-# The cron jobs run with the PATH of crond (/usr/bin:/bin): sync-nfs.sh sources env.sh, which has /usr/local/bin,
-# but nfs-watcher.sh does not, so "python" is linked into /usr/bin as well, where CentOS 7 had it.
-# /usr/bin/python3 stays the system one, for dnf.
-ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
-RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
-    tar -xzf python2.tgz -C /opt/ && \
-    rm -f python2.tgz && \
-    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
-    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
-    ln -sf /opt/conda/bin/python2 /usr/bin/python && \
-    ln -sf /opt/conda/bin/pip /usr/local/bin/pip
+# Python 3.12 runs the sync scripts and the NFS mount watcher: the build a job container installs
+# (scripts/pipeline-launch/launch.sh). The cron jobs run with the PATH of crond (/usr/bin:/bin), so they call it
+# by its full path. /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
 
 ARG LUSTRE_VERSION="2.10.8-2.el8.x86_64"
 ARG LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
@@ -113,8 +109,7 @@ RUN cd /tmp && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 
-RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
-    pip install -I requests==2.21.0 && \
+RUN pip3 install -I requests==2.34.2 && \
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 

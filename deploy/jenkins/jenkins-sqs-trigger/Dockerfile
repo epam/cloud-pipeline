@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+# CentOS 7 repositories are offline, so its yum cannot install python3. curl comes from the base curl-minimal
+FROM rockylinux/rockylinux:9.8
 
-RUN yum install -y wget \
-                   curl \
-                   python \
+RUN dnf install -y wget \
+                   python3 \
+                   python3-pip \
                    git && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
-RUN pip install awscli
+    dnf clean all
+RUN pip3 install awscli
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 

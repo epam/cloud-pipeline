@@ -26,7 +26,7 @@ from autoscaling.utils.azure_client import AzureClient
 from autoscaling.utils.gcp_client import GCPClient
 from common_utils.entity_managers import UtilsManager
 
-IP_PATTERN = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+IP_PATTERN = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 
 _clients = {

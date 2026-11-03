@@ -17,8 +17,6 @@ FROM debian
 RUN apt-get update -y && \
     apt-get install -y wget \
                    curl \
-                   python \
+                   python3 \
                    git
-
-RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 

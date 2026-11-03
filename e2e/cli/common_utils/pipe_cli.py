@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cmd_utils import *
+from .cmd_utils import *
 
 
 def pipe_storage_cp(source, destination, force=False, recursive=False, include=[], exclude=[], args=None,

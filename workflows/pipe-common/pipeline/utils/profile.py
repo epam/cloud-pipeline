@@ -39,8 +39,8 @@
 import os
 import re
 
-_PROFILE_PATTERN = '^({}(_\D+)*)_(\d+)$'
-_COMMON_PATTERN = '^({}(_\D+)*)(?!_\d+)$'
+_PROFILE_PATTERN = r'^({}(_\D+)*)_(\d+)$'
+_COMMON_PATTERN = r'^({}(_\D+)*)(?!_\d+)$'
 
 
 def build_environment_profiles(prefixes, logger):
