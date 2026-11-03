@@ -28,9 +28,13 @@ class GitLabException(Exception):
 
 
 class GitLab(object):
-    def __init__(self, server, token):
+    # GitLab 9 has both v3 and v4, GitLab 11.0 and later have v4 only
+    DEFAULT_API_VERSION = 'v3'
+
+    def __init__(self, server, token, api_version=None):
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.server = server
+        self.api_version = api_version or GitLab.DEFAULT_API_VERSION
         self.__config__ = Config.instance()
         self.__headers__ = {'Content-Type': 'application/json',
                             'Private-Token': token}
@@ -54,7 +58,7 @@ class GitLab(object):
              error_loader=None,
              http_method=None):
         expected_status_codes = [200]
-        url = '{}/api/v3/{}'.format(self.server, method)
+        url = '{}/api/{}/{}'.format(self.server, self.api_version, method)
         if not http_method:
             if data:
                 expected_status_codes = [201]
@@ -107,9 +111,9 @@ class GitLab(object):
         def page_call(page, per_page, result_container):
             expected_status_codes = [200]
             if method_url_contains_query_parameters:
-                url = '{}/api/v3/{}&page={}&per_page={}'.format(self.server, method, page, per_page)
+                url = '{}/api/{}/{}&page={}&per_page={}'.format(self.server, self.api_version, method, page, per_page)
             else:
-                url = '{}/api/v3/{}?page={}&per_page={}'.format(self.server, method, page, per_page)
+                url = '{}/api/{}/{}?page={}&per_page={}'.format(self.server, self.api_version, method, page, per_page)
             response = requests.get(
                 url,
                 headers=self.__headers__,
@@ -144,9 +148,13 @@ class GitLab(object):
             'name': name.encode('utf8'),
             'username': userName.encode('utf8').replace(' ', '_'),
             'email': email.encode('utf8'),
-            'password': password,
-            'confirm': 'no'
+            'password': password
         }
+        # v4 has no confirm parameter: a user created without skip_confirmation has to confirm the email
+        if self.api_version == 'v3':
+            payload['confirm'] = 'no'
+        else:
+            payload['skip_confirmation'] = True
         return self.call(
             'users',
             payload,
