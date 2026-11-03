@@ -56,7 +56,9 @@ public class PipelinePermissionManager {
     }
 
     public boolean hasCopyPermission(final Pipeline pipeline, final Long folderId) {
-        return permissionHelper.isAllowed(READ, pipeline)
+        // a copy of a pipeline outside GitLab keeps the original repository and its token, and is owned by the
+        // user who copies it, so the READ granted by ROLE_PIPELINE_READER regardless of the ACL is not enough
+        return permissionHelper.isAllowedIgnoringScopedReaderAndExecutor(READ, pipeline)
                 && folderId != null && hasCreatePermission(pipeline.getPipelineType(), folderId)
                 && checkManagerOrScopedAdminRole(pipeline.getPipelineType());
     }

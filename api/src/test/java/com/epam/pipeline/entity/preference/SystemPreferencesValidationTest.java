@@ -160,6 +160,20 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         assertThrows(IllegalArgumentException.class, this::validateGitPreferences);
     }
 
+    @Test
+    public void testValidateGitVersionsWithMultiDigitNumbers() throws GitClientException {
+        for (String version : Arrays.asList("15.5.4", "18.2.8", "19.4.1", "19.5.0")) {
+            Mockito.when(mockGitlabClient.getVersion()).thenReturn(gitlabVersion(version));
+            validateGitPreferences();
+        }
+    }
+
+    @Test
+    public void testValidateGitInvalidMinorVersion() throws GitClientException {
+        Mockito.when(mockGitlabClient.getVersion()).thenReturn(gitlabVersion("8.2.1"));
+        assertThrows(IllegalArgumentException.class, this::validateGitPreferences);
+    }
+
 
     @Test
     public void testDependentPreferencesMapAppropriateFilling() {
@@ -219,6 +233,12 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         required.setValue("http://localhost:9000/");
 
         preferences.validate(Arrays.asList(preference, required));
+    }
+
+    private static GitlabVersion gitlabVersion(final String version) {
+        final GitlabVersion gitlabVersion = new GitlabVersion();
+        gitlabVersion.setVersion(version);
+        return gitlabVersion;
     }
 
     private void validateGitPreferences() {
