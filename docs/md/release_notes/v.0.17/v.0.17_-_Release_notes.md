@@ -63,11 +63,14 @@
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 - [GitLab 19 support](#gitlab-19-support)
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
+- [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
+    - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
+    - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
@@ -1876,6 +1879,12 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
+## VS Code extension: the folder opened on connect
+
+On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
+In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
+For more details see [here](../../manual/15_Interactive_services/15.5._VSCode_interactions.md).
+
 ***
 
 ## GitLab 19 support
@@ -1928,6 +1937,21 @@ The images of the proxy service (`cp-tinyproxy`) and of the backup workers (`cp-
 
 Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
 In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services. A failure of `pg_dump` fails the backup, so an empty dump does not replace the good ones.
+### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
+
+[#4707](https://github.com/epam/cloud-pipeline/issues/4707)
+
+Previously, an `S3` storage registered with an access point alias as its path - e.g. the alias of an access point attached to an `FSx for NetApp ONTAP` volume - could not be accessed with the temporary credentials issued by the platform.
+AWS checks such requests against the access point ARN, and the issued credentials allowed only the bucket name. So the `pipe storage` commands, and file downloads and uploads in the GUI, failed with an `AccessDenied` error.
+Now, an `S3` storage has an optional `accessPointArn` field, set via the REST API. If it is set, the temporary credentials also allow access via this access point.
+See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#register-an-s3-access-point-alias).
+
+### VS Code extension: the run owner's home folder is not opened on connect
+
+[#4708](https://github.com/epam/cloud-pipeline/issues/4708)
+
+Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
+Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
 
 ### Storage files are not indexed when an object key is longer than 512 bytes
 
