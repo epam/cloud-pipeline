@@ -682,6 +682,19 @@ function parse_options {
                             "${!__parse_env_option_result__}"
     done
 
+    # CP_GITLAB_VERSION is missing from an install config of an earlier version: that one runs GitLab 9.
+    # It also selects the cp-git image, and only the 9 and 19 images are built
+    if [ -z "$CP_GITLAB_VERSION" ]; then
+        export CP_GITLAB_VERSION="9"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_GITLAB_VERSION" \
+                            "$CP_GITLAB_VERSION"
+    fi
+    if [ "$CP_GITLAB_VERSION" != "9" ] && [ "$CP_GITLAB_VERSION" != "19" ]; then
+        print_err "CP_GITLAB_VERSION is set to \"$CP_GITLAB_VERSION\", but only 9 and 19 are supported"
+        return 1
+    fi
+
     # GitLab 9 keeps its database in cp-api-db. Later versions need a newer PostgreSQL, and get their own server,
     # cp-gitlab-db. A database host, that is set explicitly, is kept
     if [ "$CP_GITLAB_VERSION" != "9" ] && [ "$GITLAB_DATABASE_HOST" == "cp-api-db.default.svc.cluster.local" ]; then
@@ -1243,8 +1256,8 @@ function delete_deployment_pods {
 function get_deployment_pods() {
     DEPLOYMENT_NAME=$1
     # Since pod name is: {deployment-name}-{replica-set-hash}-{pod-hash} we can assume that all pods that have such
-    # name is related to the specific deployment
-    _pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ' | grep -E "^${DEPLOYMENT_NAME}-[a-zA-Z0-9]+-[a-zA-Z0-9]+$")
+    # name is related to the specific deployment. A bare pod (e.g. cp-idp) has the name itself
+    _pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ' | grep -E "^${DEPLOYMENT_NAME}(-[a-zA-Z0-9]+-[a-zA-Z0-9]+)?$")
     echo $_pods
 }
 
