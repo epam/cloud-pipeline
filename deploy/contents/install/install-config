@@ -55,6 +55,16 @@ CP_PREF_API_STATIC_DIRECTORY_EXT=/opt/api/ext/templates/static
 CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 
 # cp-git config
+
+# possible values 9, 19
+CP_GITLAB_VERSION=9
+
+# The cp-gitlab-db PostgreSQL, that CP_GITLAB_VERSION=19 uses: 17, or a 17.x tag of the postgres image.
+# CP_GITLAB_VERSION=9 keeps its database in cp-api-db, see GITLAB_DATABASE_HOST
+GITLAB_DATABASE_VERSION=17
+GITLAB_DATABASE_SHARED_BUFFERS=128MB
+GITLAB_DATABASE_MAX_CONNECTIONS=100
+
 GITLAB_DATABASE_ADAPTER=postgresql
 GITLAB_DATABASE_DATABASE=gitlabhq_production
 GITLAB_DATABASE_USERNAME=gitlab

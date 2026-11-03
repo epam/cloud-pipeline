@@ -529,6 +529,10 @@ function api_register_gitlab {
     api_preference_append_array "$(api_preference_get_templated "git.token"          "$gitlab_root_token"                                        "false")"
     api_preference_append_array "$(api_preference_get_templated "git.user.id"        "1"                                                         "false")"
     api_preference_append_array "$(api_preference_get_templated "git.host"           "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_INTERNAL_PORT" "true")"
+    # GitLab 11.0 and later serve the API v4 only. GitLab 9 keeps v3, the default of git.gitlab.api.version
+    if [ "$CP_GITLAB_VERSION" != "9" ]; then
+        api_preference_append_array "$(api_preference_get_templated "git.gitlab.api.version" "v4" "false")"
+    fi
     api_set_preference "$(api_preference_get_array)"
     api_preference_drop_array
 }

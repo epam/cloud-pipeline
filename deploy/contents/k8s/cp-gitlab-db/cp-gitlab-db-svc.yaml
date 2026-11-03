@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-gitlab-db: "true"
+  name: cp-gitlab-db
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${GITLAB_DATABASE_PORT}
+    targetPort: ${PSG_PORT}
+  selector:
+    cloud-pipeline/cp-gitlab-db: "true"
