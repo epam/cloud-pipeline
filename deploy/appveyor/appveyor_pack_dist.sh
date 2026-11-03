@@ -27,18 +27,6 @@ rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 mkdir -p ${API_STATIC_PATH}
 
-_OSX_CLI_TAR_NAME=pipe-osx-full.$APPVEYOR_BUILD_NUMBER.tar.gz
-_OSX_CLI_PATH=$(mktemp -d)
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/${_OSX_CLI_TAR_NAME} ${_OSX_CLI_PATH}/
-tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
-
-mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx ${API_STATIC_PATH}/pipe-osx
-mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
-
-_BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
-mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
-mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
-
 ./gradlew distTar   -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
                     -Pprofile=release \
                     -x test \
