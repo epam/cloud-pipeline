@@ -28,6 +28,7 @@
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [`pipe` CLI on Python 3](#pipe-cli-on-python-3)
+- [GitLab 19 support](#gitlab-19-support)
 
 ***
 
@@ -580,6 +581,39 @@ This brings the following changes:
 On a deployment that is updated, not installed anew, **Settings** → **CLI** keeps the old installation hints, including the **MacOS** option, until an admin updates the **`ui.pipe.cli.install.template`** preference.
 
 For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+## GitLab 19 support
+
+The platform now supports GitLab CE **19.5.3** for its embedded Git (`cp-git`), besides GitLab CE 9.4.0. GitLab 19 runs with its own PostgreSQL 17 server for the GitLab database (`cp-gitlab-db`). GitLab 9.4 keeps its database in the API database server (`cp-api-db`), as before.
+
+A new deployment selects GitLab 19 with the install config value `CP_GITLAB_VERSION=19`. The default is `9`. For GitLab 19, the installer:
+
+- deploys `cp-gitlab-db` (`GITLAB_DATABASE_VERSION=17` by default), with its backup worker (`cp-bkp-worker-cp-gitlab-db`), and creates the `amcheck` extension in the GitLab database
+- generates the GitLab `root` password, if the default one is set
+- creates its GitLab tokens with an expiry date, 364 days ahead
+- sets the **`git.gitlab.api.version`** preference to `v4`
+- turns off the sign-up of new users in GitLab, and lets the GitLab webhooks call the services inside the cluster
+
+The `cp-git` image is now named `git-<CP_GITLAB_VERSION>-<version>`, i.e. `git-9-<version>` and `git-19-<version>`, instead of `git-<version>`. The GitLab runner is not part of the GitLab 19 image. The GitLab 9 image keeps it.  
+For more details see [GitLab versions](../../installation/gitlab/gitlab_versions.md).
+
+An existing deployment on GitLab 9.4 moves to 19.5 by a manual procedure: GitLab passes through a list of required versions, its database moves from `cp-api-db` to `cp-gitlab-db`, and is upgraded five times, from PostgreSQL 9.6 to 17. See [Upgrade GitLab 9.4 to 19.5](../../installation/gitlab/upgrade_gitlab_9_to_19.md).
+
+The platform also changes the way it works with GitLab. These changes do not break GitLab 9.4, so a deployment gets them before it upgrades GitLab:
+
+- **The GitLab REST API v4.** GitLab 11.0 and later have no API v3, which the platform called so far. The new preference **`git.gitlab.api.version`** selects the API version: `v3` (the default) or `v4`. The Git users synchronization (`cp-git-sync`) reads it too. GitLab 9.4 has both versions.
+- **`git.token` rotation** (GitLab 15.5 and later). On GitLab 19.5, a new access token must have an expiry date, at most 365 days ahead. The platform now checks the expiry of **`git.token`** on a schedule (every day by default). When the token is close to its expiry, the platform issues a new impersonation token, saves it to **`git.token`**, and revokes the old one. A token without an expiry date is never rotated. The rotation is set by the new preferences **`git.token.rotation.enabled`**, **`git.token.rotation.schedule`**, **`git.token.rotation.threshold.days`** and **`git.token.rotation.lifetime.days`**.  
+    **_Note_**: a run gets the **`git.token`** value when it starts. After a rotation, the old value no longer works in the runs that are still active.  
+    For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
+- **Pipeline version descriptions are saved on new GitLab versions too.** GitLab 14.0 removed the release description from the tag creation. On GitLab 14.0 and later, the `releaseDescription` of a new pipeline version (`POST /pipeline/version/register`) is saved as the GitLab release of the version tag, with the GitLab Releases API.
+- **A deleted pipeline's name can be reused at once.** On GitLab 18.0 and later, deleting a project only marks it for deletion (for 30 days by default), and its name stays taken. In the current version, when a pipeline is deleted with its repository, the repository is removed permanently, so a new pipeline can take the same name at once. The temporary `TMP_FORK_*` group that a pipeline copy uses is still only marked for deletion: GitLab removes it, with its projects, after the deletion delay.
+- **Git tokens issued for users last at most 365 days.** GitLab does not accept a token with a longer lifetime. A longer lifetime in a request is cut to `365` days.
+
+Other fixes keep the platform working with the new GitLab versions:
+
+- a missing folder of a repository is treated as an empty one: GitLab 17.7 and later answer `404` for it
+- tokens with dots, as GitLab 19.5 issues them, are accepted in repository URLs
+- saving the Git preferences no longer rejects GitLab 18.0-18.2 and 19.5-19.9
 
 ***
 
