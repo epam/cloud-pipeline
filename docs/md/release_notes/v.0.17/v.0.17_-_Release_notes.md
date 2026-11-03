@@ -62,10 +62,16 @@
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 - [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
+- [GitLab 19 support](#gitlab-19-support)
+- [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
+- [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
+    - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
+    - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
@@ -1874,6 +1880,54 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
+## VS Code extension: the folder opened on connect
+
+On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
+In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
+For more details see [here](../../manual/15_Interactive_services/15.5._VSCode_interactions.md).
+
+***
+
+## GitLab 19 support
+
+The platform now supports GitLab CE **19.5.3** for its embedded Git (`cp-git`), with PostgreSQL 17 for the GitLab database (`cp-gitlab-db`).
+
+A new deployment selects it with the install config values `CP_GITLAB_VERSION=19` and `GITLAB_DATABASE_VERSION=17`. On GitLab 17 and later, the installer:
+
+- generates the GitLab `root` password, if the default one is set
+- creates its GitLab tokens with an expiry date, 364 days ahead
+- creates the `amcheck` extension in the GitLab database
+- turns on the **`git.gitlab.hashed.repo.support`** preference
+
+The GitLab runner is not part of the GitLab 19 image (`git-19`). The images of the earlier GitLab versions keep it.  
+For more details see [GitLab versions](../../installation/gitlab/gitlab_versions.md).
+
+An existing deployment on GitLab 15.5 moves to 19.5 by a manual procedure: GitLab passes through a list of required versions, and its database is upgraded three times, from PostgreSQL 12 to 17. See [Upgrade GitLab 15.5 to 19.5](../../installation/gitlab/upgrade_gitlab_15_to_19.md).
+
+The platform also changes the way it works with GitLab. These changes do not break the earlier GitLab versions, so a deployment gets them before it upgrades GitLab:
+
+- **`git.token` rotation** (GitLab 15.5 and later). On GitLab 19.5, a new access token must have an expiry date, at most 365 days ahead. The platform now checks the expiry of **`git.token`** on a schedule (every day by default). When the token is close to its expiry, the platform issues a new impersonation token, saves it to **`git.token`**, and revokes the old one. A token without an expiry date is never rotated. The rotation is set by the new preferences **`git.token.rotation.enabled`**, **`git.token.rotation.schedule`**, **`git.token.rotation.threshold.days`** and **`git.token.rotation.lifetime.days`**.  
+    **_Note_**: a run gets the **`git.token`** value when it starts. After a rotation, the old value no longer works in the runs that are still active.  
+    For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#git).
+- **Pipeline version descriptions are saved again.** GitLab 14.0 removed the release description from the tag creation, so the `releaseDescription` of a new pipeline version (`POST /pipeline/version/register`) was lost. In the current version, on GitLab 14.0 and later, it is saved as the GitLab release of the version tag, with the GitLab Releases API.
+- **A deleted pipeline's name can be reused at once.** On GitLab 18.0 and later, deleting a project only marks it for deletion (for 30 days by default), and its name stays taken. In the current version, when a pipeline is deleted with its repository, the repository is removed permanently, so a new pipeline can take the same name at once. The temporary `TMP_FORK_*` group that a pipeline copy uses is still only marked for deletion: GitLab removes it, with its projects, after the deletion delay.
+- **Git tokens issued for users last at most 365 days.** GitLab does not accept a token with a longer lifetime. A lifetime over `365` days, from the **`git.default.token.duration.days`** preference or from a request, is cut to `365` days.
+
+Other fixes keep the platform working with the new GitLab versions:
+
+- a missing folder of a repository is treated as an empty one: GitLab 17.7 and later answer `404` for it
+- tokens with dots, as GitLab 19.5 issues them, are accepted in repository URLs
+- saving the Git preferences no longer rejects GitLab 18.0-18.2 and 19.5-19.9
+
+***
+
+## Rocky Linux 9.8 for the proxy and the backup workers
+
+The images of the proxy service (`cp-tinyproxy`) and of the backup workers (`cp-bkp-worker-*`) moved from CentOS 7, which has reached its end of life, to Rocky Linux 9.8.
+
+- The SMTP authentication helper of the proxy keeps Python 3.7, in its own `micromamba` environment.
+- The Filebeat log shippers of the proxy (`6.8` for Elasticsearch, `7.10` for OpenSearch) run with `seccomp` disabled: their `seccomp` policies do not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
+
 ***
 
 ## Read and launch access to all pipelines
@@ -1891,6 +1945,28 @@ More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-
 ***
 
 ## Notable Bug fixes
+
+### The backup worker of the GitLab database always fails
+
+[#4618](https://github.com/epam/cloud-pipeline/issues/4618)
+
+Previously, the installer created a backup worker for the GitLab database (`cp-bkp-worker-cp-gitlab-db`), but the worker image had no backup script for it. So every scheduled run of this worker failed with "Cannot find the backup script for cp-gitlab-db", and the administrators got a failure notification. The GitLab backup of the `cp-bkp-worker-cp-git` worker still included the database.
+In the current version, the worker dumps the GitLab database with `pg_dump`, and copies the dump to the backup storages, as it does for the other services. A failure of `pg_dump` fails the backup, so an empty dump does not replace the good ones.
+### AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias
+
+[#4707](https://github.com/epam/cloud-pipeline/issues/4707)
+
+Previously, an `S3` storage registered with an access point alias as its path - e.g. the alias of an access point attached to an `FSx for NetApp ONTAP` volume - could not be accessed with the temporary credentials issued by the platform.
+AWS checks such requests against the access point ARN, and the issued credentials allowed only the bucket name. So the `pipe storage` commands, and file downloads and uploads in the GUI, failed with an `AccessDenied` error.
+Now, an `S3` storage has an optional `accessPointArn` field, set via the REST API. If it is set, the temporary credentials also allow access via this access point.
+See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#register-an-s3-access-point-alias).
+
+### VS Code extension: the run owner's home folder is not opened on connect
+
+[#4708](https://github.com/epam/cloud-pipeline/issues/4708)
+
+Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
+Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
 
 ### Storage files are not indexed when an object key is longer than 512 bytes
 
