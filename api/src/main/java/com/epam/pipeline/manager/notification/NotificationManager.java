@@ -588,6 +588,11 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public void saveNotification(final NotificationMessage message) {
+        monitoringNotificationDao.createMonitoringNotification(message);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void removeNotificationTimestamps(final Long runId) {
         monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
     }

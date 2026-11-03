@@ -491,6 +491,24 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     @Test
+    public void testSaveNotification() {
+        final NotificationMessage message = new NotificationMessage();
+        message.setSubject(SUBJECT);
+        message.setBody(BODY);
+        message.setToUserId(admin.getId());
+        message.setCopyUserIds(Collections.singletonList(testUser1.getId()));
+
+        notificationManager.saveNotification(message);
+
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(1, messages.size());
+        Assert.assertEquals(SUBJECT, messages.get(0).getSubject());
+        Assert.assertEquals(BODY, messages.get(0).getBody());
+        Assert.assertEquals(admin.getId(), messages.get(0).getToUserId());
+        Assert.assertEquals(Collections.singletonList(testUser1.getId()), messages.get(0).getCopyUserIds());
+    }
+
+    @Test
     public void testCreateNotificationFailsIfSubjectIsNotSpecified() {
         final String userName = testUser1.getUserName();
         final NotificationMessageVO messageWithoutSubject = new NotificationMessageVO();
