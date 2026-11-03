@@ -177,6 +177,9 @@ Every image checks the version of the data it starts on, and stops when a requir
     * `CP_GITLAB_INTERNAL_PORT`, `GITLAB_DATABASE_PASSWORD`, `GITLAB_DATABASE_USERNAME` and `GITLAB_DATABASE_DATABASE`
       from the install config
     * a pipeline repository to clone in the checks, as `<namespace>/<project>`
+* Docker 20.10.24 or later on the node of `cp-git` and `cp-gitlab-db`. With an older Docker, do not start the
+  procedure: upgrade Docker first, after [Where /etc/gitlab is kept](#where-etcgitlab-is-kept) (see
+  [Docker version](#docker-version)).
 * A Cloud Pipeline build that has the GitLab 19 support, deployed to the `api` before the freeze (see the checks).
   The Git users synchronization (`cp-git-sync`) runs from the `api-srv` image, so it gets the support with it.
   Do not deploy `cp-git` from this build before you check [Where /etc/gitlab is kept](#where-etcgitlab-is-kept): a
@@ -433,6 +436,109 @@ If you ran [Checks that must pass](#checks-that-must-pass) before this fix, run 
 From now on, an image that appends adds its settings to `gitlab.rb` once more at each start. The last copy wins, so
 GitLab gets the same settings, and the edits of the procedure change every copy.
 
+#### Docker version
+
+The procedure needs Docker 20.10.24 or later on the node of `cp-git` and `cp-gitlab-db`. Check it on the node. This
+must print `OK`:
+
+```bash
+DOCKER_VERSION=$(docker version --format '{{.Server.Version}}'); echo "Docker $DOCKER_VERSION"
+printf '%s\n' 20.10.24 "$DOCKER_VERSION" | sort -V -C && echo OK || echo "STOP: upgrade Docker first"
+```
+
+If it prints `STOP`, do not start the procedure: upgrade Docker first. Two problems of older versions are known:
+
+* Docker older than 18.06 cannot pull an image that Docker Hub serves as an OCI image index. The pull fails with
+  "missing signature key". The PostgreSQL images of the procedure (`11.22-bookworm`, `12.22`, `14.24`, `16.15` and
+  `17.11`) and the GitLab images from `18.11.14` on are served this way.
+* The default seccomp profile of Docker older than 20.10.10 rejects the `clone3` system call of newer images, such as
+  the GitLab images from 16.x (Ubuntu 22.04 and 24.04). By default Kubernetes runs pods without a seccomp profile,
+  unless an annotation, a pod security policy or the kubelet `--seccomp-default` option sets one. So this hits the
+  containers that Docker runs with its own profile.
+
+There is no way back through `yum`: on a current Amazon Linux 2, `yum` cannot install Docker 18.03 (libseccomp
+conflicts with it). So:
+
+* Upgrade the rehearsal cluster first, and run the checks below there.
+* Take an EBS snapshot of the volumes of the node first: the root volume, and the volume of the Docker data root if it
+  is another one.
+* Upgrade after [Where /etc/gitlab is kept](#where-etcgitlab-is-kept). The restart of Docker replaces every container
+  on the node, `cp-git` too, and a deployment that keeps `/etc/gitlab` in a volume of the container loses it.
+* Tell the users first: the platform services on the node restart too. If the Kubernetes API server runs on this
+  node, `kubectl` fails for a few minutes.
+* The kubelet pulls the image again for every container it re-creates with the pull policy `Always`. The registry of
+  the platform images and Docker Hub must be reachable, or those pods stay in `ImagePullBackOff`.
+
+Record the state before the upgrade. The first command must print `/etc/gitlab`. If it prints `STOP`, fix
+[Where /etc/gitlab is kept](#where-etcgitlab-is-kept) first. The other commands record the cgroup and storage drivers
+of Docker, its packages, and the pods that do not run now. `not_ready` says so when `kubectl` fails.
+
+```bash
+kubectl get deploy cp-git -o jsonpath='{range .spec.template.spec.containers[0].volumeMounts[*]}{.mountPath}{"\n"}{end}' |
+    grep -x /etc/gitlab || echo "STOP: fix /etc/gitlab first"
+not_ready() {
+  local pods
+  pods=$(kubectl get po --all-namespaces --no-headers) || { echo "kubectl failed: run not_ready again"; return 1; }
+  printf '%s\n' "$pods" |
+      awk 'NF { split($3, r, "/"); if ($4 != "Completed" && ($4 != "Running" || r[1] != r[2])) print $1, $2, $4 }'
+}
+docker info --format '{{.CgroupDriver}} {{.Driver}}' | tee "$BKP_DIR/docker-drivers-before.txt"
+rpm -q docker containerd runc | tee "$BKP_DIR/docker-packages-before.txt"
+not_ready | tee "$BKP_DIR/pods-not-ready-before-docker.txt"
+```
+
+Upgrade Docker. These commands are for Amazon Linux 2. It has no package of 20.10.24, so they install 20.10.25. They
+also pin two packages that `yum` would otherwise take at their latest versions:
+
+* containerd stays at 1.7.27: the containerd packages of version 2 refuse a Docker older than 25.
+* runc stays at 1.3.6: with runc 1.4 and later, `exec` into a container fails.
+
+```bash
+amazon-linux-extras enable docker
+yum install -y docker-20.10.25-1.amzn2.0.5 containerd-1.7.27-1.amzn2.0.3 runc-1.3.6-1.amzn2
+rpm -q docker containerd runc
+```
+
+`rpm` must list `docker-20.10.25-1.amzn2.0.5`, `containerd-1.7.27-1.amzn2.0.3` and `runc-1.3.6-1.amzn2`. If runc 1.4
+was installed before, `yum install` leaves it at 1.4: run `yum downgrade -y runc-1.3.6-1.amzn2`, and check with
+`rpm -q runc` again. Then restart Docker, and lock the three versions: a later `yum update` would move Docker to 25,
+containerd to 2 and runc to 1.4 again.
+
+```bash
+systemctl daemon-reload
+systemctl enable --now containerd
+systemctl restart docker
+yum install -y yum-plugin-versionlock
+yum versionlock add docker containerd runc
+```
+
+Check Docker again. The `printf` line must print `OK`, and the `diff` must print `same`: the kubelet needs the same
+cgroup driver as before. If the cgroup driver changed, set the old one in `/etc/docker/daemon.json`
+(`"exec-opts": ["native.cgroupdriver=<driver>"]`), and restart Docker again.
+
+```bash
+printf '%s\n' 20.10.24 "$(docker version --format '{{.Server.Version}}')" | sort -V -C && echo OK
+diff "$BKP_DIR/docker-drivers-before.txt" <(docker info --format '{{.CgroupDriver}} {{.Driver}}') && echo same
+```
+
+Wait until Kubernetes and the platform are back:
+
+* `kubectl get nodes` must show the node as `Ready`.
+* Run `not_ready` until it prints only the pods of `pods-not-ready-before-docker.txt`. A pod in `ImagePullBackOff`
+  cannot reach its registry.
+* `exec` into the `cp-git` pod must work.
+* `smoke` must print the version 9.4 and at least one SAML sign-in link: GitLab is back, with its `/etc/gitlab`.
+* Open the Platform GUI and sign in: it must load as before.
+
+```bash
+kubectl get nodes
+not_ready
+kubectl exec "$(git_pod)" -- true && echo "exec OK"
+smoke
+```
+
+If a check fails and you cannot fix it, restore the node from the EBS snapshot.
+
 #### Repository count and size
 
 ```bash
@@ -538,9 +644,7 @@ export DB_COLLATE DB_CTYPE
 * Each GitLab image is 0.5 GB (9.5) to 1.9 GB to download, and up to 5.5 GB on disk. The Docker disk needs room for two stop
   images at a time.
 * From 16.x the GitLab images are based on Ubuntu 22.04, and from 18.x on 24.04. With Docker's default seccomp
-  profile they need Docker 20.10.10 or later. By default Kubernetes runs pods without a seccomp profile, unless an
-  annotation, a pod security policy or the kubelet `--seccomp-default` option sets one. So an older Docker is a
-  finding for the rehearsal, not a blocker.
+  profile they need Docker 20.10.10 or later: see [Docker version](#docker-version).
 * The tables must be owned by the GitLab user only, with no row in `pg_db_role_setting`. The database move and the
   PostgreSQL upgrades re-create exactly the GitLab user and its database. Re-create any other setting by hand after
   each restore.
@@ -1507,6 +1611,20 @@ services of the freeze back up, turn the token rotation back on, and remove the 
 `/opt/gitlab-postgresql`.
 
 ## Troubleshooting
+
+### "missing signature key" when an image is pulled
+
+Docker on the node is older than 18.06, and the image is served as an OCI image index. Upgrade Docker: see
+[Docker version](#docker-version). If the procedure is already running:
+
+* Upgrade between two stops, with `cp-git` stopped. Skip the `exec` and `smoke` checks of that section: they need
+  `cp-git`.
+* Stop `cp-gitlab-db` first with `db_stop`. It fails on its first line when the database does not run: that is
+  harmless. A restart of Docker while `cp-gitlab-db` creates a new database on an empty data directory leaves a
+  broken directory.
+* After the checks, start `cp-gitlab-db` again. If the pull failed in [Upgrade PostgreSQL](#upgrade-postgresql), the
+  data directory is still empty: go on with that block from `kubectl scale deployment cp-gitlab-db --replicas=1`, and
+  wait for "init process complete". Between two stops, run `db_start <its tag>`.
 
 ### The pod restarts during reconfigure
 
