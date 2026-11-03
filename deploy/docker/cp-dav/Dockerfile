@@ -89,8 +89,15 @@ RUN sed -i '/^account\s\+include\s\+system-auth/i account    sufficient pam_succ
 # Python 3.12 runs the sync scripts and the NFS mount watcher: the build a job container installs
 # (scripts/pipeline-launch/launch.sh). The cron jobs run with the PATH of crond (/usr/bin:/bin), so they call it
 # by its full path. /usr/bin/python3 stays the system one, for dnf.
+# That build's ctypes links libffi.so.6, and Rocky Linux 9 has libffi.so.8: the NFS mount watcher's "watchdog" needs
+# ctypes, so libffi.so.6 comes from the EPEL compat package libffi3.1. EPEL is removed afterwards, so the later dnf
+# installs resolve as before
 ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
-RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+RUN dnf install -y epel-release && \
+    dnf install -y libffi3.1 && \
+    dnf remove -y epel-release && \
+    dnf clean all && \
+    wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     tar -xzf python3.tgz -C /usr/local/ && \
     rm -f python3.tgz && \
     ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \

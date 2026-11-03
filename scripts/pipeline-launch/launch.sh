@@ -893,7 +893,7 @@ if [ -z "$CP_USR_BIN" ]; then
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
 create_sys_dir $CP_USR_BIN
-# --- Python 2 ---
+# --- Python ---
 # The bundled Python 3.12 is installed at every run start, it runs pipe-common and the platform scripts
 install_python3_packages "/usr/local"
 

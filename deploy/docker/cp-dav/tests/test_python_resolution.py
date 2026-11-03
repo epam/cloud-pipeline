@@ -115,5 +115,16 @@ class PipeCommonInstallTest(unittest.TestCase):
         self.assertNotIn('python2', init)
 
 
+class ImageLibrariesTest(unittest.TestCase):
+
+    def test_installs_libffi_so_6_for_the_ctypes_of_python_3_12(self):
+        # The NFS mount watcher's "watchdog" needs ctypes, which links libffi.so.6: Rocky Linux 9 has only
+        # libffi.so.8 of its own
+        with open(os.path.join(CP_DAV_DIR, 'Dockerfile')) as f:
+            dockerfile = f.read()
+        self.assertIn('dnf install -y libffi3.1', dockerfile)
+        self.assertLess(dockerfile.index('dnf install -y libffi3.1'), dockerfile.index('dnf remove -y epel-release'))
+
+
 if __name__ == '__main__':
     unittest.main()
