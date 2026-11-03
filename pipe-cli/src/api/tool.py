@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import urllib
+from urllib.parse import quote
 
 from src.api.base import API
 from src.model.docker_registry_model import ToolScanResultsModel
@@ -48,7 +48,7 @@ class Tool(API):
     def load_vulnerabilities(self, registry, group, tool):
         tool_path = group + '/' + tool
         response_data = self.call('/tool/scan?registry=%s&tool=%s'
-                                  % (urllib.quote(registry), urllib.quote(tool_path)), None)
+                                  % (quote(registry), quote(tool_path)), None)
         if 'payload' in response_data:
             return ToolScanResultsModel.load(response_data['payload'])
         if 'message' in response_data:

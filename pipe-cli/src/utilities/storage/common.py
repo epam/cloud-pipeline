@@ -169,7 +169,7 @@ class StorageOperations:
     @classmethod
     def get_user(cls):
         config = Config.instance()
-        user_info = jwt.decode(config.get_token(), verify=False)
+        user_info = jwt.decode(config.get_token(), algorithms=["RS256", "HS256"], options={"verify_signature": False})
         if 'sub' in user_info:
             return user_info['sub']
         raise RuntimeError('Cannot find user info.')
@@ -210,8 +210,7 @@ class StorageOperations:
         return not size or size == 0
 
 
-class AbstractTransferManager:
-    __metaclass__ = ABCMeta
+class AbstractTransferManager(metaclass=ABCMeta):
 
     @abstractmethod
     def get_destination_key(self, destination_wrapper, relative_path):
@@ -269,8 +268,7 @@ class AbstractTransferManager:
                 lock.release()
 
 
-class AbstractListingManager:
-    __metaclass__ = ABCMeta
+class AbstractListingManager(metaclass=ABCMeta):
 
     @abstractmethod
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
@@ -343,8 +341,7 @@ class AbstractListingManager:
         return None
 
 
-class AbstractDeleteManager:
-    __metaclass__ = ABCMeta
+class AbstractDeleteManager(metaclass=ABCMeta):
 
     @abstractmethod
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
@@ -361,8 +358,7 @@ class AbstractDeleteManager:
         pass
 
 
-class AbstractRestoreManager:
-    __metaclass__ = ABCMeta
+class AbstractRestoreManager(metaclass=ABCMeta):
 
     @abstractmethod
     def restore_version(self, version, exclude, include, recursive):

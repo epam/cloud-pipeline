@@ -16,6 +16,8 @@ import logging
 import os
 import traceback
 
+logging.captureWarnings(True)
+
 import click
 import functools
 import sys
@@ -94,10 +96,7 @@ def enable_debug_logging(ctx, param, value):
     if not value:
         return
     # Enable body/headers logging from httplib requests
-    try:
-        from http.client import HTTPConnection  # py3
-    except ImportError:
-        from httplib import HTTPConnection      # py2
+    from http.client import HTTPConnection
     HTTPConnection.debuglevel = 5
     log_level = logging.DEBUG
     log_format = os.getenv('CP_LOGGING_FORMAT') or ctx.params.get('log_format') or DEFAULT_LOGGING_FORMAT
@@ -304,45 +303,16 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-@click.option('-nt', '--proxy-ntlm',
-              help='Use NTLM authentication for the server, specified by the "--proxy"',
-              is_flag=True)
-@click.option('-nu', '--proxy-ntlm-user',
-              help='Username for the NTLM authentication against the server, specified by the "--proxy"',
-              default=None)
-@click.option('-nd', '--proxy-ntlm-domain',
-              help='Domain name of the user, specified by the "--proxy-ntlm-user"',
-              default=None)
-@click.option('-np', '--proxy-ntlm-pass',
-              help='Password of the user, specified by the "--proxy-ntlm-user"',
-              default=None)
 @click.option('-c', '--codec',
               help='Encoding that shall be used',
               default=None)
 @click.option('-cs', '--config-store',
               help='CLI configuration mode(home-dir/install-dir)',
               default='home-dir')
-def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass, codec,
-              config_store):
+def configure(auth_token, api, timezone, proxy, codec, config_store):
     """Configures CLI parameters
     """
-    if proxy_ntlm and not proxy_ntlm_user:
-        proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
-    if proxy_ntlm and not proxy_ntlm_domain:
-        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
-    if proxy_ntlm and not proxy_ntlm_pass:
-        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
-
-    Config.store(auth_token,
-                 api,
-                 timezone,
-                 proxy,
-                 proxy_ntlm,
-                 proxy_ntlm_user,
-                 proxy_ntlm_domain,
-                 proxy_ntlm_pass,
-                 codec,
-                 config_store)
+    Config.store(auth_token, api, timezone, proxy, codec, config_store)
 
 
 def echo_title(title, line=True):
@@ -1450,9 +1420,9 @@ def ssh(ctx, run_id, retries):
 
     II. Execute a single command via SSH for some run (12345):
 
-        pipe ssh pipeline-12345 echo \$HOSTNAME
+        pipe ssh pipeline-12345 echo $HOSTNAME
 
-        pipe ssh 12345 echo \$HOSTNAME
+        pipe ssh 12345 echo $HOSTNAME
     """
     ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), retries=retries)
     sys.exit(ssh_exit_code)

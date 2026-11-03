@@ -14,13 +14,10 @@
 
 import datetime
 import logging
-import platform
 import time
-import urllib
-import xml.etree.cElementTree as xml
+import xml.etree.ElementTree as xml
 from numbers import Number
 
-import easywebdav
 import pytz
 import requests
 import urllib3
@@ -29,16 +26,39 @@ from requests import cookies
 
 from pipefuse import fuseutils
 from pipefuse.fsclient import FileSystemClient, File
+from pipefuse.fuseutils import MB
 
-py_version, _, _ = platform.python_version_tuple()
-if py_version == '2':
-    from urlparse import urlparse
-    from urllib import quote, unquote
-else:
-    from urllib.parse import urlparse, quote, unquote
+from urllib.parse import urlparse, quote, unquote
 
-# add additional methods
-easywebdav.OperationFailed._OPERATIONS = dict(
+
+class _OperationFailed(Exception):
+    _OPERATIONS = {}
+
+    def __init__(self, method, path, expected_code, actual_code):
+        self.method = method
+        self.path = path
+        self.expected_code = expected_code
+        self.actual_code = actual_code
+        operation = self._OPERATIONS.get(method, method)
+        expected_codes = (expected_code,) if isinstance(expected_code, int) else expected_code
+        expected_codes_str = ', '.join(str(c) for c in expected_codes)
+        msg = 'Failed to {0} "{1}" (expected {2}, got {3})'.format(
+            operation, path, expected_codes_str, actual_code)
+        super(_OperationFailed, self).__init__(msg)
+
+
+class _WebDavBaseClient(object):
+    def __init__(self, protocol='http', host='localhost', port=0, path=None, verify_ssl=True, **kwargs):
+        if not port:
+            port = 443 if protocol == 'https' else 80
+        self.baseurl = '{0}://{1}:{2}'.format(protocol, host, port)
+        if path:
+            self.baseurl = '{0}/{1}'.format(self.baseurl, path)
+        self.cwd = '/'
+        self.session = requests.Session()
+        self.session.verify = verify_ssl
+
+_OperationFailed._OPERATIONS = dict(
     HEAD="get header",
     GET="download",
     PUT="upload",
@@ -50,7 +70,7 @@ easywebdav.OperationFailed._OPERATIONS = dict(
 )
 
 
-class CPWebDavClient(easywebdav.Client, FileSystemClient):
+class CPWebDavClient(_WebDavBaseClient, FileSystemClient):
     C_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
     # 'Wed, 28 Aug 2019 12:18:02 GMT'
     M_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %Z"
@@ -86,9 +106,6 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
         try:
             self._send('OPTIONS', '/', 200, allow_redirects=False)
             return True
-        except easywebdav.OperationFailed as e:
-            logging.exception('WevDav is not available: %s' % str(e.reason))
-            return False
         except Exception:
             logging.exception('WevDav is not available')
             return False
@@ -101,7 +118,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
 
     def prop_value(self, elem, name, default=None):
         child = self.get_elem_value(elem, name)
-        return default if child is None or child.text is None else unquote(child.text).decode('utf8')
+        return default if child is None or child.text is None else unquote(child.text)
 
     def prop_exists(self, elem, name):
         return self.get_elem_value(elem, name) is not None
@@ -136,12 +153,16 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
         response = self._send('GET', remote_path, (200, 206), stream=True, headers=headers)
         self._download(data, response)
 
+    def _download(self, buf, response):
+        for chunk in response.iter_content(chunk_size=1 * MB):
+            buf.write(chunk)
+
     def upload_range(self, fh, data, remote_path, offset=0):
         end = offset + len(data) - 1
         if end < offset:
             end = offset
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
-        self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
+        self._send('PUT', remote_path, (200, 201, 204), data=bytes(data), headers=headers)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
@@ -159,12 +180,33 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
                    'Overwrite': "T"}
         self._send('MOVE', old_path, (201, 204), headers=headers, allow_redirects=True)
 
+    def exists(self, path):
+        try:
+            self._send('HEAD', path, (200, 204, 207), allow_redirects=True)
+            return True
+        except _OperationFailed as e:
+            if e.actual_code == 404:
+                return False
+            raise
+
+    def upload(self, buf, path):
+        self._send('PUT', path, (200, 201, 204), data=bytes(buf))
+
+    def delete(self, path):
+        self._send('DELETE', path, (200, 204))
+
+    def mkdir(self, path):
+        self._send('MKCOL', path, (200, 201, 204))
+
+    def rmdir(self, path):
+        self.delete(path)
+
     def _send(self, method, path, expected_code, allow_redirects=False, **kwargs):
         url = self._get_url(path)
         response = self.session.request(method, url, allow_redirects=allow_redirects, **kwargs)
         if isinstance(expected_code, Number) and response.status_code != expected_code \
                 or not isinstance(expected_code, Number) and response.status_code not in expected_code:
-            raise easywebdav.OperationFailed(method, path, expected_code, response.status_code)
+            raise _OperationFailed(method, path, expected_code, response.status_code)
         return response
 
     def _get_url(self, path):

@@ -22,10 +22,7 @@ from pipefuse.chain import ChainingService
 _DEBUG_INPUT_OPERATIONS = ['read', 'write', 'getxattr']
 _DEBUG_OUTPUT_OPERATIONS = ['getxattr', 'listxattr']
 
-if sys.version_info >= (3, 0):
-    _BYTE_TYPES = (bytearray, bytes)
-else:
-    _BYTE_TYPES = (bytearray, bytes, str)
+_BYTE_TYPES = (bytearray, bytes)
 
 
 def _merge_arguments(args, kwargs):

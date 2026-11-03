@@ -15,9 +15,7 @@
 import sys
 
 import click
-import future
 import prettytable
-from future.utils import iteritems
 
 from src.api.entity import Entity
 from src.api.user import User
@@ -36,9 +34,9 @@ class ACLOperations(object):
         entity = Entity.load_by_id_or_name(identifier, object_type)
         identifier = entity['id']
         all_permissions = User.permissions(identifier, entity['aclClass'])
-        user_permissions = future.utils.lfilter(
+        user_permissions = list(filter(
             lambda permission: permission.name.lower() == sid.lower() and permission.principal != group,
-            all_permissions)
+            all_permissions))
         user_mask = 0
         if len(user_permissions) == 1:
             user_mask = user_permissions[0].mask
@@ -129,7 +127,7 @@ class ACLOperations(object):
         entities_table = prettytable.PrettyTable()
         entities_table.field_names = ["Type", "Name", "Owner"]
         entities_table.align = "r"
-        for entity_type, entities in iteritems(available_entities):
+        for entity_type, entities in available_entities.items():
             for entity in entities:
                 entity_name = cls.build_name_by_type(entity, entity_type)
                 if not entity_name:

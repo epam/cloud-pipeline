@@ -23,13 +23,13 @@ import stat
 import time
 from threading import RLock
 
-import easywebdav
 from dateutil.tz import tzlocal
 from fuse import FuseOSError, Operations, ENOTSUP
 
 from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
 from pipefuse.fsclient import UnsupportedOperationException
+from pipefuse.webdav import _OperationFailed as WebDavOperationFailed
 
 
 class FileHandleContainer(object):
@@ -161,7 +161,7 @@ class PipeFS(Operations, ChainingService):
             if props.ctime:
                 attrs['st_ctime'] = props.ctime
             return attrs
-        except easywebdav.OperationFailed:
+        except WebDavOperationFailed:
             raise FuseOSError(errno.ENOENT)
 
     @errorlogged
@@ -193,7 +193,7 @@ class PipeFS(Operations, ChainingService):
     def mkdir(self, path, mode):
         try:
             self._client.mkdir(path)
-        except easywebdav.OperationFailed:
+        except WebDavOperationFailed:
             raise FuseOSError(errno.EACCES)
 
     @errorlogged

@@ -13,16 +13,9 @@
 # limitations under the License.
 
 from boto3.s3.transfer import TransferConfig
-from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
-
-from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
-
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
+from urllib.request import urlopen
 
 import click
 import collections
@@ -54,8 +47,6 @@ class StorageItemManager(object):
         _boto_config = S3BucketOperations.get_proxy_config(cross_region=cross_region)
         self.s3 = session.resource('s3', config=_boto_config,
                                    region_name=self.region_name)
-        self.s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         if bucket:
             self.bucket = self.s3.Bucket(bucket)
         debug_log_proxies(_boto_config)
@@ -79,8 +70,6 @@ class StorageItemManager(object):
     def _get_client(self):
         _boto_config = S3BucketOperations.get_proxy_config()
         client = self.session.client('s3', config=_boto_config, region_name=self.region_name)
-        client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
         return client
 
@@ -258,8 +247,10 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         if not self.has_required_tag(tags, 'CP_OWNER'):
             tags += ('CP_OWNER={}'.format(self._get_user()),)
         TransferManager.ALLOWED_COPY_ARGS.append('Tagging')
+        TransferManager.ALLOWED_COPY_ARGS.append('TaggingDirective')
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
+            'TaggingDirective': 'REPLACE',
             'ACL': 'bucket-owner-full-control'
         }
         if StorageItemManager.show_progress(quiet, size, lock):
@@ -275,8 +266,6 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         source_s3 = self.session.resource('s3',
                                           config=_boto_config,
                                           region_name=source_region)
-        source_s3.meta.client._endpoint.http_session = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
         return source_s3.meta.client
 
@@ -674,8 +663,6 @@ class S3BucketOperations(object):
     def _get_client(cls, session, region_name=None):
         _boto_config = S3BucketOperations.get_proxy_config()
         client = session.client('s3', config=_boto_config, region_name=region_name)
-        client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
-            max_pool_connections=MAX_POOL_CONNECTIONS, http_adapter_cls=AwsProxyConnectWithHeadersHTTPSAdapter)
         debug_log_proxies(_boto_config)
         return client
 

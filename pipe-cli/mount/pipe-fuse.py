@@ -21,7 +21,6 @@ import platform
 import sys
 import traceback
 
-import future.utils
 from cachetools import TTLCache
 
 
@@ -69,7 +68,7 @@ from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributes
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
-_allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
+_allowed_logging_levels = list(filter(lambda name: isinstance(name, str), _allowed_logging_level_names))
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = 'ERROR'
 _debug_logging_level = 'DEBUG'

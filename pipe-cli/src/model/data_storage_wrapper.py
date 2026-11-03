@@ -16,9 +16,6 @@ import os
 from abc import abstractmethod, ABCMeta
 from ftplib import FTP, error_temp
 
-from future.standard_library import install_aliases
-
-install_aliases()
 
 from urllib.parse import urlparse
 
@@ -185,10 +182,10 @@ class DataStorageWrapper(object):
         return []
 
     def get_folders_list(self):
-        return map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FOLDER])
+        return list(map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FOLDER]))
 
     def get_files_list(self):
-        return map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FILE])
+        return list(map(lambda i: (i[1], i[2]), [item for item in self.items if item[0] == FILE]))
 
     def create_folder(self, relative_path):
         pass
@@ -211,8 +208,7 @@ class DataStorageWrapper(object):
             else self.path + self.path_separator
 
 
-class CloudDataStorageWrapper(DataStorageWrapper):
-    __metaclass__ = ABCMeta
+class CloudDataStorageWrapper(DataStorageWrapper, metaclass=ABCMeta):
 
     def __init__(self, bucket, path):
         super(CloudDataStorageWrapper, self).__init__(path)

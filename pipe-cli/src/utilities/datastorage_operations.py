@@ -20,7 +20,6 @@ import sys
 
 import click
 import prettytable
-from future.utils import iteritems
 from operator import itemgetter
 
 from src.api.data_storage import DataStorage
@@ -400,7 +399,7 @@ class DataStorageOperations(object):
         table.field_names = ["Tag name", "Value"]
         table.align = "l"
         table.header = True
-        for (key, value) in iteritems(tags):
+        for (key, value) in tags.items():
             table.add_row([key, value])
         return table
 
@@ -487,7 +486,7 @@ class DataStorageOperations(object):
                 line = line.strip()
                 splitted = line.split('\t')
                 path = splitted[0]
-                size = long(float(splitted[1]))
+                size = int(float(splitted[1]))
                 yield ('File', os.path.join(source_path, path), path, size)
 
     @classmethod

@@ -24,8 +24,7 @@ class UnsupportedOperationException(RuntimeError):
     pass
 
 
-class FileSystemClient(ChainingService):
-    __metaclass__ = ABCMeta
+class FileSystemClient(ChainingService, metaclass=ABCMeta):
 
     @abstractmethod
     def is_available(self):

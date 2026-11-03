@@ -15,8 +15,6 @@
 import threading
 import sys
 import collections
-from future.utils import iteritems
-from builtins import int
 
 from click import progressbar
 
@@ -41,7 +39,7 @@ class ProgressPercentage(object):
         self._size = float(size)
         self.unit_divider = 1
         self.unit = 'b'
-        for (unit, divider) in iteritems(self.units):
+        for (unit, divider) in self.units.items():
             if int(size) >= divider:
                 self.unit_divider = divider
                 self.unit = unit

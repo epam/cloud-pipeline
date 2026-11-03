@@ -17,8 +17,6 @@
 # https://github.com/sirosen/paramiko-shell/blob/master/interactive_shell.py@5a743a4e1eccff2d88b273aa108d0d1bb7268771
 # Corresponding license notices are available in the respective repositories
 
-from __future__ import print_function
-
 import paramiko
 import sys
 import os
@@ -26,12 +24,9 @@ import re
 import select
 import socket
 import shutil
-from paramiko.py3compat import u
 
 DEFAULT_TERMINAL_COLUMNS = 100
 DEFAULT_TERMINAL_LINES = 30
-PYTHON3 = sys.version_info.major == 3
-
 try:
     import termios
     import tty
@@ -54,21 +49,15 @@ def open_shell(channel, is_interactive=True):
 
 def transmit_to_std_out(channel, encoding='UTF-8'):
     # Read from the channel
-    if PYTHON3:
-        out = str(channel.recv(1024), encoding=encoding, errors='replace')
-        # Strip out SO/SI control characters for windows
-        if sys.platform.startswith('win'):
-            out = re.sub(r'[\x0E-\x0F]+', '', out)
-    else:
-        out = channel.recv(1024)
+    out = str(channel.recv(1024), encoding=encoding, errors='replace')
+    # Strip out SO/SI control characters for windows
+    if sys.platform.startswith('win'):
+        out = re.sub(r'[\x0E-\x0F]+', '', out)
     # Channel is closed - give up
     if len(out) == 0:
         return False
     # Write to stdout
-    if PYTHON3:
-        sys.stdout.write(out)
-    else:
-        print(out, end='')
+    sys.stdout.write(out)
     sys.stdout.flush()
     return True
 
