@@ -571,6 +571,8 @@ This brings the following changes:
 - the Linux binary and tarball require `glibc` 2.28 or later, e.g. RHEL / Rocky Linux 8, Debian 10, Ubuntu 20.04 or later. Runs of the tools, which images are based on older distributions, e.g. CentOS 7, cannot use `pipe`: neither its commands, nor the input/output data transfers and the storage mounts that are made with it
 - the `pipe-el6` binary and tarball for CentOS 6 / RHEL 6 are no longer provided
 - the macOS binary is no longer provided
+- a run fails at startup, if it sets the `CP_PIPELINE_CLI_BINARY_NAME` parameter to `pipe-el6`, or sets the `CP_PIPELINE_CLI_FROM_DIST_TAR` parameter to install `pipe` from the source tarball
+- the Linux one-file binary unpacks itself into the system temporary folder (`$TMPDIR`, `/tmp` by default) instead of `~/.pipe/tmp`. If `/tmp` does not allow to execute files (`noexec`), set `TMPDIR` to another folder or use the tarball
 - the NTLM proxy options of the `pipe configure` command (`--proxy-ntlm`, `--proxy-ntlm-user`, `--proxy-ntlm-domain`, `--proxy-ntlm-pass`) are removed
 - the installation from the source tarball (**Operation System** → **Source** in **Settings** → **CLI**) requires Python 3.10 or later
 - `pipe` requires newer versions of several Python dependencies, as the earlier versions have published security advisories, e.g. `requests` 2.33.0, `cryptography` 50.0.0 and `PyJWT` 2.15.0 or later
