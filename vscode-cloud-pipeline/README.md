@@ -35,3 +35,26 @@ The list **updates automatically** so you can see when something finishes starti
 - **Connect** — When the run is ready for SSH: **Connect via SSH** from the context menu, or open the run from the tree (same as your list open mode). Opens a remote window on the machine. **Sensitive** runs cannot be connected.
 - **Stop run** — Ends the job in Cloud Pipeline (with confirmation) and closes any SSH tunnel for that run.
 - **Stop SSH Tunnel** — Closes only the local tunnel and remote session; the run keeps running. If nothing is selected, choose which tunnel to close.
+
+---
+
+## Remote settings on connect
+
+The remote window opens your home folder on the run, and `~/cloud-data` there links to the mounted data storages. Searching them is very slow, so without extra settings a chat assistant (for example GitHub Copilot Chat) can wait for a very long time while it collects workspace context.
+
+So on **Connect**, the extension adds these settings to the run's **Remote [SSH]** settings (`~/.vscode-server/data/Machine/settings.json`, or `~/.cursor-server/...` in Cursor):
+
+```json
+{
+    "search.followSymlinks": false,
+    "search.exclude": { "**/cloud-data/**": true },
+    "files.exclude": { "**/cloud-data": true },
+    "files.watcherExclude": { "**/cloud-data/**": true }
+}
+```
+
+- Only missing settings are added. A value you already set on the run is kept.
+- The file must be plain JSON. If it has comments or trailing commas, nothing is added.
+- `~/cloud-data` is hidden from the Explorer. The storages stay available in the terminal.
+- To change what is added, edit **`cloudPipeline.remoteMachineSettings.values`**. Set a key to `null` to skip it — for example `"search.followSymlinks": null`.
+- To turn this off, set **`cloudPipeline.remoteMachineSettings.enabled`** to `false`.

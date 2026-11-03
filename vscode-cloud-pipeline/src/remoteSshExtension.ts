@@ -12,6 +12,14 @@ export function isCursorLikeHost(): boolean {
   return app.includes('cursor') || scheme === 'cursor';
 }
 
+/** Directory under the remote user's home where this host's Remote - SSH installs its server. */
+export function remoteServerDirName(): string {
+  if (isCursorLikeHost()) {
+    return '.cursor-server';
+  }
+  return (vscode.env.appName ?? '').toLowerCase().includes('insiders') ? '.vscode-server-insiders' : '.vscode-server';
+}
+
 /** Extension id to install when the user chooses “Install” (host-specific). */
 export function primaryRemoteSshExtensionId(): string {
   return isCursorLikeHost() ? REMOTE_SSH_CURSOR_ID : REMOTE_SSH_VSCODE_ID;

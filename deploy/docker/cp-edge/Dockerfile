@@ -36,7 +36,6 @@ ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
 RUN yum install -y python2 \
-                   python3 \
                    unzip \
                    git \
                    curl \
@@ -62,6 +61,15 @@ RUN yum install -y python2 \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
                 pykube==0.15.0
+
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3 && \
+    pip3 install rsa==4.0 \
+                 pykube-ng==23.6.0
 
 # Openresty + http_connect module
 RUN yum install -y  pcre-devel \

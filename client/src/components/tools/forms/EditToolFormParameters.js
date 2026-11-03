@@ -25,10 +25,13 @@ import classNames from 'classnames';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  nodeUpRetryCountNameIsReserved
+} from '../../pipelines/launch/form/utilities/node-up-retry-count';
 import roleModel from '../../../utils/roleModel';
 import styles from './EditToolFormParameters.css';
 
-@inject('runDefaultParameters')
+@inject('runDefaultParameters', 'preferences')
 @roleModel.authenticationInfo
 @observer
 export default class EditToolFormParameters extends React.Component {
@@ -536,8 +539,10 @@ export default class EditToolFormParameters extends React.Component {
         this.isSystemParameterRestrictedByRole({name: parameters[i].name || ''})
       ) {
         validation[i].error = 'This parameter is not allowed for use';
-      } else if (!this.props.isSystemParameters &&
-        this.isSystemParameter({name: parameters[i].name || ''})) {
+      } else if (!this.props.isSystemParameters && (
+        this.isSystemParameter({name: parameters[i].name || ''}) ||
+        nodeUpRetryCountNameIsReserved(parameters[i].name, this.props.preferences)
+      )) {
         validation[i].error = 'Parameter name is reserved';
       } else if (parameters
         .map(p => (p.name || '').toLowerCase())

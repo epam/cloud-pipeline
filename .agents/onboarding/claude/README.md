@@ -43,6 +43,11 @@ Windows CMD:
 curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
+On Windows the installer puts `claude.exe` in `%USERPROFILE%\.local\bin` but may not add that directory
+to `PATH` — it only warns. Add it yourself: System Properties → Environment Variables → the user `Path`
+→ Edit → New, paste `%USERPROFILE%\.local\bin`, then open a new terminal. The automated setup does this
+for you.
+
 ### Set up Claude Code settings
 
 Create your user settings file — `~/.claude/settings.json` on macOS, Linux and WSL,

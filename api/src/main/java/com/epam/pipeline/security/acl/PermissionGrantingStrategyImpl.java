@@ -129,6 +129,10 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             return true;
         }
 
+        if (isScopedReader(acl, sidsByType.get(SidType.ROLE)) && containsRead(permission)) {
+            return true;
+        }
+
         final List<AccessControlEntry> aces = acl.getEntries();
 
         for (Permission p : permission) {
@@ -222,6 +226,16 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
             return hasRole(roleSids, DefaultRoles.ROLE_RUN_ADMIN);
         }
         return false;
+    }
+
+    private boolean isScopedReader(final Acl acl, final List<Sid> roleSids) {
+        final String objectType = Optional.ofNullable(acl).map(Acl::getObjectIdentity)
+                .map(ObjectIdentity::getType).orElse(null);
+        return STORAGE_CLASSES.contains(objectType) && hasRole(roleSids, DefaultRoles.ROLE_STORAGE_READER);
+    }
+
+    private static boolean containsRead(final List<Permission> permissions) {
+        return permissions.stream().anyMatch(p -> p.getMask() == AclPermission.READ.getMask());
     }
 
     @Getter

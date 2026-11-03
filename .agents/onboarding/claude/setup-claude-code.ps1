@@ -3,6 +3,8 @@
 # the secret ones; an existing settings file is backed up before it is replaced.
 # macOS, Linux and WSL have their own copy of this, setup-claude-code.sh.
 # See README.md.
+# Keep this file ASCII: Windows PowerShell 5.1 reads a file without a byte-order mark as ANSI, and a
+# UTF-8 character such as an em dash then decodes to a quote that breaks the parse.
 
 $ErrorActionPreference = 'Stop'
 
@@ -22,8 +24,26 @@ if ($claude) {
 } else {
     Write-Host 'Installing Claude Code...'
     Invoke-RestMethod https://claude.ai/install.ps1 | Invoke-Expression
+    # The installer only warns when its bin directory is not on PATH, so add it to the user PATH here.
+    $binDir = Join-Path $env:USERPROFILE '.local\bin'
+    if (-not (Get-Command claude -ErrorAction SilentlyContinue) -and (Test-Path (Join-Path $binDir 'claude.exe'))) {
+        # Read and write the registry value raw, so that %VAR% entries in it stay unexpanded.
+        $envKey = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Environment', $true)
+        $userPath = $envKey.GetValue('Path', '', 'DoNotExpandEnvironmentNames')
+        $entries = @($userPath -split ';' | Where-Object { $_ })
+        $expanded = @($entries | ForEach-Object { [Environment]::ExpandEnvironmentVariables($_) })
+        if ($expanded -notcontains $binDir) {
+            $envKey.SetValue('Path', (($entries + $binDir) -join ';'), 'ExpandString')
+            # A registry write alone does not notify Explorer, so terminals opened from it would not
+            # see the change until sign-out; clearing an unused variable through .NET sends the notice.
+            [Environment]::SetEnvironmentVariable('CLAUDE_SETUP_PATH_REFRESH', $null, 'User')
+            Write-Host "Added $binDir to your user PATH."
+        }
+        $envKey.Close()
+        $env:Path = "$env:Path;$binDir"
+    }
     if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
-        Write-Host 'Installed, but "claude" is not on PATH in this shell yet — open a new one.'
+        Write-Host 'Installed, but "claude" is not on PATH in this shell yet - open a new one.'
         Write-Host 'The settings file below is written either way.'
     }
 }
@@ -40,7 +60,7 @@ if (Test-Path $settingsFile) {
             }
         }
     } catch {
-        Write-Host "Could not read the settings you already have — every value is asked for afresh."
+        Write-Host "Could not read the settings you already have - every value is asked for afresh."
     }
 }
 
@@ -71,7 +91,7 @@ function Read-Required {
             }
         } catch {
             Write-Host ''
-            Write-Error 'Aborted — no settings were written.'
+            Write-Error 'Aborted - no settings were written.'
             exit 1
         }
         $value = $value.Trim()
@@ -106,7 +126,7 @@ if (Test-Path $settingsFile) {
     $backup = "$settingsFile.bak.$(Get-Date -Format 'yyyyMMddHHmmss')"
     Copy-Item $settingsFile $backup
     Restrict-ToOwner $backup
-    Write-Host "Replacing $settingsFile — the previous one is now $backup"
+    Write-Host "Replacing $settingsFile - the previous one is now $backup"
 }
 
 $settings = [ordered]@{

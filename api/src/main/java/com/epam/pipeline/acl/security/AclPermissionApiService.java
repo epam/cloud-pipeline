@@ -17,16 +17,24 @@
 package com.epam.pipeline.acl.security;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ACL_ENTITY_OWNER;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.OR;
+import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
+import static com.epam.pipeline.security.acl.AclExpressions.USER_ADMIN_ONLY;
 
 import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.eventsourcing.acl.ACLUpdateEventProducer;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service public class AclPermissionApiService {
 
@@ -72,6 +80,13 @@ import org.springframework.stereotype.Service;
     @PreAuthorize("hasRole('ADMIN') or @metadataPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
     public EntityPermissionVO loadEntityPermission(final Long id, final AclClass aclClass) {
         return permissionManager.loadEntityPermission(aclClass, id);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR + USER_ADMIN_ONLY + OR_USER_READER + OR
+            + "hasPermission(#userId, 'com.epam.pipeline.entity.user.PipelineUser', 'READ')")
+    @PostFilter("hasRole('ADMIN') or @checkPermissionHelper.isAllowed('READ', filterObject.entity)")
+    public List<EntityPermission> loadUserEntitiesPermissions(final Long userId, final AclClass aclClass) {
+        return permissionManager.loadUserEntitiesPermissions(userId, aclClass);
     }
 
     private void notifyACLChange(final AclSecuredEntry entry) {

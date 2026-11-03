@@ -390,12 +390,16 @@ public class PipelineLauncher {
                 .put(SystemParams.RUN_TIME, timeFormat.format(run.getStartDate()));
         systemParamsWithValue.put(SystemParams.RUN_ID, run.getId().toString());
 
-        UserContext owner = Optional.ofNullable(authManager.getUserContext())
-                .orElse(userManager.loadUserContext(run.getOwner()));
+        final PipelineUser user = userManager.loadByNameOrId(run.getOwner());
+        // the token is always issued for the run owner, not for the caller: a run can be launched
+        // by a scheduler (as an admin) or by another user (e.g. admin resuming a run).
+        // The caller context is reused only if it is the owner, to keep its token claims (e.g. external)
+        final UserContext owner = Optional.ofNullable(authManager.getUserContext())
+                .filter(caller -> user.getUserName().equalsIgnoreCase(caller.getUsername()))
+                .orElseGet(() -> new UserContext(user));
         systemParamsWithValue.put(SystemParams.API_TOKEN, authManager
                 .issueToken(owner, null).getToken());
 
-        final PipelineUser user = userManager.loadByNameOrId(run.getOwner());
         systemParamsWithValue.put(SystemParams.OWNER, run.getOwner());
         systemParamsWithValue.put(SystemParams.OWNER_ID, String.valueOf(user.getId()));
         if (StringUtils.hasText(user.getEmail())) {

@@ -30,12 +30,12 @@ _deps_shared = [
     'pytz==2020.1',
     'requests-oauthlib==1.3.0',
     'rsa==4.0',
-    'six==1.15.0',
     'tzlocal==2.1',
     'pywin32==300;platform_system == "Windows"',
 ]
 
 _deps_py2 = [
+    'six==1.15.0',
     'PyYAML==5.3.1',
     'backports-abc==0.5',
     'backports.ssl-match-hostname==3.7.0.1',
@@ -63,8 +63,8 @@ _deps_py2 = [
     'pyOpenSSL==19.0.0;platform_system != "Windows"',
     'pyOpenSSL==20.0.1;platform_system == "Windows"',
 ]
-
 _deps_py3 = [
+    'six==1.16.0',
     'PyYAML==6.0.3',
     'certifi==2026.7.22',
     'cryptography==50.0.1',

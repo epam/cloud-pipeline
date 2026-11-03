@@ -717,10 +717,6 @@ function parse_options {
         shift # past argument
         shift # past value
         ;;
-        -demo|--deploy-demo)
-        export CP_DEPLOY_DEMO=1
-        shift # past argument
-        ;;
         -s|--service)
         enable_service "$2"
         shift # past argument

@@ -1,0 +1,11 @@
+# [MANUAL] Advanced_filter by non equal owner validation
+
+Test verifies filtering the advanced search results using `owner`.
+
+**Prerequisites**:
+- Several completed pipelines launched by different users
+
+| Steps | Actions | Expected results |
+| :---: | --- | --- |
+| 1 | Perform the [EPMCMBIBPC-727](EPMCMBIBPC-727.md) case |  |
+| 2 | Enter `owner!={existing user name}` into the search field and press **Enter** | All pipelines except those launched by the user specified at step 2 are displayed |
