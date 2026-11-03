@@ -28,6 +28,7 @@
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 - [`pipe` CLI on Python 3](#pipe-cli-on-python-3)
+- [Python 3 only](#python-3-only)
 - [GitLab 19 support](#gitlab-19-support)
 
 ***
@@ -548,12 +549,9 @@ From CentOS 7, which has reached its end of life:
 
 From Rocky Linux 8: the EDGE service (`cp-edge`).
 
-From Debian (`python:3.9-slim`): the node reporter (`cp-node-reporter`). It keeps Python 3.9, now installed with `micromamba`.
+From Debian (`python:3.9-slim`): the node reporter (`cp-node-reporter`). It now runs Python 3.12, installed with `micromamba`.
 
-Rocky Linux 9 has no Python 2 package:
-
-- The API, EDGE and WebDAV images take Python 2 from the platform's Miniconda2 distribution, as a job container does. It is installed into `/opt/conda` and linked as `python` and `python2`.
-- The other images that installed Python 2 no longer do, because nothing in them used it.
+Rocky Linux 9 has no Python 2 package, and the platform services no longer use Python 2: see [Python 3 only](#python-3-only).
 
 Other changes:
 
@@ -581,6 +579,36 @@ This brings the following changes:
 On a deployment that is updated, not installed anew, **Settings** → **CLI** keeps the old installation hints, including the **MacOS** option, until an admin updates the **`ui.pipe.cli.install.template`** preference.
 
 For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+## Python 3 only
+
+The platform no longer uses Python 2. Its Python code runs on Python 3.12, both in the runs and in the platform services.
+
+In a run:
+
+- When the run starts, it installs the platform's Python 3.12 distribution into `/usr/local/python3.12`. Python 2 (Miniconda2) is no longer installed. The new `CP_PYTHON3_DISTRO_URL` parameter sets where the distribution is downloaded from. If the download fails, the run uses the `python3.12` of the tool image. If the image has none, the run fails at startup.
+- `CP_PYTHON_PATH` points to this Python 3.12. The `pipeline` package (`pipe-common`), the FS Browser and the platform's scripts run with it. They require Python 3.10 or later.
+- `/usr/local/bin/python3` and `/usr/local/bin/pip3` link to this Python 3.12, and its `bin` folder goes first in `PATH`. So in a run, `python3` is the platform's Python 3.12, not the `python3` of the tool image. This also applies to the images that keep their own Python in `/usr/local/bin`, e.g. the `python` images from Docker Hub. To use the Python of the image, call it by its full path (e.g. `/usr/bin/python3`) or by its version (e.g. `python3.11`).
+- The run replaces `/usr/local/python3.12` and `/usr/local/openssl`, if the tool image has them.
+- `CP_PYTHON2_PATH` is no longer set. A script that calls `$CP_PYTHON2_PATH` must use `$CP_PYTHON_PATH`, and must run on Python 3.
+- The `CP_CAP_INSTALL_PRIVATE_DEPS` and `CP_CONDA_DISTRO_URL` parameters no longer have an effect.
+- When the platform's package repositories are used (`CP_REPO_ENABLED`), `pip` installs from the Python 3 package mirror (`tools/python/pypi3/simple`). The new `CP_REPO_PYPI3_BASE_URL_DEFAULT` and `CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT` parameters set it. They replace `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT`, which no longer have an effect.
+
+The Python 3.12 distribution is built for `glibc` 2.17, and some of its modules need system libraries that newer distributions do not have. So these features do not work in all the tool images:
+
+- **CentOS 7 and other distributions with `glibc` older than 2.26.** The `pipeline` package cannot be installed from the package mirror, because its dependency PyNaCl has no build for this `glibc`. A run of such a tool fails at startup. The `pipe` CLI does not run there either: see [`pipe` CLI on Python 3](#pipe-cli-on-python-3).
+- **`ctypes` needs `libffi.so.6` (`libffi` 3.1).** Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later have newer `libffi` versions only. In their images, the NFS events observer of a run does not work, and the user code that imports `ctypes` fails. On Rocky Linux 9 and RHEL 9, the `libffi3.1` package from EPEL provides `libffi.so.6`.
+- **`crypt` needs `libcrypt.so.1`.** On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
+- **`sqlite3` needs `libsqlite3.so.0`.** Minimal Debian and Ubuntu images do not have it. It comes from the `libsqlite3-0` package.
+
+For more details see [Image requirements](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#image-requirements).
+
+In the platform services:
+
+- The API (`cp-api-srv`), EDGE (`cp-edge`) and WebDAV (`cp-dav`) images run their Python scripts with the same Python 3.12 distribution, installed into `/usr/local/python3.12`. They have no Python 2.
+- The WebDAV image installs `libffi3.1` from EPEL, so the NFS mount watcher can use `ctypes`.
+- The node reporter (`cp-node-reporter`) runs Python 3.12.
+- The tool that synchronizes users and tools between two deployments (`sync.sh`, from the installation contents) installs Python 3.12 into `/usr/local/python3.12`, if it is not there. The `CP_PYTHON3_DISTRO_URL` variable sets where it is downloaded from. It replaces `CP_CONDA_DISTRO_URL`.
 
 ## GitLab 19 support
 
