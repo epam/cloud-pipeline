@@ -18,6 +18,8 @@ and were not run on a deployment. Expect to adapt them in the rehearsal.
 cluster, on the same storage type as the real deployment. The copy holds the real SMTP, webhook and SAML settings: the
 isolated cluster must not reach the real SMTP server, the platform services or the IdP. Write down how long each step
 takes: this gives the length of the maintenance window. Use the same image tags in the rehearsal and in the real run.
+If the deployment keeps `/etc/gitlab` in a volume of the container, fix that before you take the copy: otherwise the
+copy of `/opt/gitlab` does not hold it (see [Where /etc/gitlab is kept](#where-etcgitlab-is-kept)).
 
 **Do not run `pipectl` for `cp-git`, `cp-gitlab-db` or `cp-api-db`** from the start of the procedure until the install
 config has the new values (see [Switch to the GitLab 19 image](#switch-to-the-gitlab-19-image)).
@@ -177,6 +179,8 @@ Every image checks the version of the data it starts on, and stops when a requir
     * a pipeline repository to clone in the checks, as `<namespace>/<project>`
 * A Cloud Pipeline build that has the GitLab 19 support, deployed to the `api` before the freeze (see the checks).
   The Git users synchronization (`cp-git-sync`) runs from the `api-srv` image, so it gets the support with it.
+  Do not deploy `cp-git` from this build before you check [Where /etc/gitlab is kept](#where-etcgitlab-is-kept): a
+  new `cp-git` pod can lose `/etc/gitlab`.
 * The `git-19-<version>` image of the same build in the registry of the deployment, under the same prefix as the
   current `cp-git` image (`<registry prefix>:git-<version>`, or `<registry prefix>:git-9-<version>` once a build with
   the GitLab 19 support has deployed `cp-git`).
@@ -316,6 +320,118 @@ repositories of the freeze too (see [Roll back](#roll-back)).
 ### Facts to collect
 
 Collect these facts before the rehearsal, on the running 9.4. Each one changes the procedure as described.
+
+#### Where /etc/gitlab is kept
+
+`/etc/gitlab` holds `gitlab.rb`, `gitlab-secrets.json` and the SSH host keys. `gitlab-secrets.json` holds the keys of
+the data that GitLab encrypts in its database. The procedure backs up and edits `/etc/gitlab` on the node, as
+`/opt/gitlab/config`. Older `cp-git` deployments do not mount it there: for example, the ones of the builds from
+May 2019 to December 2021. Check the deployment. `/etc/gitlab` must be in the first list, and the second list must
+show its volume with the path `/opt/gitlab/config`:
+
+```bash
+kubectl get deploy cp-git -o jsonpath='{range .spec.template.spec.containers[0].volumeMounts[*]}{.mountPath} {.name}{"\n"}{end}'
+kubectl get deploy cp-git -o jsonpath='{range .spec.template.spec.volumes[*]}{.name} {.hostPath.path}{"\n"}{end}'
+```
+
+If `/etc/gitlab` is not in the first list, it is a volume of the container. The GitLab image declares that volume.
+Each new container gets a new, empty one, and Kubernetes deletes the old one together with the old container. GitLab
+then creates new secrets and new SSH host keys at start. So the running container has the only current copy of
+`/etc/gitlab`. The backup worker of `cp-git` also keeps copies in the system storage
+(`backups/cp-git/<date>/cp-bkp-git-settings-dump-<date>.tgz`, the last 10). But a copy taken before the current
+container started holds other secrets. A stop image would start on an empty `/etc/gitlab`: with new secrets, and
+without the edits of the procedure. Fix the deployment before the rehearsal copy, and before anything replaces the
+`cp-git` pod. The fix restarts GitLab, so do it at a quiet time: while GitLab is down, runs that clone a pipeline
+repository fail.
+
+Check how the image writes `gitlab.rb`. `cat >>` means that it appends its settings to the file at each start.
+`cat >` means that it writes the file again:
+
+```bash
+kubectl exec "$(git_pod)" -- grep -n 'gitlab.rb <<' /update_config.sh
+```
+
+Copy `/etc/gitlab` out of the running pod. The archive holds secrets, so keep it in the backup directory. The first
+command does not overwrite an earlier copy: that copy can be the only one with the right secrets. The list must show
+`gitlab/gitlab-secrets.json` and the `gitlab/ssh_host_*_key` files:
+
+```bash
+[ ! -e "$BKP_DIR/etc-gitlab.tar" ] &&
+    kubectl exec "$(git_pod)" -- tar -C /etc --numeric-owner -cpf - gitlab > "$BKP_DIR/etc-gitlab.tar"
+tar -tvf "$BKP_DIR/etc-gitlab.tar"
+```
+
+Put everything except `gitlab.rb` into `/opt/gitlab/config`. If that directory is already there, it is not what GitLab
+reads now (it can be left from a deployment older than May 2019): move it aside. Each command runs only when the one
+before it worked:
+
+```bash
+[ ! -e /opt/gitlab/config ] || mv /opt/gitlab/config "/opt/gitlab/config.unused-$(date +%Y%m%d%H%M)" &&
+    mkdir -m 775 /opt/gitlab/config &&
+    tar -C /opt/gitlab/config --numeric-owner --strip-components=1 --exclude=gitlab/gitlab.rb \
+        -xpf "$BKP_DIR/etc-gitlab.tar" &&
+    echo "seeded"
+```
+
+`gitlab.rb` is left out on purpose. An image that appends creates the file when it is missing, so the next start
+creates it as it is today. With the old file, the next start would add a second copy of the settings. An image that
+writes the file again does not need it either.
+
+Compare the pod and the node. Every file except `gitlab.rb` must be the same. This must print `same`:
+
+```bash
+diff <(kubectl exec "$(git_pod)" -- sh -c 'cd /etc/gitlab && find . -type f ! -path ./gitlab.rb -exec sha256sum {} + | LC_ALL=C sort -k 2') \
+     <(cd /opt/gitlab/config && find . -type f ! -path ./gitlab.rb -exec sha256sum {} + | LC_ALL=C sort -k 2) &&
+    echo same
+```
+
+Then restart `cp-git` on the same image, with `/opt/gitlab/config` mounted at `/etc/gitlab`. GitLab is down for a few
+minutes. `git_stop` scales the deployment to 0 before the patch: two GitLab pods must never run on the same data. The
+patch also sets the image pull policy to `IfNotPresent`, so that the start uses the image that is already on the node
+([The cp-git deployment](#2-the-cp-git-deployment) sets it too).
+
+```bash
+GIT9_IMAGE=$(kubectl get deploy cp-git -o jsonpath='{.spec.template.spec.containers[0].image}')
+git_stop
+kubectl patch deployment cp-git --type=json -p '[
+  {"op": "add", "path": "/spec/template/spec/volumes/-",
+   "value": {"name": "git-config", "hostPath": {"path": "/opt/gitlab/config"}}},
+  {"op": "add", "path": "/spec/template/spec/containers/0/volumeMounts/-",
+   "value": {"name": "git-config", "mountPath": "/etc/gitlab"}},
+  {"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "IfNotPresent"}]' &&
+    git_start "$GIT9_IMAGE"
+```
+
+If the patch fails, do not start `cp-git` until the mount is there. A start without it loses `/etc/gitlab` again, and
+then `/opt/gitlab/config` and the copy in the backup directory are the only ones with the right secrets. Fix the cause
+(for example, a volume named `git-config` that is already there), and run the patch and `git_start` again.
+
+Check the result:
+
+* `/etc/gitlab` must be in the first list again, and the second list must show the path `/opt/gitlab/config`.
+* The `diff` compares the node with the copy from the old container, and must print `same`. So the secrets and the SSH
+  host keys did not change, and the new `gitlab.rb` is the same as the old one. A `gitlab.rb` that differs is expected
+  only when the ConfigMap or the certificates changed after the old container started. The `diff` shows secrets: read
+  it on the node only.
+* `smoke` must print the version 9.4 again.
+* The last command must print the `cp-git` pod, not the `cp-git-sync` pod. The pod has a new name now, and the backup
+  worker runs the backup in the first pod whose name starts with `cp-git`. If it prints the `cp-git-sync` pod, give
+  the `cp-git` pod another name, as in the second block of **Backup** in [After the upgrade](#after-the-upgrade).
+
+```bash
+kubectl get deploy cp-git -o jsonpath='{range .spec.template.spec.containers[0].volumeMounts[*]}{.mountPath} {.name}{"\n"}{end}'
+kubectl get deploy cp-git -o jsonpath='{range .spec.template.spec.volumes[*]}{.name} {.hostPath.path}{"\n"}{end}'
+mkdir "$BKP_DIR/etc-gitlab" &&
+    tar -C "$BKP_DIR/etc-gitlab" --numeric-owner --strip-components=1 -xpf "$BKP_DIR/etc-gitlab.tar"
+diff -r "$BKP_DIR/etc-gitlab" /opt/gitlab/config && echo same
+smoke
+kubectl get po | grep '^cp-git' | head -1
+```
+
+If you ran [Checks that must pass](#checks-that-must-pass) before this fix, run them again.
+
+From now on, an image that appends adds its settings to `gitlab.rb` once more at each start. The last copy wins, so
+GitLab gets the same settings, and the edits of the procedure change every copy.
 
 #### Repository count and size
 
@@ -743,8 +859,9 @@ an old and a new GitLab pod on the same data at the same time.
 
 ### 3. Edit gitlab.rb
 
-The Cloud Pipeline 9 image writes `/etc/gitlab/gitlab.rb` again from the environment at every start. The plain GitLab
-images of the stops do not: they use the file as it is. So edit it now, on the node
+The Cloud Pipeline 9 image writes `/etc/gitlab/gitlab.rb` again from the environment at every start, or appends to it
+(see [Where /etc/gitlab is kept](#where-etcgitlab-is-kept)). The plain GitLab images of the stops do not: they use
+the file as it is. So edit it now, on the node
 (`/opt/gitlab/config/gitlab.rb`), and do not start the Cloud Pipeline 9 image again, except for a rollback to 9.4.
 
 * Point GitLab at `cp-gitlab-db`.
@@ -1279,7 +1396,9 @@ on GitLab 19.5, and check the log of `cp-git-sync` again.
 **The system event.** Remove the system event of the window.
 
 **Clean up.** After the agreed time, remove what the upgrade left: the `data-pg9.6`, `data-pg11`, `data-pg12`,
-`data-pg14` and `data-pg16` directories, the GitLab stop images on the node, and the old backups. Keep the backup of
+`data-pg14` and `data-pg16` directories, the GitLab stop images on the node, and the old backups. If
+[Where /etc/gitlab is kept](#where-etcgitlab-is-kept) needed a fix, also remove `/opt/gitlab/config.unused-*`, and
+`etc-gitlab.tar` and `etc-gitlab` of the backup directory: they hold secrets. Keep the backup of
 `33-19.5.3` and the freeze copy until then. Then drop the GitLab database of 9.4 and its user from `cp-api-db`. This
 cannot be undone: it removes the rollback to 9.4.
 
@@ -1362,7 +1481,9 @@ Docker Hub.
 
 The database of 9.4 is still in `cp-api-db`, as it was at the freeze. Restore the GitLab tree from the freeze, stop
 `cp-gitlab-db`, and start the old image. The 9.4 image writes `gitlab.rb` again at start, from the ConfigMap: put the
-ConfigMap of the freeze back first, in case it was changed at the switch.
+ConfigMap of the freeze back first, in case it was changed at the switch. An image that appends to `gitlab.rb` (see
+[Where /etc/gitlab is kept](#where-etcgitlab-is-kept)) would add to the restored file, so remove the file before the
+start: the image then writes it once.
 
 ```bash
 TS=$(date +%Y%m%d%H%M)
@@ -1373,6 +1494,7 @@ kubectl patch configmap cp-config-global --type merge -p "{\"data\": {
     \"GITLAB_DATABASE_HOST\": \"$(grep -E '^  GITLAB_DATABASE_HOST:' "$BKP_DIR/00-freeze/cp-config-global.yaml" | awk '{print $2}')\"}}"
 for d in config data pki; do mv "/opt/gitlab/$d" "/opt/gitlab/$d.failed-$TS"; done
 tar -C /opt --numeric-owner -xpf "$BKP_DIR/00-freeze/opt-trees.tar"
+rm /opt/gitlab/config/gitlab.rb
 git_start "<the cp-git image of 9.4, from deployments.yaml of the freeze>"
 grep -n "db_host" /opt/gitlab/config/gitlab.rb
 smoke
