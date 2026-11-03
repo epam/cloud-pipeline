@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # The GitLab API version of the sync, taken from the git.gitlab.api.version preference (no network):
-# `python2 -m unittest test_gitlab_api_version` (requires the `mock` package).
+# `python3 -m unittest test_gitlab_api_version`.
 
 import os
 import unittest
@@ -21,7 +21,7 @@ import unittest
 os.environ['API'] = 'https://pipeline.example.com/restapi'
 os.environ['API_TOKEN'] = 'test-token'
 
-import mock
+from unittest import mock
 
 from internal.api.gitlab_api import GitLab
 from internal.model.preference_model import PreferenceModel

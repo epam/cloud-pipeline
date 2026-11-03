@@ -31,7 +31,7 @@ def main():
                 if not response:
                     raise RuntimeError("Failed to add hook to pipeline repository")
 
-                print 'Pipeline repository hook was added for pipeline {pipeline} \n'.format(pipeline=pipeline['name'])
+                print('Pipeline repository hook was added for pipeline {pipeline} \n'.format(pipeline=pipeline['name']))
 
 
 if __name__ == '__main__':

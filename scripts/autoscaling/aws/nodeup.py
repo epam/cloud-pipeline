@@ -29,7 +29,10 @@ from itertools import groupby
 from operator import itemgetter
 from random import randint
 import json
-from distutils.version import LooseVersion
+try:
+    from packaging.version import Version as LooseVersion
+except ImportError:
+    from distutils.version import LooseVersion
 import fnmatch
 import sys
 import math
@@ -182,7 +185,7 @@ def get_networks_config(ec2, aws_region, instance_type):
 
     if allowed_networks and len(allowed_networks) > 0:
         try:
-            allowed_networks_details = ec2.describe_subnets(SubnetIds=allowed_networks.values())['Subnets']
+            allowed_networks_details = ec2.describe_subnets(SubnetIds=list(allowed_networks.values()))['Subnets']
             
             # Get the list of AZs, which offer the "instance_type", as some of the AZs can't provide certain types and an error is thrown:
             #   Your requested instance type (xxxxx) is not supported in your requested Availability Zone (xxxxx)
@@ -328,7 +331,7 @@ def resource_tags(cloud_region):
     merged_tags = merge_tags(region_tags, config_tags)
     if merged_tags is None:
         return tags
-    for key, value in merged_tags.iteritems():
+    for key, value in merged_tags.items():
         tags.append({"Key": key, "Value": value})
     return tags
 
@@ -339,9 +342,9 @@ def merge_tags(region_tags, global_tags):
     if global_tags is None:
         return region_tags
     merged = {}
-    for key, value in global_tags.iteritems():
+    for key, value in global_tags.items():
         merged[key] = value
-    for key, value in region_tags.iteritems():
+    for key, value in region_tags.items():
         merged[key] = value
     return merged
 
@@ -391,8 +394,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     subnet_id = None
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks)-1)
-        az_name = allowed_networks.items()[az_num][0]
-        subnet_id = allowed_networks.items()[az_num][1]
+        az_name, subnet_id = list(allowed_networks.items())[az_num]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
         additional_args.update({ 'SubnetId': subnet_id, 'SecurityGroupIds': get_security_groups(aws_region)})
     else:
@@ -422,7 +424,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             **additional_args
         )
     except ClientError as client_error:
-        if 'InstanceLimitExceeded' in client_error.message:
+        if 'InstanceLimitExceeded' in str(client_error):
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
         else:
@@ -488,7 +490,7 @@ def get_certs_string():
             return ""
         else:
             entries = []
-            for url, cert in result.iteritems():
+            for url, cert in result.items():
                 entries.append(command_pattern.format(url=url, cert=cert))
             return " && ".join(entries)
     return ""
@@ -614,7 +616,7 @@ def get_swap_ratio(swap_params):
 
 def replace_docker_images(pre_pull_images, user_data_script):
     global api_token
-    payload = jwt.decode(api_token, verify=False)
+    payload = jwt.decode(api_token, options={"verify_signature": False}, algorithms=["RS256"])
     if 'sub' in payload:
         subject = payload['sub']
         user_data_script = user_data_script\
@@ -668,8 +670,8 @@ def get_current_status(ec2, ins_id):
         else:
             return -1
     except ClientError as client_error:
-        if 'does not exist' in client_error.message:
-            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, client_error.message))
+        if 'does not exist' in str(client_error):
+            pipe_log_warn('Get status request for instance %s returned error %s.' % (ins_id, str(client_error)))
             return -1
         else:
             raise client_error
@@ -982,8 +984,8 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             LaunchSpecification=specifications,
         )
     except ClientError as client_error:
-        if 'Max spot instance count exceeded' in client_error.message or \
-                'InstanceLimitExceeded' in client_error.message:
+        if 'Max spot instance count exceeded' in str(client_error) or \
+                'InstanceLimitExceeded' in str(client_error):
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
         else:

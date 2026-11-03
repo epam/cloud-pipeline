@@ -17,7 +17,6 @@ import sys
 import time
 from internal.config import Config, ConfigNotFoundError
 from internal.synchronization.synchronization import Synchronization
-from exceptions import KeyboardInterrupt
 
 
 def configure(argv):
@@ -40,26 +39,26 @@ def configure(argv):
         elif opt in ("-n", "--nfs-root"):
             nfs_root = arg
     Config.store(key, api, users_root, nfs_root)
-    print 'syncnfs configuration updated'
+    print('syncnfs configuration updated')
     exit(0)
 
 
 def help():
-    print 'Use \'configure\' command to setup synchronization properties and settings:'
-    print 'python syncnfs.py configure ' \
+    print('Use \'configure\' command to setup synchronization properties and settings:')
+    print('python syncnfs.py configure ' \
           '--api=<api path> ' \
           '--key=<api token> ' \
           '--users-root=<root folder for users storages links> ' \
-          '--nfs-root=<root folder for nfs mounts>'
-    print ''
-    print 'Use \'sync\' command to synchronize users nfs permissions.'
-    print 'python syncnfs.py sync' \
+          '--nfs-root=<root folder for nfs mounts>')
+    print('')
+    print('Use \'sync\' command to synchronize users nfs permissions.')
+    print('python syncnfs.py sync' \
           '--api=<api path> ' \
           '--key=<api token> ' \
           '--users-root=<root folder for users storages links> ' \
           '--nfs-root=<root folder for nfs mounts>' \
-          '-l[use symlinks instead of mounting directories]'
-    print ''
+          '-l[use symlinks instead of mounting directories]')
+    print('')
 
 
 def main(argv):
@@ -93,23 +92,23 @@ def main(argv):
                     elif opt == '-l':
                         symlink = True
                 if config.api is None:
-                    print 'API path is not configured'
+                    print('API path is not configured')
                     help()
                     exit(1)
                 elif config.access_key is None:
-                    print 'API token is not configured'
+                    print('API token is not configured')
                     help()
                     exit(1)
                 elif config.users_root is None:
-                    print 'Users root is not configured'
+                    print('Users root is not configured')
                     help()
                     exit(1)
                 elif config.nfs_root is None:
-                    print 'Nfs root is not configured'
+                    print('Nfs root is not configured')
                     help()
                     exit(1)
             except ConfigNotFoundError as error:
-                print error.message
+                print(str(error))
                 help()
                 exit(1)
             start = time.time()
@@ -117,10 +116,10 @@ def main(argv):
                 Synchronization(config).synchronize(user_ids=user, use_symlinks=symlink)
             except KeyboardInterrupt:
                 exit(2)
-            print ''
-            print 'Synchronization time: {} seconds'.format(time.time() - start)
+            print('')
+            print('Synchronization time: {} seconds'.format(time.time() - start))
         else:
-            print 'Unknown command {}'.format(command)
+            print('Unknown command {}'.format(command))
             exit(1)
     else:
         help()

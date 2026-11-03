@@ -22,7 +22,6 @@ import traceback
 import os
 import subprocess
 import re
-from exceptions import KeyboardInterrupt
 
 # All user's directories and links should be CHMODed to 550
 # 550 is an octal number for -r-xr-x--- permissions.
@@ -55,7 +54,7 @@ class Synchronization(object):
                 try:
                     if test_storage.path.lower().startswith('nfs://'):
                         if share_mounts[test_storage.share_mount_id].mount_type == "SMB":
-                            search = re.search('([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
+                            search = re.search(r'([^\/]+)\/(.+)' ,test_storage.path[len('nfs://'):])
                             (server_name, storage_path) = search.group(1), search.group(2)
                         else:
                             (server_name, storage_path) = test_storage.path[len('nfs://'):].split(':')
@@ -64,9 +63,9 @@ class Synchronization(object):
                 except AttributeError:
                     pass
                 if server_name is None or storage_path is None:
-                    print 'Wrong storage path: {}'.format(test_storage.path)
+                    print('Wrong storage path: {}'.format(test_storage.path))
                     return None
-                storage_path = re.sub('\/[\/]+', '/', storage_path)
+                storage_path = re.sub(r'\/[\/]+', '/', storage_path)
                 if storage_path.startswith('/'):
                     storage_path = storage_path[1:]
                 storage_link_destination = os.path.join(self.__config__.nfs_root, server_name, storage_path)
@@ -74,12 +73,12 @@ class Synchronization(object):
                 storage_link_destination = os.path.join(self.__config__.nfs_root, test_storage.type, test_storage.name)
 
             if not os.path.exists(storage_link_destination):
-                print 'Storage mount not found at path: {}'.format(storage_link_destination)
+                print('Storage mount not found at path: {}'.format(storage_link_destination))
                 return None
             return storage_link_destination
 
         try:
-            print 'Fetching storages...'
+            print('Fetching storages...')
             self.__storages__ = []
             self.__users__ = []
             share_mounts = self.list_share_mounts()
@@ -91,37 +90,37 @@ class Synchronization(object):
                         for user in storage.users:
                             if user.username not in self.__users__:
                                 self.__users__.append(user.username)
-            print '{} NFS storages fetched'.format(len(self.__storages__))
+            print('{} NFS storages fetched'.format(len(self.__storages__)))
             for user in self.__users__:
                 if user_matches_criteria(user):
                     self.synchronize_user(user, use_symlinks=use_symlinks)
-                    print ''
+                    print('')
         except RuntimeError as error:
-            print error.message
+            print(str(error))
         except KeyboardInterrupt:
             raise
         except:
-            print 'Error: ', traceback.format_exc()
+            print('Error: ', traceback.format_exc())
 
     def synchronize_user(self, user, use_symlinks=False):
         try:
-            print 'Processing user {}.'.format(user)
+            print('Processing user {}.'.format(user))
             user_foler_name = user.split('@')[0]
             user_destination_directory = os.path.join(self.__config__.users_root, user_foler_name)
             if not os.path.exists(self.__config__.users_root):
-                print 'Creating users destination directory {}...'.format(self.__config__.users_root)
+                print('Creating users destination directory {}...'.format(self.__config__.users_root))
                 os.makedirs(self.__config__.users_root)
-                print 'Done.'
+                print('Done.')
             if not os.path.exists(user_destination_directory):
-                print 'Creating destination directory {}...'.format(user_destination_directory)
+                print('Creating destination directory {}...'.format(user_destination_directory))
                 os.mkdir(user_destination_directory)
-                print 'Done.'
+                print('Done.')
             else:
-                print 'Destination directory: {}'.format(user_destination_directory)
+                print('Destination directory: {}'.format(user_destination_directory))
             try:
                 os.chmod(user_destination_directory, chmod_mask_decimal)
             except OSError as error:
-                print 'Error modifying destination directory permissions: {}'.format(error.message)
+                print('Error modifying destination directory permissions: {}'.format(str(error)))
 
             def user_has_permission_for_storage(test_storage):
                 return len([u for u in test_storage.users if u.username.lower() == user.lower()]) > 0
@@ -143,11 +142,11 @@ class Synchronization(object):
                     else:
                         Synchronization.mount_storage(destination, storage, mounted_storage_name)
                 else:
-                    print 'Storage #{} {} already linked as {}'.format(
+                    print('Storage #{} {} already linked as {}'.format(
                         storage.identifier,
                         storage.name,
                         mounted_storage_name
-                    )
+                    ))
                     mounted_items.remove(mounted_storage_name)
             for mounted_storage_to_remove in mounted_items:
                 destination = os.path.join(user_destination_directory, mounted_storage_to_remove)
@@ -156,11 +155,11 @@ class Synchronization(object):
                 else:
                     Synchronization.unmount_storage(destination, mounted_storage_to_remove)
             if nothing_to_synchronize:
-                print 'Nothing to synchronize'
+                print('Nothing to synchronize')
         except OSError as error:
-            print error.message
+            print(str(error))
         except RuntimeError as error:
-            print error.message
+            print(str(error))
         except KeyboardInterrupt:
             raise
         # except:
@@ -168,73 +167,73 @@ class Synchronization(object):
 
     @classmethod
     def mount_storage(cls, destination, storage, mounted_storage_name):
-        print 'Mounting storage #{} {}'.format(storage.identifier, storage.name)
+        print('Mounting storage #{} {}'.format(storage.identifier, storage.name))
         try:
-            print 'Creating directory {}...'.format(destination)
+            print('Creating directory {}...'.format(destination))
             os.mkdir(destination)
-            print 'Applying permissions...'
+            print('Applying permissions...')
             os.chmod(destination, chmod_mask_decimal)
         except OSError as error:
-            print 'Error creating directory: {}'.format(error.message)
+            print('Error creating directory: {}'.format(str(error)))
             return
         command = ["mount", "-B", storage.mount_source, destination]
-        print 'Mounting {} storage as {}...'.format(
+        print('Mounting {} storage as {}...'.format(
             storage.name,
             mounted_storage_name
-        )
+        ))
         code = subprocess.call(command)
         if code == 0:
-            print 'Storage mounted: {}'.format(destination)
+            print('Storage mounted: {}'.format(destination))
         else:
-            print 'Error mounting storage'
+            print('Error mounting storage')
 
     @classmethod
     def unmount_storage(cls, destination, mounted_storage_to_remove):
-        print 'Removing mounted storage {}...'.format(mounted_storage_to_remove)
-        print 'Unmounting directory...'
+        print('Removing mounted storage {}...'.format(mounted_storage_to_remove))
+        print('Unmounting directory...')
         code = subprocess.call(["umount", destination])
         if code == 0:
-            print 'Done'
+            print('Done')
             command = ["rm", "-rf", destination]
-            print 'Removing directory {}...'.format(destination)
+            print('Removing directory {}...'.format(destination))
             code = subprocess.call(command)
             if code == 0:
-                print 'Done'
+                print('Done')
             else:
-                print 'Error removing directory'
+                print('Error removing directory')
         else:
-            print 'Error unmounting directory'
+            print('Error unmounting directory')
 
     @classmethod
     def symlink_storage(cls, destination, storage, mounted_storage_name):
-        print 'Linking storage #{} {}'.format(storage.identifier, storage.name)
+        print('Linking storage #{} {}'.format(storage.identifier, storage.name))
         command = ["ln", "-s", storage.mount_source, destination]
-        print 'Linking {} storage as {} (symlink)...'.format(
+        print('Linking {} storage as {} (symlink)...'.format(
             storage.name,
             mounted_storage_name
-        )
+        ))
         code = subprocess.call(command)
         if code == 0:
-            print 'Storage linked: {}'.format(destination)
+            print('Storage linked: {}'.format(destination))
             try:
-                print 'Modifying permissions for link...'
+                print('Modifying permissions for link...')
                 os.lchmod(destination, chmod_mask_decimal)
-                print 'Done'
+                print('Done')
             except OSError as error:
-                print 'Error modifying permissions: {}'.format(error.message)
+                print('Error modifying permissions: {}'.format(str(error)))
         else:
-            print 'Error linking storage'
+            print('Error linking storage')
 
     @classmethod
     def remove_symlink(cls, destination, mounted_storage_to_remove):
-        print 'Removing linked storage {}...'.format(mounted_storage_to_remove)
+        print('Removing linked storage {}...'.format(mounted_storage_to_remove))
         command = ["rm", destination]
-        print 'Removing item {}...'.format(destination)
+        print('Removing item {}...'.format(destination))
         code = subprocess.call(command)
         if code == 0:
-            print 'Storage link removed: {}'.format(destination)
+            print('Storage link removed: {}'.format(destination))
         else:
-            print 'Error removing link'
+            print('Error removing link')
 
     def list_storages(self):
         page = 0
@@ -248,15 +247,15 @@ class Synchronization(object):
                 result.extend(storages)
                 page += 1
         except RuntimeError as error:
-            print error.message
+            print(str(error))
         except:
-            print 'Error: ', traceback.format_exc()
+            print('Error: ', traceback.format_exc())
         return result
 
     def list_share_mounts(self):
             try:
                 return self.__storages_api__.list_share_mounts()
             except RuntimeError as error:
-                print error.message
+                print(str(error))
             except:
-                print 'Error: ', traceback.format_exc()
+                print('Error: ', traceback.format_exc())
