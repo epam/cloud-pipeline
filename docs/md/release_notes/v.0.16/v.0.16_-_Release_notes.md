@@ -27,6 +27,7 @@
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
 - [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
+- [`pipe` CLI on Python 3](#pipe-cli-on-python-3)
 
 ***
 
@@ -561,6 +562,22 @@ Other changes:
 - The Filebeat log shippers of the API and EDGE services run with `seccomp` disabled. Their `seccomp` policy does not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
 - The cron jobs of the WebDAV service and of the backup workers skip the PAM account check of `root`. Otherwise, on hosts whose AppArmor confines the `unix_chkpwd` helper (for example, Ubuntu 24.04), `crond` would not run them.
 - The WebDAV service mounts the Azure blob storages with `blobfuse2`, because `blobfuse` 1 has no Rocky Linux 9 package. It uses the `mountv1` command of `blobfuse2`, with the options that keep the behavior of `blobfuse` 1: a 1-second metadata cache, no online version check, and a mount over a non-empty temporary folder.
+
+## `pipe` CLI on Python 3
+
+The `pipe` CLI runs on Python 3. Its Linux binary and tarball are built with Python 3.12 on Rocky Linux 8, and its Windows build uses Python 3.12 as well.  
+This brings the following changes:
+
+- the Linux binary and tarball require `glibc` 2.28 or later, e.g. RHEL / Rocky Linux 8, Debian 10, Ubuntu 20.04 or later. Runs of the tools, which images are based on older distributions, e.g. CentOS 7, cannot use `pipe`: neither its commands, nor the input/output data transfers and the storage mounts that are made with it
+- the `pipe-el6` binary and tarball for CentOS 6 / RHEL 6 are no longer provided
+- the macOS binary is no longer provided
+- the NTLM proxy options of the `pipe configure` command (`--proxy-ntlm`, `--proxy-ntlm-user`, `--proxy-ntlm-domain`, `--proxy-ntlm-pass`) are removed
+- the installation from the source tarball (**Operation System** → **Source** in **Settings** → **CLI**) requires Python 3.10 or later
+- `pipe` requires newer versions of several Python dependencies, as the earlier versions have published security advisories, e.g. `requests` 2.33.0, `cryptography` 50.0.0 and `PyJWT` 2.15.0 or later
+
+On a deployment that is updated, not installed anew, **Settings** → **CLI** keeps the old installation hints, including the **MacOS** option, until an admin updates the **`ui.pipe.cli.install.template`** preference.
+
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
 
 ***
 
