@@ -19,6 +19,7 @@ import {inject, observer} from 'mobx-react';
 import {Row, Col, Spin, Input, Button, Checkbox} from 'antd';
 import {AutoSizer, List} from 'react-virtualized';
 import AU from 'ansi_up';
+import {ansiToHtml, ansiToText, highlightSearchResults} from './log-text-utilities';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import connect from '../../../utils/connect';
 import styles from './Log.css';
@@ -60,7 +61,7 @@ class LogList extends Component {
     if (!this._spanHeightCalculator || !this.props.logs.value) {
       return 30;
     }
-    this._spanHeightCalculator.innerHTML = this.ansiUp.ansi_to_text(this.props.logs.value[index]);
+    this._spanHeightCalculator.textContent = ansiToText(this.props.logs.value[index]);
     const spanHeight = (this._spanHeightCalculator.offsetHeight || 30) + 16;
 
     return Math.max(spanHeight, 30);
@@ -76,53 +77,10 @@ class LogList extends Component {
     return parts.indexOf('warning') >= 0;
   };
 
-  processSearch = (html, text, searchString, colorDefault, colorActive, isActive, position) => {
-    const parts = html.split(/(<span[^>]*>|<\/span>)/g);
-    const matchRegExp = new RegExp(searchString.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'), 'g');
-    let result;
-    let ranges = [];
-    while ((result = matchRegExp.exec(text)) !== null) {
-      ranges.push({
-        start: result.index,
-        end: result.index + searchString.length
-      });
-    }
-    const resultParts = [];
-    let index = 0;
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i].toLowerCase();
-      if (!((part.startsWith('<span') || part.startsWith('</span')) && part.endsWith('>'))) {
-        let modifiedPart = parts[i];
-        const start = index;
-        const end = index + part.length;
-        for (let r = ranges.length - 1; r >= 0; r--) {
-          let color = colorDefault;
-          const range = ranges[r];
-          if (isActive && range.start === position) {
-            color = colorActive;
-          }
-          if (range.start < end && range.end > start) {
-            const selectFrom = Math.max(range.start, start) - index;
-            const selectTo = Math.min(range.end, end) - index;
-            const before = modifiedPart.substring(0, selectFrom);
-            const match = modifiedPart.substring(selectFrom, selectTo);
-            const after = modifiedPart.substring(selectTo);
-            modifiedPart = `${before}<span style="background-color:${color}">${match}</span>${after}`;
-          }
-        }
-        resultParts.push(modifiedPart);
-        index += part.length;
-      } else {
-        resultParts.push(parts[i]);
-      }
-    }
-    return resultParts.join('');
-  };
-
   renderLogRow = ({index, style}) => {
     const log = this.props.logs.value[index];
     const textStyle = {};
-    const lowerCasedText = this.ansiUp.ansi_to_text(log).toLowerCase();
+    const lowerCasedText = ansiToText(log).toLowerCase();
     if (this.isError(lowerCasedText)) {
       textStyle.color = '#ff4632';
     } else if (this.isWarning(lowerCasedText)) {
@@ -144,10 +102,8 @@ class LogList extends Component {
         if (index === currentSearchResultLineIndex) {
           color = '#dbbf24';
         }
-        this.ansiUp.bg = null;
-        this.ansiUp.fg = null;
-        const result = this.processSearch(
-          this.ansiUp.ansi_to_html(log),
+        const result = highlightSearchResults(
+          ansiToHtml(this.ansiUp, log),
           lowerCasedText,
           searchText,
           '#877616',
@@ -161,12 +117,10 @@ class LogList extends Component {
             dangerouslySetInnerHTML={{__html: result}} />
         );
       } else {
-        this.ansiUp.bg = null;
-        this.ansiUp.fg = null;
         return (
           <span
             style={textStyle}
-            dangerouslySetInnerHTML={{__html: this.ansiUp.ansi_to_html(log)}} />
+            dangerouslySetInnerHTML={{__html: ansiToHtml(this.ansiUp, log)}} />
         );
       }
     };
@@ -245,7 +199,7 @@ class LogList extends Component {
             .map((log, index) => {
               return {
                 log,
-                logText: this.ansiUp.ansi_to_text(log.toLowerCase()),
+                logText: ansiToText(log.toLowerCase()),
                 index
               };
             })
