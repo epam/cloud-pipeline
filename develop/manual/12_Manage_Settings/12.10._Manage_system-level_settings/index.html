@@ -417,6 +417,14 @@
                 </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" >GitLab</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/upgrade_gitlab_15_to_19/">Upgrade GitLab 15.5 to 19.5</a>
+                </li>
+    </ul>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" >Management</a>
     <ul>
                 <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
@@ -1142,6 +1150,10 @@
 <td>Token to access Git with pipelines</td>
 </tr>
 <tr>
+<td><strong><code>git.default.token.duration.days</code></strong></td>
+<td>The lifetime, in days, of a GitLab token that the platform issues for a user to access Git repositories, e.g. in the Git CLI credentials. The default is <code>1</code>. A lifetime over <code>365</code> days, as a default or in a request, is cut to <code>365</code> days: GitLab does not accept a longer one</td>
+</tr>
+<tr>
 <td><strong><code>git.repository.indexing.enabled</code></strong></td>
 <td>Allows to enable the indexing of Git repository with pipelines</td>
 </tr>
@@ -1157,8 +1169,31 @@
 <td><strong><code>git.host</code></strong></td>
 <td>IP address where Git service is deployed</td>
 </tr>
+<tr>
+<td><strong><code>git.gitlab.hashed.repo.support</code></strong></td>
+<td>Enables the GitLab hashed storage paths of the repositories, which <code>git-reader</code> needs to find a repository. From GitLab 14.0 every repository is in hashed storage. The default is <code>false</code>. The installer turns it on for GitLab 17 and later; for GitLab 15, turn it on manually</td>
+</tr>
+<tr>
+<td><strong><code>git.token.rotation.enabled</code></strong></td>
+<td>Enables the automatic rotation of the <strong><code>git.token</code></strong>. The default is <code>true</code></td>
+</tr>
+<tr>
+<td><strong><code>git.token.rotation.schedule</code></strong></td>
+<td>A cron expression that defines when the <strong><code>git.token</code></strong> expiry is checked. The default is <code>0 0 3 ? * *</code> (every day at 03:00, in the time zone of the API server)</td>
+</tr>
+<tr>
+<td><strong><code>git.token.rotation.threshold.days</code></strong></td>
+<td>The <strong><code>git.token</code></strong> is rotated when it expires in this number of days or fewer. The default is <code>30</code></td>
+</tr>
+<tr>
+<td><strong><code>git.token.rotation.lifetime.days</code></strong></td>
+<td>The lifetime of a new <strong><code>git.token</code></strong>, in days, from <code>1</code> to <code>365</code>. The default is <code>364</code>: it leaves one day for a time zone difference between GitLab and the API server</td>
+</tr>
 </tbody>
 </table>
+<p><strong><code>git.token</code></strong> rotation works with GitLab 15.5 and later; on older versions the check is skipped. When the token is close to its expiry, the platform issues a new impersonation token for the <strong><code>git.user.id</code></strong> user, with the same name and scopes, saves it to <strong><code>git.token</code></strong>, and then revokes the old one. A token without an expiry date is never rotated.<br />
+If a rotation step fails, the current token is kept and all the users with the <code>ROLE_ADMIN</code> role get a notification. The notification is also sent when the new token is saved but the old one cannot be revoked: then revoke the old token in GitLab manually.<br />
+Note: a run gets the <strong><code>git.token</code></strong> value when it starts. After a rotation, the old value no longer works inside the runs that are still active.</p>
 <h3 id="grid-engine-autoscaling">Grid engine autoscaling</h3>
 <blockquote>
 <p>See <a href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a> for details.</p>

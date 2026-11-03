@@ -141,6 +141,14 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#edit-storage">Edit storage</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#register-an-s3-access-point-alias">Register an S3 access point alias</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#register-a-new-storage">Register a new storage</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#set-the-arn-for-an-existing-storage">Set the ARN for an existing storage</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../8.2._Upload_Download_data/">8.2. Upload/Download data</a>
@@ -371,6 +379,14 @@
                 </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" >GitLab</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/upgrade_gitlab_15_to_19/">Upgrade GitLab 15.5 to 19.5</a>
+                </li>
+    </ul>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" >Management</a>
     <ul>
                 <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
@@ -411,6 +427,7 @@
 <ul>
 <li><a href="#create-object-storage">Create object storage</a></li>
 <li><a href="#edit-storage">Edit storage</a></li>
+<li><a href="#register-an-s3-access-point-alias">Register an S3 access point alias</a></li>
 </ul>
 <blockquote>
 <p>To create a <strong>Storage</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permission for that folder and the <strong>ROLE_STORAGE_MANAGER</strong> role. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
@@ -469,6 +486,48 @@ If on <strong>Data storage</strong> tab in <strong>Preferences</strong> section
 <img alt="CP_CreateAndEditStorage" src="../attachments/CreateAndEditStorage_5.png" /></li>
 <li>Click <strong>"Save"</strong> button.</li>
 </ol>
+<h2 id="register-an-s3-access-point-alias">Register an S3 access point alias</h2>
+<p>An object storage can use an S3 access point alias as its <strong>Storage path</strong>. For example, the alias of an access point attached to an <code>FSx for NetApp ONTAP</code> volume looks like <code>&lt;name&gt;-&lt;suffix&gt;-ext-s3alias</code>.</p>
+<p>AWS checks a request made through an alias against the ARN of the access point, not against the alias. So the platform needs this ARN to issue temporary credentials for the storage - for the <code>pipe storage</code> commands, and for file download and upload links in the GUI. Without it, these operations fail with an error like <code>AccessDenied ... because no session policy allows the s3:ListBucket action</code>.</p>
+<p>The ARN is kept in the <code>accessPointArn</code> field of the storage. This field is set via the REST API only - the <code>/datastorage/save</code> and <code>/datastorage/update</code> methods of the API endpoint (see <code>base.api.host</code> in <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>).</p>
+<p>The ARN format is <code>arn:aws:s3:&lt;region&gt;:&lt;account id&gt;:accesspoint/&lt;access point name&gt;</code>. To find it, use one of these commands in the AWS account that owns the access point:</p>
+<ul>
+<li><code>aws fsx describe-s3-access-point-attachments</code> - for an access point attached to an <code>FSx</code> volume. See the <code>S3AccessPoint.Alias</code> and <code>S3AccessPoint.ResourceARN</code> fields.</li>
+<li><code>aws s3control list-access-points --account-id &lt;account id&gt;</code>. See the <code>Alias</code> and <code>AccessPointArn</code> fields.</li>
+</ul>
+<p><strong><em>Note</em></strong>: the role used for the temporary credentials still needs access to the access point on the AWS side - in its own IAM policy and in the access point policy.</p>
+<h3 id="register-a-new-storage">Register a new storage</h3>
+<p>Anyone who can create a storage in the folder can set the ARN. Send <code>POST /datastorage/save</code>:</p>
+<pre><code class="language-json">{
+    &quot;name&quot;: &quot;&lt;storage name&gt;&quot;,
+    &quot;path&quot;: &quot;&lt;access point alias&gt;&quot;,
+    &quot;type&quot;: &quot;S3&quot;,
+    &quot;parentFolderId&quot;: &lt;folder id&gt;,
+    &quot;accessPointArn&quot;: &quot;arn:aws:s3:&lt;region&gt;:&lt;account id&gt;:accesspoint/&lt;access point name&gt;&quot;
+}
+</code></pre>
+<h3 id="set-the-arn-for-an-existing-storage">Set the ARN for an existing storage</h3>
+<blockquote>
+<p>Only users with the <strong>ROLE_ADMIN</strong> or <strong>ROLE_STORAGE_ADMIN</strong> role can set or clear the ARN of an existing storage. The ARN widens the access of the issued credentials, so the storage <strong>OWNER</strong> cannot change it.</p>
+</blockquote>
+<p>Send <code>POST /datastorage/update</code>:</p>
+<pre><code class="language-json">{
+    &quot;id&quot;: &lt;storage id&gt;,
+    &quot;parentFolderId&quot;: &lt;current folder id&gt;,
+    &quot;mountPoint&quot;: &quot;&lt;current mount point&gt;&quot;,
+    &quot;mountOptions&quot;: &quot;&lt;current mount options&gt;&quot;,
+    &quot;accessPointArn&quot;: &quot;arn:aws:s3:&lt;region&gt;:&lt;account id&gt;:accesspoint/&lt;access point name&gt;&quot;
+}
+</code></pre>
+<p><strong><em>Note</em></strong>: this method always replaces the parent folder and the mount point of the storage with the values from the request, and resets empty mount options to the default ones. So pass their current values. Omitted name and description stay as they are.</p>
+<p>The <code>accessPointArn</code> value works as follows:</p>
+<ul>
+<li>not specified (or <code>null</code>) - the current ARN stays as it is</li>
+<li>an empty string - the ARN is removed</li>
+<li>any other value - the ARN is replaced. A value in a wrong format is rejected.</li>
+</ul>
+<p><strong><em>Note</em></strong>: when a folder is cloned, its storages get new buckets, so the copies do not get the ARN.</p>
+<p>A storage linked to such a storage (created with the <code>sourceStorageId</code> field) needs no ARN of its own. If its path is in the same access point alias, its temporary credentials use the ARN of the source storage. A linked storage restricted by masks is the exception: temporary credentials do not apply the masks, so it does not get the source ARN. An ARN set for the linked storage itself takes priority.</p>
               
             </div>
           </div><footer>

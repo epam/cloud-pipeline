@@ -429,6 +429,14 @@
                 </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" >GitLab</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/upgrade_gitlab_15_to_19/">Upgrade GitLab 15.5 to 19.5</a>
+                </li>
+    </ul>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" >Management</a>
     <ul>
                 <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
@@ -780,8 +788,16 @@ Note that this tab displays groups created in CP only, not given by <strong>SS
 <td>Allows to create/delete <strong>Folders</strong> (given to each user by default).</td>
 </tr>
 <tr>
+<td><strong>ROLE_PIPELINE_EXECUTOR</strong></td>
+<td>User gets Execute permission to all pipelines in the Platform, versioned storages included. See details <a href="../../13_Permissions/13._Permissions/#pipeline-reader-and-executor-roles">here</a>.</td>
+</tr>
+<tr>
 <td><strong>ROLE_PIPELINE_MANAGER</strong></td>
 <td>Allows to create/delete <strong>Pipelines</strong> (given to each user by default).</td>
+</tr>
+<tr>
+<td><strong>ROLE_PIPELINE_READER</strong></td>
+<td>User gets Read permission to all pipelines in the Platform, versioned storages included, and to all their runs. See details <a href="../../13_Permissions/13._Permissions/#pipeline-reader-and-executor-roles">here</a>.</td>
 </tr>
 <tr>
 <td><strong>ROLE_SERVICE_ACCOUNT</strong></td>

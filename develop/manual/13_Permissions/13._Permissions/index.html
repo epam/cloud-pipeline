@@ -267,6 +267,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#storage-reader-role">Storage reader role</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipeline-reader-and-executor-roles">Pipeline reader and executor roles</a>
+    </li>
         </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#permission-settings">Permission settings</a>
@@ -384,6 +386,14 @@
     </ul>
                 </li>
     </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >GitLab</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/upgrade_gitlab_15_to_19/">Upgrade GitLab 15.5 to 19.5</a>
                 </li>
     </ul>
                   </li>
@@ -703,6 +713,24 @@ Initially, a user with <strong>ROLE_ADMIN</strong> shall be an authenticated 
 <li>the <code>mount</code> command inside a run is not allowed by the role - it is still available only for the users with the <strong>ROLE_ADMIN</strong> or <strong>ROLE_STORAGE_ADMIN</strong> role</li>
 <li>the runs, launched by the user, mount all the storages of the Platform - as for the users with the <strong>ROLE_STORAGE_ADMIN</strong> role - but in a read-only mode. A storage is mounted with the write access only if the user was granted <strong>WRITE</strong> to it and nothing else makes it read-only (e.g. a read-only mode of the storage quota or a sensitive run)</li>
 </ul>
+<h3 id="pipeline-reader-and-executor-roles">Pipeline reader and executor roles</h3>
+<p>Access to all pipelines can be given by assigning one or both of the following roles to a user. Both roles cover every pipeline in the Platform, <a href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">versioned storages</a> included:</p>
+<ul>
+<li><strong>ROLE_PIPELINE_READER</strong> - the user gets <strong>READ</strong> permission to every pipeline - even if the pipeline permission settings deny <strong>READ</strong> to that user or to their groups. So the user is able to see all pipelines in the <strong>Library</strong>, browse their versions, code, documents and settings, view pipeline attributes and the pipeline permission settings.<br />
+  The user is also able to view all runs of all pipelines - the run details and logs, and the cluster nodes of these runs - including the runs of other users. This does not depend on the run visibility policy: neither the <strong><code>launch.run.visibility</code></strong> system preference (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a>) nor the visibility setting of a pipeline restricts it.</li>
+<li><strong>ROLE_PIPELINE_EXECUTOR</strong> - the user gets <strong>EXECUTE</strong> permission to every pipeline - even if the pipeline permission settings deny <strong>EXECUTE</strong> to that user or to their groups.</li>
+</ul>
+<p>The roles are meant to be used together: a user with both roles is able to see and launch every pipeline. A pipeline launch requires both <strong>READ</strong> and <strong>EXECUTE</strong> permissions to the pipeline, while <strong>ROLE_PIPELINE_EXECUTOR</strong> gives only <strong>EXECUTE</strong>. So a user having only this role does not see the pipelines, and is able to launch only the ones the user was granted <strong>READ</strong> to in the pipeline permission settings.</p>
+<p>The roles grant nothing but the permissions listed above:</p>
+<ul>
+<li><strong>WRITE</strong> and <strong>OWNER</strong> permissions are still resolved from the pipeline permission settings - so if the user was granted <strong>WRITE</strong> to some pipeline, they keep it</li>
+<li>a pipeline launch still requires <strong>EXECUTE</strong> permission to the Docker image of the pipeline - it is not given by the roles</li>
+<li>the <strong>EXECUTE</strong> permission given by <strong>ROLE_PIPELINE_EXECUTOR</strong> is not passed on to the runs of the pipelines. Pausing, resuming, sharing or other changes of the runs of other users still require the permissions the user would need without the role - e.g. <strong>EXECUTE</strong> granted to the user in the pipeline permission settings</li>
+<li>the runs of other users are available to a user with <strong>ROLE_PIPELINE_READER</strong> for viewing only: SSH and the run endpoints are still available only if the run is shared with the user</li>
+<li>copying of a pipeline is not allowed by <strong>ROLE_PIPELINE_READER</strong> - it still requires <strong>READ</strong> permission to the pipeline by the pipeline permission settings. A copy of a pipeline, which repository is not hosted in the Platform GitLab, keeps working with the original repository, while the user who copies it becomes the owner of the copy</li>
+<li>detached configurations are not covered by the roles. A detached configuration, that includes a pipeline, still requires <strong>EXECUTE</strong> permission to the configuration itself</li>
+<li>the global search results are not extended by the roles - they still include only the pipelines the user has <strong>READ</strong> permission to by the pipeline permission settings</li>
+</ul>
 <h2 id="permission-settings">Permission settings</h2>
 <p>The permissions could be granted to a user in one of the following ways:</p>
 <ul>
@@ -731,7 +759,7 @@ To assign object's permissions to a user or user group you shall move to the obj
 <p>The <strong>"Permissions"</strong> form shows all users and groups granted permissions to a single object. The opposite view - permissions granted to a single user on all objects of a type - is available via the API method <code>GET /permissions/user?userId=&lt;user ID&gt;&amp;aclClass=&lt;object type&gt;</code>. Supported object types are <code>DATA_STORAGE</code> and <code>PIPELINE</code>.</p>
 <p>For each object, the method returns the object and the permission entries that concern the user - the ones set for the user itself, for one of the user's groups or for one of the user's roles. Each entry combines the permissions set on the object with the ones set on its parent folders: the permissions not set on the object are taken from the closest parent folder they are set on. So an entry may differ from the one shown in the <strong>"Permissions"</strong> form of the object, and an object may be returned only because of the permissions set on its parent folder. Each entry keeps both the allowed and the denied permissions. Objects without such entries are not included.</p>
 <p>The method is available to admins, to the users with the <strong>ROLE_USER_ADMIN</strong> or <strong>ROLE_USER_READER</strong> role, and to the users that have <strong>READ</strong> permission to the specified user. Admins get the objects of all the Platform, other users - only the objects they have <strong>READ</strong> permission to themselves.</p>
-<p><strong><em>Note</em></strong>: the method returns only the permissions set in the permission settings of the objects. It does not show the access the user gets by <a href="#owner-property">ownership</a> or by a role that gives access regardless of the permission settings (e.g. <a href="#admin-role">ROLE_ADMIN</a>, <strong>ROLE_STORAGE_ADMIN</strong>, <a href="#storage-reader-role">ROLE_STORAGE_READER</a>), nor the access limited by a storage quota or by the mount status of an NFS storage. So, a user may have access to an object that is missing in the result, or less access than the returned entries grant.</p>
+<p><strong><em>Note</em></strong>: the method returns only the permissions set in the permission settings of the objects. It does not show the access the user gets by <a href="#owner-property">ownership</a> or by a role that gives access regardless of the permission settings (e.g. <a href="#admin-role">ROLE_ADMIN</a>, <strong>ROLE_STORAGE_ADMIN</strong>, <a href="#storage-reader-role">ROLE_STORAGE_READER</a>, <a href="#pipeline-reader-and-executor-roles">ROLE_PIPELINE_READER and ROLE_PIPELINE_EXECUTOR</a>), nor the access limited by a storage quota or by the mount status of an NFS storage. So, a user may have access to an object that is missing in the result, or less access than the returned entries grant.</p>
 <p>More about <strong>Cloud Pipeline</strong> API see <a href="../../../api/API_tutorials/API_tutorials/">here</a>.</p>
               
             </div>

@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>Upgrade GitLab 15.5 to 19.5 - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "Upgrade GitLab 15.5 to 19.5";
+        var mkdocs_page_input_path = "installation/gitlab/upgrade_gitlab_15_to_19.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.5._Pipeline_configuration/">6.5. Pipeline configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.2._Core_Services_Monitoring/">9.2. Core services monitoring</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.3._Cloud_nodes/">9.3. Cloud nodes</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.5._VSCode_interactions/">15.5. VSCode interactions</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" >Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../self-hosted/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../self-hosted/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../self-hosted/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../self-hosted/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >Deployment</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" >Cloud native</a>
+    <ul>
+                <li class="toctree-l3"><a class="reference internal" >AWS</a>
+    <ul>
+                <li class="toctree-l4"><a class="reference internal" href="../../native/aws/terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l4"><a class="reference internal" href="../../native/aws/cloud-formation/">AWS CloudFormation</a>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" >GitLab</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="#">Upgrade GitLab 15.5 to 19.5</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#the-path">The path</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#known-risks-and-limits">Known risks and limits</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#before-you-start">Before you start</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#what-you-need">What you need</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#session-setup">Session setup</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#facts-to-collect">Facts to collect</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#checks-that-must-pass">Checks that must pass</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#space">Space</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#freeze-and-back-up">Freeze and back up</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#1-tell-the-users">1. Tell the users</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#2-close-gitlab">2. Close GitLab</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#3-back-up">3. Back up</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#prepare">Prepare</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#1-postgresql-the-latest-12x-the-new-limits-and-amcheck">1. PostgreSQL: the latest 12.x, the new limits and amcheck</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#2-the-cp-git-deployment">2. The cp-git deployment</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#3-edit-gitlabrb">3. Edit gitlab.rb</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#4-token-scopes">4. Token scopes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#run-the-stops">Run the stops</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#one-stop">One stop</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#upgrade-postgresql">Upgrade PostgreSQL</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#switch-to-the-gitlab-19-image">Switch to the GitLab 19 image</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#after-the-upgrade">After the upgrade</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#roll-back">Roll back</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#to-an-intermediate-stop">To an intermediate stop</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#to-1554">To 15.5.4</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#the-pod-restarts-during-reconfigure">The pod restarts during reconfigure</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#command-timed-out-after-3600s">"Command timed out after 3600s"</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#it-is-required-to-upgrade-to-the-latest-version-first">"It is required to upgrade to the latest ... version first"</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#tried-to-load-unspecified-class-hashiearray">"Tried to load unspecified class: Hashie::Array"</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#a-background-migration-failed-status-4">A background migration failed (status 4)</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#gitlab-cannot-connect-to-the-database-after-a-postgresql-upgrade">GitLab cannot connect to the database after a PostgreSQL upgrade</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#out-of-shared-memory-in-a-migration">"out of shared memory" in a migration</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" >Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../operation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" aria-label="Docs"></a></li>
+          <li class="breadcrumb-item">Cloud Pipeline Installation</li>
+          <li class="breadcrumb-item">GitLab</li>
+      <li class="breadcrumb-item active">Upgrade GitLab 15.5 to 19.5</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="upgrade-gitlab-155-to-195">Upgrade GitLab 15.5 to 19.5</h1>
+<p>This page moves an existing Cloud Pipeline deployment from GitLab CE 15.5.4 (<code>CP_GITLAB_VERSION=15</code>, PostgreSQL 12)
+to GitLab CE 19.5.3 (<code>CP_GITLAB_VERSION=19</code>, PostgreSQL 17), and keeps all its repositories, users and tokens.</p>
+<p><code>pipectl</code> cannot do this upgrade: it deletes and re-creates the <code>cp-git</code> deployment. GitLab must pass through a
+list of required versions ("stops"), one at a time. The external PostgreSQL database of GitLab (<code>cp-gitlab-db</code>)
+must be upgraded three times on the way, from 12 to 17. So this is a manual procedure. An administrator with root
+access to the cluster runs it.</p>
+<p>The procedure is for a deployment that keeps the GitLab data on the host paths of its nodes, <code>/opt/gitlab</code> and
+<code>/opt/gitlab-postgresql</code>. An <code>aws-native</code> deployment keeps it on the <code>cp-system-pvc</code> volume instead, and this page
+does not cover it.</p>
+<p><strong>Rehearse it first.</strong> Run the whole procedure on a copy of <code>/opt/gitlab</code> and <code>/opt/gitlab-postgresql</code>, in an
+isolated cluster, on the same storage type as the real deployment. The copy holds the real SMTP, webhook and SAML
+settings: the isolated cluster must not reach the real SMTP server, the platform services or the IdP. Write down how
+long each step takes: this gives the length of the maintenance window. Use the same image tags in the rehearsal and
+in the real run.</p>
+<p><strong>Do not run <code>pipectl</code> for <code>cp-git</code> or <code>cp-gitlab-db</code></strong> from the start of the procedure until the install config has the
+new values (see <a href="#switch-to-the-gitlab-19-image">Switch to the GitLab 19 image</a>).</p>
+<h2 id="the-path">The path</h2>
+<p>GitLab must stop at each of these versions, in this order. At each stop GitLab starts, updates its database, and
+finishes its background migrations before it moves on. Only the start and the end use a Cloud Pipeline <code>cp-git</code>
+image. The stops in between use the plain <code>gitlab/gitlab-ce:&lt;version&gt;-ce.0</code> images from Docker Hub.</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Image</th>
+<th>PostgreSQL while it runs</th>
+<th>After the stop</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00-freeze</code></td>
+<td>the current <code>cp-git</code> image (15.5.4)</td>
+<td>12.4, then the latest 12.x</td>
+<td>freeze, back up, prepare</td>
+</tr>
+<tr>
+<td><code>01-15.11.13</code></td>
+<td><code>gitlab/gitlab-ce:15.11.13-ce.0</code></td>
+<td>12</td>
+<td>upgrade PostgreSQL 12 to 14</td>
+</tr>
+<tr>
+<td><code>01a-16.0.10</code></td>
+<td><code>gitlab/gitlab-ce:16.0.10-ce.0</code></td>
+<td>14</td>
+<td>only if the checks require it</td>
+</tr>
+<tr>
+<td><code>01b-16.1.8</code></td>
+<td><code>gitlab/gitlab-ce:16.1.8-ce.0</code></td>
+<td>14</td>
+<td>only if the checks require it</td>
+</tr>
+<tr>
+<td><code>01c-16.2.11</code></td>
+<td><code>gitlab/gitlab-ce:16.2.11-ce.0</code></td>
+<td>14</td>
+<td>only if the checks require it</td>
+</tr>
+<tr>
+<td><code>02-16.3.9</code></td>
+<td><code>gitlab/gitlab-ce:16.3.9-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>03-16.7.10</code></td>
+<td><code>gitlab/gitlab-ce:16.7.10-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>04-16.11.10</code></td>
+<td><code>gitlab/gitlab-ce:16.11.10-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>05-17.1.8</code></td>
+<td><code>gitlab/gitlab-ce:17.1.8-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>06-17.3.7</code></td>
+<td><code>gitlab/gitlab-ce:17.3.7-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>07-17.5.5</code></td>
+<td><code>gitlab/gitlab-ce:17.5.5-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>08-17.8.7</code></td>
+<td><code>gitlab/gitlab-ce:17.8.7-ce.0</code></td>
+<td>14</td>
+<td></td>
+</tr>
+<tr>
+<td><code>09-17.11.7</code></td>
+<td><code>gitlab/gitlab-ce:17.11.7-ce.0</code></td>
+<td>14</td>
+<td>upgrade PostgreSQL 14 to 16</td>
+</tr>
+<tr>
+<td><code>10-18.2.8</code></td>
+<td><code>gitlab/gitlab-ce:18.2.8-ce.0</code></td>
+<td>16</td>
+<td></td>
+</tr>
+<tr>
+<td><code>11-18.5.7</code></td>
+<td><code>gitlab/gitlab-ce:18.5.7-ce.0</code></td>
+<td>16</td>
+<td></td>
+</tr>
+<tr>
+<td><code>12-18.8.11</code></td>
+<td><code>gitlab/gitlab-ce:18.8.11-ce.0</code></td>
+<td>16</td>
+<td></td>
+</tr>
+<tr>
+<td><code>13-18.11.14</code></td>
+<td><code>gitlab/gitlab-ce:18.11.14-ce.0</code></td>
+<td>16</td>
+<td>upgrade PostgreSQL 16 to 17</td>
+</tr>
+<tr>
+<td><code>14-19.2.10</code></td>
+<td><code>gitlab/gitlab-ce:19.2.10-ce.0</code></td>
+<td>17</td>
+<td></td>
+</tr>
+<tr>
+<td><code>15-19.5.3</code></td>
+<td><code>gitlab/gitlab-ce:19.5.3-ce.0</code></td>
+<td>17</td>
+<td></td>
+</tr>
+<tr>
+<td><code>16-git-19</code></td>
+<td><code>lifescience/cloud-pipeline:git-19-&lt;version&gt;</code></td>
+<td>17</td>
+<td>switch to the Cloud Pipeline image</td>
+</tr>
+</tbody>
+</table>
+<p>Each PostgreSQL upgrade happens at a stop that supports both the old and the new major version. No GitLab version
+supports both 12 and 16, so the database cannot move in one step.</p>
+<p>The path is from the GitLab <a href="https://gitlab-com.gitlab.io/support/toolbox/upgrade-path/">upgrade path tool</a> and
+<a href="https://docs.gitlab.com/update/upgrade_paths/">upgrade paths</a> page, for a target of 19.5.3. Each stop is the latest
+patch of its version at the time of writing. The last stop must be the exact version of the GitLab 19 image (see
+<a href="#switch-to-the-gitlab-19-image">Switch to the GitLab 19 image</a>). If the target is later than 19.5, check the path
+again: the next required stop is 19.8.</p>
+<p>Why the stops matter for this deployment:</p>
+<ul>
+<li><strong>15.11.13</strong>: the first plain GitLab image. It reads the hand-edited <code>/etc/gitlab/gitlab.rb</code> (see
+  <a href="#3-edit-gitlabrb">Edit gitlab.rb</a>). PostgreSQL 12 must be 12.10 or later here.</li>
+<li><strong>The first 16.x stop</strong> (16.3.9, or a conditional one before it): PostgreSQL 12 is no longer supported. GitLab now
+  opens a second (<code>ci</code>) database connection pool, which doubles its database connections.</li>
+<li><strong>16.7.10</strong>: finalizes a background migration, queued at 15.11.13, that adds the <code>admin_mode</code> scope to the active
+  tokens of admin users, <code>git.token</code> too. The migration fails on a token whose scopes are a Ruby object: the procedure
+  rewrites them before the first stop (see <a href="#4-token-scopes">Token scopes</a>).</li>
+<li><strong>17.1.8</strong>: the first 17.x. <code>omnibus_gitconfig</code> in <code>gitlab.rb</code> now stops reconfigure with an error.</li>
+<li><strong>17.8.7</strong>: the first stop with OpenSSL 3: TLS 1.2 or later, and RSA keys of at least 2048 bits.</li>
+<li><strong>18.2.8</strong>: the first 18.x. PostgreSQL 16.5 or later is required. In GitLab CE, deleting a project or a group now
+  only marks it for deletion.</li>
+<li><strong>18.5.7</strong>: from 18.4 GitLab requires the <code>amcheck</code> extension in its database. The procedure creates it before the
+  first stop.</li>
+<li><strong>18.8.11</strong>: every batched background migration must finish here, before 18.9 or later.</li>
+<li><strong>18.11.14</strong>: this version upgrades a bundled PostgreSQL to 17 on its own. The bundled PostgreSQL is disabled
+  before the first stop, so this does not happen.</li>
+<li><strong>19.2.10</strong>: the first 19.x. PostgreSQL 17 is required.</li>
+<li><strong>19.5.3</strong>: a required stop, and the target. Its background migrations must finish before any later upgrade.</li>
+</ul>
+<p>Every image checks the version of the data it starts on, and stops when a required stop was skipped. For example,
+19.2.10 needs 18.11 or later, and 19.5.3 needs 19.2 or later.</p>
+<h2 id="known-risks-and-limits">Known risks and limits</h2>
+<ul>
+<li><strong>Storage.</strong> The <a href="https://docs.gitlab.com/administration/gitaly/">Gitaly</a> page says: "For repository data, only
+  local storage is supported for Gitaly and Gitaly Cluster (Praefect) for performance and consistency reasons.
+  Alternatives such as NFS or cloud-based file systems are not supported." When <code>/opt/gitlab</code> and
+  <code>/opt/gitlab-postgresql</code> are on Amazon FSx for Lustre, the deployment is outside GitLab support on 15.5 already.
+  The upgrade adds a heavy write load (database migrations, three PostgreSQL upgrades). The mitigations are the FSx
+  checks, a copy of the data off FSx, PostgreSQL dump and restore instead of <code>pg_upgrade --link</code>, and the integrity
+  checks after the stops. Moving the repositories and the database to local disks (Amazon EBS) removes the risk. That
+  is a separate decision.</li>
+<li><strong>Resources.</strong> GitLab recommends 8 vCPU and 16 GB of RAM for the GitLab container (8 GB at the least), besides what
+  else runs on the node. The <code>cp-git</code> deployment sets no CPU or memory requests or limits. Migrations run slower on a
+  smaller node. Plan a node resize separately, if needed.</li>
+<li><strong>Database settings.</strong> For an external PostgreSQL, GitLab asks for at least <code>shared_buffers</code> 2 GB, <code>work_mem</code> 8 MB,
+  <code>maintenance_work_mem</code> 64 MB, <code>max_connections</code> 400, and a <code>statement_timeout</code> of 15 to 60 seconds
+  (<a href="https://docs.gitlab.com/administration/postgresql/tune/#required-settings-for-external-instances">required settings</a>).
+  <code>cp-gitlab-db</code> sets <code>shared_buffers</code> from <code>GITLAB_DATABASE_SHARED_BUFFERS</code> (128MB by default) and leaves the rest at
+  the PostgreSQL defaults. The procedure sets <code>max_connections</code> to 400. Raise <code>shared_buffers</code> if the node has the
+  RAM for it: the rehearsal shows the effect. <code>work_mem</code> and <code>statement_timeout</code> are not set: the deployment spec
+  does not set them. Do not set <code>statement_timeout</code> during the procedure: its restore, vacuum and check commands run
+  statements longer than a minute.</li>
+<li><strong><code>/dev/shm</code>.</strong> GitLab needs at least 256 MB of <code>/dev/shm</code>, and the container default is 64 MB. The procedure mounts
+  a 1 GiB memory <code>emptyDir</code>, as the current <code>cp-git-dpl.yaml</code> does. On Kubernetes older than 1.22 <code>sizeLimit</code> does
+  not set the size of that memory file system (it is half of the node RAM), but the kubelet evicts the pod when it
+  uses more than 1 GiB. An idle GitLab 19.4 used about 11 MB: measure 19.5 in the rehearsal.</li>
+<li><strong>Tokens.</strong> The upgrade does not add an expiry date to an existing token that has none: every stop of the path is a
+  patch release at or after the ones that stopped doing so (see
+  <a href="https://docs.gitlab.com/update/deprecations/#non-expiring-access-tokens">Non-expiring access tokens</a>). So
+  <code>git.token</code> keeps working after the upgrade. On GitLab 19.5 a new token must have an expiry date, at most 365 days
+  ahead. The platform rotates <code>git.token</code> before it expires (the <code>git.token.rotation.*</code> preferences). A token without
+  an expiry date is never rotated.</li>
+</ul>
+<h2 id="before-you-start">Before you start</h2>
+<h3 id="what-you-need">What you need</h3>
+<ul>
+<li>A root <code>bash</code> shell on the node that runs <code>cp-git</code> and <code>cp-gitlab-db</code>, with <code>kubectl</code> configured for the cluster,
+  and <code>git</code>, <code>curl</code>, <code>openssl</code> and <code>tar</code>. If the two deployments run on different nodes, run the steps on
+  <code>/opt/gitlab</code> on the <code>cp-git</code> node and the steps on <code>/opt/gitlab-postgresql</code> on the <code>cp-gitlab-db</code> node. Only
+  administrators may have access to this node: some commands pass <code>git.token</code> on their command line.</li>
+<li>The AWS CLI, with read access to Amazon FSx, for the FSx checks.</li>
+<li>A backup directory <strong>off</strong> the file system that holds <code>/opt/gitlab</code> and <code>/opt/gitlab-postgresql</code>: for example an
+  Amazon EBS volume mounted on the node. See <a href="#space">Space</a> for its size. It will hold secrets
+  (<code>gitlab-secrets.json</code>, the database, the SAML private key): restrict access to it.</li>
+<li>These values:<ul>
+<li>the <strong><code>git.external.url</code></strong> preference: the URL of GitLab</li>
+<li>the <strong><code>git.token</code></strong> preference</li>
+<li><code>CP_GITLAB_INTERNAL_PORT</code>, <code>GITLAB_DATABASE_PASSWORD</code>, <code>GITLAB_DATABASE_USERNAME</code> and <code>GITLAB_DATABASE_DATABASE</code>
+  from the install config</li>
+<li>the GitLab <code>root</code> password</li>
+<li>a pipeline repository to clone in the checks, as <code>&lt;namespace&gt;/&lt;project&gt;</code></li>
+</ul>
+</li>
+<li>A Cloud Pipeline build that has the GitLab 19 support, deployed to the <code>api</code> before the first stop (see the checks).</li>
+<li>The <code>lifescience/cloud-pipeline:git-19-&lt;version&gt;</code> image of the same build in the registry of the deployment.</li>
+<li>The <code>lifescience/cloud-pipeline:cp-bkp-worker-&lt;version&gt;</code> image of the same build, for the backup workers. An older
+  worker image has no backup script for <code>cp-gitlab-db</code>.</li>
+</ul>
+<h3 id="session-setup">Session setup</h3>
+<p>Run this once in the shell that runs the procedure. Every later step uses these variables and functions. If the
+session is lost, run it again, and set <code>DB_COLLATE</code> and <code>DB_CTYPE</code> again (see <a href="#other-facts">Other facts</a>).</p>
+<pre><code class="language-bash">set -o pipefail
+set +H                                      # no history expansion: some SQL below contains &quot;!&quot;
+export BKP_DIR=/mnt/gitlab-upgrade          # off the file system of /opt/gitlab and /opt/gitlab-postgresql
+export GIT_URL=https://git.example.com:443  # the git.external.url preference
+export GIT_PORT=30080                       # CP_GITLAB_INTERNAL_PORT
+export SMOKE_REPO=root/my-pipeline          # a pipeline repository, &lt;namespace&gt;/&lt;project&gt;
+export DB_NAME=gitlabhq_production          # GITLAB_DATABASE_DATABASE
+export DB_USER=gitlab                       # GITLAB_DATABASE_USERNAME
+read -rsp 'git.token: ' GIT_TOKEN; echo
+read -rsp 'GITLAB_DATABASE_PASSWORD: ' DB_PASS; echo
+export GIT_TOKEN DB_PASS
+mkdir -p &quot;$BKP_DIR&quot; &amp;&amp; chmod 700 &quot;$BKP_DIR&quot;
+
+git_pod() { kubectl get po -l cloud-pipeline/cp-git=true -o jsonpath='{.items[0].metadata.name}'; }
+db_pod()  { kubectl get po -l cloud-pipeline/cp-gitlab-db=true -o jsonpath='{.items[0].metadata.name}'; }
+db_sql()  { kubectl exec &quot;$(db_pod)&quot; -- psql -U postgres -d &quot;$DB_NAME&quot; -v ON_ERROR_STOP=1 -At &quot;$@&quot;; }
+
+# A few row counts and the last schema migration, to compare before and after a database move
+db_sanity() {
+  db_sql -c &quot;SELECT 'projects=' || count(*) FROM projects UNION ALL SELECT 'users=' || count(*) FROM users
+             UNION ALL SELECT 'namespaces=' || count(*) FROM namespaces
+             UNION ALL SELECT 'schema=' || max(version) FROM schema_migrations;&quot;
+}
+
+# Batched background migrations that are not finished (3) or finalized (6). No output: none left
+bbm() {
+  db_sql -c &quot;SELECT id, status, job_class_name, table_name, column_name, job_arguments
+             FROM batched_background_migrations WHERE status NOT IN (3, 6) ORDER BY id;&quot;
+}
+
+# Stop GitLab cleanly, then scale cp-git down and wait until the pod is gone
+git_stop() {
+  kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl stop
+  kubectl scale deployment cp-git --replicas=0
+  while [ -n &quot;$(kubectl get po -l cloud-pipeline/cp-git=true -o name)&quot; ]; do sleep 5; done
+}
+
+# Start cp-git on an image, and wait until reconfigure (and so the database migrations) has finished.
+# It refuses to run while a cp-git pod exists: two GitLab pods must never run on the same data
+git_start() {
+  [ -z &quot;$(kubectl get po -l cloud-pipeline/cp-git=true -o name)&quot; ] || { echo &quot;cp-git runs: git_stop first&quot;; return 1; }
+  kubectl set image deployment/cp-git cp-git=&quot;$1&quot;
+  kubectl scale deployment cp-git --replicas=1
+  until kubectl logs &quot;$(git_pod)&quot; 2&gt;/dev/null | grep &quot;gitlab Reconfigured!&quot; &gt; /dev/null; do sleep 30; done
+  kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl status
+}
+
+# Scale cp-gitlab-db down and wait. The first line must print 0: no client is connected
+db_stop() {
+  db_sql -c &quot;SELECT count(*) FROM pg_stat_activity WHERE backend_type = 'client backend' AND pid &lt;&gt; pg_backend_pid();&quot;
+  kubectl scale deployment cp-gitlab-db --replicas=0
+  while [ -n &quot;$(kubectl get po -l cloud-pipeline/cp-gitlab-db=true -o name)&quot; ]; do sleep 5; done
+}
+
+# Start cp-gitlab-db on a postgres image tag, on the existing data directory
+db_start() {
+  [ -z &quot;$(kubectl get po -l cloud-pipeline/cp-gitlab-db=true -o name)&quot; ] || { echo &quot;cp-gitlab-db runs: db_stop first&quot;; return 1; }
+  kubectl set image deployment/cp-gitlab-db cp-gitlab-db=&quot;postgres:$1&quot;
+  kubectl scale deployment cp-gitlab-db --replicas=1
+  until kubectl exec &quot;$(db_pod)&quot; -- pg_isready -U postgres 2&gt;/dev/null; do sleep 5; done
+}
+
+# Checks GitLab through the IP of its pod, so they work while the cp-git service is closed:
+# the version, the git.token details (expires_at), the SAML button of the sign-in page, and a clone
+smoke() {
+  local url
+  url=&quot;https://$(kubectl get po &quot;$(git_pod)&quot; -o jsonpath='{.status.podIP}'):$GIT_PORT&quot;
+  for _ in $(seq 60); do curl -ksf -o /dev/null -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$url/api/v4/version&quot; &amp;&amp; break; sleep 10; done
+  curl -ksSf -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$url/api/v4/version&quot;; echo
+  curl -ksSf -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$url/api/v4/personal_access_tokens/self&quot;; echo
+  echo &quot;SAML sign-in links: $(curl -ksSf &quot;$url/users/sign_in?auto_sign_in=false&quot; | grep -c 'users/auth/saml')&quot;
+  ( umask 077; rm -rf /tmp/gitlab-smoke &amp;&amp;
+    git -c http.sslVerify=false clone -q &quot;https://root:${GIT_TOKEN}@${url#https://}/${SMOKE_REPO}.git&quot; /tmp/gitlab-smoke &amp;&amp;
+    git -C /tmp/gitlab-smoke log -1 --oneline
+    rm -rf /tmp/gitlab-smoke )
+}
+
+# The backup of a stop: a database dump, read through to its end, the /etc/gitlab archive and the row counts.
+# Run it with cp-git stopped
+stop_backup() {
+  mkdir -p &quot;$BKP_DIR/$1&quot; &amp;&amp;
+    kubectl exec &quot;$(db_pod)&quot; -- pg_dump -U postgres -Fc &quot;$DB_NAME&quot; &gt; &quot;$BKP_DIR/$1/$DB_NAME.dump&quot; &amp;&amp;
+    kubectl exec -i &quot;$(db_pod)&quot; -- pg_restore -f /dev/null &lt; &quot;$BKP_DIR/$1/$DB_NAME.dump&quot; &amp;&amp;
+    tar -C /opt/gitlab -czf &quot;$BKP_DIR/$1/gitlab-config.tgz&quot; config &amp;&amp;
+    db_sanity &gt; &quot;$BKP_DIR/$1/sanity.txt&quot; &amp;&amp;
+    ls -l &quot;$BKP_DIR/$1&quot; &amp;&amp; echo &quot;backup $1 OK&quot;
+}
+</code></pre>
+<p><code>git_stop</code> prints an error when <code>cp-git</code> is already stopped. That is harmless.</p>
+<p><code>smoke</code> connects to the IP of the <code>cp-git</code> pod from the node. During the stops the <code>cp-git</code> service is closed (see
+<a href="#freeze-and-back-up">Freeze and back up</a>), so this is the only way in. The clone happens in a private directory,
+which <code>smoke</code> removes at once.</p>
+<p>The backup of a stop dumps the database with the <code>pg_dump</code> of <code>cp-gitlab-db</code> itself, which always matches the
+server. <code>stop_backup</code> then reads the whole dump with <code>pg_restore</code>, which fails on a dump that was cut short.
+<code>gitlab-backup create</code> is used only on 15.5.4 and on 19.5.3: the <code>pg_dump</code> bundled in the intermediate GitLab images
+is older than the database server at several stops, and it refuses to dump a newer server. During the stops nobody
+can reach GitLab through its service, so the repositories do not change, and the copy of the repositories taken at
+the freeze stays valid for every stop.</p>
+<h3 id="facts-to-collect">Facts to collect</h3>
+<p>Collect these facts before the rehearsal, on the running 15.5.4. Each one changes the procedure as described.</p>
+<h4 id="repository-count-and-size">Repository count and size</h4>
+<pre><code class="language-bash">db_sql -c &quot;SELECT count(*), pg_size_pretty(sum(repository_size)), pg_size_pretty(sum(lfs_objects_size)),
+           pg_size_pretty(sum(uploads_size)) FROM project_statistics;&quot;
+du -sh /opt/gitlab/data/git-data/repositories /opt/gitlab/data/gitlab-rails/uploads
+</code></pre>
+<p>Size the backup directory and the free space with it (see <a href="#space">Space</a>). The time of the copy at the freeze and
+of <code>gitlab:git:fsck</code> at each stop grows with it: the rehearsal measures both.</p>
+<h4 id="database-size">Database size</h4>
+<pre><code class="language-bash">db_sql -c &quot;SELECT pg_size_pretty(pg_database_size('$DB_NAME'));&quot;
+</code></pre>
+<p>Each PostgreSQL upgrade keeps the old data directory, so the file system of <code>/opt/gitlab-postgresql</code> needs free space
+for three more copies of the database. The dump and restore time grows with the size: the rehearsal measures it.</p>
+<h4 id="fsx-deployment-type-backups-data-repository-and-mount-options">FSx deployment type, backups, data repository and mount options</h4>
+<p>Skip this when the paths are not on FSx for Lustre.</p>
+<pre><code class="language-bash">mount -t lustre                                  # the file system name (fs-...), its mount point and options
+findmnt -T /opt/gitlab/data; findmnt -T /opt/gitlab-postgresql/data
+aws fsx describe-file-systems --file-system-ids &lt;fs-id&gt; \
+    --query 'FileSystems[0].LustreConfiguration.[DeploymentType,AutomaticBackupRetentionDays,DataRepositoryConfiguration]'
+aws fsx describe-data-repository-associations --filters Name=file-system-id,Values=&lt;fs-id&gt;
+find /opt/gitlab/data/git-data /opt/gitlab/data/gitlab-rails /opt/gitlab-postgresql/data -type f -print0 |
+    xargs -0 lfs hsm_state | grep -c released
+</code></pre>
+<ul>
+<li>A <code>SCRATCH_*</code> deployment type does not replicate data. <strong>Stop</strong>: do not upgrade on it. Move the data to a
+  <code>PERSISTENT_*</code> file system or to local disks first. That is a decision for the platform owner.</li>
+<li>A data repository association, or an import or export path, that covers these paths can release file contents to
+  Amazon S3. Remove it, or turn off its automatic release, for these paths first. The last command must print <code>0</code>.
+  It checks every file of the trees, so it takes time.</li>
+<li>FSx backs up only a <code>PERSISTENT_*</code> file system that is not linked to an Amazon S3 data repository. On such a file
+  system the procedure also takes a manual FSx backup at the freeze, and automatic backups, if they are on, are one
+  more restore point. A file system linked to S3 has no FSx backups at all: the copy off FSx is then the only full
+  copy.</li>
+<li>Without the <code>flock</code> mount option, file locks are not shared between clients. Remount with <code>flock</code> before the
+  upgrade. This needs a stop of every pod that uses the mount.</li>
+<li><code>/opt/gitlab/config</code>, <code>/opt/gitlab/data</code>, <code>/opt/gitlab/logs</code>, <code>/opt/gitlab/pki</code> and <code>/opt/gitlab-postgresql/data</code>
+  must not be mount points themselves: the procedure renames them. If one is, adapt the <code>mv</code> steps.</li>
+</ul>
+<h4 id="the-bundled-postgresql-inside-cp-git">The bundled PostgreSQL inside cp-git</h4>
+<pre><code class="language-bash">kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl status
+grep -n &quot;db_host&quot; /opt/gitlab/config/gitlab.rb
+db_sql -c &quot;SELECT count(*) FROM pg_stat_activity WHERE datname = '$DB_NAME';&quot;
+</code></pre>
+<ul>
+<li><code>run: postgresql</code> in the first output is expected: the bundled PostgreSQL runs idle, next to <code>cp-gitlab-db</code>. The
+  <code>gitlab.rb</code> edit before the first stop disables it. Otherwise the 15.11 and 16.11 images would try to upgrade it at
+  start, and the 19.x image would start PostgreSQL 17 on its old data.</li>
+<li><code>db_host</code> must be the <code>cp-gitlab-db</code> service, and the last query must count GitLab's connections (more than 0). If
+  GitLab uses the bundled PostgreSQL instead, <strong>stop</strong>: this procedure does not apply.</li>
+</ul>
+<h4 id="local-requests-from-webhooks-and-sign-up">Local requests from webhooks, and sign-up</h4>
+<pre><code class="language-bash">curl -ksSf -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$GIT_URL/api/v4/application/settings&quot; |
+    grep -o -E '&quot;(allow_local_requests_from_web_hooks_and_services|signup_enabled)&quot;:[a-z]+'
+</code></pre>
+<ul>
+<li><code>allow_local_requests_from_web_hooks_and_services</code> should be <code>true</code>: the webhooks of pipeline repositories call the
+  <code>elasticsearch-agent</code> inside the cluster. If it is <code>true</code>, check after the upgrade that it still is. If it is
+  <code>false</code>, repository indexing through webhooks does not work today either. Leave it as it is, and raise it with the
+  platform owner: the upgrade does not change it.</li>
+<li><code>signup_enabled</code> is set to <code>false</code> after the upgrade.</li>
+</ul>
+<h4 id="other-facts">Other facts</h4>
+<p>Record the rest in the same session. The procedure uses them.</p>
+<pre><code class="language-bash"># Where the pods run, what the node has, and the container runtime
+kubectl get po -o wide | grep -E '^cp-git|^cp-gitlab'
+kubectl describe node &lt;node&gt; | grep -A 6 -E '^(Capacity|Allocatable)'
+docker version --format '{{.Server.Version}}'
+df -h &quot;$(docker info --format '{{.DockerRootDir}}')&quot;
+
+# The deployments the procedure scales down, and the current images
+kubectl get deploy cp-git cp-gitlab-db cp-git-sync cp-gitlab-reader cp-bkp-worker-cp-git cp-bkp-worker-cp-gitlab-db
+kubectl get deploy cp-git cp-gitlab-db -o jsonpath='{range .items[*]}{.metadata.name} {.spec.template.spec.containers[0].image} {.spec.template.spec.containers[0].args}{&quot;\n&quot;}{end}'
+
+# Database roles, encoding, locale and database-level settings
+db_sql -c &quot;SELECT rolname FROM pg_roles WHERE rolname !~ '^pg_' ORDER BY 1;&quot;
+db_sql -c &quot;SELECT datname, pg_encoding_to_char(encoding), datcollate, datctype FROM pg_database WHERE datname = '$DB_NAME';&quot;
+db_sql -c &quot;SELECT count(*) FROM pg_db_role_setting;&quot;
+DB_COLLATE=$(db_sql -c &quot;SELECT datcollate FROM pg_database WHERE datname = '$DB_NAME';&quot;)
+DB_CTYPE=$(db_sql -c &quot;SELECT datctype FROM pg_database WHERE datname = '$DB_NAME';&quot;)
+export DB_COLLATE DB_CTYPE
+
+# Object storage for LFS
+grep -n &quot;object_store&quot; /opt/gitlab/config/gitlab.rb
+db_sql -c &quot;SELECT file_store, count(*) FROM lfs_objects GROUP BY 1;&quot;
+</code></pre>
+<ul>
+<li>Each GitLab image is 1.3 to 1.9 GB to download and 3.5 to 5.5 GB on disk. The Docker disk needs room for two stop
+  images at a time.</li>
+<li>From 16.x the GitLab images are based on Ubuntu 22.04, and from 18.x on 24.04. With Docker's default seccomp
+  profile they need Docker 20.10.10 or later. By default Kubernetes runs pods without a seccomp profile, unless an
+  annotation, a pod security policy or the kubelet <code>--seccomp-default</code> option sets one. So an older Docker is a
+  finding for the rehearsal, not a blocker.</li>
+<li>The roles must be <code>postgres</code> and the GitLab user only, with no row in <code>pg_db_role_setting</code>. The PostgreSQL upgrade
+  re-creates exactly these. Re-create any other role or database setting by hand after each restore.</li>
+<li>If <code>lfs_objects</code> has rows with <code>file_store = 2</code>, LFS objects are in object storage. The current <code>gitlab.rb</code> sets the
+  region <code>us-east-1</code>. The GitLab 19 image sets <code>CP_GITLAB_OBJ_STORE_REGION</code>, or <code>CP_CLOUD_REGION_ID</code> when that is not
+  set. Check the bucket region (<code>aws s3api get-bucket-location --bucket &lt;bucket&gt;</code>). If it is not that value, set
+  <code>CP_GITLAB_OBJ_STORE_REGION</code> in the <code>cp-config-global</code> ConfigMap and the install config before the switch to the
+  GitLab 19 image.</li>
+</ul>
+<h3 id="checks-that-must-pass">Checks that must pass</h3>
+<p>Run these before the freeze. Each one must pass, or be fixed first.</p>
+<p><strong>The version is 15.5.4, and <code>smoke</code> works.</strong> <code>smoke</code> must print the version, the token, at least one SAML sign-in
+link, and the last commit of the pipeline repository. It also proves that the node reaches the pod IP.</p>
+<pre><code class="language-bash">curl -ksSf -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$GIT_URL/api/v4/version&quot;
+smoke
+</code></pre>
+<p><strong>No background migration is pending.</strong> <code>bbm</code> prints nothing, and this prints <code>0</code>:</p>
+<pre><code class="language-bash">bbm
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rails runner -e production 'puts Gitlab::BackgroundMigration.remaining'
+</code></pre>
+<p><strong>The <code>api</code> has the GitLab 19 support.</strong> The version of the <code>api</code> is <code>&lt;version&gt;.&lt;build&gt;.&lt;commit&gt;</code>. In a checkout of the
+Cloud Pipeline repository, the second command lists the GitLab fixes up to that commit: token rotation, the release
+description, the project deletion, the temporary fork group, the missing tree path, the fork namespace, the token
+expiry cap, the version check and the token format. The third command must return the preference.</p>
+<pre><code class="language-bash">curl -ksSf -H &quot;Authorization: Bearer &lt;admin JWT&gt;&quot; &quot;https://&lt;api host&gt;/pipeline/restapi/app/info&quot;
+git log --format=%B --grep 'Issue 4618' &lt;commit&gt; -- api core | grep 'Issue 4618'
+curl -ksSf -H &quot;Authorization: Bearer &lt;admin JWT&gt;&quot; &quot;https://&lt;api host&gt;/pipeline/restapi/preferences/git.token.rotation.enabled&quot;
+</code></pre>
+<p><strong>The images are there.</strong> Pull the first stop image on the <code>cp-git</code> node, and check the GitLab 19 image of the same
+build as the <code>api</code>. The registry prefix is the one of the current <code>cp-git</code> image, and the version is the one of the
+<code>api-srv</code> image. The last command must print the GitLab version of the last stop, <code>19.5.3</code>. An older build of the
+platform has a <code>git-19</code> image on GitLab 19.4.1, and that image must not start on 19.5.3 data.</p>
+<pre><code class="language-bash">docker pull gitlab/gitlab-ce:15.11.13-ce.0
+kubectl get deploy cp-api-srv -o jsonpath='{.spec.template.spec.containers[*].image}'; echo
+docker pull &lt;registry prefix&gt;lifescience/cloud-pipeline:git-19-&lt;version&gt;
+docker run --rm --entrypoint cat &lt;registry prefix&gt;lifescience/cloud-pipeline:git-19-&lt;version&gt; \
+    /opt/gitlab/embedded/service/gitlab-rails/VERSION; echo
+</code></pre>
+<p>Find the latest minor of each PostgreSQL major with the command below. At the time of writing they were 12.22, 14.24,
+16.15 and 17.11. Use 14.14 or later, and 16.5 or later. Use the same tags in the rehearsal and in the real run.</p>
+<pre><code class="language-bash">for m in 12 14 16 17; do
+  curl -s &quot;https://hub.docker.com/v2/repositories/library/postgres/tags?page_size=100&amp;name=$m.&quot; |
+      grep -o &quot;\&quot;name\&quot;:\&quot;$m\.[0-9]*\&quot;&quot; | cut -d'&quot;' -f4 | sort -V | tail -1
+done
+</code></pre>
+<p><strong>Conditional stops.</strong> Run:</p>
+<pre><code class="language-bash">db_sql -c &quot;SELECT 'users=' || count(*) FROM users
+           UNION ALL SELECT 'ci_pipeline_variables=' || count(*) FROM ci_pipeline_variables
+           UNION ALL SELECT 'npm_packages=' || count(*) FROM packages_packages WHERE package_type = 2
+           UNION ALL SELECT 'ci_pipeline_messages=' || count(*) FROM ci_pipeline_messages;&quot;
+</code></pre>
+<ul>
+<li><code>users</code> over 30,000: add the <code>16.0.10</code> stop.</li>
+<li><code>ci_pipeline_variables</code> over 0: add the <code>16.0.10</code> and <code>16.2.11</code> stops. GitLab names no threshold for a "large
+  pipeline variables history", and the platform does not use GitLab CI, so any row is unexpected.</li>
+<li><code>npm_packages</code> over 0: add the <code>16.1.8</code> stop.</li>
+<li><code>ci_pipeline_messages</code> over 1.5 million: the <code>17.1.8</code> stop is in the path anyway, but its migration processes about
+  1.5 to 2 million rows an hour. Plan the time.</li>
+</ul>
+<p><strong>Certificate keys.</strong> From 17.7 GitLab uses OpenSSL 3 at security level 2. An RSA key under 2048 bits, or a
+certificate signed with SHA-1, is rejected.</p>
+<pre><code class="language-bash">for f in /opt/gitlab/pki/ssl-public-cert.pem /opt/gitlab/pki/sso-public-cert.pem \
+         /opt/idp/pki/idp-public-cert.pem /opt/common/pki/ca-public-cert.pem; do
+  [ -f &quot;$f&quot; ] &amp;&amp; echo &quot;== $f&quot; &amp;&amp; openssl x509 -in &quot;$f&quot; -noout -text | grep -E 'Public-Key|Signature Algorithm' | sort -u
+done
+</code></pre>
+<p>Every key must be 2048 bits or more, and no signature <code>sha1WithRSAEncryption</code>. Check the same for the services GitLab
+connects to over TLS: the host of the <strong><code>git.repository.hook.url</code></strong> preference, and the SMTP server, if it uses TLS
+(<code>openssl s_client -connect &lt;host&gt;:&lt;port&gt; -tls1_2 &lt; /dev/null</code>). Replace a failing certificate before the <code>17.8.7</code>
+stop. A new SAML certificate of GitLab must also be registered in <code>cp-idp</code>.</p>
+<p><strong>Database connections.</strong> GitLab 16 doubles its database connections. Record the limit and the current use:</p>
+<pre><code class="language-bash">db_sql -c &quot;SHOW max_connections;&quot; -c &quot;SHOW max_locks_per_transaction;&quot; -c &quot;SELECT count(*) FROM pg_stat_activity;&quot;
+</code></pre>
+<p>The procedure sets <code>max_connections</code> to 400, the value GitLab requires for an external database. Record the
+connection count at each stop in the rehearsal. If it gets close to 400, raise the limit. The procedure also sets
+<code>max_locks_per_transaction</code> to 128, the value of the bundled PostgreSQL: with the default 64, loading the GitLab 19
+schema fails with "out of shared memory".</p>
+<p><strong>The root password.</strong> Sign in as <code>root</code> at <code>$GIT_URL/users/sign_in?auto_sign_in=false</code>. If the password is unknown,
+or still <code>Passw0rd</code>, set a new strong one:</p>
+<pre><code class="language-bash">kubectl exec -it &quot;$(git_pod)&quot; -- gitlab-rake &quot;gitlab:password:reset[root]&quot;
+</code></pre>
+<h3 id="space">Space</h3>
+<ul>
+<li>The backup directory: the <code>gitlab-backup</code> archive (about the size of the repositories, uploads and database), the
+  copy of <code>/opt/gitlab</code> and <code>/opt/gitlab-postgresql/data</code>, and one compressed database dump per stop.</li>
+<li>The file system of <code>/opt/gitlab</code>: room for one <code>gitlab-backup</code> archive, before it moves to the backup directory.</li>
+<li>The file system of <code>/opt/gitlab-postgresql</code>: three more copies of the database.</li>
+<li>For a full rollback to 15.5.4: room for one more copy of both trees on their file systems. The rollback moves the
+  current trees aside and unpacks the freeze copy next to them.</li>
+<li>For each pause (see <a href="#run-the-stops">Run the stops</a>): one more copy of <code>/opt/gitlab/data</code> in the backup directory.</li>
+</ul>
+<p>Enlarge them before the freeze. An FSx for Lustre file system can be enlarged while it is in use.</p>
+<h2 id="freeze-and-back-up">Freeze and back up</h2>
+<h3 id="1-tell-the-users">1. Tell the users</h3>
+<p>Add a system event with the time of the window (see <a href="../../../manual/12_Manage_Settings/12.1._Add_a_new_system_event/">Add a new system event</a>).
+Say that pipelines and versioned storages cannot be created, changed or launched during the window, and that runs
+which clone a pipeline repository or a versioned storage fail.</p>
+<p>Tell the administrators too: the VM monitor reports <code>cp-git</code> and <code>cp-git-sync</code> as down while they are stopped. That is
+expected during the window.</p>
+<h3 id="2-close-gitlab">2. Close GitLab</h3>
+<p>Scale down the services that call GitLab or read its data, and the backup workers: a scheduled backup must not run in
+the middle of a stop. Turn the token rotation off for the window, so that its daily check does not report GitLab as
+down: set <strong><code>git.token.rotation.enabled</code></strong> to <code>false</code> (<strong>Settings</strong> &gt; <strong>Preferences</strong> &gt; <strong>Git</strong>).</p>
+<pre><code class="language-bash">mkdir -p &quot;$BKP_DIR/00-freeze&quot;
+kubectl get deploy cp-git cp-gitlab-db -o yaml &gt; &quot;$BKP_DIR/00-freeze/deployments.yaml&quot;
+kubectl get svc cp-git -o yaml &gt; &quot;$BKP_DIR/00-freeze/service.yaml&quot;
+for d in cp-git-sync cp-gitlab-reader cp-bkp-worker-cp-git cp-bkp-worker-cp-gitlab-db; do
+  kubectl scale deployment &quot;$d&quot; --replicas=0
+done
+</code></pre>
+<p>Close the <code>cp-git</code> service: point it at a label that no pod has. Users (through the edge and the node port), the
+<code>api</code> and the runs all reach GitLab through this service, so nobody can change a repository until it opens again.
+The GitLab components inside the pod talk to each other over local sockets. Only the GitLab agent server (KAS) uses
+the service address, and it logs connection errors during the window: that is harmless. The pod IP stays reachable
+from inside the cluster, which <code>smoke</code> uses. <code>ENDPOINTS</code> must be <code>&lt;none&gt;</code>:</p>
+<pre><code class="language-bash">kubectl patch svc cp-git -p '{&quot;spec&quot;: {&quot;selector&quot;: {&quot;cloud-pipeline/cp-git&quot;: &quot;closed-for-upgrade&quot;}}}'
+kubectl get endpoints cp-git
+</code></pre>
+<p>Stop the GitLab web and background services too. Gitaly and Redis still run for the backup:</p>
+<pre><code class="language-bash">kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl stop puma
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl stop sidekiq
+</code></pre>
+<h3 id="3-back-up">3. Back up</h3>
+<pre><code class="language-bash"># GitLab backup: repositories, uploads and database, on 15.5.4
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-backup create
+ls -t /opt/gitlab/data/backups/*_gitlab_backup.tar | head -1
+mv &quot;$(ls -t /opt/gitlab/data/backups/*_gitlab_backup.tar | head -1)&quot; &quot;$BKP_DIR/00-freeze/&quot;
+
+# Stop GitLab, then dump the whole PostgreSQL server, and take the same backup as after every stop
+git_stop
+kubectl exec &quot;$(db_pod)&quot; -- pg_dumpall -U postgres | gzip &gt; &quot;$BKP_DIR/00-freeze/pg_dumpall.sql.gz&quot;
+gzip -dc &quot;$BKP_DIR/00-freeze/pg_dumpall.sql.gz&quot; | tail -5 | grep -c &quot;database cluster dump complete&quot;
+stop_backup 00-freeze
+
+# Stop the database, and copy both data trees off the file system
+db_stop
+tar -C /opt --numeric-owner -cpf &quot;$BKP_DIR/00-freeze/opt-trees.tar&quot; --exclude=gitlab/data/backups \
+    gitlab/config gitlab/data gitlab/pki gitlab-postgresql/data
+</code></pre>
+<p>The <code>grep -c</code> must print <code>1</code>: <code>pg_dumpall</code> writes that line last, so a dump that was cut short does not have it.
+<code>gitlab-config.tgz</code> holds <code>/etc/gitlab</code>, with <code>gitlab.rb</code> and <code>gitlab-secrets.json</code>. Without <code>gitlab-secrets.json</code>
+no backup can be restored. <code>tar</code> warns that it ignores sockets: that is expected.</p>
+<p>If the file system supports FSx backups (see the facts), take a manual one now, while both deployments are stopped:</p>
+<pre><code class="language-bash">aws fsx create-backup --file-system-id &lt;fs-id&gt; --tags Key=Name,Value=gitlab-upgrade-00-freeze
+</code></pre>
+<h2 id="prepare">Prepare</h2>
+<h3 id="1-postgresql-the-latest-12x-the-new-limits-and-amcheck">1. PostgreSQL: the latest 12.x, the new limits and amcheck</h3>
+<p><code>cp-gitlab-db</code> is stopped. Set its arguments. For <code>--shared_buffers</code> use the current value, or a larger one (see
+<a href="#known-risks-and-limits">Known risks and limits</a>), and set the same value in <code>GITLAB_DATABASE_SHARED_BUFFERS</code> of the
+install config. Then start the latest 12.x on the same data directory. A minor version runs on the same data files,
+so this is an image change only.</p>
+<pre><code class="language-bash">kubectl patch deployment cp-gitlab-db --type=json -p '[{&quot;op&quot;: &quot;replace&quot;,
+    &quot;path&quot;: &quot;/spec/template/spec/containers/0/args&quot;,
+    &quot;value&quot;: [&quot;--shared_buffers=&lt;shared_buffers&gt;&quot;, &quot;--max_connections=400&quot;, &quot;--max_locks_per_transaction=128&quot;]}]'
+db_start 12.22
+db_sql -c &quot;SELECT version();&quot; -c &quot;SHOW shared_buffers;&quot; -c &quot;SHOW max_connections;&quot; -c &quot;SHOW max_locks_per_transaction;&quot;
+</code></pre>
+<p>The 12.4 image runs on Debian 10, and the latest 12.x image on Debian 12. The C library of the new image sorts some
+text in a different order, so the text indexes must be rebuilt. Then compare the row counts.</p>
+<p>GitLab 18.4 and later require the <code>amcheck</code> extension in their database, and do not create it. Create it now: the
+dumps carry it through the PostgreSQL upgrades, and <code>pg_amcheck</code> uses it too.</p>
+<pre><code class="language-bash">db_sql -c &quot;REINDEX DATABASE $DB_NAME;&quot;
+diff &quot;$BKP_DIR/00-freeze/sanity.txt&quot; &lt;(db_sanity) &amp;&amp; echo &quot;same&quot;
+db_sql -c &quot;CREATE EXTENSION IF NOT EXISTS amcheck;&quot;
+</code></pre>
+<p>In the install config set <code>GITLAB_DATABASE_VERSION=12.22</code> (the tag you used) and <code>GITLAB_DATABASE_MAX_CONNECTIONS=400</code>.</p>
+<h3 id="2-the-cp-git-deployment">2. The cp-git deployment</h3>
+<p><code>cp-git</code> is stopped. Add the 1 GiB <code>/dev/shm</code>, if the deployment does not have it yet (the first command lists the
+volumes). Set the image pull policy to <code>IfNotPresent</code>: the stop images are pulled ahead, and a start must not fail
+when Docker Hub is slow or not reachable.</p>
+<pre><code class="language-bash">kubectl get deploy cp-git -o jsonpath='{.spec.template.spec.volumes[*].name}'; echo
+kubectl patch deployment cp-git --type=json -p '[
+  {&quot;op&quot;: &quot;add&quot;, &quot;path&quot;: &quot;/spec/template/spec/volumes/-&quot;,
+   &quot;value&quot;: {&quot;name&quot;: &quot;git-dshm&quot;, &quot;emptyDir&quot;: {&quot;medium&quot;: &quot;Memory&quot;, &quot;sizeLimit&quot;: &quot;1Gi&quot;}}},
+  {&quot;op&quot;: &quot;add&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/volumeMounts/-&quot;,
+   &quot;value&quot;: {&quot;name&quot;: &quot;git-dshm&quot;, &quot;mountPath&quot;: &quot;/dev/shm&quot;}},
+  {&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/imagePullPolicy&quot;, &quot;value&quot;: &quot;IfNotPresent&quot;}]'
+</code></pre>
+<p>Change the deployment only while <code>cp-git</code> is scaled to 0, as here and in every step below. Then Kubernetes never runs
+an old and a new GitLab pod on the same data at the same time.</p>
+<h3 id="3-edit-gitlabrb">3. Edit gitlab.rb</h3>
+<p>The Cloud Pipeline 15 image writes <code>/etc/gitlab/gitlab.rb</code> again from the environment at every start. The plain GitLab
+images of the stops do not: they use the file as it is. So edit it once, now, on the node
+(<code>/opt/gitlab/config/gitlab.rb</code>), and do not start the Cloud Pipeline 15 image again, except for a rollback.</p>
+<ul>
+<li>Remove <code>omnibus_gitconfig</code>: GitLab 17.0 stops reconfigure on it, and 18.2 no longer knows it.</li>
+<li>Set its <code>pack.packSizeLimit</code> through Gitaly. Its <code>pack.windowMemory</code> cannot be set: Gitaly always uses 100m, so the
+  old value never applied.</li>
+<li>Disable the bundled PostgreSQL.</li>
+</ul>
+<p>First look at the current lines. Note the <code>packSizeLimit</code> value of the <code>omnibus_gitconfig</code> line. There must be no
+<code>gitaly[...]</code> or <code>postgresql[...]</code> line: if there is one, merge it by hand.</p>
+<pre><code class="language-bash">grep -n -E &quot;^omnibus_gitconfig|^gitaly\[|^postgresql\[&quot; /opt/gitlab/config/gitlab.rb
+</code></pre>
+<p>Then edit the file. Put the noted value in place of <code>512m</code>. The last command must show no <code>omnibus_gitconfig</code>.</p>
+<pre><code class="language-bash">sed -i '/^omnibus_gitconfig\[/d' /opt/gitlab/config/gitlab.rb
+cat &gt;&gt; /opt/gitlab/config/gitlab.rb &lt;&lt;'EOF'
+
+# GitLab uses cp-gitlab-db, not the bundled PostgreSQL
+postgresql['enable'] = false
+# Replaces omnibus_gitconfig, which GitLab 17.0 and later reject
+gitaly['configuration'] = {
+  git: {
+    config: [
+      { key: 'pack.packSizeLimit', value: '512m' }
+    ]
+  }
+}
+EOF
+grep -n -E &quot;omnibus_gitconfig|^postgresql\[|packSizeLimit&quot; /opt/gitlab/config/gitlab.rb
+</code></pre>
+<h3 id="4-token-scopes">4. Token scopes</h3>
+<p>GitLab stores the scopes of each access token as YAML text. GitLab 9 stored the scopes of a token created through its
+REST API as a Ruby <code>Hashie::Array</code> object, not as a plain list. <code>pipectl</code> creates <code>git.token</code> through the REST API, so
+a deployment first installed on GitLab 9 can still have such rows. The <code>01-15.11.13</code> stop queues a background
+migration that reads the scopes of every active token of an admin user, and the <code>03-16.7.10</code> stop finalizes it. The
+migration fails on such a row (see <a href="#tried-to-load-unspecified-class-hashiearray">Troubleshooting</a>).</p>
+<p>Rewrite these scopes as plain lists, as GitLab writes them. The first command lists the rows, and keeps a record in the
+backup directory. Where there is no such row, it prints nothing, and the update changes nothing.</p>
+<pre><code class="language-bash">db_sql -c &quot;SELECT id, user_id, name, impersonation, revoked, expires_at, replace(scopes, E'\n', ' ')
+           FROM personal_access_tokens WHERE scopes LIKE '%!ruby/%' ORDER BY id;&quot; | tee -a &quot;$BKP_DIR/00-freeze/pat-scopes.txt&quot;
+db_sql -c &quot;UPDATE personal_access_tokens SET scopes = replace(scopes, '--- !ruby/array:Hashie::Array', '---')
+           WHERE scopes LIKE '--- !ruby/array:Hashie::Array%' RETURNING id;&quot;
+</code></pre>
+<p>Then count what is left on the tokens that the migration reads. This must print <code>0</code>:</p>
+<pre><code class="language-bash">db_sql -c &quot;SELECT count(*) FROM personal_access_tokens t JOIN users u ON u.id = t.user_id
+           WHERE u.admin AND t.revoked IS NOT TRUE AND (t.expires_at IS NULL OR t.expires_at &gt; now())
+             AND t.scopes LIKE '%!ruby/%';&quot;
+</code></pre>
+<p>If it does not, one of the listed rows holds another Ruby object. Write its scopes by hand as a plain list of the same
+scopes, then count again. For example, for a token with the <code>api</code> scope only:</p>
+<pre><code class="language-bash">db_sql -c &quot;UPDATE personal_access_tokens SET scopes = E'---\n- api\n' WHERE id = &lt;id&gt;;&quot;
+</code></pre>
+<h2 id="run-the-stops">Run the stops</h2>
+<p>Run <a href="#one-stop">One stop</a> for each line of <a href="#the-path">the path</a>, from <code>01-15.11.13</code> to <code>15-19.5.3</code>. After
+<code>01-15.11.13</code>, <code>09-17.11.7</code> and <code>13-18.11.14</code>, run <a href="#upgrade-postgresql">Upgrade PostgreSQL</a> before the next stop.</p>
+<p>The procedure can pause after the backup of any stop. To give GitLab back to the users in a pause, start the same
+stop again, open the <code>cp-git</code> service, scale the services of the freeze back up, and turn the token rotation back on
+(see <a href="#after-the-upgrade">After the upgrade</a>). Users then change the repositories, so the backups of the earlier
+stops no longer match them. Before you go on, freeze again (steps 1 and 2 of <a href="#freeze-and-back-up">Freeze and back up</a>),
+but skip the two <code>kubectl get ... -o yaml</code> lines: a full rollback reads the files of <code>00-freeze</code>. Then stop GitLab
+with <code>git_stop</code>, take the backup of that stop again, and copy the repositories again:</p>
+<pre><code class="language-bash">tar -C /opt --numeric-owner -cpf &quot;$BKP_DIR/$LABEL/opt-gitlab-data.tar&quot; --exclude=gitlab/data/backups gitlab/data
+</code></pre>
+<p>A rollback then goes back no further than the pause, with this copy of the repositories. A rollback to 15.5.4 loses
+the changes of the pause.</p>
+<h3 id="one-stop">One stop</h3>
+<p>Set the stop, and start it. Watch the pod in a second shell: <code>kubectl get po -l cloud-pipeline/cp-git=true -w</code> and
+<code>kubectl logs -f &lt;pod&gt;</code>. The database migrations run inside reconfigure, so it can take long.</p>
+<pre><code class="language-bash">STOP=16.3.9 LABEL=02-16.3.9
+git_start &quot;gitlab/gitlab-ce:$STOP-ce.0&quot;
+</code></pre>
+<p>Read the end of the reconfigure output in the log: it lists the deprecated settings. A removed setting stops
+reconfigure with an error, and the pod restarts (see <a href="#troubleshooting">Troubleshooting</a>).</p>
+<p>Wait for the background migrations. <code>bbm</code> must print nothing. A row with status <code>4</code> is a failed migration: see
+<a href="#troubleshooting">Troubleshooting</a>. On the stops up to <code>10-18.2.8</code>, the second command must also print <code>0</code> (later
+versions do not have it). From 18.5, <code>gitlab-rake gitlab:background_migrations:status</code> (18.5 to 18.8) or <code>...:list</code>
+(18.9 and later) shows the same, with the progress.</p>
+<pre><code class="language-bash">while [ -n &quot;$(bbm)&quot; ]; do bbm; echo; sleep 60; done
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rails runner -e production 'puts Gitlab::BackgroundMigration.remaining'
+</code></pre>
+<p>Check that GitLab works:</p>
+<pre><code class="language-bash">smoke
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rake gitlab:git:fsck
+db_sql -c &quot;SELECT count(*) FROM pg_stat_activity;&quot;
+</code></pre>
+<ul>
+<li><code>smoke</code> prints the version of the stop, the <code>git.token</code> details, the SAML sign-in links, and the last commit of the
+  pipeline repository. <code>expires_at</code> of <code>git.token</code> must stay <code>null</code>, and the SAML count must be at least 1. The count
+  only shows that GitLab loaded the SAML settings, not that a sign-in works. A real SAML sign-in needs the service
+  open, so it is checked after the upgrade. The certificate checks before the freeze cover the OpenSSL 3 change of
+  17.8.7. If the SAML sign-in fails after the upgrade, fix the certificates or the settings on 19.5.3: it is no reason
+  to roll back.</li>
+<li><code>gitlab:git:fsck</code> must report no error. It checks every repository, so it takes time: the rehearsal shows how much.</li>
+<li>Record the connection count, and compare it with <code>max_connections</code>.</li>
+</ul>
+<p>Stop GitLab and back up the stop:</p>
+<pre><code class="language-bash">git_stop
+stop_backup &quot;$LABEL&quot;
+</code></pre>
+<p>While the migrations run, pull the image of the next stop on the node (<code>docker pull gitlab/gitlab-ce:&lt;next&gt;-ce.0</code>).
+After a stop, remove the image of the stop before it (<code>docker rmi gitlab/gitlab-ce:&lt;previous&gt;-ce.0</code>). Keep the
+current <code>cp-git</code> image of 15.5.4 until the upgrade is done: a full rollback needs it.</p>
+<h3 id="upgrade-postgresql">Upgrade PostgreSQL</h3>
+<p>Run this after the backup of <code>01-15.11.13</code> (12 to 14), <code>09-17.11.7</code> (14 to 16) and <code>13-18.11.14</code> (16 to 17). <code>cp-git</code>
+is stopped, and the backup of the stop is the dump to restore.</p>
+<p>The procedure dumps the database and restores it into an empty data directory of the new version. The old data
+directory stays as it is, as a fallback. Do not use <code>pg_upgrade --link</code> or <code>--clone</code> on FSx: link mode leaves no
+fallback, and clone mode needs reflinks, which Lustre does not have. <code>pg_upgrade</code> in copy mode also works, but the
+official <code>postgres</code> images do not have the old and the new binaries in one container.</p>
+<p>Set the versions, the stop and its backup label, then stop the database and start the new version on an empty
+directory:</p>
+<pre><code class="language-bash">OLD=12 NEW_TAG=14.24 STOP=15.11.13 LABEL=01-15.11.13
+db_stop
+mv /opt/gitlab-postgresql/data &quot;/opt/gitlab-postgresql/data-pg$OLD&quot;
+mkdir /opt/gitlab-postgresql/data
+kubectl set image deployment/cp-gitlab-db cp-gitlab-db=&quot;postgres:$NEW_TAG&quot;
+kubectl scale deployment cp-gitlab-db --replicas=1
+until kubectl logs &quot;$(db_pod)&quot; 2&gt;/dev/null | grep &quot;PostgreSQL init process complete&quot; &gt; /dev/null; do sleep 5; done
+until kubectl exec &quot;$(db_pod)&quot; -- pg_isready -U postgres 2&gt;/dev/null; do sleep 5; done
+</code></pre>
+<p><code>db_stop</code> must print <code>0</code> client connections. The image creates a new server on the empty directory, with the
+<code>postgres</code> password from the deployment. Wait for "init process complete" before the next step: until then the image
+runs a temporary server, which it stops.</p>
+<p>Create the GitLab user and database as the installer does, with the encoding and locale of the old database, and
+restore the dump:</p>
+<pre><code class="language-bash">kubectl exec -i &quot;$(db_pod)&quot; -- psql -U postgres -v ON_ERROR_STOP=1 &lt;&lt;EOF
+CREATE ROLE $DB_USER WITH LOGIN SUPERUSER CREATEDB PASSWORD '$DB_PASS';
+CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' LC_COLLATE '$DB_COLLATE' LC_CTYPE '$DB_CTYPE' TEMPLATE template0;
+EOF
+kubectl exec -i &quot;$(db_pod)&quot; -- pg_restore -U postgres -d &quot;$DB_NAME&quot; --exit-on-error &lt; &quot;$BKP_DIR/$LABEL/$DB_NAME.dump&quot;
+echo &quot;pg_restore exit $?&quot;
+</code></pre>
+<p><code>pg_restore</code> must exit with <code>0</code>. From PostgreSQL 14 a new password is stored as SCRAM, and the image accepts only
+SCRAM for connections from other pods, such as GitLab. This is why the user is created with its password here, and
+not copied from the old server, where it is stored as MD5.</p>
+<p>Update the statistics, check the tables and indexes, and compare the row counts:</p>
+<pre><code class="language-bash">kubectl exec &quot;$(db_pod)&quot; -- vacuumdb -U postgres --all --analyze-in-stages
+kubectl exec &quot;$(db_pod)&quot; -- pg_amcheck -U postgres --install-missing --heapallindexed &quot;$DB_NAME&quot;; echo &quot;pg_amcheck exit $?&quot;
+diff &quot;$BKP_DIR/$LABEL/sanity.txt&quot; &lt;(db_sanity) &amp;&amp; echo &quot;same&quot;
+</code></pre>
+<p><code>pg_amcheck</code> must exit with <code>0</code>, and the row counts must be the same.</p>
+<p>In the install config set <code>GITLAB_DATABASE_VERSION</code> to the new tag. Then start the same stop again on the new
+database, check it, and stop it:</p>
+<pre><code class="language-bash">git_start &quot;gitlab/gitlab-ce:$STOP-ce.0&quot;
+smoke
+git_stop
+</code></pre>
+<p>Then go on with the next stop: <a href="#one-stop">One stop</a>. The dump taken before the upgrade is also the backup of this
+stop on the new version: the data is the same.</p>
+<p>Keep every <code>data-pg&lt;version&gt;</code> directory until the upgrade is done and checked.</p>
+<p>If the new version fails to start or the restore fails, go back to the old version:</p>
+<pre><code class="language-bash">kubectl scale deployment cp-gitlab-db --replicas=0
+while [ -n &quot;$(kubectl get po -l cloud-pipeline/cp-gitlab-db=true -o name)&quot; ]; do sleep 5; done
+mv /opt/gitlab-postgresql/data &quot;/opt/gitlab-postgresql/data.failed-$(date +%Y%m%d%H%M)&quot;
+mv &quot;/opt/gitlab-postgresql/data-pg$OLD&quot; /opt/gitlab-postgresql/data
+db_start &lt;the old tag&gt;
+</code></pre>
+<h2 id="switch-to-the-gitlab-19-image">Switch to the GitLab 19 image</h2>
+<p>After the backup of <code>15-19.5.3</code>, switch to the Cloud Pipeline image of the same GitLab version. This image writes
+<code>gitlab.rb</code> again from the environment at start: the new nginx settings with the SSL ciphers, the object storage with
+its region, no GitLab runner. The GitLab data is already on 19.5.3, so no migration runs.</p>
+<p>This image comes from the registry of the deployment, so set the image pull policy back to <code>Always</code>, as
+<code>cp-git-dpl.yaml</code> has it. <code>cp-git</code> is stopped after the backup of the stop.</p>
+<pre><code class="language-bash">GIT19_IMAGE=&lt;registry prefix&gt;lifescience/cloud-pipeline:git-19-&lt;version&gt;
+cp -p /opt/gitlab/config/gitlab.rb &quot;$BKP_DIR/15-19.5.3/gitlab.rb&quot;
+kubectl patch deployment cp-git --type=json -p '[{&quot;op&quot;: &quot;replace&quot;,
+    &quot;path&quot;: &quot;/spec/template/spec/containers/0/imagePullPolicy&quot;, &quot;value&quot;: &quot;Always&quot;}]'
+git_start &quot;$GIT19_IMAGE&quot;
+diff &quot;$BKP_DIR/15-19.5.3/gitlab.rb&quot; /opt/gitlab/config/gitlab.rb
+</code></pre>
+<p>The diff shows secrets: read it on the node only. Expect the <code>nginx</code> settings under <code>gitlab_rails['nginx']</code>, the SSL
+ciphers, and more object types disabled in the object storage. The object storage region must be the region of the
+bucket (see the facts).</p>
+<p>Run the final checks:</p>
+<pre><code class="language-bash">smoke
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rake gitlab:git:fsck
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rake gitlab:uploads:check
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rake gitlab:lfs:check
+kubectl exec &quot;$(db_pod)&quot; -- pg_amcheck -U postgres &quot;$DB_NAME&quot;; echo &quot;pg_amcheck exit $?&quot;
+bbm
+</code></pre>
+<p>Update the install config, so that a later <code>pipectl</code> run uses the new versions:</p>
+<ul>
+<li><code>CP_GITLAB_VERSION=19</code></li>
+<li><code>GITLAB_DATABASE_VERSION=&lt;the 17.x tag&gt;</code></li>
+<li><code>GITLAB_DATABASE_MAX_CONNECTIONS=400</code></li>
+<li><code>GITLAB_ROOT_PASSWORD=&lt;the real root password&gt;</code>: on GitLab 17 and later the installer replaces <code>Passw0rd</code> with a
+  random password, which GitLab never applies to an existing database. The installer then clones pipeline
+  repositories with the wrong password.</li>
+</ul>
+<p>The pods read the same values from the <code>cp-config-global</code> ConfigMap, which <code>pipectl</code> builds from the install config.
+Update it now too:</p>
+<pre><code class="language-bash">kubectl patch configmap cp-config-global --type merge \
+    -p '{&quot;data&quot;: {&quot;CP_GITLAB_VERSION&quot;: &quot;19&quot;, &quot;GITLAB_DATABASE_VERSION&quot;: &quot;&lt;the 17.x tag&gt;&quot;}}'
+</code></pre>
+<p>A later <code>pipectl</code> re-deploy of <code>cp-git</code> creates a new <code>git.token</code> with an expiry date, and does not revoke the old
+one. Revoke the old <code>CloudPipeline</code> impersonation token of <code>root</code> in GitLab after such a re-deploy.</p>
+<h2 id="after-the-upgrade">After the upgrade</h2>
+<p><strong>Open GitLab.</strong> Point the <code>cp-git</code> service at the GitLab pod again. <code>ENDPOINTS</code> must show the pod:</p>
+<pre><code class="language-bash">kubectl patch svc cp-git -p '{&quot;spec&quot;: {&quot;selector&quot;: {&quot;cloud-pipeline/cp-git&quot;: &quot;true&quot;}}}'
+kubectl get endpoints cp-git
+</code></pre>
+<p>Sign in to <code>$GIT_URL</code> in a browser with <strong>SSO Login</strong>, as a platform user: this checks SAML through <code>cp-idp</code>. Sign in
+as <code>root</code> too, and check that all migrations are finished in <strong>Admin</strong> &gt; <strong>Monitoring</strong> &gt; <strong>Background migrations</strong>.</p>
+<p><strong>Services.</strong> Set the image of the backup workers to the one of the same build (see <a href="#what-you-need">What you need</a>).
+Then scale the services of the freeze back up, and set <strong><code>git.token.rotation.enabled</code></strong> back to <code>true</code>.</p>
+<pre><code class="language-bash">for s in cp-git cp-gitlab-db; do
+  kubectl set image &quot;deployment/cp-bkp-worker-$s&quot; \
+      &quot;cp-bkp-worker-$s=&lt;registry prefix&gt;lifescience/cloud-pipeline:cp-bkp-worker-&lt;version&gt;&quot;
+done
+for d in cp-git-sync cp-gitlab-reader cp-bkp-worker-cp-git cp-bkp-worker-cp-gitlab-db; do
+  kubectl scale deployment &quot;$d&quot; --replicas=1
+done
+</code></pre>
+<p><strong>Backup.</strong> Take a full backup with the backup worker, and check its log. The worker is ready when it has written
+<code>/backup.env</code>: it first downloads <code>pipe</code> from the <code>api</code>, which can take some minutes. The worker runs the backup in
+the first pod whose name starts with <code>cp-git</code>. The new <code>cp-git</code> pod has a new name: check that the first line below
+is the <code>cp-git</code> pod, not <code>cp-git-sync</code>. If it is not, the scheduled backup fails. Until the worker is fixed, change
+the pod template of <code>cp-git</code> (the second block) to get another pod name, and check again.</p>
+<pre><code class="language-bash">bkp_pod() { kubectl get po -l cloud-pipeline/cp-bkp-worker=cp-git -o jsonpath='{.items[0].metadata.name}'; }
+until kubectl exec &quot;$(bkp_pod)&quot; -- test -f /backup.env 2&gt;/dev/null; do sleep 10; done
+BKP_POD=$(bkp_pod)
+kubectl get po | grep '^cp-git' | head -1
+kubectl exec &quot;$BKP_POD&quot; -- bash /backup.sh
+tail -20 /opt/bkp-worker/logs/backup-cp-git.log
+</code></pre>
+<pre><code class="language-bash">git_stop
+kubectl patch deployment cp-git -p &quot;{\&quot;spec\&quot;: {\&quot;template\&quot;: {\&quot;metadata\&quot;: {\&quot;annotations\&quot;: {\&quot;cloud-pipeline/restarted\&quot;: \&quot;$(date +%s)\&quot;}}}}}&quot;
+kubectl scale deployment cp-git --replicas=1
+</code></pre>
+<p>Back up the GitLab database with its own worker too. It runs <code>pg_dump</code> in the <code>cp-gitlab-db</code> pod, now on PostgreSQL
+17, with the user that the PostgreSQL upgrade re-created. The backup must exit with <code>0</code>. The log is on the
+<code>cp-gitlab-db</code> node.</p>
+<pre><code class="language-bash">gdb_bkp_pod() { kubectl get po -l cloud-pipeline/cp-bkp-worker=cp-gitlab-db -o jsonpath='{.items[0].metadata.name}'; }
+until kubectl exec &quot;$(gdb_bkp_pod)&quot; -- test -f /backup.env 2&gt;/dev/null; do sleep 10; done
+kubectl exec &quot;$(gdb_bkp_pod)&quot; -- bash /backup.sh; echo &quot;backup exit $?&quot;
+tail -20 /opt/bkp-worker/logs/backup-cp-gitlab-db.log
+</code></pre>
+<p><strong>Token.</strong> <code>smoke</code> shows <code>expires_at</code> of <code>git.token</code>: <code>null</code> means no expiry, and the rotation has nothing to do. The
+<strong><code>git.token.rotation.*</code></strong> preferences must be there, with the rotation enabled.</p>
+<p><strong>Application settings.</strong> Check them, and turn sign-up off. <code>allow_local_requests_from_web_hooks_and_services</code> must
+have the value it had before the upgrade.</p>
+<pre><code class="language-bash">curl -ksSf -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$GIT_URL/api/v4/application/settings&quot; |
+    grep -o -E '&quot;(allow_local_requests_from_web_hooks_and_services|signup_enabled)&quot;:[a-z]+'
+curl -ksSf -X PUT -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$GIT_URL/api/v4/application/settings?signup_enabled=false&quot; &gt; /dev/null
+</code></pre>
+<p><strong>Webhooks and search.</strong> Check the webhooks of a pipeline repository. On a self-managed GitLab, a failing project
+webhook is not disabled by default, so this is a check, not an expected fix. The hook URL is the
+<strong><code>git.repository.hook.url</code></strong> preference, and <code>alert_status</code> must be <code>executable</code>.</p>
+<pre><code class="language-bash">curl -ksSf -H &quot;PRIVATE-TOKEN: $GIT_TOKEN&quot; &quot;$GIT_URL/api/v4/projects/$(echo &quot;$SMOKE_REPO&quot; | sed 's#/#%2F#g')/hooks&quot;
+</code></pre>
+<p>Change a file of a test pipeline in the platform, and search for the change. From GitLab 19.0 webhooks send
+timestamps in ISO 8601 with milliseconds: the <code>elasticsearch-agent</code> log must show no error for the push event. Check
+that log for pipeline synchronization errors during the window too, and search for a few pipelines. If a pipeline is
+missing from the search, change it in the platform (for example its description): this indexes it and its code
+again.</p>
+<p><strong>The system event.</strong> Remove the system event of the window.</p>
+<p><strong>Clean up.</strong> After the agreed time, remove what the upgrade left: the <code>data-pg12</code>, <code>data-pg14</code> and <code>data-pg16</code>
+directories, the GitLab stop images on the node, and the old backups. Keep the backup of <code>15-19.5.3</code> and the freeze
+copy until then.</p>
+<p>On GitLab 18.0 and later, the temporary <code>TMP_FORK_*</code> group that a pipeline copy uses is only scheduled for deletion,
+with its projects. GitLab removes it after the deletion delay (30 days by default). These groups are expected in
+<strong>Admin</strong> &gt; <strong>Groups</strong>.</p>
+<h2 id="roll-back">Roll back</h2>
+<p>Roll back to the last stop that passed its checks. A stop can only be restored on exactly its GitLab version and its
+PostgreSQL major version. Keep the <code>cp-git</code> service closed until the rollback is checked, then open it as in
+<a href="#after-the-upgrade">After the upgrade</a>.</p>
+<h3 id="to-an-intermediate-stop">To an intermediate stop</h3>
+<p><code>S</code> is the label of the stop, for example <code>05-17.1.8</code>, <code>S_STOP</code> its GitLab version, and <code>S_TAG</code> the postgres tag it
+ran on. At the stops before a PostgreSQL upgrade, the dump restores into the old and the new version alike.</p>
+<pre><code class="language-bash">S=05-17.1.8 S_STOP=17.1.8 S_TAG=14.24
+TS=$(date +%Y%m%d%H%M)
+git_stop
+
+# /etc/gitlab and gitlab-secrets.json of the stop
+mv /opt/gitlab/config &quot;/opt/gitlab/config.failed-$TS&quot;
+tar -C /opt/gitlab -xzpf &quot;$BKP_DIR/$S/gitlab-config.tgz&quot;
+
+# An older Redis cannot read the data file of a newer one. It holds only caches, sessions and queued jobs
+mv /opt/gitlab/data/redis/dump.rdb &quot;/opt/gitlab/data/redis/dump.rdb.failed-$TS&quot;
+
+# The database of the stop, into an empty data directory
+db_stop
+mv /opt/gitlab-postgresql/data &quot;/opt/gitlab-postgresql/data.failed-$TS&quot;
+mkdir /opt/gitlab-postgresql/data
+kubectl set image deployment/cp-gitlab-db cp-gitlab-db=&quot;postgres:$S_TAG&quot;
+kubectl scale deployment cp-gitlab-db --replicas=1
+until kubectl logs &quot;$(db_pod)&quot; 2&gt;/dev/null | grep &quot;PostgreSQL init process complete&quot; &gt; /dev/null; do sleep 5; done
+until kubectl exec &quot;$(db_pod)&quot; -- pg_isready -U postgres 2&gt;/dev/null; do sleep 5; done
+kubectl exec -i &quot;$(db_pod)&quot; -- psql -U postgres -v ON_ERROR_STOP=1 &lt;&lt;EOF
+CREATE ROLE $DB_USER WITH LOGIN SUPERUSER CREATEDB PASSWORD '$DB_PASS';
+CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' LC_COLLATE '$DB_COLLATE' LC_CTYPE '$DB_CTYPE' TEMPLATE template0;
+EOF
+kubectl exec -i &quot;$(db_pod)&quot; -- pg_restore -U postgres -d &quot;$DB_NAME&quot; --exit-on-error &lt; &quot;$BKP_DIR/$S/$DB_NAME.dump&quot;
+echo &quot;pg_restore exit $?&quot;
+kubectl exec &quot;$(db_pod)&quot; -- vacuumdb -U postgres --all --analyze-in-stages
+diff &quot;$BKP_DIR/$S/sanity.txt&quot; &lt;(db_sanity) &amp;&amp; echo &quot;same&quot;
+
+# GitLab of the stop
+git_start &quot;gitlab/gitlab-ce:$S_STOP-ce.0&quot;
+smoke
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-rake gitlab:git:fsck
+</code></pre>
+<p><code>db_stop</code> fails on its first line when the database does not run: that is harmless. Set <code>GITLAB_DATABASE_VERSION</code> in
+the install config to <code>S_TAG</code>.</p>
+<p>The repositories do not change between the stops. If <code>gitlab:git:fsck</code> reports damage, restore
+<code>gitlab/data/git-data</code> from <code>opt-trees.tar</code> of the freeze, or from the copy taken after a pause.</p>
+<p>For a rollback to <code>15-19.5.3</code> after the switch to the GitLab 19 image, run <code>git_stop</code>, then
+<code>git_start gitlab/gitlab-ce:19.5.3-ce.0</code>. The pull policy is <code>Always</code> again by then, so the node pulls the image from
+Docker Hub.</p>
+<h3 id="to-1554">To 15.5.4</h3>
+<p>Restore both data trees from the freeze, and start the old images:</p>
+<pre><code class="language-bash">TS=$(date +%Y%m%d%H%M)
+git_stop
+kubectl scale deployment cp-gitlab-db --replicas=0
+while [ -n &quot;$(kubectl get po -l cloud-pipeline/cp-gitlab-db=true -o name)&quot; ]; do sleep 5; done
+for d in config data pki; do mv &quot;/opt/gitlab/$d&quot; &quot;/opt/gitlab/$d.failed-$TS&quot;; done
+mv /opt/gitlab-postgresql/data &quot;/opt/gitlab-postgresql/data.failed-$TS&quot;
+tar -C /opt --numeric-owner -xpf &quot;$BKP_DIR/00-freeze/opt-trees.tar&quot;
+db_start &lt;the postgres tag of the freeze, from deployments.yaml of the freeze&gt;
+git_start &quot;&lt;the cp-git image of 15.5.4, from deployments.yaml of the freeze&gt;&quot;
+smoke
+</code></pre>
+<p>Then set back the install config values, and the <code>cp-config-global</code> ConfigMap if it was changed at the switch. Open
+the <code>cp-git</code> service, scale the services of the freeze back up, turn the token rotation back on, and remove the
+system event. The 15.5.4 image writes <code>gitlab.rb</code> again at start.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="the-pod-restarts-during-reconfigure">The pod restarts during reconfigure</h3>
+<p>Read <code>kubectl logs --previous "$(git_pod)"</code>. A removed setting in <code>gitlab.rb</code> is named there. Remove or change it on
+the node, and the next start runs reconfigure again.</p>
+<h3 id="command-timed-out-after-3600s">"Command timed out after 3600s"</h3>
+<p>The database migrations took longer than an hour, reconfigure failed, and the pod restarts. The next start runs the
+remaining migrations again. A single migration that takes over an hour never finishes this way. Then run the
+migrations outside reconfigure, with Puma and Sidekiq stopped, so that nothing else takes locks on the tables. The log
+stays on the node, and its last line is the exit code of the migration:</p>
+<pre><code class="language-bash">git_stop
+echo &quot;gitlab_rails['auto_migrate'] = false&quot; &gt;&gt; /opt/gitlab/config/gitlab.rb
+git_start &quot;gitlab/gitlab-ce:$STOP-ce.0&quot;
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl stop puma
+kubectl exec &quot;$(git_pod)&quot; -- gitlab-ctl stop sidekiq
+kubectl exec &quot;$(git_pod)&quot; -- sh -c 'nohup sh -c &quot;gitlab-rake db:migrate; echo db:migrate exit \$?&quot; &gt; /var/log/gitlab/db-migrate.log 2&gt;&amp;1 &amp;'
+tail -f /opt/gitlab/logs/db-migrate.log      # until the line &quot;db:migrate exit ...&quot;
+</code></pre>
+<p>The last line must be <code>db:migrate exit 0</code>. Then check that no migration is left: the status command must exit with
+<code>0</code>, count some <code>up</code> lines, and count <code>0</code> <code>down</code> lines.</p>
+<pre><code class="language-bash">kubectl exec &quot;$(git_pod)&quot; -- gitlab-rake db:migrate:status &gt; &quot;$BKP_DIR/migrate-status.txt&quot;; echo &quot;exit $?&quot;
+grep -c '^\s*up' &quot;$BKP_DIR/migrate-status.txt&quot;; grep -c '^\s*down' &quot;$BKP_DIR/migrate-status.txt&quot;
+</code></pre>
+<p>Then remove the setting, and start the stop again with Puma and Sidekiq. Go on with the stop from the background
+migrations. See also
+<a href="https://docs.gitlab.com/update/package/package_troubleshooting/#error-command-timed-out-after-3600s">the GitLab troubleshooting page</a>.</p>
+<pre><code class="language-bash">git_stop
+sed -i &quot;/^gitlab_rails\['auto_migrate'\] = false$/d&quot; /opt/gitlab/config/gitlab.rb
+git_start &quot;gitlab/gitlab-ce:$STOP-ce.0&quot;
+</code></pre>
+<h3 id="it-is-required-to-upgrade-to-the-latest-version-first">"It is required to upgrade to the latest ... version first"</h3>
+<p>A stop was skipped. Start the stop that was skipped.</p>
+<h3 id="tried-to-load-unspecified-class-hashiearray">"Tried to load unspecified class: Hashie::Array"</h3>
+<p>A token still has its scopes as a Ruby object: <a href="#4-token-scopes">Token scopes</a> was skipped, or a backup taken before
+that step was restored. The background migration <code>BackfillAdminModeScopeForPersonalAccessTokens</code> then fails:</p>
+<ul>
+<li>From <code>01-15.11.13</code> to <code>02-16.3.9</code>, <code>bbm</code> shows it with status <code>4</code>, and a retry fails again.</li>
+<li>At <code>03-16.7.10</code>, reconfigure fails in the migration <code>FinalizeBackfillAdminModeScopeForPersonalAccessTokens</code>, and the
+  pod restarts.</li>
+</ul>
+<p>Run <code>git_stop</code>, then the commands of that step, and start the stop again. At <code>03-16.7.10</code> GitLab retries the failed
+batch on its own. At an earlier stop, retry the migration (see
+<a href="#a-background-migration-failed-status-4">A background migration failed</a>).</p>
+<h3 id="a-background-migration-failed-status-4">A background migration failed (status 4)</h3>
+<p>If its <code>job_class_name</code> is <code>BackfillAdminModeScopeForPersonalAccessTokens</code>, fix the token scopes first (see
+<a href="#tried-to-load-unspecified-class-hashiearray">"Tried to load unspecified class: Hashie::Array"</a>).</p>
+<p>Retry it in <strong>Admin</strong> &gt; <strong>Monitoring</strong> &gt; <strong>Background migrations</strong>, or finish it with the values that <code>bbm</code> prints:
+<code>gitlab-rake gitlab:background_migrations:finalize[&lt;job_class_name&gt;,&lt;table_name&gt;,&lt;column_name&gt;,'&lt;job_arguments&gt;']</code>.
+Escape every comma in <code>job_arguments</code> with a backslash. See
+<a href="https://docs.gitlab.com/update/background_migrations/">background migrations</a>.</p>
+<h3 id="gitlab-cannot-connect-to-the-database-after-a-postgresql-upgrade">GitLab cannot connect to the database after a PostgreSQL upgrade</h3>
+<p>Check the user and its password through the pod IP. The image trusts connections from <code>127.0.0.1</code> without a password,
+so a check through <code>127.0.0.1</code> proves nothing. The password must be <code>GITLAB_DATABASE_PASSWORD</code>.</p>
+<pre><code class="language-bash">DB_IP=$(kubectl get po &quot;$(db_pod)&quot; -o jsonpath='{.status.podIP}')
+kubectl exec &quot;$(db_pod)&quot; -- psql &quot;host=$DB_IP user=$DB_USER password=$DB_PASS dbname=$DB_NAME&quot; -c 'select 1'
+</code></pre>
+<h3 id="out-of-shared-memory-in-a-migration">"out of shared memory" in a migration</h3>
+<p><code>max_locks_per_transaction</code> is too low: check that it is 128.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../gitlab_versions/" class="btn btn-neutral float-left" title="GitLab versions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../../operation/environments_sync/environments_sync/" class="btn btn-neutral float-right" title="Environments sync">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../gitlab_versions/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../../operation/environments_sync/environments_sync/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../../../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "../../..";</script>
+    <script src="../../../js/theme_extra.js"></script>
+    <script src="../../../js/theme.js"></script>
+      <script src="../../../search/main.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

@@ -385,6 +385,14 @@
                 </li>
     </ul>
                   </li>
+                  <li class="toctree-l1"><a class="reference internal" >GitLab</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/gitlab_versions/">GitLab versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/gitlab/upgrade_gitlab_15_to_19/">Upgrade GitLab 15.5 to 19.5</a>
+                </li>
+    </ul>
+                  </li>
                   <li class="toctree-l1"><a class="reference internal" >Management</a>
     <ul>
                 <li class="toctree-l2"><a class="reference internal" href="../../../operation/environments_sync/environments_sync/">Environments sync</a>
@@ -495,11 +503,16 @@ If it is not installed - you will be prompted to do so. Click <strong>Install Re
 <img alt="CP_VSCodeInteractions" src="../attachments/VSCode_15.png" /></li>
 </ul>
 <blockquote>
-<p>The remote window opens the home folder of the user the extension connects as. This user depends on the SSH mode of the run (the <code>CP_CAP_SSH_MODE</code> parameter) and on the <code>system.ssh.default.root.user.enabled</code> system preference:</p>
+<p>The remote window opens the first of these folders:</p>
 <ul>
+<li>the folder in the <code>CP_VSCODE_WORKSPACE_DIR</code> parameter of the run - if it is an absolute path to a folder that the user the extension connects as can open. Set this parameter at launch, or as a default parameter of a tool, e.g. to open a project folder in the image. If the folder cannot be opened, the extension shows a warning with the reason, and opens the home folder (see below).<br />
+    Do not set it to a folder in a mounted data storage (under <code>/cloud-data</code>): the settings below, which keep search and file watching out of the storages, do not apply inside such a folder, and a chat request may hang for a long time</li>
+<li>the home folder of the user the extension connects as. This user depends on the SSH mode of the run (the <code>CP_CAP_SSH_MODE</code> parameter) and on the <code>system.ssh.default.root.user.enabled</code> system preference:<ul>
 <li>the run owner - the folder in the <code>OWNER_HOME</code> environment variable of the instance. If it is not set, or cannot be read, <code>/home/&lt;user name&gt;</code> is opened</li>
 <li><code>root</code> - <code>/root</code></li>
 <li>any other user (e.g. one who connects to a shared run) - <code>/home/&lt;user name&gt;</code></li>
+</ul>
+</li>
 </ul>
 <p>On connect, the extension adds the settings below to the <strong>Remote [SSH]</strong> settings of the instance (<code>~/.vscode-server/data/Machine/settings.json</code>, or <code>~/.cursor-server/data/Machine/settings.json</code> in Cursor).<br />
 They keep search, file watching and chat assistants (e.g. GitHub Copilot Chat) out of the mounted data storages under <code>~/cloud-data</code>. Without them a chat request may hang for a long time.  </p>
