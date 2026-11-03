@@ -21,7 +21,7 @@
 FROM rockylinux/rockylinux:9.8
 
 # Prerequisites
-# libxcrypt-compat provides libcrypt.so.1, which the Python 2 psycopg2 wheel and the "crypt" module link
+# libxcrypt-compat provides libcrypt.so.1, which the crypt module of the bundled Python 3.12 links
 RUN dnf install -y \
                 wget \
                 java-1.8.0-openjdk \
@@ -63,45 +63,34 @@ RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
 
-# Python 2 has no package on Rocky Linux 9: use the platform's Miniconda2, as a job container does
-# (scripts/pipeline-launch/launch.sh). It is built for the /opt/conda prefix. Link it as the python/python2/pip
-# that the steps below and init-git-sync find; /usr/bin/python3 stays the system one, for dnf.
-ARG CP_PYTHON2_DIST_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"
-RUN wget -q $CP_PYTHON2_DIST_URL -O python2.tgz && \
-    tar -xzf python2.tgz -C /opt/ && \
-    rm -f python2.tgz && \
-    ln -sf /opt/conda/bin/python2 /usr/local/bin/python2 && \
-    ln -sf /opt/conda/bin/python2 /usr/local/bin/python && \
-    ln -sf /opt/conda/bin/pip /usr/local/bin/pip
-
-RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python && \
-    pip install -I  requests==2.21.0 \
-                    ipaddress==1.0.22 \
-                    rsa==4.0 \
-                    pykube==0.15.0 \
-                    psycopg2==2.7.7 \
-                    sqlalchemy==1.3.2 \
-                    luigi==2.8.3 \
-                    cryptography==2.6.1 \
-                    PyJWT==1.6.1
+# Python 3.12, the only Python of this image: the build a job container installs (scripts/pipeline-launch/launch.sh).
+# /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
 
 # AWS - specific packages
-RUN pip install -I  awscli==1.16.314 \
-                    boto3==1.10.50 \
-                    botocore==1.13.50
+RUN pip3 install -I  boto3==1.34.69 \
+                     botocore==1.34.69
 
-# Azure - specific packages
-# We install here portalocker==1.7.1 to solve the problem with not fixed dependency some where in azure dependencies tree
-RUN pip install -I  portalocker==1.7.1 \
-                    azure-common==1.1.18 \
-                    azure==4.0.0 \
-                    azure-mgmt-resource==2.0.0 \
-                    azure-mgmt-compute==4.5.1 \
-                    azure-mgmt-containerinstance==1.4.1 \
-                    azure-cli-core==2.0.52
+# Azure - specific packages. azure-mgmt-* stay on the msrestazure-based generation: current (track2, azure-core-based)
+# releases of azure-mgmt-resource/compute/network dropped get_client_from_auth_file()/get_client_from_cli_profile()
+# and raise azure.core exceptions, not msrestazure's CloudError - both of which scripts/autoscaling/azure/*.py and
+# azureprovider.py depend on.
+RUN pip3 install -I  azure-common==1.1.18 \
+                     azure-mgmt-resource==2.0.0 \
+                     azure-mgmt-compute==4.5.1 \
+                     azure-mgmt-network==2.0.0
 
 # GCP - specific packages
-RUN pip install -I google-api-python-client
+RUN pip3 install -I  google-api-core==1.32.0 \
+                     google-api-python-client==1.12.11 \
+                     google-auth==1.35.0 \
+                     google-auth-httplib2==0.1.0 \
+                     googleapis-common-protos==1.52.0
 
 # API distribution
 ARG CP_API_DIST_URL=""
@@ -121,7 +110,7 @@ RUN mkdir -p /tmp/pipe-temp && \
     cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
     cd /tmp/pipe-temp/ && \
     unzip -qq pipeline.jar && \
-    pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    pip3 install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp
 

@@ -28,19 +28,30 @@ fi
 SYNC_GIT_HOME="/opt/api/scripts/git-role-management"
 SYNC_GIT_PERIOD=${SYNC_GIT_PERIOD:-300}
 
+# --- Python interpreter ---
+# The Python 3.12 of this image runs the platform scripts (git sync, cluster commands, the luigi graph reader);
+# the Java side resolves the same CP_PYTHON_PATH.
+export CP_PYTHON_PATH="${CP_PYTHON_PATH:-/usr/local/python3.12/bin/python3.12}"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    echo "Python 3.12 is not found at $CP_PYTHON_PATH, exiting."
+    exit 1
+fi
+export PATH="/usr/local/python3.12/bin:$PATH"
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
+
 # Configure
-python $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
+$CP_PYTHON_PATH $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
 
 # Start sync loop
 SYNC_LOG_FILE_NAME="${SYNC_LOG_FILE_NAME:-/opt/git-sync/logs/syncgit.log}"
 mkdir -p "$(dirname $SYNC_LOG_FILE_NAME)"
 while "true"; do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
-    python $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
+    $CP_PYTHON_PATH $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
 
     if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
-        python $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
+        $CP_PYTHON_PATH $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
     fi
     
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Iteration done" | tee -a $SYNC_LOG_FILE_NAME
