@@ -1005,7 +1005,8 @@ class _RefreshingClient(Client):
         session.proxies = StorageOperations.get_proxy_config('https://storage.googleapis.com')
         adapter = ProxyConnectWithHeadersHTTPSAdapter(max_retries=3)
         session.mount("https://", adapter)
-        super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
+        super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key,
+                                               credentials=credentials, _http=session)
 
 
 class GsBucketOperations:

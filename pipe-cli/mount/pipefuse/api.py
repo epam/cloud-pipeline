@@ -135,7 +135,7 @@ class CloudPipelineClient:
             self.get_temporary_credentials(bucket)
             return True
         except RuntimeError as e:
-            if 'Write operations are forbidden' in str(e.message):
+            if 'Write operations are forbidden' in str(e):
                 return False
             else:
                 raise e

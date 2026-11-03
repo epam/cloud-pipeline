@@ -300,6 +300,8 @@ class PipeFS(Operations, ChainingService):
     @syncronized
     @errorlogged
     def setxattr(self, path, name, value, options, *args):
+        if isinstance(value, bytes):
+            value = value.decode('utf-8')
         self._client.upload_xattr(path, name, value)
         return 0
 
@@ -309,7 +311,7 @@ class PipeFS(Operations, ChainingService):
         xattr = xattrs.get(name)
         if xattr is None:
             raise FuseOSError(errno.ENODATA)
-        return xattr
+        return xattr.encode('utf-8') if isinstance(xattr, str) else xattr
 
     @errorlogged
     def listxattr(self, path):

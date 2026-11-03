@@ -200,7 +200,8 @@ class _RefreshingClient(Client):
             max_refresh_attempts = sys.maxsize
         credentials = _RefreshingCredentials(refresh)
         session = AuthorizedSession(credentials, max_refresh_attempts=max_refresh_attempts)
-        super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
+        super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key,
+                                               credentials=credentials, _http=session)
 
     def bucket(self, bucket_name, user_project=None):
         return _RetryableBucket(client=self, name=bucket_name, user_project=user_project)
