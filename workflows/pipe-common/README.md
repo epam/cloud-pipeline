@@ -5,13 +5,14 @@
 The proper approach is to use python virtual environment. It can be installed and activated using the following command.
 Also it should be set as a IDE python interpreter.
  
+pipe-common requires Python 3.10 or later; job containers run it with Python 3.12.
+
  ```bash
-python2 -m pip install virtualenv
-python2 -m virtualenv .env
+python3.12 -m venv .env
 source .env/bin/activate
 ```
 
-Once a virtual environment is set you can use `python` to access `python2` whatever python distribution is set 
+Once a virtual environment is set you can use `python` to access its Python 3, whatever python distribution is set
 as default on your system.
 
 ## Testing

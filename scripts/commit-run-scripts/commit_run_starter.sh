@@ -40,7 +40,15 @@ export SCRIPTS_DIR="$(pwd)/commit-run-scripts"
 export COMMON_REPO_DIR="$(pwd)/pipe-common"
 
 export FULL_NEW_IMAGE_NAME="${REGISTRY_TO_PUSH}/${NEW_IMAGE_NAME}"
-export CP_PYTHON2_PATH=python
+# scripts/pipeline-launch/launch.sh installs the bundled Python 3.12 at this path on every run start
+export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    export CP_PYTHON_PATH="$(command -v python3.12)"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "[ERROR] Python 3.12 is not found, exiting"
+    exit 1
+fi
 
 if [[ "$#" -ge 16 ]]; then
     export DOCKER_LOGIN=${15}

@@ -142,7 +142,15 @@ export PRE_COMMIT_COMMAND=${10}
 export POST_COMMIT_COMMAND=${11}
 
 export TASK_NAME="PausePipelineRun"
-export CP_PYTHON2_PATH=python
+# scripts/pipeline-launch/launch.sh installs the bundled Python 3.12 at this path on every run start
+export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
+if [ ! -x "$CP_PYTHON_PATH" ]; then
+    export CP_PYTHON_PATH="$(command -v python3.12)"
+fi
+if [ -z "$CP_PYTHON_PATH" ]; then
+    echo "[ERROR] Python 3.12 is not found, exiting"
+    exit 1
+fi
 export RUNS_ROOT='/runs'
 
 export COMMON_REPO_DIR="$(pwd)/pipe-common"

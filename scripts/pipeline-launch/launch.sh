@@ -94,7 +94,7 @@ function install_pip_package {
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
             exit "$_DOWNLOAD_RESULT"
         fi
-    $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
     rm -f ${_DIST_NAME}.tar.gz
     if [ "$_INSTALL_RESULT" -ne 0 ];
@@ -320,7 +320,7 @@ function check_package_installed {
 
 function check_python_module_installed {
       local _MODULE_TO_CHECK=$1
-      $CP_PYTHON2_PATH -m $_MODULE_TO_CHECK >/dev/null 2>&1
+      $CP_PYTHON_PATH -m $_MODULE_TO_CHECK >/dev/null 2>&1
       return $?
 }
 
@@ -331,6 +331,30 @@ function upgrade_installed_packages {
       check_installed "apk" && { _UPGRADE_COMMAND_TEXT="apk update -q 1>/dev/null && apk upgrade -q 1>/dev/null";  };
       eval "$_UPGRADE_COMMAND_TEXT"
       return $?
+}
+
+function configure_package_manager_pip {
+    # Converts regional s3 endpoints
+    # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+    # to regional website s3 endpoints
+    # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+    _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+        | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+
+    if [ -z "$CP_REPO_PYPI3_BASE_URL_DEFAULT" ]; then
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi3/simple"
+        else
+            CP_REPO_PYPI3_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi3/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI3_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI3_BASE_URL_DEFAULT
+    export CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI3_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI3_BASE_URL_DEFAULT ($CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT)..."
 }
 
 function run_pre_common_commands {
@@ -499,9 +523,7 @@ function configure_package_manager {
                   done
             fi
             # Pip setup
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+            configure_package_manager_pip
       fi
 
 }
@@ -519,11 +541,6 @@ function get_install_command_by_current_distr {
             check_installed "apt-get" && _ltdl_lib_name="libltdl7"
             check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
-      fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         [ "$CP_OS" == "centos" ] && \
-         [ "$CP_VER" == "8" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
       local _TOOL_TO_CHECK=
@@ -637,28 +654,21 @@ function initialise_wrappers {
 }
 
 # This function installs any prerequisite, which is not available in the public repos or it is not desired to use those
-function install_private_packages {
+function install_python3_packages {
       local _install_path="$1"
       local _tmp_install_dir="/tmp/"
-      # Separate python distro setup
-      # ====
-      #    Delete an existing installation, if it's a paused run
-      #    We can probably keep it, but it will fail if we need to update a resumed run
-      rm -rf "${_install_path}/conda"
-      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
-      # Download the distro from a public bucket
-      echo "Getting python distro from $CP_CONDA_DISTRO_URL"
-      wget -q "${CP_CONDA_DISTRO_URL}" -O "${_tmp_install_dir}/conda.tgz" &> /dev/null
-      if [ $? -ne 0 ]; then
-            echo "[ERROR] Can't download the python distro"
-            return 1
-      fi
+      echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
+      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
 
-      # Unpack and remove tarball
-      tar -zxf "${_tmp_install_dir}/conda.tgz" -C "${_install_path}"
-      rm -f "${_tmp_install_dir}/conda.tgz"
-      echo "Python distro is installed into ${_install_path}/conda"
+      tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
+      rm -f "${_tmp_install_dir}/python3.tgz"
+
+      ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
+      ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
+      echo "Python3 distro is installed into ${_install_path}/python3.12"
 }
 
 function list_storage_mounts() {
@@ -883,35 +893,22 @@ if [ -z "$CP_USR_BIN" ]; then
         echo "CP_USR_BIN is not defined, setting to ${CP_USR_BIN}"
 fi
 create_sys_dir $CP_USR_BIN
-if [ "$CP_CAP_INSTALL_PRIVATE_DEPS" == "true" ]; then
-      install_private_packages $CP_USR_BIN
-fi
+# --- Python 2 ---
+# The bundled Python 3.12 is installed at every run start, it runs pipe-common and the platform scripts
+install_python3_packages "/usr/local"
 
-# Check if python2 is installed:
-# If it was installed into a private location - use it
-# Otherwise - find the "global" version, if not found - try to install
-# If none found - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH="/usr/cpbin/conda/bin/python2"
-if [ ! -f "$CP_PYTHON2_PATH" ]; then
-      echo "[WARN] Private python not found, trying to get the global one"
-      export CP_PYTHON2_PATH=$(command -v python2)
-      if [ -z "$CP_PYTHON2_PATH" ]
-      then
-            echo "[WARN] Global python not found as well, trying to install from a public repo"
-            _DEPS_INSTALL_COMMAND=
-            get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python python-docutils"
-            eval "$_DEPS_INSTALL_COMMAND"
-            export CP_PYTHON2_PATH=$(command -v python2)
-            if [ -z "$CP_PYTHON2_PATH" ]
-            then
-                  echo "[ERROR] python2 environment not found, exiting."
-                  exit 1
-            fi
-      fi
+export CP_PYTHON_PATH="/usr/local/python3.12/bin/python3.12"
+if [ ! -f "$CP_PYTHON_PATH" ]; then
+      export CP_PYTHON_PATH=$(command -v python3.12)
 fi
-echo "Local python interpreter found: $CP_PYTHON2_PATH"
+if [ -z "$CP_PYTHON_PATH" ]; then
+      echo "[ERROR] Python 3.12 environment not found, exiting."
+      exit 1
+fi
+export PATH=/usr/local/python3.12/bin:$PATH
+echo "Python interpreter (CP_PYTHON_PATH): $CP_PYTHON_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
+check_python_module_installed "pip --version" || $CP_PYTHON_PATH -m ensurepip --upgrade
 
 ######################################################
 # Configure the dependencies if needed
@@ -1251,8 +1248,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             exit 1
       else
             cd $COMMON_REPO_DIR
-            # Fixed setuptools version to be compatible with the pipe-common package
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==68.0.0
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
@@ -1262,7 +1258,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
-            $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I
             _INSTALL_RESULT=$?
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
@@ -1323,8 +1319,8 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             echo "[ERROR] Unable to install FSBrowser"
             exit 1
       fi
-      # If the "private" python distro was used - symlink fsbrowser to the path, which is exported via PATH
-      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON2_PATH)/fsbrowser
+      # fsbrowser is installed into the bin folder of the bundled python - symlink it to the folders in PATH
+      CP_FSBROWSER_BIN=$(dirname $CP_PYTHON_PATH)/fsbrowser
       if [ -f "$CP_FSBROWSER_BIN" ]; then
             ln -sf $CP_FSBROWSER_BIN $CP_USR_BIN/fsbrowser
             ln -sf $CP_FSBROWSER_BIN /usr/bin/fsbrowser
@@ -1487,7 +1483,7 @@ echo "Setup cluster users sharing"
 echo "-"
 
 if check_cp_cap CP_CAP_SHARE_USERS; then
-    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+    "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
 else
     echo "Cluster users sharing is not requested"
 fi
@@ -1506,7 +1502,7 @@ echo "Setup users synchronization"
 echo "-"
 
 if check_cp_cap CP_CAP_SYNC_USERS; then
-    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+    nohup "$CP_PYTHON_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
 else
     echo "Users synchronization is not requested"
 fi
@@ -1569,7 +1565,7 @@ command -v gitfs >/dev/null 2>&1 && { GITFS_INSTALL=1;  };
 
 if [ $GITFS_INSTALL -ne 0 ] && [ ! -z "$GIT_REPO" ];
 then
-    python $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
+    $CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
     _IS_ALLOWED=$?
     if [ $_IS_ALLOWED -ne 0 ];
     then
@@ -1941,7 +1937,7 @@ else
     inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
     sysctl -w fs.inotify.max_user_watches=$inotify_watchers
     sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
+    nohup $CP_PYTHON_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
 fi
 
 ######################################################
@@ -1966,7 +1962,7 @@ then
 fi
 
 echo "Prepare profile credentials"
-$CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON2_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
+$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/profiles_credentials_writer.py --script-path=$COMMON_REPO_DIR/scripts/credentials_process.py --python-path=$CP_PYTHON_PATH --config-file=$HOME/.aws/config --log-dir=$LOG_DIR 1>/dev/null 2>$LOG_DIR/profile.credentials.writer.log
 _PROFILE_CREDENTIALS_WRITER_RESULT=$?
 if [ "$_PROFILE_CREDENTIALS_WRITER_RESULT" -ne 0 ];
 then

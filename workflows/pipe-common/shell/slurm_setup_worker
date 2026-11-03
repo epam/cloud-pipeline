@@ -75,7 +75,7 @@ LINUX_DISTRIBUTION=$( get_linux_dist )
 
 pipe_log_info "Installing SLURM worker" "$SLURM_WORKER_SETUP_TASK"
 
-MASTER_INFO_RESULT=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SLURMMasterSetup")
+MASTER_INFO_RESULT=$(eval "${CP_PYTHON_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SLURMMasterSetup")
 _MASTER_AWAIT_RESULT=$?
 MASTER_INFO=($MASTER_INFO_RESULT)
 MASTER_IP=${MASTER_INFO[-1]}
