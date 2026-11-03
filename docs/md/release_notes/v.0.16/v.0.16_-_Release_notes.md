@@ -26,6 +26,7 @@
 - [Search the tool by its version/package name](#the-ability-to-find-the-tool-by-its-versionpackage-name)
 - [The ability to restrict which run statuses trigger the email notification](#the-ability-to-restrict-which-run-statuses-trigger-the-email-notification)
 - [Restrictions of "other" users permissions for the mounted storage](#restrictions-of-other-users-permissions-for-the-storages-mounted-via-the-pipe-storage-mount-command)
+- [Rocky Linux 9.8 for the platform services](#rocky-linux-98-for-the-platform-services)
 
 ***
 
@@ -528,6 +529,38 @@ E.g. to mount the storage with `RW` access to the **OWNER**, `R` access to the *
 If the option `-m` isn't specified - the default permission mask will be set - `700` (full access to the **OWNER** (`RWX`), no access to the **GROUP** and **OTHERS**).
 
 For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+
+## Rocky Linux 9.8 for the platform services
+
+The images of these platform services moved to Rocky Linux 9.8.
+
+From CentOS 7, which has reached its end of life:
+
+- the API (`cp-api-srv`) and the search service (`cp-search`)
+- the notifier (`cp-notifier`), the billing service (`cp-billing-srv`) and the VM monitor (`cp-vm-monitor`)
+- the data sharing service (`cp-share-srv`) and the docker components scanner (`cp-docker-comp`)
+- the node logger (`cp-node-logger`) and the leader elector (`cp-leader-elector`)
+- the backup workers (`cp-bkp-worker-*`) and the HTTP and TCP/UDP forward proxy (`cp-tinyproxy`)
+- the test SAML identity provider (`cp-idp`)
+- the WebDAV service (`cp-dav`)
+
+From Rocky Linux 8: the EDGE service (`cp-edge`).
+
+From Debian (`python:3.9-slim`): the node reporter (`cp-node-reporter`). It keeps Python 3.9, now installed with `micromamba`.
+
+Rocky Linux 9 has no Python 2 package:
+
+- The API, EDGE and WebDAV images take Python 2 from the platform's Miniconda2 distribution, as a job container does. It is installed into `/opt/conda` and linked as `python` and `python2`.
+- The other images that installed Python 2 no longer do, because nothing in them used it.
+
+Other changes:
+
+- The Lustre client in the API, search and WebDAV images is now the el8 build of version 2.10.8. It replaces the el7 build of version 2.12.5.
+- The Java services follow the `DEFAULT` crypto policy of Rocky Linux 9. In TLS connections and certificate chains, they now reject SHA-1 signatures, and RSA, DSA and DH keys shorter than 2048 bits (on CentOS 7, the limit was 1024 bits). So a server that a service connects to, for example an SMTP server, must have a certificate that meets these limits. This does not apply to the 1024-bit JWT signing keys that the installer creates.
+- The test identity provider runs on Node.js 24, and it accepts SHA-1 signatures, because the API signs its SAML requests with RSA-SHA1.
+- The Filebeat log shippers of the API and EDGE services run with `seccomp` disabled. Their `seccomp` policy does not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
+- The cron jobs of the WebDAV service and of the backup workers skip the PAM account check of `root`. Otherwise, on hosts whose AppArmor confines the `unix_chkpwd` helper (for example, Ubuntu 24.04), `crond` would not run them.
+- The WebDAV service mounts the Azure blob storages with `blobfuse2`, because `blobfuse` 1 has no Rocky Linux 9 package. It uses the `mountv1` command of `blobfuse2`, with the options that keep the behavior of `blobfuse` 1: a 1-second metadata cache, no online version check, and a mount over a non-empty temporary folder.
 
 ***
 
