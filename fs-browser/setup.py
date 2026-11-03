@@ -15,9 +15,16 @@
 from setuptools import setup, find_packages
 from fsbrowser.version import __version__
 
+
+def _package_version(version):
+    # A build sets the version to <major>.<minor>.<patch>.<build number>.<commit>: the commit is no PEP 440 release
+    # segment, so the package version carries it as the local version label
+    parts = version.split('.', 4)
+    return '.'.join(parts[:4]) + ('+' + parts[4] if len(parts) > 4 else '')
+
 setup(
     name='fsbrowser',
-    version=__version__,
+    version=_package_version(__version__),
     py_modules=['fsbrowser'],
     packages=find_packages(),
     include_package_data=True,

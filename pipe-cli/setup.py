@@ -16,6 +16,13 @@
 from setuptools import setup, find_packages
 from src.version import __version__
 
+
+def _package_version(version):
+    # A build sets the version to <major>.<minor>.<patch>.<build number>.<commit>: the commit is no PEP 440 release
+    # segment, so the package version carries it as the local version label
+    parts = version.split('.', 4)
+    return '.'.join(parts[:4]) + ('+' + parts[4] if len(parts) > 4 else '')
+
 with open('requirements.txt') as requirements_file:
     requirements = requirements_file.read().splitlines()
 
@@ -24,7 +31,7 @@ with open('mount/requirements.txt') as mount_requirements_file:
 
 setup(
     name='PipelineCLI',
-    version=__version__,
+    version=_package_version(__version__),
     python_requires='>=3.10',
     py_modules=['pipe'],
     packages=find_packages(),

@@ -8,17 +8,17 @@ task build(type: Exec, dependsOn: ':pipe-cli:test') {
     group = 'build'
     doFirst {
         setCLIVersion()
+        delete(fileTree("$project.rootDir/pipe-cli/dist").matching { include "PipelineCLI-*.tar.gz", "pipelinecli-*.tar.gz" })
     }
     commandLine 'python', "$project.rootDir/pipe-cli/setup.py", 'sdist'
     doLast {
         cleanCLIVersion()
         delete("$project.rootDir/api/src/main/resources/static/PipelineCLI.tar.gz")
+        // setup.py names the sdist after the PEP 440 form of the version, see _package_version()
         copy {
-            from("$project.rootDir/pipe-cli/dist/PipelineCLI-${version}.tar.gz")
+            from(fileTree("$project.rootDir/pipe-cli/dist").matching { include "PipelineCLI-*.tar.gz", "pipelinecli-*.tar.gz" })
             into("$project.rootDir/api/src/main/resources/static/")
-            rename { String fileName ->
-                fileName.replace("PipelineCLI-${version}", "PipelineCLI")
-            }
+            rename { String fileName -> "PipelineCLI.tar.gz" }
         }
     }
 }
