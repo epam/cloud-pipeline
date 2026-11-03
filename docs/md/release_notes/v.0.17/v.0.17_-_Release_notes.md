@@ -61,6 +61,7 @@
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
+- [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
 - [GitLab 19 support](#gitlab-19-support)
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
@@ -1926,6 +1927,20 @@ The images of the proxy service (`cp-tinyproxy`) and of the backup workers (`cp-
 
 - The SMTP authentication helper of the proxy keeps Python 3.7, in its own `micromamba` environment.
 - The Filebeat log shippers of the proxy (`6.8` for Elasticsearch, `7.10` for OpenSearch) run with `seccomp` disabled: their `seccomp` policies do not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
+
+***
+
+## Read and launch access to all pipelines
+
+Previously, access to all pipelines of the Platform could be given only by the permission settings of the pipelines (or of their parent folders) - or by the **ROLE\_ADMIN**/**ROLE\_PIPELINE\_ADMIN** roles, which also give write and owner access.  
+In the current version, two new roles were introduced. Both cover every pipeline in the Platform, versioned storages included:
+
+- **ROLE\_PIPELINE\_READER** gives the user **READ** permission to every pipeline, regardless of the pipeline permission settings: the user is able to see all pipelines, their versions, code, documents, attributes and permission settings. The user is also able to view all runs of all pipelines, regardless of the run visibility policy
+- **ROLE\_PIPELINE\_EXECUTOR** gives the user **EXECUTE** permission to every pipeline, regardless of the pipeline permission settings. This permission is not passed on to the runs: changes of the runs of other users still require the permissions the user would need without the role
+
+A user with both roles is able to see and launch every pipeline. As a launch also requires **READ** permission to the pipeline, **ROLE\_PIPELINE\_EXECUTOR** alone allows to launch only the pipelines the user is able to see. Any write access still has to be granted explicitly.
+
+More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-reader-and-executor-roles).
 
 ***
 
