@@ -23,20 +23,27 @@ import com.amazonaws.services.s3.waiters.AmazonS3Waiters;
 import com.amazonaws.waiters.Waiter;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
+import java.util.List;
+
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -56,9 +63,13 @@ public class S3StorageProviderTest extends AbstractSpringTest {
             "  }" +
             "]";
     private static final String BUCKET = "bucketname";
+    private static final String ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
 
     @MockBean
     private CloudRegionManager cloudRegionManager;
+
+    @MockBean
+    private S3TemporaryCredentialsGenerator stsCredentialsGenerator;
 
     @SpyBean
     private S3StorageProvider s3StorageProvider;
@@ -98,6 +109,25 @@ public class S3StorageProviderTest extends AbstractSpringTest {
         s3StorageProvider.postCreationProcessing(storage);
 
         verify(amazonClient).setBucketCrossOriginConfiguration(any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void shouldPassAccessPointArnToSignedUrlCredentials() {
+        final S3bucketDataStorage storage = new S3bucketDataStorage(1L, BUCKET, BUCKET);
+        storage.setRegionId(REGION_ID);
+        storage.setAccessPointArn(ACCESS_POINT_ARN);
+        final TemporaryCredentials credentials = TemporaryCredentials.builder().build();
+        doReturn(credentials).when(stsCredentialsGenerator).generate(any(), any());
+        doReturn(mock(S3Helper.class)).when(s3StorageProvider)
+                .getS3Helper(any(TemporaryCredentials.class), any(AwsRegion.class));
+
+        s3StorageProvider.generateDownloadURL(storage, "file.txt", null, null);
+
+        final ArgumentCaptor<List<DataStorageAction>> actions = ArgumentCaptor.forClass((Class) List.class);
+        verify(stsCredentialsGenerator).generate(actions.capture(), anyListOf(S3bucketDataStorage.class));
+        Assert.assertEquals(1, actions.getValue().size());
+        Assert.assertEquals(ACCESS_POINT_ARN, actions.getValue().get(0).getAccessPointArn());
     }
 
     private AwsRegion region() {

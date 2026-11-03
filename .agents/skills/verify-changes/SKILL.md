@@ -54,6 +54,9 @@ and commit what it regenerates.
 **Any `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.cursor/`, `.github/instructions/`, `.agents/`** —
 `.agents/skills/modifying-instructions/scripts/verify-instructions.sh`
 
+**`.agents/skills/dev-sandbox/`** — also that skill's own tests and `shellcheck` over its scripts,
+both in Docker: its `README.md` → "Checks".
+
 **`e2e/gui/`** — `e2e/gui/AGENTS.md`, and its own `e2e/gui/gradlew`: a standalone build, so no root
 `:<module>:` task reaches it.
 

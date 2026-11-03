@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -37,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -63,6 +65,7 @@ public class RunRegionShiftHandler {
     private final RunLogManager runLogManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
+    private final InstanceOfferManager instanceOfferManager;
 
     public PipelineRun restartRunInAnotherRegion(final long currentRunId) {
         final Long parentRunId = restartRunManager.findRestartRunById(currentRunId)
@@ -96,22 +99,53 @@ public class RunRegionShiftHandler {
             return null;
         }
 
-        final Long nextRegionId = findNextRegion(parentRun, availableRegions);
-        if (Objects.isNull(nextRegionId)) {
+        final List<Long> untriedRegionIds = findUntriedRegions(parentRun, availableRegions);
+        if (untriedRegionIds.isEmpty()) {
             logRestartFailure(parentRun, messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_NEXT_REGION_NOT_FOUND, currentRunId), currentRun);
             return null;
         }
 
-        pipelineRunManager.stop(currentRunId);
+        final String instanceType = parentRun.getInstance().getNodeType();
+        final Long nextRegionId = untriedRegionIds.stream()
+                .filter(regionId -> isInstanceTypeAvailable(instanceType, regionId))
+                .findFirst()
+                .orElse(null);
+        if (Objects.isNull(nextRegionId)) {
+            logRestartFailure(parentRun, messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_INSTANCE_TYPE_NOT_AVAILABLE_IN_REGIONS, currentRunId,
+                    instanceType), currentRun);
+            return null;
+        }
 
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setCloudRegionId(nextRegionId));
         Optional.ofNullable(parentRun.getInstance()).ifPresent(instance -> instance.setSpot(false));
-        final PipelineRun newRun = pipelineRunManager.restartRun(parentRun);
         final String nextRegionName = availableRegions.get(nextRegionId).getName();
+        final PipelineRun newRun = tryRestartRun(parentRun, currentRun, nextRegionName);
+        if (Objects.isNull(newRun)) {
+            return null;
+        }
+
+        // the current run is stopped only once the new one exists, so that a failed restart leaves it
+        // to fail as any other run which exceeded its nodeup attempts
+        pipelineRunManager.stop(currentRunId);
         addRunLog(parentRun, messageHelper.getMessage(MessageConstants.INFO_RESTART_RUN_SUCCESS, newRun.getId(),
                 nextRegionName), TaskStatus.STOPPED, currentRun);
         return newRun;
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private PipelineRun tryRestartRun(final PipelineRun parentRun, final PipelineRun currentRun,
+                                      final String nextRegionName) {
+        try {
+            return pipelineRunManager.restartRun(parentRun);
+        } catch (RuntimeException e) {
+            log.error(String.format("Failed to restart run '%d' in region '%s'.",
+                    currentRun.getId(), nextRegionName), e);
+            logRestartFailure(parentRun, messageHelper.getMessage(MessageConstants.ERROR_RESTART_RUN_IN_REGION_FAILURE,
+                    currentRun.getId(), nextRegionName, ExceptionUtils.getRootCauseMessage(e)), currentRun);
+            return null;
+        }
     }
 
     private boolean validate(final PipelineRun parentRun, final PipelineRun currentRun,
@@ -168,8 +202,8 @@ public class RunRegionShiftHandler {
         return true;
     }
 
-    private Long findNextRegion(final PipelineRun parentRun,
-                                final Map<Long, ? extends AbstractCloudRegion> availableRegions) {
+    private List<Long> findUntriedRegions(final PipelineRun parentRun,
+                                          final Map<Long, ? extends AbstractCloudRegion> availableRegions) {
         final List<Long> previousRunIds = ListUtils.emptyIfNull(parentRun.getRestartedRuns()).stream()
                 .map(RestartRun::getRestartedRunId)
                 .collect(Collectors.toList());
@@ -184,8 +218,19 @@ public class RunRegionShiftHandler {
         retriedRegions.add(parentRun.getInstance().getCloudRegionId());
         return availableRegions.keySet().stream()
                 .filter(region -> !retriedRegions.contains(region))
-                .findFirst()
-                .orElse(null);
+                .collect(Collectors.toList());
+    }
+
+    // the same check as the price estimation of a restarted run, which fails the restart otherwise;
+    // a shifted run is always on-demand
+    private boolean isInstanceTypeAvailable(final String instanceType, final Long regionId) {
+        final boolean available = instanceOfferManager.isInstanceAllowed(instanceType, regionId, false)
+                || instanceOfferManager.isToolInstanceAllowed(instanceType, regionId, false);
+        if (!available) {
+            log.debug("Skipping region '{}' for run restart: instance type '{}' is not allowed or not offered.",
+                    regionId, instanceType);
+        }
+        return available;
     }
 
     private boolean isRunParametersValid(final PipelineRun parentRun) {

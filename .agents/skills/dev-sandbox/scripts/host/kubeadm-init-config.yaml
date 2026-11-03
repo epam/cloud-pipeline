@@ -1,0 +1,35 @@
+# The dev sandbox's copy of deploy/contents/k8s/kube-system/kubeadm-init-config.yaml, with
+# apiServer.certSANs added: besides its private address, the API server is reached through a tunnel
+# to the master. Apart from these comments and that block, it must stay the same as the original,
+# which scripts/test/in-tools-test.sh checks. up fills in the ${...} placeholders.
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+apiServer:
+  certSANs:
+    - 127.0.0.1
+    - localhost
+    - ${CP_KUBE_MASTER_IP}
+    - ${CP_KUBE_MASTER_TUNNEL_HOST}
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+dns:
+  type: kube-dns
+kubernetesVersion: v1.15.4
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+  podSubnet: ${CP_KUBE_FLANNEL_CIDR}
+controllerManager:
+  extraArgs:
+    node-cidr-mask-size: "${CP_KUBE_NODE_CIDR_MASK}"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+port: ${CP_KUBE_KUBELET_PORT}
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+  - groups:
+    ttl: 0s

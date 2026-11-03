@@ -40,9 +40,12 @@ export SCRIPTS_DIR="$(pwd)/commit-run-scripts"
 export COMMON_REPO_DIR="$(pwd)/pipe-common"
 
 export FULL_NEW_IMAGE_NAME="${REGISTRY_TO_PUSH}/${NEW_IMAGE_NAME}"
-if command -v python3 &>/dev/null; then
+# scripts/pipeline-launch/launch.sh installs the bundled python3.12 distro at this fixed
+# path on every run start - check for its presence rather than any system python3's version.
+export CP_PYTHON3_PATH="/usr/local/python3.12/bin/python3.12"
+if [ -x "$CP_PYTHON3_PATH" ]; then
     export CP_PYTHON_VERSION="3"
-    export CP_PYTHON_PATH=$(command -v python3)
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
 else
     export CP_PYTHON_VERSION="2"
     export CP_PYTHON_PATH=$(command -v python2)

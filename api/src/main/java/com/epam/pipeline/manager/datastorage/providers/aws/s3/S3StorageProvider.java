@@ -50,6 +50,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
+import com.epam.pipeline.manager.cloud.aws.S3AccessPointArnResolver;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -100,6 +101,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
     private final S3TemporaryCredentialsGenerator stsCredentialsGenerator;
+    private final S3AccessPointArnResolver accessPointArnResolver;
 
     @Override
     public DataStorageType getStorageType() {
@@ -491,6 +493,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         action.setId(dataStorage.getId());
         action.setBucketName(dataStorage.getRoot());
         action.setPath(dataStorage.getPath());
+        action.setAccessPointArn(accessPointArnResolver.resolve(dataStorage));
         action.setRead(true);
         action.setReadVersion(useVersion);
         action.setWrite(write);

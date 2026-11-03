@@ -1,0 +1,104 @@
+# The dev sandbox reaper: reaper.py, run every hour, terminating the sandbox instances of this
+# region that have expired, and the workers whose master is gone. Deployed once per account and
+# region, by a person: README.md -> "The reaper". `aws cloudformation package`, run from this
+# directory, uploads reaper.py and fills in Code.
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Terminates expired dev sandbox instances (cp-sandbox tags) every hour.
+
+Parameters:
+  DryRun:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: true logs what would be terminated and terminates nothing.
+
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      # Where Lambda writes the function's log, the function being named after the stack.
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: 30
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: The dev sandbox reaper. Lists instances; terminates only those tagged cp-sandbox.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: reaper
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: ListInstances
+                Effect: Allow
+                Action: ec2:DescribeInstances
+                # DescribeInstances takes no resource or tag condition.
+                Resource: "*"
+              - Sid: TerminateSandboxInstances
+                Effect: Allow
+                Action: ec2:TerminateInstances
+                Resource: !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:instance/*
+                Condition:
+                  # The tag is there, with a value of at least one character.
+                  StringLike:
+                    aws:ResourceTag/cp-sandbox: "?*"
+              - Sid: WriteOwnLog
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !GetAtt LogGroup.Arn
+
+  Function:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn-lint:
+        config:
+          # "This code may only work with 'package' cli command": Code is the local reaper.py,
+          # which `aws cloudformation package` replaces with the S3 object it uploads.
+          ignore_checks: [W3002]
+    Properties:
+      FunctionName: !Ref AWS::StackName
+      Description: Terminates expired dev sandbox instances (cp-sandbox tags).
+      Runtime: python3.12
+      Handler: reaper.handler
+      Code: reaper.py
+      Role: !GetAtt Role.Arn
+      MemorySize: 128
+      Timeout: 300
+      Environment:
+        Variables:
+          DRY_RUN: !Ref DryRun
+
+  Schedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Runs the dev sandbox reaper every hour.
+      ScheduleExpression: rate(1 hour)
+      State: ENABLED
+      Targets:
+        - Id: reaper
+          Arn: !GetAtt Function.Arn
+
+  SchedulePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt Schedule.Arn
+
+Outputs:
+  FunctionName:
+    Value: !Ref Function
+  LogGroupName:
+    Value: !Ref LogGroup

@@ -104,6 +104,7 @@ import NestedRunsModal from './forms/NestedRunsModal';
 import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 import {confirmRunContinuation, continueRun, runSupportsContinue} from '../actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../actions/actions-availability';
+import runNodeIsUnavailable from '../actions/node-availability';
 import {
   findReservationParameterConfig
 } from '../../pipelines/launch/form/components/reservation-parameters/utilities';
@@ -1605,6 +1606,7 @@ class Logs extends localization.LocalizedReactComponent {
       return status.toLowerCase() === 'running' &&
         roleModel.executeAllowed(run) &&
         podIP &&
+        !runNodeIsUnavailable(run) &&
         checkRunActionAvailable(run, runActions.browse);
     }
     return false;

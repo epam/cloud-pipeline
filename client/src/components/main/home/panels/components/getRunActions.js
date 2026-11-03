@@ -24,6 +24,7 @@ import DataStorageLink from '../../../../special/data-storage-link';
 import roleModel from '../../../../../utils/roleModel';
 import {runSupportsContinue} from '../../../../runs/actions/continue-run';
 import {checkRunActionAvailable, runActions} from '../../../../runs/actions/actions-availability';
+import runNodeIsUnavailable from '../../../../runs/actions/node-availability';
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -126,6 +127,7 @@ export default function (
           }
           if (
             !run.sensitive &&
+            !runNodeIsUnavailable(run) &&
             vsActions &&
             vsActions.available
           ) {

@@ -114,10 +114,15 @@ def configure_kernel_param(key, value):
 
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
+    # universal_newlines=True makes communicate() return str under both Python 2 and 3 - without it,
+    # Python 3's Popen returns bytes, and every caller below (out.split(NEWLINE), stderr.rstrip(...))
+    # treats the result as str.
     if executable:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             executable=executable, universal_newlines=True)
     else:
-        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                             universal_newlines=True)
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)
@@ -146,7 +151,9 @@ def current_utc_time():
 
 
 def current_utc_time_millis():
-    return int((current_utc_time() - datetime.datetime(1970, 1, 1)).total_seconds() * 1000)
+    # current_utc_time() is tz-aware (via _UTC above) - the epoch reference must be too, or the
+    # subtraction raises "can't subtract offset-naive and offset-aware datetimes".
+    return int((current_utc_time() - datetime.datetime(1970, 1, 1, tzinfo=_UTC)).total_seconds() * 1000)
 
 
 def current_utc_time_str():

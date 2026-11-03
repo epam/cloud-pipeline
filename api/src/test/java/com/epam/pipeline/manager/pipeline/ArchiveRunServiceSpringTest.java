@@ -54,6 +54,7 @@ import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.dts.DtsMonitoringManager;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
+import com.epam.pipeline.manager.git.GitTokenRotationService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.BillingQuotasScheduler;
@@ -140,6 +141,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private FirecloudApiService firecloudApiService;
     @MockBean
     private FirecloudManager firecloudManager;
+    @MockBean
+    private GitTokenRotationService gitTokenRotationService;
     @MockBean
     private RunScheduleMonitoringManager runScheduleMonitoringManager;
     @MockBean

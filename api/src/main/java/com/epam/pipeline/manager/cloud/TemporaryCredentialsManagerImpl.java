@@ -23,6 +23,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.manager.cloud.aws.S3AccessPointArnResolver;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
@@ -54,13 +56,15 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
     private final StoragePathPermissionsService storagePathPermissionsService;
     private final StoragePermissionManager storagePermissionManager;
     private final AuthManager authManager;
+    private final S3AccessPointArnResolver accessPointArnResolver;
 
     public TemporaryCredentialsManagerImpl(final List<TemporaryCredentialsGenerator> credentialsGenerators,
                                            final MessageHelper messageHelper,
                                            final DataStorageManager dataStorageManager,
                                            final StoragePathPermissionsService storagePathPermissionsService,
                                            final StoragePermissionManager storagePermissionManager,
-                                           final AuthManager authManager) {
+                                           final AuthManager authManager,
+                                           final S3AccessPointArnResolver accessPointArnResolver) {
         this.credentialsGenerators = CommonUtils.groupByKey(credentialsGenerators,
                 TemporaryCredentialsGenerator::getStorageType);
         this.messageHelper = messageHelper;
@@ -68,6 +72,7 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         this.storagePathPermissionsService = storagePathPermissionsService;
         this.storagePermissionManager = storagePermissionManager;
         this.authManager = authManager;
+        this.accessPointArnResolver = accessPointArnResolver;
     }
 
     @SensitiveStorageOperation
@@ -106,6 +111,9 @@ public class TemporaryCredentialsManagerImpl implements TemporaryCredentialsMana
         final AbstractDataStorage loadedDataStorage = storagesById.get(action.getId());
         action.setBucketName(loadedDataStorage.getRoot());
         action.setPath(loadedDataStorage.getPath());
+        if (loadedDataStorage instanceof S3bucketDataStorage) {
+            action.setAccessPointArn(accessPointArnResolver.resolve((S3bucketDataStorage) loadedDataStorage));
+        }
         return action;
     }
 

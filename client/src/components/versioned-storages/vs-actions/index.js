@@ -45,6 +45,7 @@ import {
   ConflictsDialog
 } from './components';
 import DropDownWrapper from '../../special/dropdown-wrapper';
+import runNodeIsUnavailable from '../../runs/actions/node-availability';
 
 class VSActions extends React.Component {
   state = {
@@ -78,6 +79,7 @@ class VSActions extends React.Component {
       run.initialized &&
       run.podIP &&
       /^running$/i.test(run.status) &&
+      !runNodeIsUnavailable(run) &&
       !this.isDtsEnvironment;
   }
 
