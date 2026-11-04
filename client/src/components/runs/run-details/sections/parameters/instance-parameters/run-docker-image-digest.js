@@ -1,10 +1,10 @@
 import {generateRunValueComponent} from './common';
+import {hasDockerImageDigest} from '../../../../utilities/docker-image-digest';
 
-// a run has a digest only if its pod was pinned to it at the launch
 const RunDockerImageDigest = generateRunValueComponent(
   'actualDockerImageDigest',
   {
-    check: (run) => Boolean(run && run.actualDockerImageDigest)
+    check: hasDockerImageDigest
   }
 );
 
