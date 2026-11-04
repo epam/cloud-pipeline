@@ -82,14 +82,18 @@ class UploadButton extends React.Component {
   @observable s3StorageError;
   uploadButton;
 
-  // Guards extraction against starting twice for one batch:
+  // Guards each archive's path against being queued for extraction twice:
   // `hideUploadInfoDelayedIfDone` runs once per file on the S3 path (plus
-  // once more after the upload loop awaits them all), so without this flag
-  // the same successful batch could call `extractArchives` more than once.
-  // An instance field, not state - it has no bearing on what renders, only
-  // on whether the call has already gone out. Reset in `hideUploadInfo`,
-  // the only place a batch's state is fully cleared.
-  extractionStarted = false;
+  // once more after the upload loop awaits them all), and a retry can bring
+  // the same batch back through here again once a previously-failed archive
+  // lands. The guard has to work per path, not per batch - a single "has
+  // extraction started" boolean would stop a retried archive from ever being
+  // queued, since the same boolean would already read `true` from the
+  // batch's first completion. An instance field, not state - it has no
+  // bearing on what renders, only on which paths have already been queued.
+  // Reset in `hideUploadInfo`, the only place a batch's state is fully
+  // cleared.
+  queuedExtractionPaths = new Set();
 
   componentDidMount () {
     const {onInitialized} = this.props;
@@ -159,8 +163,12 @@ class UploadButton extends React.Component {
       if (allDone) {
         // A retryable failure must keep the modal open regardless of
         // whether extraction also runs - `skipAutoClose` tells
-        // `extractOrCloseDelayed` not to arm the close timer either way,
-        // which is the behaviour this had before extraction existed.
+        // `extractOrCloseDelayed` not to arm the close timer either way.
+        // This same call also carries whatever archive has newly landed
+        // since the last completion - a retry that just succeeded, say -
+        // over to `extractOrCloseDelayed`, which queues it and decides on
+        // the close timer from `skipAutoClose` alone: queuing a path is
+        // never a reason, on its own, to skip or to arm that timer.
         this.extractOrCloseDelayed(!!haveRetry);
       }
     });
@@ -169,52 +177,54 @@ class UploadButton extends React.Component {
   /**
    * The point both completion paths reach once every file in the batch is
    * finished - this is exactly where each used to arm the 2 s close timer
-   * directly, and still does. A batch that was not started through "Upload
-   * and extract" goes straight to that timer. One that was, and that
-   * uploaded at least one archive successfully, also queues the extraction
-   * of those archives - but does not wait on it: extraction is an async
-   * task, exactly like an archive download is, so the request only queues
-   * it and the modal closes on the same timer an ordinary upload uses. The
-   * toast `handleExtractArchives` shows is the whole of the user's feedback;
+   * directly, and still does: the close timer is armed here whenever
+   * `skipAutoClose` allows it, on every call this function gets for the
+   * batch, including a later one a successful retry brings back through
+   * here. A batch started through "Upload and extract" also queues the
+   * extraction of whatever archive has newly landed since the last call -
+   * but does not wait on it: extraction is an async task, exactly like an
+   * archive download is, so the request only queues it and the modal closes
+   * on the same timer an ordinary upload uses. The toast
+   * `handleExtractArchives` shows is the whole of the user's feedback;
    * following the task itself happens in the downloads view, not here.
+   * Queuing nothing new (nothing has landed since the last call, or there
+   * was nothing to begin with) is never a reason to skip arming the close
+   * timer - the two are decided independently.
    *
    * @param {boolean} [skipAutoClose=false] true when a file in the batch
    *   still offers a retry (the S3 path's own affordance). The modal must
-   *   not auto-close while a retry is still possible, so neither branch
-   *   below arms the close timer in that case - extraction, if any, is still
-   *   queued over whatever already landed.
+   *   not auto-close while a retry is still possible, so the close timer is
+   *   not armed in that case - extraction, if any, is still queued over
+   *   whatever already landed.
    */
   extractOrCloseDelayed = (skipAutoClose = false) => {
     const {extractAfterUpload, uploadingFiles} = this.state;
-    if (!extractAfterUpload) {
-      if (!skipAutoClose) {
-        setTimeout(this.hideUploadInfo, 2000);
+    if (extractAfterUpload) {
+      const paths = uploadedArchivePaths(uploadingFiles, this.props.path);
+      // Per-path guard, not a batch-wide one: this function can be reached
+      // more than once for the same batch (the S3 path calls it once per
+      // file, plus once after the loop, plus once more if a retry succeeds
+      // later), and a path already queued must not be sent again - but a
+      // path that only lands on a later call (a successful retry) still has
+      // to go out, which a single "has extraction started" boolean would
+      // have missed entirely.
+      const newPaths = paths.filter(path => !this.queuedExtractionPaths.has(path));
+      if (newPaths.length > 0) {
+        newPaths.forEach(path => this.queuedExtractionPaths.add(path));
+        // `this.props.extractArchives` is the test seam described on the
+        // propType above; no caller sets it today, so this falls through to
+        // the module's own mock in every real render.
+        const extract = this.props.extractArchives || extractArchives;
+        // Fired and left to run: `handleExtractArchives` owns the toast and
+        // its own error handling, and the modal does not sit open waiting
+        // for it.
+        void handleExtractArchives(this.props.storageId, newPaths, undefined, extract);
       }
-      return;
+      // Every archive failed or was aborted, or nothing new has landed since
+      // the last call - either way there is nothing to queue this time, but
+      // that says nothing about the close timer below, which is armed from
+      // `skipAutoClose` alone.
     }
-    // Idempotency guard: this function can be reached more than once for
-    // the same batch (the S3 path calls it once per file plus once after
-    // the loop), but the extraction call itself must go out at most once.
-    if (this.extractionStarted) {
-      return;
-    }
-    const paths = uploadedArchivePaths(uploadingFiles, this.props.path);
-    if (paths.length === 0) {
-      // Every archive in the batch failed or was aborted - nothing landed
-      // in the storage to extract, so the API is not called at all.
-      if (!skipAutoClose) {
-        setTimeout(this.hideUploadInfo, 2000);
-      }
-      return;
-    }
-    this.extractionStarted = true;
-    // `this.props.extractArchives` is the test seam described on the
-    // propType above; no caller sets it today, so this falls through to the
-    // module's own mock in every real render.
-    const extract = this.props.extractArchives || extractArchives;
-    // Fired and left to run: `handleExtractArchives` owns the toast and its
-    // own error handling, and the modal does not sit open waiting for it.
-    void handleExtractArchives(this.props.storageId, paths, undefined, extract);
     if (!skipAutoClose) {
       setTimeout(this.hideUploadInfo, 2000);
     }
@@ -227,7 +237,7 @@ class UploadButton extends React.Component {
     const {
       uploadingFiles = []
     } = this.state;
-    this.extractionStarted = false;
+    this.queuedExtractionPaths = new Set();
     this.setState({
       uploadInfoVisible: false,
       uploadInfoClosable: false,

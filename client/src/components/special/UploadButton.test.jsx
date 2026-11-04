@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {message} from 'antd';
 import {
   render,
   screen,
@@ -213,19 +214,18 @@ describe('UploadButton - the paused confirmation modal', () => {
   );
 });
 
-// With no `extractArchives` prop passed, `UploadButton` falls through to its
-// own module-level mock, which is not injectable - rule 2 forbids reaching
-// the resolved-extraction branch by mocking that module. What this describe
-// block covers without it: jsdom's XHR against `/upload` has no server to
-// answer it, so every upload here fails, which is exactly the "nothing to
+// jsdom's XHR against `/upload` has no server to answer it, so every upload
+// in the first test below fails, which reaches exactly the "nothing to
 // extract" branch (every archive in the batch failed, so the batch has
-// nothing to send) - covered below with real timers, since closing the
-// modal this way waits out the component's own 2 s grace period. The
-// resolved-extraction branch and the idempotency guard are covered in the
-// next describe block instead, through the injectable prop. A rejected
-// extraction no longer changes anything the modal renders - it is a toast
-// now, covered by `handleExtractArchives`'s own test in
-// `extract-storage-archives.test.js`.
+// nothing to send) - covered with real timers, since closing the modal this
+// way waits out the component's own 2 s grace period. That test still passes
+// the injectable `extractArchives` prop (see its propType on `UploadButton`)
+// purely to assert it is never called - it does not drive a real extraction,
+// since the upload itself never succeeds here. The resolved-extraction
+// branch and the idempotency guard are covered in the next describe block
+// instead, through an upload that does succeed. A rejected extraction no
+// longer changes anything the modal renders - it is a toast now, covered by
+// `handleExtractArchives`'s own test in `extract-storage-archives.test.js`.
 describe('UploadButton - extraction after upload', () => {
   afterEach(() => {
     if (instance) {
@@ -245,7 +245,16 @@ describe('UploadButton - extraction after upload', () => {
     'and closes the modal the ordinary way',
     async () => {
       const onRefresh = fn();
-      const {input} = renderUploadButton({extractArchivesAvailable: true, onRefresh});
+      // Passed only to assert it is never called - the upload below never
+      // succeeds, so `uploadedArchivePaths` has nothing to report and
+      // `extractOrCloseDelayed`'s `newPaths.length > 0` check is never true.
+      // This is the only place in the suite that reaches that early return.
+      const extractArchives = fn();
+      const {input} = renderUploadButton({
+        extractArchivesAvailable: true,
+        onRefresh,
+        extractArchives
+      });
 
       await selectFiles(input, [zipFile('archive.zip')]);
       await waitFor(() => {
@@ -272,6 +281,10 @@ describe('UploadButton - extraction after upload', () => {
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalled();
       }, {timeout: 5000});
+
+      // The "extracts nothing" half this test is named for: every archive
+      // in the batch failed, so nothing was ever queued.
+      expect(extractArchives).not.toHaveBeenCalled();
     },
     10000
   );
@@ -349,6 +362,15 @@ describe('UploadButton - the injectable extraction call', () => {
 
   afterEach(() => {
     window.XMLHttpRequest = OriginalXMLHttpRequest;
+    // The component passes no `messageApi` of its own, so every extraction
+    // in this block toasts through antd's real, global `message` - and
+    // `rc-notification` attaches that toast to `document.body` itself,
+    // outside what this file's own `render()` tracks. A test whose injected
+    // `extractArchives` never settles (below) never runs the loading
+    // toast's own `hide()` either, which would otherwise leave "Starting
+    // archive extraction..." in the document for the rest of the file.
+    // `message.destroy()` is antd's own API, not module mocking.
+    message.destroy();
     if (instance) {
       instance.setState({uploadInfoVisible: false, pendingConfirmation: false});
       instance = null;
@@ -383,6 +405,82 @@ describe('UploadButton - the injectable extraction call', () => {
       // The modal does not wait on the extraction call before closing - it
       // closes on the same 2 s timer an ordinary upload uses, and
       // `onRefresh` only fires from inside that close.
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      }, {timeout: 5000});
+    },
+    10000
+  );
+
+  test(
+    'an extraction that never settles still lets the modal close and call ' +
+    'onRefresh',
+    async () => {
+      // The resolved-extraction test above injects an already-settled
+      // promise, so it would still pass even if `extractOrCloseDelayed`
+      // regressed back into `await`-ing the call before arming the close
+      // timer - an extraction this slow would just make that test slow, not
+      // fail it. A promise that never settles at all is the only way to
+      // pin "the modal does not wait on this call".
+      const extractArchives = fn(() => new Promise(() => {}));
+      const onRefresh = fn();
+      const {input} = renderUploadButton({
+        extractArchivesAvailable: true,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+      });
+
+      await click(screen.getByRole('button', {name: 'Upload and extract'}));
+
+      await waitFor(() => {
+        expect(extractArchives).toHaveBeenCalledTimes(1);
+      }, {timeout: 5000});
+
+      // The call above is still pending, and always will be - if the modal
+      // were waiting on it, this would time out rather than pass.
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      }, {timeout: 5000});
+    },
+    10000
+  );
+
+  test(
+    'a rejected extraction still closes the modal and does not leave it stuck',
+    async () => {
+      // Mirrors the never-settling test above for the other outcome a real
+      // extraction call can have: before this phase, a rejection left the
+      // modal open waiting on a manual close (see this file's own history).
+      // Now extraction's outcome does not change what the modal does either
+      // way - it still closes on its own, on the same timer.
+      const extractArchives = fn(() => Promise.reject(new Error('extraction failed')));
+      const onRefresh = fn();
+      const {input} = renderUploadButton({
+        extractArchivesAvailable: true,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      await selectFiles(input, [zipFile('archive.zip')]);
+      await waitFor(() => {
+        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
+      });
+
+      await click(screen.getByRole('button', {name: 'Upload and extract'}));
+
+      await waitFor(() => {
+        expect(extractArchives).toHaveBeenCalledTimes(1);
+      }, {timeout: 5000});
+
+      // Not stuck: the modal closes on its own, with no further user
+      // action, exactly as a resolved extraction does.
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalled();
       }, {timeout: 5000});
@@ -488,6 +586,100 @@ describe('UploadButton - the injectable extraction call', () => {
       // and called `onRefresh`.
       await new Promise((resolve) => setTimeout(resolve, 2200));
       expect(onRefresh).not.toHaveBeenCalled();
+    },
+    10000
+  );
+
+  test(
+    'a retry that newly lands an archive queues exactly that archive and ' +
+    'arms the close; a second completion with nothing new queues nothing',
+    async () => {
+      // A batch-wide "extraction already started" boolean got the first
+      // completion below half right - it queues what already landed - and
+      // then swallows every later one entirely, because the flag it set
+      // the first time never lets a later call past its own guard: a
+      // second completion would neither queue the archive that only landed
+      // on retry, nor arm the close timer, leaving the modal open forever.
+      // Reaching that requires two archives, one that lands on the first
+      // completion and one that only lands on a later one - a single
+      // archive that fails then retries (as the "retryable failure" test
+      // above does) never sets that boolean in the first place, so it does
+      // not exercise this guard. Driven through the instance for the same
+      // reason the tests above are.
+      const extractArchives = fn(() => Promise.resolve());
+      const onRefresh = fn();
+      renderUploadButton({
+        extractArchivesAvailable: true,
+        uploadToS3: true,
+        uploadToNFS: false,
+        storageId: 'storage-1',
+        extractArchives,
+        onRefresh
+      });
+
+      // First completion: one archive already landed, the other still
+      // offers a retry.
+      await act(async () => {
+        instance.setState({
+          uploadInfoVisible: true,
+          extractAfterUpload: true,
+          uploadingFiles: [
+            {uid: '1', name: 'landed.zip', status: 'done', done: true},
+            {
+              uid: '2',
+              name: 'retry.zip',
+              status: 'error',
+              done: true,
+              error: 'boom',
+              retryCb: fn()
+            }
+          ]
+        });
+      });
+      await act(async () => {
+        instance.hideUploadInfoDelayedIfDone();
+      });
+
+      await waitFor(() => {
+        expect(extractArchives).toHaveBeenCalledTimes(1);
+      }, {timeout: 5000});
+      expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/landed.zip']);
+      expect(onRefresh).not.toHaveBeenCalled();
+
+      // The retry succeeds: `retry.zip` is now done with no error and no
+      // retry on offer - the batch's second completion, and the one this
+      // fix is for.
+      await act(async () => {
+        instance.setState({
+          uploadingFiles: [
+            {uid: '1', name: 'landed.zip', status: 'done', done: true},
+            {uid: '2', name: 'retry.zip', status: 'done', done: true}
+          ]
+        });
+      });
+      await act(async () => {
+        instance.hideUploadInfoDelayedIfDone();
+      });
+
+      await waitFor(() => {
+        expect(extractArchives).toHaveBeenCalledTimes(2);
+      }, {timeout: 5000});
+      // Only the archive that newly landed - `landed.zip` is not sent again.
+      expect(extractArchives).toHaveBeenNthCalledWith(2, 'storage-1', ['folder/retry.zip']);
+
+      // A third completion with nothing new since the last one must not
+      // queue either path again.
+      await act(async () => {
+        instance.hideUploadInfoDelayedIfDone();
+      });
+      expect(extractArchives).toHaveBeenCalledTimes(2);
+
+      // No retry is on offer any more, so the second completion (and this
+      // third one) armed the close timer - the modal still closes and
+      // refreshes, where the unfixed boolean guard left it open forever.
+      await waitFor(() => {
+        expect(onRefresh).toHaveBeenCalled();
+      }, {timeout: 5000});
     },
     10000
   );
