@@ -1172,12 +1172,13 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
-| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is the default one until a default version is set |  |
+| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is used until a default version is set |  |
 | [**4664_10**](Tools/4664_default_version/4664_10.md) | Deleting a version of the same image removes the default version |  |
 | [**4664_11**](Tools/4664_default_version/4664_11.md) | A default version removed outside the platform |  |
 | [**4664_12**](Tools/4664_default_version/4664_12.md) | A commit into a tool with a default version doesn't create the latest version |  |
+| [**4664_13**](Tools/4664_default_version/4664_13.md) | Delete the default version of a tool without the latest version |  |
 | [**4664_2**](Tools/4664_default_version/4664_2.md) | Set a version as the default one |  |
-| [**4664_3**](Tools/4664_default_version/4664_3.md) | Remove the default version |  |
+| [**4664_3**](Tools/4664_default_version/4664_3.md) | Unset the default version |  |
 | [**4664_4**](Tools/4664_default_version/4664_4.md) | Delete the default version |  |
 | [**4664_5**](Tools/4664_default_version/4664_5.md) | The default version in the version pickers |  |
 | [**4664_6**](Tools/4664_default_version/4664_6.md) | The default version controls depend on the permissions |  |
