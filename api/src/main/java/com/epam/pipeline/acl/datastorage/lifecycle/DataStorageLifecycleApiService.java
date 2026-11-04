@@ -17,6 +17,7 @@
 package com.epam.pipeline.acl.datastorage.lifecycle;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleType;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
@@ -28,13 +29,17 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclRead;
 import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -145,5 +150,17 @@ public class DataStorageLifecycleApiService {
         final boolean showArchived = permissionManager.storageArchiveReadPermissions(storage);
         return restoreManager.loadEffectiveRestoreStorageActionHierarchy(
                 storage, StorageRestorePath.builder().type(pathType).path(path).build(), recursive, showArchived);
+    }
+
+    @StorageAclRead
+    public List<AbstractDataStorage> listStoragesWithLifecycle(StorageLifecycleType lifecycleType) {
+        final Set<Long> resultedListStorageIds = new HashSet<>();
+        if (lifecycleType == null || lifecycleType == StorageLifecycleType.TRANSITION) {
+            resultedListStorageIds.addAll(ListUtils.emptyIfNull(storageLifecycleManager.listStorageIdsWithLifecycle()));
+        }
+        if (lifecycleType == null || lifecycleType == StorageLifecycleType.RESTORE) {
+            resultedListStorageIds.addAll(ListUtils.emptyIfNull(restoreManager.listStoragesWithLifecycle()));
+        }
+        return storageManager.getDatastoragesByIds(resultedListStorageIds);
     }
 }
