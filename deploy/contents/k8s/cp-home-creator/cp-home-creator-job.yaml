@@ -1,0 +1,46 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cp-home-dirs
+  namespace: default
+spec:
+  schedule: ${CP_HOME_DIRS_SCHEDULE}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          namespace: default
+          labels:
+            cloud-pipeline/cp-home-dirs: "true"
+            cloud-pipeline/core-component: "CronJob"
+        spec:
+          nodeSelector:
+            cloud-pipeline/cp-home-dirs: "true"
+          tolerations:
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+          restartPolicy: OnFailure
+          containers:
+            - name: cp-home-dirs
+              image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:home-dirs-$CP_VERSION
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                privileged: true
+              command:
+                - /bin/sh
+                - -c
+                - /create_home_dirs.sh
+              envFrom:
+                - configMapRef:
+                    name: cp-config-global
+              volumeMounts:
+                    - name: home-dirs-logs
+                      mountPath: /opt/home_dirs/logs
+          volumes:
+            - name: home-dirs-logs
+              hostPath:
+                path: /opt/home_dirs/logs
+          imagePullSecrets:
+            - name: cp-distr-docker-registry-secret
