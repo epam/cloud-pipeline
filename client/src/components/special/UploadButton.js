@@ -41,6 +41,10 @@ import displaySize from '../../utils/displaySize';
 const KB = 1024;
 const MB = 1024 * KB;
 const MAX_NFS_FILE_SIZE_MB = 500;
+// The one row margin both the confirmation state and the progress state use -
+// so a file's row is exactly as tall before the upload starts as after, and
+// only the progress line's own visibility differs between the two.
+const FILE_ROW_MARGIN_BOTTOM = 20;
 
 class UploadButton extends React.Component {
   static propTypes = {
@@ -384,6 +388,7 @@ class UploadButton extends React.Component {
     const uploadingFiles = this.state.synchronousUploadingFiles.map(f => ({
       uid: f.uid,
       name: f.name,
+      size: f.size,
       status: 'waiting...',
       percent: 0
     }));
@@ -491,6 +496,7 @@ class UploadButton extends React.Component {
     if (!uploadingFile) {
       uploadingFile = {
         name: info.file.name,
+        size: info.file.size,
         uid: info.file.uid,
         percent: 0,
         error: undefined,
@@ -573,6 +579,7 @@ class UploadButton extends React.Component {
     const uploadingFiles = this.state.synchronousUploadingFiles.map(f => ({
       uid: f.uid,
       name: f.name,
+      size: f.size,
       status: 'waiting...',
       percent: 0
     }));
@@ -766,19 +773,111 @@ class UploadButton extends React.Component {
     );
   };
 
-  renderConfirmationList = () => {
-    const {synchronousUploadingFiles = []} = this.state;
-    return synchronousUploadingFiles.map(file => (
+  /**
+   * One row renderer for both the confirmation state and the progress state,
+   * so a file's row is built the same way in either state and the two
+   * cannot drift apart in height - which is how they used to: the
+   * confirmation state rendered a single line while the progress state
+   * rendered a name line plus a `<Progress>` line, at a different margin.
+   *
+   * Both states now render the same two lines. The progress line - the
+   * `<Progress>` itself, in its `Col span={21}`, and on an S3 upload the
+   * retry/cancel actions in their `Col span={3}` - is always present, so its
+   * height is always reserved; only `visibility` hides it while `pending` is
+   * true and nothing has started uploading yet. Guessing a pixel height
+   * instead would drift the moment `Progress`'s own metrics change.
+   *
+   * @param {object} file a `synchronousUploadingFiles` entry (`uid`, `name`,
+   *   `size`) while `pending`, or a `uploadingFiles` entry (also carrying
+   *   `status`, `percent`, `error`, `done`, `aborted`, `aborting`,
+   *   `retryCb`, `cancelCb`, `uploadID`) once the upload has started.
+   * @param {boolean} pending true while the batch only lists the selection,
+   *   nothing uploading yet.
+   */
+  renderFileRow = (file, pending) => {
+    const {uploadToS3} = this.props;
+    let title = file.name;
+    if (!pending && file.status) {
+      title = `${file.name} - ${file.status}`;
+    }
+    let status = 'active';
+    if (!pending) {
+      if (file.error) {
+        status = 'exception';
+      } else if (file.percent === 100) {
+        status = 'success';
+      }
+    }
+    return (
       <Row
-        style={{marginBottom: 10}}
+        style={{marginBottom: FILE_ROW_MARGIN_BOTTOM, marginTop: 0}}
         type="flex"
-        align="middle"
         key={file.uid}
       >
-        <span style={{flex: 1}}>{file.name}</span>
-        <span style={{marginLeft: 10}}>{displaySize(file.size)}</span>
+        <Row type="flex" style={{width: '100%'}}>
+          <span
+            title={file.name}
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {title}
+            {
+              !pending && file.error && (
+                <span
+                  className="cp-error"
+                  style={{fontSize: 'small', marginLeft: 5}}
+                >
+                  - {file.error}
+                </span>
+              )
+            }
+          </span>
+          <span style={{marginLeft: 10}}>{displaySize(file.size)}</span>
+        </Row>
+        <Row
+          type="flex"
+          style={{width: '100%', visibility: pending ? 'hidden' : 'visible'}}
+        >
+          <Col span={21}>
+            <Progress
+              strokeWidth={3}
+              key={`${file.uid}-progress`}
+              percent={pending ? 0 : file.percent}
+              status={status} />
+          </Col>
+          {
+            uploadToS3 && (
+              <Col span={3}>
+                <Row type="flex" justify="space-around">
+                  {
+                    !pending && file.done && (file.error || file.aborted) &&
+                    file.retryCb && !file.aborting &&
+                    <Button
+                      size="small"
+                      shape="circle"
+                      icon="reload"
+                      onClick={() => file.retryCb()} />
+                  }
+                  {
+                    !pending && !file.done && file.cancelCb && file.uploadID &&
+                    <Button
+                      size="small"
+                      shape="circle"
+                      type="danger"
+                      icon="close"
+                      onClick={() => file.cancelCb()} />
+                  }
+                </Row>
+              </Col>
+            )
+          }
+        </Row>
       </Row>
-    ));
+    );
   };
 
   render () {
@@ -874,76 +973,14 @@ class UploadButton extends React.Component {
           onCancel={this.state.pendingConfirmation ? this.cancelConfirmation : this.hideUploadInfo}
           visible={this.state.uploadInfoVisible}>
           {
-            this.state.pendingConfirmation && this.renderConfirmationList()
+            this.state.pendingConfirmation &&
+            this.state.synchronousUploadingFiles.map(
+              file => this.renderFileRow(file, true)
+            )
           }
           {
-            !this.state.pendingConfirmation && this.state.uploadingFiles.map(f => {
-              let status = 'active';
-              if (f.error) {
-                status = 'exception';
-              } else if (f.percent === 100) {
-                status = 'success';
-              }
-              let title = f.name;
-              if (f.status) {
-                title = `${f.name} - ${f.status}`;
-              }
-              return (
-                <Row
-                  style={{marginBottom: 20, marginTop: 0}}
-                  type="flex"
-                  key={f.uid}>
-                  <Row type="flex" style={{width: '100%'}} >
-                    <span>
-                      {title}
-                      {
-                        f.error && (
-                          <span
-                            className="cp-error"
-                            style={{fontSize: 'small', marginLeft: 5}}
-                          >
-                            - {f.error}
-                          </span>
-                        )
-                      }
-                    </span>
-                  </Row>
-                  <Row type="flex" style={{width: '100%'}}>
-                    <Col span={21}>
-                      <Progress
-                        strokeWidth={3}
-                        key={`${f.uid}-progress`}
-                        percent={f.percent}
-                        status={status} />
-                    </Col>
-                    {
-                      this.props.uploadToS3 &&
-                      <Col span={3}>
-                        <Row type="flex" justify="space-around">
-                          {
-                            f.done && (f.error || f.aborted) && f.retryCb && !f.aborting &&
-                            <Button
-                              size="small"
-                              shape="circle"
-                              icon="reload"
-                              onClick={() => f.retryCb()} />
-                          }
-                          {
-                            !f.done && f.cancelCb && f.uploadID &&
-                            <Button
-                              size="small"
-                              shape="circle"
-                              type="danger"
-                              icon="close"
-                              onClick={() => f.cancelCb()} />
-                          }
-                        </Row>
-                      </Col>
-                    }
-                  </Row>
-                </Row>
-              );
-            })
+            !this.state.pendingConfirmation &&
+            this.state.uploadingFiles.map(file => this.renderFileRow(file, false))
           }
         </Modal>
       </div>
