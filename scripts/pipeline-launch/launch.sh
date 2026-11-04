@@ -673,9 +673,12 @@ function install_python3_packages {
             echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL"
             return 1
       fi
-      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      rm -rf "${_install_path}/python3.12"
       mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"
+      # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
+      # an openssl folder (the previous python3.12.0 build) replaces it
       if [ -d "${_tmp_install_dir}/openssl" ]; then
+            rm -rf "${_install_path}/openssl"
             mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
       fi
       rm -rf "${_tmp_install_dir}"

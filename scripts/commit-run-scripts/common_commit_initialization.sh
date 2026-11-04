@@ -110,9 +110,11 @@ install_python() {
                 && tar -xzf "$_python3_tmp_dir/python3.tgz" -C "$_python3_tmp_dir" \
                 && [ -x "$_python3_tmp_dir/python3.12/bin/python3.12" ] \
                 && [ ! -x "$CP_PYTHON_PATH" ]; then
-            rm -rf /usr/local/python3.12 /usr/local/openssl
+            rm -rf /usr/local/python3.12
             mv "$_python3_tmp_dir/python3.12" /usr/local/python3.12
+            # Only a distro that brings an openssl folder (the previous python3.12.0 build) replaces the host's one
             if [ -d "$_python3_tmp_dir/openssl" ]; then
+                rm -rf /usr/local/openssl
                 mv "$_python3_tmp_dir/openssl" /usr/local/openssl
             fi
         fi
