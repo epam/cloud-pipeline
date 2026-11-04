@@ -58,6 +58,7 @@
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
+- [Self-contained Python 3.12 distribution](#self-contained-python-312-distribution)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
@@ -1855,6 +1856,21 @@ If the system preference `ui.launch.allow.nodeup.count` is `true`, this paramete
 The `data_loader` system pipeline and the `Python` pipeline template now resolve their interpreter via `CP_PYTHON_PATH` as well, instead of a hardcoded `python`, so they also run under either Python version. The `pipe-demo` NGS demo pipelines and the `Luigi` pipeline template, which still only ran under Python 2, were removed.
 
 The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got the same `CP_PYTHON_VERSION`/Python 3.12 support, covering its NFS-synchronization scripts and the storage `chown`/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.
+
+***
+
+## Self-contained Python 3.12 distribution
+
+The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12` (the AWS node images into `/opt/python3.12`). It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
+
+- CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.
+- Its modules carry their own libraries. So `ctypes` (and with it the NFS events observer of a run), `sqlite3`, `readline` and `curses` now work in the images that lack the `libffi.so.6`, `libsqlite3.so.0`, `libreadline.so.6` or `libncursesw.so.5` of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.
+- `readline` uses libedit. `dbm.gnu`, `dbm.ndbm`, `nis` and `tkinter` are not included.
+- `crypt` still uses the `libcrypt.so.1` of the image. On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
+- HTTPS verifies with the CA certificates of the image, where Debian and Ubuntu keep them (`/etc/ssl/certs`), and where the RHEL family keeps them (`/etc/pki/tls/cert.pem`).
+- The download is about 30 MB, instead of 107 MB: it no longer includes the test suite, the static `libpython3.12.a`, or a separate `/usr/local/openssl`.
+
+The previous distribution stays available as `tools/python/3/python3.12.0.tar.gz`. A run uses it, when the `CP_PYTHON3_DISTRO_URL` parameter points to it.
 
 ***
 
