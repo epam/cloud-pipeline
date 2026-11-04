@@ -597,14 +597,14 @@ In a run:
 
 The Python 3.12 distribution is built for `glibc` 2.17, and some of its modules need system libraries that newer distributions do not have. So these features do not work in all the tool images:
 
-- **CentOS 7 and other distributions with `glibc` older than 2.26.** The `pipeline` package cannot be installed from the package mirror, because its dependency PyNaCl has no build for this `glibc`. A run of such a tool fails at startup. The `pipe` CLI does not run there either: see [`pipe` CLI on Python 3](#pipe-cli-on-python-3).
+- **CentOS 7 and other distributions with `glibc` older than 2.28.** The `pipeline` package installs there from the package mirror, but the `pipe` CLI does not run: see [`pipe` CLI on Python 3](#pipe-cli-on-python-3).
 - **`ctypes` needs `libffi.so.6` (`libffi` 3.1).** Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later have newer `libffi` versions only. In their images, the NFS events observer of a run does not work, and the user code that imports `ctypes` fails. On Rocky Linux 9 and RHEL 9, the `libffi3.1` package from EPEL provides `libffi.so.6`.
 - **`crypt` needs `libcrypt.so.1`.** On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
 - **`sqlite3` needs `libsqlite3.so.0`.** Minimal Debian and Ubuntu images do not have it. It comes from the `libsqlite3-0` package.
 
 For more details see [Image requirements](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#image-requirements).
 
-Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. The AWS node images that the installer of this version builds have it already. On node hosts with `glibc` older than 2.26, e.g. CentOS 7 (the default base of the Azure node image), the `pipeline` package cannot be installed, so committing and pausing a run do not work.
+Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. The AWS node images that the installer of this version builds have it already. The `pipeline` package installs on node hosts with an older `glibc` as well, e.g. CentOS 7 (the default base of the Azure node image), and the commit and pause scripts do not need the `pipe` CLI.
 
 In the platform services:
 
