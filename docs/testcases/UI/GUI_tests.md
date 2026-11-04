@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (151 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (152 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -229,6 +229,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4570_7**](Data_storages/4570/4570_7.md) | Downloads window: the Status filter's select-all box and "Reset to defaults" |  |
 | [**4570_8**](Data_storages/4570/4570_8.md) | Downloads window: unselecting every status applies no status filter at all |  |
 | [**4570_9**](Data_storages/4570/4570_9.md) | Downloads window: clearing the Owner filter by hand, and "Reset to defaults" |  |
+| [**4570_10**](Data_storages/4570/4570_10.md) | Downloads window: the Owner filter takes a user picked from its suggestion list |  |
 | [**EPMCMBIBPC-2274**](Data_storages/NFS_mount/EPMCMBIBPC-2274.md) | Validation of NFS storage creation | :white_check_mark: |
 | [**EPMCMBIBPC-2275**](Data_storages/NFS_mount/EPMCMBIBPC-2275.md) | Create existing NFS mount (negative), validation | :white_check_mark: |
 | [**EPMCMBIBPC-2276**](Data_storages/NFS_mount/EPMCMBIBPC-2276.md) | Create folder/file in NFS mount, validation | :white_check_mark: |
