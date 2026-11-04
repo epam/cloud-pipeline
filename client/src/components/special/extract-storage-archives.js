@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import {message} from 'antd';
+
 /**
  * @typedef {Object} UploadingFile
  * @property {string} [name]
@@ -119,9 +121,13 @@ export const EXTRACT_ARCHIVES_MOCK_DELAY_MS = 1500;
 /**
  * Stands in for `POST /datastorage/{id}/extract`, body `{paths: [...]}` with
  * storage-relative paths and no trailing slash. That endpoint is not
- * implemented on the server yet - this always resolves, because there is no
- * real response to fail on. Swapping this mock for the real call is one
- * small edit once the endpoint exists: a `RemotePost` model.
+ * implemented on the server yet. Once it is, it queues an async task and
+ * answers with it - the request does not wait for the extraction itself to
+ * finish, the same way starting an archive download only queues one. This
+ * mock resolves with nothing instead, because there is no real task to fake,
+ * but it always resolves, since there is no real response to fail on either.
+ * Swapping this mock for the real call is one small edit once the endpoint
+ * exists: a `RemotePost` model.
  *
  * A missing storage id or an empty paths list rejects immediately, before
  * the delay - that is a caller bug either way, not something a real server
@@ -140,4 +146,47 @@ export function extractArchives (storageId, paths) {
   return new Promise(resolve => {
     setTimeout(resolve, EXTRACT_ARCHIVES_MOCK_DELAY_MS);
   });
+}
+
+/**
+ * Queues the extraction and reports the outcome - the loading toast while
+ * the request is in flight, then the queued-info toast on success or the
+ * error toast on failure, exactly the shape `handleDownloadArchive`
+ * (`download-storage-archive.js`) already uses for a download. The parallel
+ * is deliberate: extraction is queued the same way a download is, so the
+ * caller (`UploadButton`) does not wait on this either - it fires this and
+ * moves on, and the toast is the whole of the user's feedback.
+ *
+ * An empty `paths` gets no toast of its own here: the only caller never
+ * reaches this with one, and `extract`'s own rejection on a missing id or an
+ * empty list is guard enough without a second one.
+ *
+ * @param {string|number} storageId
+ * @param {string[]} paths
+ * @param {*} [messageApi] - defaults to antd's `message`, taken as a
+ *   parameter so this is testable without module mocking
+ * @param {function} [extract] - defaults to this module's own
+ *   `extractArchives`, taken as a parameter for the same reason - and the
+ *   seam `UploadButton`'s own injectable `extractArchives` prop is passed
+ *   through to
+ * @returns {Promise<void>}
+ */
+export async function handleExtractArchives (
+  storageId,
+  paths,
+  messageApi = message,
+  extract = extractArchives
+) {
+  const hide = messageApi.loading('Starting archive extraction...', 0);
+  try {
+    await extract(storageId, paths);
+    messageApi.info(
+      'Archive extraction has been queued. Follow its progress under "Show downloads".',
+      5
+    );
+  } catch (error) {
+    messageApi.error(error.message, 5);
+  } finally {
+    hide();
+  }
 }

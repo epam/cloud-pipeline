@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-import {useFakeTimers, useRealTimers, advanceTimers} from '@test';
+import {fn, useFakeTimers, useRealTimers, advanceTimers} from '@test';
 import {
   ARCHIVE_EXTENSIONS,
   isArchive,
   hasArchives,
   uploadedArchivePaths,
   extractArchives,
+  handleExtractArchives,
   EXTRACT_ARCHIVES_MOCK_DELAY_MS
 } from './extract-storage-archives';
 
@@ -174,5 +175,82 @@ describe('extractArchives', () => {
   test('rejects immediately when the paths list is empty or missing', async () => {
     await expect(extractArchives(1, [])).rejects.toThrow();
     await expect(extractArchives(1, undefined)).rejects.toThrow();
+  });
+});
+
+describe('handleExtractArchives', () => {
+  test(
+    'calls extract with the storage id and paths, and shows then hides the loading toast',
+    async () => {
+      const hide = fn();
+      const messageApi = {
+        info: fn(),
+        loading: fn().mockReturnValue(hide),
+        error: fn()
+      };
+      const extract = fn().mockResolvedValue();
+
+      await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
+
+      expect(messageApi.loading).toHaveBeenCalledWith('Starting archive extraction...', 0);
+      expect(extract).toHaveBeenCalledWith('storage-1', ['a.zip']);
+      expect(hide).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  // The queued toast goes through messageApi.info - mirrors
+  // handleDownloadArchive's own "goes through messageApi.info, not success"
+  // test in download-storage-archive.test.js.
+  test('the queued toast names the downloads view', async () => {
+    const messageApi = {
+      info: fn(),
+      loading: fn().mockReturnValue(fn()),
+      error: fn()
+    };
+    const extract = fn().mockResolvedValue();
+
+    await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
+
+    expect(messageApi.info).toHaveBeenCalledWith(
+      'Archive extraction has been queued. Follow its progress under "Show downloads".',
+      5
+    );
+    expect(messageApi.error).not.toHaveBeenCalled();
+  });
+
+  test(
+    'a rejecting extract reports through messageApi.error, with no queued-info toast',
+    async () => {
+      const messageApi = {
+        info: fn(),
+        loading: fn().mockReturnValue(fn()),
+        error: fn()
+      };
+      const extract = fn().mockRejectedValue(new Error('too many active tasks'));
+
+      await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
+
+      expect(messageApi.error).toHaveBeenCalledWith('too many active tasks', 5);
+      expect(messageApi.info).not.toHaveBeenCalled();
+    }
+  );
+
+  // No `extract` argument given falls through to this module's own mock -
+  // the default the real `RemotePost` model will replace once the endpoint
+  // exists.
+  test('defaults extract to this module\'s own mock when none is injected', async () => {
+    useFakeTimers();
+    const messageApi = {
+      info: fn(),
+      loading: fn().mockReturnValue(fn()),
+      error: fn()
+    };
+
+    const pending = handleExtractArchives('storage-1', ['a.zip'], messageApi);
+    advanceTimers(EXTRACT_ARCHIVES_MOCK_DELAY_MS);
+    await pending;
+
+    expect(messageApi.info).toHaveBeenCalled();
+    useRealTimers();
   });
 });

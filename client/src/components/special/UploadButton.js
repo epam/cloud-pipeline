@@ -34,7 +34,8 @@ import {
   isArchive,
   hasArchives,
   uploadedArchivePaths,
-  extractArchives
+  extractArchives,
+  handleExtractArchives
 } from './extract-storage-archives';
 import displaySize from '../../utils/displaySize';
 
@@ -61,8 +62,9 @@ class UploadButton extends React.Component {
     disabled: PropTypes.bool,
     extractArchivesAvailable: PropTypes.bool,
     // A seam for tests, which cannot reach the module's own `extractArchives`
-    // without a module mock: a test passes a `fn()` here instead. Also the
-    // place the real `RemotePost` model goes once `POST
+    // without a module mock: a test passes a `fn()` here instead. Passed
+    // through to `handleExtractArchives` as its own `extract` argument. Also
+    // the place the real `RemotePost` model goes once `POST
     // /datastorage/{id}/extract` exists - no caller passes this today.
     extractArchives: PropTypes.func
   };
@@ -73,9 +75,7 @@ class UploadButton extends React.Component {
     uploadingFiles: [],
     synchronousUploadingFiles: [],
     pendingConfirmation: false,
-    extractAfterUpload: false,
-    extracting: false,
-    extractionError: undefined
+    extractAfterUpload: false
   };
 
   @observable s3Storage;
@@ -169,16 +169,20 @@ class UploadButton extends React.Component {
   /**
    * The point both completion paths reach once every file in the batch is
    * finished - this is exactly where each used to arm the 2 s close timer
-   * directly. A batch that was not started through "Upload and extract"
-   * still goes straight to that timer. One that was, and that uploaded at
-   * least one archive successfully, extracts those archives first and
-   * closes afterwards instead.
+   * directly, and still does. A batch that was not started through "Upload
+   * and extract" goes straight to that timer. One that was, and that
+   * uploaded at least one archive successfully, also queues the extraction
+   * of those archives - but does not wait on it: extraction is an async
+   * task, exactly like an archive download is, so the request only queues
+   * it and the modal closes on the same timer an ordinary upload uses. The
+   * toast `handleExtractArchives` shows is the whole of the user's feedback;
+   * following the task itself happens in the downloads view, not here.
    *
    * @param {boolean} [skipAutoClose=false] true when a file in the batch
    *   still offers a retry (the S3 path's own affordance). The modal must
    *   not auto-close while a retry is still possible, so neither branch
-   *   below arms the close timer in that case - extraction, if any, still
-   *   runs over whatever already landed.
+   *   below arms the close timer in that case - extraction, if any, is still
+   *   queued over whatever already landed.
    */
   extractOrCloseDelayed = (skipAutoClose = false) => {
     const {extractAfterUpload, uploadingFiles} = this.state;
@@ -208,28 +212,12 @@ class UploadButton extends React.Component {
     // propType above; no caller sets it today, so this falls through to the
     // module's own mock in every real render.
     const extract = this.props.extractArchives || extractArchives;
-    this.setState({extracting: true, uploadInfoClosable: false}, async () => {
-      try {
-        await extract(this.props.storageId, paths);
-        // The files were uploaded and are now extracted - close the same
-        // way a batch without extraction would have, after the same
-        // short grace period, unless a retry is still on offer.
-        this.setState({extracting: false, uploadInfoClosable: true}, () => {
-          if (!skipAutoClose) {
-            setTimeout(this.hideUploadInfo, 2000);
-          }
-        });
-      } catch (error) {
-        // The files were still uploaded; only extraction failed. Leave the
-        // modal open and closable so the user can read the error and
-        // close it themselves - closing still refreshes the listing.
-        this.setState({
-          extracting: false,
-          extractionError: error ? (error.message || `${error}`) : 'Extraction failed',
-          uploadInfoClosable: true
-        });
-      }
-    });
+    // Fired and left to run: `handleExtractArchives` owns the toast and its
+    // own error handling, and the modal does not sit open waiting for it.
+    void handleExtractArchives(this.props.storageId, paths, undefined, extract);
+    if (!skipAutoClose) {
+      setTimeout(this.hideUploadInfo, 2000);
+    }
   };
 
   hideUploadInfo = () => {
@@ -246,9 +234,7 @@ class UploadButton extends React.Component {
       uploadingFiles: [],
       synchronousUploadingFiles: [],
       pendingConfirmation: false,
-      extractAfterUpload: false,
-      extracting: false,
-      extractionError: undefined
+      extractAfterUpload: false
     }, async () => {
       if (this.props.onRefresh) {
         this.props.onRefresh(uploadingFiles.map(f => f.name));
@@ -778,29 +764,6 @@ class UploadButton extends React.Component {
     ));
   };
 
-  renderExtractionStatus = () => {
-    const {extracting, extractionError} = this.state;
-    if (extractionError) {
-      return (
-        <Row type="flex" style={{marginTop: 10}}>
-          <span className="cp-error" style={{fontSize: 'small'}}>
-            {extractionError}
-          </span>
-        </Row>
-      );
-    }
-    if (!extracting) {
-      return null;
-    }
-    const count = uploadedArchivePaths(this.state.uploadingFiles, this.props.path).length;
-    return (
-      <Row type="flex" align="middle" style={{marginTop: 10}}>
-        <Icon type="loading" style={{marginRight: 5}} />
-        <span>{`Extracting ${count} archive${count === 1 ? '' : 's'}...`}</span>
-      </Row>
-    );
-  };
-
   render () {
     const uploadProps = {
       multiple: this.props.multiple,
@@ -888,7 +851,7 @@ class UploadButton extends React.Component {
           title={
             this.state.pendingConfirmation
               ? 'Upload files'
-              : (this.state.extracting ? 'Extracting archives...' : 'Uploading files...')
+              : 'Uploading files...'
           }
           closable={this.state.pendingConfirmation ? true : this.state.uploadInfoClosable}
           onCancel={this.state.pendingConfirmation ? this.cancelConfirmation : this.hideUploadInfo}
@@ -964,9 +927,6 @@ class UploadButton extends React.Component {
                 </Row>
               );
             })
-          }
-          {
-            !this.state.pendingConfirmation && this.renderExtractionStatus()
           }
         </Modal>
       </div>

@@ -215,14 +215,17 @@ describe('UploadButton - the paused confirmation modal', () => {
 
 // With no `extractArchives` prop passed, `UploadButton` falls through to its
 // own module-level mock, which is not injectable - rule 2 forbids reaching
-// the resolved- or rejected-extraction branches by mocking that module. What
-// this describe block covers without it: jsdom's XHR against `/upload` has
-// no server to answer it, so every upload here fails, which is exactly the
-// "nothing to extract" branch (every archive in the batch failed, so the
-// batch has nothing to send) - covered below with real timers, since closing
-// the modal this way waits out the component's own 2 s grace period. The
-// resolved- and rejected-extraction branches, and the idempotency guard, are
-// covered in the next describe block instead, through the injectable prop.
+// the resolved-extraction branch by mocking that module. What this describe
+// block covers without it: jsdom's XHR against `/upload` has no server to
+// answer it, so every upload here fails, which is exactly the "nothing to
+// extract" branch (every archive in the batch failed, so the batch has
+// nothing to send) - covered below with real timers, since closing the
+// modal this way waits out the component's own 2 s grace period. The
+// resolved-extraction branch and the idempotency guard are covered in the
+// next describe block instead, through the injectable prop. A rejected
+// extraction no longer changes anything the modal renders - it is a toast
+// now, covered by `handleExtractArchives`'s own test in
+// `extract-storage-archives.test.js`.
 describe('UploadButton - extraction after upload', () => {
   afterEach(() => {
     if (instance) {
@@ -259,11 +262,6 @@ describe('UploadButton - extraction after upload', () => {
       await waitFor(() => {
         expect(screen.getByText('- error', {selector: '.cp-error'})).toBeInTheDocument();
       }, {timeout: 5000});
-
-      // With nothing to extract, the title never switches to the
-      // extracting state - this text never rendered at any point, which
-      // `antd`'s own CSS-based hiding of a closed modal does not affect.
-      expect(screen.queryByText('Extracting archives...')).not.toBeInTheDocument();
 
       // The modal closes the same way it always did before this mode
       // existed - after its own 2 s grace period - which calls `onRefresh`
@@ -307,7 +305,7 @@ describe('UploadButton - extraction after upload', () => {
 // `fn()` and the component calls that instead of its own module-level mock.
 // No caller does this in the real app; it is a seam.
 //
-// All three tests below still need an upload that actually finishes, since
+// Every test below still needs an upload that actually finishes, since
 // extraction only ever runs over files that uploaded. The synchronous/NFS
 // path posts through a real `XMLHttpRequest`, and jsdom's is real but talks
 // to no server - every request in the describe block above fails for that
@@ -316,6 +314,11 @@ describe('UploadButton - extraction after upload', () => {
 // successful `{status: 'OK'}` response. That is the "stub the object on
 // window" option: nothing under `src/` is replaced, only the global
 // constructor the browser itself provides, so it is not a module mock.
+//
+// The modal no longer waits on the extraction call before closing, so there
+// is no rejected-extraction branch left to reach from here: that toast is
+// tested directly on `handleExtractArchives`, in
+// extract-storage-archives.test.js.
 class SucceedingXMLHttpRequest {
   constructor () {
     this.upload = {};
@@ -353,13 +356,10 @@ describe('UploadButton - the injectable extraction call', () => {
   });
 
   test(
-    'a resolved extraction is called with the uploaded archive\'s path, shows ' +
-    'the in-flight count, then closes the modal and refreshes',
+    'a resolved extraction is called with the uploaded archive\'s path, and ' +
+    'the modal still closes',
     async () => {
-      let resolveExtraction;
-      const extractArchives = fn(() => new Promise((resolve) => {
-        resolveExtraction = resolve;
-      }));
+      const extractArchives = fn(() => Promise.resolve());
       const onRefresh = fn();
       const {input} = renderUploadButton({
         extractArchivesAvailable: true,
@@ -379,50 +379,13 @@ describe('UploadButton - the injectable extraction call', () => {
         expect(extractArchives).toHaveBeenCalledTimes(1);
       }, {timeout: 5000});
       expect(extractArchives).toHaveBeenCalledWith('storage-1', ['folder/archive.zip']);
-      expect(screen.getByText('Extracting 1 archive...')).toBeInTheDocument();
-      expect(onRefresh).not.toHaveBeenCalled();
 
-      resolveExtraction();
-
+      // The modal does not wait on the extraction call before closing - it
+      // closes on the same 2 s timer an ordinary upload uses, and
+      // `onRefresh` only fires from inside that close.
       await waitFor(() => {
         expect(onRefresh).toHaveBeenCalled();
       }, {timeout: 5000});
-    },
-    10000
-  );
-
-  test(
-    'a rejected extraction renders the error and leaves the modal open; ' +
-    'closing it still refreshes',
-    async () => {
-      const extractArchives = fn(() => Promise.reject(new Error('extraction failed')));
-      const onRefresh = fn();
-      const {input} = renderUploadButton({
-        extractArchivesAvailable: true,
-        storageId: 'storage-1',
-        extractArchives,
-        onRefresh
-      });
-
-      await selectFiles(input, [zipFile('archive.zip')]);
-      await waitFor(() => {
-        expect(screen.getByRole('button', {name: 'Upload and extract'})).toBeInTheDocument();
-      });
-
-      await click(screen.getByRole('button', {name: 'Upload and extract'}));
-
-      await waitFor(() => {
-        expect(screen.getByText('extraction failed')).toBeInTheDocument();
-      }, {timeout: 5000});
-      expect(onRefresh).not.toHaveBeenCalled();
-
-      await act(async () => {
-        instance.hideUploadInfo();
-      });
-
-      await waitFor(() => {
-        expect(onRefresh).toHaveBeenCalled();
-      });
     },
     10000
   );
