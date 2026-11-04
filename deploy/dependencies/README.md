@@ -6,6 +6,7 @@ folder builds one dependency from pinned sources, and checks the result.
 | Folder | Builds |
 |---|---|
 | [python3](python3/README.md) | the Python 3.12 distribution of `/usr/local/python3.12` |
+| [pypi3](pypi3/README.md) | the pypi3 mirror, the Python package index that the platform installs from |
 
 A folder is a dependency when it has:
 
