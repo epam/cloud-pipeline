@@ -65,6 +65,38 @@ it('selects the latest version of a tool without a default version', async () =>
   await waitFor(() => expect(onChange).toHaveBeenCalledWith('registry/library/tool:latest'));
 });
 
+it('selects the default version for a pool image without a tag', async () => {
+  const onChange = fn();
+  renderWithStores(
+    <AddDockerRegistryControl docker="registry/library/tool" onChange={onChange} />,
+    {dockerRegistries: dockerRegistries({id: 1, image: 'library/tool', defaultVersion: '1.2'})}
+  );
+
+  await waitFor(() => expect(onChange).toHaveBeenCalledWith('registry/library/tool:1.2'));
+  expect(onChange).not.toHaveBeenCalledWith('registry/library/tool:latest');
+});
+
+// e.g. a hot node pool dialog, which is opened again, resets the control to the saved image
+it('selects the default version, once the same pool image comes again without a tag', async () => {
+  const onChange = fn();
+  const stores = {
+    dockerRegistries: dockerRegistries({id: 1, image: 'library/tool', defaultVersion: '1.2'})
+  };
+  const {container} = renderWithStores(
+    <AddDockerRegistryControl docker="registry/library/tool:1.1" onChange={onChange} />,
+    stores
+  );
+  await waitFor(() => expect(onChange).toHaveBeenCalledWith('registry/library/tool:1.1'));
+
+  renderWithStores(
+    <AddDockerRegistryControl docker="registry/library/tool" onChange={onChange} />,
+    stores,
+    {container}
+  );
+
+  await waitFor(() => expect(onChange).toHaveBeenCalledWith('registry/library/tool:1.2'));
+});
+
 it('selects the default version of a tool, which replaces the pool image', async () => {
   const onChange = fn();
   renderWithStores(

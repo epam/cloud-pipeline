@@ -403,7 +403,8 @@ export default class DockerImageBrowser extends React.Component {
             if (tagsError) {
               return <i>Error loading tags</i>;
             }
-            const defaultTag = getToolDefaultVersion(tool, tags);
+            // only a version set as the default one is labeled, not the latest one used instead
+            const {defaultVersion} = tool;
             return (
               <Select
                 onSelect={onSelectTag(tool)}
@@ -414,7 +415,7 @@ export default class DockerImageBrowser extends React.Component {
                   tags.map(tag => {
                     return (
                       <Select.Option key={tag} data={tag}>
-                        {tag === defaultTag ? `${tag} (default)` : tag}
+                        {tag === defaultVersion ? `${tag} (default)` : tag}
                       </Select.Option>
                     );
                   })

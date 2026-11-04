@@ -306,7 +306,7 @@ class LaunchVSForm extends React.Component {
                           key={tag}
                           value={tag}
                         >
-                          {tag === getToolDefaultVersion(tool, tags) ? `${tag} (default)` : tag}
+                          {tag === tool.defaultVersion ? `${tag} (default)` : tag}
                         </Select.Option>
                       ))
                     }

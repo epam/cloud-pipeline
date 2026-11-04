@@ -69,7 +69,10 @@ class AddDockerRegistryControl extends React.Component {
       const [i, v] = iv.split(':');
       this.setState({
         docker: [r, g, i].join('/'),
-        version: v || 'latest'
+        // an image without a tag stands for the tool's default version, selected once loaded,
+        // so the versions are loaded again, even if they are of the same image
+        version: v,
+        ...(v ? {} : {versionsHash: undefined})
       }, this.fetchVersions);
     } else {
       this.setState({
@@ -309,7 +312,7 @@ class AddDockerRegistryControl extends React.Component {
     const {pending, version, versions, dockerImageVersionField} = this.state;
     if (versions.length > 0) {
       const filteredVersions = versions.filter((v) => {
-        if (v.toLowerCase() === version.toLowerCase()) {
+        if (version && v.toLowerCase() === version.toLowerCase()) {
           return true;
         }
         if (dockerImageVersionField && dockerImageVersionField.length) {

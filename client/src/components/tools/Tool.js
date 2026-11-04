@@ -70,7 +70,11 @@ import {
   isCustomDefaultVersion,
   LATEST_VERSION
 } from '../../utils/tool-default-version';
-import {DefaultVersionButton, DefaultVersionLabel} from './default-version';
+import {
+  DefaultVersionButton,
+  DefaultVersionLabel,
+  MissingDefaultVersionAlert
+} from './default-version';
 import LoadToolAttributes from '../../models/tools/LoadToolInfo';
 import LoadToolScanPolicy from '../../models/tools/LoadToolScanPolicy';
 import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhiteList';
@@ -341,7 +345,10 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   deleteToolVersionConfirm = (version, aliases) => {
     const deleteToolVersion = this.deleteToolVersion;
-    deleteToolConfirmModal({tool: this.props.toolId, version, aliases}, this.props.router)
+    deleteToolConfirmModal(
+      {tool: this.props.toolId, version, aliases, versions: this.versionNames},
+      this.props.router
+    )
       .then((confirm) => {
         if (confirm) {
           return deleteToolVersion(version);
@@ -1108,7 +1115,6 @@ export default class Tool extends localization.LocalizedReactComponent {
                   <DefaultVersionLabel
                     tool={this.props.tool.loaded ? this.props.tool.value : undefined}
                     version={name}
-                    versions={this.versionNames}
                   />
                 </th>
                 <td className={styles.versionScanningInfoGraph}>
@@ -1195,6 +1201,16 @@ export default class Tool extends localization.LocalizedReactComponent {
       render: (version) => {
         return (
           <Row type="flex" justify="end" className={styles.toolVersionActions}>
+            {
+              roleModel.writeAllowed(this.props.tool.value) && !this.link &&
+              (
+                <DefaultVersionButton
+                  tool={this.props.tool.value}
+                  version={version.name}
+                  onChange={this.onDefaultVersionChanged}
+                />
+              )
+            }
             {this.renderVersionListToggle(version)}
             {
               !/^windows$/i.test(version.platform) &&
@@ -1221,17 +1237,6 @@ export default class Tool extends localization.LocalizedReactComponent {
                 this.renderRunButton(
                   version.name
                 )
-              )
-            }
-            {
-              roleModel.writeAllowed(this.props.tool.value) && !this.link &&
-              (
-                <DefaultVersionButton
-                  tool={this.props.tool.value}
-                  version={version.name}
-                  versions={this.versionNames}
-                  onChange={this.onDefaultVersionChanged}
-                />
               )
             }
             {
@@ -1277,6 +1282,16 @@ export default class Tool extends localization.LocalizedReactComponent {
             type="error"
             message={this.props.versions.error}
             style={{margin: '5px 0 10px 0'}} />
+        }
+        {
+          this.props.versions.loaded && this.props.tool.loaded &&
+          <MissingDefaultVersionAlert
+            tool={this.props.tool.value}
+            versions={this.versionNames}
+            disabled={!roleModel.writeAllowed(this.props.tool.value) || this.link}
+            onChange={this.onDefaultVersionChanged}
+            style={{margin: '5px 0 10px 0'}}
+          />
         }
         <Input
           value={versionFilterValue}
@@ -2371,14 +2386,19 @@ export default class Tool extends localization.LocalizedReactComponent {
     } else if (!this.hasPendingScanning && this.props.versions.isUpdating) {
       this.props.versions.clearInterval();
     }
+    // the default version changes, once it is set, removed or deleted;
+    // it is not known, while the versions are loading
     if (
-      this.defaultTag &&
-      (!this.defaultVersionSettings || this.defaultVersionSettingsTag !== this.defaultTag)
+      this.props.versions.loaded &&
+      this.defaultVersionSettingsTag !== (this.defaultTag || undefined)
     ) {
-      // the default version changes, once it is set, removed or deleted
-      this.defaultVersionSettingsTag = this.defaultTag;
-      this.defaultVersionSettings = new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag);
-      this.defaultVersionSettings.fetch();
+      this.defaultVersionSettingsTag = this.defaultTag || undefined;
+      this.defaultVersionSettings = this.defaultTag
+        ? new LoadToolVersionSettings(this.props.tool.value.id, this.defaultTag)
+        : undefined;
+      if (this.defaultVersionSettings) {
+        this.defaultVersionSettings.fetch();
+      }
     }
     if (
       this.props.tool.loaded &&

@@ -18,10 +18,8 @@ import React from 'react';
 import {hover, render, screen} from '@test';
 import DefaultVersionLabel from './default-version-label';
 
-const versions = ['latest', '1.2', '1.1'];
-
 it('marks the default version set for a tool', async () => {
-  render(<DefaultVersionLabel tool={{defaultVersion: '1.2'}} version="1.2" versions={versions} />);
+  render(<DefaultVersionLabel tool={{defaultVersion: '1.2'}} version="1.2" />);
 
   await hover(screen.getByText('default'));
 
@@ -29,42 +27,19 @@ it('marks the default version set for a tool', async () => {
     .toBeInTheDocument();
 });
 
-it('marks the latest version of a tool without a default version', async () => {
-  render(<DefaultVersionLabel tool={{}} version="latest" versions={versions} />);
+it('does not mark the latest version of a tool without a default version', () => {
+  render(<DefaultVersionLabel tool={{}} version="latest" />);
 
-  await hover(screen.getByText('default'));
-
-  expect(await screen.findByText('A default version is not set, so the latest version is used'))
-    .toBeInTheDocument();
-});
-
-it('marks the only version of a tool without a default and a latest version', async () => {
-  render(<DefaultVersionLabel tool={{}} version="1.1" versions={['1.1']} />);
-
-  await hover(screen.getByText('default'));
-
-  expect(await screen.findByText('A default version is not set, so the only version is used'))
-    .toBeInTheDocument();
+  expect(screen.queryByText('default')).not.toBeInTheDocument();
 });
 
 it('does not mark other versions', () => {
   render(
     <div>
-      <DefaultVersionLabel tool={{defaultVersion: '1.2'}} version="latest" versions={versions} />
-      <DefaultVersionLabel tool={{defaultVersion: '1.2'}} version="1.1" versions={versions} />
+      <DefaultVersionLabel tool={{defaultVersion: '1.2'}} version="latest" />
+      <DefaultVersionLabel tool={{defaultVersion: '1.2'}} version="1.1" />
     </div>
   );
 
   expect(screen.queryByText('default')).not.toBeInTheDocument();
-});
-
-it('tells that the default version of a tool does not exist anymore', async () => {
-  const tool = {defaultVersion: '1.3'};
-  render(<DefaultVersionLabel tool={tool} version="latest" versions={versions} />);
-
-  await hover(screen.getByText('default'));
-
-  expect(
-    await screen.findByText('The default version 1.3 does not exist, so the latest version is used')
-  ).toBeInTheDocument();
 });

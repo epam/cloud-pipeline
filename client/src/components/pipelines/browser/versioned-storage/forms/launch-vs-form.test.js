@@ -50,8 +50,9 @@ it('selects and labels the default version of a tool', async () => {
   expect(await screen.findByText('1.2 (default)')).toBeInTheDocument();
 });
 
-it('selects and labels the latest version of a tool without a default version', async () => {
+it('selects, but does not label, the latest version, if a default one is not set', async () => {
   await selectTool({id: 1, image: 'library/tool'});
 
-  expect(await screen.findByText('latest (default)')).toBeInTheDocument();
+  expect(await screen.findByText('latest')).toBeInTheDocument();
+  expect(screen.queryByText('latest (default)')).not.toBeInTheDocument();
 });

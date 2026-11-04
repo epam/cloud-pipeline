@@ -18,92 +18,84 @@ import React from 'react';
 import {click, fn, render, screen, stubApi, waitFor} from '@test';
 import DefaultVersionButton from './default-version-button';
 
-const versions = ['latest', '1.2', '1.1'];
+// the dialog closes with an animation, so the helper waits until it is removed
+async function confirm (title, answer = 'Yes') {
+  expect(await screen.findByText(title)).toBeInTheDocument();
+  await click(screen.getByRole('button', {name: answer}));
+  await waitFor(() => expect(screen.queryByText(title)).not.toBeInTheDocument());
+}
 
-it('sets a version as the default one', async () => {
+it('sets a version as the default one, once a user confirms it', async () => {
   const api = stubApi({'/tool/1/defaultVersion?version=1.1': {id: 1, defaultVersion: '1.1'}});
   const onChange = fn();
   render(
     <DefaultVersionButton
       tool={{id: 1, defaultVersion: '1.2'}}
       version="1.1"
-      versions={versions}
       onChange={onChange}
     />
   );
 
   await click(screen.getByRole('button', {name: 'Set as default'}));
+  await confirm("Are you sure you want to set version '1.1' as default?");
 
   await waitFor(() => expect(onChange).toHaveBeenCalledWith({id: 1, defaultVersion: '1.1'}));
   expect(api.calls).toHaveLength(1);
   expect(api.calls[0]).toEqual(expect.objectContaining({method: 'POST'}));
 });
 
-it('removes the default version', async () => {
+it('unsets the default version, once a user confirms it', async () => {
   const api = stubApi({'/tool/1/defaultVersion': {id: 1}});
   const onChange = fn();
   render(
     <DefaultVersionButton
       tool={{id: 1, defaultVersion: '1.2'}}
       version="1.2"
-      versions={versions}
       onChange={onChange}
     />
   );
 
-  await click(screen.getByRole('button', {name: 'Remove default'}));
+  await click(screen.getByRole('button', {name: 'Unset default'}));
+  await confirm("Are you sure you want to unset version '1.2' as default?");
 
   await waitFor(() => expect(onChange).toHaveBeenCalled());
   expect(api.calls).toHaveLength(1);
   expect(api.calls[0]).toEqual(expect.objectContaining({method: 'DELETE'}));
 });
 
+it('does not change the default version, if a user cancels it', async () => {
+  const api = stubApi();
+  const onChange = fn();
+  render(
+    <DefaultVersionButton
+      tool={{id: 1, defaultVersion: '1.2'}}
+      version="1.2"
+      onChange={onChange}
+    />
+  );
+
+  await click(screen.getByRole('button', {name: 'Unset default'}));
+  await confirm("Are you sure you want to unset version '1.2' as default?", 'No');
+
+  expect(api.calls).toHaveLength(0);
+  expect(onChange).not.toHaveBeenCalled();
+});
+
 it('does not call back, if the request fails', async () => {
   const api = stubApi();
   api.fail('/tool/1/defaultVersion?version=1.1', 'Version does not exist');
   const onChange = fn();
-  render(
-    <DefaultVersionButton tool={{id: 1}} version="1.1" versions={versions} onChange={onChange} />
-  );
+  render(<DefaultVersionButton tool={{id: 1}} version="1.1" onChange={onChange} />);
 
   await click(screen.getByRole('button', {name: 'Set as default'}));
+  await confirm("Are you sure you want to set version '1.1' as default?");
 
   await waitFor(() => expect(api.calls).toHaveLength(1));
   expect(onChange).not.toHaveBeenCalled();
 });
 
-it('is not shown for the latest version, while a default version is not set', () => {
-  render(<DefaultVersionButton tool={{id: 1}} version="latest" versions={versions} />);
-
-  expect(screen.queryByRole('button')).not.toBeInTheDocument();
-});
-
-it('offers to set the latest version as the default one, if another default version is set', () => {
-  render(
-    <DefaultVersionButton
-      tool={{id: 1, defaultVersion: '1.2'}}
-      version="latest"
-      versions={versions}
-    />
-  );
+it('offers to set the latest version as default, while a default version is not set', () => {
+  render(<DefaultVersionButton tool={{id: 1}} version="latest" />);
 
   expect(screen.getByRole('button', {name: 'Set as default'})).toBeInTheDocument();
-});
-
-it('removes a default version, which does not exist, from the version used instead', async () => {
-  const api = stubApi({'/tool/1/defaultVersion': {id: 1}});
-  const onChange = fn();
-  render(
-    <DefaultVersionButton
-      tool={{id: 1, defaultVersion: '1.3'}}
-      version="latest"
-      versions={versions}
-      onChange={onChange}
-    />
-  );
-
-  await click(screen.getByRole('button', {name: 'Remove default'}));
-
-  await waitFor(() => expect(onChange).toHaveBeenCalled());
-  expect(api.calls[0]).toEqual(expect.objectContaining({method: 'DELETE'}));
 });

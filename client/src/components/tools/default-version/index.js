@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-export {
-  default as DefaultVersionLabel,
-  getDefaultVersionDescription
-} from './default-version-label';
+export {default as DefaultVersionLabel} from './default-version-label';
 export {default as DefaultVersionButton} from './default-version-button';
+export {default as MissingDefaultVersionAlert} from './missing-default-version-alert';

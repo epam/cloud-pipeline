@@ -22,7 +22,7 @@ import LoadTool from '../../../models/tools/LoadTool';
 import dockerRegistries from '../../../models/tools/DockerRegistriesTree';
 import PipelineRunSingleFilter from '../../../models/pipelines/PipelineRunSingleFilter';
 import registryName from '../registryName';
-import {LATEST_VERSION} from '../../../utils/tool-default-version';
+import {getToolDefaultVersion, LATEST_VERSION} from '../../../utils/tool-default-version';
 
 class ToolDeletionWarning extends React.Component {
   constructor (props) {
@@ -53,7 +53,7 @@ class ToolDeletionWarning extends React.Component {
       total,
       onNavigateToRuns,
       deletedDefaultVersion,
-      latestDeleted
+      replacementVersion
     } = opts;
     this.displayPromise = new Promise((resolve) => {
       const resolveFn = async (...opts) => {
@@ -69,7 +69,7 @@ class ToolDeletionWarning extends React.Component {
           resolve: undefined,
           onNavigateToRuns: undefined,
           deletedDefaultVersion: undefined,
-          latestDeleted: false
+          replacementVersion: undefined
         });
       };
       this.setState({
@@ -84,7 +84,7 @@ class ToolDeletionWarning extends React.Component {
         resolve: resolveFn,
         onNavigateToRuns,
         deletedDefaultVersion,
-        latestDeleted
+        replacementVersion
       });
     });
     return this.displayPromise;
@@ -162,7 +162,7 @@ class ToolDeletionWarning extends React.Component {
   };
 
   renderDefaultVersionWarning = () => {
-    const {name, deletedDefaultVersion, latestDeleted} = this.state;
+    const {name, deletedDefaultVersion, replacementVersion} = this.state;
     if (deletedDefaultVersion) {
       return (
         <Row style={{marginTop: 5, marginBottom: 5}}>
@@ -178,19 +178,28 @@ class ToolDeletionWarning extends React.Component {
             )
           }
           {
-            latestDeleted
-              ? (
-                <span>
-                  Once it is deleted, the tool has no default version,
-                  and no <i>latest</i> version either.
-                </span>
-              )
-              : (
-                <span>
-                  Once it is deleted, the tool has no default version,
-                  and the <i>latest</i> version (or the only one) is used instead.
-                </span>
-              )
+            replacementVersion === LATEST_VERSION && (
+              <span>
+                Once it is deleted, the tool has no default version,
+                and the <i>latest</i> version is used instead.
+              </span>
+            )
+          }
+          {
+            replacementVersion && replacementVersion !== LATEST_VERSION && (
+              <span>
+                Once it is deleted, the tool has no default version,
+                and the only version <i>{replacementVersion}</i> is used instead.
+              </span>
+            )
+          }
+          {
+            !replacementVersion && (
+              <span>
+                Once it is deleted, the tool has no default version,
+                and no <i>latest</i> version either.
+              </span>
+            )
           }
         </Row>
       );
@@ -299,13 +308,16 @@ async function fetchActiveRuns (dockerImages = []) {
 const STATUSES_SEARCH_STRING =
   'run.status=RUNNING or run.status=PAUSING or run.status=PAUSED or run.status=RESUMING';
 
-function deleteToolConfirm ({registry, group, tool: toolId, version, aliases = [], link}, router) {
+function deleteToolConfirm (
+  {registry, group, tool: toolId, version, aliases = [], versions = [], link},
+  router
+) {
   return new Promise(async (resolve) => {
     const dockerImages = [];
     const hide = message.loading('Fetching active jobs info...', 0);
     let showGroupAlert = false;
     let deletedDefaultVersion;
-    let latestDeleted = false;
+    let replacementVersion;
     let advancedSearchString;
     if (toolId) {
       const toolInfo = new LoadTool(toolId);
@@ -316,7 +328,11 @@ function deleteToolConfirm ({registry, group, tool: toolId, version, aliases = [
         const deletedVersions = version ? [version, ...aliases] : [];
         if (defaultVersion && deletedVersions.includes(defaultVersion)) {
           deletedDefaultVersion = defaultVersion;
-          latestDeleted = deletedVersions.includes(LATEST_VERSION);
+          // the version, which a user gets instead, if they do not choose one
+          replacementVersion = getToolDefaultVersion(
+            undefined,
+            versions.filter(v => !deletedVersions.includes(v))
+          );
         }
         dockerImages.push(`${toolRegistry}/${image}${version ? `:${version}` : ''}`);
         advancedSearchString = `docker.image="${toolRegistry}/${image}${version ? `:${version}` : '*'}"`;
@@ -390,7 +406,7 @@ function deleteToolConfirm ({registry, group, tool: toolId, version, aliases = [
         total,
         onNavigateToRuns: navigate,
         deletedDefaultVersion,
-        latestDeleted
+        replacementVersion
       }
     );
     resolve(success);

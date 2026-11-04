@@ -3208,7 +3208,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.toolAllowSensitive = im.allowSensitive;
             this.toolPlatform = im.platform;
             this.toolSettingsPending = true;
-            this._toolSettings = new LoadToolVersionSettings(im.id, version);
+            const toolVersion = version || getTaglessImageVersion(im);
+            this._toolSettings = new LoadToolVersionSettings(im.id, toolVersion);
             await this._toolSettings.fetchIfNeededOrWait();
 
             if (this._toolSettings && this._toolSettings.loaded && this._toolSettings.value &&
@@ -3238,10 +3239,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.rescheduleRunInitialValue = undefined;
             }
 
-            const defaultCmdRequest = new ToolDefaultCommand(
-              im.id,
-              version || getTaglessImageVersion(im)
-            );
+            const defaultCmdRequest = new ToolDefaultCommand(im.id, toolVersion);
             await defaultCmdRequest.fetch();
             if (defaultCmdRequest.loaded) {
               this.toolDefaultCmd = defaultCmdRequest.value;

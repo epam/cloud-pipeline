@@ -16,48 +16,25 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, message, Tooltip} from 'antd';
-import ToolDefaultVersionUpdate from '../../../models/tools/ToolDefaultVersionUpdate';
-import ToolDefaultVersionDelete from '../../../models/tools/ToolDefaultVersionDelete';
-import {
-  getToolDefaultVersion,
-  isCustomDefaultVersion
-} from '../../../utils/tool-default-version';
+import {Button, Icon, Tooltip} from 'antd';
+import {confirmDefaultVersion, updateDefaultVersion} from './update-default-version';
 
 const SET_DEFAULT = 'Set as default';
-const REMOVE_DEFAULT = 'Remove default';
+const UNSET_DEFAULT = 'Unset default';
 
 /**
- * A button, which sets a tool's version as the default one, or removes the default version,
- * if it is that version. It is not shown for a version, which is the default one implicitly
- * (the latest or the only one, while a default version is not set). If the default version
- * does not exist anymore, the button removes it from the version, which is used instead.
+ * A button, which sets a tool's version as the default one, or unsets it, if it is that version,
+ * once a user confirms it. It is shown for every version: the version, which is used,
+ * while a default version is not set (the latest or the only one), is not the default one.
  */
 class DefaultVersionButton extends React.Component {
   state = {
     pending: false
   };
 
-  get isCustomDefault () {
-    const {tool, version, versions} = this.props;
-    return isCustomDefaultVersion(tool, versions) && tool.defaultVersion === version;
-  }
-
-  get isImplicitDefault () {
-    const {tool, version, versions} = this.props;
-    return !this.isCustomDefault && version === getToolDefaultVersion(tool, versions);
-  }
-
-  get missingDefaultVersion () {
-    const {tool, versions} = this.props;
-    const {defaultVersion} = tool || {};
-    return defaultVersion && !(versions || []).includes(defaultVersion)
-      ? defaultVersion
-      : undefined;
-  }
-
-  get removesDefault () {
-    return this.isCustomDefault || (this.isImplicitDefault && !!this.missingDefaultVersion);
+  get isDefault () {
+    const {tool, version} = this.props;
+    return !!tool && !!version && tool.defaultVersion === version;
   }
 
   onClick = async (event) => {
@@ -66,21 +43,14 @@ class DefaultVersionButton extends React.Component {
       event.stopPropagation();
     }
     const {tool, version, onChange} = this.props;
-    const remove = this.removesDefault;
-    const hide = message.loading(
-      remove ? 'Removing the default version...' : `Setting version '${version}' as default...`,
-      0
-    );
+    const unset = this.isDefault;
+    if (!(await confirmDefaultVersion(version, unset))) {
+      return;
+    }
     this.setState({pending: true});
-    const request = remove
-      ? new ToolDefaultVersionDelete(tool.id)
-      : new ToolDefaultVersionUpdate(tool.id, version);
-    await request.send({});
-    hide();
+    const request = await updateDefaultVersion(tool.id, unset ? undefined : version);
     this.setState({pending: false});
-    if (request.error) {
-      message.error(request.error, 5);
-    } else if (onChange) {
+    if (!request.error && onChange) {
       await onChange(request.value);
     }
   };
@@ -95,17 +65,10 @@ class DefaultVersionButton extends React.Component {
     if (!tool || !version) {
       return null;
     }
-    const remove = this.removesDefault;
-    if (this.isImplicitDefault && !remove) {
-      return null;
-    }
-    const title = remove ? REMOVE_DEFAULT : SET_DEFAULT;
-    const missingDefaultVersion = this.missingDefaultVersion;
-    const tooltip = remove && missingDefaultVersion
-      ? `${REMOVE_DEFAULT}: version ${missingDefaultVersion} does not exist`
-      : title;
+    const isDefault = this.isDefault;
+    const title = isDefault ? UNSET_DEFAULT : SET_DEFAULT;
     return (
-      <Tooltip title={tooltip}>
+      <Tooltip title={title}>
         <Button
           aria-label={title}
           size="small"
@@ -114,7 +77,7 @@ class DefaultVersionButton extends React.Component {
           onClick={this.onClick}
           style={{lineHeight: 1}}
         >
-          {!pending && <Icon type={remove ? 'star' : 'star-o'} />}
+          {!pending && <Icon type={isDefault ? 'check-circle' : 'check-circle-o'} />}
         </Button>
       </Tooltip>
     );
@@ -125,7 +88,6 @@ DefaultVersionButton.propTypes = {
   disabled: PropTypes.bool,
   tool: PropTypes.object,
   version: PropTypes.string,
-  versions: PropTypes.arrayOf(PropTypes.string),
   onChange: PropTypes.func
 };
 

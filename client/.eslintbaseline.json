@@ -507,7 +507,7 @@
     "object-curly-spacing": 2
   },
   "src/components/tools/Tool.js": {
-    "max-len": 12
+    "max-len": 11
   },
   "src/components/tools/elements/ToolEndpointsFormItem.js": {
     "max-len": 1,

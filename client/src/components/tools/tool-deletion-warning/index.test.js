@@ -65,7 +65,10 @@ it('warns that the default version of the same image is going to be deleted', as
 });
 
 it('tells that no latest version is left, if it is an image of the default version', async () => {
-  const confirmation = deleteToolConfirm({tool: 1, version: 'latest', aliases: ['1.2']}, router);
+  const confirmation = deleteToolConfirm(
+    {tool: 1, version: 'latest', aliases: ['1.2'], versions: ['latest', '1.2', '1.1', '1.0']},
+    router
+  );
 
   expect(await screen.findByText(/Once it is deleted/).then(e => e.textContent)).toBe(
     'Once it is deleted, the tool has no default version, and no latest version either.'
@@ -88,4 +91,33 @@ it('does not tell about the same image when the default version itself is delete
   expect(await screen.findByText(DEFAULT_VERSION_WARNING)).toBeInTheDocument();
   expect(screen.queryByText(/refers to the same image/)).not.toBeInTheDocument();
   await cancel(confirmation);
+});
+
+async function expectReplacement (versions, text) {
+  const confirmation = deleteToolConfirm({tool: 1, version: '1.2', versions}, router);
+
+  expect(await screen.findByText(/Once it is deleted/).then(e => e.textContent)).toBe(text);
+  await cancel(confirmation);
+}
+
+it('tells that the latest version is used instead of the deleted default version', async () => {
+  await expectReplacement(
+    ['latest', '1.2', '1.1'],
+    'Once it is deleted, the tool has no default version, and the latest version is used instead.'
+  );
+});
+
+it('tells that the only version left is used instead of the deleted default version', async () => {
+  await expectReplacement(
+    ['1.2', '1.1'],
+    'Once it is deleted, the tool has no default version, ' +
+    'and the only version 1.1 is used instead.'
+  );
+});
+
+it('tells that no version is used, if several versions are left without the latest', async () => {
+  await expectReplacement(
+    ['1.2', '1.1', '1.0'],
+    'Once it is deleted, the tool has no default version, and no latest version either.'
+  );
 });

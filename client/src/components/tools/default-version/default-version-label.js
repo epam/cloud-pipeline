@@ -18,43 +18,25 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Tooltip} from 'antd';
-import {
-  getToolDefaultVersion,
-  isCustomDefaultVersion,
-  LATEST_VERSION
-} from '../../../utils/tool-default-version';
 import styles from './default-version.css';
 
-export function getDefaultVersionDescription (tool, versions = []) {
-  const defaultVersion = getToolDefaultVersion(tool, versions);
-  if (!defaultVersion) {
-    return undefined;
-  }
-  if (isCustomDefaultVersion(tool, versions)) {
-    return 'This version is launched, if a version is not specified';
-  }
-  const used = defaultVersion === LATEST_VERSION ? 'the latest version' : 'the only version';
-  const {defaultVersion: missingDefaultVersion} = tool || {};
-  if (missingDefaultVersion) {
-    // the default version tag was removed from the registry
-    return `The default version ${missingDefaultVersion} does not exist, so ${used} is used`;
-  }
-  return `A default version is not set, so ${used} is used`;
-}
-
+/**
+ * The "default" label of a tool's version, which is set as the default one.
+ * The version, which is used, while a default version is not set
+ * (the latest or the only one), is not labeled.
+ */
 function DefaultVersionLabel (props) {
   const {
     className,
     style,
     tool,
-    version,
-    versions
+    version
   } = props;
-  if (!version || version !== getToolDefaultVersion(tool, versions)) {
+  if (!tool || !version || tool.defaultVersion !== version) {
     return null;
   }
   return (
-    <Tooltip title={getDefaultVersionDescription(tool, versions)}>
+    <Tooltip title="This version is launched, if a version is not specified">
       <span
         className={classNames(className, 'cp-tag', 'accent', styles.label)}
         style={style}
@@ -69,8 +51,7 @@ DefaultVersionLabel.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   tool: PropTypes.object,
-  version: PropTypes.string,
-  versions: PropTypes.arrayOf(PropTypes.string)
+  version: PropTypes.string
 };
 
 export default DefaultVersionLabel;
