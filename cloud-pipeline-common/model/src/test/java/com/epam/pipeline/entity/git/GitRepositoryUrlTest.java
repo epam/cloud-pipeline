@@ -110,6 +110,11 @@ public class GitRepositoryUrlTest {
                     "https://username:pAssw0rd@git.company-name-42.com:42/graphic/awesome-game.git",
                     PROTOCOL, of(USERNAME), of(PASSWORD), "git.company-name-42.com:42", of(NAMESPACE), of(PROJECT)
                 },
+                {
+                    "password with dot",
+                    "https://username:pA.ssw0rd@git.company-name-42.com/graphic/awesome-game.git",
+                    PROTOCOL, of(USERNAME), of("pA.ssw0rd"), "git.company-name-42.com", of(NAMESPACE), of(PROJECT)
+                },
             });
         }
 
