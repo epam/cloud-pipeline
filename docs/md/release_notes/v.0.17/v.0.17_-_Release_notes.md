@@ -1888,7 +1888,7 @@ In **`v0.17`**, any version of a tool can be set as its default version. The def
 - the version pickers of the launch form and of the versioned storage launch mark it as **default**
 - a commit gives the new version the settings of the default version of the tool, which the run was launched from, and doesn't push the `latest` version into a tool, which has a default version set
 
-Users with the **WRITE** permission for a tool set and remove the default version at the **Versions** tab of the tool. Until a default version is set, and once it is removed or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
+Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
 
 For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
 
