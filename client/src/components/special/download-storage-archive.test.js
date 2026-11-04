@@ -345,7 +345,7 @@ describe('handleDownloadArchive', () => {
     await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
 
     expect(messageApi.info).toHaveBeenCalledWith(
-      'Archive download has been queued. Follow its progress under "Show downloads".',
+      'Archive download has been queued. Follow its progress under "Show storage tasks".',
       5
     );
     expect(messageApi.success).not.toHaveBeenCalled();
@@ -375,11 +375,11 @@ describe('handleDownloadArchive', () => {
     const [content] = messageApi.info.mock.calls[0];
     const {container} = render(content);
     expect(container.textContent).toBe(
-      'Archive download has been queued. Follow its progress under "Show downloads".'
+      'Archive download has been queued. Follow its progress under "Show storage tasks".'
     );
 
     // No implicit `link` role on an `<a>` with no `href` - queried by text.
-    await click(screen.getByText('Show downloads'));
+    await click(screen.getByText('Show storage tasks'));
 
     expect(onShowDownloads).toHaveBeenCalledTimes(1);
     // Dismissed before (or regardless of) opening the modal, so the toast

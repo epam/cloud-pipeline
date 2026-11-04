@@ -1085,9 +1085,9 @@ export default class DataStorage extends React.Component {
   };
 
   // The one way the Downloads modal opens - the presentation dropdown's own
-  // `downloads` action below, and the queued-task toasts' "Show downloads"
-  // link (submitDownloadArchive and the UploadButton it renders), both reach
-  // this rather than each inlining its own `setState`.
+  // `downloads` action below, and the queued-task toasts' "Show storage
+  // tasks" link (submitDownloadArchive and the UploadButton it renders), both
+  // reach this rather than each inlining its own `setState`.
   showDownloadsModal = () => {
     this.setState({downloadsModalVisible: true});
   };

@@ -222,7 +222,7 @@ class UploadButton extends React.Component {
         // Fired and left to run: `handleExtractArchives` owns the toast and
         // its own error handling, and the modal does not sit open waiting
         // for it. `this.props.onShowDownloads` is threaded straight through -
-        // it is what turns the toast's "Show downloads" into a link.
+        // it is what turns the toast's "Show storage tasks" into a link.
         void handleExtractArchives(
           this.props.storageId,
           newPaths,

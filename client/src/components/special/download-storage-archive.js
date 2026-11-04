@@ -289,8 +289,8 @@ export async function archiveDownloadAllowed (asyncTasks) {
  * @param {function} [onShowDownloads] - opens the Downloads modal; a new,
  *   last parameter so existing callers and tests passing five arguments keep
  *   working. With none given, the queued toast falls back to the plain
- *   string it has always been - it still names the menu item ("Show
- *   downloads", in the storage view's presentation dropdown - see
+ *   string it has always been - it still names the menu item ("Show storage
+ *   tasks", in the storage view's presentation dropdown - see
  *   renderPresentationConfiguration in pipelines/browser/data-storage/
  *   index.js), because a user who has just queued an archive otherwise has
  *   nothing to go looking for.

@@ -19,7 +19,11 @@ import React from 'react';
 // The presentation dropdown's own action label (renderPresentationConfiguration,
 // pipelines/browser/data-storage/index.js) - read from here rather than
 // repeated there, so the menu item and the sentence below cannot drift apart.
-export const SHOW_DOWNLOADS_LABEL = 'Show downloads';
+// The constant keeps this name; the user reads its value as "Show storage
+// tasks" - the modal it opens (downloads-modal.js) is named "Storage tasks"
+// to the user for the same reason: it is an async-task table, not only
+// downloads, now that an extraction task can land in it too.
+export const SHOW_DOWNLOADS_LABEL = 'Show storage tasks';
 
 /**
  * The content a queued-task toast shares between the two callers that queue

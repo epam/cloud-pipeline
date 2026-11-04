@@ -212,7 +212,7 @@ describe('handleExtractArchives', () => {
     await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract);
 
     expect(messageApi.info).toHaveBeenCalledWith(
-      'Archive extraction has been queued. Follow its progress under "Show downloads".',
+      'Archive extraction has been queued. Follow its progress under "Show storage tasks".',
       5
     );
     expect(messageApi.error).not.toHaveBeenCalled();
@@ -238,11 +238,11 @@ describe('handleExtractArchives', () => {
     const [content] = messageApi.info.mock.calls[0];
     const {container} = render(content);
     expect(container.textContent).toBe(
-      'Archive extraction has been queued. Follow its progress under "Show downloads".'
+      'Archive extraction has been queued. Follow its progress under "Show storage tasks".'
     );
 
     // No implicit `link` role on an `<a>` with no `href` - queried by text.
-    await click(screen.getByText('Show downloads'));
+    await click(screen.getByText('Show storage tasks'));
 
     expect(onShowDownloads).toHaveBeenCalledTimes(1);
     expect(hideQueued).toHaveBeenCalledTimes(1);

@@ -94,7 +94,7 @@ describe('DownloadsModal', () => {
   // again before the suite's own `afterEach(cleanup)` unmounts it, through
   // `renderWithStores` into the same container rather than a hand-rolled
   // `<Provider>` (rule 11) - or the next test would see a leftover
-  // "Downloads" dialog still in the document.
+  // "Storage tasks" dialog still in the document.
   let openModal = null;
 
   afterEach(() => {
@@ -140,7 +140,7 @@ describe('DownloadsModal', () => {
 
     renderModal();
 
-    expect(screen.getByText('Downloads')).toBeInTheDocument();
+    expect(screen.getByText('Storage tasks')).toBeInTheDocument();
     // The table only exists once `DownloadsManager` itself has mounted
     // inside the Modal's body.
     expect(await screen.findByRole('table')).toBeInTheDocument();

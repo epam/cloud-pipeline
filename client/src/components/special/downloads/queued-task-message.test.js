@@ -36,7 +36,7 @@ describe('queuedTaskMessage', () => {
   });
 
   test(
-    'renders the identical sentence as a node, with Show downloads as a clickable link',
+    'renders the identical sentence as a node, with Show storage tasks as a clickable link',
     async () => {
       const onShowDownloads = fn();
       const {container} = render(queuedTaskMessage(SENTENCE, onShowDownloads));
