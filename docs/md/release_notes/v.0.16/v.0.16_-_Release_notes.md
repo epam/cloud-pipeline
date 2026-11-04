@@ -587,7 +587,7 @@ The platform no longer uses Python 2. Its Python code runs on Python 3.12, both 
 In a run:
 
 - When the run starts, it installs the platform's Python 3.12 distribution into `/usr/local/python3.12`. Python 2 (Miniconda2) is no longer installed. The distribution is downloaded from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL` (by default, the public Cloud Pipeline bucket). The new `CP_PYTHON3_DISTRO_URL` parameter sets another location. If the download fails, the run keeps the `/usr/local/python3.12` of the tool image (e.g. of a committed run) or uses a `python3.12` that the image has in `PATH`. If the image has neither, the run fails at startup.
-- `CP_PYTHON_PATH` points to this Python 3.12. The `pipeline` package (`pipe-common`), the FS Browser and the platform's scripts run with it. They require Python 3.10 or later.
+- `CP_PYTHON_PATH` points to this Python 3.12. The `pipeline` package (`pipe-common`), the FS Browser and the platform's scripts run with it. They require Python 3.12 or later.
 - The run links `/usr/local/bin/python3` and `/usr/local/bin/pip3` to this Python 3.12. So in a run, `python3` is the platform's Python 3.12, unless the tool image puts another `python3` before `/usr/local/bin` in `PATH` (e.g. `/opt/conda/bin`). This also applies to the images that keep their own Python in `/usr/local/bin`, e.g. the `python` images from Docker Hub. To use the Python of the image, call it by its full path (e.g. `/usr/bin/python3`) or by its version (e.g. `python3.11`). The run does not link `python`: to call the platform's Python 3.12, use `$CP_PYTHON_PATH`.
 - The run replaces `/usr/local/python3.12` and `/usr/local/openssl` of the tool image, if it has them, with its own.
 - `CP_PYTHON2_PATH` is no longer set. A script that calls `$CP_PYTHON2_PATH` must use `$CP_PYTHON_PATH`, and must run on Python 3.
@@ -612,6 +612,14 @@ In the platform services:
 - The WebDAV image installs `libffi3.1` from EPEL, so the NFS mount watcher can use `ctypes`.
 - The node reporter (`cp-node-reporter`) runs Python 3.12.
 - The tool that synchronizes users and tools between two deployments (`sync.sh`, from the installation contents) installs Python 3.12 into `/usr/local/python3.12`, if it is not there. The `CP_PYTHON3_DISTRO_URL` variable sets where it is downloaded from. It replaces `CP_CONDA_DISTRO_URL`.
+
+Several Python dependencies moved to versions with the known advisories fixed:
+
+- The `pipeline` package: certifi 2026.10.23, httplib2 0.32.1, idna 3.20, oauthlib 4.0.1, pyasn1 0.6.5, PyJWT 2.15.1, pywin32 312 (Windows), requests-oauthlib 2.0.0, rsa 4.9.1, setuptools 81.0.0, tornado 6.6 and urllib3 2.8.0. It now requires Python 3.12. The runs, the commit and pause scripts and the WebDAV image install the same setuptools 81.0.0, the last version that has `pkg_resources`.
+- The FS Browser and the NICE DCV desktop: Flask 3.1.3 and Flask-HTTPAuth 4.8.1. The NoMachine desktop: Flask 3.1.3.
+- The node reporter (`cp-node-reporter`): Flask 3.1.3, Werkzeug 3.1.9 and gunicorn 26.2.0, from PyPI when the image is built.
+
+The Python 3 package mirror serves these versions next to the earlier ones.
 
 ## GitLab 19 support
 

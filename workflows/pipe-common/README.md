@@ -5,7 +5,7 @@
 The proper approach is to use python virtual environment. It can be installed and activated using the following command.
 Also it should be set as a IDE python interpreter.
  
-pipe-common requires Python 3.10 or later; job containers run it with Python 3.12.
+pipe-common requires Python 3.12 or later; job containers run it with Python 3.12.
 
  ```bash
 python3.12 -m venv .env

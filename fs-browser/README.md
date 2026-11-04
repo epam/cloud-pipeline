@@ -4,7 +4,7 @@ FS Browser is the `python/flask` service that allows to expose compute node's fi
 
 ## Requirements
 
-- Python 3.10 or later (job containers run it on the bundled Python 3.12)
+- Python 3.12 or later (job containers run it on the bundled Python 3.12)
 - pipe cli
 - pipe common
 - flask
