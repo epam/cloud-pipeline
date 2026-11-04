@@ -50,21 +50,13 @@ export default class DownloadArchiveModal extends React.Component {
     pending: false
   };
 
-  // Set by the first submit and cleared when the modal opens again, or when a
-  // rejected submit lets the user try again. The modal stays clickable while
-  // it animates closed, so without it a double-click on OK, or Enter pressed
-  // twice, queues two archives. An instance field, not state: the second
-  // click must see it at once.
-  submitted = false;
-
   componentDidUpdate (prevProps) {
     // Seed from `defaultName` whenever the modal BECOMES visible, the same
     // trigger EditItemForm.componentDidUpdate uses — so reopening it offers a
     // fresh timestamped default rather than whatever the user typed last time.
-    // `pending` resets alongside `submitted` for the same reason: a reopened
-    // modal must not still be showing the previous attempt's spinner.
+    // `pending` resets too: a reopened modal must not still be showing the
+    // previous attempt's spinner.
     if (!prevProps.visible && this.props.visible) {
-      this.submitted = false;
       this.resetName();
     }
   }
@@ -79,35 +71,20 @@ export default class DownloadArchiveModal extends React.Component {
 
   handleSubmit = async () => {
     const name = (this.state.name || '').trim();
-    if (archiveNameError(name) || this.submitted || this.state.pending) {
+    if (archiveNameError(name) || this.state.pending) {
       return;
     }
-    this.submitted = true;
     this.setState({pending: true});
     try {
       await this.props.onSubmit(name);
-      // `pending` clears here too, not only on rejection: `defaultProps`
-      // supplies a resolving no-op `onSubmit`, and any future caller that
-      // resolves without ever flipping `visible` to `false` would otherwise
-      // leave this modal blocked forever with no way out. Clearing it is
-      // safe - no flash of an enabled form on the way out - because today's
-      // only caller, `submitDownloadArchive`
-      // (pipelines/browser/data-storage/index.js), calls
-      // `closeDownloadArchiveModal()` BEFORE the promise this modal awaited
-      // resolves, so `visible` is already `false` by the time this line
-      // runs. `submitted` is NOT reset here on either path, and still is
-      // what actually stops a second submit: React 15 batches `setState`
-      // inside a handler, so a synchronous second click or Enter would not
-      // yet observe `state.pending` and would slip through if `submitted`
-      // - a plain instance field, visible the instant it is set - were not
-      // guarding it too.
-      this.setState({pending: false});
     } catch (error) {
-      // Reported by the caller's own toast. Resetting `submitted` as well as
-      // `pending` here is what lets the user fix the name and press OK
-      // again.
-      this.submitted = false;
+      // The caller has shown the error already; unlocking lets the user fix the name and retry.
       this.setState({pending: false});
+      return;
+    }
+    // `pending` stays set while the modal animates closed, so a late click queues nothing.
+    if (this.props.onCancel) {
+      this.props.onCancel();
     }
   };
 

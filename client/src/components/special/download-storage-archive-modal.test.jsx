@@ -209,13 +209,15 @@ test('while onSubmit is pending, OK is disabled and loading, Cancel and the ' +
 test('when onSubmit rejects, the dialog stays in the document, OK, Cancel ' +
   'and the input re-enable, and editing the name and pressing OK calls ' +
   'onSubmit a second time', async () => {
+  const onCancel = fn();
   const onSubmit = fn()
     .mockImplementationOnce(() => Promise.reject(new Error('queueing failed')))
     .mockImplementationOnce(() => Promise.resolve());
-  renderModal({defaultName: 'archive-20261021-131302', onSubmit});
+  renderModal({defaultName: 'archive-20261021-131302', onCancel, onSubmit});
 
   await click(screen.getByRole('button', {name: 'OK'}));
 
+  expect(onCancel).not.toHaveBeenCalled();
   expect(screen.getByText('Download archive')).toBeTruthy();
   expect(screen.getByRole('button', {name: 'OK'})).not.toBeDisabled();
   expect(screen.getByRole('button', {name: 'Cancel'})).not.toBeDisabled();
@@ -230,21 +232,19 @@ test('when onSubmit rejects, the dialog stays in the document, OK, Cancel ' +
   expect(onSubmit).toHaveBeenLastCalledWith('retry name');
 });
 
-test('when onSubmit resolves, the modal does not close itself: it stays in ' +
-  'the document with visible unchanged, onCancel is never called, and its ' +
-  'controls are not left permanently blocked', async () => {
-  const onCancel = fn();
+test('when onSubmit resolves, the modal closes itself through onCancel and ' +
+  'keeps OK disabled while it animates closed', async () => {
   const onSubmit = fn(() => Promise.resolve());
+  // Closes the way the storage page does; jsdom never ends the animation, so the dialog stays.
+  const onCancel = fn(() => current.rerender(
+    <DownloadArchiveModal visible={false} onCancel={onCancel} onSubmit={onSubmit} />
+  ));
   renderModal({defaultName: 'archive-20261021-131302', onCancel, onSubmit});
 
   await click(screen.getByRole('button', {name: 'OK'}));
 
-  expect(screen.getByText('Download archive')).toBeTruthy();
-  expect(onCancel).not.toHaveBeenCalled();
-  // No caller here ever flips `visible` to `false`, which is the dead-state
-  // this pins: `pending` must still clear on its own, or OK, Cancel and the
-  // input would stay disabled forever with nothing able to re-enable them.
-  expect(screen.getByRole('button', {name: 'OK'})).not.toBeDisabled();
-  expect(screen.getByRole('button', {name: 'Cancel'})).not.toBeDisabled();
-  expect(screen.getByLabelText('Archive name')).not.toBeDisabled();
+  expect(onCancel).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole('button', {name: 'OK'})).toBeDisabled();
+  await keyDown(screen.getByLabelText('Archive name'), {key: 'Enter', keyCode: 13});
+  expect(onSubmit).toHaveBeenCalledTimes(1);
 });

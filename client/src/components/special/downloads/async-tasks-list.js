@@ -61,7 +61,9 @@ class AsyncTasksList extends React.Component {
     // open, `pendingOwner` is the not-yet-committed value while it is. The
     // *committed* value is `this.props.ownerFilter`, owned by the parent.
     ownerFilterVisible: false,
-    pendingOwner: undefined
+    pendingOwner: undefined,
+    // What the input holds, which differs from `pendingOwner` while typing.
+    pendingOwnerText: undefined
   };
 
   get committedStatuses () {
@@ -269,24 +271,30 @@ class AsyncTasksList extends React.Component {
   openOwnerFilter = () => {
     this.setState({
       ownerFilterVisible: true,
-      pendingOwner: this.committedOwner
+      pendingOwner: this.committedOwner,
+      pendingOwnerText: undefined
     });
   };
 
   handlePendingOwnerChange = (owner) => {
-    this.setState({pendingOwner: owner});
+    this.setState({pendingOwner: owner, pendingOwnerText: owner});
   };
 
-  // The user emptying the Owner input by hand, reported by
-  // UserAutoComplete's own `onClear` (its `onChange` fires only from a
-  // selection, so it cannot carry this). An emptied input means "every
-  // user's tasks" and is committed as exactly that - `undefined`, so no
-  // `owner` key is sent - rather than falling back to the current user:
-  // putting the default back is `Reset to defaults`'s job, and nothing else
-  // here should do it behind the user's back.
-  handlePendingOwnerClear = () => {
-    this.setState({pendingOwner: undefined});
+  // An emptied field means "every user's tasks" (`undefined`, no `owner` key). Typed text
+  // leaves `pendingOwner` alone: it is the field's `value`, and changing it drops the typing.
+  handlePendingOwnerText = (text) => {
+    if (text) {
+      this.setState({pendingOwnerText: text});
+    } else {
+      this.setState({pendingOwner: undefined, pendingOwnerText: ''});
+    }
   };
+
+  // Typed but not picked: committing would send `pendingOwner`, not the name the field shows.
+  get ownerCommitBlocked () {
+    const {pendingOwner, pendingOwnerText} = this.state;
+    return !!pendingOwnerText && pendingOwnerText !== pendingOwner;
+  }
 
   // Commits `owner` as the filter - a string, or `undefined` to mean "any
   // user". An emptied owner omits the key from the request entirely, where
@@ -297,13 +305,24 @@ class AsyncTasksList extends React.Component {
   // alone, on both columns.
   commitOwnerFilter = (owner) => {
     const {onOwnerFilterChange} = this.props;
-    this.setState({ownerFilterVisible: false, pendingOwner: undefined});
+    this.closeOwnerFilter();
     if (onOwnerFilterChange) {
       onOwnerFilterChange(owner || undefined);
     }
   };
 
+  closeOwnerFilter = () => {
+    this.setState({
+      ownerFilterVisible: false,
+      pendingOwner: undefined,
+      pendingOwnerText: undefined
+    });
+  };
+
   handleOwnerFilterOk = () => {
+    if (this.ownerCommitBlocked) {
+      return;
+    }
     this.commitOwnerFilter(this.state.pendingOwner);
   };
 
@@ -311,16 +330,17 @@ class AsyncTasksList extends React.Component {
   // what DownloadsManager seeds it to on first load and what `ownerFiltered`
   // above compares against. It REPLACES the `Clear` link this dropdown used
   // to carry, the same rename the Status column got: "every user's tasks" is
-  // now asked for by emptying the input instead (`handlePendingOwnerClear`
+  // now asked for by emptying the input instead (`handlePendingOwnerText`
   // above), which is the gesture that reads as clearing, and leaves this one
   // link meaning only what its label says.
   //
-  // `defaultOwner` is `undefined` until DownloadsManager's first `/whoami`
-  // resolves, in which window this clears the filter rather than guessing at
-  // a user name. `ownerFiltered` reports "not filtered" in that same window
-  // for the same reason, so the two agree.
+  // The parent decides, since it knows when the current user is not loaded yet.
   handleOwnerFilterResetToDefaults = () => {
-    this.commitOwnerFilter(this.props.defaultOwner);
+    const {onOwnerFilterResetToDefaults} = this.props;
+    this.closeOwnerFilter();
+    if (onOwnerFilterResetToDefaults) {
+      onOwnerFilterResetToDefaults();
+    }
   };
 
   // Same "commit on close" shape as handleStatusesFilterVisibleChange above,
@@ -333,7 +353,11 @@ class AsyncTasksList extends React.Component {
     if (visible) {
       this.openOwnerFilter();
     } else if (this.state.ownerFilterVisible) {
-      this.commitOwnerFilter(this.state.pendingOwner);
+      if (this.ownerCommitBlocked) {
+        this.closeOwnerFilter();
+      } else {
+        this.commitOwnerFilter(this.state.pendingOwner);
+      }
     }
   };
 
@@ -346,7 +370,7 @@ class AsyncTasksList extends React.Component {
   //
   // There is no `Clear` link, unlike that precedent: emptying the input by
   // hand is what clears this filter, carried by UserAutoComplete's own
-  // `onClear` (added for exactly this - its `onChange` fires only from a
+  // `onTextChange` (added for exactly this - its `onChange` fires only from a
   // selection, so it cannot report an emptied field). That leaves the one
   // remaining link meaning only "back to the current user".
   get ownerFilterDropdown () {
@@ -360,9 +384,16 @@ class AsyncTasksList extends React.Component {
           placeholder="Owner"
           value={pendingOwner}
           onChange={this.handlePendingOwnerChange}
-          onClear={this.handlePendingOwnerClear}
+          onTextChange={this.handlePendingOwnerText}
           onPressEnter={this.handleOwnerFilterOk}
         />
+        {
+          this.ownerCommitBlocked ? (
+            <div className={classNames(styles.filterHint, 'cp-text-not-important')}>
+              {'Select a user from the list, or empty the field to show every user\'s tasks.'}
+            </div>
+          ) : undefined
+        }
         <div className={styles.filterActionsButtonsContainer}>
           <a onClick={this.handleOwnerFilterOk}>{'OK'}</a>
           <a onClick={this.handleOwnerFilterResetToDefaults}>{'Reset to defaults'}</a>
@@ -477,6 +508,7 @@ AsyncTasksList.propTypes = {
   isAdmin: PropTypes.bool,
   ownerFilter: PropTypes.string,
   onOwnerFilterChange: PropTypes.func,
+  onOwnerFilterResetToDefaults: PropTypes.func,
   // The current user - DownloadsManager's own `defaultOwner` field, the
   // single source of truth `ownerFiltered` compares `ownerFilter` against.
   // `undefined` until DownloadsManager's first successful `/whoami` (see

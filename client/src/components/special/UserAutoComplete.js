@@ -27,13 +27,8 @@ export default class UserAutoComplete extends React.Component {
 
   static propTypes = {
     onChange: PropTypes.func,
-    // Called when the user empties the input by hand. `onChange` cannot
-    // carry that: it fires only from `onUserSelect`, so it only ever reports
-    // a user who was picked, and a caller watching it alone can never tell
-    // "no user is chosen any more" from "the value I passed in is still
-    // current". Opt-in - a caller that does not pass it behaves exactly as
-    // before.
-    onClear: PropTypes.func,
+    // The input's text on every keystroke and on blur; `onChange` reports picked users only.
+    onTextChange: PropTypes.func,
     value: PropTypes.string,
     readOnly: PropTypes.bool,
     placeholder: PropTypes.string,
@@ -61,12 +56,8 @@ export default class UserAutoComplete extends React.Component {
   };
   lastFetchId = 0;
   findUser = (value) => {
-    // Reported before the lookup below, and regardless of what it answers:
-    // an emptied input is a decision the user has already made, not
-    // something to wait on the server for. See the `onClear` propType above
-    // for why this cannot go through `onChange`.
-    if (!value && this.props.onClear) {
-      this.props.onClear();
+    if (this.props.onTextChange) {
+      this.props.onTextChange(value || '');
     }
     this.lastFetchId += 1;
     const fetchId = this.lastFetchId;
@@ -92,6 +83,10 @@ export default class UserAutoComplete extends React.Component {
   };
   onBlur = () => {
     if (this.state.value === null) {
+      // The field falls back to `value` below, so report that instead of the dropped text.
+      if (this.props.onTextChange) {
+        this.props.onTextChange(this.props.value || '');
+      }
       this.setState({
         valueInput: null
       });

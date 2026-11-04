@@ -375,6 +375,15 @@ class DownloadsManager extends React.Component {
   // async-tasks-list.js's Owner column filter dropdown (admin-only).
   handleOwnerFilterChange = (owner) => this.setFilter('owner', owner);
 
+  // Before `/whoami` answers, `setFilter('owner', undefined)` would mark the owner seeded and
+  // leave it unset for the session - the same reason `handleResetFilters` skips it.
+  handleOwnerFilterResetToDefaults = () => {
+    if (this.defaultOwner === undefined) {
+      return;
+    }
+    this.setFilter('owner', this.defaultOwner);
+  };
+
   // async-tasks-list.js's Status column filter dropdown.
   handleStatusesFilterChange = (statuses) => this.setFilter('statuses', statuses);
 
@@ -459,6 +468,7 @@ class DownloadsManager extends React.Component {
           isAdmin={this.isAdmin}
           ownerFilter={this.state.filters.owner}
           onOwnerFilterChange={this.handleOwnerFilterChange}
+          onOwnerFilterResetToDefaults={this.handleOwnerFilterResetToDefaults}
           defaultOwner={this.defaultOwner}
           statusesFilter={this.state.filters.statuses}
           onStatusesFilterChange={this.handleStatusesFilterChange}

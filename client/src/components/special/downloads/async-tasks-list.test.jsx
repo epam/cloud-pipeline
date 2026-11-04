@@ -22,8 +22,11 @@ import {
   screen,
   within,
   click,
+  change,
   clear,
+  blur,
   hover,
+  waitFor,
   fn,
   stubApi,
   flushPromises,
@@ -1001,7 +1004,7 @@ test('hovering the archive name shows every archived path', async () => {
 // column's behaviour rather than a detail of the other one. Its
 // search-as-you-type behaviour proper - typing a name and picking a
 // candidate out of the results - is left to UserAutoComplete's own test
-// file, which covers the `onClear` contract this column depends on.
+// file, which covers the `onTextChange` contract this column depends on.
 describe('the Owner column', () => {
   function renderList (props = {}) {
     return renderWithLocale(
@@ -1058,17 +1061,27 @@ describe('the Owner column', () => {
     }
   );
 
+  // The field the user types in. `combobox` is the role antd puts on the
+  // control's own wrapper, not on that field - the `textbox` inside it is
+  // that, and the only one in this popover.
+  function ownerInput () {
+    return within(screen.getByRole('combobox')).getByRole('textbox');
+  }
+
+  const OWNER_HINT = 'Select a user from the list, or empty the field to show every user\'s tasks.';
+
   // Emptying the input by hand, which is now the only way to ask for every
   // user's tasks. It reaches this component through UserAutoComplete's own
-  // `onClear` - added for this, because its `onChange` fires only from a
+  // `onTextChange` - added for this, because its `onChange` fires only from a
   // selection and so cannot report an emptied field. Typed through the real
   // combobox rather than by calling the handler: the wiring between the two
   // components is the part that would break silently.
   test('emptying the input by hand commits undefined, not the default owner', async () => {
     // UserAutoComplete issues a `UserFind` request from its own `onSearch`,
     // the empty string included - `stubApi` is what keeps that from tripping
-    // the harness's network guard. Its answer is irrelevant here: `onClear`
-    // fires before the lookup and regardless of what it returns.
+    // the harness's network guard. Its answer is irrelevant here:
+    // `onTextChange` fires before the lookup and regardless of what it
+    // returns.
     stubApi();
     const onOwnerFilterChange = fn();
     renderList({
@@ -1079,23 +1092,194 @@ describe('the Owner column', () => {
     });
 
     await openOwnerFilter();
-    // `combobox` is the role antd puts on the control's own wrapper, not on
-    // the field the user types in - the `textbox` inside it is that, and the
-    // only one in this popover. `clear` from `@test` then fires the change
-    // event with an empty value, which is what deleting the text produces;
-    // UserAutoComplete turns that into `onClear`.
-    await clear(within(screen.getByRole('combobox')).getByRole('textbox'));
+    // `clear` from `@test` fires the change event with an empty value, which
+    // is what deleting the text produces; UserAutoComplete turns that into
+    // `onTextChange('')`.
+    await clear(ownerInput());
     // UserAutoComplete sets state when its own `UserFind` settles, and it
     // has no unmount guard - letting that land before this test ends keeps
     // the "setState on an unmounted component" warning out of the run. It is
-    // not what the case is about: `onClear` has already fired by here.
+    // not what the case is about: `onTextChange` has already fired by here.
     await flushPromises();
     await click(screen.getByText('OK'));
 
     expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
   });
 
-  test('Reset to defaults commits defaultOwner, not undefined', async () => {
+  // The gesture the clearing one above would otherwise turn into a trap:
+  // empty the field, type a replacement name, and commit before the lookup
+  // answers (or when it matches nothing). Committing there would send no
+  // `owner` key and widen the table to EVERY user's tasks while the field
+  // still reads like a name.
+  describe('text typed but no candidate picked', () => {
+    test('OK commits nothing at all', async () => {
+      stubApi();
+      const onOwnerFilterChange = fn();
+      renderList({
+        isAdmin: true,
+        ownerFilter: 'someone-else',
+        defaultOwner: 'current-user',
+        onOwnerFilterChange
+      });
+
+      await openOwnerFilter();
+      await clear(ownerInput());
+      await change(ownerInput(), 'jdoe');
+      await flushPromises();
+      await click(screen.getByText('OK'));
+
+      expect(onOwnerFilterChange).not.toHaveBeenCalled();
+    });
+
+    // Typing over a committed owner without emptying the field first - the
+    // same state by a different route, and it must not commit that stale
+    // owner back either.
+    test('OK commits nothing when the text replaced a committed owner', async () => {
+      stubApi();
+      const onOwnerFilterChange = fn();
+      renderList({
+        isAdmin: true,
+        ownerFilter: 'someone-else',
+        defaultOwner: 'current-user',
+        onOwnerFilterChange
+      });
+
+      await openOwnerFilter();
+      await change(ownerInput(), 'jdoe');
+      await flushPromises();
+      await click(screen.getByText('OK'));
+
+      expect(onOwnerFilterChange).not.toHaveBeenCalled();
+    });
+
+    // Same for the commit-on-close path: clicking away is not a commit
+    // either, so the filter stays exactly as it was.
+    test('closing the dropdown commits nothing', async () => {
+      stubApi();
+      const onOwnerFilterChange = fn();
+      let instance;
+      renderList({
+        isAdmin: true,
+        ownerFilter: 'someone-else',
+        defaultOwner: 'current-user',
+        onOwnerFilterChange,
+        ref: (r) => { instance = r; }
+      });
+
+      await openOwnerFilter();
+      await clear(ownerInput());
+      await change(ownerInput(), 'jdoe');
+      await flushPromises();
+      instance.handleOwnerFilterVisibleChange(false);
+
+      expect(onOwnerFilterChange).not.toHaveBeenCalled();
+    });
+
+    // Losing focus drops the typed text from the field (UserAutoComplete's
+    // own `onBlur` falls back to rendering the `value` prop), so the block
+    // has to lift with it - otherwise the field would read as a name OK
+    // refuses to apply, with the hint still up and nothing explaining it.
+    test('leaving the field unblocks it again, since the text goes with the focus', async () => {
+      stubApi();
+      const onOwnerFilterChange = fn();
+      renderList({
+        isAdmin: true,
+        ownerFilter: 'someone-else',
+        defaultOwner: 'current-user',
+        onOwnerFilterChange
+      });
+
+      await openOwnerFilter();
+      await change(ownerInput(), 'jdoe');
+      await flushPromises();
+      expect(screen.getByText(OWNER_HINT)).toBeInTheDocument();
+
+      await blur(ownerInput());
+
+      // rc-select 6 runs its blur handling on a 10ms timer, so this lands
+      // after the event rather than with it.
+      await waitFor(() => expect(screen.queryByText(OWNER_HINT)).not.toBeInTheDocument());
+      await click(screen.getByText('OK'));
+      expect(onOwnerFilterChange).toHaveBeenCalledWith('someone-else');
+    });
+
+    // OK and Enter doing nothing silently would read as broken, so the
+    // dropdown says what it is waiting for.
+    test('the dropdown explains why, and stops explaining once the field is empty', async () => {
+      stubApi();
+      renderList({isAdmin: true, ownerFilter: 'someone-else', defaultOwner: 'current-user'});
+
+      await openOwnerFilter();
+      expect(screen.queryByText(OWNER_HINT)).not.toBeInTheDocument();
+
+      await change(ownerInput(), 'jdoe');
+      await flushPromises();
+      expect(screen.getByText(OWNER_HINT)).toBeInTheDocument();
+
+      await clear(ownerInput());
+      await flushPromises();
+      expect(screen.queryByText(OWNER_HINT)).not.toBeInTheDocument();
+    });
+  });
+
+  // "Reset to defaults" hands the decision to the parent rather than
+  // resolving `defaultOwner` here: it owns what the default is, and what to
+  // do while `/whoami` has not answered yet - see
+  // downloads-manager.js's own `handleOwnerFilterResetToDefaults`.
+  test('Reset to defaults asks the parent, and commits no owner itself', async () => {
+    const onOwnerFilterChange = fn();
+    const onOwnerFilterResetToDefaults = fn();
+    renderList({
+      isAdmin: true,
+      ownerFilter: 'someone-else',
+      defaultOwner: 'current-user',
+      onOwnerFilterChange,
+      onOwnerFilterResetToDefaults
+    });
+
+    await openOwnerFilter();
+    await click(screen.getByText('Reset to defaults'));
+
+    expect(onOwnerFilterResetToDefaults).toHaveBeenCalledTimes(1);
+    expect(onOwnerFilterChange).not.toHaveBeenCalled();
+  });
+
+  // It also closes the dropdown, which is what stops the commit-on-close
+  // path firing afterwards and overwriting what the parent has just set.
+  // Asserted through that path rather than by reading `ownerFilterVisible`:
+  // a second close must be a no-op, which is the behaviour the flag exists
+  // for.
+  test('Reset to defaults closes the dropdown, so a later close commits nothing', async () => {
+    const onOwnerFilterChange = fn();
+    let instance;
+    renderList({
+      isAdmin: true,
+      ownerFilter: 'someone-else',
+      defaultOwner: 'current-user',
+      onOwnerFilterChange,
+      onOwnerFilterResetToDefaults: fn(),
+      ref: (r) => { instance = r; }
+    });
+
+    await openOwnerFilter();
+    await click(screen.getByText('Reset to defaults'));
+    instance.handleOwnerFilterVisibleChange(false);
+
+    expect(onOwnerFilterChange).not.toHaveBeenCalled();
+  });
+
+  // The path OUT of the blocked state above, and the only way this filter can
+  // be pointed at another user at all: type, then pick a candidate from the
+  // list UserAutoComplete fetches. Covered here rather than in that
+  // component's own file because what it proves is this column's own state -
+  // that a picked candidate counts as the field's text, so OK commits
+  // instead of refusing.
+  test('picking a candidate from the list is what lets OK commit that user', async () => {
+    const api = stubApi();
+    // The `UserFind` request UserAutoComplete issues on every search
+    // (models/user/UserFind.js) - matched loosely, since the prefix lands in
+    // the query string.
+    api.reply(/\/user\/find/, [{id: 42, userName: 'jdoe'}]);
     const onOwnerFilterChange = fn();
     renderList({
       isAdmin: true,
@@ -1105,23 +1289,14 @@ describe('the Owner column', () => {
     });
 
     await openOwnerFilter();
-    await click(screen.getByText('Reset to defaults'));
+    await change(ownerInput(), 'jdo');
+    // The candidate list is rendered from the lookup's answer, so it only
+    // exists once that has landed.
+    const candidate = await screen.findByText('jdoe');
+    await click(candidate);
+    await click(screen.getByText('OK'));
 
-    expect(onOwnerFilterChange).toHaveBeenCalledWith('current-user');
-  });
-
-  // Before the first `/whoami` resolves there is no default to go back to,
-  // so this clears the filter rather than guessing at a user name - the same
-  // window in which `ownerFiltered` reports "not filtered", so the two
-  // agree.
-  test('Reset to defaults commits undefined while defaultOwner is unknown', async () => {
-    const onOwnerFilterChange = fn();
-    renderList({isAdmin: true, ownerFilter: 'someone-else', onOwnerFilterChange});
-
-    await openOwnerFilter();
-    await click(screen.getByText('Reset to defaults'));
-
-    expect(onOwnerFilterChange).toHaveBeenCalledWith(undefined);
+    expect(onOwnerFilterChange).toHaveBeenCalledWith('jdoe');
   });
 
   test('OK commits the already-selected owner as a string, never an array', async () => {

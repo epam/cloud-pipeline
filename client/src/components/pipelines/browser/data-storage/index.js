@@ -1088,10 +1088,9 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
-  // Returns the promise so the modal above it can tell a queued archive from
-  // a refused one: no try/catch here, since swallowing the rejection would
-  // hide the failure from the modal and close it on an error anyway. The
-  // modal closes only once `handleDownloadArchive` resolves.
+  // Returns the promise so the modal can tell a queued archive from a refused
+  // one: no try/catch here, since swallowing the rejection would close the
+  // modal on an error. The modal closes itself once this resolves.
   submitDownloadArchive = async (name) => {
     const {asyncTasks, storageId} = this.props;
     const {selectedItems = []} = this.state;
@@ -1101,7 +1100,6 @@ export default class DataStorage extends React.Component {
       archivePathsFromSelection(selectedItems),
       name
     );
-    this.closeDownloadArchiveModal();
   };
 
   createFolder = async ({name}) => {

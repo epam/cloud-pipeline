@@ -33,6 +33,7 @@ import {
   useRealTimers
 } from '@test';
 import DownloadsManager from './downloads-manager';
+import whoAmI from '../../../models/user/WhoAmI';
 import {ALL_ASYNC_TASK_STATUSES, POLLED_STATUSES} from '../../../models/asyncTask/statuses';
 
 const WHOAMI_ROUTE = '/whoami';
@@ -432,8 +433,8 @@ test('Reset to defaults in the Status dropdown re-sends POLLED_STATUSES', async 
 // drives: it reaches the `setFilter`/`ownerSeeded` guard without needing to
 // drive UserAutoComplete's own UserFind-backed *search*, and emptying the
 // field is the gesture that carries it now that the dropdown has no `Clear`
-// link - through UserAutoComplete's `onClear`, which is reachable from the
-// real field under rule 6 (a bare antd Select's own clear icon, which the
+// link - through UserAutoComplete's `onTextChange`, which is reachable from
+// the real field under rule 6 (a bare antd Select's own clear icon, which the
 // test before this one had to work around, is not).
 test(
   'the owner filter defaults to the current user, and clearing it sends no owner key, ' +
@@ -521,6 +522,62 @@ test('the Owner dropdown\'s Reset to defaults sends the current user again', asy
   // reset and the bar's own button goes away again.
   expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
 });
+
+// The window before `/whoami` answers, in which there is no default owner to
+// go back to. `Reset to defaults` must leave the filter alone there: writing
+// `owner: undefined` would clear it AND mark it seeded, so the seeding in
+// `sendFilterRequest` would never run and the owner would stay unset for the
+// rest of the session - with nothing on screen saying so, since
+// `ownerIsFiltered(undefined, undefined)` is `false`.
+//
+// `/whoami` is held open to reach that window, and `whoAmI` is the shared
+// singleton every other case in this file has already loaded by now
+// (`fetchIfNeededOrWait` answers from its cache), so it is invalidated first.
+// Importing the real model is not module mocking (rule 2): it is the same
+// object the page itself reads.
+test(
+  'the Owner dropdown\'s Reset to defaults leaves the filter alone until /whoami answers, ' +
+  'and the owner is still seeded once it does',
+  async () => {
+    const api = stubApi();
+    let answerWhoAmI;
+    api.handle(WHOAMI_ROUTE, () => new Promise((resolve) => {
+      answerWhoAmI = () => resolve(ok({userName: USER_NAME}));
+    }));
+    api.reply(FILTER_ROUTE, {elements: [], totalCount: 0});
+    whoAmI.invalidateCache();
+
+    try {
+      renderWithLocale(<DownloadsManager />, {stores: stores()});
+
+      // Nothing has been fetched yet: `sendFilterRequest` awaits `/whoami`
+      // before it sends anything, which is exactly what makes this window
+      // reachable at all.
+      await waitFor(() => expect(api.calls.some((c) => c.path === WHOAMI_ROUTE)).toBe(true));
+      expect(filterCalls(api)).toHaveLength(0);
+
+      await click(ownerFilterIcon());
+      await click(within(ownerPopover()).getByText('Reset to defaults'));
+
+      // No request of its own, and no filter written: had it written one, the
+      // seeded owner below would never arrive.
+      expect(filterCalls(api)).toHaveLength(0);
+
+      answerWhoAmI();
+
+      await waitFor(() => expect(filterCalls(api).length).toBeGreaterThan(0));
+      expect(JSON.parse(filterCalls(api)[0].body).owner).toBe(USER_NAME);
+      expect(screen.queryByRole('button', {name: /reset filters/i})).not.toBeInTheDocument();
+    } finally {
+      // `whoAmI` is shared by the whole file: left unanswered, every later test would hang on
+      // it. The wait keeps the request it unblocks on this test's stub, not the next one's.
+      if (answerWhoAmI) {
+        answerWhoAmI();
+        await waitFor(() => expect(filterCalls(api).length).toBeGreaterThan(0));
+      }
+    }
+  }
+);
 
 // "Reset filters" - visible only once either column's own filter differs
 // from its default, reusing exactly the comparisons the columns' own filter

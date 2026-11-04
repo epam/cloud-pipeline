@@ -40,6 +40,15 @@
   margin: 5px 0;
 }
 
+/* The Owner filter's one-line hint, shown while the field holds text that is
+ * not a picked user. Geometry and size only: the faded colour is the themable
+ * `cp-text-not-important` from client/src/themes/styles/layout.less, applied
+ * alongside this class. */
+.filter-hint {
+  margin: 5px 10px;
+  font-size: smaller;
+}
+
 .filter-actions-buttons-container {
   display: flex;
   justify-content: space-between;

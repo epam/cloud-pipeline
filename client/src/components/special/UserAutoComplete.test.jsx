@@ -22,25 +22,30 @@ import {
   within,
   change,
   clear,
+  blur,
+  waitFor,
   fn,
   stubApi,
   flushPromises
 } from '@test';
 import UserAutoComplete from './UserAutoComplete';
 
-// Covers the `onClear` prop only - the contract the Downloads modal's Owner
-// column filter (components/special/downloads/async-tasks-list.js) depends
-// on, and the reason this file exists at all. That column's own suite drives
-// `onClear` through the real field, but only end to end: if `findUser` were
-// refactored to early-return on an empty value, or to report the clear after
-// its lookup rather than before, the Owner filter would lose its only
-// clearing gesture with that suite still green, because nothing there
-// asserts the prop where it is defined. Five callers reach `findUser` on
-// every empty search, so the contract is worth pinning here.
+// Covers the `onTextChange` prop only - the contract the Downloads modal's
+// Owner column filter (components/special/downloads/async-tasks-list.js)
+// depends on, and the reason this file exists at all. That column's own suite
+// drives `onTextChange` through the real field, but only end to end: if
+// `findUser` were refactored to early-return on an empty value, or to report
+// the text after its lookup rather than before, the Owner filter would lose
+// both its only clearing gesture and its guard against committing a name
+// nobody picked, with that suite still green, because nothing there asserts
+// the prop where it is defined. The other caller of this component
+// (components/runs/run-table/columns/column-owner.js) reaches the same
+// `findUser` on every search while passing no `onTextChange` at all, which
+// is the other half of the contract pinned below.
 //
 // This component's other behaviour - searching, rendering candidates,
 // selecting one - is deliberately NOT covered: it is pre-existing and not
-// what the change that added `onClear` touched.
+// what the change that added `onTextChange` touched.
 //
 // It carries its own `@inject('authenticatedUserInfo')` (for the "(you)"
 // marker on a candidate), and mobx-react's `inject` throws when that store
@@ -69,62 +74,57 @@ function input () {
 // afterwards lets that request settle while the component is still mounted -
 // this component sets state when it resolves and has no unmount guard, so
 // without it the run carries a "setState on an unmounted component" warning.
-describe('onClear', () => {
-  test('fires when the field is emptied by hand', async () => {
+describe('onTextChange', () => {
+  test('reports the empty string when the field is emptied by hand', async () => {
     stubApi();
-    const onClear = fn();
-    renderControl({value: 'someone-else', onClear});
+    const onTextChange = fn();
+    renderControl({value: 'someone-else', onTextChange});
 
     await clear(input());
     await flushPromises();
 
-    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onTextChange).toHaveBeenCalledTimes(1);
+    expect(onTextChange).toHaveBeenCalledWith('');
   });
 
-  test('is called with no arguments - it reports the clear, not a value', async () => {
+  // The other half of the contract, and what tells an emptied field from one
+  // holding a name nobody has picked yet: the text goes out verbatim on every
+  // keystroke, not only when it empties.
+  test('reports the text while the field still holds some', async () => {
     stubApi();
-    const onClear = fn();
-    renderControl({value: 'someone-else', onClear});
-
-    await clear(input());
-    await flushPromises();
-
-    expect(onClear.mock.calls[0]).toEqual([]);
-  });
-
-  test('does not fire while the field still holds text', async () => {
-    stubApi();
-    const onClear = fn();
-    renderControl({value: 'someone-else', onClear});
+    const onTextChange = fn();
+    renderControl({value: 'someone-else', onTextChange});
 
     await change(input(), 'som');
     await flushPromises();
 
-    expect(onClear).not.toHaveBeenCalled();
+    expect(onTextChange).toHaveBeenCalledWith('som');
   });
 
-  // The split between the two callbacks, which is the whole reason `onClear`
-  // had to be added: `onChange` fires only from `onUserSelect`, so it can
-  // report a user who was picked but never the absence of one. A caller
-  // watching `onChange` alone cannot tell "cleared" from "unchanged".
+  // The split between the two callbacks, which is the whole reason
+  // `onTextChange` had to be added: `onChange` fires only from
+  // `onUserSelect`, so it can report a user who was picked but never a field
+  // the user is still typing in. A caller watching `onChange` alone cannot
+  // tell "cleared" or "half-typed" from "unchanged".
   test('does not reach onChange, which only ever reports a selection', async () => {
     stubApi();
     const onChange = fn();
-    const onClear = fn();
-    renderControl({value: 'someone-else', onChange, onClear});
+    const onTextChange = fn();
+    renderControl({value: 'someone-else', onChange, onTextChange});
 
     await clear(input());
+    await change(input(), 'som');
     await flushPromises();
 
-    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onTextChange).toHaveBeenCalledTimes(2);
     expect(onChange).not.toHaveBeenCalled();
   });
 
   // Opt-in: the callers that predate it (for example
-  // components/runs/run-table/columns/column-owner.js) pass no `onClear`,
-  // and must keep behaving exactly as before rather than throwing on an
-  // emptied field.
-  test('an emptied field does not throw when no onClear is passed', async () => {
+  // components/runs/run-table/columns/column-owner.js) pass no
+  // `onTextChange`, and must keep behaving exactly as before rather than
+  // throwing on a keystroke.
+  test('typing does not throw when no onTextChange is passed', async () => {
     stubApi();
     renderControl({value: 'someone-else'});
 
@@ -134,21 +134,55 @@ describe('onClear', () => {
     expect(input()).toBeInTheDocument();
   });
 
+  // Losing focus with nothing selected drops the typed text from the field:
+  // `onBlur` clears the component's own `valueInput`, so the field falls
+  // back to rendering the `value` prop. That revert has to be reported too,
+  // or a caller tracking the typed text would go on acting on text the field
+  // no longer shows.
+  test('reports the value prop again when the field reverts to it on blur', async () => {
+    stubApi();
+    const onTextChange = fn();
+    renderControl({value: 'someone-else', onTextChange});
+
+    await change(input(), 'som');
+    await flushPromises();
+    await blur(input());
+
+    // rc-select 6 runs its own blur handling on a 10ms timer (`blurTimer` in
+    // node_modules/rc-select/lib/Select.js), so antd's `onBlur` - and this
+    // component's own - land after the event itself, not with it.
+    await waitFor(() => expect(onTextChange).toHaveBeenLastCalledWith('someone-else'));
+  });
+
+  // The same revert where there is no `value` prop to go back to: the field
+  // ends up empty, so the empty string is what gets reported, not the text
+  // that was typed.
+  test('reports the empty string on blur when there is no value prop', async () => {
+    stubApi();
+    const onTextChange = fn();
+    renderControl({onTextChange});
+
+    await change(input(), 'som');
+    await flushPromises();
+    await blur(input());
+
+    await waitFor(() => expect(onTextChange).toHaveBeenLastCalledWith(''));
+  });
+
   // Reported before the lookup resolves, and regardless of what it answers -
-  // emptying the field is a decision the user has already made. `stubApi`
-  // with no route registered for `UserFind` is what makes the request fail
-  // here.
+  // what the user typed is already decided. `stubApi` with no route
+  // registered for `UserFind` is what makes the request fail here.
   test('fires even when the lookup that follows it fails', async () => {
     stubApi();
-    const onClear = fn();
-    renderControl({value: 'someone-else', onClear});
+    const onTextChange = fn();
+    renderControl({value: 'someone-else', onTextChange});
 
     await clear(input());
 
     // Asserted BEFORE the pending request is allowed to settle.
-    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onTextChange).toHaveBeenCalledTimes(1);
 
     await flushPromises();
-    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onTextChange).toHaveBeenCalledTimes(1);
   });
 });
