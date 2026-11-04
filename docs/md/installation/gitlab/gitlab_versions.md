@@ -43,7 +43,8 @@ Kubernetes master by default. Its data is in `/opt/gitlab-postgresql/data` of th
 When `CP_GITLAB_VERSION` is `19`, the installer also does the following.
 
 * **It deploys `cp-gitlab-db`**, with its backup worker `cp-bkp-worker-cp-gitlab-db`, which dumps the GitLab database
-  with `pg_dump` and copies the dump to the system storage, as the other backup workers do. For `9`, `cp-gitlab-db` is not deployed.
+  with `pg_dump` and copies the dump to the backup storages, as the other backup workers do: the storages of
+  `CP_BKP_STORAGE_LIST`, or the system storage if it is not set. For `9`, `cp-gitlab-db` is not deployed.
 
 * **It generates the GitLab `root` password**, if `GITLAB_ROOT_PASSWORD` has its default value `Passw0rd`. GitLab
   rejects that password as too weak. The installer writes the new password to `GITLAB_ROOT_PASSWORD` in the install

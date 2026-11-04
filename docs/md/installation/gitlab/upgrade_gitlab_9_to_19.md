@@ -340,8 +340,9 @@ kubectl get deploy cp-git -o jsonpath='{range .spec.template.spec.volumes[*]}{.n
 If `/etc/gitlab` is not in the first list, it is a volume of the container. The GitLab image declares that volume.
 Each new container gets a new, empty one, and Kubernetes deletes the old one together with the old container. GitLab
 then creates new secrets and new SSH host keys at start. So the running container has the only current copy of
-`/etc/gitlab`. The backup worker of `cp-git` also keeps copies in the system storage
-(`backups/cp-git/<date>/cp-bkp-git-settings-dump-<date>.tgz`, the last 10). But a copy taken before the current
+`/etc/gitlab`. The backup worker of `cp-git` also keeps copies
+(`backups/cp-git/<date>/cp-bkp-git-settings-dump-<date>.tgz`, the last 10) in the backup storages: the storages of
+`CP_BKP_STORAGE_LIST`, or the system storage if it is not set. But a copy taken before the current
 container started holds other secrets. A stop image would start on an empty `/etc/gitlab`: with new secrets, and
 without the edits of the procedure. Fix the deployment before the rehearsal copy, and before anything replaces the
 `cp-git` pod. The fix restarts GitLab, so do it at a quiet time: while GitLab is down, runs that clone a pipeline

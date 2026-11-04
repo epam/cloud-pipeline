@@ -55,6 +55,7 @@
     - [Incorrect behavior while download files from external resources into several folders](#incorrect-behavior-while-download-files-from-external-resources-into-several-folders)
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
+    - [Backup workers ignore `CP_BKP_STORAGE_LIST`](#backup-workers-ignore-cp_bkp_storage_list)
 
 ***
 
@@ -790,3 +791,14 @@ If user was tried to download files from external resources and at the **Transfe
 Previously, **pipeline versions page** had broken layout if there "Attributes" and "Issues" panels were simultaneously opened.  
 If there were a lot of node labels at the **Cluster nodes** page, some of them were "broken" and spaced to different lines.  
 Some of the other page layouts also were broken.
+
+### Backup workers ignore `CP_BKP_STORAGE_LIST`
+
+Previously, the backup workers (`cp-bkp-worker-*`) ignored the `CP_BKP_STORAGE_LIST` value of the install config. They copied the backups to the system storage only, and a failed backup did not notify anyone.  
+In the current version:
+
+- `CP_BKP_STORAGE_LIST` sets the storages for the backups: a comma-separated list, with the scheme in each item, e.g. `s3://backups-a,s3://backups-b`. Each item must be a data storage registered in the platform. Each storage gets the backups in `backups/<service>/<date>/`, and keeps the last `CP_BKP_FILES_COUNT` of them (10 by default). If `CP_BKP_STORAGE_LIST` is set, the system storage gets no backups, unless it is in the list. If it is not set, the backups go to the system storage, as before
+- if the copy to one storage fails, the worker still copies the backup to the other storages, and then fails. It does not remove the old backups from the storage where the copy failed
+- when a backup fails, the worker notifies the users of the role with the `CP_BKP_ADMIN_ROLE_ID` ID (by default `1`, i.e. `ROLE_ADMIN`) that have the `Email` attribute
+
+A worker reads `CP_BKP_STORAGE_LIST` from the `cp-config-global` ConfigMap when it starts. To change the storages of a deployment, update the ConfigMap and restart the backup workers.
