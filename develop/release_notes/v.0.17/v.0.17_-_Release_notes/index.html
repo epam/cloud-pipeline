@@ -252,6 +252,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#python-3-support-for-backend-services">Python 3 support for backend services</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#self-contained-python-312-distribution">Self-contained Python 3.12 distribution</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#run-controls-for-an-unavailable-node">Run controls for an unavailable node</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#priority-of-group-gui-settings">Priority of group GUI settings</a>
@@ -732,6 +734,7 @@
 <li><a href="#read-only-access-to-all-storages">Read-only access to all storages</a></li>
 <li><a href="#permissions-granted-to-a-user">Permissions granted to a user</a></li>
 <li><a href="#python-3-support-for-backend-services">Python 3 support for backend services</a></li>
+<li><a href="#self-contained-python-312-distribution">Self-contained Python 3.12 distribution</a></li>
 <li><a href="#run-controls-for-an-unavailable-node">Run controls for an unavailable node</a></li>
 <li><a href="#priority-of-group-gui-settings">Priority of group GUI settings</a></li>
 <li><a href="#show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</a></li>
@@ -2211,6 +2214,18 @@ The parameter also defines when a run is relaunched in another region in case of
 <p><code>pipe-common</code> and the job container launch script now support running under either Python 2 or Python 3.12, selected via the <code>CP_PYTHON_VERSION</code> environment variable (<code>2</code> by default, for backward compatibility). The same support was added to the API service pod (<code>cp-api-srv</code>) and its git synchronization sidecar (<code>cp-git-sync</code>): both images now have Python 3.12 installed alongside Python 2, and resolve their active interpreter the same way. The AWS, Azure and GCP cluster-command scripts (node up/down, reassign, terminate) now have their Python 3 dependencies installed too (<code>boto3</code>/<code>botocore</code>, <code>azure-mgmt-*</code>, <code>google-api-python-client</code>, and <code>pipe-common</code> itself), so they run under either interpreter.</p>
 <p>The <code>data_loader</code> system pipeline and the <code>Python</code> pipeline template now resolve their interpreter via <code>CP_PYTHON_PATH</code> as well, instead of a hardcoded <code>python</code>, so they also run under either Python version. The <code>pipe-demo</code> NGS demo pipelines and the <code>Luigi</code> pipeline template, which still only ran under Python 2, were removed.</p>
 <p>The WebDAV service (<code>cp-dav</code>) also moved from CentOS 7 to Rocky Linux 8 and got the same <code>CP_PYTHON_VERSION</code>/Python 3.12 support, covering its NFS-synchronization scripts and the storage <code>chown</code>/checksum helper. The SMB server component keeps its own separate Python 3.12 environment, unaffected by this toggle.</p>
+<hr />
+<h2 id="self-contained-python-312-distribution">Self-contained Python 3.12 distribution</h2>
+<p>The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from <code>tools/python/3/python3.12.tar.gz</code> of the distribution bucket, into <code>/usr/local/python3.12</code> (the AWS node images into <code>/opt/python3.12</code>). It is now built from pinned sources by the <code>Build-Dependencies</code> workflow (<code>deploy/dependencies/python3/</code>), and it needs nothing from the tool image but <code>glibc</code> 2.17 or later:</p>
+<ul>
+<li>CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.</li>
+<li>Its modules carry their own libraries. So <code>ctypes</code> (and with it the NFS events observer of a run), <code>sqlite3</code>, <code>readline</code> and <code>curses</code> now work in the images that lack the <code>libffi.so.6</code>, <code>libsqlite3.so.0</code>, <code>libreadline.so.6</code> or <code>libncursesw.so.5</code> of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.</li>
+<li><code>readline</code> uses libedit. <code>dbm.gnu</code>, <code>dbm.ndbm</code>, <code>nis</code> and <code>tkinter</code> are not included.</li>
+<li><code>crypt</code> still uses the <code>libcrypt.so.1</code> of the image. On Rocky Linux 9 and RHEL 9, it comes from the <code>libxcrypt-compat</code> package.</li>
+<li>HTTPS verifies with the CA certificates of the image, where Debian and Ubuntu keep them (<code>/etc/ssl/certs</code>), and where the RHEL family keeps them (<code>/etc/pki/tls/cert.pem</code>).</li>
+<li>The download is about 30 MB, instead of 107 MB: it no longer includes the test suite, the static <code>libpython3.12.a</code>, or a separate <code>/usr/local/openssl</code>.</li>
+</ul>
+<p>The previous distribution stays available as <code>tools/python/3/python3.12.0.tar.gz</code>. A run uses it, when the <code>CP_PYTHON3_DISTRO_URL</code> parameter points to it.</p>
 <hr />
 <h2 id="run-controls-for-an-unavailable-node">Run controls for an unavailable node</h2>
 <p>When the compute node of a run stops reporting its status, the run gets the <code>NODE_UNAVAILABLE</code> tag. If the node does not recover within the grace period (the <code>cluster.node.unavailable.grace.period.minutes</code> system preference, or the <code>NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES</code> run parameter), the node is terminated.<br />
