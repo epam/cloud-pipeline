@@ -160,8 +160,8 @@ test(
 );
 
 // No heading assertion any more: the class itself carries no title - the
-// Modal shell's own `title` prop is what shows "Downloads" now, covered in
-// downloads-modal.test.jsx.
+// Modal shell's own `title` prop is what shows "Storage tasks" now, covered
+// in downloads-modal.test.jsx.
 test('renders the rows from its own response', async () => {
   const api = stubApi();
   stubFilter(api, [

@@ -36,15 +36,16 @@ import {
   extractArchives,
   handleExtractArchives
 } from './extract-storage-archives';
-import displaySize from '../../utils/displaySize';
 
 const KB = 1024;
 const MB = 1024 * KB;
 const MAX_NFS_FILE_SIZE_MB = 500;
 // The one row margin both the confirmation state and the progress state use -
-// so a file's row is exactly as tall before the upload starts as after, and
-// only the progress line's own visibility differs between the two.
-const FILE_ROW_MARGIN_BOTTOM = 20;
+// so a file's row is as tall before the upload starts as after, and only the
+// progress line's own visibility differs between the two. The exception is a
+// file that failed: its reason renders on a line of its own, below, and that
+// row does grow.
+const FILE_ROW_MARGIN_BOTTOM = 4;
 
 class UploadButton extends React.Component {
   static propTypes = {
@@ -784,8 +785,12 @@ class UploadButton extends React.Component {
    * `<Progress>` itself, in its `Col span={21}`, and on an S3 upload the
    * retry/cancel actions in their `Col span={3}` - is always present, so its
    * height is always reserved; only `visibility` hides it while `pending` is
-   * true and nothing has started uploading yet. Guessing a pixel height
-   * instead would drift the moment `Progress`'s own metrics change.
+   * true and nothing has started uploading yet. The line itself is a fixed
+   * 22px tall (with a -4px top margin), chosen to keep the rows compact
+   * rather than guessed from nothing - the real `<Progress>` is still
+   * rendered inside it so the two states stay identical in every other
+   * respect. That 22px is tied to `Progress`'s own rendered height at this
+   * `strokeWidth`, and needs revisiting if that height ever changes.
    *
    * @param {object} file a `synchronousUploadingFiles` entry (`uid`, `name`,
    *   `size`) while `pending`, or a `uploadingFiles` entry (also carrying
@@ -799,6 +804,13 @@ class UploadButton extends React.Component {
     let title = file.name;
     if (!pending && file.status) {
       title = `${file.name} - ${file.status}`;
+    }
+    // The hover title carries the status and the error too: the span below
+    // is clipped to one line, so the attribute is the only place a long
+    // name, a status or a failure reason is ever shown in full together.
+    let hoverTitle = title;
+    if (!pending && file.error) {
+      hoverTitle = `${hoverTitle} - ${file.error}`;
     }
     let status = 'active';
     if (!pending) {
@@ -816,31 +828,36 @@ class UploadButton extends React.Component {
       >
         <Row type="flex" style={{width: '100%'}}>
           <span
-            title={file.name}
+            title={hoverTitle}
             style={{
-              flex: 1,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'
             }}
           >
             {title}
-            {
-              !pending && file.error && (
-                <span
-                  className="cp-error"
-                  style={{fontSize: 'small', marginLeft: 5}}
-                >
-                  - {file.error}
-                </span>
-              )
-            }
           </span>
-          <span style={{marginLeft: 10}}>{displaySize(file.size)}</span>
         </Row>
+        {
+          // Outside the clipped span above, and with no `nowrap` of its own,
+          // so a long failure reason wraps onto as many lines as it needs
+          // instead of being cut off together with the name.
+          !pending && file.error && (
+            <Row type="flex" style={{width: '100%'}}>
+              <span className="cp-error" style={{fontSize: 'small'}}>
+                - {file.error}
+              </span>
+            </Row>
+          )
+        }
         <Row
           type="flex"
-          style={{width: '100%', visibility: pending ? 'hidden' : 'visible'}}
+          style={{
+            width: '100%',
+            marginTop: -4,
+            height: 22,
+            visibility: pending ? 'hidden' : 'visible'
+          }}
         >
           <Col span={21}>
             <Progress
