@@ -2224,6 +2224,7 @@ The parameter also defines when a run is relaunched in another region in case of
 <li><code>crypt</code> still uses the <code>libcrypt.so.1</code> of the image. On Rocky Linux 9 and RHEL 9, it comes from the <code>libxcrypt-compat</code> package.</li>
 <li>HTTPS verifies with the CA certificates of the image, where Debian and Ubuntu keep them (<code>/etc/ssl/certs</code>), and where the RHEL family keeps them (<code>/etc/pki/tls/cert.pem</code>).</li>
 <li>The download is about 30 MB, instead of 107 MB: it no longer includes the test suite, the static <code>libpython3.12.a</code>, or a separate <code>/usr/local/openssl</code>.</li>
+<li>A run now keeps the <code>/usr/local/openssl</code> of the tool image, e.g. an OpenSSL that the software of the image is built with. Before, a run removed it. Only a distribution that has its own <code>openssl</code> folder, like <code>python3.12.0.tar.gz</code>, still replaces it.</li>
 </ul>
 <p>The previous distribution stays available as <code>tools/python/3/python3.12.0.tar.gz</code>. A run uses it, when the <code>CP_PYTHON3_DISTRO_URL</code> parameter points to it.</p>
 <hr />
