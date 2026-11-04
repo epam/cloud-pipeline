@@ -18,6 +18,7 @@ import {fn, screen} from '@test';
 import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
+  archiveNameError,
   archivePathsFromSelection,
   archiveStorageSupported,
   defaultArchiveName
@@ -262,6 +263,60 @@ describe('defaultArchiveName', () => {
   });
 });
 
+describe('archiveNameError', () => {
+  test.each([
+    'report.csv.zip',
+    'my archive',
+    '__init__',
+    'a-b_c.1',
+    '  padded  '
+  ])('accepts %j', (name) => {
+    expect(archiveNameError(name)).toBeUndefined();
+  });
+
+  test.each([
+    'report(1).csv',
+    'a@b',
+    'a/b',
+    'a:b',
+    'отчет.csv',
+    'a\tb'
+  ])('rejects %j with the illegal-character message', (name) => {
+    expect(archiveNameError(name))
+      .toBe('Only letters, digits, spaces, dot, dash and underscore are allowed.');
+  });
+
+  test.each([
+    '',
+    '   ',
+    undefined
+  ])('rejects %j with the required message', (name) => {
+    expect(archiveNameError(name)).toBe('Archive name is required.');
+  });
+
+  // Pins the "no `g` flag" reasoning in the implementation: a `g` regex
+  // carries `lastIndex` between calls and would answer differently on
+  // alternate renders.
+  test('SAFE_ARCHIVE_NAME holds no state across calls', () => {
+    expect(archiveNameError('ok name')).toBeUndefined();
+    expect(archiveNameError('ok name')).toBeUndefined();
+  });
+
+  // The drift guard: an offered default the modal would then refuse is the
+  // bug this catches.
+  test.each([
+    [[{path: 'report(1).csv', type: 'File'}]],
+    [[{path: 'отчет.csv', type: 'File'}]],
+    [[{path: 'a/b/my.data/', type: 'Folder'}]],
+    [[
+      {path: 'a.txt', type: 'File'},
+      {path: 'b', type: 'Folder'}
+    ]]
+  ])('never rejects the default name offered for %j', (selection) => {
+    expect(archiveNameError(defaultArchiveName(selection))).toBeUndefined();
+  });
+});
+
 describe('archiveDownloadAllowed', () => {
   test('answers true, and says nothing, when the store reports room', async () => {
     const asyncTasks = {
@@ -321,12 +376,22 @@ describe('handleDownloadArchive', () => {
     expect(asyncTasks.startArchiveDownload).not.toHaveBeenCalled();
   });
 
-  test('a rejecting startArchiveDownload is caught, not thrown out of the helper', async () => {
+  // Re-thrown (not swallowed) so the name-confirmation modal above it can
+  // tell a queued archive from a refused one and decide whether to close.
+  test('a rejecting startArchiveDownload is re-thrown out of the helper', async () => {
+    const error = new Error('too many active downloads');
     const asyncTasks = {
-      startArchiveDownload: fn().mockRejectedValue(new Error('too many active downloads'))
+      startArchiveDownload: fn().mockRejectedValue(error)
     };
     await expect(
       handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive')
+    ).rejects.toBe(error);
+  });
+
+  test('still resolves, not rejects, on the empty-paths path', async () => {
+    const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
+    await expect(
+      handleDownloadArchive(asyncTasks, 7, [], 'my archive')
     ).resolves.toBeUndefined();
   });
 
@@ -351,7 +416,8 @@ describe('handleDownloadArchive', () => {
     expect(messageApi.success).not.toHaveBeenCalled();
   });
 
-  // A failing `startArchiveDownload` still reports through `messageApi.error`.
+  // A failing `startArchiveDownload` still reports through `messageApi.error`,
+  // even though the same failure is now also re-thrown.
   test('a failing startArchiveDownload reports through messageApi.error', async () => {
     const asyncTasks = {
       startArchiveDownload: fn().mockRejectedValue(new Error('too many active downloads'))
@@ -363,7 +429,9 @@ describe('handleDownloadArchive', () => {
       error: fn()
     };
 
-    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
+    await expect(
+      handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi)
+    ).rejects.toThrow('too many active downloads');
 
     expect(messageApi.error).toHaveBeenCalledWith('too many active downloads', 5);
     expect(messageApi.success).not.toHaveBeenCalled();

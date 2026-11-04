@@ -230,12 +230,13 @@ export default function buildColumns ({
       filterDropdown: statusesFilterDropdown,
       filterDropdownVisible: statusesFilterVisible,
       onFilterDropdownVisibleChange: onStatusesFilterVisibleChange,
-      // `statusesFilter` is now always populated (see async-tasks-list.js's
+      // `statusesFilter` always starts populated (see async-tasks-list.js's
       // own defaultProps and DownloadsManager's initial state), so
       // `statusesFiltered` compares against POLLED_STATUSES rather than a
       // truthy/non-empty check - a plain "is it set" test would light the
       // icon permanently. It should read as active only once the selection
-      // has actually moved away from the default.
+      // has actually moved away from the default, which an empty selection
+      // (every box unticked, now committed as `[]`) also is.
       filteredValue: statusesFiltered ? ['filtered'] : [],
       render: (task) => {
         const {status, errorMessage} = task;

@@ -15,6 +15,8 @@
  */
 
 import {
+  ALL_ASYNC_TASK_STATUSES,
+  ASYNC_TASK_STATUSES,
   ACTIVE_STATUSES,
   POLLED_STATUSES,
   taskIsActive,
@@ -126,6 +128,34 @@ describe('archiveNameOf', () => {
   });
 });
 
+// The list the Downloads modal's Status filter renders a checkbox for, and
+// what its select-all box ticks. It lives in this module rather than in that
+// dropdown's own file so the component and its tests read the same list;
+// these cases are what hold it to the vocabulary.
+//
+// Note what is NOT asserted here, and cannot be: every key in
+// ASYNC_TASK_STATUSES maps to a string equal to itself, so `Object.values`
+// and `Object.keys` return the same array, and no test in this file can tell
+// which one the implementation used. Writing one that looks like it does
+// would be worse than leaving it out - the cases below assert the list's
+// contents and shape instead, which is what callers actually depend on.
+describe('ALL_ASYNC_TASK_STATUSES', () => {
+  test('holds every value in ASYNC_TASK_STATUSES, and nothing else', () => {
+    expect([...ALL_ASYNC_TASK_STATUSES].sort()).toEqual(Object.values(ASYNC_TASK_STATUSES).sort());
+  });
+  test('is a superset of POLLED_STATUSES, and strictly larger', () => {
+    expect(ALL_ASYNC_TASK_STATUSES).toEqual(expect.arrayContaining(POLLED_STATUSES));
+    expect(ALL_ASYNC_TASK_STATUSES.length).toBeGreaterThan(POLLED_STATUSES.length);
+  });
+  test('contains the two the default leaves out', () => {
+    expect(ALL_ASYNC_TASK_STATUSES).toContain('CANCELLED');
+    expect(ALL_ASYNC_TASK_STATUSES).toContain('EXPIRED');
+  });
+  test('carries no duplicates, so a count against it is a count of distinct statuses', () => {
+    expect(new Set(ALL_ASYNC_TASK_STATUSES).size).toBe(ALL_ASYNC_TASK_STATUSES.length);
+  });
+});
+
 describe('POLLED_STATUSES', () => {
   test('contains all four active statuses', () => {
     expect(POLLED_STATUSES).toEqual(expect.arrayContaining(ACTIVE_STATUSES));
@@ -164,6 +194,14 @@ describe('statusesAreFiltered', () => {
   });
   test('false for an empty selection against an empty default', () => {
     expect(statusesAreFiltered([], [])).toBe(false);
+  });
+  // An empty selection is a real, committable filter now - "no status is
+  // ticked" - so it has to read as filtered against a non-empty default.
+  // Without this, unticking everything would leave the column's header icon
+  // unlit and DownloadsManager's "Reset filters" button hidden, which is the
+  // one gesture that gets the default back.
+  test('true for an empty selection against a non-empty default', () => {
+    expect(statusesAreFiltered([], POLLED_STATUSES)).toBe(true);
   });
   test('true when the selection differs from the default', () => {
     expect(statusesAreFiltered([...POLLED_STATUSES, 'CANCELLED'], POLLED_STATUSES)).toBe(true);
