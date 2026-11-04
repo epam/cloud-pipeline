@@ -305,7 +305,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4571_1**](Data_storages/4571/4571_1.md) | Picking an archive together with other files pauses the upload behind a confirmation pop-up |  |
 | [**4571_2**](Data_storages/4571/4571_2.md) | Cancel on the upload confirmation pop-up discards the pending selection |  |
 | [**4571_3**](Data_storages/4571/4571_3.md) | "Upload" on the confirmation pop-up uploads the archive as-is, without extracting it |  |
-| [**4571_4**](Data_storages/4571/4571_4.md) | "Upload and extract" uploads the batch, then shows the extraction status before closing |  |
+| [**4571_4**](Data_storages/4571/4571_4.md) | "Upload and extract" uploads the batch, then queues extraction and closes |  |
 | [**4571_5**](Data_storages/4571/4571_5.md) | [Negative] A selection with no archive uploads immediately, with no confirmation pop-up |  |
 | [**4571_6**](Data_storages/4571/4571_6.md) | [Negative] The upload confirmation pop-up is not offered outside AWS S3 and NFS-mounted-NFS storages |  |
 
