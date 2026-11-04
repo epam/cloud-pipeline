@@ -23,6 +23,7 @@
 
 import moment from 'moment-timezone';
 import {message} from 'antd';
+import {queuedTaskMessage} from './downloads/queued-task-message';
 
 function isFolder (item) {
   return /^folder$/i.test((item && item.type) || '');
@@ -285,6 +286,14 @@ export async function archiveDownloadAllowed (asyncTasks) {
  * @param {string} archiveName
  * @param {*} [messageApi] - defaults to antd's `message`, taken as a
  *   parameter so this is testable without module mocking
+ * @param {function} [onShowDownloads] - opens the Downloads modal; a new,
+ *   last parameter so existing callers and tests passing five arguments keep
+ *   working. With none given, the queued toast falls back to the plain
+ *   string it has always been - it still names the menu item ("Show
+ *   downloads", in the storage view's presentation dropdown - see
+ *   renderPresentationConfiguration in pipelines/browser/data-storage/
+ *   index.js), because a user who has just queued an archive otherwise has
+ *   nothing to go looking for.
  * @returns {Promise<void>}
  */
 export default async function handleDownloadArchive (
@@ -292,7 +301,8 @@ export default async function handleDownloadArchive (
   storageId,
   paths,
   archiveName,
-  messageApi = message
+  messageApi = message,
+  onShowDownloads
 ) {
   if (!paths || paths.length === 0) {
     messageApi.info('Nothing to download: select at least one file or folder.', 5);
@@ -301,14 +311,26 @@ export default async function handleDownloadArchive (
   const hide = messageApi.loading('Starting archive download...', 0);
   try {
     await asyncTasks.startArchiveDownload(storageId, paths, archiveName);
-    // Plain text, not a link: the route the page link once pointed at is gone,
-    // and the downloads view is now a modal on the storage page. It names the
-    // menu item that opens that modal ("Show downloads", in the storage view's
-    // presentation dropdown - see renderPresentationConfiguration in
-    // pipelines/browser/data-storage/index.js), because a user who has just
-    // queued an archive otherwise has nothing to go looking for.
-    messageApi.info(
-      'Archive download has been queued. Follow its progress under "Show downloads".',
+    // The queued toast's own `hide` function does not exist until the
+    // `messageApi.info` call below returns it - but the link inside the
+    // content that call is given has to call that same `hide`, so the toast
+    // does not sit over the Downloads modal the click just opened. A plain
+    // mutable holder breaks the chicken-and-egg: the click handler only
+    // reads `queuedHide.current` at click time, long after the assignment
+    // below has run. Harmless on a click after the toast has already timed
+    // out on its own - `hide` is antd's own `removeNotice`, a no-op once the
+    // notice is already gone.
+    const queuedHide = {current: undefined};
+    const showDownloads = typeof onShowDownloads === 'function'
+      ? () => {
+        if (queuedHide.current) {
+          queuedHide.current();
+        }
+        onShowDownloads();
+      }
+      : undefined;
+    queuedHide.current = messageApi.info(
+      queuedTaskMessage('Archive download has been queued.', showDownloads),
       5
     );
   } catch (error) {

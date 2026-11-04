@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {fn, useFakeTimers, useRealTimers, advanceTimers} from '@test';
+import {fn, useFakeTimers, useRealTimers, advanceTimers, screen, click, render} from '@test';
 import {
   ARCHIVE_EXTENSIONS,
   isArchive,
@@ -216,6 +216,36 @@ describe('handleExtractArchives', () => {
       5
     );
     expect(messageApi.error).not.toHaveBeenCalled();
+  });
+
+  // Mirrors the matching test in download-storage-archive.test.js: the
+  // plain-string path (no `onShowDownloads`) is already covered by "the
+  // queued toast names the downloads view" above, since every other test
+  // here calls `handleExtractArchives` without the new, fifth argument.
+  test('the queued toast carries a working link when onShowDownloads is given', async () => {
+    const hideQueued = fn();
+    const messageApi = {
+      info: fn().mockReturnValue(hideQueued),
+      loading: fn().mockReturnValue(fn()),
+      error: fn()
+    };
+    const extract = fn().mockResolvedValue();
+    const onShowDownloads = fn();
+
+    await handleExtractArchives('storage-1', ['a.zip'], messageApi, extract, onShowDownloads);
+
+    expect(messageApi.info).toHaveBeenCalledTimes(1);
+    const [content] = messageApi.info.mock.calls[0];
+    const {container} = render(content);
+    expect(container.textContent).toBe(
+      'Archive extraction has been queued. Follow its progress under "Show downloads".'
+    );
+
+    // No implicit `link` role on an `<a>` with no `href` - queried by text.
+    await click(screen.getByText('Show downloads'));
+
+    expect(onShowDownloads).toHaveBeenCalledTimes(1);
+    expect(hideQueued).toHaveBeenCalledTimes(1);
   });
 
   test(

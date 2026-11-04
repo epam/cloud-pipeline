@@ -31,7 +31,6 @@ import {
 import S3Storage, {MAX_FILE_SIZE_DESCRIPTION} from '../../models/s3-upload/s3-storage';
 import DataStorageGenerateUploadUrl from '../../models/dataStorage/DataStorageGenerateUploadUrl';
 import {
-  isArchive,
   hasArchives,
   uploadedArchivePaths,
   extractArchives,
@@ -66,7 +65,12 @@ class UploadButton extends React.Component {
     // through to `handleExtractArchives` as its own `extract` argument. Also
     // the place the real `RemotePost` model goes once `POST
     // /datastorage/{id}/extract` exists - no caller passes this today.
-    extractArchives: PropTypes.func
+    extractArchives: PropTypes.func,
+    // Opens the Downloads modal - passed straight through to
+    // `handleExtractArchives`, which wires it to the link its queued toast
+    // shows. The storage page is the only caller that can supply this: that
+    // modal's state lives there, not here.
+    onShowDownloads: PropTypes.func
   };
 
   state = {
@@ -217,8 +221,15 @@ class UploadButton extends React.Component {
         const extract = this.props.extractArchives || extractArchives;
         // Fired and left to run: `handleExtractArchives` owns the toast and
         // its own error handling, and the modal does not sit open waiting
-        // for it.
-        void handleExtractArchives(this.props.storageId, newPaths, undefined, extract);
+        // for it. `this.props.onShowDownloads` is threaded straight through -
+        // it is what turns the toast's "Show downloads" into a link.
+        void handleExtractArchives(
+          this.props.storageId,
+          newPaths,
+          undefined,
+          extract,
+          this.props.onShowDownloads
+        );
       }
       // Every archive failed or was aborted, or nothing new has landed since
       // the last call - either way there is nothing to queue this time, but
@@ -764,10 +775,6 @@ class UploadButton extends React.Component {
         align="middle"
         key={file.uid}
       >
-        {
-          isArchive(file.name) &&
-          <Icon type="file-zip" style={{marginRight: 5}} />
-        }
         <span style={{flex: 1}}>{file.name}</span>
         <span style={{marginLeft: 10}}>{displaySize(file.size)}</span>
       </Row>

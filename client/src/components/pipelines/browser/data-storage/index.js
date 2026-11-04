@@ -118,6 +118,7 @@ import handleDownloadArchive, {
 } from '../../../special/download-storage-archive';
 import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
 import DownloadsModal from '../../../special/downloads/downloads-modal';
+import {SHOW_DOWNLOADS_LABEL} from '../../../special/downloads/queued-task-message';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
@@ -1083,6 +1084,14 @@ export default class DataStorage extends React.Component {
     this.setState({downloadArchiveModalVisible: false});
   };
 
+  // The one way the Downloads modal opens - the presentation dropdown's own
+  // `downloads` action below, and the queued-task toasts' "Show downloads"
+  // link (submitDownloadArchive and the UploadButton it renders), both reach
+  // this rather than each inlining its own `setState`.
+  showDownloadsModal = () => {
+    this.setState({downloadsModalVisible: true});
+  };
+
   closeDownloadsModal = () => {
     this.setState({downloadsModalVisible: false});
   };
@@ -1095,7 +1104,9 @@ export default class DataStorage extends React.Component {
       asyncTasks,
       storageId,
       archivePathsFromSelection(selectedItems),
-      name
+      name,
+      undefined,
+      this.showDownloadsModal
     );
   };
 
@@ -2764,6 +2775,7 @@ export default class DataStorage extends React.Component {
                   extractArchivesAvailable={
                     archiveStorageSupported(this.storage.info, this.fileShareMount)
                   }
+                  onShowDownloads={this.showDownloadsModal}
                   // synchronous
                   uploadToS3={/^s3$/i.test(type)}
                   uploadToNFS={/^nfs$/i.test(type)}
@@ -2891,7 +2903,7 @@ export default class DataStorage extends React.Component {
     // inapplicable, omics stores included.
     const downloadsAction = {
       key: 'downloads',
-      title: 'Show downloads',
+      title: SHOW_DOWNLOADS_LABEL,
       available: true
     };
     const doAction = (action) => {
@@ -2903,7 +2915,7 @@ export default class DataStorage extends React.Component {
         case 'jobs': this.onToggleJobs(); break;
         case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
-        case 'downloads': this.setState({downloadsModalVisible: true}); break;
+        case 'downloads': this.showDownloadsModal(); break;
         default:
           break;
       }

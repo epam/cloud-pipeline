@@ -15,6 +15,7 @@
  */
 
 import {message} from 'antd';
+import {queuedTaskMessage} from './downloads/queued-task-message';
 
 /**
  * @typedef {Object} UploadingFile
@@ -169,19 +170,38 @@ export function extractArchives (storageId, paths) {
  *   `extractArchives`, taken as a parameter for the same reason - and the
  *   seam `UploadButton`'s own injectable `extractArchives` prop is passed
  *   through to
+ * @param {function} [onShowDownloads] - opens the Downloads modal;
+ *   `UploadButton`'s own `onShowDownloads` prop is passed through to this.
+ *   With none given, the queued toast falls back to the plain string it has
+ *   always been.
  * @returns {Promise<void>}
  */
 export async function handleExtractArchives (
   storageId,
   paths,
   messageApi = message,
-  extract = extractArchives
+  extract = extractArchives,
+  onShowDownloads
 ) {
   const hide = messageApi.loading('Starting archive extraction...', 0);
   try {
     await extract(storageId, paths);
-    messageApi.info(
-      'Archive extraction has been queued. Follow its progress under "Show downloads".',
+    // See the matching comment in `handleDownloadArchive`
+    // (download-storage-archive.js) for why the holder below is
+    // unavoidable: the toast's own content needs a function that dismisses
+    // the toast before `messageApi.info` - the call that creates the toast -
+    // has returned the `hide` to dismiss it with.
+    const queuedHide = {current: undefined};
+    const showDownloads = typeof onShowDownloads === 'function'
+      ? () => {
+        if (queuedHide.current) {
+          queuedHide.current();
+        }
+        onShowDownloads();
+      }
+      : undefined;
+    queuedHide.current = messageApi.info(
+      queuedTaskMessage('Archive extraction has been queued.', showDownloads),
       5
     );
   } catch (error) {

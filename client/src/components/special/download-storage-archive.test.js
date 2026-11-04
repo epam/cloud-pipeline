@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {fn, screen} from '@test';
+import {fn, screen, click, render} from '@test';
 import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
@@ -349,6 +349,42 @@ describe('handleDownloadArchive', () => {
       5
     );
     expect(messageApi.success).not.toHaveBeenCalled();
+  });
+
+  // The test above already covers the plain-string path (no `onShowDownloads`
+  // given, the existing five-argument call every other test here still
+  // makes) - this one covers the sixth, new argument: the queued toast's
+  // content turns into a node whose link opens the Downloads modal and
+  // dismisses its own toast.
+  test('the queued toast carries a working link when onShowDownloads is given', async () => {
+    const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
+    const hideQueued = fn();
+    const messageApi = {
+      info: fn().mockReturnValue(hideQueued),
+      loading: fn().mockReturnValue(fn()),
+      success: fn(),
+      error: fn()
+    };
+    const onShowDownloads = fn();
+
+    await handleDownloadArchive(
+      asyncTasks, 7, ['a.txt'], 'my archive', messageApi, onShowDownloads
+    );
+
+    expect(messageApi.info).toHaveBeenCalledTimes(1);
+    const [content] = messageApi.info.mock.calls[0];
+    const {container} = render(content);
+    expect(container.textContent).toBe(
+      'Archive download has been queued. Follow its progress under "Show downloads".'
+    );
+
+    // No implicit `link` role on an `<a>` with no `href` - queried by text.
+    await click(screen.getByText('Show downloads'));
+
+    expect(onShowDownloads).toHaveBeenCalledTimes(1);
+    // Dismissed before (or regardless of) opening the modal, so the toast
+    // does not sit over it.
+    expect(hideQueued).toHaveBeenCalledTimes(1);
   });
 
   // A failing `startArchiveDownload` still reports through `messageApi.error`.
