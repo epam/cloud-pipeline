@@ -89,7 +89,7 @@ if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
         # watch_mount_shares.py imports the "pipeline" package, "watchdog" and "psutil": install pipe-common for them
         tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
         mv watch_mount_shares.py $SYNC_HOME/ && \
-        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==68.0.0 && \
+        "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q setuptools==81.0.0 && \
         "$CP_PYTHON_PATH" -m pip install $CP_PIP_PACKAGE_INDEX_ARGS -I -q pipe-common.tar.gz && \
         rm -rf pipe-common.tar.gz && \
         sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \

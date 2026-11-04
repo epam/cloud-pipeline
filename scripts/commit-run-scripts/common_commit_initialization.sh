@@ -136,7 +136,7 @@ install_pip() {
 
 install_pipeline_code() {
     echo "Installing pipeline packages and code"
-    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==68.0.0
+    $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==81.0.0
     mkdir $COMMON_REPO_DIR
     cd $COMMON_REPO_DIR
     download_file ${DISTRIBUTION_URL}pipe-common.tar.gz

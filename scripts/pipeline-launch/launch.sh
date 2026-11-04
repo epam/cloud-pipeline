@@ -1267,7 +1267,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             exit 1
       else
             cd $COMMON_REPO_DIR
-            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==68.0.0
+            $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==81.0.0
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];

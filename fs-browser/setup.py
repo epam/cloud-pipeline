@@ -28,10 +28,10 @@ setup(
     py_modules=['fsbrowser'],
     packages=find_packages(),
     include_package_data=True,
-    python_requires='>=3.10',
+    python_requires='>=3.12',
     install_requires=[
-        'flask==2.3.3',
-        'Flask-HTTPAuth==4.4.0'
+        'flask==3.1.3',
+        'Flask-HTTPAuth==4.8.1'
     ],
     entry_points='''
         [console_scripts]
