@@ -1869,6 +1869,7 @@ The runs, the node hosts and the platform images install the platform's Python 3
 - `crypt` still uses the `libcrypt.so.1` of the image. On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
 - HTTPS verifies with the CA certificates of the image, where Debian and Ubuntu keep them (`/etc/ssl/certs`), and where the RHEL family keeps them (`/etc/pki/tls/cert.pem`).
 - The download is about 30 MB, instead of 107 MB: it no longer includes the test suite, the static `libpython3.12.a`, or a separate `/usr/local/openssl`.
+- A run now keeps the `/usr/local/openssl` of the tool image, e.g. an OpenSSL that the software of the image is built with. Before, a run removed it. Only a distribution that has its own `openssl` folder, like `python3.12.0.tar.gz`, still replaces it.
 
 The previous distribution stays available as `tools/python/3/python3.12.0.tar.gz`. A run uses it, when the `CP_PYTHON3_DISTRO_URL` parameter points to it.
 
