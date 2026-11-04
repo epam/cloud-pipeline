@@ -68,7 +68,7 @@ function download_list() {
 mkdir -p /srv/pypi/web/
 
 pypi_packages="setuptools==68.0.0
-setuptools==84.2.1
+setuptools==81.0.0
 PyYAML==6.0.3
 certifi==2026.7.22
 certifi==2026.10.23
