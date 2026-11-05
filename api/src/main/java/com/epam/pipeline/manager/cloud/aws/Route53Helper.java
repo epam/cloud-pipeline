@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2026 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.amazonaws.services.route53.model.ChangeResourceRecordSetsRequest;
 import com.amazonaws.services.route53.model.ChangeResourceRecordSetsResult;
 import com.amazonaws.services.route53.model.ChangeStatus;
 import com.amazonaws.services.route53.model.GetChangeRequest;
-import com.amazonaws.services.route53.model.GetChangeResult;
 import com.amazonaws.services.route53.model.InvalidChangeBatchException;
 import com.amazonaws.services.route53.model.ListResourceRecordSetsRequest;
 import com.amazonaws.services.route53.model.RRType;
@@ -36,11 +35,14 @@ import com.amazonaws.waiters.FixedDelayStrategy;
 import com.amazonaws.waiters.MaxAttemptsRetryStrategy;
 import com.amazonaws.waiters.PollingStrategy;
 import com.amazonaws.waiters.WaiterParameters;
+import com.amazonaws.waiters.WaiterTimedOutException;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -97,7 +99,7 @@ public class Route53Helper {
 
     }
 
-    private AmazonRoute53 getRoute53Client() {
+    AmazonRoute53 getRoute53Client() {
         return AmazonRoute53AsyncClientBuilder.standard().build();
     }
 
@@ -152,26 +154,33 @@ public class Route53Helper {
         );
 
         if (await) {
-            final WaiterParameters<GetChangeRequest> request = new WaiterParameters<GetChangeRequest>()
-                    .withPollingStrategy(
-                            new PollingStrategy(
-                                    new MaxAttemptsRetryStrategy(maxAttempts),
-                                    new FixedDelayStrategy(delayInSeconds)
-                            )
-                    ).withRequest(new GetChangeRequest().withId(result.getChangeInfo().getId()));
-            new AmazonRoute53Waiters(client).resourceRecordSetsChanged().run(request);
-            final String status = checkRequestStatus(client, request.getRequest().getId()).getChangeInfo().getStatus();
-            if (status.equalsIgnoreCase(ChangeStatus.INSYNC.name())) {
-                result.getChangeInfo().setStatus(status);
-            } else {
-                throw new IllegalStateException(
-                        String.format("Route53 DNS record change %s did not reach INSYNC status "
-                                        + "within %d attempts (delay: %ds). Current status: %s",
-                                result.getChangeInfo().getId(), maxAttempts, delayInSeconds, status));
-            }
+            awaitInSync(client, result.getChangeInfo().getId());
+            result.getChangeInfo().setStatus(ChangeStatus.INSYNC.name());
         }
 
         return result;
+    }
+
+    /**
+     * Returns once Route53 has answered INSYNC for the change. The status is not read again afterwards:
+     * a later GetChange call can still answer PENDING for a change that is already INSYNC.
+     */
+    private void awaitInSync(final AmazonRoute53 client, final String changeId) {
+        final long start = System.currentTimeMillis();
+        try {
+            new AmazonRoute53Waiters(client).resourceRecordSetsChanged().run(
+                    new WaiterParameters<GetChangeRequest>()
+                            .withPollingStrategy(new PollingStrategy(
+                                    new MaxAttemptsRetryStrategy(maxAttempts),
+                                    new FixedDelayStrategy(delayInSeconds)))
+                            .withRequest(new GetChangeRequest().withId(changeId)));
+        } catch (WaiterTimedOutException e) {
+            throw new IllegalStateException(
+                    String.format("Route53 DNS record change %s did not reach INSYNC status "
+                                    + "within %d attempts (delay: %ds, waited: %ds)",
+                            changeId, maxAttempts, delayInSeconds,
+                            TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start)), e);
+        }
     }
 
     private static RRType getRRType(final String target) {
@@ -180,10 +189,6 @@ public class Route53Helper {
         } else {
             return RRType.CNAME;
         }
-    }
-
-    private GetChangeResult checkRequestStatus(final AmazonRoute53 client, final String requestId) {
-        return client.getChange(new GetChangeRequest().withId(requestId));
     }
 
 }
