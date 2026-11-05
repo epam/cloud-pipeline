@@ -90,6 +90,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.PATH_DELIMITER;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.REPOSITORY_AND_IMAGE;
+import static com.epam.pipeline.manager.pipeline.ToolUtils.TAG_DELIMITER;
 import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 
 @Slf4j
@@ -99,9 +102,9 @@ public class ToolManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolManager.class);
 
-    private static final Pattern REPOSITORY_AND_IMAGE = Pattern.compile("^(.*)\\/(.*\\/.*)$");
-    private static final String TAG_DELIMITER = ":";
-    private static final String TOOL_DELIMETER = "/";
+    // a digest as the OCI image specification defines it, e.g. sha256:6c3c62...
+    private static final Pattern DIGEST_PATTERN =
+            Pattern.compile("^[a-z0-9]+(?:[+._-][a-z0-9]+)*:[a-zA-Z0-9=_-]+$");
     private static final String LATEST_TAG = "latest";
     private static final int KB_SIZE = 1000;
     private static final long SECONDS_IN_HOUR = 3600;
@@ -369,7 +372,7 @@ public class ToolManager implements SecuredEntityManager {
 
     private String getFullImageNameWithSameTag(final Tool tool, final String image) {
         return tool.getRegistry()
-                + TOOL_DELIMETER
+                + PATH_DELIMITER
                 + getImageWithoutTag(tool.getImage())
                 + TAG_DELIMITER
                 + getTagFromImageName(image);
@@ -804,6 +807,48 @@ public class ToolManager implements SecuredEntityManager {
         }
     }
 
+    /**
+     * Resolves the digest, which a docker image tag points to.
+     *
+     * The digest is resolved in the registry the given image names, so it always belongs to that repository.
+     * A digest, which cannot be resolved, is not an error: an empty value is returned, and it is up to a caller
+     * to fall back to the image tag.
+     *
+     * @param dockerImage a docker image, in the registry/group/tool:tag form
+     * @return the digest, or an empty value if it cannot be resolved
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public Optional<String> resolveImageDigest(final String dockerImage) {
+        try {
+            final Matcher matcher = REPOSITORY_AND_IMAGE.matcher(dockerImage);
+            if (!matcher.find()) {
+                LOGGER.warn("Digest of docker image {} is not resolved: it names no registry.", dockerImage);
+                return Optional.empty();
+            }
+            final DockerRegistry registry = dockerRegistryManager.loadByNameOrId(matcher.group(1));
+            if (registry == null) {
+                LOGGER.warn("Digest of docker image {} is not resolved: its registry is not found.", dockerImage);
+                return Optional.empty();
+            }
+            final String imageWithTag = matcher.group(2);
+            final String image = getImageWithoutTag(imageWithTag);
+            final String tag = getTagFromImageName(imageWithTag);
+            final Optional<String> digest = dockerRegistryManager.getDockerClient(registry, image)
+                    .getManifest(registry, image, tag)
+                    .map(ManifestV2::getDigest)
+                    .filter(value -> DIGEST_PATTERN.matcher(value).matches());
+            if (!digest.isPresent()) {
+                LOGGER.warn("Digest of docker image {} is not resolved: the registry reports no valid digest.",
+                        dockerImage);
+            }
+            return digest;
+        } catch (RuntimeException e) {
+            LOGGER.warn("Digest of docker image {} cannot be resolved. {}", dockerImage, e.getMessage());
+            LOGGER.debug(e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
     public boolean isToolScanningEnabled() {
         return preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED);
     }
@@ -985,7 +1030,7 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     private String getSymlinkTargetImage(final Tool sourceTool, final ToolGroup targetGroup) {
-        return targetGroup.getName() + TOOL_DELIMETER +
+        return targetGroup.getName() + PATH_DELIMITER +
                 toolGroupManager.getGroupAndTool(sourceTool.getImage()).getRight();
     }
 

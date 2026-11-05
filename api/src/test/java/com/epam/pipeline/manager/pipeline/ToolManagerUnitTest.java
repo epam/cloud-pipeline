@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
+import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -438,5 +439,78 @@ public class ToolManagerUnitTest {
 
     private void mockRegistry(final DockerRegistry registry) {
         doReturn(registry).when(dockerRegistryManager).loadByNameOrId(REGISTRY);
+    }
+
+    @Test
+    public void resolveImageDigestShouldReturnDigestOfImageTag() {
+        final DockerClient dockerClient = mockDockerClient();
+        mockDigest(dockerClient, SOME_TAG, TEST_DIGEST);
+
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.of(TEST_DIGEST)));
+    }
+
+    @Test
+    public void resolveImageDigestShouldFallBackToLatestTagIfImageHasNoTag() {
+        final DockerClient dockerClient = mockDockerClient();
+        mockDigest(dockerClient, LATEST_TAG, TEST_DIGEST);
+
+        assertThat(manager.resolveImageDigest(REGISTRY + SLASH + TOOL_IMAGE), is(Optional.of(TEST_DIGEST)));
+    }
+
+    @Test
+    public void resolveImageDigestShouldReturnEmptyIfManifestIsNotFound() {
+        final DockerClient dockerClient = mockDockerClient();
+        doReturn(Optional.empty()).when(dockerClient).getManifest(any(), anyString(), anyString());
+
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.empty()));
+    }
+
+    @Test
+    public void resolveImageDigestShouldReturnEmptyIfDigestIsInvalid() {
+        final DockerClient dockerClient = mockDockerClient();
+        mockDigest(dockerClient, SOME_TAG, "not a digest");
+
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.empty()));
+    }
+
+    @Test
+    public void resolveImageDigestShouldReturnEmptyIfRegistryIsUnavailable() {
+        final DockerClient dockerClient = mockDockerClient();
+        doThrow(new DockerConnectionException(REGISTRY, REGISTRY_ERROR))
+                .when(dockerClient).getManifest(any(), anyString(), anyString());
+
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.empty()));
+    }
+
+    @Test
+    public void resolveImageDigestShouldReturnEmptyIfRegistryIsUnknown() {
+        assertThat(manager.resolveImageDigest("unknown:443" + SLASH + TOOL_IMAGE + COLON + SOME_TAG),
+                is(Optional.empty()));
+    }
+
+    @Test
+    public void resolveImageDigestShouldReturnEmptyIfImageNamesNoRegistry() {
+        final DockerClient dockerClient = mockDockerClient();
+        mockDigest(dockerClient, SOME_TAG, TEST_DIGEST);
+
+        assertThat(manager.resolveImageDigest(TOOL_IMAGE + COLON + SOME_TAG), is(Optional.empty()));
+    }
+
+    private String dockerImage(final String tag) {
+        return REGISTRY + SLASH + TOOL_IMAGE + COLON + tag;
+    }
+
+    private DockerClient mockDockerClient() {
+        final DockerRegistry registry = getRegistry();
+        mockRegistry(registry);
+        final DockerClient dockerClient = mock(DockerClient.class);
+        doReturn(dockerClient).when(dockerRegistryManager).getDockerClient(registry, TOOL_IMAGE);
+        return dockerClient;
+    }
+
+    private void mockDigest(final DockerClient dockerClient, final String tag, final String digest) {
+        final ManifestV2 manifest = new ManifestV2();
+        manifest.setDigest(digest);
+        doReturn(Optional.of(manifest)).when(dockerClient).getManifest(any(), eq(TOOL_IMAGE), eq(tag));
     }
 }

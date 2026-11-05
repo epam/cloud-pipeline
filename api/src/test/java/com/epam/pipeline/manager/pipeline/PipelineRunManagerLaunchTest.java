@@ -41,7 +41,6 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.docker.DockerImageDigestResolver;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
@@ -71,6 +70,7 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_FAL
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_SPOT;
 import static com.epam.pipeline.manager.preference.SystemPreferences.COMMIT_TIMEOUT;
+import static com.epam.pipeline.manager.preference.SystemPreferences.LAUNCH_DOCKER_IMAGE_PIN_DIGEST;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
@@ -105,6 +105,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -206,9 +207,6 @@ public class PipelineRunManagerLaunchTest {
     @Mock
     private RestartRunManager restartRunManager;
 
-    @Mock
-    private DockerImageDigestResolver dockerImageDigestResolver;
-
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
     private final AwsRegion defaultAwsRegion = getDefaultAwsRegion(ID);
     private final AwsRegion nonAllowedAwsRegion = getNonDefaultAwsRegion(ID_2);
@@ -256,12 +254,13 @@ public class PipelineRunManagerLaunchTest {
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
         doReturn(Optional.empty()).when(pipelineVersionManager).resolvePipelineVersion(any(), any());
-        doReturn(Optional.empty()).when(dockerImageDigestResolver).findDigestToPin(any());
+        doReturn(true).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
+        doReturn(Optional.empty()).when(toolManager).resolveImageDigest(any());
     }
 
     @Test
     public void launchPipelineShouldPinDockerImageDigestBeforePodLaunch() {
-        doReturn(Optional.of(DIGEST)).when(dockerImageDigestResolver).findDigestToPin(tool.getImage());
+        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(tool.getImage());
         final AtomicReference<String> launchedDigest = new AtomicReference<>();
         doAnswer(invocation -> {
             launchedDigest.set(((PipelineRun) invocation.getArguments()[0]).getActualDockerImageDigest());
@@ -279,6 +278,17 @@ public class PipelineRunManagerLaunchTest {
         final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
 
         assertNull(run.getActualDockerImageDigest());
+    }
+
+    @Test
+    public void launchPipelineShouldNotPinDockerImageDigestIfPinningIsDisabled() {
+        doReturn(false).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
+        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(tool.getImage());
+
+        final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
+
+        assertNull(run.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString());
     }
 
     @Test
@@ -599,11 +609,25 @@ public class PipelineRunManagerLaunchTest {
         final PipelineRun run = getRunToRestart();
         run.setActualDockerImageDigest(DIGEST);
         mockRestart();
-        doReturn(Optional.of(ANOTHER_DIGEST)).when(dockerImageDigestResolver).findDigestToPin(IMAGE);
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(IMAGE);
 
         final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
 
         assertEquals(ANOTHER_DIGEST, restartedRun.getActualDockerImageDigest());
+    }
+
+    @Test
+    public void restartRunShouldNotPinDockerImageDigestIfPinningIsDisabled() {
+        final PipelineRun run = getRunToRestart();
+        run.setActualDockerImageDigest(DIGEST);
+        mockRestart();
+        doReturn(false).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(IMAGE);
+
+        final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
+
+        assertNull(restartedRun.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString());
     }
 
     @Test

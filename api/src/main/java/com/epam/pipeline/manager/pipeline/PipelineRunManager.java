@@ -85,7 +85,6 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.RunMonitor;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.docker.DockerImageDigestResolver;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
@@ -265,9 +264,6 @@ public class PipelineRunManager {
 
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
-
-    @Autowired
-    private DockerImageDigestResolver dockerImageDigestResolver;
 
     @Autowired
     private PipelineRunServiceUrlManager pipelineRunServiceUrlManager;
@@ -493,8 +489,7 @@ public class PipelineRunManager {
         final PipelineRun run = createPipelineRun(pipelineVersion.orElse(null), configuration, pipeline,
                 tool, toolVersion.orElse(null),
                 region, parentRun.orElse(null), entityIds, configurationId, sensitive);
-        run.setActualDockerImageDigest(dockerImageDigestResolver.findDigestToPin(run.getActualDockerImage())
-                .orElse(null));
+        run.setActualDockerImageDigest(findDigestToPin(run.getActualDockerImage()));
 
         // If there is no podAssignPolicy, then run is scheduled to a dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
@@ -1374,8 +1369,7 @@ public class PipelineRunManager {
         final PipelineRun restartedRun = createRestartRun(run);
         final Tool tool = getToolForRun(configuration);
         // a restarted run is pinned the same way a new run is, its tag may point to another digest by now
-        restartedRun.setActualDockerImageDigest(
-                dockerImageDigestResolver.findDigestToPin(restartedRun.getActualDockerImage()).orElse(null));
+        restartedRun.setActualDockerImageDigest(findDigestToPin(restartedRun.getActualDockerImage()));
         final List<String> endpoints = configuration.isEraseRunEndpoints() ?
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
@@ -1700,6 +1694,27 @@ public class PipelineRunManager {
         List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filter, projectFilter);
         int totalCount = pipelineRunDao.countFilteredPipelineRuns(filter, projectFilter);
         return new PagedResult<>(runs, totalCount);
+    }
+
+    /**
+     * Resolves the digest to pin a run's pod to, if the pinning is enabled.
+     *
+     * The digest is resolved for the very image the pod is created with, so the pinned image always names
+     * the repository the digest belongs to. A digest, which cannot be resolved, is not a launch error:
+     * such a run is launched with the docker image tag, just as it is launched while the pinning is disabled.
+     *
+     * @param dockerImage the run's docker image, in the registry/group/tool:tag form
+     * @return the digest, or {@code null} if the pinning is disabled or the digest cannot be resolved
+     */
+    private String findDigestToPin(final String dockerImage) {
+        if (!Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE_PIN_DIGEST))) {
+            return null;
+        }
+        final Optional<String> digest = toolManager.resolveImageDigest(dockerImage);
+        if (!digest.isPresent()) {
+            log.warn("Docker image {} will be pulled by the tag: its digest is not resolved.", dockerImage);
+        }
+        return digest.orElse(null);
     }
 
     private void setParentInstance(PipelineRun run, Long parentNodeId) {
