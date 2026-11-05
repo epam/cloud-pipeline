@@ -92,6 +92,7 @@ requests or limits, so pick a node with this much free CPU and memory.
 database must be upgraded to new PostgreSQL major versions between them. For example, the GitLab 19.5 image does not
 start on data older than GitLab 19.2. So do not change `CP_GITLAB_VERSION` of an existing deployment and re-deploy
 `cp-git`. To move a deployment from GitLab 15.5 to 19.5, follow [Upgrade GitLab 15.5 to 19.5](upgrade_gitlab_15_to_19.md).
+To move one from GitLab 17.4 to 19.5, follow [Upgrade GitLab 17.4 to 19.5](upgrade_gitlab_17_to_19.md).
 
 Without the `-e` (`--erase-data`) option, a re-deploy of `cp-git` keeps the existing GitLab data. On `17` or later,
 before such a re-deploy:
