@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
@@ -667,8 +668,17 @@ public class SystemPreferences {
                                    new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
                                    isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
 
-    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new StringPreference(
-            "cluster.capacity.reservation.instance.families", "c,m,r,i,t,g", CLUSTER_GROUP, pass);
+    /**
+     * Per {@link CapacityReservationType}, the instance types the cloud provider is allowed to reserve capacity
+     * for - comma-separated {@link org.springframework.util.AntPathMatcher} patterns against the instance type
+     * name, same format as {@link #CLUSTER_ALLOWED_INSTANCE_TYPES}. A type with no entry has no restriction.
+     */
+    public static final ObjectPreference<Map<CapacityReservationType, String>>
+            CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new ObjectPreference<>(
+                    "cluster.capacity.reservation.instance.families",
+                    Collections.singletonMap(CapacityReservationType.FUTURE_DATED, "c*,m*,r*,i*,t*,g*"),
+                    new TypeReference<Map<CapacityReservationType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CapacityReservationType, String>>() {}));
 
     public static final ObjectPreference<CapacityReservationMonitorSettings>
             CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(

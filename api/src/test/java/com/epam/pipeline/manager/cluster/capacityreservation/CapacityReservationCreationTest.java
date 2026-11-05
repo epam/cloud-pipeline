@@ -152,6 +152,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         givenVcpusPerInstance(INSTANCE_VCPUS);
         setPolicies("[]");
+        resetInstanceTypePatterns();
     }
 
     @Test
@@ -461,19 +462,53 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldNotMistakeALongerFamilyPrefixForASupportedOne() {
+    public void shouldAllowALongerFamilyNameThatMatchesTheWildcardPrefix() {
         final NodePoolVO vo = reservationPoolVO();
         vo.setInstanceType("trn1.32xlarge");
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldAllowAFamilyAnAdministratorHasEnabled() {
+        setInstanceTypePattern(CapacityReservationType.FUTURE_DATED, "c*,m*,r*,i*,t*,g*,p*");
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setInstanceType("p5.48xlarge");
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldAllowACapacityBlockForAnInstanceTypeNotCoveredByTheFutureDatedPattern() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.setInstanceType(FOREIGN_INSTANCE_TYPE);
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectACapacityBlockThatDoesNotMatchItsOwnConfiguredPattern() {
+        setInstanceTypePattern(CapacityReservationType.CAPACITY_BLOCK, "p5.4xlarge");
+        final NodePoolVO vo = capacityBlockPoolVO();
 
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldAllowAFamilyAnAdministratorHasEnabled() {
-        setInstanceFamilies("c,m,r,i,t,g,p");
-        final NodePoolVO vo = reservationPoolVO();
-        vo.setInstanceType("p5.48xlarge");
+    public void shouldAllowACapacityBlockThatMatchesItsOwnConfiguredPattern() {
+        setInstanceTypePattern(CapacityReservationType.CAPACITY_BLOCK, "p5.4xlarge");
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.setInstanceType("p5.4xlarge");
 
         final NodePool created = poolManager.create(vo);
 
@@ -927,11 +962,16 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(preference));
     }
 
-    private void setInstanceFamilies(final String families) {
+    private void setInstanceTypePattern(final CapacityReservationType type, final String pattern) {
         final Preference preference =
                 SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES.toPreference();
-        preference.setValue(families);
+        preference.setValue("{\"" + type + "\": \"" + pattern + "\"}");
         preferenceManager.update(Collections.singletonList(preference));
+    }
+
+    private void resetInstanceTypePatterns() {
+        preferenceManager.update(Collections.singletonList(
+                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES.toPreference()));
     }
 
     @Test
