@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumable;
 import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -30,12 +31,17 @@ import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.security.acl.AclExpressions;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +52,14 @@ public class AsyncTaskApiService {
     private final AuthManager authManager;
     private final CheckPermissionHelper permissionHelper;
     private final MessageHelper messageHelper;
+
+    private final Map<AsyncTaskType, Function<AsyncTask, AsyncTaskConsumable>> consumers =
+            new EnumMap<>(AsyncTaskType.class);
+
+    @PostConstruct
+    void registerConsumers() {
+        consumers.put(AsyncTaskType.DOWNLOAD_ARCHIVE, downloadArchiveManager::consume);
+    }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public PagedResult<List<AsyncTask>> loadByFilter(final AsyncTaskFilterVO filter) {
@@ -65,7 +79,11 @@ public class AsyncTaskApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTaskConsumeResult consume(final String id) {
-        return AsyncTaskConsumeResult.of(downloadArchiveManager.consume(reachableByCaller(id)));
+        final AsyncTask task = reachableByCaller(id);
+        final Function<AsyncTask, AsyncTaskConsumable> consumer = consumers.get(task.getType());
+        Assert.notNull(consumer, messageHelper.getMessage(
+                MessageConstants.ERROR_ASYNC_TASK_NOTHING_TO_CONSUME, task.getId(), task.getType()));
+        return AsyncTaskConsumeResult.of(consumer.apply(task));
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

@@ -1046,6 +1046,24 @@ public final class MessageConstants {
     public static final String ERROR_ASYNC_TASK_PAYLOAD_REQUIRED = "error.async.task.payload.required";
     public static final String ERROR_ASYNC_TASK_PAYLOAD_UNEXPECTED =
             "error.async.task.payload.unexpected";
+    public static final String ERROR_ASYNC_TASK_UNPACK_PATH_INVALID =
+            "error.async.task.unpack.path.invalid";
+    public static final String ERROR_ASYNC_TASK_UNPACK_PATH_NOT_CANONICAL =
+            "error.async.task.unpack.path.not.canonical";
+    public static final String ERROR_ASYNC_TASK_NOTHING_TO_CONSUME =
+            "error.async.task.nothing.to.consume";
+    public static final String ERROR_ASYNC_TASK_UNPACK_REQUEST_REQUIRED =
+            "error.async.task.unpack.request.required";
+    public static final String ERROR_ASYNC_TASK_UNPACK_SOURCE_STORAGE_REQUIRED =
+            "error.async.task.unpack.source.storage.required";
+    public static final String ERROR_ASYNC_TASK_UNPACK_SOURCE_PATH_REQUIRED =
+            "error.async.task.unpack.source.path.required";
+    public static final String ERROR_ASYNC_TASK_UNPACK_SOURCE_NOT_A_FILE =
+            "error.async.task.unpack.source.not.a.file";
+    public static final String ERROR_ASYNC_TASK_UNPACK_DESTINATION_STORAGE_REQUIRED =
+            "error.async.task.unpack.destination.storage.required";
+    public static final String ERROR_ASYNC_TASK_UNPACK_DESTINATION_PATH_REQUIRED =
+            "error.async.task.unpack.destination.path.required";
     public static final String ERROR_ASYNC_TASK_STATUS_NOT_REPORTABLE =
             "error.async.task.status.not.reportable";
 

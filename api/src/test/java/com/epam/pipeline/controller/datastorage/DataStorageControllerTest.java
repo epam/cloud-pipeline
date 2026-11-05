@@ -17,6 +17,10 @@
 package com.epam.pipeline.controller.datastorage;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.controller.vo.UnpackArchiveVO;
+import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskStatus;
+import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -412,5 +416,46 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
 
         Mockito.verify(mockStorageApiService, Mockito.times(storageTypeReferenceList.size()))
                 .updatePolicy(Mockito.refEq(dataStorageVO));
+    }
+
+    @Test
+    public void shouldFailCreateUnpackArchiveTaskForUnauthorizedUser() {
+        performUnauthorizedRequest(post(UNPACK_ARCHIVE_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldCreateUnpackArchiveTask() throws Exception {
+        // The endpoint takes no path variable, so the body binding is the whole contract: both
+        // storages and both paths have to arrive in the request object the ACL layer checks.
+        final UnpackArchiveVO request = UnpackArchiveVO.builder()
+                .sourceStorageId(ID)
+                .sourcePath("incoming/data.zip")
+                .destinationStorageId(ID + 1)
+                .destinationPath("extracted/data")
+                .deleteSourceOnSuccess(true)
+                .overwrite(true)
+                .build();
+        final String content = getObjectMapper().writeValueAsString(request);
+        final AsyncTask task = AsyncTask.builder()
+                .id(TEST)
+                .type(AsyncTaskType.UNPACK_ARCHIVE)
+                .status(AsyncTaskStatus.PENDING)
+                .build();
+        Mockito.doReturn(task).when(mockStorageApiService)
+                .createUnpackArchiveTask(Mockito.refEq(request));
+
+        final MvcResult mvcResult = performRequest(post(UNPACK_ARCHIVE_URL).content(content));
+
+        Mockito.verify(mockStorageApiService).createUnpackArchiveTask(Mockito.refEq(request));
+        // Field by field rather than through `assertResponse`: `AsyncTask` is a plain
+        // getter/setter DTO with no `equals`, so comparing two instances compares identities.
+        final AsyncTask answered = getObjectMapper()
+                .readValue(mvcResult.getResponse().getContentAsString(),
+                        DatastorageCreatorUtils.ASYNC_TASK_TYPE)
+                .getPayload();
+        assertEquals(task.getId(), answered.getId());
+        assertEquals(AsyncTaskType.UNPACK_ARCHIVE, answered.getType());
+        assertEquals(AsyncTaskStatus.PENDING, answered.getStatus());
     }
 }

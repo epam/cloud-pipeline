@@ -83,25 +83,36 @@ Every setting is both an option and an environment variable, and the option wins
 
 ## The platform preference
 
-Everything an administrator tunes is in `storage.download.archive.config`, read again on every round,
-so a change applies without a restart:
+Everything an administrator tunes is in `storage.archive.config`, read again on every round, so a
+change applies without a restart:
 
 ```json
 {
-  "destinationStorageId": 9,
-  "destinationPrefix": "archives/",
-  "maxSizeBytes": 107374182400,
-  "maxFilesCount": 100000,
-  "ttlDays": 7,
   "maxUserTasks": 3,
-  "workerMaxRunningMinutes": 240,
-  "stuckTasksThresholdMinutes": 360
+  "stuckTasksThresholdMinutes": 360,
+  "tasks": {
+    "download": {
+      "destinationStorageId": 9,
+      "destinationPrefix": "archives/",
+      "maxSizeBytes": 107374182400,
+      "maxFilesCount": 100000,
+      "ttlDays": 7,
+      "workerMaxRunningMinutes": 240
+    }
+  }
 }
 ```
 
-Without `destinationStorageId` nothing is claimed and tasks stay pending. `null` in either threshold
-means no limit. `stuckTasksThresholdMinutes` must exceed `workerMaxRunningMinutes`, or the cleaner
-fails tasks whose workers are still working.
+**A section per task type under `tasks`, and the shared values at the top.** `maxUserTasks` is one budget across
+every type - the quota exists to stop one person occupying the service, and it is the same service
+whichever task they queued - and `stuckTasksThresholdMinutes` governs the cleaner rather than a task
+type, so it must exceed the **largest** `workerMaxRunningMinutes` of any section. Two of either would
+be a trap, which is why neither sits inside `tasks`. A value put in the wrong level is read as
+absent and silently replaced by its default, so the warnings this service logs at startup name the
+level each setting is read from.
+
+Without `tasks.download.destinationStorageId` nothing is claimed and tasks stay pending. `null` in either
+threshold means no limit.
 
 ## How it is deployed
 
