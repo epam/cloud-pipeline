@@ -1921,6 +1921,8 @@ For more details see [GitLab versions](../../installation/gitlab/gitlab_versions
 
 An existing deployment on GitLab 15.5 moves to 19.5 by a manual procedure: GitLab passes through a list of required versions, and its database is upgraded three times, from PostgreSQL 12 to 17. See [Upgrade GitLab 15.5 to 19.5](../../installation/gitlab/upgrade_gitlab_15_to_19.md).
 
+An existing deployment on GitLab 17.4 moves to 19.5 the same way, with two database upgrades, from PostgreSQL 14 to 17. See [Upgrade GitLab 17.4 to 19.5](../../installation/gitlab/upgrade_gitlab_17_to_19.md).
+
 The platform also changes the way it works with GitLab. These changes do not break the earlier GitLab versions, so a deployment gets them before it upgrades GitLab:
 
 - **`git.token` rotation** (GitLab 15.5 and later). On GitLab 19.5, a new access token must have an expiry date, at most 365 days ahead. The platform now checks the expiry of **`git.token`** on a schedule (every day by default). When the token is close to its expiry, the platform issues a new impersonation token, saves it to **`git.token`**, and revokes the old one. A token without an expiry date is never rotated. The rotation is set by the new preferences **`git.token.rotation.enabled`**, **`git.token.rotation.schedule`**, **`git.token.rotation.threshold.days`** and **`git.token.rotation.lifetime.days`**.  
