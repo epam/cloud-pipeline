@@ -56,6 +56,7 @@
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
     - [Backup workers ignore `CP_BKP_STORAGE_LIST`](#backup-workers-ignore-cp_bkp_storage_list)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
 
 ***
 
@@ -801,3 +802,11 @@ In the current version:
 - when a backup fails, the worker notifies the users of the role with the `CP_BKP_ADMIN_ROLE_ID` ID (by default `1`, i.e. `ROLE_ADMIN`) that have the `Email` attribute
 
 A worker reads `CP_BKP_STORAGE_LIST` from the `cp-config-global` ConfigMap when it starts. To change the storages of a deployment, update the ConfigMap and restart the backup workers.
+
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings.
