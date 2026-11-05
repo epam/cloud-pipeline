@@ -18,10 +18,14 @@ package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.amazonaws.regions.Regions;
 import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.entity.region.CloudProvider;
 import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,5 +58,77 @@ public class StorageServicePricingTest {
         testPriceList.put(Regions.US_EAST_2.getName(), pricingUsEast2);
         final StoragePricingService testStoragePricing = new StoragePricingService(testPriceList);
         Assert.assertEquals(BigDecimal.TEN, testStoragePricing.getDefaultPriceGb());
+    }
+
+    @Test
+    public void priceListThatCantBeLoadedShouldNotFailServiceCreation() throws Exception {
+        final IllegalStateException loadError = new IllegalStateException("Duplicate key us-east-1");
+        final StoragePriceListLoader loader = loader();
+        Mockito.doThrow(loadError).when(loader).loadFullPriceList();
+
+        final StoragePricingService pricingService = new StoragePricingService(loader);
+
+        final IllegalStateException updateError =
+                Assertions.assertThrows(IllegalStateException.class, pricingService::updatePrices);
+        Assertions.assertSame(loadError, updateError.getCause());
+    }
+
+    @Test
+    public void priceListShouldBeLoadedAtUpdateAfterFailedServiceCreation() throws Exception {
+        final StoragePriceListLoader loader = loader();
+        Mockito.doThrow(new IllegalStateException("Price list is unavailable"))
+                .doReturn(priceList(BigDecimal.ONE))
+                .when(loader).loadFullPriceList();
+        final StoragePricingService pricingService = new StoragePricingService(loader);
+
+        pricingService.updatePrices();
+
+        Assertions.assertEquals(BigDecimal.ONE, pricingService.getDefaultPriceGb());
+        Assertions.assertNotNull(pricingService.getRegionPricing(Regions.US_EAST_1.getName()));
+    }
+
+    @Test
+    public void failedUpdateShouldKeepPreviousPrices() throws Exception {
+        final StoragePriceListLoader loader = loader();
+        final Map<String, StoragePricing> previousPriceList = priceList(BigDecimal.ONE);
+        Mockito.doReturn(previousPriceList)
+                .doThrow(new IllegalStateException("Price list is unavailable"))
+                .when(loader).loadFullPriceList();
+        final StoragePricingService pricingService = new StoragePricingService(loader);
+
+        pricingService.updatePrices();
+
+        Assertions.assertEquals(BigDecimal.ONE, pricingService.getDefaultPriceGb());
+        Assertions.assertSame(previousPriceList.get(Regions.US_EAST_1.getName()),
+                pricingService.getRegionPricing(Regions.US_EAST_1.getName()));
+    }
+
+    @Test
+    public void updateWithoutPricesShouldKeepPreviousPrices() throws Exception {
+        final StoragePriceListLoader loader = loader();
+        final Map<String, StoragePricing> previousPriceList = priceList(BigDecimal.ONE);
+        Mockito.doReturn(previousPriceList)
+                .doReturn(priceList(BigDecimal.ZERO))
+                .when(loader).loadFullPriceList();
+        final StoragePricingService pricingService = new StoragePricingService(loader);
+
+        pricingService.updatePrices();
+
+        Assertions.assertEquals(BigDecimal.ONE, pricingService.getDefaultPriceGb());
+        Assertions.assertSame(previousPriceList.get(Regions.US_EAST_1.getName()),
+                pricingService.getRegionPricing(Regions.US_EAST_1.getName()));
+    }
+
+    private static StoragePriceListLoader loader() {
+        final StoragePriceListLoader loader = Mockito.mock(StoragePriceListLoader.class);
+        Mockito.doReturn(CloudProvider.AWS).when(loader).getProvider();
+        return loader;
+    }
+
+    private static Map<String, StoragePricing> priceList(final BigDecimal priceCentsPerGb) {
+        final StoragePricing pricing = new StoragePricing();
+        pricing.addPrice(STORAGE_CLASS,
+                new StoragePricing.StoragePricingEntity(0L, Long.MAX_VALUE, priceCentsPerGb));
+        return Collections.singletonMap(Regions.US_EAST_1.getName(), pricing);
     }
 }
