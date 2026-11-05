@@ -98,7 +98,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         try {
             return buildDocRequests(storages, previousSync, syncStart);
         } catch (Exception e) {
-            log.error("An error during storage billing synchronization: {}", e.getMessage());
+            log.error("An error during storage billing synchronization: {}", e.getMessage(), e);
             return Collections.emptyList();
         }
     }
