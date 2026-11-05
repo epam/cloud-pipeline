@@ -562,6 +562,7 @@ Other changes:
 - The Filebeat log shippers of the API and EDGE services run with `seccomp` disabled. Their `seccomp` policy does not allow the `clone3` system call, which Rocky Linux 9 uses to start threads.
 - The cron jobs of the WebDAV service and of the backup workers skip the PAM account check of `root`. Otherwise, on hosts whose AppArmor confines the `unix_chkpwd` helper (for example, Ubuntu 24.04), `crond` would not run them.
 - The WebDAV service mounts the Azure blob storages with `blobfuse2`, because `blobfuse` 1 has no Rocky Linux 9 package. It uses the `mountv1` command of `blobfuse2`, with the options that keep the behavior of `blobfuse` 1: a 1-second metadata cache, no online version check, and a mount over a non-empty temporary folder.
+- The users export names its date columns `registrationDate UTC` and `firstLoginDate UTC` on any image ([#4739](https://github.com/epam/cloud-pipeline/issues/4739)). Before, the API took the zone name from the system, and Rocky Linux 9 names it `Etc/UTC`. The dates are in UTC in both cases. See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
 
 ## `pipe` CLI on Python 3
 
