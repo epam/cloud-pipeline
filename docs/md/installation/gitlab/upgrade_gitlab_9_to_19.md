@@ -187,8 +187,8 @@ Every image checks the version of the data it starts on, and stops when a requir
 * The `git-19-<version>` image of the same build in the registry of the deployment, under the same prefix as the
   current `cp-git` image (`<registry prefix>:git-<version>`, or `<registry prefix>:git-9-<version>` once a build with
   the GitLab 19 support has deployed `cp-git`).
-* The `cp-bkp-worker-<version>` image of the same build, for the backup workers. An older worker image is based on
-  CentOS 7: it cannot run the `pipe` of this build, and has no backup script for `cp-gitlab-db`.
+* The `cp-bkp-worker-<version>` image of the same build, for the backup workers. An older worker image has no backup
+  script for `cp-gitlab-db`.
 
 ### Session setup
 
