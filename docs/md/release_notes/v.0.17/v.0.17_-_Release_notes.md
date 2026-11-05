@@ -70,6 +70,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
@@ -1962,6 +1963,14 @@ More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-
 ***
 
 ## Notable Bug fixes
+
+### Users export: the names of the date columns depend on the API time zone
+
+[#4739](https://github.com/epam/cloud-pipeline/issues/4739)
+
+Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
+Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
+See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
 
 ### The backup worker of the GitLab database always fails
 

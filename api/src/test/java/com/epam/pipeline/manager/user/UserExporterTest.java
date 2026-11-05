@@ -20,10 +20,12 @@ import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.dto.credits.PlatformUsageCreditsUserBalance;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
@@ -34,7 +36,35 @@ public class UserExporterTest {
     private static final int CREDITS_VALUE = 1500;
     private static final String USAGE_CREDITS_HEADER = "usageCredits";
 
+    private static final String DATE_COLUMNS_HEADER = "registrationDate UTC,firstLoginDate UTC";
+
     private final UserExporter exporter = new UserExporter();
+    private final TimeZone defaultTimeZone = TimeZone.getDefault();
+
+    @After
+    public void restoreDefaultTimeZone() {
+        TimeZone.setDefault(defaultTimeZone);
+    }
+
+    @Test
+    public void shouldNameDateColumnsUtcWhenDefaultTimeZoneIsEtcUtc() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Etc/UTC"));
+
+        final String csv = exporter.exportUsers(exportSettingsWithDates(), Collections.emptyList(),
+                Collections.emptyList());
+
+        assertThat(csv.trim()).isEqualTo(DATE_COLUMNS_HEADER);
+    }
+
+    @Test
+    public void shouldNameDateColumnsUtcWhenDefaultTimeZoneIsNotUtc() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"));
+
+        final String csv = exporter.exportUsers(exportSettingsWithDates(), Collections.emptyList(),
+                Collections.emptyList());
+
+        assertThat(csv.trim()).isEqualTo(DATE_COLUMNS_HEADER);
+    }
 
     @Test
     public void shouldIncludeUsageCreditsColumnInHeaderWhenFlagIsSet() {
@@ -88,6 +118,14 @@ public class UserExporterTest {
         final PipelineUserExportVO settings = new PipelineUserExportVO();
         settings.setIncludeHeader(true);
         settings.setIncludeCredits(true);
+        return settings;
+    }
+
+    private static PipelineUserExportVO exportSettingsWithDates() {
+        final PipelineUserExportVO settings = new PipelineUserExportVO();
+        settings.setIncludeHeader(true);
+        settings.setIncludeRegistrationDate(true);
+        settings.setIncludeFirstLoginDate(true);
         return settings;
     }
 
