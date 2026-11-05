@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
 
 ***
 
@@ -912,3 +913,11 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings.
