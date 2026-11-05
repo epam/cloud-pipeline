@@ -73,6 +73,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [`pipe` CLI does not run on CentOS 7 and Ubuntu 18.04](#pipe-cli-does-not-run-on-centos-7-and-ubuntu-1804)
 
 ***
 
@@ -895,7 +896,7 @@ Please note:
 
 [#4618](https://github.com/epam/cloud-pipeline/issues/4618)
 
-Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI is built on Rocky Linux 8 with Python 3.12, and requires `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
+Previously, the image of the backup workers (`cp-bkp-worker-*`) was based on CentOS 7. The `pipe` CLI was built on Rocky Linux 8 with Python 3.12, and required `glibc` 2.28 or later, while CentOS 7 has `glibc` 2.17. So a backup worker could not run `pipe`, and could not copy the backups to the storage.
 In the current version, the backup worker image is based on Rocky Linux 9.8.
 
 ### The backup worker of the GitLab database always fails
@@ -920,3 +921,11 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### `pipe` CLI does not run on CentOS 7 and Ubuntu 18.04
+
+[#4735](https://github.com/epam/cloud-pipeline/issues/4735)
+
+Previously, the Linux binary and tarball of the `pipe` CLI were built on Rocky Linux 8, and required `glibc` 2.28 or later. They did not run on the older Linux distributions, e.g. CentOS 7, Amazon Linux 2, Ubuntu 16.04 and 18.04. In a run of a tool based on such a distribution, the `pipe` commands, and the data transfers and the storage mounts made with `pipe`, failed.
+Now, the binary and the tarball are built on CentOS 7, and run on `glibc` 2.17 or later. They bring OpenSSL 3.5 with them. As before, they take the CA certificates and the OpenSSL configuration from `/etc/pki/tls` of the system, if it has one.
+See details in [14.1. Install and setup CLI](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
