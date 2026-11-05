@@ -15,6 +15,8 @@
 
 # SEE `nomachine_setup_deps` FOR THE DEPS PREPARATION STEPS
 
+set -o pipefail
+
 NOMACHINE_INSTALL_TASK="NoMachineInitialization"
 NM_TARGET_VERSION="${CP_CAP_DESKTOP_NM_VERSION:-6.5.6-9}"
 CP_NM_WAIT_TIMEOUT="${CP_NM_WAIT_TIMEOUT:-10}"
@@ -48,7 +50,7 @@ function get_installed_nm_version {
 function update_nm {
   nm_version=$1
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm
     if [ $? -ne 0 ]; then
       return 1
     fi
@@ -72,7 +74,7 @@ function update_nm {
 
     rm -f nomachine.rpm
   else
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb
   fi
@@ -91,14 +93,14 @@ function install_nm {
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     os_ver=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
     CP_NM_DEFAULT_DESKTOP_COMMAND="${CP_NM_DEFAULT_DESKTOP_COMMAND_RPM:-/usr/bin/startxfce4}"
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/xfce4-$os_ver.tar.gz" -O xfcedesktop.tar.gz && \
     mkdir -p xfcedesktop && \
     tar -xzvf xfcedesktop.tar.gz -C xfcedesktop && \
     yum install -y --nogpgcheck xfcedesktop/*.rpm && \
     rm -rf xfcedesktop* && \
     rm -f /etc/xdg/autostart/xfce-polkit* && \
     /bin/dbus-uuidgen > /etc/machine-id && \
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_x86_64.rpm" -O nomachine.rpm && \
     yum install -y nomachine.rpm && \
     rm -f nomachine.rpm
   else
@@ -112,7 +114,7 @@ function install_nm {
                         xfce4 \
                         xfce4-xkb-plugin \
                         dbus-x11 && \
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine_${nm_version}_amd64.deb" -O nomachine.deb && \
     dpkg -i nomachine.deb && \
     rm -f nomachine.deb
   fi
@@ -128,7 +130,7 @@ function config_nm {
   else
     $CP_PYTHON_PATH -m pip install -I $CP_PIP3_EXTRA_ARGS flask==2.3.3
   fi && \
-  wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
+  wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
   mkdir -p nomachine-common/ /etc/nomachine/ && \
   tar -C nomachine-common/ -zxvf nomachine-common.tar.gz && \
   mv nomachine-common/create_chrome_launcher.sh /tmp/ && \
@@ -145,11 +147,11 @@ function install_nm_extras {
   CP_NM_EXTRA_INSTALL_CHROME_VERSION="${CP_NM_EXTRA_INSTALL_CHROME_VERSION:-104.0.5112.79-1}"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     # Google chrome installation may be stuck, when updating. So just wait a bit and proceed further
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.rpm" -O /opt/google-chrome.rpm && \
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.rpm" -O /opt/google-chrome.rpm && \
     timeout ${CP_NM_EXTRA_INSTALL_TIMEOUT:-1}m yum install -y /opt/google-chrome.rpm && \
     rm -f /opt/google-chrome.rpm
   else
-    wget -q "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.deb" -O /opt/google-chrome.deb && \
+    wget --no-verbose "${GLOBAL_DISTRIBUTION_URL}tools/chrome/google-chrome-${CP_NM_EXTRA_INSTALL_CHROME_VERSION}.deb" -O /opt/google-chrome.deb && \
     apt-get install --no-upgrade -y /opt/google-chrome.deb && \
     rm -f /opt/google-chrome.deb && \
     rm -f /etc/apt/sources.list.d/google-chrome.list 

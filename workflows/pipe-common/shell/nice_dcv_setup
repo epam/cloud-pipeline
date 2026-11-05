@@ -82,7 +82,7 @@ function install_dcv {
         _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11445-el8-x86_64
     fi
 
-    wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
+    wget --no-verbose "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
       tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && \
       cd ${_NICE_DCV_DISTRIBUTION} && \
       yum install -y nice-dcv-server-*.x86_64.rpm \
@@ -92,9 +92,9 @@ function install_dcv {
   else
     if [[ "$CP_VER" == *"18.04"* ]]; then
       _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu1804-x86_64
-      wget "$_dcv_distro_url/NICE-GPG-KEY"
+      wget --no-verbose "$_dcv_distro_url/NICE-GPG-KEY"
       gpg --import NICE-GPG-KEY
-      wget "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
+      wget --no-verbose "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
       tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION && \
       apt install -y ./nice-dcv-server_2021.2.11190-1_amd64.ubuntu1804.deb \
                      ./nice-dcv-web-viewer_2021.2.11190-1_amd64.ubuntu1804.deb \
@@ -102,9 +102,9 @@ function install_dcv {
       _pkg_result=$?
     elif [[  "$CP_VER" == *"20.04"* ]]; then
       _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu2004-x86_64
-      wget "$_dcv_distro_url/NICE-GPG-KEY"
+      wget --no-verbose "$_dcv_distro_url/NICE-GPG-KEY"
       gpg --import NICE-GPG-KEY
-      wget "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
+      wget --no-verbose "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
       tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION && \
       apt install -y ./nice-dcv-server*.deb \
                       ./nice-dcv-web-viewer*.deb \
@@ -112,9 +112,9 @@ function install_dcv {
       _pkg_result=$?
     elif [[  "$CP_VER" == *"22.04"* ]]; then
       _NICE_DCV_DISTRIBUTION=nice-dcv-2022.2-14521-ubuntu2204-x86_64
-      wget "$_dcv_distro_url/NICE-GPG-KEY"
+      wget --no-verbose "$_dcv_distro_url/NICE-GPG-KEY"
       gpg --import NICE-GPG-KEY
-      wget "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
+      wget --no-verbose "$_dcv_distro_url/$_NICE_DCV_DISTRIBUTION.tgz" && \
       tar -xvzf $_NICE_DCV_DISTRIBUTION.tgz && cd $_NICE_DCV_DISTRIBUTION && \
       apt install -y ./nice-dcv-server*.deb \
                       ./nice-dcv-web-viewer*.deb \
