@@ -173,6 +173,7 @@ A new SSH key named `CP-SSH-Key`
                 "kms:GenerateDataKey",
                 "ec2:DescribeSubnets",
                 "ec2:DeleteKeyPair",
+                "ec2:PurchaseCapacityBlock",
                 "cloudwatch:GetMetricStatistics",
                 "cloudwatch:ListMetrics",
                 "cloudwatch:PutMetricData",
