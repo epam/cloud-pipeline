@@ -801,3 +801,11 @@ In the current version:
 - when a backup fails, the worker notifies the users of the role with the `CP_BKP_ADMIN_ROLE_ID` ID (by default `1`, i.e. `ROLE_ADMIN`) that have the `Email` attribute
 
 A worker reads `CP_BKP_STORAGE_LIST` from the `cp-config-global` ConfigMap when it starts. To change the storages of a deployment, update the ConfigMap and restart the backup workers.
+
+### AWS: a run with a Route53 DNS record of an endpoint fails although Route53 has created the record
+
+[#4741](https://github.com/epam/cloud-pipeline/issues/4741)
+
+Previously, the API read the status of a new Route53 DNS record once more after Route53 had already reported it as `INSYNC`. Route53 could still answer `PENDING` to that second read, and the API then reported the record as failed.
+So a run whose endpoint has the **Sub-Domain** option sometimes failed: the `CreateDNSRecord` task logged "Fail to create DNS record for the run", and the EDGE service set the run status to `FAILURE`. The error message also stated a timeout that had not happened.
+Now, the API uses the `INSYNC` status Route53 reported. If the record is still not `INSYNC` after `CP_API_DNS_ROUTE53_MAX_ATTEMPTS` retries, made `CP_API_DNS_ROUTE53_DELAY_SECONDS` apart, the request fails, and the message gives the attempts, the delay and the time waited.
