@@ -801,3 +801,12 @@ In the current version:
 - when a backup fails, the worker notifies the users of the role with the `CP_BKP_ADMIN_ROLE_ID` ID (by default `1`, i.e. `ROLE_ADMIN`) that have the `Email` attribute
 
 A worker reads `CP_BKP_STORAGE_LIST` from the `cp-config-global` ConfigMap when it starts. To change the storages of a deployment, update the ConfigMap and restart the backup workers.
+
+### AWS: the billing service stops when the `S3` price list has two `General Purpose` storage products in a region
+
+[#4742](https://github.com/epam/cloud-pipeline/issues/4742)
+
+Previously, the billing service expected one `General Purpose` storage product per region in the AWS price list.
+In June 2026, AWS added an "Annotations" product of this storage class to the `S3` price list in almost every region. Since then, the `S3` storage billing failed every day, and after a restart the billing service did not start at all, so the run billing and the other storage billings stopped as well. The container kept running without the service, so nothing showed the failure. Also, in the `API` price loading mode, the service applied only one of its two product filters.
+Now, the billing service takes only the standard storage product of each region. The storage costs of the days when the storage billing failed or the billing service did not run are not restored.
+Also, a price list that can't be loaded no longer stops the billing service. The service keeps the prices it loaded before, logs the error with its cause, and tries again at the next storage billing. The run billing and the other storage billings go on. If no prices were loaded yet, that storage billing is skipped for the day, and it is not written later. And if the billing service stops, its container stops too, so Kubernetes restarts it.

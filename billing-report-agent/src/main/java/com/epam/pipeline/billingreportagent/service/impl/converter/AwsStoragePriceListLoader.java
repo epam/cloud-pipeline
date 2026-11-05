@@ -27,6 +27,7 @@ import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceDimensions;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceList;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPriceRate;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsPricingCard;
+import com.epam.pipeline.billingreportagent.model.pricing.AwsProduct;
 import com.epam.pipeline.billingreportagent.model.pricing.AwsTerms;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -46,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,6 +64,10 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
     private static final String STORAGE = "Storage";
     private static final String STORAGE_CLASS_KEY = "storageClass";
     private static final String GENERAL_STORAGE = "General Purpose";
+    private static final String USAGE_TYPE_KEY = "usagetype";
+    // The standard timed storage, with an optional region prefix (none for S3 in us-east-1). Any other usage type
+    // of the General Purpose storage class, e.g. S3 Annotation-TimedStorage-ByteHrs, is not billed here.
+    private static final String STANDARD_TIMED_STORAGE_USAGE_TYPE = "([A-Z0-9]+-)?TimedStorage-ByteHrs";
     private static final String US_DOLLAR_CODE = "USD";
 
     private final String awsStorageServiceName;
@@ -90,12 +96,19 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     @Override
     public Map<String, StoragePricing> loadFullPriceList() {
-        return loadAwsPricingCards(awsStorageServiceName, priceLoadingMode).stream()
+        final Map<String, StoragePricing> prices = new HashMap<>();
+        loadAwsPricingCards(awsStorageServiceName, priceLoadingMode).stream()
             .map(this::extractEntryFromAwsPricing)
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .collect(Collectors.toMap(SimpleEntry::getKey,
-                                      SimpleEntry::getValue));
+            .forEach(entry -> {
+                if (prices.putIfAbsent(entry.getKey(), entry.getValue()) != null) {
+                    throw new IllegalStateException(String.format(
+                        "More than one %s storage price product for the region %s!",
+                        awsStorageServiceName, entry.getKey()));
+                }
+            });
+        return prices;
     }
 
     private Optional<SimpleEntry<String, StoragePricing>> extractEntryFromAwsPricing(final AwsPricingCard price) {
@@ -141,13 +154,6 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
 
     private List<AwsPricingCard> getAwsPricingCardsViaApi(final String awsStorageServiceName) {
         final List<AwsPricingCard> allPrices = new ArrayList<>();
-        final Filter filter = new Filter();
-        filter.setType(TERM_MATCH_FILTER);
-        filter.setField(PRODUCT_FAMILY_KEY);
-        filter.setValue(STORAGE);
-        filter.setField(STORAGE_CLASS_KEY);
-        filter.setValue(GENERAL_STORAGE);
-
         String nextToken = StringUtils.EMPTY;
 
         final AWSPricing awsPricingService = AWSPricingClientBuilder
@@ -155,19 +161,36 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             .withRegion(Regions.US_EAST_1)
             .build();
         do {
-            final GetProductsRequest request = new GetProductsRequest()
-                .withServiceCode(awsStorageServiceName)
-                .withFilters(filter)
-                .withNextToken(nextToken)
-                .withFormatVersion(AWS_PRICE_FORMAT_VERSION);
-
+            final GetProductsRequest request = buildProductsRequest(awsStorageServiceName, nextToken);
             final GetProductsResult result = awsPricingService.getProducts(request);
-            result.getPriceList().stream()
-                .map(this::parseAwsPricingCard)
-                .forEach(allPrices::add);
+            allPrices.addAll(parseStandardTimedStorageCards(result.getPriceList()));
             nextToken = result.getNextToken();
         } while (nextToken != null);
         return allPrices;
+    }
+
+    /**
+     * The API filters can't tell the standard timed storage from the other General Purpose storage products,
+     * so the usage type is checked here.
+     */
+    List<AwsPricingCard> parseStandardTimedStorageCards(final List<String> priceList) {
+        return priceList.stream()
+            .map(this::parseAwsPricingCard)
+            .filter(card -> isStandardTimedStorage(card.getProduct()))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * One filter per attribute: the API applies all of them.
+     */
+    GetProductsRequest buildProductsRequest(final String awsStorageServiceName, final String nextToken) {
+        return new GetProductsRequest()
+            .withServiceCode(awsStorageServiceName)
+            .withFilters(
+                new Filter().withType(TERM_MATCH_FILTER).withField(PRODUCT_FAMILY_KEY).withValue(STORAGE),
+                new Filter().withType(TERM_MATCH_FILTER).withField(STORAGE_CLASS_KEY).withValue(GENERAL_STORAGE))
+            .withNextToken(nextToken)
+            .withFormatVersion(AWS_PRICE_FORMAT_VERSION);
     }
 
     private List<AwsPricingCard> getAwsPricingCardsFromJson() {
@@ -177,6 +200,7 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
             return fullPriceList.getProducts().values().stream()
                 .filter(awsProduct -> STORAGE.equals(awsProduct.getProductFamily()))
                 .filter(awsProduct -> GENERAL_STORAGE.equals(awsProduct.getAttributes().get(STORAGE_CLASS_KEY)))
+                .filter(this::isStandardTimedStorage)
                 .map(awsProduct -> {
                     final AwsPricingCard card = new AwsPricingCard();
                     card.setProduct(awsProduct);
@@ -195,6 +219,14 @@ public class AwsStoragePriceListLoader implements StoragePriceListLoader {
         } catch (IOException e) {
             throw new IllegalStateException("Can't load AWS price list from given endpoint!", e);
         }
+    }
+
+    private boolean isStandardTimedStorage(final AwsProduct product) {
+        return Optional.ofNullable(product)
+            .map(AwsProduct::getAttributes)
+            .map(attributes -> attributes.get(USAGE_TYPE_KEY))
+            .filter(usageType -> usageType.matches(STANDARD_TIMED_STORAGE_USAGE_TYPE))
+            .isPresent();
     }
 
     public String readStringFromURL(String url) throws IOException {
