@@ -565,10 +565,10 @@ Other changes:
 
 ## `pipe` CLI on Python 3
 
-The `pipe` CLI runs on Python 3. Its Linux binary and tarball are built with Python 3.12 on Rocky Linux 8, and its Windows build uses Python 3.12 as well.  
+The `pipe` CLI runs on Python 3. Its Linux binary and tarball are built with Python 3.12 on CentOS 7, and its Windows build uses Python 3.12 as well.  
 This brings the following changes:
 
-- the Linux binary and tarball require `glibc` 2.28 or later, e.g. RHEL / Rocky Linux 8, Debian 10, Ubuntu 20.04 or later. Runs of the tools, which images are based on older distributions, e.g. CentOS 7, cannot use `pipe`: neither its commands, nor the input/output data transfers and the storage mounts that are made with it
+- the Linux binary and tarball require `glibc` 2.17 or later, e.g. CentOS / RHEL 7, Amazon Linux 2, Ubuntu 16.04, Debian 9 or later. They bring OpenSSL 3.5 with them, and take the CA certificates and the OpenSSL configuration from `/etc/pki/tls` of the system, if it has one
 - the `pipe-el6` binary and tarball for CentOS 6 / RHEL 6 are no longer provided
 - the macOS binary is no longer provided
 - a run fails at startup, if it sets the `CP_PIPELINE_CLI_BINARY_NAME` parameter to `pipe-el6`, or sets the `CP_PIPELINE_CLI_FROM_DIST_TAR` parameter to install `pipe` from the source tarball
@@ -598,7 +598,6 @@ In a run:
 
 The Python 3.12 distribution is built in the `manylinux2014` image (`glibc` 2.17), with OpenSSL, libffi, SQLite, ncurses, libedit, xz, bzip2, zlib and libuuid built into it. So its modules, but `crypt`, load in any tool image with `glibc` 2.17 or later, whatever other libraries the image has. `python3.12.BUILD-INFO.txt`, next to the distribution, lists the versions it is built from. The distribution has no `dbm.gnu`, `dbm.ndbm`, `nis` or `tkinter` modules. These features do not work in all the tool images:
 
-- **CentOS 7 and other distributions with `glibc` older than 2.28.** The `pipeline` package installs there from the package mirror, but the `pipe` CLI does not run: see [`pipe` CLI on Python 3](#pipe-cli-on-python-3).
 - **`crypt` needs `libcrypt.so.1`.** On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
 - **`ssl` needs the CA certificates of the image.** Minimal Debian and Ubuntu images have none until the `ca-certificates` package is installed. `pip` and `requests` work without them: they trust their own CA bundle.
 
@@ -606,7 +605,7 @@ The previous distribution, CPython 3.12.0 with OpenSSL 1.1.1w built on CentOS 7,
 
 For more details see [Image requirements](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#image-requirements).
 
-Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. The AWS node images that the installer of this version builds have it already. The `pipeline` package installs on node hosts with an older `glibc` as well, e.g. CentOS 7 (the default base of the Azure node image), and the commit and pause scripts do not need the `pipe` CLI.
+Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. The AWS node images that the installer of this version builds have it already. The `pipeline` package installs on node hosts with `glibc` 2.17 as well, e.g. CentOS 7 (the default base of the Azure node image), and the commit and pause scripts do not need the `pipe` CLI.
 
 In the platform services:
 
