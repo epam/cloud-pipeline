@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.pipeline.ToolUtils;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.DoubleUtils;
+import com.epam.pipeline.utils.InstanceTypePatternMatcher;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -53,11 +54,9 @@ import java.util.Objects;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -209,27 +208,15 @@ public class NodePoolValidator {
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_PLATFORM_NOT_SUPPORTED,
                         platform));
 
-        final String family = instanceFamily(vo.getInstanceType());
-        final Set<String> supportedFamilies = supportedInstanceFamilies();
-        Assert.isTrue(supportedFamilies.isEmpty() || supportedFamilies.contains(family),
+        final String pattern = supportedInstanceTypePattern(request.getReservationType());
+        Assert.isTrue(InstanceTypePatternMatcher.matches(vo.getInstanceType(), pattern),
                 messageHelper.getMessage(MessageConstants.ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED,
-                        vo.getInstanceType(), String.join(", ", supportedFamilies)));
+                        vo.getInstanceType(), request.getReservationType(), pattern));
     }
 
-    private static String instanceFamily(final String instanceType) {
-        if (StringUtils.isBlank(instanceType)) {
-            return StringUtils.EMPTY;
-        }
-        final int firstDigit = StringUtils.indexOfAny(instanceType, "0123456789".split(StringUtils.EMPTY));
-        return (firstDigit < 0 ? instanceType : instanceType.substring(0, firstDigit)).toLowerCase(Locale.ROOT);
-    }
-
-    private Set<String> supportedInstanceFamilies() {
-        return Arrays.stream(StringUtils.split(StringUtils.defaultString(preferenceManager.getPreference(
-                                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)), ','))
-                .map(family -> family.trim().toLowerCase(Locale.ROOT))
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
+    private String supportedInstanceTypePattern(final CapacityReservationType type) {
+        return preferenceManager.getPreference(SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES)
+                .get(type);
     }
 
     private void validateReservationWindow(final CapacityReservationRequest request) {
