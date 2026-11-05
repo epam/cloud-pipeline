@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# A Python 3 run installs pipe-common with the bundled Python 3.12 from the pypi3 mirror only, which
-# deploy/repos/build-repo-pypi3.sh builds: a pin of setup.py missing from that list fails every Python 3 run.
+# A Python 3 run installs pipe-common with the bundled Python 3.12 from the pypi3 mirror only, which is built from
+# deploy/dependencies/pypi3/requirements.txt: a pin of setup.py missing from that list fails every Python 3 run.
 
 import os
-import re
 import runpy
 import sys
 
@@ -33,8 +32,8 @@ from packaging.version import Version
 
 _PIPE_COMMON_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 _SETUP_PY = os.path.join(_PIPE_COMMON_DIR, 'setup.py')
-_MIRROR_SCRIPT = os.path.abspath(os.path.join(_PIPE_COMMON_DIR, '..', '..', 'deploy', 'repos',
-                                              'build-repo-pypi3.sh'))
+_MIRROR_REQUIREMENTS = os.path.abspath(os.path.join(_PIPE_COMMON_DIR, '..', '..', 'deploy', 'dependencies', 'pypi3',
+                                                    'requirements.txt'))
 _LINUX = {'platform_system': 'Linux', 'sys_platform': 'linux', 'os_name': 'posix'}
 
 
@@ -57,11 +56,12 @@ def _pipe_common_linux_requirements(monkeypatch):
 
 
 def _mirror_versions():
-    with open(_MIRROR_SCRIPT) as script:
-        listing = re.search(r'^pypi_packages="([^"]*)"', script.read(), re.MULTILINE)
-    assert listing, 'no pypi_packages list in {}'.format(_MIRROR_SCRIPT)
+    with open(_MIRROR_REQUIREMENTS) as requirements:
+        lines = [line.split('#', 1)[0].strip() for line in requirements]
+    lines = [line for line in lines if line]
+    assert lines, 'no requirement in {}'.format(_MIRROR_REQUIREMENTS)
     versions = {}
-    for line in listing.group(1).split():
+    for line in lines:
         requirement = Requirement(line)
         versions.setdefault(canonicalize_name(requirement.name), set()).add(_pinned_version(requirement))
     return versions
@@ -77,4 +77,4 @@ class TestPypi3MirrorList(object):
             pinned = _pinned_version(requirement)
             if not versions or (pinned is not None and pinned not in versions):
                 missing.append(str(requirement))
-        assert not missing, 'missing from the pypi_packages list of {}: {}'.format(_MIRROR_SCRIPT, missing)
+        assert not missing, 'missing from {}: {}'.format(_MIRROR_REQUIREMENTS, missing)
