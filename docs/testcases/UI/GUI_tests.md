@@ -861,7 +861,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (145 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (146 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -946,6 +946,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**3300**](Run_tools_in_sandbox/Launch_parameters/3300.md) | Display warning for tools with/without CUDA toolkit |  |
 | [**3417**](Run_tools_in_sandbox/Launch_parameters/3417.md) | Add kubernetes support to grid engine autoscaler |  |
 | [**3433**](Run_tools_in_sandbox/Launch_parameters/3433.md) | Allow to use r6i instance family in the SGE hybrid autoscaling | :white_check_mark: |
+| [**4718**](Run_tools_in_sandbox/Launch_parameters/4718.md) | [MANUAL] Open the CP_VSCODE_WORKSPACE_DIR folder in VS Code on connect |  |
 | [**783**](Run_tools_in_sandbox/Launch_parameters/783.md) | Check the configure CPU resource | :white_check_mark: |
 | [**913**](Run_tools_in_sandbox/Launch_parameters/913.md) | Add support for autoscaling filesystem for AWS | :white_check_mark: |
 | [**TC-PARAMETERS-1**](Run_tools_in_sandbox/Launch_parameters/TC-PARAMETERS-1.md) | Check the configure allowed instance types | :white_check_mark: |
