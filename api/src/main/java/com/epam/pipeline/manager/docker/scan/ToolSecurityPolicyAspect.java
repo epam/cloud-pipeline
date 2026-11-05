@@ -67,7 +67,8 @@ public class ToolSecurityPolicyAspect {
         PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
 
         Tool tool = toolManager.loadByNameOrId(configuration.getDockerImage());
-        String tag = toolManager.getTagFromImageName(tool, configuration.getDockerImage());
+        String tag = toolManager.getTagFromImageName(configuration.getDockerImage(),
+                toolManager.resolveDefaultVersion(tool));
         final ToolExecutionCheckStatus checkStatus = clairToolScanManager.checkTool(tool, tag);
         if (!checkStatus.isAllowed()) {
             throw new ToolExecutionDeniedException(

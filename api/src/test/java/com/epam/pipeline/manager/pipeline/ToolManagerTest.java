@@ -636,23 +636,25 @@ public class ToolManagerTest extends AbstractManagerTest {
         String repoImage = "repo/image";
         String imageTag = "image:tag";
         String image = "image";
-        Tool tool = new Tool();
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, repoImageTag));
-        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(tool, repoImage));
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, imageTag));
-        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(tool, image));
+        Assert.assertEquals(TAG, toolManager.getTagFromImageName(repoImageTag, LATEST_TAG));
+        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(repoImage, LATEST_TAG));
+        Assert.assertEquals(TAG, toolManager.getTagFromImageName(imageTag, LATEST_TAG));
+        Assert.assertEquals(LATEST_TAG, toolManager.getTagFromImageName(image, LATEST_TAG));
     }
 
     @Test
     @Transactional
-    public void getTagFromImageNameShouldUseDefaultVersionForImageWithoutTag() {
+    public void resolveDefaultVersionShouldReturnDefaultVersionOfTool() {
         final Tool tool = new Tool();
         tool.setDefaultVersion(PREV_TAG);
 
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, "repo/image:tag"));
-        Assert.assertEquals(PREV_TAG, toolManager.getTagFromImageName(tool, "repo/image"));
-        Assert.assertEquals(TAG, toolManager.getTagFromImageName(tool, "image:tag"));
-        Assert.assertEquals(PREV_TAG, toolManager.getTagFromImageName(tool, "image"));
+        Assert.assertEquals(PREV_TAG, toolManager.resolveDefaultVersion(tool));
+    }
+
+    @Test
+    @Transactional
+    public void resolveDefaultVersionShouldReturnLatestVersionIfDefaultVersionIsNotSet() {
+        Assert.assertEquals(LATEST_TAG, toolManager.resolveDefaultVersion(new Tool()));
     }
 
     @Test

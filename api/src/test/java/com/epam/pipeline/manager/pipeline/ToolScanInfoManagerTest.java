@@ -65,7 +65,8 @@ public class ToolScanInfoManagerTest {
         final ToolVersionScanResult scan = new ToolVersionScanResult(DEFAULT_VERSION);
         scan.setStatus(ToolScanStatus.NOT_SCANNED);
         doReturn(tool).when(toolManager).loadByNameOrId(IMAGE);
-        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(tool, IMAGE);
+        doReturn(DEFAULT_VERSION).when(toolManager).resolveDefaultVersion(tool);
+        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(IMAGE, DEFAULT_VERSION);
         doReturn(new HashMap<>(Collections.singletonMap(DEFAULT_VERSION, scan))).when(toolVulnerabilityDao)
                 .loadToolVersionScanInfo(TOOL_ID, Collections.singletonList(DEFAULT_VERSION));
 

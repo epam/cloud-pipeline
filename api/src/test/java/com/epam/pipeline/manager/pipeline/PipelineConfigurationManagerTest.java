@@ -160,7 +160,8 @@ public class PipelineConfigurationManagerTest {
         entry.setName(TEST_STRING);
         entry.setDefaultConfiguration(true);
         entry.setConfiguration(new PipelineConfiguration());
-        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(tool, TEST_DOCKER_IMAGE);
+        doReturn(DEFAULT_VERSION).when(toolManager).resolveDefaultVersion(tool);
+        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(TEST_DOCKER_IMAGE, DEFAULT_VERSION);
         doReturn(Collections.singletonList(ToolVersion.builder().settings(Collections.singletonList(entry)).build()))
                 .when(toolVersionManager).loadToolVersionSettings(TEST_LONG, DEFAULT_VERSION);
 

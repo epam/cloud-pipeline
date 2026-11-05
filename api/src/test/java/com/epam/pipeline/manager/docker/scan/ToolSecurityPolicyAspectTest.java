@@ -71,7 +71,8 @@ public class ToolSecurityPolicyAspectTest {
         configuration.setDockerImage(IMAGE);
         doReturn(configuration).when(configurationManager).getPipelineConfiguration(runVO);
         doReturn(tool).when(toolManager).loadByNameOrId(IMAGE);
-        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(tool, IMAGE);
+        doReturn(DEFAULT_VERSION).when(toolManager).resolveDefaultVersion(tool);
+        doReturn(DEFAULT_VERSION).when(toolManager).getTagFromImageName(IMAGE, DEFAULT_VERSION);
     }
 
     @Test

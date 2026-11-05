@@ -406,7 +406,7 @@ public class ToolManager implements SecuredEntityManager {
                 + TOOL_DELIMETER
                 + getImageWithoutTag(tool.getImage())
                 + TAG_DELIMITER
-                + getTagFromImageName(tool, image);
+                + getTagFromImageName(image, resolveDefaultVersion(tool));
     }
 
     @Override
@@ -851,11 +851,12 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Cuts tag value from a image string. f.i. : repo/image:tag, image:tag
-     * @param tool the tool, which the image belongs to
      * @param image the image, with or without a tag
-     * @return a docker tag for a tool: an image without a tag stands for the tool's default version
+     * @param defaultVersion the version to be used, if the image is specified without a tag: shall not be
+     *                       empty, see {@link #resolveDefaultVersion(Tool)}
+     * @return a docker tag for a tool: an image without a tag stands for the given default version
      */
-    public String getTagFromImageName(final Tool tool, final String image) {
+    public String getTagFromImageName(final String image, final String defaultVersion) {
         Matcher matcher = REPOSITORY_AND_IMAGE.matcher(image);
         String imageWithTag;
 
@@ -864,7 +865,7 @@ public class ToolManager implements SecuredEntityManager {
         } else {
             imageWithTag = image;
         }
-        return findImageTag(imageWithTag).orElseGet(() -> resolveDefaultVersion(tool));
+        return findImageTag(imageWithTag).orElse(defaultVersion);
     }
 
     /**
@@ -990,7 +991,7 @@ public class ToolManager implements SecuredEntityManager {
     private long getCurrentImageSize(final Tool tool) {
         DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
         String imageWithoutTag = getImageWithoutTag(tool.getImage());
-        String tag = getTagFromImageName(tool, tool.getImage());
+        String tag = getTagFromImageName(tool.getImage(), resolveDefaultVersion(tool));
         DockerClient dockerClient = dockerRegistryManager.getDockerClient(dockerRegistry,
                 imageWithoutTag);
         try {
@@ -1170,7 +1171,8 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public Optional<ToolVersion> findToolVersion(final Tool tool) {
-        return toolVersionManager.findToolVersion(tool.getId(), getTagFromImageName(tool, tool.getImage()));
+        return toolVersionManager.findToolVersion(tool.getId(),
+                getTagFromImageName(tool.getImage(), resolveDefaultVersion(tool)));
     }
 
     private Optional<ToolVersionScanResult> prepareToolVersionScanForUpdate(final Tool tool, final Long toolId,
