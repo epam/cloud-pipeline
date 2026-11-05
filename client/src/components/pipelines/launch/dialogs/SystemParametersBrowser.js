@@ -40,9 +40,17 @@ export default class SystemParametersBrowser extends Component {
     searchString: null
   };
 
+  get selectedParametersToSave () {
+    // The parent may add a selected parameter itself while the dialog is open.
+    // The dialog hides it then, and it is not added for the second time
+    const {notToShow} = this.props;
+    return this.state.selectedParameters
+      .filter(p => !notToShow || !notToShow.includes(p.name));
+  }
+
   onSave = () => {
     if (this.props.onSave) {
-      this.props.onSave(this.state.selectedParameters);
+      this.props.onSave(this.selectedParametersToSave);
     }
   };
 
@@ -227,6 +235,7 @@ export default class SystemParametersBrowser extends Component {
   };
 
   render () {
+    const selectedCount = this.selectedParametersToSave.length;
     return (
       <Modal
         width="50%"
@@ -240,11 +249,11 @@ export default class SystemParametersBrowser extends Component {
             </Button>
             <Button
               type="primary"
-              disabled={!this.state.selectedParameters.length}
+              disabled={!selectedCount}
               id="system-parameters-browser-ok-button" onClick={this.onSave}>
               OK{
-                !!this.state.selectedParameters.length &&
-                ` (${this.state.selectedParameters.length})`
+                !!selectedCount &&
+                ` (${selectedCount})`
               }
             </Button>
           </Row>
@@ -262,11 +271,15 @@ export default class SystemParametersBrowser extends Component {
     );
   }
 
-  componentWillReceiveProps () {
-    this.setState({
-      selectedParameters: [],
-      searchString: null
-    });
+  componentWillReceiveProps (nextProps) {
+    // React calls this on every re-render of the parent, so the selection
+    // is cleared only when the dialog opens
+    if (nextProps.visible && !this.props.visible) {
+      this.setState({
+        selectedParameters: [],
+        searchString: null
+      });
+    }
   }
 }
 
