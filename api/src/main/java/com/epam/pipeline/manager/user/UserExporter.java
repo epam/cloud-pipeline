@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 public class UserExporter {
@@ -45,6 +44,9 @@ public class UserExporter {
     private static final DateTimeFormatter USER_DATE_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.EXPORT_DATE_TIME_FORMAT);
     public static final String SPACE = " ";
+    // Users' registration and first login dates are written as DateUtils.nowUTC(),
+    // so the header names UTC rather than the default time zone of the API JVM
+    private static final String DATE_TIME_ZONE = "UTC";
 
     public String exportUsers(final PipelineUserExportVO exportSettings,
                               final Collection<PipelineUserWithStoragePath> users,
@@ -93,11 +95,11 @@ public class UserExporter {
         }
         if (exportSettings.isIncludeRegistrationDate()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.REGISTRATION_DATE.getValue()
-                    + SPACE + TimeZone.getDefault().toZoneId());
+                    + SPACE + DATE_TIME_ZONE);
         }
         if (exportSettings.isIncludeFirstLoginDate()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.FIRST_LOGIN_DATE.getValue()
-                    + SPACE + TimeZone.getDefault().toZoneId());
+                    + SPACE + DATE_TIME_ZONE);
         }
         if (exportSettings.isIncludeRoles()) {
             result.add(PipelineUserWithStoragePath.PipelineUserFields.ROLES.getValue());
