@@ -66,6 +66,8 @@
 - [GitLab 19 support](#gitlab-19-support)
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
+- [Default version of a tool](#default-version-of-a-tool)
 
 ***
 
@@ -1898,6 +1900,8 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
+***
+
 ## VS Code extension: the folder opened on connect
 
 On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
@@ -1959,6 +1963,45 @@ In the current version, two new roles were introduced. Both cover every pipeline
 A user with both roles is able to see and launch every pipeline. As a launch also requires **READ** permission to the pipeline, **ROLE\_PIPELINE\_EXECUTOR** alone allows to launch only the pipelines the user is able to see. Any write access still has to be granted explicitly.
 
 More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-reader-and-executor-roles).
+
+***
+
+## Pinning a run to the Docker image digest
+
+Previously, the pod of a run was always created with the Docker image tag, e.g. `library/centos:7`. If the tag was moved to another image after the launch - e.g. while the run's node was still starting - the run could get another image than the one it was launched with.
+
+In **`v0.17`**, a run can be pinned to the exact image its tag points to at the launch. It is enabled by the system preference `launch.docker.image.pin.digest` (`false` by default):
+
+- a new run asks the registry for the digest of its image tag, stores it, and its pod pulls the image by the digest (`<registry>/<group>/<tool>@sha256:...`). The image name with the tag is kept in the `docker_image` annotation of the pod
+- if the digest cannot be obtained from the registry, the new run is launched with the tag, as before
+- a restarted run - e.g. a spot run restarted after its instance was reclaimed - asks the registry for nothing: it keeps the digest of the run it restarts, so it continues from the same image, even if the tag has been moved to another image since that run was launched
+- a rerun of a completed run, by the **RERUN** control or by `pipe run`, is a new run and not a restart: it asks the registry for the digest of the tag again, so it can get another image than the run it was rerun from
+- the digest is shown at the **Run logs** page (the **Instance** section), and by `pipe view-runs <run-id>`. It is also returned by the API as the `actualDockerImageDigest` field of a run
+- a paused run is always resumed with the tag, since the pause saves the container under it. The digest of such a run still names the image it was launched with, not the image saved by the pause
+
+The preference applies when a run is launched or restarted. The runs launched before the preference was enabled keep using the tag, and a restart of such a run uses the tag as well. Disabling the preference does not affect the runs that are already pinned, but a restart of a pinned run after that uses the tag.
+
+> **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
+
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
+
+***
+
+## Default version of a tool
+
+Previously, the version of a tool, which was used if a version was not specified, was always the `latest` one. To make another version the default one, it had to be pushed again with the `latest` tag, and when a version was deleted, `latest` could still point to an old image.
+
+In **`v0.17`**, any version of a tool can be set as its default version. The default version is used in place of the `latest` one:
+
+- the **Run** button at the top of the tool page launches it, and the **Settings** tab of the tool shows and saves its settings
+- a version, which has no own settings, is launched from the GUI with the settings of the default version
+- a tool image specified without a version - via `pipe run -di`, in a pipeline configuration or in an API request - is launched with the default version
+- the version pickers of the launch form and of the versioned storage launch mark it as **default**
+- a commit gives the new version the settings of the default version of the tool, which the run was launched from, and doesn't push the `latest` version into a tool, which has a default version set
+
+Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
+
+For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
 
 ***
 
