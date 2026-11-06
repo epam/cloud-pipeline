@@ -56,6 +56,7 @@
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
     - [Backup workers ignore `CP_BKP_STORAGE_LIST`](#backup-workers-ignore-cp_bkp_storage_list)
+    - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
 
 ***
 
@@ -801,3 +802,10 @@ In the current version:
 - when a backup fails, the worker notifies the users of the role with the `CP_BKP_ADMIN_ROLE_ID` ID (by default `1`, i.e. `ROLE_ADMIN`) that have the `Email` attribute
 
 A worker reads `CP_BKP_STORAGE_LIST` from the `cp-config-global` ConfigMap when it starts. To change the storages of a deployment, update the ConfigMap and restart the backup workers.
+
+### Detached configuration: the old name stays in the Library after a rename
+
+[#4756](https://github.com/epam/cloud-pipeline/issues/4756)
+
+Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
+Now, the folder and the library tree show the new name right after the rename.
