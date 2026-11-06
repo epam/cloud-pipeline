@@ -79,6 +79,7 @@
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
@@ -2057,6 +2058,14 @@ Now, the launch form shows its default value.
 
 Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
 Now, the alias is added to the run's tags alongside the tags set in the launch form.
+
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings and in the configuration selection dialog of the **Metadata** page.
 
 ### Restarted runs lose parameters and get an API token of another user
 
