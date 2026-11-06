@@ -70,6 +70,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [`sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3](#sge-create-and-sge-configure-fail-in-tools-without-diff-and-the-extra-sge-queues-fail-on-python-3)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
@@ -1963,6 +1964,15 @@ More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-
 ***
 
 ## Notable Bug fixes
+
+### `sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3
+
+[#4758](https://github.com/epam/cloud-pipeline/issues/4758)
+
+Previously, `sge create` and `sge configure` ran the `diff` command of the tool image to find the changes made to a grid engine profile. Many images have no `diff`: Rocky Linux 8 and 9, Red Hat UBI 8 and 9 and Amazon Linux 2023 among them. There, once the editor was closed, the commands failed with `Grid engine profiles management has failed.`, and the profile changes were lost.
+With Python 3 (`CP_PYTHON_VERSION=3`), the grid engine profiles were not generated when there were queues besides the default one: `sge create` failed in every image before the editor opened, and a cluster launched with extra queues, e.g. with `CP_CAP_SGE_QUEUE_NAME_1`, got no profiles at all. Also, `sge configure` printed the changes as `b'...'`.
+Now, the commands find the changes in Python, and print them as text, in the same format as before: `<` before an old line, and `>` before a new one. The profiles of the extra queues are generated with Python 3 too.
+See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
 
 ### Detached configuration: the old name stays in the Library after a rename
 
