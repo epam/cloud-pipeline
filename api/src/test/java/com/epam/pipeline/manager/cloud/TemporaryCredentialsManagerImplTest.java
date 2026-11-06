@@ -17,11 +17,13 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.manager.cloud.aws.S3AccessPointArnResolver;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.permissions.StoragePathPermissionsService;
@@ -51,8 +53,11 @@ public class TemporaryCredentialsManagerImplTest {
 
     private static final Long ID_1 = 1L;
     private static final Long ID_2 = 2L;
+    private static final Long LINK_ID = 3L;
     private static final String TEST_PATH_1 = "path1";
     private static final String TEST_PATH_2 = "path2";
+    private static final String ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
+    private static final String OTHER_ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/other-ap";
 
     private final TemporaryCredentialsGenerator generator = buildAWSCredentialsGeneratorMock();
     private final List<TemporaryCredentialsGenerator> credentialsGenerators = Collections.singletonList(generator);
@@ -61,9 +66,11 @@ public class TemporaryCredentialsManagerImplTest {
     private final StoragePathPermissionsService pathPermissionsService = mock(StoragePathPermissionsService.class);
     private final StoragePermissionManager storagePermissionManager = mock(StoragePermissionManager.class);
     private final AuthManager authManager = mock(AuthManager.class);
+    private final DataStorageDao dataStorageDao = mock(DataStorageDao.class);
 
     private final TemporaryCredentialsManagerImpl manager = new TemporaryCredentialsManagerImpl(credentialsGenerators,
-            messageHelper, dataStorageManager, pathPermissionsService, storagePermissionManager, authManager);
+            messageHelper, dataStorageManager, pathPermissionsService, storagePermissionManager, authManager,
+            new S3AccessPointArnResolver(dataStorageDao));
 
     @Before
     public void setUp() {
@@ -121,6 +128,39 @@ public class TemporaryCredentialsManagerImplTest {
             assertThat(actualAction.getBucketName()).isEqualTo(TEST_PATH_1);
             assertThat(actualAction.getPath()).isEqualTo(TEST_PATH_1);
         });
+    }
+
+    @Test
+    public void shouldSetStorageAccessPointArnToActions() {
+        final DataStorageAction actionWithArn = dataStorageAction(ID_1, true);
+        final DataStorageAction actionWithoutArn = dataStorageAction(ID_2, true);
+        actionWithoutArn.setAccessPointArn(OTHER_ACCESS_POINT_ARN);
+        final S3bucketDataStorage storage1 = s3DataStorage(ID_1, TEST_PATH_1);
+        storage1.setAccessPointArn(ACCESS_POINT_ARN);
+        final S3bucketDataStorage storage2 = s3DataStorage(ID_2, TEST_PATH_2);
+        when(dataStorageManager.load(ID_1)).thenReturn(storage1);
+        when(dataStorageManager.load(ID_2)).thenReturn(storage2);
+
+        manager.generate(Arrays.asList(actionWithArn, actionWithoutArn));
+
+        final List<DataStorageAction> actualActions = capture().getLeft();
+        assertThat(actualActions).hasSize(2);
+        assertThat(actualActions.get(0).getAccessPointArn()).isEqualTo(ACCESS_POINT_ARN);
+        assertThat(actualActions.get(1).getAccessPointArn()).isNull();
+    }
+
+    @Test
+    public void shouldSetSourceStorageAccessPointArnToLinkActions() {
+        final S3bucketDataStorage source = s3DataStorage(ID_1, TEST_PATH_1);
+        source.setAccessPointArn(ACCESS_POINT_ARN);
+        final S3bucketDataStorage link = s3DataStorage(LINK_ID, TEST_PATH_1);
+        link.setSourceStorageId(ID_1);
+        when(dataStorageManager.load(LINK_ID)).thenReturn(link);
+        when(dataStorageDao.loadDataStorage(ID_1)).thenReturn(source);
+
+        manager.generate(Collections.singletonList(dataStorageAction(LINK_ID, true)));
+
+        assertThat(capture().getLeft().get(0).getAccessPointArn()).isEqualTo(ACCESS_POINT_ARN);
     }
 
     @Test(expected = IllegalStateException.class)

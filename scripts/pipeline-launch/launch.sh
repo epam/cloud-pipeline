@@ -768,12 +768,17 @@ function install_private_packages {
 function install_python3_packages {
       local _install_path="$1"
       local _tmp_install_dir="/tmp/"
-      rm -rf "${_install_path}/python3.12" "${_install_path}/openssl"
+      rm -rf "${_install_path}/python3.12"
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
       wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
 
+      # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
+      # an openssl folder (the previous python3.12.0 build) replaces it
+      if tar -tzf "${_tmp_install_dir}/python3.tgz" 2>/dev/null | grep '^openssl/' > /dev/null; then
+            rm -rf "${_install_path}/openssl"
+      fi
       tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
       rm -f "${_tmp_install_dir}/python3.tgz"
 

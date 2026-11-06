@@ -163,3 +163,16 @@ instance_ssh() {
   fi
   "${ssh_command[@]}"
 }
+
+# instance_ssh_file <name> <instance-id> <file> <remote-file>: copies the file to the instance over
+# SSH, as instance_ssh reaches it, readable by root only: for what should not pass through the
+# account's Run Command history, or would take many commands there.
+instance_ssh_file() {
+  local name=$1 id=$2 file=$3 remote=$4 command
+  command="sudo sh -c $(shell_quote "umask 077 && mkdir -p $(dirname "$remote") && cat >$remote.part && mv -f $remote.part $remote")"
+  if dry_run; then
+    instance_ssh '' "$name" "$id" "$command" </dev/null
+    return 0
+  fi
+  instance_ssh '' "$name" "$id" "$command" <"$file"
+}

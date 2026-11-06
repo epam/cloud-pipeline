@@ -41,6 +41,9 @@ the instruction already arrived.
 - **The docs the change owes are in the diff** — the `implement-task` skill → "Docs", and
   `CONTRIBUTIONS.md` → "Documenting" behind it. A user-visible change with no documentation commit is
   not finished.
+- **No UI test cases in a task's diff**, unless they are the whole task — the `testcases` skill. The
+  one exception is the `Automated` mark in `docs/testcases/UI/GUI_tests.md`, which goes with the
+  `e2e/gui` test that automates the case.
 
 ## 3. Commit message
 

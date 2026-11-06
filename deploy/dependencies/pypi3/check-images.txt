@@ -1,0 +1,10 @@
+# The base images that check.sh checks the mirror in, one per line: the tool images and node hosts a run installs from it on
+centos:7
+amazonlinux:2
+ubuntu:18.04
+ubuntu:20.04
+ubuntu:22.04
+ubuntu:24.04
+rockylinux/rockylinux:8
+rockylinux/rockylinux:9
+debian:12

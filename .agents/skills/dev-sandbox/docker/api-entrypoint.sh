@@ -9,13 +9,16 @@
 #     is not there, which its SAML setup reads, and has Java trust the API's certificate, which
 #     the API checks base.api.host against;
 #   - exports the secrets the API's settings name, read from their files;
-#   - copies the kubeconfig to ~/.kube/config, where the node scripts read it.
+#   - copies the kubeconfig to ~/.kube/config, where the node scripts read it;
+#   - copies the sandbox's SSH key to SANDBOX_NODE_SSH_KEY, for root only, which the API logs in
+#     to a run's node with, for its commit, pause and the other operations there.
 # Then tools-entrypoint.sh does what it does for the tools image: the config file's quotes and
 # empty AWS variables, and a copy of ~/.aws.
 #
 # The environment sandbox.sh sets: SANDBOX_DIR, the sandbox's local state; SANDBOX_VPC_CIDRS, the
 # VPC's address ranges, separated by spaces; SANDBOX_SOCKS_PROXY, host:port of the tunnel's SOCKS
-# proxy; SANDBOX_MASTER_IP, the master's private address.
+# proxy; SANDBOX_MASTER_IP, the master's private address; SANDBOX_NODE_SSH_KEY, where the API's
+# commit.deploy.key preference names the SSH key.
 set -euo pipefail
 
 API_HOME=/var/lib/cp-sandbox-api
@@ -27,7 +30,8 @@ ROUTE_CHECK_SECONDS=${ROUTE_CHECK_SECONDS:-30}
 # What runs the command, once this is done.
 TOOLS_ENTRYPOINT=${TOOLS_ENTRYPOINT:-/usr/local/bin/tools-entrypoint.sh}
 
-: "${SANDBOX_DIR:?}" "${SANDBOX_VPC_CIDRS:?}" "${SANDBOX_SOCKS_PROXY:?}" "${SANDBOX_MASTER_IP:?}"
+: "${SANDBOX_DIR:?}" "${SANDBOX_VPC_CIDRS:?}" "${SANDBOX_SOCKS_PROXY:?}" "${SANDBOX_MASTER_IP:?}" \
+  "${SANDBOX_NODE_SSH_KEY:?}"
 
 log() {
   printf 'api-entrypoint: %s\n' "$*" >&2
@@ -131,6 +135,9 @@ main() {
   export_secrets
   install -D -m 0600 "$SANDBOX_DIR/kubeconfig.secret" "$HOME/.kube/config"
   export KUBECONFIG=$HOME/.kube/config
+  # A copy, at a path without spaces: the API splits the SSH command it runs at spaces, and ssh
+  # refuses a key that others may read, as a mounted file may look.
+  install -D -m 0600 "$SANDBOX_DIR/ssh-key.pem" "$SANDBOX_NODE_SSH_KEY"
   export CP_API_SSO_CONFIG=$API_HOME/sso CP_API_WORKDIR=$API_HOME/work
   # The node scripts write their logs to the working directory.
   cd "$CP_API_WORKDIR"

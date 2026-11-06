@@ -6,8 +6,8 @@
 #
 # Usage: in-tools.sh <check|ami|up|status|extend|down> [options] [--dry-run]
 #        in-tools.sh <connect-prepare|connect-check|connect-stop|tunnel> --name <name> [--dry-run]
-#        in-tools.sh <services-prepare|services-sequences|services-wait|services-configure|
-#                     services-api> --name <name> [options] [--dry-run]
+#        in-tools.sh <services-prepare|services-master|services-sequences|services-wait|
+#                     services-configure|services-api> --name <name> [options] [--dry-run]
 # The second and third forms are the steps of connect, services and api in the tools image, which
 # only sandbox.sh runs.
 set -euo pipefail
@@ -72,6 +72,7 @@ main() {
     connect-stop) cmd_connect_stop "${args[@]}" ;;
     tunnel) cmd_tunnel "${args[@]}" ;;
     services-prepare) cmd_services_prepare "${args[@]}" ;;
+    services-master) cmd_services_master "${args[@]}" ;;
     services-sequences) cmd_services_sequences "${args[@]}" ;;
     services-wait) cmd_services_wait "${args[@]}" ;;
     services-configure) cmd_services_configure "${args[@]}" ;;
