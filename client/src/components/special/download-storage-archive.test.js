@@ -55,23 +55,14 @@ describe('archiveStorageSupported', () => {
 });
 
 describe('archiveDownloadAvailable', () => {
-  const supported = {archiveSupported: true, downloadEnabled: true, sensitive: false};
+  const supported = {archiveSupported: true, downloadAllowed: true};
 
   test('a supported storage this user may download from offers the archive', () => {
     expect(archiveDownloadAvailable(supported)).toBe(true);
   });
 
-  // A sensitive storage is not readable outside a sensitive run, which is why no
-  // row on one is downloadable. The archive worker reads it with the storage's
-  // own cloud role, so an offered archive would be the one way data leaves it.
-  test('a sensitive storage offers no archive', () => {
-    expect(archiveDownloadAvailable({...supported, sensitive: true})).toBe(false);
-  });
-
-  // An archive is a download, so the storage's download attribute applies to it
-  // exactly as it applies to a file row's own Download button.
-  test('a storage whose download is denied to this user offers no archive', () => {
-    expect(archiveDownloadAvailable({...supported, downloadEnabled: false})).toBe(false);
+  test('a storage this user may not download from offers no archive', () => {
+    expect(archiveDownloadAvailable({...supported, downloadAllowed: false})).toBe(false);
   });
 
   test('a storage the archive worker cannot read offers no archive', () => {
@@ -85,11 +76,9 @@ describe('archiveDownloadAvailable', () => {
 });
 
 describe('archiveSelectionAvailable', () => {
-  const supported = {archiveSupported: true, downloadEnabled: true, sensitive: false};
+  const supported = {archiveSupported: true, downloadAllowed: true};
 
-  // The regression this exists for: a read-only user (or a ROLE_STORAGE_READER)
-  // sees no checkbox on a folder row, so the archive they are allowed to
-  // download cannot be assembled.
+  // No folder is downloadable, so without this a read-only user cannot select one.
   test('a folder is selectable, even though no folder is downloadable', () => {
     expect(archiveSelectionAvailable({path: 'sub', type: 'Folder'}, supported)).toBe(true);
   });
@@ -98,10 +87,6 @@ describe('archiveSelectionAvailable', () => {
     expect(archiveSelectionAvailable({path: 'sub', type: 'folder'}, supported)).toBe(true);
   });
 
-  // Folders only: a file row's checkbox stays with `downloadable`, so this flag
-  // changes nothing about any row that is not a folder - including a
-  // lifecycle-archived file, which a read-only user could not select before
-  // this flag either.
   test('a file is not selectable through this flag', () => {
     expect(archiveSelectionAvailable({path: 'a.txt', type: 'File'}, supported)).toBe(false);
   });
@@ -123,8 +108,7 @@ describe('archiveSelectionAvailable', () => {
 
   test.each([
     ['the storage cannot be archived', {...supported, archiveSupported: false}],
-    ['downloads are denied to this user', {...supported, downloadEnabled: false}],
-    ['the storage is sensitive', {...supported, sensitive: true}],
+    ['this user may not download from it', {...supported, downloadAllowed: false}],
     ['nothing is known about the storage', undefined]
   ])('nothing is selectable when %s', (_, options) => {
     expect(archiveSelectionAvailable({path: 'sub', type: 'Folder'}, options)).toBe(false);

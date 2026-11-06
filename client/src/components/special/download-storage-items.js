@@ -70,11 +70,9 @@ async function downloadStorageItems (items) {
 // case now (archiveActionAvailable in download-storage-archive.js), not this
 // one. Four or more is excluded because "Download archive" in the same
 // dropdown is the answer for a bigger selection - but only where that item is
-// actually offered, which is what the caller's `archiveSupported` answers
-// (archiveDownloadAvailable in download-storage-archive.js: the storage type
-// the archive worker can read, and not a storage whose downloads are off).
-// Anywhere else there is no upper bound. Folders never reach this count at
-// all - the caller filters them out before counting.
+// offered (the caller's `archiveSupported`); anywhere else there is no upper
+// bound. Folders never reach this count at all - the caller filters them out
+// before counting.
 export const MIN_DOWNLOAD_ITEMS = 1;
 export const MAX_DOWNLOAD_ITEMS = 3;
 

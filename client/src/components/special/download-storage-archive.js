@@ -51,71 +51,32 @@ function archivableItems (selectedItems) {
 }
 
 /**
- * Whether an archive download may be offered on this storage, to this user, at
- * all - the gate both the "Download archive" selection item and every row's
- * `archiveSelectable` flag go through, so the two can never disagree.
+ * Whether "Download archive" may be offered on this storage, to this user.
+ * The selection item and every row's `archiveSelectable` flag both use it.
  *
- * - `archiveSupported` - `archiveStorageSupported` below, on a non-Omics
- *   storage. Without it the request would be queued and then always fail, so
- *   offering the item would be offering a broken action.
- * - `sensitive` - a sensitive storage's data is readable only from inside a
- *   sensitive run, which is why no row on one is ever `downloadable`. The API's
- *   data-leakage aspect enforces that on the methods that read a storage
- *   directly (`@SensitiveStorageOperation` on `StorageProviderManager`'s
- *   `generateDownloadURL`, `getFile`, `getFileStream`), and an archive request
- *   calls none of them - it queues a task for a worker that reads the storage
- *   with its own cloud role. So this is the only thing keeping the GUI from
- *   offering an archive of a sensitive storage.
- * - `downloadEnabled` - the storage's download attribute, which the GUI applies
- *   to every file row already (`downloadEnabled` in
- *   `models/dataStorage/data-storage-listing.js`). An archive is a download, so
- *   a storage that refuses downloads to this user refuses this one too.
- *
- * Neither of the last two is enforced by the server for an archive request:
- * `POST /datastorage/{id}/download/archive` asks for READ and nothing else, so
- * both are GUI rules for the archive exactly as the download attribute is a GUI
- * rule for the plain download. Hiding the item is not a control.
- *
- * @param {{archiveSupported: boolean, downloadEnabled: boolean, sensitive: boolean}} [options]
+ * @param {{archiveSupported: boolean, downloadAllowed: boolean}} [options]
+ *   `archiveSupported` - the archive worker can read this storage;
+ *   `downloadAllowed` - the user may download from it
+ *   (`checkStorageDownloadAllowed` in the storage browser's `utils.js`)
  * @returns {boolean}
  */
 export function archiveDownloadAvailable (options = {}) {
   const {
     archiveSupported = false,
-    downloadEnabled = false,
-    sensitive = false
+    downloadAllowed = false
   } = options;
-  return archiveSupported && downloadEnabled && !sensitive;
+  return archiveSupported && downloadAllowed;
 }
 
 /**
- * Whether a listed storage item carries a selection checkbox for an archive
- * download's sake - the `archiveSelectable` flag the storage browser hangs on
- * every row.
- *
- * **Folders only**, and deliberately so. A folder is never `downloadable` (the
- * browser cannot download one), and a user with READ alone on the storage gets
- * neither `editable` nor `shareAvailable`, so before this flag a read-only user
- * - or a `ROLE_STORAGE_READER` - had no checkbox on any folder row and no way
- * to put a folder into an archive, which is the one thing the feature exists
- * for. The server asks for READ and nothing more
- * (`DataStorageApiService.createDownloadArchiveTask`), so the checkbox matches
- * what it will accept.
- *
- * A FILE row is left exactly as it was, to `downloadable`. That leaves one case
- * behind: a lifecycle-archived, not-yet-restored file, which
- * `archivePathsFromSelection` would happily archive but which a read-only user
- * still cannot select. That was equally true before this flag existed, its row
- * carries its own restore control, and widening it here would change what rows
- * a user may select for reasons that have nothing to do with folders.
- *
- * Past `isFolder`, the item-level part is `isArchivableItem` above: a path, and
- * not a delete-marker. The storage-level part is `archiveDownloadAvailable`
- * above, whose options this passes straight through - a row is never selectable
- * for an archive the storage would not produce.
+ * Whether a row gets a checkbox so it can go into an archive. Folders only:
+ * a user with READ alone has no other way to select a folder. A file row
+ * keeps its checkbox through `downloadable`, so a read-only user cannot select
+ * an archived file that is not restored yet, unless data sharing is on.
  *
  * @param {SelectedStorageItem} item
- * @param {{archiveSupported: boolean, downloadEnabled: boolean, sensitive: boolean}} [options]
+ * @param {{archiveSupported: boolean, downloadAllowed: boolean}} [options]
+ *   the same as for `archiveDownloadAvailable`
  * @returns {boolean}
  */
 export function archiveSelectionAvailable (item, options = {}) {

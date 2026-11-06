@@ -31,7 +31,8 @@ import {
   Popover,
   Row,
   Spin,
-  Table
+  Table,
+  Tooltip
 } from 'antd';
 import Dropdown from 'rc-dropdown';
 import Menu, {MenuItem, Divider} from 'rc-menu';
@@ -131,7 +132,14 @@ import {
 import {getDataStorageItemFullPath} from '../../launch/dialogs/BucketBrowser';
 import copyTextToClipboard from '../../../special/copy-text-to-clipboard';
 import {
+  checkStorageDownloadAllowed,
   checkStorageOperationsEnabled,
+  downloadableStorageItems,
+  partialGenerateUrlHint,
+  partialRemoveHint,
+  removableStorageItems,
+  removeConfirmTitle,
+  restorableStorageItems,
   storageItemSelectionAvailable
 } from './utils';
 
@@ -210,6 +218,7 @@ export default class DataStorage extends React.Component {
     createFolder: false,
     createFile: false,
     itemsToDelete: null,
+    itemsToDeleteHint: undefined,
     selectedFile: null,
     editFile: null,
     previewModal: null,
@@ -350,26 +359,14 @@ export default class DataStorage extends React.Component {
       archiveStorageSupported(this.storage.info, this.fileShareMount);
   }
 
-  /**
-   * What `archiveDownloadAvailable` and `archiveSelectionAvailable` need to
-   * know about this storage. Read by the "Download archive" selection action
-   * and by every row's `archiveSelectable` flag, so the item a user can reach
-   * and the rows they can select for it always agree.
-   *
-   * `downloadEnabled` starts false and is only assigned once the storage, its
-   * metadata, the preferences and the user have all loaded
-   * (`models/dataStorage/data-storage-listing.js`), so this fails closed: while
-   * that is in flight - and permanently, if one of those requests rejects,
-   * since nothing retries it - the archive is not offered. That is the same
-   * window in which a file row shows no Download button today, which is why it
-   * is left as it is rather than given a third, "still loading" state.
-   */
+  get storageDownloadAllowed () {
+    return checkStorageDownloadAllowed(this.storage.info, this.storage.downloadEnabled);
+  }
+
   get archiveDownloadOptions () {
-    const {sensitive} = this.storage.info || {};
     return {
       archiveSupported: this.archiveStorageTypeSupported,
-      downloadEnabled: !!this.storage.downloadEnabled,
-      sensitive: !!sensitive
+      downloadAllowed: this.storageDownloadAllowed
     };
   }
 
@@ -485,12 +482,10 @@ export default class DataStorage extends React.Component {
   }
 
   get restorableItems () {
-    const {selectedItems} = this.state;
-    return (selectedItems || [])
-      .filter(item => (
-        (item.labels && !isStandardClass(item.labels.StorageClass)) ||
-        item.type === 'Folder'
-      ));
+    return restorableStorageItems(
+      this.state.selectedItems,
+      (item) => item.labels && !isStandardClass(item.labels.StorageClass)
+    );
   }
 
   get storageTagRestrictedAccess () {
@@ -646,8 +641,7 @@ export default class DataStorage extends React.Component {
       pageElements: elements = [],
       pagePath: path,
       info,
-      storageId,
-      downloadEnabled: downloadable
+      storageId
     } = this.storage;
     if (!info) {
       return [];
@@ -656,9 +650,7 @@ export default class DataStorage extends React.Component {
       this.storage.info.storageType ||
       this.storage.info.type
     );
-    const {sensitive} = info;
-    // The storage-level half of `archiveSelectable`, the same for every row -
-    // see `archiveSelectionAvailable`.
+    const downloadAllowed = this.storageDownloadAllowed;
     const archiveOptions = this.archiveDownloadOptions;
     const items = [];
     const documentPreviewAvailable = (item) => {
@@ -678,11 +670,10 @@ export default class DataStorage extends React.Component {
         editable: false,
         selectable: false,
         shareAvailable: false,
-        archiveSelectable: false,
         navigationBackward: true
       });
     }
-    const getChildList = (item, versions, sensitive) => {
+    const getChildList = (item, versions) => {
       if (!versions || versions.length === 0 || !this.showVersions) {
         return undefined;
       }
@@ -703,20 +694,14 @@ export default class DataStorage extends React.Component {
             ...versions[version],
             downloadable: item.type.toLowerCase() === 'file' &&
               !versions[version].deleteMarker &&
-              !sensitive &&
               (!archived || (latest ? fileRestored : versionRestored)) &&
-              downloadable,
+              downloadAllowed,
             editable: versions[version].version === item.version &&
               !versions[version].deleteMarker &&
               roleModel.writeAllowed(versions[version]),
             deletable: roleModel.writeAllowed(versions[version]),
             selectable: false,
             shareAvailable: false,
-            // A version row is a file's version, and only a folder is ever
-            // archive-selectable - plus it is never selected at all
-            // (`selectable: false` above). The archive request carries paths
-            // only, with no version field.
-            archiveSelectable: false,
             latest,
             isVersion: true,
             archived,
@@ -749,16 +734,14 @@ export default class DataStorage extends React.Component {
         ? (
           type === 'file' &&
           !i.deleteMarker &&
-          !sensitive &&
           (!archived || restored) &&
-          downloadable
+          downloadAllowed
         )
         : (
           (type === 'file' || type === 'folder') &&
           !i.deleteMarker &&
-          !sensitive &&
           (active || restored) &&
-          downloadable
+          downloadAllowed
         );
       return {
         key: `${i.type}_${i.path}`,
@@ -768,7 +751,7 @@ export default class DataStorage extends React.Component {
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
         archiveSelectable: archiveSelectionAvailable(i, archiveOptions),
         deletable: roleModel.writeAllowed(i),
-        children: getChildList(i, i.versions, sensitive),
+        children: getChildList(i, i.versions),
         selectable: !i.deleteMarker,
         miew: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
@@ -959,7 +942,7 @@ export default class DataStorage extends React.Component {
     if (downloadUrlModalVisible && this.state.selectedItems) {
       this.generateDownloadUrls = new GenerateDownloadUrlsRequest(this.props.storageId);
       this.generateDownloadUrls.send({
-        paths: this.state.selectedItems.map(i => i.path)
+        paths: downloadableStorageItems(this.state.selectedItems).map(i => i.path)
       });
     } else {
       this.generateDownloadUrls = null;
@@ -1213,12 +1196,12 @@ export default class DataStorage extends React.Component {
     }
   };
 
-  openDeleteModal = (items) => {
-    this.setState({itemsToDelete: items});
+  openDeleteModal = (items, hint) => {
+    this.setState({itemsToDelete: items, itemsToDeleteHint: hint});
   };
 
   closeDeleteModal = () => {
-    this.setState({itemsToDelete: null});
+    this.setState({itemsToDelete: null, itemsToDeleteHint: undefined});
   };
 
   copyPathsToClipboard = (items = []) => {
@@ -1358,8 +1341,10 @@ export default class DataStorage extends React.Component {
   };
 
   removeSelectedItemsConfirm = (event) => {
-    const items = this.state.selectedItems.map(item => {
+    const {selectedItems} = this.state;
+    const items = removableStorageItems(selectedItems).map(item => {
       return {
+        name: item.name,
         path: item.path,
         type: item.type
       };
@@ -1368,13 +1353,13 @@ export default class DataStorage extends React.Component {
       event.stopPropagation();
     }
     if (this.showVersions) {
-      this.openDeleteModal(items);
+      this.openDeleteModal(items, partialRemoveHint(selectedItems.length, items.length));
     } else {
       const removeItems = () => this.removeItems(items, false, false, () => {
         this.setState({selectedItems: []});
       });
       Modal.confirm({
-        title: 'Remove all selected items?',
+        title: removeConfirmTitle(selectedItems.length, items.length),
         style: {
           wordWrap: 'break-word'
         },
@@ -2111,19 +2096,11 @@ export default class DataStorage extends React.Component {
     if (this.storage.info && this.storage.info.sensitive) {
       return false;
     }
-    const selectedItemsLength = this.state.selectedItems.length;
-    const downloadableSelectedItemsLength = this.state.selectedItems
-      .filter(item => item.downloadable).length;
-    return selectedItemsLength > 0 &&
-      selectedItemsLength === downloadableSelectedItemsLength;
+    return downloadableStorageItems(this.state.selectedItems).length > 0;
   }
 
   get removeAllSelectedItemsEnabled () {
-    const selectedItemsLength = this.state.selectedItems.length;
-    const editableSelectedItemsLength = this.state.selectedItems
-      .filter(item => item.editable).length;
-    return selectedItemsLength > 0 &&
-      selectedItemsLength === editableSelectedItemsLength;
+    return removableStorageItems(this.state.selectedItems).length > 0;
   }
 
   get selectAllAvailable () {
@@ -2436,9 +2413,6 @@ export default class DataStorage extends React.Component {
       title: 'Clear selection',
       available: this.clearSelectionVisible
     };
-    // Not merely "can the worker read this storage": a sensitive storage, or one
-    // whose download is denied to this user, offers no archive either - the same
-    // gate every row's `archiveSelectable` flag goes through.
     const archiveSupported = archiveDownloadAvailable(this.archiveDownloadOptions);
     const downloadAction = {
       key: Keys.download,
@@ -2517,6 +2491,10 @@ export default class DataStorage extends React.Component {
       available: this.bulkDownloadEnabled &&
         this.storageAllowSignedUrls &&
         (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
+      hint: partialGenerateUrlHint(
+        selectedItems.length,
+        downloadableStorageItems(selectedItems).length
+      ),
       icon: 'link'
     };
     const copyPathsAction = {
@@ -2530,6 +2508,10 @@ export default class DataStorage extends React.Component {
       title: 'Remove',
       available: this.removeAllSelectedItemsEnabled &&
         (!this.isOmicsStore || (this.isSequenceStorage && this.isOmicsFolder)),
+      hint: partialRemoveHint(
+        selectedItems.length,
+        removableStorageItems(selectedItems).length
+      ),
       className: 'cp-danger',
       icon: 'delete'
     };
@@ -2643,6 +2625,11 @@ export default class DataStorage extends React.Component {
           <div style={{display: 'flex', alignItems: 'center'}}>
             {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
             {action.title}
+            {action.hint && (
+              <Tooltip title={action.hint}>
+                <Icon type="info-circle" style={{marginLeft: 5}} />
+              </Tooltip>
+            )}
           </div>
         </MenuItem>
       );
@@ -3485,6 +3472,16 @@ export default class DataStorage extends React.Component {
               </Col>
             </Row>
           }>
+          {
+            this.state.itemsToDeleteHint && (
+              <Alert
+                type="info"
+                showIcon
+                message={this.state.itemsToDeleteHint}
+                style={{marginBottom: 10}}
+              />
+            )
+          }
           {
             (this.state.itemsToDelete || []).map(item => {
               return (

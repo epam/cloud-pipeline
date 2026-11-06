@@ -14,7 +14,16 @@
  * limitations under the License.
  */
 
-import {storageItemSelectionAvailable} from './utils';
+import {
+  checkStorageDownloadAllowed,
+  downloadableStorageItems,
+  partialGenerateUrlHint,
+  partialRemoveHint,
+  removableStorageItems,
+  removeConfirmTitle,
+  restorableStorageItems,
+  storageItemSelectionAvailable
+} from './utils';
 
 describe('storageItemSelectionAvailable', () => {
   const row = (flags = {}) => ({
@@ -26,11 +35,7 @@ describe('storageItemSelectionAvailable', () => {
     ...flags
   });
 
-  // The regression this predicate exists for. A folder is never
-  // `downloadable`, and a user with READ only on the storage - or a
-  // ROLE_STORAGE_READER - gets neither `editable` nor `shareAvailable`, so
-  // before `archiveSelectable` the row had no checkbox and no folder could be
-  // put into an archive.
+  // A read-only user's folder has no other flag set.
   test('an archive-selectable folder is selectable for a read-only user', () => {
     expect(storageItemSelectionAvailable(row({archiveSelectable: true}))).toBe(true);
   });
@@ -65,11 +70,122 @@ describe('storageItemSelectionAvailable', () => {
     expect(storageItemSelectionAvailable(undefined)).toBe(false);
   });
 
-  // The flags arrive from the listing as whatever the item carried, so the
-  // answer has to be a boolean rather than a truthy value - it is read both
-  // as a condition and compared against.
   test('answers a boolean, not the flag it found', () => {
     expect(storageItemSelectionAvailable(row({archiveSelectable: 'yes'}))).toBe(true);
     expect(storageItemSelectionAvailable(row({archiveSelectable: undefined}))).toBe(false);
+  });
+});
+
+describe('checkStorageDownloadAllowed', () => {
+  test('a regular storage with downloads enabled allows download', () => {
+    expect(checkStorageDownloadAllowed({sensitive: false}, true)).toBe(true);
+  });
+
+  test('a sensitive storage allows no download', () => {
+    expect(checkStorageDownloadAllowed({sensitive: true}, true)).toBe(false);
+  });
+
+  test('a storage whose download attribute denies this user allows no download', () => {
+    expect(checkStorageDownloadAllowed({sensitive: false}, false)).toBe(false);
+  });
+
+  // `downloadEnabled` is false until the storage's metadata has loaded.
+  test('an unknown storage or download state allows no download', () => {
+    expect(checkStorageDownloadAllowed(undefined, true)).toBe(false);
+    expect(checkStorageDownloadAllowed({}, undefined)).toBe(false);
+  });
+});
+
+describe('removableStorageItems', () => {
+  test('keeps only the items the user may write to', () => {
+    const writable = {path: 'a', editable: true};
+    const readOnly = {path: 'b', editable: false};
+    expect(removableStorageItems([writable, readOnly])).toEqual([writable]);
+  });
+
+  test('answers an empty list on no selection', () => {
+    expect(removableStorageItems(undefined)).toEqual([]);
+    expect(removableStorageItems([undefined])).toEqual([]);
+  });
+});
+
+describe('partialRemoveHint', () => {
+  test('names both counts when only some items will be removed', () => {
+    expect(partialRemoveHint(5, 2)).toBe(
+      'Only items you have write access to will be removed (2 of 5).'
+    );
+  });
+
+  test('gives no hint when every selected item will be removed', () => {
+    expect(partialRemoveHint(3, 3)).toBeUndefined();
+  });
+
+  // "Remove" is not offered at all then.
+  test('gives no hint when no selected item will be removed', () => {
+    expect(partialRemoveHint(3, 0)).toBeUndefined();
+  });
+});
+
+describe('removeConfirmTitle', () => {
+  test('names both counts when only some items will be removed', () => {
+    expect(removeConfirmTitle(5, 2)).toBe('Remove 2 of 5 selected items?');
+  });
+
+  test('keeps the old title when every selected item will be removed', () => {
+    expect(removeConfirmTitle(3, 3)).toBe('Remove all selected items?');
+  });
+});
+
+describe('downloadableStorageItems', () => {
+  test('keeps only the items the user may download', () => {
+    const file = {path: 'a.txt', type: 'File', downloadable: true};
+    const folder = {path: 'sub', type: 'Folder', downloadable: false};
+    expect(downloadableStorageItems([file, folder])).toEqual([file]);
+  });
+
+  test('answers an empty list on no selection', () => {
+    expect(downloadableStorageItems(undefined)).toEqual([]);
+    expect(downloadableStorageItems([undefined])).toEqual([]);
+  });
+});
+
+describe('partialGenerateUrlHint', () => {
+  test('names both counts when only some items get a URL', () => {
+    expect(partialGenerateUrlHint(4, 3)).toBe(
+      'URLs are generated only for downloadable files (3 of 4).'
+    );
+  });
+
+  test('gives no hint when every selected item gets a URL', () => {
+    expect(partialGenerateUrlHint(2, 2)).toBeUndefined();
+  });
+
+  test('gives no hint when no selected item gets a URL', () => {
+    expect(partialGenerateUrlHint(2, 0)).toBeUndefined();
+  });
+});
+
+describe('restorableStorageItems', () => {
+  const isArchivedFile = (item) => !!item.archived;
+
+  test('keeps a folder the user may write to', () => {
+    const folder = {path: 'sub', type: 'Folder', editable: true};
+    expect(restorableStorageItems([folder], isArchivedFile)).toEqual([folder]);
+  });
+
+  // With fine-grained permissions a user may only read some folders.
+  test('skips a folder the user may only read', () => {
+    const folder = {path: 'sub', type: 'Folder', editable: false};
+    expect(restorableStorageItems([folder], isArchivedFile)).toEqual([]);
+  });
+
+  test('keeps an archived file, and skips a file that is not archived', () => {
+    const archived = {path: 'cold.txt', type: 'File', archived: true};
+    const regular = {path: 'a.txt', type: 'File', editable: true};
+    expect(restorableStorageItems([archived, regular], isArchivedFile)).toEqual([archived]);
+  });
+
+  test('answers an empty list on no selection', () => {
+    expect(restorableStorageItems(undefined, isArchivedFile)).toEqual([]);
   });
 });
