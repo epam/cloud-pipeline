@@ -15,14 +15,15 @@
  */
 
 import LoadToolVersionSettings from '../../../../../models/tools/LoadToolVersionSettings';
+import {getTaglessImageVersion, LATEST_VERSION} from '../../../../../utils/tool-default-version';
 
-function getToolVersionParameters (versions, version) {
+export function getToolVersionParameters (versions, version, defaultVersion = LATEST_VERSION) {
   const versionInfo = versions.find(v => v.version === version);
-  if (!versionInfo && !/^latest$/i.test(version)) {
-    return getToolVersionParameters(versions, 'latest');
+  if (!versionInfo && version !== defaultVersion) {
+    return getToolVersionParameters(versions, defaultVersion, defaultVersion);
   }
   if (!versionInfo && versions.length > 0) {
-    return getToolVersionParameters(versions, version[0].version);
+    return getToolVersionParameters(versions, versions[0].version, versions[0].version);
   }
   if (!versionInfo) {
     return {};
@@ -49,6 +50,7 @@ export default function fetchToolDefaultParameters (dockerImage, dockerRegistrie
     ] = dockerImage.split('/');
     const [image, version] = (imageAndVersion || '').split(':');
     let toolInfoRequest;
+    let defaultVersion = LATEST_VERSION;
     dockerRegistries
       .fetchIfNeededOrWait()
       .then(() => {
@@ -74,6 +76,7 @@ export default function fetchToolDefaultParameters (dockerImage, dockerRegistrie
           if (!tool) {
             throw new Error(`Tool ${groupName}/${image} not found`);
           }
+          defaultVersion = getTaglessImageVersion(tool);
           toolInfoRequest = new LoadToolVersionSettings(tool.id);
           return toolInfoRequest.fetch();
         } else {
@@ -84,7 +87,8 @@ export default function fetchToolDefaultParameters (dockerImage, dockerRegistrie
         if (toolInfoRequest && toolInfoRequest.loaded) {
           return Promise.resolve(getToolVersionParameters(
             toolInfoRequest.value || [],
-            version || 'latest'
+            version || defaultVersion,
+            defaultVersion
           ));
         }
         throw new Error(

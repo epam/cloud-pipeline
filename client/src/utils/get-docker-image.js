@@ -1,3 +1,5 @@
+import {getTaglessImageVersion} from './tool-default-version';
+
 export function getDockerImage (dockerImage, dockerRegistries) {
   if (!dockerImage || !dockerRegistries) {
     return undefined;
@@ -12,7 +14,7 @@ export function getDockerImage (dockerImage, dockerRegistries) {
     return undefined;
   }
   const [diRegistry, diGroup, diToolAndVersion] = parts;
-  const [diTool, diVersion = 'latest'] = diToolAndVersion.split(':');
+  const [diTool, diVersion] = diToolAndVersion.split(':');
   const registry = registries.find((r) => r.path.toLowerCase() === diRegistry);
   if (!registry) {
     return undefined;
@@ -32,6 +34,6 @@ export function getDockerImage (dockerImage, dockerRegistries) {
     registry,
     group,
     tool,
-    version: diVersion
+    version: diVersion || getTaglessImageVersion(tool)
   };
 }

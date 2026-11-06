@@ -58,3 +58,9 @@ So on **Connect**, the extension adds these settings to the run's **Remote [SSH]
 - `~/cloud-data` is hidden from the Explorer. The storages stay available in the terminal.
 - To change what is added, edit **`cloudPipeline.remoteMachineSettings.values`**. Set a key to `null` to skip it — for example `"search.followSymlinks": null`.
 - To turn this off, set **`cloudPipeline.remoteMachineSettings.enabled`** to `false`.
+
+---
+
+## Development
+
+Node 20 and `npm ci` in this directory. `npm run compile` builds the extension into `out/`, `npm test` builds it and runs the unit tests under `src/test/` with the Node test runner. A tested module must not import `vscode`, which is only available inside the editor.
