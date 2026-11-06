@@ -59,6 +59,7 @@
 - [Read-only access to all storages](#read-only-access-to-all-storages)
 - [Permissions granted to a user](#permissions-granted-to-a-user)
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
+- [Self-contained Python 3.12 distribution](#self-contained-python-312-distribution)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
 - [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
 - [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
@@ -72,6 +73,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
@@ -1869,6 +1871,22 @@ The WebDAV service (`cp-dav`) also moved from CentOS 7 to Rocky Linux 8 and got 
 
 ***
 
+## Self-contained Python 3.12 distribution
+
+The runs, the node hosts and the platform images install the platform's Python 3.12 distribution, from `tools/python/3/python3.12.tar.gz` of the distribution bucket, into `/usr/local/python3.12` (the AWS node images into `/opt/python3.12`). It is now built from pinned sources by the `Build-Dependencies` workflow (`deploy/dependencies/python3/`), and it needs nothing from the tool image but `glibc` 2.17 or later:
+
+- CPython 3.12.16 with OpenSSL 3.5, instead of CPython 3.12.0 with OpenSSL 1.1.1, which has had no support since 2023.
+- Its modules carry their own libraries. So `ctypes` (and with it the NFS events observer of a run), `sqlite3`, `readline` and `curses` now work in the images that lack the `libffi.so.6`, `libsqlite3.so.0`, `libreadline.so.6` or `libncursesw.so.5` of the previous build, e.g. Rocky Linux 9, Ubuntu 20.04 and later, and Debian 11 and later.
+- `readline` uses libedit. `dbm.gnu`, `dbm.ndbm`, `nis` and `tkinter` are not included.
+- `crypt` still uses the `libcrypt.so.1` of the image. On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
+- HTTPS verifies with the CA certificates of the image, where Debian and Ubuntu keep them (`/etc/ssl/certs`), and where the RHEL family keeps them (`/etc/pki/tls/cert.pem`).
+- The download is about 30 MB, instead of 107 MB: it no longer includes the test suite, the static `libpython3.12.a`, or a separate `/usr/local/openssl`.
+- A run now keeps the `/usr/local/openssl` of the tool image, e.g. an OpenSSL that the software of the image is built with. Before, a run removed it. Only a distribution that has its own `openssl` folder, like `python3.12.0.tar.gz`, still replaces it.
+
+The previous distribution stays available as `tools/python/3/python3.12.0.tar.gz`. A run uses it, when the `CP_PYTHON3_DISTRO_URL` parameter points to it.
+
+***
+
 ## Run controls for an unavailable node
 
 When the compute node of a run stops reporting its status, the run gets the `NODE_UNAVAILABLE` tag. If the node does not recover within the grace period (the `cluster.node.unavailable.grace.period.minutes` system preference, or the `NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES` run parameter), the node is terminated.  
@@ -1980,6 +1998,13 @@ More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-
 ***
 
 ## Notable Bug fixes
+
+### Detached configuration: the old name stays in the Library after a rename
+
+[#4756](https://github.com/epam/cloud-pipeline/issues/4756)
+
+Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
+Now, the folder and the library tree show the new name right after the rename.
 
 ### The backup worker of the GitLab database always fails
 
