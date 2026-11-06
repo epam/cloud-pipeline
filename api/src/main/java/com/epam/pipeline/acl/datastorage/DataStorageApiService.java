@@ -261,7 +261,7 @@ public class DataStorageApiService {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
-    @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE)
+    @PreAuthorize(AclExpressions.STORAGE_MGMT_UPDATE_WITH_ACCESS_POINT)
     @AclMask
     public AbstractDataStorage update(DataStorageVO storage) {
         return dataStorageManager.update(storage);

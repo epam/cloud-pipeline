@@ -556,6 +556,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         S3_KMS_KEY_ARN,
         S3_USE_ASSUMED_CREDS,
         S3_TEMP_CREDS_ROLE,
+        S3_ACCESS_POINT_ARN,
 
         // NFS specific fields
         MOUNT_OPTIONS,
@@ -625,6 +626,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     String cidrsStr = s3Bucket.getAllowedCidrs() != null ?
                             s3Bucket.getAllowedCidrs().stream().collect(Collectors.joining(",")) : null;
                     params.addValue(ALLOWED_CIDRS.name(), cidrsStr);
+                    params.addValue(S3_ACCESS_POINT_ARN.name(), s3Bucket.getAccessPointArn());
                 }
             } else if (dataStorage instanceof AzureBlobStorage) {
                 AzureBlobStorage blob = ((AzureBlobStorage) dataStorage);
@@ -722,6 +724,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     rs.getString(S3_KMS_KEY_ARN.name()),
                     rs.getString(S3_TEMP_CREDS_ROLE.name()),
                     rs.getBoolean(S3_USE_ASSUMED_CREDS.name()),
+                    rs.getString(S3_ACCESS_POINT_ARN.name()),
                     rs.getString(MOUNT_STATUS.name()),
                     linkingMasks,
                     sourceStorageId);

@@ -1129,6 +1129,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         NODE_PLATFORM,
         DOCKER_IMAGE,
         ACTUAL_DOCKER_IMAGE,
+        ACTUAL_DOCKER_IMAGE_DIGEST,
         PLATFORM,
         CMD_TEMPLATE,
         ACTUAL_CMD,
@@ -1201,6 +1202,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(TIMEOUT.name(), run.getTimeout());
             params.addValue(DOCKER_IMAGE.name(), run.getDockerImage());
             params.addValue(ACTUAL_DOCKER_IMAGE.name(), run.getActualDockerImage());
+            params.addValue(ACTUAL_DOCKER_IMAGE_DIGEST.name(), run.getActualDockerImageDigest());
             params.addValue(PLATFORM.name(), run.getPlatform());
             params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
             params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
@@ -1340,6 +1342,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
             run.setDockerImage(rs.getString(DOCKER_IMAGE.name()));
             run.setActualDockerImage(rs.getString(ACTUAL_DOCKER_IMAGE.name()));
+            run.setActualDockerImageDigest(rs.getString(ACTUAL_DOCKER_IMAGE_DIGEST.name()));
             run.setPlatform(rs.getString(PLATFORM.name()));
             run.setCmdTemplate(rs.getString(CMD_TEMPLATE.name()));
             run.setActualCmd(rs.getString(ACTUAL_CMD.name()));

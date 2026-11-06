@@ -92,6 +92,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_INVALID_IMAGE = "error.tool.invalid.image";
     public static final String ERROR_TOOL_VERSION_INVALID_SIZE = "error.tool.version.invalid.size";
     public static final String ERROR_TOOL_VERSION_DELETE_FAILED = "error.tool.version.delete.failed";
+    public static final String ERROR_TOOL_DEFAULT_VERSION_NOT_FOUND = "error.tool.default.version.not.found";
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
@@ -266,6 +267,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_NAME_IS_EMPTY = "error.datastorage.name.is.empty";
     public static final String ERROR_DATASTORAGE_NOT_SUPPORTED = "error.datastorage.not.supported";
     public static final String ERROR_DATASTORAGE_PATH_IS_EMPTY = "error.datastorage.path.is.empty";
+    public static final String ERROR_DATASTORAGE_ACCESS_POINT_ARN_INVALID =
+            "error.datastorage.access.point.arn.invalid";
     public static final String ERROR_DATASTORAGE_RULE_NOT_FOUND = "error.datastorage.rule.not.found";
     public static final String ERROR_DATASTORAGE_RULE_STS_OR_LTS_REQUIRED =
             "error.datastorage.rule.sts.or.lts.required";

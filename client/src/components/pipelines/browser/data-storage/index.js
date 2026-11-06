@@ -1090,7 +1090,8 @@ export default class DataStorage extends React.Component {
   // the modal opens only if there is room - see `archiveDownloadAllowed`
   // (special/download-storage-archive.js). The same check runs again inside
   // `startArchiveDownload` when OK is pressed, since this modal can sit open
-  // for as long as the user likes.
+  // for as long as the user likes - and this time, if the cap has since been
+  // hit, the modal stays open to show it rather than closing on the error.
   // Invoked fire-and-forget from the selection dropdown's click handler, so
   // it catches for itself: an escaping rejection would become an unhandled
   // one and the click would look like it did nothing at all.
@@ -1117,11 +1118,13 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
-  submitDownloadArchive = (name) => {
+  // Returns the promise so the modal can tell a queued archive from a refused
+  // one: no try/catch here, since swallowing the rejection would close the
+  // modal on an error. The modal closes itself once this resolves.
+  submitDownloadArchive = async (name) => {
     const {asyncTasks, storageId} = this.props;
     const {selectedItems = []} = this.state;
-    this.closeDownloadArchiveModal();
-    handleDownloadArchive(
+    await handleDownloadArchive(
       asyncTasks,
       storageId,
       archivePathsFromSelection(selectedItems),
@@ -2423,10 +2426,13 @@ export default class DataStorage extends React.Component {
     };
     // Carries no cap state. Clicking it counts the user's active tasks against
     // the server (`openDownloadArchiveModal` above) and, at the cap, shows a
-    // message instead of opening the name modal. A hint here could only come
-    // from a background poll of the task list, which the notification tracker
-    // no longer keeps (models/asyncTask/CurrentUserAsyncTasks.js polls the
-    // user's own queued tasks one by one).
+    // message instead of opening the name modal; hitting the cap again after
+    // the name modal is already open leaves it open, showing the error,
+    // rather than closing it (`submitDownloadArchive` above). A hint here
+    // could only come from a background poll of the task list, which the
+    // notification tracker no longer keeps
+    // (models/asyncTask/CurrentUserAsyncTasks.js polls the user's own queued
+    // tasks one by one).
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',

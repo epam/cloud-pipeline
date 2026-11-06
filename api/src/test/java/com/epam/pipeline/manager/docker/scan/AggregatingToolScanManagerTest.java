@@ -289,7 +289,8 @@ public class AggregatingToolScanManagerTest {
         old.setDigest(DIGEST_2);
         when(toolVersionManager.loadToolVersion(testTool.getId(), LATEST_VERSION)).thenReturn(old);
 
-        when(toolManager.getTagFromImageName(nullable(String.class))).thenReturn(LATEST_VERSION);
+        when(toolManager.getTagFromImageName(nullable(String.class), nullable(String.class)))
+                .thenReturn(LATEST_VERSION);
         when(toolVersionManager.findToolVersion(Mockito.anyLong(), nullable(String.class)))
                 .thenReturn(Optional.empty());
 

@@ -428,7 +428,8 @@ public class DockerContainerOperationManager {
         try {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER);
+                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER,
+                        false);
             }
         } finally {
             resumeLock.unlock();

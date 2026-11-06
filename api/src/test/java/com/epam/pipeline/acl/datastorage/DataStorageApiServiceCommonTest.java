@@ -71,6 +71,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     private static final int WRITE_PERMISSION = 2;
     private static final int READ_AND_WRITE_PERMISSION = 3;
     private static final int ALL_PERMISSIONS = 15;
+    private static final String ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
     private static final DataStorageConvertRequest CONVERT_REQUEST = new DataStorageConvertRequest(
             DataStorageConvertRequestType.VERSIONED_STORAGE, DataStorageConvertRequestAction.LEAVE);
     public static final long SECS_IN_HOUR = 3600L;
@@ -518,6 +519,54 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(s3bucket).when(target).update(dataStorageVO);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(dataStorageVO));
+    }
+
+    @Test
+    @WithMockUser(roles = ADMIN_ROLE)
+    public void shouldUpdateAccessPointArnForAdmin() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn(ACCESS_POINT_ARN);
+        initAclEntity(s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThat(dataStorageApiService.update(storageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(roles = STORAGE_ADMIN_ROLE)
+    public void shouldUpdateAccessPointArnForStorageAdmin() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn(ACCESS_POINT_ARN);
+        initAclEntity(s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThat(dataStorageApiService.update(storageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldDenyUpdateAccessPointArnForOwner() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn(ACCESS_POINT_ARN);
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(storageVO));
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldDenyClearAccessPointArnForOwner() {
+        final DataStorageVO storageVO = getDataStorageVOWithAccessPointArn("");
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(storageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(storageVO));
     }
 
     @Test
@@ -991,5 +1040,11 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
                 ContextualPreferenceLevel.STORAGE, storage.getId().toString());
         doReturn(preference).when(contextualPreferenceManager)
                 .search(eq(Collections.singletonList(preference.name())), eq(resource));
+    }
+
+    private DataStorageVO getDataStorageVOWithAccessPointArn(final String accessPointArn) {
+        final DataStorageVO storageVO = DatastorageCreatorUtils.getDataStorageVO();
+        storageVO.setAccessPointArn(accessPointArn);
+        return storageVO;
     }
 }
