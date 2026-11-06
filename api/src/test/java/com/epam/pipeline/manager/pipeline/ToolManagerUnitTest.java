@@ -446,7 +446,7 @@ public class ToolManagerUnitTest {
         final DockerClient dockerClient = mockDockerClient();
         mockDigest(dockerClient, SOME_TAG, TEST_DIGEST);
 
-        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.of(TEST_DIGEST)));
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG), LATEST_TAG), is(Optional.of(TEST_DIGEST)));
     }
 
     @Test
@@ -454,7 +454,15 @@ public class ToolManagerUnitTest {
         final DockerClient dockerClient = mockDockerClient();
         mockDigest(dockerClient, LATEST_TAG, TEST_DIGEST);
 
-        assertThat(manager.resolveImageDigest(REGISTRY + SLASH + TOOL_IMAGE), is(Optional.of(TEST_DIGEST)));
+        assertThat(manager.resolveImageDigest(REGISTRY + SLASH + TOOL_IMAGE, LATEST_TAG), is(Optional.of(TEST_DIGEST)));
+    }
+
+    @Test
+    public void resolveImageDigestShouldFallBackToDefaultVersionIfImageHasNoTag() {
+        final DockerClient dockerClient = mockDockerClient();
+        mockDigest(dockerClient, SOME_TAG, TEST_DIGEST);
+
+        assertThat(manager.resolveImageDigest(REGISTRY + SLASH + TOOL_IMAGE, SOME_TAG), is(Optional.of(TEST_DIGEST)));
     }
 
     @Test
@@ -462,7 +470,7 @@ public class ToolManagerUnitTest {
         final DockerClient dockerClient = mockDockerClient();
         doReturn(Optional.empty()).when(dockerClient).getManifest(any(), anyString(), anyString());
 
-        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.empty()));
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG), LATEST_TAG), is(Optional.empty()));
     }
 
     @Test
@@ -470,7 +478,7 @@ public class ToolManagerUnitTest {
         final DockerClient dockerClient = mockDockerClient();
         mockDigest(dockerClient, SOME_TAG, "not a digest");
 
-        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.empty()));
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG), LATEST_TAG), is(Optional.empty()));
     }
 
     @Test
@@ -479,12 +487,12 @@ public class ToolManagerUnitTest {
         doThrow(new DockerConnectionException(REGISTRY, REGISTRY_ERROR))
                 .when(dockerClient).getManifest(any(), anyString(), anyString());
 
-        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG)), is(Optional.empty()));
+        assertThat(manager.resolveImageDigest(dockerImage(SOME_TAG), LATEST_TAG), is(Optional.empty()));
     }
 
     @Test
     public void resolveImageDigestShouldReturnEmptyIfRegistryIsUnknown() {
-        assertThat(manager.resolveImageDigest("unknown:443" + SLASH + TOOL_IMAGE + COLON + SOME_TAG),
+        assertThat(manager.resolveImageDigest("unknown:443" + SLASH + TOOL_IMAGE + COLON + SOME_TAG, LATEST_TAG),
                 is(Optional.empty()));
     }
 
@@ -493,7 +501,7 @@ public class ToolManagerUnitTest {
         final DockerClient dockerClient = mockDockerClient();
         mockDigest(dockerClient, SOME_TAG, TEST_DIGEST);
 
-        assertThat(manager.resolveImageDigest(TOOL_IMAGE + COLON + SOME_TAG), is(Optional.empty()));
+        assertThat(manager.resolveImageDigest(TOOL_IMAGE + COLON + SOME_TAG, LATEST_TAG), is(Optional.empty()));
     }
 
     private String dockerImage(final String tag) {

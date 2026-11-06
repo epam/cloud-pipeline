@@ -881,16 +881,17 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Resolves the digest, which a docker image tag points to.
-     *
+     * <p>
      * The digest is resolved in the registry the given image names, so it always belongs to that repository.
      * A digest, which cannot be resolved, is not an error: an empty value is returned, and it is up to a caller
      * to fall back to the image tag.
      *
-     * @param dockerImage a docker image, in the registry/group/tool:tag form
+     * @param dockerImage    a docker image, in the registry/group/tool:tag form
+     * @param defaultVersion default version tag of the corresponding tool
      * @return the digest, or an empty value if it cannot be resolved
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public Optional<String> resolveImageDigest(final String dockerImage) {
+    public Optional<String> resolveImageDigest(final String dockerImage, final String defaultVersion) {
         try {
             final Matcher matcher = REPOSITORY_AND_IMAGE.matcher(dockerImage);
             if (!matcher.find()) {
@@ -904,7 +905,7 @@ public class ToolManager implements SecuredEntityManager {
             }
             final String imageWithTag = matcher.group(2);
             final String image = getImageWithoutTag(imageWithTag);
-            final String tag = getTagFromImageName(imageWithTag);
+            final String tag = getTagFromImageName(imageWithTag, defaultVersion);
             final Optional<String> digest = dockerRegistryManager.getDockerClient(registry, image)
                     .getManifest(registry, image, tag)
                     .map(ManifestV2::getDigest)

@@ -489,7 +489,7 @@ public class PipelineRunManager {
         final PipelineRun run = createPipelineRun(pipelineVersion.orElse(null), configuration, pipeline,
                 tool, toolVersion.orElse(null),
                 region, parentRun.orElse(null), entityIds, configurationId, sensitive);
-        run.setActualDockerImageDigest(findDigestToPin(run.getActualDockerImage()));
+        run.setActualDockerImageDigest(findDigestToPin(run.getActualDockerImage(), tool));
 
         // If there is no podAssignPolicy, then run is scheduled to a dedicated node
         if (configuration.getPodAssignPolicy() == null || !configuration.getPodAssignPolicy().isValid()) {
@@ -1697,19 +1697,22 @@ public class PipelineRunManager {
 
     /**
      * Resolves the digest to pin a run's pod to, if the pinning is enabled.
-     *
+     * <p>
      * The digest is resolved for the very image the pod is created with, so the pinned image always names
      * the repository the digest belongs to. A digest, which cannot be resolved, is not a launch error:
      * such a run is launched with the docker image tag, just as it is launched while the pinning is disabled.
      *
      * @param dockerImage the run's docker image, in the registry/group/tool:tag form
+     * @param tool object corresponded to dockerImage
      * @return the digest, or {@code null} if the pinning is disabled or the digest cannot be resolved
      */
-    private String findDigestToPin(final String dockerImage) {
+    private String findDigestToPin(final String dockerImage, Tool tool) {
         if (!isImageDigestPinningEnabled()) {
             return null;
         }
-        final Optional<String> digest = toolManager.resolveImageDigest(dockerImage);
+        final Optional<String> digest = toolManager.resolveImageDigest(
+                dockerImage,  toolManager.resolveDefaultVersion(tool)
+        );
         if (!digest.isPresent()) {
             log.warn("Docker image {} will be pulled by the tag: its digest is not resolved.", dockerImage);
         }

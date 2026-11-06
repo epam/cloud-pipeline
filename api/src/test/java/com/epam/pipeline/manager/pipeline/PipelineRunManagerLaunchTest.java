@@ -131,6 +131,7 @@ public class PipelineRunManagerLaunchTest {
     private static final String IMAGE = "testImage";
     private static final String DIGEST = "sha256:digest";
     private static final String ANOTHER_DIGEST = "sha256:another";
+    private static final String DEFAULT_VERSION = "defaultVersion";
     private static final String STRING_TYPE = "string";
     private static final String RESOLVED_VALUE = "resolved";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
@@ -255,12 +256,13 @@ public class PipelineRunManagerLaunchTest {
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
         doReturn(Optional.empty()).when(pipelineVersionManager).resolvePipelineVersion(any(), any());
         doReturn(true).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
-        doReturn(Optional.empty()).when(toolManager).resolveImageDigest(any());
+        doReturn(Optional.empty()).when(toolManager).resolveImageDigest(any(), any());
     }
 
     @Test
     public void launchPipelineShouldPinDockerImageDigestBeforePodLaunch() {
-        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(tool.getImage());
+        doReturn(DEFAULT_VERSION).when(toolManager).resolveDefaultVersion(tool);
+        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(eq(tool.getImage()), any());
         final AtomicReference<String> launchedDigest = new AtomicReference<>();
         doAnswer(invocation -> {
             launchedDigest.set(((PipelineRun) invocation.getArguments()[0]).getActualDockerImageDigest());
@@ -271,6 +273,7 @@ public class PipelineRunManagerLaunchTest {
 
         assertEquals(DIGEST, launchedDigest.get());
         assertEquals(DIGEST, run.getActualDockerImageDigest());
+        verify(toolManager).resolveImageDigest(tool.getImage(), DEFAULT_VERSION);
     }
 
     @Test
@@ -283,12 +286,12 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void launchPipelineShouldNotPinDockerImageDigestIfPinningIsDisabled() {
         doReturn(false).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
-        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(tool.getImage());
+        doReturn(Optional.of(DIGEST)).when(toolManager).resolveImageDigest(eq(tool.getImage()), any());
 
         final PipelineRun run = launchTool(configuration, INSTANCE_TYPE);
 
         assertNull(run.getActualDockerImageDigest());
-        verify(toolManager, never()).resolveImageDigest(anyString());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
     }
 
     @Test
@@ -609,12 +612,12 @@ public class PipelineRunManagerLaunchTest {
         final PipelineRun run = getRunToRestart();
         run.setActualDockerImageDigest(DIGEST);
         mockRestart();
-        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(IMAGE);
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(eq(IMAGE), any());
 
         final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
 
         assertEquals(DIGEST, restartedRun.getActualDockerImageDigest());
-        verify(toolManager, never()).resolveImageDigest(anyString());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
     }
 
     @Test
@@ -623,12 +626,12 @@ public class PipelineRunManagerLaunchTest {
         run.setActualDockerImageDigest(DIGEST);
         mockRestart();
         doReturn(false).when(preferenceManager).getPreference(LAUNCH_DOCKER_IMAGE_PIN_DIGEST);
-        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(IMAGE);
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(eq(IMAGE), any());
 
         final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
 
         assertNull(restartedRun.getActualDockerImageDigest());
-        verify(toolManager, never()).resolveImageDigest(anyString());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
     }
 
     @Test
@@ -636,12 +639,12 @@ public class PipelineRunManagerLaunchTest {
         final PipelineRun run = getRunToRestart();
         run.setActualDockerImageDigest(null);
         mockRestart();
-        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(IMAGE);
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(eq(IMAGE), any());
 
         final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
 
         assertNull(restartedRun.getActualDockerImageDigest());
-        verify(toolManager, never()).resolveImageDigest(anyString());
+        verify(toolManager, never()).resolveImageDigest(anyString(), any());
     }
 
     private PipelineRun getRunToRestart() {
