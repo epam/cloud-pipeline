@@ -54,4 +54,19 @@ describe('refreshConfigurationParent', () => {
     expect(() => refreshConfigurationParent({id: 1, parent: {id: 7}}, stores)).not.toThrow();
     expect(stores.folders.invalidateFolder).toHaveBeenCalledWith(7);
   });
+
+  it('does not throw without the stores', () => {
+    expect(refreshConfigurationParent({id: 1, parent: {id: 7}})).toBe(7);
+    expect(refreshConfigurationParent({id: 1}, null)).toBeUndefined();
+    expect(refreshConfigurationParent({id: 1, parent: {id: 7}}, {})).toBe(7);
+    expect(refreshConfigurationParent({id: 1}, {onReloadTree: undefined})).toBeUndefined();
+  });
+
+  it('reloads the tree when the folders store is missing', () => {
+    const onReloadTree = fn();
+
+    refreshConfigurationParent({id: 1, parent: {id: 7}}, {onReloadTree});
+
+    expect(onReloadTree).toHaveBeenCalledWith(false, 7);
+  });
 });

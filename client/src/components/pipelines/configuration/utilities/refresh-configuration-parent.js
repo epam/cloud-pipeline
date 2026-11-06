@@ -24,20 +24,20 @@
  * reload.
  *
  * @param {{parent: {id: number}}} configuration - the configuration, as the API returns it
- * @param {{folders, pipelinesLibrary, onReloadTree}} stores - the `folders` and
+ * @param {{folders, pipelinesLibrary, onReloadTree}} [stores] - the `folders` and
  * `pipelinesLibrary` stores, and the library's `onReloadTree(reloadRoot, folderId)`
- * callback, if there is one
+ * callback; each is optional, and a missing one is skipped
  * @returns {number|undefined} the id of the parent folder, or undefined for the library root
  */
 export default function refreshConfigurationParent (configuration, stores) {
-  const {folders, pipelinesLibrary, onReloadTree} = stores;
+  const {folders, pipelinesLibrary, onReloadTree} = stores || {};
   const parentFolderId = configuration && configuration.parent
     ? configuration.parent.id
     : undefined;
   if (parentFolderId) {
-    folders.invalidateFolder(parentFolderId);
+    folders && folders.invalidateFolder(parentFolderId);
   } else {
-    pipelinesLibrary.invalidateCache();
+    pipelinesLibrary && pipelinesLibrary.invalidateCache();
   }
   if (typeof onReloadTree === 'function') {
     onReloadTree(!parentFolderId, parentFolderId);
