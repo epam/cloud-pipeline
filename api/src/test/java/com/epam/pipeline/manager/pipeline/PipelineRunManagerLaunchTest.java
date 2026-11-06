@@ -605,7 +605,7 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
-    public void restartRunShouldResolveDockerImageDigestAgain() {
+    public void restartRunShouldKeepDockerImageDigestOfParentRun() {
         final PipelineRun run = getRunToRestart();
         run.setActualDockerImageDigest(DIGEST);
         mockRestart();
@@ -613,7 +613,8 @@ public class PipelineRunManagerLaunchTest {
 
         final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
 
-        assertEquals(ANOTHER_DIGEST, restartedRun.getActualDockerImageDigest());
+        assertEquals(DIGEST, restartedRun.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString());
     }
 
     @Test
@@ -631,14 +632,16 @@ public class PipelineRunManagerLaunchTest {
     }
 
     @Test
-    public void restartRunShouldNotCopyDockerImageDigestIfItIsNotResolved() {
+    public void restartRunShouldNotPinDockerImageDigestIfParentRunIsNotPinned() {
         final PipelineRun run = getRunToRestart();
-        run.setActualDockerImageDigest(DIGEST);
+        run.setActualDockerImageDigest(null);
         mockRestart();
+        doReturn(Optional.of(ANOTHER_DIGEST)).when(toolManager).resolveImageDigest(IMAGE);
 
         final PipelineRun restartedRun = pipelineRunManager.restartRun(run);
 
         assertNull(restartedRun.getActualDockerImageDigest());
+        verify(toolManager, never()).resolveImageDigest(anyString());
     }
 
     private PipelineRun getRunToRestart() {

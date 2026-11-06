@@ -1368,8 +1368,7 @@ public class PipelineRunManager {
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final PipelineRun restartedRun = createRestartRun(run);
         final Tool tool = getToolForRun(configuration);
-        // a restarted run is pinned the same way a new run is, its tag may point to another digest by now
-        restartedRun.setActualDockerImageDigest(findDigestToPin(restartedRun.getActualDockerImage()));
+        restartedRun.setActualDockerImageDigest(findDigestToInherit(run));
         final List<String> endpoints = configuration.isEraseRunEndpoints() ?
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
@@ -1707,7 +1706,7 @@ public class PipelineRunManager {
      * @return the digest, or {@code null} if the pinning is disabled or the digest cannot be resolved
      */
     private String findDigestToPin(final String dockerImage) {
-        if (!Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE_PIN_DIGEST))) {
+        if (!isImageDigestPinningEnabled()) {
             return null;
         }
         final Optional<String> digest = toolManager.resolveImageDigest(dockerImage);
@@ -1715,6 +1714,33 @@ public class PipelineRunManager {
             log.warn("Docker image {} will be pulled by the tag: its digest is not resolved.", dockerImage);
         }
         return digest.orElse(null);
+    }
+
+    /**
+     * Resolves the digest to pin a restarted run's pod to, if the pinning is enabled.
+     *
+     * A restarted run continues the run it restarts, so it keeps the very digest that run was pinned to,
+     * rather than the digest its image tag points to now. A restarted run, whose parent run carries no digest,
+     * is launched with the docker image tag.
+     *
+     * @param parentRun the run being restarted
+     * @return the digest, or {@code null} if the pinning is disabled or the parent run carries no digest
+     */
+    private String findDigestToInherit(final PipelineRun parentRun) {
+        if (!isImageDigestPinningEnabled()) {
+            return null;
+        }
+        final String digest = parentRun.getActualDockerImageDigest();
+        if (StringUtils.isBlank(digest)) {
+            log.debug("Docker image {} will be pulled by the tag: run {}, which is being restarted, "
+                    + "is not pinned to a digest.", parentRun.getActualDockerImage(), parentRun.getId());
+            return null;
+        }
+        return digest;
+    }
+
+    private boolean isImageDigestPinningEnabled() {
+        return Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.LAUNCH_DOCKER_IMAGE_PIN_DIGEST));
     }
 
     private void setParentInstance(PipelineRun run, Long parentNodeId) {

@@ -1862,12 +1862,14 @@ Previously, the pod of a run was always created with the Docker image tag, e.g. 
 
 In **`v0.17`**, a run can be pinned to the exact image its tag points to at the launch. It is enabled by the system preference `launch.docker.image.pin.digest` (`false` by default):
 
-- a new or a restarted run asks the registry for the digest of its image tag, stores it, and its pod pulls the image by the digest (`<registry>/<group>/<tool>@sha256:...`). The image name with the tag is kept in the `docker_image` annotation of the pod
+- a new run asks the registry for the digest of its image tag, stores it, and its pod pulls the image by the digest (`<registry>/<group>/<tool>@sha256:...`). The image name with the tag is kept in the `docker_image` annotation of the pod
+- if the digest cannot be obtained from the registry, the new run is launched with the tag, as before
+- a restarted run - e.g. a spot run restarted after its instance was reclaimed - asks the registry for nothing: it keeps the digest of the run it restarts, so it continues from the same image, even if the tag has been moved to another image since that run was launched
+- a rerun of a completed run, by the **RERUN** control or by `pipe run`, is a new run and not a restart: it asks the registry for the digest of the tag again, so it can get another image than the run it was rerun from
 - the digest is shown at the **Run logs** page (the **Instance** section), and by `pipe view-runs <run-id>`. It is also returned by the API as the `actualDockerImageDigest` field of a run
-- if the digest cannot be obtained from the registry, the run is launched with the tag, as before
 - a paused run is always resumed with the tag, since the pause saves the container under it. The digest of such a run still names the image it was launched with, not the image saved by the pause
 
-The preference applies when a run is launched or restarted. The runs launched before the preference was enabled keep using the tag, and disabling the preference does not affect the runs that are already pinned.
+The preference applies when a run is launched or restarted. The runs launched before the preference was enabled keep using the tag, and a restart of such a run uses the tag as well. Disabling the preference does not affect the runs that are already pinned, but a restart of a pinned run after that uses the tag.
 
 > **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
 
