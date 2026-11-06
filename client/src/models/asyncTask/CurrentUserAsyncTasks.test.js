@@ -95,7 +95,7 @@ async function setMaxUserTasks (maxUserTasks) {
   stubApi({
     '/preferences': [
       {
-        name: 'storage.download.archive.config',
+        name: 'storage.archive.config',
         value: JSON.stringify({maxUserTasks})
       }
     ]

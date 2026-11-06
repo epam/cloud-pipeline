@@ -27,6 +27,7 @@ import com.epam.pipeline.dto.async.DownloadArchiveResult;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
@@ -67,7 +68,7 @@ public class DataStorageDownloadArchiveManagerTest {
         manager = new DataStorageDownloadArchiveManager(dataStorageManager, asyncTaskManager,
                 preferenceManager, storageProviderManager, messageHelper);
         Mockito.when(preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG)).thenReturn(config());
+                SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG)).thenReturn(config());
     }
 
     @Test
@@ -179,8 +180,8 @@ public class DataStorageDownloadArchiveManagerTest {
                 .archiveSizeBytes(ARCHIVE_SIZE_BYTES)
                 .build());
 
-        assertEquals(PREVIOUS_STORAGE_ID, manager.archiveStorageId(task, config()));
-        assertEquals("previous-prefix/" + TASK_ID + ".zip", manager.archivePath(task, config()));
+        assertEquals(PREVIOUS_STORAGE_ID, manager.archiveStorageId(task, downloadSection()));
+        assertEquals("previous-prefix/" + TASK_ID + ".zip", manager.archivePath(task, downloadSection()));
     }
 
     @Test
@@ -191,8 +192,8 @@ public class DataStorageDownloadArchiveManagerTest {
                 .archiveSizeBytes(ARCHIVE_SIZE_BYTES)
                 .build());
 
-        assertEquals(ARCHIVE_STORAGE_ID, manager.archiveStorageId(task, config()));
-        assertEquals("archives/" + TASK_ID + ".zip", manager.archivePath(task, config()));
+        assertEquals(ARCHIVE_STORAGE_ID, manager.archiveStorageId(task, downloadSection()));
+        assertEquals("archives/" + TASK_ID + ".zip", manager.archivePath(task, downloadSection()));
     }
 
     @Test
@@ -206,7 +207,7 @@ public class DataStorageDownloadArchiveManagerTest {
                 .path("archives/someone-elses-task.zip")
                 .build());
 
-        assertThrows(() -> manager.archivePath(task, config()));
+        assertThrows(() -> manager.archivePath(task, downloadSection()));
     }
 
     @Test
@@ -217,7 +218,7 @@ public class DataStorageDownloadArchiveManagerTest {
                 .path(TASK_ID + ".zip")
                 .build());
 
-        assertEquals(TASK_ID + ".zip", manager.archivePath(task, config()));
+        assertEquals(TASK_ID + ".zip", manager.archivePath(task, downloadSection()));
     }
 
     @Test
@@ -294,27 +295,48 @@ public class DataStorageDownloadArchiveManagerTest {
     @Test
     public void shouldRefuseToHandOverAnArchiveWhenNoStorageIsConfigured() {
         Mockito.when(preferenceManager.getPreference(
-                SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG))
-                .thenReturn(DownloadArchiveConfig.builder()
-                        .maxUserTasks(TASK_LIMIT)
-                        .build());
+                SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG))
+                .thenReturn(wrap(DownloadArchiveConfig.builder().build()));
 
         assertThrows(() -> manager.consume(task(AsyncTaskStatus.SUCCESS)));
         Mockito.verify(dataStorageManager, Mockito.never()).load(Mockito.anyLong());
     }
 
-    private DownloadArchiveConfig config() {
-        return DownloadArchiveConfig.builder()
+    private ArchiveTasksConfig config() {
+        return wrap(DownloadArchiveConfig.builder()
                 .destinationStorageId(ARCHIVE_STORAGE_ID)
-                .maxUserTasks(TASK_LIMIT)
-                .build();
+                .build());
     }
 
+    /**
+     * The download section of the stubbed preference, for the package-private methods that take just
+     * that section rather than the whole property.
+     */
+    private DownloadArchiveConfig downloadSection() {
+        return config().getTasks().getDownload();
+    }
+
+    /**
+     * The download section alone, for the package-private methods that take just that section.
+     */
     private DownloadArchiveConfig configWithPrefix(final String prefix) {
         return DownloadArchiveConfig.builder()
                 .destinationStorageId(ARCHIVE_STORAGE_ID)
                 .destinationPrefix(prefix)
+                .build();
+    }
+
+    /**
+     * The download section inside the preference that holds it, with the quota where the quota lives.
+     * {@code maxUserTasks} is one budget across both task types, so it sits at the top level and not
+     * in either section.
+     */
+    private ArchiveTasksConfig wrap(final DownloadArchiveConfig download) {
+        return ArchiveTasksConfig.builder()
                 .maxUserTasks(TASK_LIMIT)
+                .tasks(ArchiveTasksConfig.Tasks.builder()
+                        .download(download)
+                        .build())
                 .build();
     }
 

@@ -112,7 +112,7 @@ class CurrentUserAsyncTasks {
   }
 
   get maxUserTasks () {
-    return preferences.storageDownloadArchiveConfig.maxUserTasks;
+    return preferences.storageArchiveConfig.maxUserTasks;
   }
 
   // The signed-in user's name, with one retry. `fetchIfNeededOrWait` clears

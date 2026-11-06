@@ -17,5 +17,6 @@
 package com.epam.pipeline.dto.async;
 
 public enum AsyncTaskType {
-    DOWNLOAD_ARCHIVE
+    DOWNLOAD_ARCHIVE,
+    UNPACK_ARCHIVE
 }

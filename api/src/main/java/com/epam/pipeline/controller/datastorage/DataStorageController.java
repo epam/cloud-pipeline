@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.DownloadArchiveVO;
+import com.epam.pipeline.controller.vo.UnpackArchiveVO;
 import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
@@ -824,5 +825,22 @@ public class DataStorageController extends AbstractRestController {
     public Result<AsyncTask> createDownloadArchiveTask(@PathVariable(value = ID) final Long id,
                                                        @RequestBody final DownloadArchiveVO request) {
         return Result.success(dataStorageApiService.createDownloadArchiveTask(id, request));
+    }
+
+    @PostMapping(value = "/datastorage/unpack/archive")
+    @ResponseBody
+    @Operation(
+            summary = "Requests the archive that is in source to be extracted to destination.",
+            description = "Accepts the request, records it as an asynchronous task and returns that "
+                    + "task. The archive is extracted by an executor service; follow the task to "
+                    + "learn when it is done. The content lands exactly under the given destination "
+                    + "path, keeping the archive's own folder structure, and an entry that is itself "
+                    + "an archive is written out as a file rather than extracted. The caller needs "
+                    + "READ on the source and WRITE on the destination.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<AsyncTask> createUnpackArchiveTask(@RequestBody final UnpackArchiveVO request) {
+        return Result.success(dataStorageApiService.createUnpackArchiveTask(request));
     }
 }

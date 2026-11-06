@@ -19,8 +19,12 @@ The two kinds of settings this service has, kept apart on purpose.
 command line and the environment.
 
 `StorageDownloadArchiveConfig` is the platform's: the bucket, the thresholds, the time limits. Read
-from the `storage.download.archive.config` preference on every round, so a change in the UI applies
-without a restart. Its field names mirror `DownloadArchiveConfig` on the Java side.
+from the `storage.archive.config` preference on every round, so a change in the UI applies without a
+restart. Its field names mirror `DownloadArchiveConfig` on the Java side.
+
+That preference holds a section per task type, so the values this service needs come from two levels
+of it: the download ones from its own `download` section, and the two that belong to the service
+rather than to a task type from the top. See `from_preference`.
 """
 
 from __future__ import annotations
@@ -30,8 +34,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Keep in step with `SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG`.
-PREFERENCE_KEY = 'storage.download.archive.config'
+# Keep in step with `SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG`.
+PREFERENCE_KEY = 'storage.archive.config'
+
+# The preference nests one section per task type under `tasks`. `maxUserTasks` and
+# `stuckTasksThresholdMinutes` are deliberately NOT in there: they govern the service rather than one
+# task type, so they sit at the top level where there can only be one of each.
+TASKS_SECTION = 'tasks'
+DOWNLOAD_SECTION = 'download'
 
 # Used when the preference leaves a field out. They repeat the defaults in `SystemPreferences`, so a
 # half-filled preference behaves like an untouched one. A field present as `null` is honoured as
@@ -43,6 +53,11 @@ DEFAULT_TTL_DAYS = 7
 DEFAULT_MAX_USER_TASKS = 3
 DEFAULT_WORKER_MAX_RUNNING_MINUTES = 240
 DEFAULT_STUCK_TASKS_THRESHOLD_MINUTES = 360
+
+
+def _section(parent: dict[str, Any], name: str) -> dict[str, Any]:
+    value = parent.get(name)
+    return value if isinstance(value, dict) else {}
 
 
 def normalise_prefix(configured: str | None) -> str:
@@ -124,9 +139,9 @@ class StorageDownloadArchiveConfig:
 
         Two ways of reading a field, and the difference is intentional:
 
-          * `raw.get('maxFilesCount', DEFAULT)` - the default applies only when the key is absent, so
-            a key present as `null` means unlimited;
-          * `raw.get('ttlDays') or DEFAULT` - "no limit" is not a meaning these fields have, and a
+          * `section.get('maxFilesCount', DEFAULT)` - the default applies only when the key is absent,
+            so a key present as `null` means unlimited;
+          * `section.get('ttlDays') or DEFAULT` - "no limit" is not a meaning these fields have, and a
             missing TTL must not mean "keep archives for ever".
         """
         if raw is None:
@@ -134,16 +149,18 @@ class StorageDownloadArchiveConfig:
         if isinstance(raw, str):
             # A blank preference value is not valid JSON. Treat it as unset.
             raw = json.loads(raw) if raw.strip() else {}
+        shared = raw if isinstance(raw, dict) else {}
+        download = _section(_section(shared, TASKS_SECTION), DOWNLOAD_SECTION)
         return cls(
-            destination_storage_id=raw.get('destinationStorageId'),
-            destination_prefix=normalise_prefix(raw.get('destinationPrefix')),
-            max_size_bytes=raw.get('maxSizeBytes', DEFAULT_MAX_SIZE_BYTES),
-            max_files_count=raw.get('maxFilesCount', DEFAULT_MAX_FILES_COUNT),
-            ttl_days=raw.get('ttlDays') or DEFAULT_TTL_DAYS,
-            max_user_tasks=raw.get('maxUserTasks') or DEFAULT_MAX_USER_TASKS,
-            worker_max_running_minutes=(raw.get('workerMaxRunningMinutes')
+            destination_storage_id=download.get('destinationStorageId'),
+            destination_prefix=normalise_prefix(download.get('destinationPrefix')),
+            max_size_bytes=download.get('maxSizeBytes', DEFAULT_MAX_SIZE_BYTES),
+            max_files_count=download.get('maxFilesCount', DEFAULT_MAX_FILES_COUNT),
+            ttl_days=download.get('ttlDays') or DEFAULT_TTL_DAYS,
+            worker_max_running_minutes=(download.get('workerMaxRunningMinutes')
                                         or DEFAULT_WORKER_MAX_RUNNING_MINUTES),
-            stuck_tasks_threshold_minutes=(raw.get('stuckTasksThresholdMinutes')
+            max_user_tasks=shared.get('maxUserTasks') or DEFAULT_MAX_USER_TASKS,
+            stuck_tasks_threshold_minutes=(shared.get('stuckTasksThresholdMinutes')
                                            or DEFAULT_STUCK_TASKS_THRESHOLD_MINUTES),
         )
 
@@ -159,22 +176,25 @@ class StorageDownloadArchiveConfig:
 
     def warnings(self) -> list[str]:
         """Settings that are valid but will misbehave. Returned so the caller decides how often to log."""
+        section = f'{PREFERENCE_KEY}: {TASKS_SECTION}.{DOWNLOAD_SECTION}'
         found = []
         if not self.destination_storage_id:
-            found.append(f'Preference {PREFERENCE_KEY} has no destinationStorageId, no task can be '
+            found.append(f'Preference {section}.destinationStorageId is not set, no task can be '
                          f'executed')
         if self.stuck_tasks_threshold_minutes <= self.worker_max_running_minutes:
             # Otherwise the cleaner fails tasks whose workers are alive and about to stop by
             # themselves, and that worker then deletes the archive it has just uploaded.
             found.append(
                 f'Preference {PREFERENCE_KEY}: stuckTasksThresholdMinutes '
-                f'({self.stuck_tasks_threshold_minutes}) should exceed workerMaxRunningMinutes '
+                f'({self.stuck_tasks_threshold_minutes}) should exceed '
+                f'{TASKS_SECTION}.{DOWNLOAD_SECTION}.workerMaxRunningMinutes '
                 f'({self.worker_max_running_minutes}) by at least the time a worker needs to notice '
-                f'its own deadline, clean up and report')
+                f'its own deadline, clean up and report. It is one value for the whole service, so it '
+                f'must exceed the larger of the two sections')
         if self.max_size_bytes is None:
-            found.append(f'Preference {PREFERENCE_KEY} sets no maxSizeBytes, selection size is not '
+            found.append(f'Preference {section}.maxSizeBytes is not set, selection size is not '
                          f'limited')
         if self.max_files_count is None:
-            found.append(f'Preference {PREFERENCE_KEY} sets no maxFilesCount, selection file count is '
+            found.append(f'Preference {section}.maxFilesCount is not set, selection file count is '
                          f'not limited')
         return found

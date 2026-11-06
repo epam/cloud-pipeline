@@ -22,10 +22,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Everything tunable about archive downloads, in one preference. Part of it is read here, part by the
- * executor service through {@code GET /preferences/{key}}.
- */
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -65,23 +62,8 @@ public class DownloadArchiveConfig {
     private Integer ttlDays;
 
     /**
-     * How many tasks one user may have in flight. Checked when a task is created.
-     */
-    private Integer maxUserTasks;
-
-    /**
      * How long a worker may work on one task, that is how long the task may stay in {@code RUNNING}.
      * The orchestrator hands the value over at startup and the worker stops itself once past it.
      */
     private Integer workerMaxRunningMinutes;
-
-    /**
-     * How long one status may stay unchanged before the task is taken for stuck and failed. Measured by
-     * {@code status_changed}, so {@code RUNNING} and {@code STOPPING} get a window each.
-     *
-     * <p>Must exceed {@code workerMaxRunningMinutes} by the worker's poll interval, cleanup and report:
-     * failing a task does not stop its thread, and a worker failed while still alive deletes the
-     * archive it had just made.</p>
-     */
-    private Integer stuckTasksThresholdMinutes;
 }

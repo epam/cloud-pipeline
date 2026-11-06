@@ -26,6 +26,7 @@ import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.dto.async.DownloadArchiveParams;
 import com.epam.pipeline.dto.async.DownloadArchiveResult;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
@@ -83,7 +84,7 @@ public class DataStorageDownloadArchiveManager {
     public DownloadArchiveConsumable consume(final AsyncTask task) {
         Assert.isTrue(AsyncTaskStatus.SUCCESS == task.getStatus(), messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ARCHIVE_NOT_READY, task.getId(), task.getStatus()));
-        final DownloadArchiveConfig config = config();
+        final DownloadArchiveConfig config = getDownloadArchiveConfig();
         final Long storageId = archiveStorageId(task, config);
         Assert.notNull(storageId, messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ARCHIVE_STORAGE_NOT_CONFIGURED));
@@ -146,14 +147,18 @@ public class DataStorageDownloadArchiveManager {
     }
 
     private void assertUserQuota(final String owner) {
-        final int limit = config().getMaxUserTasks();
+        final int limit = ArchiveTasksConfig.maxUserTasksOrDefault(fullConfig());
         final long active = asyncTaskManager.countActive(owner);
         Assert.isTrue(active < limit, messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_USER_QUOTA_EXCEEDED, limit));
     }
 
-    private DownloadArchiveConfig config() {
-        return preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_DOWNLOAD_ARCHIVE_CONFIG);
+    private DownloadArchiveConfig getDownloadArchiveConfig() {
+        return ArchiveTasksConfig.downloadOrEmpty(fullConfig());
+    }
+
+    private ArchiveTasksConfig fullConfig() {
+        return preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG);
     }
 
     private String validArchiveName(final String requested) {
