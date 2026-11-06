@@ -644,7 +644,7 @@ public class PipelineRunManagerUnitTest {
 
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
-        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(tool), eq(DOCKER_IMAGE), eq(null)))
                 .thenReturn(emptyToolConfiguration());
         doNothing().when(pipelineRunDao).deleteRunSids(eq(RUN_ID));
         doNothing().when(pipelineRunDao).createRunSids(eq(RUN_ID), eq(newSids));
@@ -672,7 +672,7 @@ public class PipelineRunManagerUnitTest {
 
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
-        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(tool), eq(DOCKER_IMAGE), eq(null)))
                 .thenReturn(null);
         doNothing().when(pipelineRunDao).deleteRunSids(eq(RUN_ID));
         doNothing().when(pipelineRunDao).createRunSids(eq(RUN_ID), eq(newSids));
@@ -702,7 +702,7 @@ public class PipelineRunManagerUnitTest {
 
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
-        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(tool), eq(DOCKER_IMAGE), eq(null)))
                 .thenReturn(emptyToolConfiguration());
         when(pipelineVersionManager.loadParametersFromScript(eq(ID), anyString(), eq(TEST_NAME)))
                 .thenReturn(new PipelineConfiguration());
@@ -740,7 +740,7 @@ public class PipelineRunManagerUnitTest {
 
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
-        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(tool), eq(DOCKER_IMAGE), eq(null)))
                 .thenReturn(toolConfigurationWithSharedUsers(USER1));
 
         assertThrows(IllegalStateException.class, () ->
@@ -758,7 +758,7 @@ public class PipelineRunManagerUnitTest {
 
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
-        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(tool), eq(DOCKER_IMAGE), eq(null)))
                 .thenReturn(toolConfigurationWithSharedGroup(GROUP1));
 
         assertThrows(IllegalStateException.class, () ->
@@ -781,7 +781,7 @@ public class PipelineRunManagerUnitTest {
         when(pipelineVersionManager.loadParametersFromScript(eq(ID), eq(VERSION), eq(TEST_NAME)))
                 .thenReturn(configWithSharedUsers(USER1));
         when(toolManager.loadByNameOrId(eq(DOCKER_IMAGE))).thenReturn(tool);
-        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(ID), eq(DOCKER_IMAGE), eq(null)))
+        when(pipelineConfigurationManager.getConfigurationForToolVersion(eq(tool), eq(DOCKER_IMAGE), eq(null)))
                 .thenReturn(emptyToolConfiguration());
 
         assertThrows(IllegalStateException.class, () ->

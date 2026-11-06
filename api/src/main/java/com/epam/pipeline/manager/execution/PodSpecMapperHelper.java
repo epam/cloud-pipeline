@@ -16,12 +16,15 @@
 
 package com.epam.pipeline.manager.execution;
 
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.manager.pipeline.ToolUtils;
 import io.fabric8.kubernetes.api.model.Toleration;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class PodSpecMapperHelper {
@@ -45,5 +48,20 @@ public final class PodSpecMapperHelper {
                     }
                     return toleration;
                 }).collect(Collectors.toList());
+    }
+
+    /**
+     * Builds the image of a run's pod, pinned to the run's docker image digest.
+     *
+     * @param pinImageDigest whether the pod may be pinned at all
+     * @return the pinned image, or an empty value if the pod shall be created with the docker image tag:
+     * the pinning is not allowed or the run has no digest, e.g. it was launched while the pinning was disabled
+     */
+    public static Optional<String> buildPinnedDockerImage(final PipelineRun run, final boolean pinImageDigest) {
+        if (!pinImageDigest || StringUtils.isBlank(run.getActualDockerImageDigest())) {
+            return Optional.empty();
+        }
+        return Optional.of(ToolUtils.getImageWithDigest(run.getActualDockerImage(),
+                run.getActualDockerImageDigest()));
     }
 }
