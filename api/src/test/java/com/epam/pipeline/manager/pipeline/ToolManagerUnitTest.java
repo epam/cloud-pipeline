@@ -212,7 +212,7 @@ public class ToolManagerUnitTest {
 
         manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
 
-        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+        verify(toolVulnerabilityDao).insertToolVersionScanIfAbsent(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
                 eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
                 eq(false));
         verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, true);
@@ -226,7 +226,7 @@ public class ToolManagerUnitTest {
 
         manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
 
-        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+        verify(toolVulnerabilityDao).insertToolVersionScanIfAbsent(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
                 eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
                 eq(false));
         verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
@@ -322,7 +322,7 @@ public class ToolManagerUnitTest {
 
         manager.updateBlackListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
 
-        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+        verify(toolVulnerabilityDao).insertToolVersionScanIfAbsent(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
                 eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
                 eq(false));
         verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, false, true);
@@ -336,7 +336,7 @@ public class ToolManagerUnitTest {
 
         manager.updateWhiteListWithToolVersionStatus(TOOL_ID, LATEST_TAG, true);
 
-        verify(toolVulnerabilityDao).insertToolVersionScan(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
+        verify(toolVulnerabilityDao).insertToolVersionScanIfAbsent(eq(TOOL_ID), eq(LATEST_TAG), eq(null), eq(null),
                 eq(null), eq(ToolScanStatus.NOT_SCANNED), any(Date.class), any(Map.class), eq(null), eq(null),
                 eq(false));
         verify(toolVulnerabilityDao).updateWhiteAndBlackListWithToolVersion(TOOL_ID, LATEST_TAG, true, false);
