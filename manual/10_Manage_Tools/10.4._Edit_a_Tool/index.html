@@ -195,6 +195,8 @@
         <ul>
     <li class="toctree-l4"><a class="reference internal" href="#rundelete-a-tool-version">Run/Delete a Tool version</a>
     </li>
+    <li class="toctree-l4"><a class="reference internal" href="#set-a-default-version">Set a default version</a>
+    </li>
     <li class="toctree-l4"><a class="reference internal" href="#commit-a-tool">Commit a Tool</a>
     </li>
         </ul>
@@ -430,6 +432,7 @@
 <li><a href="#edit-a-tool-description">Edit a Tool description</a></li>
 <li><a href="#edit-a-tool-version">Edit a Tool version</a><ul>
 <li><a href="#rundelete-a-tool-version">Run/Delete a Tool version</a></li>
+<li><a href="#set-a-default-version">Set a default version</a></li>
 <li><a href="#commit-a-tool">Commit a Tool</a><ul>
 <li><a href="#committing-features">Committing features</a><ul>
 <li><a href="#prepost-commit-hooks">Pre/post-commit hooks</a></li>
@@ -459,6 +462,26 @@
 <li>If you want to delete a Tool version, click the <strong>Delete</strong> button.</li>
 </ol>
 <p><img alt="CP_EditTool" src="../attachments/EditTool_02.png" /></p>
+<h3 id="set-a-default-version">Set a default version</h3>
+<p>The default version of a Tool is the version, which is used if a version is not specified:</p>
+<ul>
+<li>the <strong>Run</strong> button at the top of the Tool page launches it</li>
+<li>the <a href="#edit-a-tool-settings"><strong>Settings</strong></a> tab shows and saves its settings</li>
+<li>a version, which has no own settings, is launched from the GUI with the settings of the default version</li>
+<li>a Tool image specified without a version - e.g. in <code>pipe run -di library/ubuntu</code>, in a pipeline configuration or in an API request - is launched with it</li>
+</ul>
+<p>Until a default version is set, the <strong>latest</strong> version is used. The <strong>Run</strong> button at the top of the Tool page launches the only version of a Tool, if it has no <strong>latest</strong> one. In the <strong>Versions</strong> tab, only a version set as the default one is marked with the <strong>default</strong> label.</p>
+<p>Users with the <strong>WRITE</strong> permission for a Tool can set another version as the default one:</p>
+<ol>
+<li>Navigate to the <strong>Versions</strong> tab of a Tool.</li>
+<li>Click the "check" button (<strong>Set as default</strong>) opposite the version, and confirm it. The version gets the <strong>default</strong> label, and its button is filled.</li>
+<li>To use the <strong>latest</strong> version again, click the "filled check" button (<strong>Unset default</strong>) opposite the default version, and confirm it.</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: if the default version is deleted, the Tool has no default version anymore, and the <strong>latest</strong> version (or the only one left) is used again, if the Tool has it. A Docker registry deletes all the versions of the same image together, so deleting another version, which has the same digest as the default one, removes the default version as well. In both cases, the deletion confirmation warns about it.</p>
+<p><strong><em>Note</em></strong>: if the default version is removed from the Docker registry outside of Cloud Pipeline, the <strong>Versions</strong> tab warns that it does not exist. Until it is unset by the <strong>Unset</strong> button of the warning, or another version is set as the default one, a Tool image specified without a version is launched with the missing version, which cannot be pulled.</p>
+<p><strong><em>Note</em></strong>: a "symlinked" Tool uses the default version of the original Tool, it can be changed only for the original Tool (see <a href="../10.8._Symlinks_between_tools/">10.8. Symlinks between tools</a>).</p>
+</blockquote>
 <h3 id="commit-a-tool">Commit a Tool</h3>
 <p>Commit function allows modifying existing Tools.</p>
 <ol>
@@ -494,6 +517,10 @@ When it is complete COMMITING status on the right side of the screen will change
 <li>Find a modified Tool in the registry.<br />
 <img alt="CP_EditTool" src="../attachments/EditTool_07.png" /></li>
 </ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: the new version gets the settings of the <a href="#set-a-default-version">default version</a> of the Tool, which the run was launched from. A commit into the version, which the run was launched with, or into that default version, keeps the settings of that version.</p>
+<p><strong><em>Note</em></strong>: if the Tool, which the run is committed into, has no <strong>latest</strong> version and no default version set, the commit also pushes the new version as the <strong>latest</strong> one, so that the Tool can be launched without a version specified. If the Tool has a default version set, it is launched with that version, and the commit doesn't create the <strong>latest</strong> version.</p>
+</blockquote>
 <h4 id="committing-features">Committing features</h4>
 <h5 id="prepost-commit-hooks">Pre/post-commit hooks</h5>
 <p>In certain use-cases, extra steps shall be executed before/after running the commit command in the container. For example, to avoid warning messages about terminating the previous session (which was committed) of the tool application in a non-graceful manner. Some applications may require extra cleanup to be performed before the termination.</p>
@@ -564,7 +591,7 @@ At the same time, commit operation is available.</p>
 <img alt="CP_EditTool" src="../attachments/EditTool_27.png" /><br />
 Commit operation is unavailable.</p>
 <h2 id="edit-a-tool-settings">Edit a Tool settings</h2>
-<p>Settings in this tab are applied to all Tool versions (i.e. these settings will be a default for all Tool version).</p>
+<p>Settings in this tab are applied to all Tool versions (i.e. these settings will be a default for all Tool version). They are saved as the settings of the <a href="#set-a-default-version">default version</a> of the Tool.</p>
 <ol>
 <li>Navigate to the <strong>Settings</strong> tab.<br />
 <img alt="CP_EditTool" src="../attachments/EditTool_08.png" /></li>

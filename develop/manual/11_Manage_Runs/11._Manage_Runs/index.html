@@ -754,6 +754,7 @@ Changes will be displayed at the <strong>Run logs</strong> page and will be appl
 <p>The "<strong>Instance</strong>" section lists calculation node and execution environment details that were assigned to the run when it was launched.<br />
 <strong><em>Note</em></strong>: node IP is presented as a hyperlink. Clicking it will navigate to the node details, where technical information and resources utilization is available - for more details see <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#node-information-page">here</a>.<br />
 <strong><em>Note</em></strong>: Docker image name link leads to a specific Tool's detail page (see an <a href="../../10_Manage_Tools/10._Manage_Tools/#description-tab">example</a>).<br />
+<strong><em>Note</em></strong>: if the run is pinned to the Docker image digest (see the <code>launch.docker.image.pin.digest</code> <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#launch">system preference</a>), the section also shows the <strong>Docker image digest</strong> - the exact image the run was launched with, even if its tag was moved to another image later.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_10.png" /></p>
 <blockquote>
 <p><strong><em>Note</em></strong>: if a specific platform deployment has a number of Cloud Providers registered (e.g. <code>AWS</code>+<code>Azure</code>, <code>GCP</code>+<code>Azure</code>) - corresponding auxiliary Cloud Provider icon is additionally displayed, e.g.:<br />

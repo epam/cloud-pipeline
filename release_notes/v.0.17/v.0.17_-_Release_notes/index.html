@@ -268,6 +268,10 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#read-and-launch-access-to-all-pipelines">Read and launch access to all pipelines</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pinning-a-run-to-the-docker-image-digest">Pinning a run to the Docker image digest</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#default-version-of-a-tool">Default version of a tool</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#detached-configuration-the-old-name-stays-in-the-library-after-a-rename">Detached configuration: the old name stays in the Library after a rename</a>
@@ -744,6 +748,8 @@
 <li><a href="#gitlab-19-support">GitLab 19 support</a></li>
 <li><a href="#rocky-linux-98-for-the-proxy-and-the-backup-workers">Rocky Linux 9.8 for the proxy and the backup workers</a></li>
 <li><a href="#vs-code-extension-the-folder-opened-on-connect">VS Code extension: the folder opened on connect</a></li>
+<li><a href="#pinning-a-run-to-the-docker-image-digest">Pinning a run to the Docker image digest</a></li>
+<li><a href="#default-version-of-a-tool">Default version of a tool</a></li>
 </ul>
 <hr />
 <ul>
@@ -2244,6 +2250,7 @@ For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_s
 <h2 id="show-optional-parameters-per-pipeline-or-tool">Show optional parameters per pipeline or tool</h2>
 <p>The <code>optional-parameters-filter</code> launch form setting can now set the default state of the <strong>Show optional parameters</strong> checkbox, and override it for a single pipeline or tool.<br />
 For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#miscellaneous">here</a>.</p>
+<hr />
 <h2 id="vs-code-extension-the-folder-opened-on-connect">VS Code extension: the folder opened on connect</h2>
 <p>On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.<br />
 In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter <strong><code>CP_VSCODE_WORKSPACE_DIR</code></strong> to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.<br />
@@ -2293,6 +2300,36 @@ In the current version, two new roles were introduced. Both cover every pipeline
 </ul>
 <p>A user with both roles is able to see and launch every pipeline. As a launch also requires <strong>READ</strong> permission to the pipeline, <strong>ROLE_PIPELINE_EXECUTOR</strong> alone allows to launch only the pipelines the user is able to see. Any write access still has to be granted explicitly.</p>
 <p>More details see <a href="../../../manual/13_Permissions/13._Permissions/#pipeline-reader-and-executor-roles">here</a>.</p>
+<hr />
+<h2 id="pinning-a-run-to-the-docker-image-digest">Pinning a run to the Docker image digest</h2>
+<p>Previously, the pod of a run was always created with the Docker image tag, e.g. <code>library/centos:7</code>. If the tag was moved to another image after the launch - e.g. while the run's node was still starting - the run could get another image than the one it was launched with.</p>
+<p>In <strong><code>v0.17</code></strong>, a run can be pinned to the exact image its tag points to at the launch. It is enabled by the system preference <code>launch.docker.image.pin.digest</code> (<code>false</code> by default):</p>
+<ul>
+<li>a new run asks the registry for the digest of its image tag, stores it, and its pod pulls the image by the digest (<code>&lt;registry&gt;/&lt;group&gt;/&lt;tool&gt;@sha256:...</code>). The image name with the tag is kept in the <code>docker_image</code> annotation of the pod</li>
+<li>if the digest cannot be obtained from the registry, the new run is launched with the tag, as before</li>
+<li>a restarted run - e.g. a spot run restarted after its instance was reclaimed - asks the registry for nothing: it keeps the digest of the run it restarts, so it continues from the same image, even if the tag has been moved to another image since that run was launched</li>
+<li>a rerun of a completed run, by the <strong>RERUN</strong> control or by <code>pipe run</code>, is a new run and not a restart: it asks the registry for the digest of the tag again, so it can get another image than the run it was rerun from</li>
+<li>the digest is shown at the <strong>Run logs</strong> page (the <strong>Instance</strong> section), and by <code>pipe view-runs &lt;run-id&gt;</code>. It is also returned by the API as the <code>actualDockerImageDigest</code> field of a run</li>
+<li>a paused run is always resumed with the tag, since the pause saves the container under it. The digest of such a run still names the image it was launched with, not the image saved by the pause</li>
+</ul>
+<p>The preference applies when a run is launched or restarted. The runs launched before the preference was enabled keep using the tag, and a restart of such a run uses the tag as well. Disabling the preference does not affect the runs that are already pinned, but a restart of a pinned run after that uses the tag.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.</p>
+</blockquote>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#launch">here</a>.</p>
+<hr />
+<h2 id="default-version-of-a-tool">Default version of a tool</h2>
+<p>Previously, the version of a tool, which was used if a version was not specified, was always the <code>latest</code> one. To make another version the default one, it had to be pushed again with the <code>latest</code> tag, and when a version was deleted, <code>latest</code> could still point to an old image.</p>
+<p>In <strong><code>v0.17</code></strong>, any version of a tool can be set as its default version. The default version is used in place of the <code>latest</code> one:</p>
+<ul>
+<li>the <strong>Run</strong> button at the top of the tool page launches it, and the <strong>Settings</strong> tab of the tool shows and saves its settings</li>
+<li>a version, which has no own settings, is launched from the GUI with the settings of the default version</li>
+<li>a tool image specified without a version - via <code>pipe run -di</code>, in a pipeline configuration or in an API request - is launched with the default version</li>
+<li>the version pickers of the launch form and of the versioned storage launch mark it as <strong>default</strong></li>
+<li>a commit gives the new version the settings of the default version of the tool, which the run was launched from, and doesn't push the <code>latest</code> version into a tool, which has a default version set</li>
+</ul>
+<p>Users with the <strong>WRITE</strong> permission for a tool set and unset the default version at the <strong>Versions</strong> tab of the tool. Until a default version is set, and once it is unset or deleted, the <code>latest</code> version is used, as before. The default version can also be managed via the API: <code>POST /tool/{id}/defaultVersion?version=&lt;version&gt;</code> sets it, <code>DELETE /tool/{id}/defaultVersion</code> removes it, and the tool returns it as the <code>defaultVersion</code> field.</p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#set-a-default-version">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="detached-configuration-the-old-name-stays-in-the-library-after-a-rename">Detached configuration: the old name stays in the Library after a rename</h3>

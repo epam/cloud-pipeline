@@ -544,6 +544,7 @@
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_10.png" /></p>
 <p>To view information about specific run - enter its RunID at the end of the command, e.g.:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_11.png" /><br />
+<strong><em>Note</em></strong>: the information about a specific run also contains its <strong>Docker image</strong>, and the <strong>Docker image digest</strong> if the run is pinned to it (see the <code>launch.docker.image.pin.digest</code> <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#launch">system preference</a>).<br />
 You can additionally display information about instance used by a specific run - by the <code>-nd</code> (<code>--node-details</code>) flag:<br />
 <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_17.png" /><br />
 You can additionally display information about pipeline parameters used by a specific run - by the <code>-pd</code> (<code>--parameters-details</code>) flag:<br />
@@ -740,7 +741,7 @@ In the example below we will launch the Docker image <strong>ubuntu:latest</stro
 <blockquote>
 <p><strong><em>Note</em></strong>: Docker image path shall be specified in a full manner including version.</p>
 </blockquote>
-<p>Before the launch, <code>pipe</code> checks that the specified version (tag) of the Docker image exists. If the version is not specified, <code>latest</code> is checked.<br />
+<p>Before the launch, <code>pipe</code> checks that the specified version (tag) of the Docker image exists. If the version is not specified, the default version of the tool is checked and launched - the <code>latest</code> one, unless another version is set as the default one (see <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#set-a-default-version">10.4. Edit a Tool</a>).<br />
 If the tool has no such version, the run is not scheduled - <code>pipe</code> prints an error with the list of the available versions and exits with the code <code>1</code>, e.g.:</p>
 <pre><code class="language-bash">pipe run -di library/ubuntu:latet -it n1-highcpu-2 -id 27 -cmd &quot;sleep infinity&quot; -y
 </code></pre>
