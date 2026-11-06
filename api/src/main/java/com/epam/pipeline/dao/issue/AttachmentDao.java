@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -35,6 +34,8 @@ import org.springframework.util.CollectionUtils;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.issue.Attachment;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class AttachmentDao extends NamedParameterJdbcDaoSupport {
     private static final String LIST_PARAMETER = "list";
@@ -196,68 +197,73 @@ public class AttachmentDao extends NamedParameterJdbcDaoSupport {
             return attachment;
         };
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createAttachmentQuery, "Required query createAttachmentQuery is not set");
+        Assert.notNull(deleteAttachmentQuery, "Required query deleteAttachmentQuery is not set");
+        Assert.notNull(loadAttachmentsByIssueIdQuery, "Required query loadAttachmentsByIssueIdQuery is not set");
+        Assert.notNull(loadAttachmentIdsByIssueIdsQuery, "Required query loadAttachmentIdsByIssueIdsQuery is not set");
+        Assert.notNull(loadAttachmentsByCommentIdsQuery, "Required query loadAttachmentsByCommentIdsQuery is not set");
+        Assert.notNull(deleteAttachmentsByCommentIdsQuery,
+                "Required query deleteAttachmentsByCommentIdsQuery is not set");
+        Assert.notNull(deleteAttachmentsByIssueIdQuery, "Required query deleteAttachmentsByIssueIdQuery is not set");
+        Assert.notNull(attachmentSequenceName, "Required query attachmentSequenceName is not set");
+        Assert.notNull(updateAttachmentIssueIdQuery, "Required query updateAttachmentIssueIdQuery is not set");
+        Assert.notNull(updateAttachmentCommentIdQuery, "Required query updateAttachmentCommentIdQuery is not set");
+        Assert.notNull(loadAttachmentQuery, "Required query loadAttachmentQuery is not set");
+        Assert.notNull(deleteAttachmentsQuery, "Required query deleteAttachmentsQuery is not set");
+        Assert.notNull(loadAttachmentByNameQuery, "Required query loadAttachmentByNameQuery is not set");
+    }
 
-    @Required
+
     public void setCreateAttachmentQuery(String createAttachmentQuery) {
         this.createAttachmentQuery = createAttachmentQuery;
     }
 
-    @Required
     public void setDeleteAttachmentQuery(String deleteAttachmentQuery) {
         this.deleteAttachmentQuery = deleteAttachmentQuery;
     }
 
-    @Required
     public void setLoadAttachmentsByIssueIdQuery(String loadAttachmentsByIssueIdQuery) {
         this.loadAttachmentsByIssueIdQuery = loadAttachmentsByIssueIdQuery;
     }
 
-    @Required
     public void setLoadAttachmentIdsByIssueIdsQuery(String loadAttachmentIdsByIssueIdsQuery) {
         this.loadAttachmentIdsByIssueIdsQuery = loadAttachmentIdsByIssueIdsQuery;
     }
 
-    @Required
     public void setLoadAttachmentsByCommentIdsQuery(String loadAttachmentsByCommentIdsQuery) {
         this.loadAttachmentsByCommentIdsQuery = loadAttachmentsByCommentIdsQuery;
     }
 
-    @Required
     public void setDeleteAttachmentsByCommentIdsQuery(String deleteAttachmentsByCommentIdsQuery) {
         this.deleteAttachmentsByCommentIdsQuery = deleteAttachmentsByCommentIdsQuery;
     }
 
-    @Required
     public void setDeleteAttachmentsByIssueIdQuery(String deleteAttachmentsByIssueIdQuery) {
         this.deleteAttachmentsByIssueIdQuery = deleteAttachmentsByIssueIdQuery;
     }
 
-    @Required
     public void setAttachmentSequenceName(String attachmentSequenceName) {
         this.attachmentSequenceName = attachmentSequenceName;
     }
 
-    @Required
     public void setUpdateAttachmentIssueIdQuery(String updateAttachmentIssueIdQuery) {
         this.updateAttachmentIssueIdQuery = updateAttachmentIssueIdQuery;
     }
 
-    @Required
     public void setUpdateAttachmentCommentIdQuery(String updateAttachmentCommentIdQuery) {
         this.updateAttachmentCommentIdQuery = updateAttachmentCommentIdQuery;
     }
 
-    @Required
     public void setLoadAttachmentQuery(String loadAttachmentQuery) {
         this.loadAttachmentQuery = loadAttachmentQuery;
     }
 
-    @Required
     public void setDeleteAttachmentsQuery(String deleteAttachmentsQuery) {
         this.deleteAttachmentsQuery = deleteAttachmentsQuery;
     }
 
-    @Required
     public void setLoadAttachmentByNameQuery(String loadAttachmentByNameQuery) {
         this.loadAttachmentByNameQuery = loadAttachmentByNameQuery;
     }

@@ -344,10 +344,10 @@ public class S3Helper {
                                final List<MoveObjectRequest> moveRequests) {
         try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, events, bucket)) {
             moveRequests.forEach(moveRequest -> {
-                events.put(new DataAccessEvent(moveRequest.getSourcePath(), DataAccessType.READ, bucket),
-                        new DataAccessEvent(moveRequest.getDestinationPath(), DataAccessType.WRITE, bucket));
+                events.put(new DataAccessEvent(moveRequest.sourcePath(), DataAccessType.READ, bucket),
+                        new DataAccessEvent(moveRequest.destinationPath(), DataAccessType.WRITE, bucket));
                 client.copyObject(moveRequest.toCopyRequest(bucket.getRoot()));
-                deleter.deleteKey(moveRequest.getSourcePath(), moveRequest.getVersion());
+                deleter.deleteKey(moveRequest.sourcePath(), moveRequest.version());
             });
         } catch (AmazonS3Exception e) {
             handleInvalidObjectState(e);
@@ -425,6 +425,12 @@ public class S3Helper {
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
                                                           String version, ContentDisposition contentDisposition) {
+        return generateDownloadURL(bucket, path, version, contentDisposition, FilenameUtils.getName(path));
+    }
+
+    public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path, String version,
+                                                          ContentDisposition contentDisposition,
+                                                          String fileName) {
         final AmazonS3 client = getDefaultS3Client();
         verifyArchiveState(getObjectHead(client, bucket, path, version));
         final Date expires = new Date((new Date()).getTime() + URL_EXPIRATION);
@@ -432,8 +438,11 @@ public class S3Helper {
         request.setVersionId(version);
         request.setExpiration(expires);
         if (contentDisposition != null) {
+            final String offeredName = StringUtils.isNullOrEmpty(fileName)
+                    ? FilenameUtils.getName(path)
+                    : fileName;
             request.setResponseHeaders(new ResponseHeaderOverrides()
-                    .withContentDisposition(contentDisposition.getHeader(FilenameUtils.getName(path))));
+                    .withContentDisposition(contentDisposition.getHeader(offeredName)));
         }
         return generatePresignedUrl(client, expires, request);
     }

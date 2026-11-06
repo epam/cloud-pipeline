@@ -27,16 +27,16 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 @Transactional
@@ -68,8 +68,7 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
     @MockBean
     private CheckPermissionHelper permissionHelper;
 
-    @Before
-    public void setUp() {
+    @BeforeEach    public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager)
                 .getS3Helper(any(S3bucketDataStorage.class));
         doReturn(new AwsRegion()).when(regionManager).loadOrDefault(any());
@@ -124,7 +123,7 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
 
     private void loadAndAssertStorage(final AbstractDataStorage expected, final String query) {
         AbstractDataStorage loaded = pathLoader.loadDataStorageByPathOrId(query);
-        Assert.assertEquals(expected.getId(), loaded.getId());
+        assertEquals(expected.getId(), loaded.getId());
     }
 
 }

@@ -48,7 +48,7 @@ export {
   unhover
 } from './events';
 
-export {renderWithStores, renderWithRouter} from './providers';
+export {renderWithStores, renderWithRouter, renderWithLocale} from './providers';
 
 export {
   fn,

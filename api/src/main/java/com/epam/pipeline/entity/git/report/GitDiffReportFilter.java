@@ -19,9 +19,11 @@ package com.epam.pipeline.entity.git.report;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 
 @Value
 @Builder(toBuilder = true)
+@Jacksonized
 public class GitDiffReportFilter {
     GitCommitsFilter commitsFilter;
     long userTimeOffsetInMin;

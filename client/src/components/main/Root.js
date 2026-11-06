@@ -18,14 +18,13 @@ import React from 'react';
 import {hashHistory} from 'react-router';
 import {Provider} from 'mobx-react';
 import {RouterStore, syncHistoryWithStore} from 'mobx-react-router';
-import GoogleApi from '../../models/google/GoogleApi';
 import authenticatedUserInfo from '../../models/user/WhoAmI';
 import preferences from '../../models/preferences/PreferencesLoad';
 import notifications from '../../models/notifications/ActiveNotifications';
 import userNotifications from '../../models/notifications/CurrentUserNotifications';
+import asyncTasks from '../../models/asyncTask/CurrentUserAsyncTasks';
 import pipelines from '../../models/pipelines/Pipelines';
 import projects from '../../models/folders/FolderProjects';
-import FireCloudMethods from '../../models/firecloud/FireCloudMethods';
 import runDefaultParameters from '../../models/pipelines/PipelineRunDefaultParameters';
 import configurations from '../../models/configuration/Configurations';
 import AllConfigurations from '../../models/configuration/ConfigurationsLoadAll';
@@ -69,6 +68,7 @@ import ApplicationInfo from '../../models/utils/application-info';
 import SystemJobs from '../../utils/system-jobs';
 import uiLaunchParametersConfiguration from '../../utils/ui-launch-parameters-configuration';
 import {gcpSpotInstanceType} from '../../models/utils/gcp-spot-instance-type';
+import startAsyncTaskNotifications from './async-task-notifications';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -76,8 +76,6 @@ const counter = new RunCount({usePreferenceValue: true, autoUpdate: true});
 const localization = AppLocalization.localization;
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
 const myIssues = new MyIssues();
-const googleApi = new GoogleApi(preferences);
-const fireCloudMethods = new FireCloudMethods(googleApi);
 const users = new Users();
 const usersInfo = new UsersInfo();
 const allowedInstanceTypes = new AllowedInstanceTypes();
@@ -115,6 +113,8 @@ const applicationInfo = new ApplicationInfo();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
 (() => { return applicationInfo.fetchIfNeededOrWait(); })();
 
+startAsyncTaskNotifications();
+
 const themes = new CloudPipelineThemes();
 
 const systemJobs = new SystemJobs();
@@ -123,8 +123,6 @@ const Root = () =>
   <Provider
     {...{
       routing,
-      googleApi,
-      fireCloudMethods,
       localization,
       history,
       preferences,
@@ -148,6 +146,7 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       userNotifications,
+      asyncTasks,
       authenticatedUserInfo,
       [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,

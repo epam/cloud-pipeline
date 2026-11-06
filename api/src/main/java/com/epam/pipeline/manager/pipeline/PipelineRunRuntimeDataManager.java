@@ -65,7 +65,7 @@ public class PipelineRunRuntimeDataManager {
 
         final RunSyncRuntimeDataConfigEntry dataSyncEntry = Optional.ofNullable(
                 preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_SYNC_RUNTIME_DATA))
-                .map(RunSyncRuntimeDataConfig::getData)
+                .map(RunSyncRuntimeDataConfig::data)
                 .map(dataTypeConfigs -> dataTypeConfigs.get(type))
                 .orElseThrow(() -> new IllegalArgumentException(
                         String.format(
@@ -82,15 +82,15 @@ public class PipelineRunRuntimeDataManager {
 
 
         final String runtimeDataDirPath;
-        final RunSyncRuntimeEvalType evalType = dataSyncEntry.getEvalType();
+        final RunSyncRuntimeEvalType evalType = dataSyncEntry.evalType();
         if (evalType == RunSyncRuntimeEvalType.HASH || type.equals(RunSyncRuntimeDataType.NF_TRACE)) {
             if (evalType == RunSyncRuntimeEvalType.HASH) {
                 validateParams(RunSyncRuntimeEvalType.HASH.getValue(), parameters, evalType);
             }
             runtimeDataDirPath = Stream.of(
-                            dataSyncEntry.getRunFolderPathPrefix(),
+                            dataSyncEntry.runFolderPathPrefix(),
                             String.valueOf(runId),
-                            dataSyncEntry.getDataPathPrefix(),
+                            dataSyncEntry.dataPathPrefix(),
                             MapUtils.emptyIfNull(parameters).get(RunSyncRuntimeEvalType.HASH.getValue())
                     ).filter(StringUtils::isNotBlank)
                     .map(this::cleanupPath)

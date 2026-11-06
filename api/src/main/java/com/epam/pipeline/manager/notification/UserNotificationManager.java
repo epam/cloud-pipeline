@@ -19,13 +19,14 @@ package com.epam.pipeline.manager.notification;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.dto.notification.UserNotification;
 import com.epam.pipeline.entity.notification.UserNotificationEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.user.UserManager;
+//import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.repository.notification.UserNotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +53,9 @@ public class UserNotificationManager {
     private final UserNotificationMapper mapper;
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
-    private final UserManager userManager;
+    //private final UserManager userManager;
     private final MessageHelper messageHelper;
+    private final UserDao userDao; //put instead of UserManager (including UserManager causes circular dependency)
 
     @Transactional(propagation = Propagation.REQUIRED)
     public UserNotification save(final UserNotification notification) {
@@ -62,12 +64,12 @@ public class UserNotificationManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void save(final List<UserNotification> notifications) {
-        userNotificationRepository.save(toEntity(notifications));
+        userNotificationRepository.saveAll(toEntity(notifications));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void delete(final Long notificationId) {
-        userNotificationRepository.delete(notificationId);
+        userNotificationRepository.deleteById(notificationId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -84,7 +86,7 @@ public class UserNotificationManager {
                                                             final Boolean isRead,
                                                             final int pageNum,
                                                             final int pageSize) {
-        final Pageable pageable = new PageRequest(Math.max(pageNum, 0), pageSize > 0 ? pageSize : 10);
+        final Pageable pageable = PageRequest.of(Math.max(pageNum, 0), pageSize > 0 ? pageSize : 10);
         final Page<UserNotificationEntity> entities = isRead == null ?
                 userNotificationRepository.findByUserIdOrderByCreatedDateDesc(userId, pageable) :
                 userNotificationRepository.findByUserIdAndIsReadOrderByCreatedDateDesc(userId, isRead, pageable);
@@ -135,7 +137,7 @@ public class UserNotificationManager {
 
     private Long getPipelineUserId() {
         final String currentUser = authManager.getAuthorizedUser();
-        final PipelineUser user = userManager.loadUserByName(currentUser);
+        final PipelineUser user = userDao.loadUserByName(currentUser);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, user));
         return user.getId();
     }

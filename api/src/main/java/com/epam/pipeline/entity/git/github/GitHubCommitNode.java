@@ -17,12 +17,14 @@
 package com.epam.pipeline.entity.git.github;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 @Builder
+@Jacksonized
 public class GitHubCommitNode {
     private String sha;
     private GitHubCommit commit;

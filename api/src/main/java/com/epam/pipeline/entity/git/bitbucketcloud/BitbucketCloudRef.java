@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.git.bitbucketcloud;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class BitbucketCloudRef {
     private String name;
     private String type;

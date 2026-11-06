@@ -40,8 +40,8 @@ import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.cluster.ClusterCreatorUtils;
 import com.epam.pipeline.test.creator.cluster.NodeCreatorUtils;
 import com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
@@ -60,7 +60,7 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 
 public class ClusterApiServiceTest extends AbstractAclTest {
@@ -344,7 +344,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         assertThat(returnedStatsList).hasSize(1).contains(monitoringStats);
     }
 
-    @Ignore
+    @Disabled
     @Test
     @WithMockUser
     public void shouldDenyAccessToStatsWhenPermissionIsNotGranted() {
@@ -391,7 +391,7 @@ public class ClusterApiServiceTest extends AbstractAclTest {
         assertThat(returnedInputStream).isEqualTo(inputStream);
     }
 
-    @Ignore
+    @Disabled
     @Test
     @WithMockUser
     public void shouldDenyAccessToUsageStatisticsFileWhenPermissionIsNotGranted() {
@@ -448,33 +448,33 @@ public class ClusterApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnNodeDisksForAdmin() {
-        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
+        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.nodeId());
 
-        assertThat(clusterApiService.loadNodeDisks(nodeDisk.getNodeId())).hasSize(1).contains(nodeDisk);
+        assertThat(clusterApiService.loadNodeDisks(nodeDisk.nodeId())).hasSize(1).contains(nodeDisk);
     }
 
     @Test
     @WithMockUser
     public void shouldReturnNodeDisksWhenPermissionIsGranted() {
         initAclEntity(nodeInstance, AclPermission.READ);
-        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
+        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.nodeId());
         mockNode(nodeInstance);
         mockUser();
         mockRun(pipelineRun);
 
-        assertThat(clusterApiService.loadNodeDisks(nodeDisk.getNodeId())).hasSize(1).contains(nodeDisk);
+        assertThat(clusterApiService.loadNodeDisks(nodeDisk.nodeId())).hasSize(1).contains(nodeDisk);
     }
 
     @Test
     @WithMockUser
     public void shouldDenyAccessToNodeDisksWhenPermissionIsNotGranted() {
         initAclEntity(nodeInstance);
-        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.getNodeId());
+        doReturn(nodeDisks).when(mockNodeDiskManager).loadByNodeId(nodeDisk.nodeId());
         mockRun(pipelineRun);
         mockNode(nodeInstance);
         mockSecurityContext();
 
-        assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.getNodeId()));
+        assertThrows(AccessDeniedException.class, () -> clusterApiService.loadNodeDisks(nodeDisk.nodeId()));
     }
 
     private void mockNode(final NodeInstance nodeInstance) {

@@ -72,16 +72,6 @@
   "src/components/main/home/panels/components/renderSeparator.js": {
     "react/jsx-indent": 1
   },
-  "src/components/pipelines/browser/FireCloudBrowser.js": {
-    "padded-blocks": 2
-  },
-  "src/components/pipelines/browser/FireCloudMethodSnapshotConfigurations.js": {
-    "indent": 1,
-    "padded-blocks": 2
-  },
-  "src/components/pipelines/browser/FireCloudMethodsBrowser.js": {
-    "padded-blocks": 1
-  },
   "src/components/pipelines/browser/Folder.js": {
     "max-len": 16,
     "no-unused-vars": 1,
@@ -178,7 +168,7 @@
   },
   "src/components/pipelines/launch/form/LaunchPipelineForm.js": {
     "comma-dangle": 3,
-    "max-len": 4,
+    "max-len": 3,
     "no-unused-vars": 2,
     "semi": 1,
     "standard/no-callback-literal": 1
@@ -311,9 +301,6 @@
     "react/jsx-indent": 1,
     "standard/no-callback-literal": 7
   },
-  "src/components/runs/run-details/widgets/run-header/run-actions/run-ssh-button.js": {
-    "quotes": 1
-  },
   "src/components/runs/run-scheduling/run-sheduling-list.js": {
     "max-len": 1
   },
@@ -324,7 +311,7 @@
     "comma-dangle": 2
   },
   "src/components/search/preview/ConfigurationPreview.js": {
-    "max-len": 3
+    "max-len": 2
   },
   "src/components/search/preview/DefaultPreview.js": {
     "max-len": 1
@@ -611,15 +598,6 @@
   "src/models/dts/DTSItemsPage.js": {
     "max-len": 2
   },
-  "src/models/firecloud/FireCloudMethodParameters.js": {
-    "max-len": 2
-  },
-  "src/models/firecloud/FireCloudMethodSnapshotConfigurations.js": {
-    "max-len": 2
-  },
-  "src/models/firecloud/FireCloudMethods.js": {
-    "max-len": 2
-  },
   "src/models/folderMetadata/MetadataClassLoadAll.js": {
     "padded-blocks": 1
   },
@@ -644,10 +622,6 @@
   },
   "src/models/folders/FolderLoadWithMetadata.js": {
     "padded-blocks": 2
-  },
-  "src/models/google/GoogleApi.js": {
-    "max-len": 2,
-    "padded-blocks": 1
   },
   "src/models/grant/GrantRemove.js": {
     "max-len": 1

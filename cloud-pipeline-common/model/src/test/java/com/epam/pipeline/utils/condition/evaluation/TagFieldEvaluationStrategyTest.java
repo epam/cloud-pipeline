@@ -5,15 +5,16 @@ import com.epam.pipeline.utils.condition.ConditionExpression;
 import com.epam.pipeline.utils.condition.ConditionType;
 import com.epam.pipeline.utils.condition.field.PipelineRunField;
 import com.epam.pipeline.utils.condition.field.SubjectEntityField;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TagFieldEvaluationStrategyTest {
 
@@ -133,9 +134,10 @@ public class TagFieldEvaluationStrategyTest {
         assertFalse(strategy.evaluate(leafWithDuration("=", TAG_IDLE, DURATION_48H), pipelineRunWithTags(t), NOW));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldThrowForUnsupportedOperator() {
-        strategy.evaluate(leaf(">", TAG_IDLE), tags(TAG_IDLE, TAG_VALUE_TRUE), NOW);
+        assertThrows(IllegalArgumentException.class,
+                () -> strategy.evaluate(leaf(">", TAG_IDLE), tags(TAG_IDLE, TAG_VALUE_TRUE), NOW));
     }
 
     @Test

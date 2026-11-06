@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.run.PipelineRunPerformanceMetric;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetrics;
 import com.epam.pipeline.entity.run.PipelineRunPerformanceMetricsType;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -89,12 +88,10 @@ public class PipelineRunMetricsDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
-    @Required
     public void setLoadRunMetricsByIdQuery(final String loadRunMetricsByIdQuery) {
         this.loadRunMetricsByIdQuery = loadRunMetricsByIdQuery;
     }
 
-    @Required
     public void setPutRunMetricsByIdQuery(final String putRunMetricsByIdQuery) {
         this.putRunMetricsByIdQuery = putRunMetricsByIdQuery;
     }

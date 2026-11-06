@@ -30,6 +30,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +59,7 @@ public class ReassignHandler {
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
+    private final RunStatusManager runStatusManager;
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
     private final MetadataManager metadataManager;
     private final IAMProfileVerifier iamProfileVerifier;
@@ -67,13 +69,15 @@ public class ReassignHandler {
                            final PipelineRunManager pipelineRunManager,
                            final List<PoolFilterHandler> filterHandlers,
                            final MetadataManager metadataManager,
-                           final IAMProfileVerifier iamProfileVerifier) {
+                           final IAMProfileVerifier iamProfileVerifier,
+                           final RunStatusManager runStatusManager) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
         this.metadataManager = metadataManager;
         this.iamProfileVerifier = iamProfileVerifier;
+        this.runStatusManager = runStatusManager;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -132,7 +136,7 @@ public class ReassignHandler {
                         return false;
                     }
                     final boolean passedPoolFilter = Optional.ofNullable(previousInstance.getPool())
-                            .map(pool -> matchesPoolFilter(pool, pipelineRun))
+                            .map(pool -> isReusable(pool) && matchesPoolFilter(pool, pipelineRun))
                             .orElse(true);
                     if (!passedPoolFilter) {
                         return false;
@@ -142,29 +146,56 @@ public class ReassignHandler {
                 });
     }
 
+    /**
+     * Only a capacity reservation pool's own window decides whether its free node may take a new run: past it the
+     * reservation is ending or gone, and the job would outlive the reserved capacity. An ordinary pool's free node is
+     * reused regardless of its schedule - it is already running and paid for until it is scaled down.
+     */
+    private boolean isReusable(final NodePool pool) {
+        return !pool.isCapacityReservation() || pool.isActive(DateUtils.nowUTC());
+    }
+
+    /**
+     * Whether a pool's free node may take this run. A filter about whose runs the pool serves does not hold against
+     * the pool's own owner, who reuses its nodes whatever it says; a filter about the run itself - its image, its
+     * pipeline, its parameters - holds for the owner as for anyone else.
+     */
     private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {
         final PoolFilter filter = pool.getFilter();
         if (filter == null || filter.isEmpty()) {
             return true;
         }
         return pipelineRun
-                .map(run -> matchRun(filter, run))
+                .map(run -> matchRun(pool, filter, run))
                 .orElse(false);
     }
 
-    private boolean matchRun(final PoolFilter filter, final PipelineRun run) {
-        final List<PoolInstanceFilter> filters = filter.getFilters();
-        switch (filter.getOperator()) {
+    private boolean ownsPool(final NodePool pool, final PipelineRun run) {
+        return StringUtils.isNotBlank(pool.getOwner())
+                && StringUtils.equalsIgnoreCase(pool.getOwner(), run.getOwner());
+    }
+
+    private boolean matchRun(final NodePool pool, final PoolFilter filter, final PipelineRun run) {
+        final List<PoolInstanceFilter> filters = filter.filters();
+        switch (filter.operator()) {
             case AND:
-                return filters.stream().allMatch(f -> matchRunToFilter(f, run));
+                return filters.stream().allMatch(f -> matchRunToFilter(pool, f, run));
             case OR:
-                return filters.stream().anyMatch(f -> matchRunToFilter(f, run));
+                return filters.stream().anyMatch(f -> matchRunToFilter(pool, f, run));
             default:
-                throw new IllegalArgumentException("Unsupported filter operator: " + filter.getOperator());
+                throw new IllegalArgumentException("Unsupported filter operator: " + filter.operator());
         }
     }
 
-    private boolean matchRunToFilter(final PoolInstanceFilter filter, final PipelineRun run) {
+    private boolean matchRunToFilter(final NodePool pool, final PoolInstanceFilter filter,
+                                     final PipelineRun run) {
+        final PoolInstanceFilterType type = filter.getType();
+        if ((PoolInstanceFilterType.RUN_OWNER == type || PoolInstanceFilterType.RUN_OWNER_GROUP == type)
+                && ownsPool(pool, run)) {
+            log.debug("Run {} belongs to the owner of the pool, so pool filter {} does not apply to it.",
+                    run.getId(), filter);
+            return true;
+        }
         log.debug("Matching run {} to filter pool filter {}.", run.getId(), filter);
         return Optional.ofNullable(filterHandlers.get(filter.getType()))
                 .map(handler -> handler.matches(filter, run))
@@ -192,8 +223,9 @@ public class ReassignHandler {
         final RunInstance reassignedInstance = StringUtils.isBlank(instance.getNodeId()) ?
                 cloudFacade.describeInstance(runId, instance) : instance;
         reassignedInstance.setPoolId(instance.getPoolId());
-        pipelineRunManager.updateRunInstance(runId, reassignedInstance);
+        pipelineRunManager.updateRunInstanceAndPrices(runId, reassignedInstance);
         pipelineRunManager.updateRunInstanceStartDate(runId, DateUtils.nowUTC());
+        runStatusManager.updatePriceForCurrentActiveRunStatus(runId);
         final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                 runId);
         if (CollectionUtils.isNotEmpty(disks)) {

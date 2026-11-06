@@ -19,14 +19,15 @@ package com.epam.dockercompscan.owasp;
 import com.epam.dockercompscan.AbstractSpringTest;
 import com.epam.dockercompscan.owasp.analyzer.RPackageAnalyzer;
 import com.epam.dockercompscan.scan.domain.Dependency;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.owasp.dependencycheck.exception.ExceptionCollection;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DependencyCheckServiceTest extends AbstractSpringTest {
 
@@ -40,8 +41,8 @@ public class DependencyCheckServiceTest extends AbstractSpringTest {
         List<Dependency> dependencies =
                 dependencyCheckService.runScan(new File(classLoader.getResource("owasp/analyzer").toURI()));
 
-        Assert.assertEquals(1, dependencies.size());
-        Assert.assertEquals(RPackageAnalyzer.DEPENDENCY_ECOSYSTEM, dependencies.get(0).getEcosystem());
-        Assert.assertEquals("PositiveTest", dependencies.get(0).getName());
+        assertEquals(1, dependencies.size());
+        assertEquals(RPackageAnalyzer.DEPENDENCY_ECOSYSTEM, dependencies.get(0).getEcosystem());
+        assertEquals("PositiveTest", dependencies.get(0).getName());
     }
 }

@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -64,17 +64,17 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.Whitebox;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,6 +82,8 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.manager.CmdExecutor;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 
 @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -150,28 +152,28 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     private static File testMountPoint = new File("test_mount_point");
 
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() throws Exception {
         if (!testMountPoint.exists()) {
             testMountPoint.mkdir();
         }
 
-        Assert.assertTrue("Could not create test mounting point!", testMountPoint.exists());
+        assertTrue(testMountPoint.exists(), "Could not create test mounting point!");
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
-        MockitoAnnotations.initMocks(this);
-        Whitebox.setInternalState(nfsStorageMounter, "dataStorageDao", dataStorageDao);
-        Whitebox.setInternalState(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
-        Whitebox.setInternalState(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
+        MockitoAnnotations.openMocks(this);
+        ReflectionTestUtils.setField(nfsStorageMounter, "dataStorageDao", dataStorageDao);
+        ReflectionTestUtils.setField(nfsStorageMounter, "rootMountPoint", testMountPoint.getAbsolutePath());
+        ReflectionTestUtils.setField(nfsStorageMounter, "cmdExecutor", mockCmdExecutor);
 
         // NFSStorageMounter.isMounted() reads /proc/mounts; tests use temp dirs that are not real mounts.
         // Mock getProcMountsPath() to return a nonexistent path so isMounted() falls back to File.exists().
         NFSStorageMounter spyMounter = spy(nfsStorageMounter);
         doReturn("/nonexistent/proc/mounts").when(spyMounter).getProcMountsPath();
-        Whitebox.setInternalState(nfsProvider, "nfsStorageMounter", spyMounter);
+        ReflectionTestUtils.setField(nfsProvider, "nfsStorageMounter", spyMounter);
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
@@ -206,7 +208,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown() throws Exception {
         FileUtils.deleteQuietly(testMountPoint);
     }
@@ -220,7 +222,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         String path = nfsProvider.createStorage(dataStorage);
         dataStorageDao.createDataStorage(dataStorage);
 
-        Assert.assertEquals(dataStorage.getPath(), path);
+        assertEquals(dataStorage.getPath(), path);
 
         NFSDataStorage dataStorage2 = new NFSDataStorage(1L, TEST_STORAGE_NAME,
                 TEST_PATH + ":root/" + STORAGE_NAME + 1);
@@ -229,25 +231,25 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         String path2 = nfsProvider.createStorage(dataStorage2);
         dataStorageDao.createDataStorage(dataStorage2);
 
-        Assert.assertEquals(dataStorage2.getPath(), path2);
+        assertEquals(dataStorage2.getPath(), path2);
 
 
         File mountRootDir = new File(testMountPoint, TEST_PATH + "/root");
-        Assert.assertTrue(mountRootDir.exists());
+        assertTrue(mountRootDir.exists());
 
         File dataStorageRoot = new File(mountRootDir.getPath() + "/" + STORAGE_NAME);
-        Assert.assertTrue(dataStorageRoot.exists());
+        assertTrue(dataStorageRoot.exists());
 
         nfsProvider.deleteStorage(dataStorage);
 
-        Assert.assertFalse(dataStorageRoot.exists());
-        Assert.assertTrue(mountRootDir.exists());
+        assertFalse(dataStorageRoot.exists());
+        assertTrue(mountRootDir.exists());
 
         //emulate that database doesn't contain datastorages with mountRootDir
         dataStorageDao.deleteDataStorage(dataStorage.getId());
 
         nfsProvider.deleteStorage(dataStorage2);
-        Assert.assertFalse(mountRootDir.exists());
+        assertFalse(mountRootDir.exists());
 
     }
 
@@ -260,19 +262,19 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         String path = nfsProvider.createStorage(dataStorage);
         dataStorageDao.createDataStorage(dataStorage);
 
-        Assert.assertEquals(dataStorage.getPath(), path);
+        assertEquals(dataStorage.getPath(), path);
 
 
         File mountRootDir = new File(testMountPoint, TEST_PATH + "/root");
-        Assert.assertTrue(mountRootDir.exists());
+        assertTrue(mountRootDir.exists());
 
         File dataStorageRoot = new File(mountRootDir.getPath() + "/" + STORAGE_NAME);
-        Assert.assertTrue(dataStorageRoot.exists());
+        assertTrue(dataStorageRoot.exists());
 
         nfsProvider.deleteStorage(dataStorage);
 
-        Assert.assertFalse(dataStorageRoot.exists());
-        Assert.assertFalse(mountRootDir.exists());
+        assertFalse(dataStorageRoot.exists());
+        assertFalse(mountRootDir.exists());
 
     }
 
@@ -285,42 +287,42 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
         File dataStorageRoot = new File(testMountPoint, TEST_PATH + "/test");
         File testFile = new File(dataStorageRoot, TEST_FILE_NAME);
-        Assert.assertTrue(testFile.exists());
+        assertTrue(testFile.exists());
 
         String testFolderName = "testFolder";
         nfsProvider.createFolder(dataStorage, testFolderName);
 
         File testFolder = new File(dataStorageRoot, testFolderName);
-        Assert.assertTrue(testFolder.exists());
+        assertTrue(testFolder.exists());
 
         DataStorageListing listing = nfsProvider.getItems(dataStorage, null, false, DEFAULT_PAGE_SIZE, null, null);
-        Assert.assertFalse(listing.getResults().isEmpty());
+        assertFalse(listing.getResults().isEmpty());
 
         Optional<AbstractDataStorageItem>
             loadedFile = listing.getResults().stream()
             .filter(i -> i.getType() == DataStorageItemType.File)
             .findFirst();
 
-        Assert.assertTrue(loadedFile.isPresent());
-        Assert.assertEquals(TEST_FILE_NAME, loadedFile.get().getName());
-        Assert.assertEquals(TEST_FILE_NAME, loadedFile.get().getPath());
-        Assert.assertNotNull(((DataStorageFile) loadedFile.get()).getChanged());
+        assertTrue(loadedFile.isPresent());
+        assertEquals(TEST_FILE_NAME, loadedFile.get().getName());
+        assertEquals(TEST_FILE_NAME, loadedFile.get().getPath());
+        assertNotNull(((DataStorageFile) loadedFile.get()).getChanged());
 
         Optional<AbstractDataStorageItem>
             loadedFolder = listing.getResults().stream()
             .filter(i -> i.getType() == DataStorageItemType.Folder)
             .findFirst();
 
-        Assert.assertTrue(loadedFolder.isPresent());
-        Assert.assertEquals(testFolderName, loadedFolder.get().getName());
-        Assert.assertEquals(testFolderName + "/", loadedFolder.get().getPath());
-        Assert.assertNull(listing.getNextPageMarker());
+        assertTrue(loadedFolder.isPresent());
+        assertEquals(testFolderName, loadedFolder.get().getName());
+        assertEquals(testFolderName + "/", loadedFolder.get().getPath());
+        assertNull(listing.getNextPageMarker());
 
         listing = nfsProvider.getItems(dataStorage, null, false, 1, null, null);
-        Assert.assertEquals("2", listing.getNextPageMarker());
+        assertEquals("2", listing.getNextPageMarker());
         listing = nfsProvider.getItems(dataStorage, null, false, 1, listing.getNextPageMarker(), null);
-        Assert.assertNull(listing.getNextPageMarker());
-        Assert.assertFalse(listing.getResults().isEmpty());
+        assertNull(listing.getNextPageMarker());
+        assertFalse(listing.getResults().isEmpty());
     }
 
     @Test
@@ -335,11 +337,11 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
         nfsProvider.copyFile(storage, oldPath.getFileName().toString(), newPath.getFileName().toString());
 
-        Assert.assertTrue(Files.exists(oldPath));
-        Assert.assertTrue(Files.isRegularFile(oldPath));
-        Assert.assertTrue(Files.exists(newPath));
-        Assert.assertTrue(Files.isRegularFile(newPath));
-        Assert.assertArrayEquals(CommonCreatorConstants.TEST_BYTES,
+        assertTrue(Files.exists(oldPath));
+        assertTrue(Files.isRegularFile(oldPath));
+        assertTrue(Files.exists(newPath));
+        assertTrue(Files.isRegularFile(newPath));
+        assertArrayEquals(CommonCreatorConstants.TEST_BYTES,
                 nfsProvider.getFile(storage, newPath.getFileName().toString(), null, Long.MAX_VALUE).getContent());
 
         nfsProvider.deleteFile(storage, oldPath.getFileName().toString(), null, true);
@@ -358,10 +360,10 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
         nfsProvider.copyFolder(storage, oldPath.getFileName().toString(), newPath.getFileName().toString());
 
-        Assert.assertTrue(Files.exists(oldPath));
-        Assert.assertTrue(Files.isDirectory(oldPath));
-        Assert.assertTrue(Files.exists(newPath));
-        Assert.assertTrue(Files.isDirectory(newPath));
+        assertTrue(Files.exists(oldPath));
+        assertTrue(Files.isDirectory(oldPath));
+        assertTrue(Files.exists(newPath));
+        assertTrue(Files.isDirectory(newPath));
 
         nfsProvider.deleteFolder(storage, oldPath.getFileName().toString(), true);
         nfsProvider.deleteFolder(storage, newPath.getFileName().toString(), true);
@@ -391,28 +393,28 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         String newFilePath = testFolderName + "/" + TEST_FILE_NAME;
         DataStorageFile file = nfsProvider.moveFile(dataStorage, TEST_FILE_NAME, newFilePath);
 
-        Assert.assertEquals(newFilePath, file.getPath());
+        assertEquals(newFilePath, file.getPath());
 
         File oldFileLocation = new File(dataStorageRoot, TEST_FILE_NAME);
         File newFileLocation = new File(dataStorageRoot, newFilePath);
-        Assert.assertTrue(newFileLocation.exists());
-        Assert.assertFalse(oldFileLocation.exists());
+        assertTrue(newFileLocation.exists());
+        assertFalse(oldFileLocation.exists());
 
         String newFolder2Path = testFolderName + "/" + testFolder2Name;
         DataStorageFolder folder = nfsProvider.moveFolder(dataStorage, testFolder2Name, newFolder2Path);
 
-        Assert.assertEquals(newFolder2Path, folder.getPath());
+        assertEquals(newFolder2Path, folder.getPath());
 
         File oldFolderLocation = new File(dataStorageRoot, testFolder2Name);
         File newFolderLocation = new File(dataStorageRoot, newFolder2Path);
-        Assert.assertTrue(newFolderLocation.exists());
-        Assert.assertFalse(oldFolderLocation.exists());
+        assertTrue(newFolderLocation.exists());
+        assertFalse(oldFolderLocation.exists());
 
         nfsProvider.deleteFile(dataStorage, newFilePath, null, true);
-        Assert.assertFalse(newFileLocation.exists());
+        assertFalse(newFileLocation.exists());
 
         nfsProvider.deleteFolder(dataStorage, newFolder2Path, true);
-        Assert.assertFalse(newFolderLocation.exists());
+        assertFalse(newFolderLocation.exists());
     }
 
     @Test
@@ -426,14 +428,14 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
         DataStorageFile file = nfsProvider.createFile(dataStorage, TEST_FILE_NAME, testContent);
 
-        Assert.assertArrayEquals(
+        assertArrayEquals(
                 testContent,
                 nfsProvider.getFile(dataStorage, TEST_FILE_NAME, file.getVersion(), Long.MAX_VALUE).getContent()
         );
 
         DataStorageFile updatedFile = nfsProvider.createFile(dataStorage, TEST_FILE_NAME, newContent);
 
-        Assert.assertArrayEquals(
+        assertArrayEquals(
                 newContent,
                 nfsProvider.getFile(dataStorage, TEST_FILE_NAME, updatedFile.getVersion(), Long.MAX_VALUE).getContent()
         );
@@ -547,10 +549,10 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
                 .thenReturn(gidFieldName);
         when(mockAuthManager.getCurrentUser()).thenReturn(user);
 
-        Whitebox.setInternalState(nfsProvider, "preferenceManager", mockPreferenceManager);
-        Whitebox.setInternalState(nfsProvider, "authManager", mockAuthManager);
-        Whitebox.setInternalState(externalUIDManager, "preferenceManager", mockPreferenceManager);
-        Whitebox.setInternalState(externalUIDManager, "metadataManager", mockMetadataManager);
+        ReflectionTestUtils.setField(nfsProvider, "preferenceManager", mockPreferenceManager);
+        ReflectionTestUtils.setField(nfsProvider, "authManager", mockAuthManager);
+        ReflectionTestUtils.setField(externalUIDManager, "preferenceManager", mockPreferenceManager);
+        ReflectionTestUtils.setField(externalUIDManager, "metadataManager", mockMetadataManager);
     }
 
     private void createFileForChownTest() {
@@ -568,9 +570,9 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
                 .filter(cmd -> cmd.contains("chown"))
                 .reduce((first, second) -> second)
                 .orElse(null);
-        Assert.assertNotNull("Expected chown command to be executed", chownCmd);
-        Assert.assertTrue("Expected uid " + expectedUid + " in command: " + chownCmd,
-                chownCmd.contains(expectedUid + ":" + expectedGid));
+        Assertions.assertNotNull(chownCmd, "Expected chown command to be executed");
+        Assertions.assertTrue(chownCmd.contains(expectedUid + ":" + expectedGid),
+                "Expected uid " + expectedUid + " in command: " + chownCmd);
     }
 
     private void mockUserMetadata(final String key, final String value) {

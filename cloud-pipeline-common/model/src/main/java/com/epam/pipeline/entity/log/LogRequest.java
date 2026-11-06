@@ -17,10 +17,12 @@
 package com.epam.pipeline.entity.log;
 
 import lombok.Builder;
+import lombok.extern.jackson.Jacksonized;
 import lombok.Data;
 
 @Data
 @Builder
+@Jacksonized
 public class LogRequest {
     private LogFilter filter;
     private String groupBy;

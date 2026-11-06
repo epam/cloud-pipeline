@@ -17,11 +17,13 @@
 package com.epam.pipeline.entity.log;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class LogFilter {
     private List<String> hostnames;
     private String message;

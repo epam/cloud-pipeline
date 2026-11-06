@@ -16,11 +16,5 @@
 
 package com.epam.pipeline.entity.cluster.pool;
 
-import lombok.Value;
-
-@Value
-public class PoolLabel {
-
-    String value;
-    boolean monitored;
+public record PoolLabel(String value, boolean monitored) {
 }

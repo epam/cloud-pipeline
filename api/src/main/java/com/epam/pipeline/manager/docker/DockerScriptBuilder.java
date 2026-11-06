@@ -62,7 +62,7 @@ public class DockerScriptBuilder {
 
     @Getter
     @AllArgsConstructor
-    private static class ScriptTemplate {
+    private static final class ScriptTemplate {
         private String value;
 
         private ScriptTemplate replaceParameter(String parameterName, String parameterValue) {

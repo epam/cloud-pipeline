@@ -51,10 +51,8 @@ public class PluginAssignmentService {
     }
 
     public UIPluginAssignment getAssignment(Long id) {
-        UIPluginAssignmentEntity assignment = assignmentRepository.findOne(id);
-        if (assignment == null) {
-            throw new ObjectNotFoundException("Plugin assignment not found: " + id);
-        }
+        UIPluginAssignmentEntity assignment = assignmentRepository.findById(id)
+            .orElseThrow(() -> new ObjectNotFoundException("Plugin assignment not found: " + id));
         return mapper.toDto(assignment);
     }
 
@@ -68,7 +66,7 @@ public class PluginAssignmentService {
     @Transactional
     public void deleteAssignment(Long id) {
         UIPluginAssignment uiPluginAssignment = getAssignment(id);
-        assignmentRepository.delete(uiPluginAssignment.getId());
+        assignmentRepository.deleteById(uiPluginAssignment.getId());
     }
 
     private void validateAssignment(UIPluginAssignment assignment) {
@@ -76,7 +74,7 @@ public class PluginAssignmentService {
             throw new IllegalArgumentException("Assignment cannot be null");
         }
         if (assignment.getPlugin() == null || assignment.getPlugin().getId() == null ||
-                pluginRepository.findOne(assignment.getPlugin().getId()) == null) {
+                pluginRepository.findById(assignment.getPlugin().getId()).isEmpty()) {
             throw new IllegalArgumentException("Valid plugin ID is required");
         }
         if ((assignment.getToolId() == null && assignment.getPipelineId() == null) ||

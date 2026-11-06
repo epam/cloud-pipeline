@@ -17,11 +17,11 @@ public class AuditClient {
     private final DataStorageType type;
 
     public void put(final DataAccessEvent entry) {
-        ThreadContext.put(KEY_STORAGE_ID, Optional.ofNullable(entry.getStorage().getId())
+        ThreadContext.put(KEY_STORAGE_ID, Optional.ofNullable(entry.storage().getId())
                 .map(Object::toString)
                 .orElse(null));
-        log.info("{} {}://{}/{}", entry.getType(), type.getId().toLowerCase(), entry.getStorage().getRoot(),
-                entry.getPath());
+        log.info("{} {}://{}/{}", entry.type(), type.getId().toLowerCase(), entry.storage().getRoot(),
+                entry.path());
     }
 
     public void put(final DataAccessEvent... entries) {

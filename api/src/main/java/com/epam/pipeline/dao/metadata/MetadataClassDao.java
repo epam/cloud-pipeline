@@ -17,10 +17,9 @@
 package com.epam.pipeline.dao.metadata;
 
 import com.epam.pipeline.dao.DaoHelper;
-import com.epam.pipeline.entity.metadata.FireCloudClass;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -28,6 +27,8 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
@@ -36,7 +37,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
     private String metadataClassSequence;
     private String createMetadataClassQuery;
-    private String updateMetadataClassExternalNameQuery;
     private String loadAllMetadataClassesQuery;
     private String loadMetadataClassQuery;
     private String deleteMetadataClassQuery;
@@ -47,12 +47,6 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
         metadataClass.setId(daoHelper.createId(metadataClassSequence));
         getNamedParameterJdbcTemplate()
                 .update(createMetadataClassQuery, MetadataClassParameters.getParameters(metadataClass));
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void updateMetadataClass(MetadataClass metadataClass) {
-        getNamedParameterJdbcTemplate()
-                .update(updateMetadataClassExternalNameQuery, MetadataClassParameters.getParameters(metadataClass));
     }
 
     public List<MetadataClass> loadAllMetadataClasses() {
@@ -80,16 +74,13 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
 
     enum MetadataClassParameters {
         CLASS_ID,
-        CLASS_NAME,
-        EXTERNAL_CLASS_NAME;
+        CLASS_NAME;
 
         private static MapSqlParameterSource getParameters(MetadataClass metadataClass) {
             MapSqlParameterSource params = new MapSqlParameterSource();
 
             params.addValue(CLASS_ID.name(), metadataClass.getId());
             params.addValue(CLASS_NAME.name(), metadataClass.getName());
-            params.addValue(EXTERNAL_CLASS_NAME.name(), metadataClass.getFireCloudClassName() == null ? null
-                    : metadataClass.getFireCloudClassName().name());
             return params;
         }
 
@@ -98,46 +89,41 @@ public class MetadataClassDao extends NamedParameterJdbcDaoSupport {
                 MetadataClass metadataClass = new MetadataClass();
                 metadataClass.setId(rs.getLong(CLASS_ID.name()));
                 metadataClass.setName(rs.getString(CLASS_NAME.name()));
-                String externalClassName = rs.getString(EXTERNAL_CLASS_NAME.name());
-                if (!rs.wasNull()) {
-                    metadataClass.setFireCloudClassName(FireCloudClass.valueOf(externalClassName));
-                }
                 return metadataClass;
             };
         }
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(loadMetadataClassQuery, "Required query loadMetadataClassQuery is not set");
+        Assert.notNull(metadataClassSequence, "Required query metadataClassSequence is not set");
+        Assert.notNull(createMetadataClassQuery, "Required query createMetadataClassQuery is not set");
+        Assert.notNull(loadAllMetadataClassesQuery, "Required query loadAllMetadataClassesQuery is not set");
+        Assert.notNull(deleteMetadataClassQuery, "Required query deleteMetadataClassQuery is not set");
+        Assert.notNull(loadMetadataClassByNameQuery, "Required query loadMetadataClassByNameQuery is not set");
+    }
 
-    @Required
+
     public void setLoadMetadataClassQuery(String loadMetadataClassQuery) {
         this.loadMetadataClassQuery = loadMetadataClassQuery;
     }
 
-    @Required
     public void setMetadataClassSequence(String metadataClassSequence) {
         this.metadataClassSequence = metadataClassSequence;
     }
 
-    @Required
     public void setCreateMetadataClassQuery(String createMetadataClassQuery) {
         this.createMetadataClassQuery = createMetadataClassQuery;
     }
 
-    @Required
-    public void setUpdateMetadataClassExternalNameQuery(String updateMetadataClassExternalNameQuery) {
-        this.updateMetadataClassExternalNameQuery = updateMetadataClassExternalNameQuery;
-    }
-
-    @Required
     public void setLoadAllMetadataClassesQuery(String loadAllMetadataClassesQuery) {
         this.loadAllMetadataClassesQuery = loadAllMetadataClassesQuery;
     }
 
-    @Required
     public void setDeleteMetadataClassQuery(String deleteMetadataClassQuery) {
         this.deleteMetadataClassQuery = deleteMetadataClassQuery;
     }
 
-    @Required
     public void setLoadMetadataClassByNameQuery(String loadMetadataClassByNameQuery) {
         this.loadMetadataClassByNameQuery = loadMetadataClassByNameQuery;
     }

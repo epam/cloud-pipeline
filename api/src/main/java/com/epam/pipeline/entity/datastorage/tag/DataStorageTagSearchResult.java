@@ -16,15 +16,8 @@
 
 package com.epam.pipeline.entity.datastorage.tag;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
 import java.util.List;
 
-@Value
-@AllArgsConstructor
-public class DataStorageTagSearchResult {
-
-    Long datastorageId;
-    List<DataStorageTag> items;
-
-}
+public record DataStorageTagSearchResult(
+        Long datastorageId,
+        List<DataStorageTag> items) {}

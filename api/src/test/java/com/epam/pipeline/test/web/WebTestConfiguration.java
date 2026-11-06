@@ -18,7 +18,6 @@ package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.app.AppMVCConfiguration;
 import com.epam.pipeline.app.JWTSecurityConfiguration;
-import com.epam.pipeline.app.RestConfiguration;
 import com.epam.pipeline.test.CommonTestContext;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.ContextConfiguration;
@@ -40,11 +39,11 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @ContextConfiguration(classes = {
-        CommonTestContext.class,
-        ControllerTestBeans.class,
-        RestConfiguration.class,
-        AppMVCConfiguration.class,
-        JWTSecurityConfiguration.class})
+    CommonTestContext.class,
+    ControllerTestBeans.class,
+    TestControllersConfiguration.class,
+    AppMVCConfiguration.class,
+    JWTSecurityConfiguration.class})
 @WebAppConfiguration
 @AutoConfigureMockMvc
 @TestPropertySource(value={"classpath:test-application.properties"})

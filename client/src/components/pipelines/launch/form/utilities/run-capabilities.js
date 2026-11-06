@@ -204,8 +204,7 @@ export function isEnabledByReservationConfig (capability, reservationConfig) {
     return true;
   }
   const {
-    kube_assign_policy: _kubeAssignPolicy = {},
-    kubeAssignPolicy = _kubeAssignPolicy
+    kubeAssignPolicy
   } = reservationConfig || {};
   // If kube assign policy is not overridden, allow
   if (!kubeAssignPolicy) {
@@ -239,7 +238,8 @@ class RunCapabilities extends React.Component {
     mode: PropTypes.string,
     showError: PropTypes.bool,
     getPopupContainer: PropTypes.func,
-    instanceType: PropTypes.string
+    instanceType: PropTypes.string,
+    poolId: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
   };
 
   static defaultProps = {
@@ -272,7 +272,10 @@ class RunCapabilities extends React.Component {
     if (this.props.values && !prevProps.values) {
       this.setInitialRequiredCapabilities();
     }
-    if (prevProps.instanceType !== this.props.instanceType) {
+    if (
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.poolId !== this.props.poolId
+    ) {
       this.setReservationConfig();
     }
     if (prevState.reservationConfig !== this.state.reservationConfig) {
@@ -303,13 +306,16 @@ class RunCapabilities extends React.Component {
   };
 
   setReservationConfig = async () => {
-    const {instanceType} = this.props;
+    const {instanceType, poolId} = this.props;
     if (!instanceType || typeof instanceType !== 'string') {
       this.setState({reservationConfig: undefined});
       return;
     }
     try {
-      const config = await getReservationParametersConfig(instanceType);
+      // A capability is gated on the launch config of the pool the user
+      // chose (`poolId`). With no pool chosen there is no config, even where
+      // a pool backs `instanceType`.
+      const config = await getReservationParametersConfig(poolId);
       this.setState({reservationConfig: config});
     } catch (error) {
       console.error('Error retrieving reservation config:', error);

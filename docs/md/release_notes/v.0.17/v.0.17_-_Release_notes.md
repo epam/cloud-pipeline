@@ -41,6 +41,7 @@
 - [NAT gateway](#nat-gateway)
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
+- [Download storage contents as an archive](#download-storage-contents-as-an-archive)
 - [Image history and generating of Dockerfile](#image-history-and-generating-of-dockerfile)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
@@ -60,6 +61,8 @@
 - [Python 3 support for backend services](#python-3-support-for-backend-services)
 - [Self-contained Python 3.12 distribution](#self-contained-python-312-distribution)
 - [Run controls for an unavailable node](#run-controls-for-an-unavailable-node)
+- [Capacity blocks sourced from node pools](#capacity-blocks-sourced-from-node-pools)
+- [Node pool managers can edit and delete the pools they own](#node-pool-managers-can-edit-and-delete-the-pools-they-own)
 - [Priority of group GUI settings](#priority-of-group-gui-settings)
 - [Show optional parameters per pipeline or tool](#show-optional-parameters-per-pipeline-or-tool)
 - [Read and launch access to all pipelines](#read-and-launch-access-to-all-pipelines)
@@ -1533,6 +1536,14 @@ _Data restoring_ can be applied to previously archived files. Separate files or 
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
 
+## Download storage contents as an archive
+
+Previously, selecting several files in the Storage browser and downloading them fetched the files one by one, and any selected folder was silently skipped.
+
+In **`v0.17`**, a selection of files **and** folders can be downloaded as a single `ZIP` archive instead, from AWS S3 storages and NFS storages on an NFS share. The archive is built by the platform in the background: the user names it from the **Download archive** item, which sits in the same selection menu as **Download** (on those storages, the plain **Download** item is itself offered only where one to three of the selected files can be downloaded, any selected folders not counted, and four files or more are covered by **Download archive** alone - while **Download archive** is in turn not offered for a single selected file, which **Download** already covers), and later tracks, cancels or fetches it from the **Downloads** window, opened from the storage view's own presentation dropdown rather than from a page of its own. The window shows each task's status and archive size, can be filtered by status and (for an administrator, and for a **ROLE_STORAGE_ADMIN**) by owner, is paged, and keeps itself up to date while it is open. A notification announces each archive as it finishes, including one that finished while the application was closed, or one queued on another computer; unlike most notifications, the one for a finished archive stays on screen until it is clicked, rather than disappearing on its own. The number of archive downloads a user may have in progress at once is capped by the platform, and that cap is counted against the server each time an archive is asked for.
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data.md#download-as-archive).
+
 ## Image history and generating of Dockerfile
 
 **Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
@@ -1885,6 +1896,28 @@ Previously, the GUI still showed the **PAUSE**, **COMMIT**, **BROWSE** and **VER
 
 In **`v0.17`**, these controls are hidden while the run has the `NODE_UNAVAILABLE` tag - at the **Run logs** page, at the **ACTIVE RUNS** tab, at the **Home** page and in the actions of in-app notifications. The **STOP** dialog does not offer to persist the current docker image state either. The controls are shown again once the node recovers and the tag is removed.  
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#controls).
+
+***
+
+## Capacity blocks sourced from node pools
+
+Previously, the GUI learned about capacity blocks - reserved compute capacity that a node type can draw on at launch - from the `launch.reservation.parameters` system preference, a map keyed by an instance-type pattern. That preference is no longer read by the GUI.
+
+In the current version, the GUI reads capacity blocks directly off the node pools that back them. The node type list leads with a **Reserved capacity blocks** group, one entry per pool: only picking an entry there launches the run on the reservation, and a plain instance type launches without one. The launch form also lists the reserved capacity available right now for the selected **Cloud Region**. Configurations, launch profiles and tool settings do not offer capacity blocks.
+
+A run on a node pool, or with reservation requests, no longer shows an estimated price: a pool node outlives a single run, so a per-run price would mislead.
+
+For more details see [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#future-dated-node-pools).
+
+## Node pool managers can edit and delete the pools they own
+
+Previously, a **ROLE_NODE_POOL_MANAGER** could create a **Future dated** node pool but never reach it again - viewing, editing and removing an existing pool was restricted to administrators and **ROLE_RUN_ADMIN**.
+
+In the current version, such a user may also open, edit and remove a pool it owns - the one it created. A pool owned by somebody else, or managed only by an administrator, stays out of reach.
+
+Deleting a **Future dated** pool whose capacity reservation is still open - any status but _Requires approval_, _Finished_, _Purchase failed_, _Failed_ or _Cancelled_ - now also shows a warning in the delete confirmation: the reservation is given up too, and the cloud provider may still charge for the capacity it already committed. The **DELETE** button stays disabled until a **Force deletion** checkbox is ticked, for an administrator exactly as much as for the pool's owner.
+
+For more details see [9.1. Hot node pools](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md#delete-existing-pool).
 
 ***
 

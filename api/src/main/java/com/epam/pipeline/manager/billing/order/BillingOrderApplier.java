@@ -34,7 +34,7 @@ public final class BillingOrderApplier {
                                               final BillingGroupingSortOrder order,
                                               final BoolQueryBuilder query,
                                               final TermsAggregationBuilder terms) {
-        final BillingGroupingOrderAggregate orderAggregate = order.getAggregate();
+        final BillingGroupingOrderAggregate orderAggregate = order.aggregate();
         Assert.isTrue(orderAggregate.getGroups() == null || orderAggregate.getGroups().contains(grouping),
                 String.format("Grouping: %s and Grouping Order: %s, don't match.",
                         grouping.name(), orderAggregate.name()));
@@ -44,7 +44,7 @@ public final class BillingOrderApplier {
 
         terms.subAggregation(order.getAggregation());
         terms.order(BucketOrder.aggregation(order.getAggregateToOrderBy() + BillingUtils.SORT_AGG_POSTFIX,
-                order.isDesc()));
+                order.desc()));
 
         return query;
     }

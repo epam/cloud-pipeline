@@ -18,8 +18,8 @@ package com.epam.pipeline.manager.metadata.parser;
 
 import static com.epam.pipeline.manager.metadata.parser.MetadataFileBuilder.SAMPLE1_ID;
 import static com.epam.pipeline.manager.metadata.parser.MetadataFileBuilder.prepareInputData;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +33,7 @@ import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class MetadataEntityReaderTest {
 

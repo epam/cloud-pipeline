@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;

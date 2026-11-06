@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -64,8 +64,7 @@ public class LdapBlockedUsersManagerTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final LdapBlockedUsersManager manager = new LdapBlockedUsersManager(ldapManager, preferenceManager);
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach    public void setUp() throws Exception {
         set(SystemPreferences.LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE, PAGE_SIZE);
         set(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD,
                 LdapBlockedUserSearchMethod.LOAD_ACTIVE_AND_INTERCEPT.name());

@@ -37,6 +37,7 @@ import org.springframework.util.StringUtils;
 
 import javax.mail.internet.InternetAddress;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -99,6 +100,7 @@ public class SMTPNotificationManager implements NotificationManager {
      */
     @Override
     public void notifySubscribers(NotificationMessage message) {
+        Exception exception = null;
         for (int i = 0; i < notifyRetryCount; i++) {
             try {
                 Optional<Email> email = buildEmail(message);
@@ -110,14 +112,17 @@ public class SMTPNotificationManager implements NotificationManager {
                 sleepIfRequired(emailDelay);
                 return;
             } catch (EmailException e) {
+                exception = e;
                 LOGGER.warn(String.format("Fail to send message with id %d. Attempt %d/%d. %n Cause: %n ",
                         message.getId(), i + 1, notifyRetryCount), e);
                 sleepIfRequired(retryDelay);
             }
         }
-        LOGGER.error(String.format("All attempts are failed. Message with id: %d will not be sent.",
-                message.getId()));
-
+        if (Objects.nonNull(exception)) {
+            LOGGER.error(String.format("All attempts are failed. Message with id: %d will not be sent.",
+                    message.getId()));
+            throw new IllegalStateException(exception.getMessage());
+        }
     }
 
     private Optional<Email> buildEmail(NotificationMessage message) throws EmailException {
@@ -173,12 +178,12 @@ public class SMTPNotificationManager implements NotificationManager {
             LOGGER.info("toUserId is not set for message {}", message.getId());
             return null;
         }
-        PipelineUser targetUser = userRepository.findOne(message.getToUserId());
-        if (targetUser == null) {
+        Optional<PipelineUser> targetUser = userRepository.findById(message.getToUserId());
+        if (targetUser.isEmpty()) {
             LOGGER.info("Cannot find user with id {} for message {}", message.getToUserId(), message.getId());
             return null;
         }
-        return targetUser.getEmail();
+        return targetUser.get().getEmail();
     }
 
     private void sleepIfRequired(final long delay) {

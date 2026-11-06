@@ -22,7 +22,7 @@ import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;

@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.cluster;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.jackson.Jacksonized;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.Map;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @Builder
+@Jacksonized
 public class LaunchCapability {
     private String name;
     private String description;

@@ -16,16 +16,16 @@
 
 package com.epam.pipeline.manager.contextual.handler;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.user.PipelineUser;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class UserContextualPreferenceHandlerTest extends AbstractDaoContextualPreferenceHandlerTest {
 

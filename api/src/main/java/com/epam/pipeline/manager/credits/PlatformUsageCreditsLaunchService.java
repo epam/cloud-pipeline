@@ -369,7 +369,7 @@ public class PlatformUsageCreditsLaunchService {
                 .map(PlatformUsageCreditsUserBalance::getCurrentValue)
                 .orElseGet(() -> Integer.parseInt(contextualPreferenceManager.search(
                         Collections.singletonList(SystemPreferences.USAGE_CREDITS_DEFAULT.getKey()),
-                        user).getValue()));
+                        user).value()));
     }
 
     private Map<String, Integer> weights() {

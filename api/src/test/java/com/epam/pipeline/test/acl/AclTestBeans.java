@@ -19,6 +19,7 @@ package com.epam.pipeline.test.acl;
 import com.epam.pipeline.acl.auth.AccessApiService;
 import com.epam.pipeline.acl.plugin.PluginAssignmentService;
 import com.epam.pipeline.acl.plugin.PluginService;
+import org.springframework.session.jdbc.JdbcIndexedSessionRepository;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
@@ -50,6 +51,7 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
+import com.epam.pipeline.manager.cluster.capacityreservation.CapacityReservationService;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
@@ -62,6 +64,8 @@ import com.epam.pipeline.manager.credits.PlatformUsageCreditsLaunchService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsRuleService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceCRUDService;
 import com.epam.pipeline.manager.credits.PlatformUsageCreditsUserBalanceService;
+import com.epam.pipeline.manager.async.AsyncTaskManager;
+import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
@@ -91,11 +95,9 @@ import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.execution.CommandBuilder;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
-import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
-import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.log.LogManager;
 import com.epam.pipeline.manager.log.storage.StorageRequestManager;
@@ -342,9 +344,6 @@ public class AclTestBeans {
     protected DtsRegistryManager mockDtsRegistryManager;
 
     @MockBean
-    protected FirecloudManager mockFirecloudManager;
-
-    @MockBean
     protected MetadataUploadManager mockMetadataUploadManager;
 
     @MockBean
@@ -429,9 +428,6 @@ public class AclTestBeans {
     protected CommandBuilder mockCommandBuilder;
 
     @MockBean
-    protected CredentialsManager mockCredentialsManager;
-
-    @MockBean
     protected RunStatusDao mockRunStatusDao;
 
     @MockBean
@@ -510,6 +506,9 @@ public class AclTestBeans {
     protected NodePoolManager nodePoolManager;
 
     @MockBean
+    protected CapacityReservationService capacityReservationService;
+
+    @MockBean
     protected InfrastructureManager infrastructureManager;
 
     @MockBean
@@ -532,6 +531,12 @@ public class AclTestBeans {
 
     @MockBean
     protected DataStorageManager mockDataStorageManager;
+
+    @MockBean
+    protected DataStorageDownloadArchiveManager downloadArchiveManager;
+
+    @MockBean
+    protected AsyncTaskManager asyncTaskManager;
 
     @MockBean
     protected FolderCrudManager mockFolderCrudManager;
@@ -570,6 +575,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserRunnersManager mockUserRunnersManager;
+
+    @MockBean
+    protected JdbcIndexedSessionRepository mockJdbcIndexedSessionRepository;
 
     @MockBean
     protected PipelineRunAsManager mockPipelineRunAsManager;

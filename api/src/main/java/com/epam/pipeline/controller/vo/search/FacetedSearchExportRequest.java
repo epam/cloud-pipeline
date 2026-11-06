@@ -16,8 +16,10 @@
 package com.epam.pipeline.controller.vo.search;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class FacetedSearchExportRequest {
     private FacetedSearchRequest facetedSearchRequest;
     private FacetedSearchExportVO facetedSearchExportVO;

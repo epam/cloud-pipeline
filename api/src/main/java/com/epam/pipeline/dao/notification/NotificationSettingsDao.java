@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
@@ -34,6 +34,7 @@ import java.sql.Connection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
 
 public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
 
@@ -75,27 +76,31 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteNotificationSettingsQuery, id);
     }
 
-    @Required
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(createNotificationSettingsQuery, "Required query createNotificationSettingsQuery is not set");
+        Assert.notNull(loadNotificationSettingsQuery, "Required query loadNotificationSettingsQuery is not set");
+        Assert.notNull(loadAllNotificationSettingsQuery, "Required query loadAllNotificationSettingsQuery is not set");
+        Assert.notNull(deleteNotificationSettingsQuery, "Required query deleteNotificationSettingsQuery is not set");
+        Assert.notNull(updateNotificationSettingsQuery, "Required query updateNotificationSettingsQuery is not set");
+    }
+
     public void setCreateNotificationSettingsQuery(String createNotificationSettingsQuery) {
         this.createNotificationSettingsQuery = createNotificationSettingsQuery;
     }
 
-    @Required
     public void setLoadNotificationSettingsQuery(String loadNotificationSettingsQuery) {
         this.loadNotificationSettingsQuery = loadNotificationSettingsQuery;
     }
 
-    @Required
     public void setLoadAllNotificationSettingsQuery(String loadAllNotificationSettingsQuery) {
         this.loadAllNotificationSettingsQuery = loadAllNotificationSettingsQuery;
     }
 
-    @Required
     public void setDeleteNotificationSettingsQuery(String deleteNotificationSettingsQuery) {
         this.deleteNotificationSettingsQuery = deleteNotificationSettingsQuery;
     }
 
-    @Required
     public void setUpdateNotificationSettingsQuery(String updateNotificationSettingsQuery) {
         this.updateNotificationSettingsQuery = updateNotificationSettingsQuery;
     }
@@ -175,8 +180,5 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
                 return settings;
             };
         }
-
-
-
     }
 }

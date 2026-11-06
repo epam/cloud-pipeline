@@ -83,7 +83,7 @@ public final class StorageBillingCostDetailsLoader {
 
     public static void buildQuery(final BillingCostDetailsRequest request, final AggregationBuilder topAgg) {
         final long storageDiscount = Optional.ofNullable(request.getDiscount())
-                .map(BillingDiscount::getStorages).orElse(0).longValue();
+                .map(BillingDiscount::storages).orElse(0).longValue();
         if (request.getGrouping() == BillingGrouping.STORAGE) {
             // Since we build topAgg as Term agg for storage (bucket is storage), we can just calculate
             // cost as sum and size as avg + for current size we can grab last value

@@ -128,7 +128,7 @@ public abstract class AbstractAzurePriceListLoader {
                                                              AzureResourceManager client,
                                                              Map<String, ResourceSkuInner> vmSkusByName,
                                                              Map<String, ResourceSkuInner> diskSkusByName)
-                                                             throws IOException;
+            throws IOException;
 
     public abstract String getAPIVersion();
 
@@ -174,9 +174,9 @@ public abstract class AbstractAzurePriceListLoader {
     }
 
     protected InstanceOffer diskSkuToOffer(final Long regionId,
-                                         final ResourceSkuInner diskSku,
-                                         final double price,
-                                         final String unit) {
+                                           final ResourceSkuInner diskSku,
+                                           final double price,
+                                           final String unit) {
         final Map<String, String> capabilitiesByName = ListUtils.emptyIfNull(diskSku.capabilities())
                 .stream()
                 .collect(Collectors.toMap(ResourceSkuCapabilities::name, ResourceSkuCapabilities::value));

@@ -16,8 +16,9 @@
 
 package com.epam.pipeline.manager.cloud.commands;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClusterCommandExecutableTest {
 
@@ -33,7 +34,7 @@ public class ClusterCommandExecutableTest {
                 .cloud(CLOUD)
                 .build()
                 .getCommand();
-        Assert.assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
+        assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
     }
 
     @Test
@@ -44,7 +45,7 @@ public class ClusterCommandExecutableTest {
                 .cloud(CLOUD)
                 .build()
                 .getCommand();
-        Assert.assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
+        assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
     }
 
     @Test
@@ -55,7 +56,7 @@ public class ClusterCommandExecutableTest {
                 .cloud(CLOUD)
                 .build()
                 .getCommand();
-        Assert.assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
+        assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
     }
 
     @Test
@@ -66,6 +67,6 @@ public class ClusterCommandExecutableTest {
                 .cloud(CLOUD)
                 .build()
                 .getCommand();
-        Assert.assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
+        assertTrue(command.startsWith(CUSTOM_EXECUTABLE + " " + SCRIPT));
     }
 }

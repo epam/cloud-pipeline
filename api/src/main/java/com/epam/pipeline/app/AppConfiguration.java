@@ -50,10 +50,10 @@ import javax.sql.DataSource;
 @EnableScheduling
 @EnableAsync
 @ComponentScan(basePackages = {"com.epam.pipeline.dao",
-        "com.epam.pipeline.manager",
-        "com.epam.pipeline.security",
-        "com.epam.pipeline.aspect",
-        "com.epam.pipeline.event"})
+    "com.epam.pipeline.manager",
+    "com.epam.pipeline.security",
+    "com.epam.pipeline.aspect",
+    "com.epam.pipeline.event"})
 @EnableSchedulerLock(interceptMode = EnableSchedulerLock.InterceptMode.PROXY_METHOD, defaultLockAtMostFor = "PT30S")
 public class AppConfiguration implements SchedulingConfigurer {
 

@@ -22,12 +22,14 @@ import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @EqualsAndHashCode
+@NoArgsConstructor
 public class PipeConfValue {
 
     private String type;

@@ -27,7 +27,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Required;
+
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import org.springframework.util.Assert;
 
 public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
@@ -141,27 +143,24 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<MetadataEntry> loadMetadataItems(List<EntityVO> entities) {
-        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
+        return getNamedParameterJdbcTemplate().query(
                 convertEntitiesToString(loadMetadataItemsQuery, entities),
                 MetadataParameters.getParametersWithArrays(entities),
                 MetadataParameters.getRowMapper());
-        return items.isEmpty() ? null : items;
     }
 
     public List<MetadataEntry> loadMetadataItemsByKey(final String key, final List<EntityVO> entities) {
-        List<MetadataEntry> items = getNamedParameterJdbcTemplate().query(
+        return getNamedParameterJdbcTemplate().query(
                 convertEntitiesToString(loadMetadataItemsQuery, entities),
                 MetadataParameters.getParametersWithArrays(entities),
                 MetadataParameters.getRowMapper(Collections.singletonList(key)));
-        return items.isEmpty() ? null : items;
     }
 
     public List<MetadataEntryWithIssuesCount> loadMetadataItemsWithIssues(List<EntityVO> entities) {
-        List<MetadataEntryWithIssuesCount> items = getNamedParameterJdbcTemplate()
+        return getNamedParameterJdbcTemplate()
                 .query(convertEntitiesToString(loadMetadataItemsWithIssuesQuery, entities),
                         MetadataParameters.getParametersWithArrays(entities),
                         MetadataParameters.getRowMapperWithIssues());
-        return items.isEmpty() ? null : items;
     }
 
     public List<EntityVO> searchMetadataByClassAndKey(final AclClass entityClass, final String key) {
@@ -225,78 +224,82 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
         params.addValue(LIST_PARAMETER, sensitiveKeysList);
         return params;
     }
+    @PostConstruct
+    public void checkQueryDependencies() {
+        Assert.notNull(loadMetadataItemsWithIssuesQuery, "Required query loadMetadataItemsWithIssuesQuery is not set");
+        Assert.notNull(uploadMetadataItemKeyQuery, "Required query uploadMetadataItemKeyQuery is not set");
+        Assert.notNull(loadMetadataItemQuery, "Required query loadMetadataItemQuery is not set");
+        Assert.notNull(loadMetadataItemsQuery, "Required query loadMetadataItemsQuery is not set");
+        Assert.notNull(createMetadataItemQuery, "Required query createMetadataItemQuery is not set");
+        Assert.notNull(deleteMetadataItemQuery, "Required query deleteMetadataItemQuery is not set");
+        Assert.notNull(deleteMetadataItemKeyQuery, "Required query deleteMetadataItemKeyQuery is not set");
+        Assert.notNull(uploadMetadataItemQuery, "Required query uploadMetadataItemQuery is not set");
+        Assert.notNull(searchMetadataByClassAndKeyValueQuery,
+                "Required query searchMetadataByClassAndKeyValueQuery is not set");
+        Assert.notNull(searchMetadataByClassAndKeyQuery, "Required query searchMetadataByClassAndKeyQuery is not set");
+        Assert.notNull(searchMetadataEntriesByClassAndKeyValueQuery,
+                "Required query searchMetadataEntriesByClassAndKeyValueQuery is not set");
+        Assert.notNull(searchMetadataEntriesByClassAndKeyQuery,
+                "Required query searchMetadataEntriesByClassAndKeyQuery is not set");
+    }
 
-    @Required
+
     public void setLoadMetadataItemsWithIssuesQuery(String loadMetadataItemsWithIssuesQuery) {
         this.loadMetadataItemsWithIssuesQuery = loadMetadataItemsWithIssuesQuery;
     }
 
-    @Required
     public void setUploadMetadataItemKeyQuery(String uploadMetadataItemKeyQuery) {
         this.uploadMetadataItemKeyQuery = uploadMetadataItemKeyQuery;
     }
 
-    @Required
     public void setLoadMetadataItemQuery(String loadMetadataItemQuery) {
         this.loadMetadataItemQuery = loadMetadataItemQuery;
     }
 
-    @Required
     public void setLoadMetadataItemsQuery(String loadMetadataItemsQuery) {
         this.loadMetadataItemsQuery = loadMetadataItemsQuery;
     }
 
-    @Required
     public void setCreateMetadataItemQuery(String createMetadataItemQuery) {
         this.createMetadataItemQuery = createMetadataItemQuery;
     }
 
-    @Required
     public void setDeleteMetadataItemQuery(String deleteMetadataItemQuery) {
         this.deleteMetadataItemQuery = deleteMetadataItemQuery;
     }
 
-    @Required
     public void setDeleteMetadataItemKeyQuery(String deleteMetadataItemKeyQuery) {
         this.deleteMetadataItemKeyQuery = deleteMetadataItemKeyQuery;
     }
 
-    @Required
     public void setUploadMetadataItemQuery(String uploadMetadataItemQuery) {
         this.uploadMetadataItemQuery = uploadMetadataItemQuery;
     }
 
-    @Required
     public void setSearchMetadataByClassAndKeyValueQuery(String searchMetadataByClassAndKeyValueQuery) {
         this.searchMetadataByClassAndKeyValueQuery = searchMetadataByClassAndKeyValueQuery;
     }
 
-    @Required
     public void setLoadUniqueValuesFromEntitiesAttributes(final String loadUniqueValuesFromEntitiesAttributes) {
         this.loadUniqueValuesFromEntitiesAttributes = loadUniqueValuesFromEntitiesAttributes;
     }
 
-    @Required
     public void setCreateMetadataDictionary(final String createMetadataDictionary) {
         this.createMetadataDictionary = createMetadataDictionary;
     }
 
-    @Required
     public void setLoadMetadataKeysQuery(final String loadMetadataKeysQuery) {
         this.loadMetadataKeysQuery = loadMetadataKeysQuery;
     }
 
-    @Required
     public void setSearchMetadataByClassAndKeyQuery(String searchMetadataByClassAndKeyQuery) {
         this.searchMetadataByClassAndKeyQuery = searchMetadataByClassAndKeyQuery;
     }
 
-    @Required
     public void setSearchMetadataEntriesByClassAndKeyValueQuery(String searchMetadataEntriesByClassAndKeyValueQuery) {
         this.searchMetadataEntriesByClassAndKeyValueQuery = searchMetadataEntriesByClassAndKeyValueQuery;
     }
 
-    @Required
     public void setSearchMetadataEntriesByClassAndKeyQuery(String searchMetadataEntriesByClassAndKeyQuery) {
         this.searchMetadataEntriesByClassAndKeyQuery = searchMetadataEntriesByClassAndKeyQuery;
     }

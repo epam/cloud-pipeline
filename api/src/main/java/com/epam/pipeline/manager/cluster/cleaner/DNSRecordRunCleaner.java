@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -61,13 +60,13 @@ public class DNSRecordRunCleaner implements RunCleaner {
     private void removeDNSRecords(final String regionName, final String serializedServiceUrls) {
         final String edgeUrl = edgeServiceManager.getEdgeDomainNameOrIP(regionName);
         for (final ServiceUrl serviceUrl : getDeserializedServiceUrls(serializedServiceUrls)) {
-            if (!serviceUrl.isCustomDNS()) {
+            if (!serviceUrl.customDNS) {
                 continue;
             }
-            final String domain = URLUtils.getHost(serviceUrl.getUrl());
+            final String domain = URLUtils.getHost(serviceUrl.url);
             final InstanceDNSRecord record = new InstanceDNSRecord(domain, edgeUrl,
                     InstanceDNSRecordFormat.ABSOLUTE, InstanceDNSRecordStatus.NOOP);
-            cloudFacade.removeDNSRecord(serviceUrl.getRegionId(), record);
+            cloudFacade.removeDNSRecord(serviceUrl.regionId, record);
         }
     }
 
@@ -80,7 +79,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
         return Optional.ofNullable(deserializeServiceUrls(serializedServiceUrls))
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
-                .filter(serviceUrl -> StringUtils.isNotBlank(serviceUrl.getUrl()) && serviceUrl.getRegionId() != null);
+                .filter(serviceUrl -> StringUtils.isNotBlank(serviceUrl.url) && serviceUrl.regionId != null);
     }
 
     private List<ServiceUrl> deserializeServiceUrls(final String serializedServiceUrls) {
@@ -89,8 +88,7 @@ public class DNSRecordRunCleaner implements RunCleaner {
         return JsonMapper.parseData(serializedServiceUrls, new TypeReference<List<ServiceUrl>>() {}, mapper);
     }
 
-    @Value
-    private static class ServiceUrl {
+    private static final class ServiceUrl {
         String url;
         Long regionId;
         boolean customDNS;

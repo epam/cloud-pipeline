@@ -24,11 +24,10 @@ import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -37,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
@@ -51,6 +51,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GitlabClientTest {
 
@@ -109,24 +113,26 @@ public class GitlabClientTest {
     private static final String RELEASE_DESCRIPTION = "release_description";
     private static final String RELEASE_JSON = "{\"tag_name\": \"v1\", \"description\": \"Release notes\"}";
 
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+    @RegisterExtension
+    static WireMockExtension wireMock = WireMockExtension.newInstance()
+            .options(wireMockConfig().dynamicPort())
+            .build();
 
     @Test
-    @Ignore
+    @Disabled
     public void testBuildCloneCredentialsWithUser() throws GitClientException {
         testBuildCloneUrl(USER, URL_WITH_USER);
     }
 
     @Test
-    @Ignore
+    @Disabled
     public void testBuildCloneCredentialsWithoutUser() throws GitClientException {
         testBuildCloneUrl(USER, URL_WITHOUT_USER);
     }
 
     @Test
     public void shouldLoadCurrentToken() {
-        wireMockRule.stubFor(get(urlEqualTo("/api/v4/personal_access_tokens/self"))
+        wireMock.stubFor(get(urlEqualTo("/api/v4/personal_access_tokens/self"))
                 .withHeader(PRIVATE_TOKEN, equalTo(TOKEN))
                 .willReturn(okJson("{\"id\": 42, \"name\": \"CloudPipeline\", \"revoked\": false, "
                         + "\"created_at\": \"2026-01-01T10:00:00.000Z\", \"scopes\": [\"api\"], \"user_id\": 1, "
@@ -134,34 +140,34 @@ public class GitlabClientTest {
 
         final GitToken token = client().getCurrentToken();
 
-        Assert.assertEquals(Long.valueOf(TOKEN_ID), token.getId());
-        Assert.assertEquals(TOKEN_NAME, token.getName());
-        Assert.assertEquals(Long.valueOf(ADMIN_ID), token.getUserId());
-        Assert.assertTrue(token.isActive());
-        Assert.assertEquals(Collections.singletonList("api"), token.getScopes());
-        Assert.assertEquals(EXPIRES,
+        assertEquals(Long.valueOf(TOKEN_ID), token.getId());
+        assertEquals(TOKEN_NAME, token.getName());
+        assertEquals(Long.valueOf(ADMIN_ID), token.getUserId());
+        assertTrue(token.isActive());
+        assertEquals(Collections.singletonList("api"), token.getScopes());
+        assertEquals(EXPIRES,
                 token.getExpires().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
     }
 
     @Test
     public void shouldLoadCurrentTokenWithoutExpiry() {
-        wireMockRule.stubFor(get(urlEqualTo("/api/v4/personal_access_tokens/self"))
+        wireMock.stubFor(get(urlEqualTo("/api/v4/personal_access_tokens/self"))
                 .willReturn(okJson("{\"id\": 42, \"name\": \"CloudPipeline\", \"expires_at\": null}")));
 
-        Assert.assertNull(client().getCurrentToken().getExpires());
+        assertNull(client().getCurrentToken().getExpires());
     }
 
-    @Test(expected = UnexpectedResponseStatusException.class)
+    @Test
     public void shouldFailToLoadCurrentTokenIfEndpointIsMissing() {
-        wireMockRule.stubFor(get(urlEqualTo("/api/v4/personal_access_tokens/self"))
+        wireMock.stubFor(get(urlEqualTo("/api/v4/personal_access_tokens/self"))
                 .willReturn(aResponse().withStatus(NOT_FOUND)));
 
-        client().getCurrentToken();
+        assertThrows(UnexpectedResponseStatusException.class, () -> client().getCurrentToken());
     }
 
     @Test
     public void shouldIssueImpersonationToken() {
-        wireMockRule.stubFor(post(urlEqualTo(IMPERSONATION_TOKENS_URL))
+        wireMock.stubFor(post(urlEqualTo(IMPERSONATION_TOKENS_URL))
                 .willReturn(aResponse().withStatus(OK_CREATED).withHeader("Content-Type", "application/json")
                         .withBody("{\"id\": 43, \"name\": \"CloudPipeline\", \"token\": \"new-token\", "
                                 + "\"impersonation\": true, \"active\": true, \"expires_at\": \"2027-10-15\"}")));
@@ -169,9 +175,9 @@ public class GitlabClientTest {
         final GitToken token = client().issueImpersonationToken(TOKEN_NAME, ADMIN_ID, EXPIRES.plusYears(1),
                 Arrays.asList("api", "sudo"));
 
-        Assert.assertEquals(Long.valueOf(NEW_TOKEN_ID), token.getId());
-        Assert.assertEquals("new-token", token.getToken());
-        wireMockRule.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
+        assertEquals(Long.valueOf(NEW_TOKEN_ID), token.getId());
+        assertEquals("new-token", token.getToken());
+        wireMock.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
                 .withHeader(PRIVATE_TOKEN, equalTo(TOKEN))
                 .withRequestBody(equalToJson(
                         "{\"name\": \"CloudPipeline\", \"expires_at\": \"2027-10-15\", "
@@ -180,40 +186,41 @@ public class GitlabClientTest {
 
     @Test
     public void shouldRevokeImpersonationToken() {
-        wireMockRule.stubFor(delete(urlEqualTo(IMPERSONATION_TOKENS_URL + "/42"))
+        wireMock.stubFor(delete(urlEqualTo(IMPERSONATION_TOKENS_URL + "/42"))
                 .willReturn(aResponse().withStatus(NO_CONTENT)));
 
         client().revokeImpersonationToken(ADMIN_ID, TOKEN_ID);
 
-        wireMockRule.verify(deleteRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL + "/42"))
+        wireMock.verify(deleteRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL + "/42"))
                 .withHeader(PRIVATE_TOKEN, equalTo(TOKEN)));
     }
 
-    @Test(expected = UnexpectedResponseStatusException.class)
+    @Test
     public void shouldFailToRevokeMissingImpersonationToken() {
-        wireMockRule.stubFor(delete(urlEqualTo(IMPERSONATION_TOKENS_URL + "/42"))
+        wireMock.stubFor(delete(urlEqualTo(IMPERSONATION_TOKENS_URL + "/42"))
                 .willReturn(aResponse().withStatus(NOT_FOUND)));
 
-        client().revokeImpersonationToken(ADMIN_ID, TOKEN_ID);
+        assertThrows(UnexpectedResponseStatusException.class,
+                () -> client().revokeImpersonationToken(ADMIN_ID, TOKEN_ID));
     }
 
     @Test
     public void shouldSaveReleaseDescriptionWithReleasesApi() {
         stubVersion(LATEST_VERSION);
         stubTagCreation();
-        wireMockRule.stubFor(post(urlEqualTo(RELEASES_URL))
+        wireMock.stubFor(post(urlEqualTo(RELEASES_URL))
                 .willReturn(created(RELEASE_JSON)));
 
         final GitTagEntry tag = projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, DESCRIPTION);
 
-        Assert.assertEquals(TAG_NAME, tag.getName());
-        Assert.assertEquals(DESCRIPTION, tag.getRelease().getDescription());
-        wireMockRule.verify(postRequestedFor(urlPathEqualTo(TAGS_URL))
+        assertEquals(TAG_NAME, tag.getName());
+        assertEquals(DESCRIPTION, tag.getRelease().getDescription());
+        wireMock.verify(postRequestedFor(urlPathEqualTo(TAGS_URL))
                 .withQueryParam("tag_name", equalTo(TAG_NAME))
                 .withQueryParam(REF, equalTo(SHA))
                 .withQueryParam("message", equalTo(TAG_MESSAGE))
                 .withQueryParam(RELEASE_DESCRIPTION, absent()));
-        wireMockRule.verify(postRequestedFor(urlEqualTo(RELEASES_URL))
+        wireMock.verify(postRequestedFor(urlEqualTo(RELEASES_URL))
                 .withRequestBody(equalToJson(RELEASE_JSON)));
     }
 
@@ -224,9 +231,9 @@ public class GitlabClientTest {
 
         projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, DESCRIPTION);
 
-        wireMockRule.verify(postRequestedFor(urlPathEqualTo(TAGS_URL))
+        wireMock.verify(postRequestedFor(urlPathEqualTo(TAGS_URL))
                 .withQueryParam(RELEASE_DESCRIPTION, equalTo(DESCRIPTION)));
-        wireMockRule.verify(0, postRequestedFor(urlEqualTo(RELEASES_URL)));
+        wireMock.verify(0, postRequestedFor(urlEqualTo(RELEASES_URL)));
     }
 
     @Test
@@ -235,143 +242,145 @@ public class GitlabClientTest {
 
         final GitTagEntry tag = projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, " ");
 
-        Assert.assertNull(tag.getRelease());
-        wireMockRule.verify(0, getRequestedFor(urlEqualTo(VERSION_URL)));
-        wireMockRule.verify(0, postRequestedFor(urlEqualTo(RELEASES_URL)));
+        assertNull(tag.getRelease());
+        wireMock.verify(0, getRequestedFor(urlEqualTo(VERSION_URL)));
+        wireMock.verify(0, postRequestedFor(urlEqualTo(RELEASES_URL)));
     }
 
     @Test
     public void shouldReturnCreatedTagIfReleaseCannotBeCreated() {
         stubVersion(LATEST_VERSION);
         stubTagCreation();
-        wireMockRule.stubFor(post(urlEqualTo(RELEASES_URL))
+        wireMock.stubFor(post(urlEqualTo(RELEASES_URL))
                 .willReturn(aResponse().withStatus(CONFLICT)));
 
         final GitTagEntry tag = projectClient().createRepositoryRevision(TAG_NAME, SHA, TAG_MESSAGE, DESCRIPTION);
 
-        Assert.assertEquals(TAG_NAME, tag.getName());
-        Assert.assertNull(tag.getRelease());
+        assertEquals(TAG_NAME, tag.getName());
+        assertNull(tag.getRelease());
     }
 
     @Test
     public void shouldDeleteProjectOnceOnGitlabOlderThan18() {
         stubVersion(GITLAB_15_VERSION);
-        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_URL)).willReturn(accepted()));
+        wireMock.stubFor(delete(urlEqualTo(PROJECT_URL)).willReturn(accepted()));
 
         projectClient().deleteRepository();
 
-        wireMockRule.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_URL)));
-        wireMockRule.verify(0, getRequestedFor(urlPathEqualTo(PROJECT_URL)));
+        wireMock.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_URL)));
+        wireMock.verify(0, getRequestedFor(urlPathEqualTo(PROJECT_URL)));
     }
 
     @Test
     public void shouldRemoveMarkedProjectPermanentlyOnGitlab18AndLater() {
         stubVersion(LATEST_VERSION);
-        wireMockRule.stubFor(get(urlEqualTo(PROJECT_URL))
+        wireMock.stubFor(get(urlEqualTo(PROJECT_URL))
                 .willReturn(okJson(projectJson(PROJECT_PATH))));
-        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
-        wireMockRule.stubFor(get(urlEqualTo(PROJECT_ID_URL))
+        wireMock.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
+        wireMock.stubFor(get(urlEqualTo(PROJECT_ID_URL))
                 .willReturn(okJson(projectJson(MARKED_PROJECT_PATH))));
-        wireMockRule.stubFor(delete(urlPathEqualTo(PROJECT_ID_URL))
+        wireMock.stubFor(delete(urlPathEqualTo(PROJECT_ID_URL))
                 .withQueryParam(PERMANENTLY_REMOVE, equalTo("true"))
                 .withQueryParam(FULL_PATH, equalTo(MARKED_PROJECT_PATH))
                 .willReturn(accepted()));
 
         projectClient().deleteRepository();
 
-        wireMockRule.verify(1, deleteRequestedFor(urlEqualTo(PROJECT_ID_URL)));
-        wireMockRule.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_ID_URL))
+        wireMock.verify(1, deleteRequestedFor(urlEqualTo(PROJECT_ID_URL)));
+        wireMock.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_ID_URL))
                 .withQueryParam(PERMANENTLY_REMOVE, equalTo("true"))
                 .withQueryParam(FULL_PATH, equalTo(MARKED_PROJECT_PATH)));
-        wireMockRule.verify(0, deleteRequestedFor(urlPathEqualTo(PROJECT_URL)));
+        wireMock.verify(0, deleteRequestedFor(urlPathEqualTo(PROJECT_URL)));
     }
 
     @Test
     public void shouldNotRemoveProjectPermanentlyIfItIsAlreadyDeleted() {
         stubVersion(LATEST_VERSION);
-        wireMockRule.stubFor(get(urlEqualTo(PROJECT_URL))
+        wireMock.stubFor(get(urlEqualTo(PROJECT_URL))
                 .willReturn(okJson(projectJson(PROJECT_PATH))));
-        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
-        wireMockRule.stubFor(get(urlEqualTo(PROJECT_ID_URL)).willReturn(aResponse().withStatus(NOT_FOUND)));
+        wireMock.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
+        wireMock.stubFor(get(urlEqualTo(PROJECT_ID_URL)).willReturn(aResponse().withStatus(NOT_FOUND)));
 
         projectClient().deleteRepository();
 
-        wireMockRule.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_ID_URL)));
+        wireMock.verify(1, deleteRequestedFor(urlPathEqualTo(PROJECT_ID_URL)));
     }
 
-    @Test(expected = UnexpectedResponseStatusException.class)
+    @Test
     public void shouldFailIfMarkedProjectCannotBeRemovedPermanently() {
         stubVersion(LATEST_VERSION);
-        wireMockRule.stubFor(get(urlEqualTo(PROJECT_URL))
+        wireMock.stubFor(get(urlEqualTo(PROJECT_URL))
                 .willReturn(okJson(projectJson(PROJECT_PATH))));
-        wireMockRule.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
-        wireMockRule.stubFor(get(urlEqualTo(PROJECT_ID_URL))
+        wireMock.stubFor(delete(urlEqualTo(PROJECT_ID_URL)).willReturn(accepted()));
+        wireMock.stubFor(get(urlEqualTo(PROJECT_ID_URL))
                 .willReturn(okJson(projectJson(MARKED_PROJECT_PATH))));
-        wireMockRule.stubFor(delete(urlPathEqualTo(PROJECT_ID_URL))
+        wireMock.stubFor(delete(urlPathEqualTo(PROJECT_ID_URL))
                 .withQueryParam(PERMANENTLY_REMOVE, equalTo("true"))
                 .willReturn(aResponse().withStatus(BAD_REQUEST)));
 
-        projectClient().deleteRepository();
+        assertThrows(UnexpectedResponseStatusException.class, () -> projectClient().deleteRepository());
     }
 
     @Test
     public void shouldAcceptScheduledGroupDeletion() {
-        wireMockRule.stubFor(delete(urlEqualTo(GROUP_URL)).willReturn(accepted()));
+        wireMock.stubFor(delete(urlEqualTo(GROUP_URL)).willReturn(accepted()));
 
         client().deleteGroup(GROUP);
 
-        wireMockRule.verify(1, deleteRequestedFor(urlEqualTo(GROUP_URL)));
-        wireMockRule.verify(0, getRequestedFor(urlEqualTo(GROUP_URL)));
+        wireMock.verify(1, deleteRequestedFor(urlEqualTo(GROUP_URL)));
+        wireMock.verify(0, getRequestedFor(urlEqualTo(GROUP_URL)));
     }
 
     @Test
     public void shouldReturnEmptyListForMissingTreePath() {
-        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, equalTo(FOLDER))
+        wireMock.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, equalTo(FOLDER))
                 .willReturn(notFound("{\"message\": \"404 invalid revision or path Not Found\"}")));
-        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, absent())
+        wireMock.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, absent())
                 .willReturn(okJson("[{\"name\": \"README.md\", \"path\": \"README.md\", \"type\": \"blob\"}]")));
 
-        Assert.assertTrue(projectClient().getRepositoryContents(FOLDER, BRANCH, true).isEmpty());
+        assertTrue(projectClient().getRepositoryContents(FOLDER, BRANCH, true).isEmpty());
     }
 
     @Test
     public void shouldLoadTreePath() {
-        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, equalTo(FOLDER))
+        wireMock.stubFor(get(urlPathEqualTo(TREE_URL)).withQueryParam(PATH, equalTo(FOLDER))
                 .willReturn(okJson("[{\"name\": \"main.py\", \"path\": \"src/main.py\", \"type\": \"blob\"}]")));
 
         final List<GitRepositoryEntry> entries = projectClient().getRepositoryContents(FOLDER, BRANCH, true);
 
-        Assert.assertEquals(1, entries.size());
-        Assert.assertEquals("src/main.py", entries.get(0).getPath());
-        wireMockRule.verify(1, getRequestedFor(urlPathEqualTo(TREE_URL)));
+        assertEquals(1, entries.size());
+        assertEquals("src/main.py", entries.get(0).getPath());
+        wireMock.verify(1, getRequestedFor(urlPathEqualTo(TREE_URL)));
     }
 
-    @Test(expected = UnexpectedResponseStatusException.class)
+    @Test
     public void shouldFailToLoadTreePathOfMissingRevision() {
-        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL))
+        wireMock.stubFor(get(urlPathEqualTo(TREE_URL))
                 .willReturn(notFound("{\"message\": \"404 Tree Not Found\"}")));
 
-        projectClient().getRepositoryContents(FOLDER, BRANCH, true);
+        assertThrows(UnexpectedResponseStatusException.class,
+                () -> projectClient().getRepositoryContents(FOLDER, BRANCH, true));
     }
 
-    @Test(expected = UnexpectedResponseStatusException.class)
+    @Test
     public void shouldFailToLoadRootTreeOfMissingProject() {
-        wireMockRule.stubFor(get(urlPathEqualTo(TREE_URL))
+        wireMock.stubFor(get(urlPathEqualTo(TREE_URL))
                 .willReturn(notFound("{\"message\": \"404 Project Not Found\"}")));
 
-        projectClient().getRepositoryContents(null, BRANCH, false);
+        assertThrows(UnexpectedResponseStatusException.class,
+                () -> projectClient().getRepositoryContents(null, BRANCH, false));
     }
 
     @Test
     public void shouldForkProjectToNamespacePath() {
         stubVersion(LATEST_VERSION);
-        wireMockRule.stubFor(post(urlPathEqualTo(FORK_URL))
+        wireMock.stubFor(post(urlPathEqualTo(FORK_URL))
                 .willReturn(created(projectJson(GROUP + "/" + FORKED_PROJECT))));
 
         final GitProject fork = client().forkProject(FORKED_PROJECT, USER, GROUP);
 
-        Assert.assertEquals(GROUP + "/" + FORKED_PROJECT, fork.getPath());
-        wireMockRule.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
+        assertEquals(GROUP + "/" + FORKED_PROJECT, fork.getPath());
+        wireMock.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
                 .withQueryParam(NAMESPACE_PATH, equalTo(GROUP))
                 .withQueryParam(NAMESPACE, absent()));
     }
@@ -379,12 +388,12 @@ public class GitlabClientTest {
     @Test
     public void shouldForkProjectToNamespaceOnGitlabOlderThan13() {
         stubVersion(GITLAB_9_VERSION);
-        wireMockRule.stubFor(post(urlPathEqualTo(FORK_URL))
+        wireMock.stubFor(post(urlPathEqualTo(FORK_URL))
                 .willReturn(created(projectJson(GROUP + "/" + FORKED_PROJECT))));
 
         client().forkProject(FORKED_PROJECT, USER, GROUP);
 
-        wireMockRule.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
+        wireMock.verify(postRequestedFor(urlPathEqualTo(FORK_URL))
                 .withQueryParam(NAMESPACE, equalTo(GROUP))
                 .withQueryParam(NAMESPACE_PATH, absent()));
     }
@@ -395,7 +404,7 @@ public class GitlabClientTest {
 
         projectClient().buildCloneCredentials(false, true, LONG_DURATION);
 
-        wireMockRule.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
+        wireMock.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
                 .withRequestBody(equalToJson("{\"name\": \"" + PROJECT + "-adminToken\", \"expires_at\": \""
                         + LocalDate.now(ZoneOffset.UTC).plusDays(MAX_TOKEN_DAYS) + "\", \"scopes\": [\"api\"]}")));
     }
@@ -406,16 +415,16 @@ public class GitlabClientTest {
 
         final GitCredentials credentials = projectClient().buildCloneCredentials(false, true, DURATION);
 
-        Assert.assertEquals(CLONE_TOKEN, credentials.getToken());
-        wireMockRule.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
+        assertEquals(CLONE_TOKEN, credentials.getToken());
+        wireMock.verify(postRequestedFor(urlEqualTo(IMPERSONATION_TOKENS_URL))
                 .withRequestBody(equalToJson("{\"expires_at\": \"" + LocalDate.now().plusDays(DURATION) + "\"}",
                         false, true)));
     }
 
     private void stubCloneTokenIssue() {
-        wireMockRule.stubFor(get(urlPathEqualTo("/api/v4/users"))
+        wireMock.stubFor(get(urlPathEqualTo("/api/v4/users"))
                 .willReturn(okJson("[{\"id\": 1, \"username\": \"root\", \"email\": \"root@example.com\"}]")));
-        wireMockRule.stubFor(post(urlEqualTo(IMPERSONATION_TOKENS_URL))
+        wireMock.stubFor(post(urlEqualTo(IMPERSONATION_TOKENS_URL))
                 .willReturn(created("{\"id\": 44, \"token\": \"" + CLONE_TOKEN + "\"}")));
     }
 
@@ -432,12 +441,12 @@ public class GitlabClientTest {
     }
 
     private void stubVersion(final String version) {
-        wireMockRule.stubFor(get(urlEqualTo(VERSION_URL))
+        wireMock.stubFor(get(urlEqualTo(VERSION_URL))
                 .willReturn(okJson("{\"version\": \"" + version + "\", \"revision\": \"abc\"}")));
     }
 
     private void stubTagCreation() {
-        wireMockRule.stubFor(post(urlPathEqualTo(TAGS_URL))
+        wireMock.stubFor(post(urlPathEqualTo(TAGS_URL))
                 .willReturn(created("{\"name\": \"v1\", \"message\": \"Tag message\", "
                         + "\"commit\": {\"id\": \"" + SHA + "\"}}")));
     }
@@ -448,12 +457,12 @@ public class GitlabClientTest {
 
     private GitlabClient client() {
         return GitlabClient.initializeGitlabClientFromHostAndToken(
-                "http://localhost:" + wireMockRule.port(), TOKEN, USER, ADMIN_ID, USER, "v4");
+                "http://localhost:" + wireMock.getPort(), TOKEN, USER, ADMIN_ID, USER, "v4");
     }
 
     private GitlabClient projectClient() {
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(USER,
-                "http://localhost:" + wireMockRule.port() + "/root/" + PROJECT + ".git",
+                "http://localhost:" + wireMock.getPort() + "/root/" + PROJECT + ".git",
                 TOKEN, ADMIN_ID, USER, false, "v4");
     }
 
@@ -462,9 +471,9 @@ public class GitlabClientTest {
                 GitlabClient.initializeGitlabClientFromRepositoryAndToken(
                         user, url, TOKEN, null, null, false, "v3");
         GitCredentials credentials = client.buildCloneCredentials(true, DURATION);
-        Assert.assertNotNull(credentials);
-        Assert.assertEquals(USER, credentials.getUserName());
-        Assert.assertEquals(TOKEN, credentials.getToken());
-        Assert.assertEquals(URL_WITH_ENV_VARS, credentials.getUrl());
+        assertNotNull(credentials);
+        assertEquals(USER, credentials.getUserName());
+        assertEquals(TOKEN, credentials.getToken());
+        assertEquals(URL_WITH_ENV_VARS, credentials.getUrl());
     }
 }

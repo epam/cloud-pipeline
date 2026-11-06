@@ -17,8 +17,10 @@
 package com.epam.pipeline.entity.git.azure;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class AzureDevOpsItem {
     private String commitId;
     private String path;

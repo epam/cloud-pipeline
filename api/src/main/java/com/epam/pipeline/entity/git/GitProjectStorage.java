@@ -19,8 +19,10 @@ package com.epam.pipeline.entity.git;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @EqualsAndHashCode
 public class GitProjectStorage {
 

@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.metadata_entity_class DROP COLUMN external_class_name;

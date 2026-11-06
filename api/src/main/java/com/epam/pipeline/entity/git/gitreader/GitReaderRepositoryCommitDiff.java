@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.git.gitreader;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ import java.util.List;
  * Represents Git Diff by commits and filters that was used to fetch this diffs
  */
 @Data
+@NoArgsConstructor
 public class GitReaderRepositoryCommitDiff {
 
     @JsonProperty("entries")

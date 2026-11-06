@@ -21,7 +21,7 @@ import {MACHINE_TYPES} from '../../../models/cluster/ClusterNodes';
 import roleModel from '../../../utils/roleModel';
 import {observer} from 'mobx-react';
 import LoadingView from '../../special/LoadingView';
-import {isAdmin} from '../utilities/access-permissinos';
+import {isAdmin} from '../utilities/access-permissions';
 
 @roleModel.authenticationInfo
 @observer

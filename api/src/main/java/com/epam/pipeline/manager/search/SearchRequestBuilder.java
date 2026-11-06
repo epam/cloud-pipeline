@@ -266,33 +266,33 @@ public class SearchRequestBuilder {
     }
 
     private SortBuilder<?> buildSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return isDefaultField(sort.getField()) ? buildDefaultFieldSort(sort, isScrollingBackwards)
-                : isOwnerField(sort.getField()) ? buildOwnerFieldSort(sort, isScrollingBackwards)
-                : isDateField(sort.getField()) ? buildDateFieldSort(sort, isScrollingBackwards)
-                : isNumericField(sort.getField()) ? buildNumericFieldSort(sort, isScrollingBackwards)
+        return isDefaultField(sort.field()) ? buildDefaultFieldSort(sort, isScrollingBackwards)
+                : isOwnerField(sort.field()) ? buildOwnerFieldSort(sort, isScrollingBackwards)
+                : isDateField(sort.field()) ? buildDateFieldSort(sort, isScrollingBackwards)
+                : isNumericField(sort.field()) ? buildNumericFieldSort(sort, isScrollingBackwards)
                 : buildRegularFieldSort(sort, isScrollingBackwards);
     }
 
     private SortBuilder<?> buildDefaultFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return SortBuilders.fieldSort(sort.getField())
-                .order(buildSortOrder(sort.getOrder(), isScrollingBackwards));
+        return SortBuilders.fieldSort(sort.field())
+                .order(buildSortOrder(sort.order(), isScrollingBackwards));
     }
 
     private SortBuilder<?> buildOwnerFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return buildFieldSort(SearchSourceFields.OWNER.getFieldName(), sort.getOrder(), ES_KEYWORD_TYPE,
+        return buildFieldSort(SearchSourceFields.OWNER.getFieldName(), sort.order(), ES_KEYWORD_TYPE,
                 isScrollingBackwards);
     }
 
     private SortBuilder<?> buildDateFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return buildFieldSort(sort.getField(), sort.getOrder(), ES_DATE_TYPE, isScrollingBackwards);
+        return buildFieldSort(sort.field(), sort.order(), ES_DATE_TYPE, isScrollingBackwards);
     }
 
     private SortBuilder<?> buildNumericFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return buildFieldSort(sort.getField(), sort.getOrder(), ES_LONG_TYPE, isScrollingBackwards);
+        return buildFieldSort(sort.field(), sort.order(), ES_LONG_TYPE, isScrollingBackwards);
     }
 
     private SortBuilder<?> buildRegularFieldSort(final SearchRequestSort sort, final boolean isScrollingBackwards) {
-        return buildFieldSort(buildKeywordName(sort.getField()), sort.getOrder(), ES_KEYWORD_TYPE,
+        return buildFieldSort(buildKeywordName(sort.field()), sort.order(), ES_KEYWORD_TYPE,
                 isScrollingBackwards);
     }
 
@@ -319,7 +319,7 @@ public class SearchRequestBuilder {
     private Object[] buildSearchAfterArguments(final List<SearchRequestSort> sorts,
                                                final ScrollingParameters scrollingParameters) {
         final Map<String, Object> searchAfterParameters = getSearchAfterParameters(scrollingParameters);
-        final List<String> sortFields = sorts.stream().map(SearchRequestSort::getField).collect(Collectors.toList());
+        final List<String> sortFields = sorts.stream().map(SearchRequestSort::field).collect(Collectors.toList());
         final Collection<String> sortFieldsWithoutSearchAfterParameter = CollectionUtils.subtract(sortFields,
                 searchAfterParameters.keySet());
         Assert.isTrue(CollectionUtils.isEmpty(sortFieldsWithoutSearchAfterParameter), messageHelper.getMessage(

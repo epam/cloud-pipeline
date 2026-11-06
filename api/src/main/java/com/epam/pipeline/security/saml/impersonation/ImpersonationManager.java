@@ -47,7 +47,7 @@ public class ImpersonationManager implements UserDetailsChecker, UserDetailsServ
     public void check(final UserDetails userToImpersonate) {
         Assert.notNull(userToImpersonate, messageHelper.getMessage(MessageConstants.ERROR_IMPERSONATION_EMPTY_USER));
         final String impersonatedName = userToImpersonate.getUsername();
-        log.info("Attempt to impersonate user from: " + authManager.getAuthorizedUser() + " to: " + impersonatedName);
+        log.info("Attempt to impersonate user from: {} to: {}", authManager.getAuthorizedUser(), impersonatedName);
         Assert.isTrue(!impersonatedName.equals(authManager.getAuthorizedUser()),
                       messageHelper.getMessage(MessageConstants.ERROR_SELF_IMPERSONATION_NOT_ALLOWED,
                                                impersonatedName));

@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
 
 public final class CustomMatchers {
 
@@ -65,14 +65,14 @@ public final class CustomMatchers {
     }
 
     public static List<Long> anyLongList() {
-        return anyListOf(Long.class);
+        return anyList();
     }
 
     public static List<String> anyStringList() {
-        return anyListOf(String.class);
+        return anyList();
     }
 
     public static Map<String, String> anyStringMap() {
-        return anyMapOf(String.class, String.class);
+        return anyMap();
     }
 }

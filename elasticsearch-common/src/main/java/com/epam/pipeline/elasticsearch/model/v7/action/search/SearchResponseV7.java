@@ -21,18 +21,20 @@ import com.epam.pipeline.elasticsearch.model.SearchResponse;
 import com.epam.pipeline.elasticsearch.model.v7.search.SearchHitsV7;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 public class SearchResponseV7 implements SearchResponse {
 
-    private final org.opensearch.action.search.SearchResponse inner;
+    private final org.opensearch.client.opensearch.core.SearchResponse<Map<String, Object>> inner;
 
     @Override
     public String getScrollId() {
-        return inner.getScrollId();
+        return inner.scrollId();
     }
 
     @Override
     public SearchHits getHits() {
-        return new SearchHitsV7(inner.getHits());
+        return new SearchHitsV7(inner.hits());
     }
 }

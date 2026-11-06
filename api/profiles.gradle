@@ -5,25 +5,35 @@ def escape(String s) {
 }
 
 // copies properties file and filers resources based on environment
-task copyConfiguration {
-    doLast {
-        println "Target profile: $profile"
-        // specifies the content root directory? used to store
-        //filterTokens.putAt("rootDirPath", profile == "dev" ? escape(rootDir.absolutePath)  : "")
-        filterTokens.putAt("rootDirPath", escape(rootDir.absolutePath))
+tasks.register('copyConfiguration') {
+    description = 'Copies profile-specific and test configuration files with token replacement'
+    group = 'build'
 
+    doLast {
+        // Define filterTokens map
+        ext.filterTokens = [:]
+
+        // Get profile from project property, default to 'dev'
+        def profile = project.hasProperty('profile') ? project.profile : 'dev'
+        println "Target profile: $profile"
+
+        // Set rootDirPath token (replace backslashes for cross-platform compatibility)
+        filterTokens['rootDirPath'] = rootDir.absolutePath.replace('\\', '/')
+
+        // Copy profile-specific resources
         copy {
             from "profiles/$profile"
             into "$buildDir/resources/main"
-            include "*/"
-            filter(ReplaceTokens, tokens: project.filterTokens)
+            include "**/*"
+            filter(ReplaceTokens, tokens: filterTokens)
         }
 
+        // Copy test resources
         copy {
             from "profiles/test"
             into "$buildDir/resources/test"
-            include "*/"
-            filter(ReplaceTokens, tokens: project.filterTokens)
+            include "**/*"
+            filter(ReplaceTokens, tokens: filterTokens)
         }
     }
 }
