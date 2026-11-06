@@ -35,12 +35,54 @@ function isFolder (item) {
  * server builds the archive, not the browser, so an archived (not currently
  * downloadable) file is still archivable.
  *
+ * @param {SelectedStorageItem} item
+ * @returns {boolean}
+ */
+function isArchivableItem (item) {
+  return !!item && !!item.path && !item.deleteMarker;
+}
+
+/**
  * @param {SelectedStorageItem[]} selectedItems
  * @returns {SelectedStorageItem[]}
  */
 function archivableItems (selectedItems) {
-  return (selectedItems || [])
-    .filter(item => item && item.path && !item.deleteMarker);
+  return (selectedItems || []).filter(isArchivableItem);
+}
+
+/**
+ * Whether "Download archive" may be offered on this storage, to this user.
+ * The selection item and every row's `archiveSelectable` flag both use it.
+ *
+ * @param {{archiveSupported: boolean, downloadAllowed: boolean}} [options]
+ *   `archiveSupported` - the archive worker can read this storage;
+ *   `downloadAllowed` - the user may download from it
+ *   (`checkStorageDownloadAllowed` in the storage browser's `utils.js`)
+ * @returns {boolean}
+ */
+export function archiveDownloadAvailable (options = {}) {
+  const {
+    archiveSupported = false,
+    downloadAllowed = false
+  } = options;
+  return archiveSupported && downloadAllowed;
+}
+
+/**
+ * Whether a row gets a checkbox so it can go into an archive. Folders only:
+ * a user with READ alone has no other way to select a folder. A file row
+ * keeps its checkbox through `downloadable`, so a read-only user cannot select
+ * an archived file that is not restored yet, unless data sharing is on.
+ *
+ * @param {SelectedStorageItem} item
+ * @param {{archiveSupported: boolean, downloadAllowed: boolean}} [options]
+ *   the same as for `archiveDownloadAvailable`
+ * @returns {boolean}
+ */
+export function archiveSelectionAvailable (item, options = {}) {
+  return archiveDownloadAvailable(options) &&
+    isFolder(item) &&
+    isArchivableItem(item);
 }
 
 /**

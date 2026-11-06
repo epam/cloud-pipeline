@@ -42,6 +42,121 @@ function getMetadataEntryValueString (entry) {
   return String(raw).trim().toLowerCase();
 }
 
+/**
+ * Whether a row gets a checkbox, and whether "Select page" picks it up.
+ * A row is worth selecting when at least one selection action can use it.
+ *
+ * @param {{selectable: boolean, downloadable: boolean, editable: boolean,
+ *   shareAvailable: boolean, archiveSelectable: boolean}} item
+ * @returns {boolean}
+ */
+export function storageItemSelectionAvailable (item) {
+  if (!item || !item.selectable) {
+    return false;
+  }
+  return !!(
+    item.downloadable ||
+    item.editable ||
+    item.shareAvailable ||
+    item.archiveSelectable
+  );
+}
+
+/**
+ * Whether the user may download from the storage: it is not sensitive, and
+ * its download attribute allows this user.
+ *
+ * @param {{sensitive: boolean}} info
+ * @param {boolean} downloadEnabled
+ * @returns {boolean}
+ */
+export function checkStorageDownloadAllowed (info, downloadEnabled) {
+  return !!info && !info.sensitive && !!downloadEnabled;
+}
+
+/**
+ * The selected items "Remove" deletes: the ones the user may write to.
+ *
+ * @param {{editable: boolean}[]} selectedItems
+ * @returns {{editable: boolean}[]}
+ */
+export function removableStorageItems (selectedItems) {
+  return (selectedItems || []).filter((item) => item && item.editable);
+}
+
+function isPartialSelection (selectedCount, count) {
+  return count > 0 && count < selectedCount;
+}
+
+/**
+ * The hint for "Remove" when only some of the selected items will be removed.
+ *
+ * @param {number} selectedCount
+ * @param {number} removableCount
+ * @returns {string|undefined} nothing when all of them, or none, will be removed
+ */
+export function partialRemoveHint (selectedCount, removableCount) {
+  if (!isPartialSelection(selectedCount, removableCount)) {
+    return undefined;
+  }
+  return 'Only items you have write access to will be removed ' +
+    `(${removableCount} of ${selectedCount}).`;
+}
+
+/**
+ * The selected items "Generate URL" works on.
+ *
+ * @param {{downloadable: boolean}[]} selectedItems
+ * @returns {{downloadable: boolean}[]}
+ */
+export function downloadableStorageItems (selectedItems) {
+  return (selectedItems || []).filter((item) => item && item.downloadable);
+}
+
+/**
+ * The hint for "Generate URL" when only some of the selected items get a URL.
+ *
+ * @param {number} selectedCount
+ * @param {number} downloadableCount
+ * @returns {string|undefined} nothing when all of them, or none, get a URL
+ */
+export function partialGenerateUrlHint (selectedCount, downloadableCount) {
+  if (!isPartialSelection(selectedCount, downloadableCount)) {
+    return undefined;
+  }
+  return 'URLs are generated only for downloadable files ' +
+    `(${downloadableCount} of ${selectedCount}).`;
+}
+
+/**
+ * The selected items "Restore transferred items" works on: files in an
+ * archive class, and folders the user may write to.
+ *
+ * @param {{type: string, editable: boolean}[]} selectedItems
+ * @param {function(Object): boolean} isArchivedFile
+ * @returns {{type: string, editable: boolean}[]}
+ */
+export function restorableStorageItems (selectedItems, isArchivedFile) {
+  return (selectedItems || []).filter((item) => item && (
+    isArchivedFile(item) ||
+    (item.type === 'Folder' && item.editable)
+  ));
+}
+
+/**
+ * The confirm title for "Remove".
+ *
+ * @param {number} selectedCount
+ * @param {number} removableCount
+ * @returns {string}
+ */
+export function removeConfirmTitle (selectedCount, removableCount) {
+  if (removableCount < selectedCount) {
+    return `Remove ${removableCount} of ${selectedCount} selected items?`;
+  }
+  return 'Remove all selected items?';
+}
+
 export function checkStorageOperationsEnabled (metadata = {}) {
   if (!metadata?.data) {
     return true;
