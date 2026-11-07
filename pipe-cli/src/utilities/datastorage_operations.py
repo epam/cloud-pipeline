@@ -810,7 +810,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def __get_file_to_copy(cls, file_path, source_path):
-        with open(file_path, 'rb') as source:
+        with open(file_path, 'r', encoding='utf-8') as source:
             for line in source:
                 line = line.strip()
                 splitted = line.split('\t')
