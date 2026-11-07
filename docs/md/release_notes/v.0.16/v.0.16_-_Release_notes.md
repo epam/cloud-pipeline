@@ -56,6 +56,7 @@
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
     - [Broken layouts](#broken-layouts)
     - [Backup workers ignore `CP_BKP_STORAGE_LIST`](#backup-workers-ignore-cp_bkp_storage_list)
+    - [`pipe storage cp` and `mv` fail with `--file-list`](#pipe-storage-cp-and-mv-fail-with-file-list)
 
 ***
 
@@ -801,3 +802,12 @@ In the current version:
 - when a backup fails, the worker notifies the users of the role with the `CP_BKP_ADMIN_ROLE_ID` ID (by default `1`, i.e. `ROLE_ADMIN`) that have the `Email` attribute
 
 A worker reads `CP_BKP_STORAGE_LIST` from the `cp-config-global` ConfigMap when it starts. To change the storages of a deployment, update the ConfigMap and restart the backup workers.
+
+### `pipe storage cp` and `mv` fail with `--file-list`
+
+[#4764](https://github.com/epam/cloud-pipeline/issues/4764)
+
+Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--file-list` option failed with the `a bytes-like object is required, not 'str'` error, as the `pipe` CLI now runs on Python 3.  
+When the parallel transfer is enabled for a run (the `CP_PARALLEL_TRANSFER` parameter is set), the run uses this option to transfer the folders of its parameters. So such a run failed at the **InputData** step, if an input or common parameter pointed to a folder. If it had output parameters, it did not upload its outputs, but still ended with the `SUCCESS` status.  
+Now, the file list is read as a UTF-8 text file, and both commands transfer the listed files.  
+See details in [14.3. Manage Storage via CLI](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#upload-and-download-data).
