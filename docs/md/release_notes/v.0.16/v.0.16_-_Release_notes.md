@@ -74,6 +74,7 @@
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [`pipe` CLI does not run on CentOS 7 and Ubuntu 18.04](#pipe-cli-does-not-run-on-centos-7-and-ubuntu-1804)
+    - [`pipe storage cp` and `mv` fail with `--file-list`](#pipe-storage-cp-and-mv-fail-with-file-list)
 
 ***
 
@@ -929,3 +930,12 @@ Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/h
 Previously, the Linux binary and tarball of the `pipe` CLI were built on Rocky Linux 8, and required `glibc` 2.28 or later. They did not run on the older Linux distributions, e.g. CentOS 7, Amazon Linux 2, Ubuntu 16.04 and 18.04. In a run of a tool based on such a distribution, the `pipe` commands, and the data transfers and the storage mounts made with `pipe`, failed.
 Now, the binary and the tarball are built on CentOS 7, and run on `glibc` 2.17 or later. They bring OpenSSL 3.5 with them. As before, they take the CA certificates and the OpenSSL configuration from `/etc/pki/tls` of the system, if it has one.
 See details in [14.1. Install and setup CLI](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+### `pipe storage cp` and `mv` fail with `--file-list`
+
+[#4764](https://github.com/epam/cloud-pipeline/issues/4764)
+
+Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--file-list` option failed with the `a bytes-like object is required, not 'str'` error, as the `pipe` CLI now runs on Python 3.
+When the parallel transfer is enabled for a run (the `CP_PARALLEL_TRANSFER` parameter is set, and `CP_PARALLEL_TRANSFER_MODE` is not `threaded`), the run uses this option to transfer the folders of its parameters. So such a run failed at the **InputData** step, if an input or common parameter pointed to a folder. If it had output parameters, it did not upload its outputs, but still ended with the `SUCCESS` status.
+Now, the file list is read as a UTF-8 text file, and both commands transfer the listed files.
+See details in [14.3. Manage Storage via CLI](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#upload-and-download-data).
