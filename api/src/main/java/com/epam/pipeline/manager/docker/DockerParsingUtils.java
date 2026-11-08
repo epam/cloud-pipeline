@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,8 +76,26 @@ public final class DockerParsingUtils {
         return cropNopPrefix(historyEntry.getCreatedBy()).trim().replaceAll("\\s+", SPACE);
     }
 
+    /**
+     * @return the labels of the image: of its {@code container_config} and its {@code config}, the latter win.
+     * {@code container_config} is the config of the container, which the image was committed from, while
+     * {@code config} also holds the changes of the commit, e.g. {@code docker commit --change 'LABEL ...'}.
+     * Images built by newer docker versions have no {@code container_config}.
+     */
     public static Map<String, String> getLabels(final RawImageDescriptionV2 rawImage) {
-        return rawImage.getContainerConfig().getLabels();
+        final Map<String, String> containerConfigLabels = getLabels(rawImage.getContainerConfig());
+        final Map<String, String> configLabels = getLabels(rawImage.getConfig());
+        if (containerConfigLabels == null && configLabels == null) {
+            return null;
+        }
+        final Map<String, String> labels = new HashMap<>();
+        Optional.ofNullable(containerConfigLabels).ifPresent(labels::putAll);
+        Optional.ofNullable(configLabels).ifPresent(labels::putAll);
+        return labels;
+    }
+
+    private static Map<String, String> getLabels(final RawImageDescriptionV2.Config config) {
+        return Optional.ofNullable(config).map(RawImageDescriptionV2.Config::getLabels).orElse(null);
     }
 
     public static List<String> processCommands(final String from, final List<String> commands,

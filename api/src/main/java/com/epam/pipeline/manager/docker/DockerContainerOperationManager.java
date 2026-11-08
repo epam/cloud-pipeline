@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.NetworkCo
 import com.epam.pipeline.manager.cluster.performancemonitoring.monitor.OverloadedRunMonitor;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.execution.ToolOSVersionResolver;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunServiceUrlManager;
@@ -156,6 +157,9 @@ public class DockerContainerOperationManager {
     @Autowired
     private NotificationManager notificationManager;
 
+    @Autowired
+    private ToolOSVersionResolver toolOSVersionResolver;
+
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
 
@@ -232,6 +236,7 @@ public class DockerContainerOperationManager {
                     .isPipelineAuth(String.valueOf(registry.isPipelineAuth()))
                     .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
                     .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                    .osLabel(resolveOSLabel(run))
                     .build()
                     .getCommand();
 
@@ -410,6 +415,21 @@ public class DockerContainerOperationManager {
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
+        }
+    }
+
+    /**
+     * @return the OS of the image of the run, as a value of {@link ToolOSVersionResolver#OS_LABEL}, or
+     * {@code null}. A commit shall not fail because of it.
+     */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private String resolveOSLabel(final PipelineRun run) {
+        try {
+            return ToolOSVersionResolver.toOSLabel(toolOSVersionResolver.resolve(run.getDockerImage()));
+        } catch (RuntimeException e) {
+            log.warn("Cannot resolve the OS of the image {} of the run {}: {}",
+                    run.getDockerImage(), run.getId(), e.getMessage());
+            return null;
         }
     }
 

@@ -65,6 +65,9 @@ export POST_COMMIT_COMMAND=${19}
 
 export GLOBAL_DISTRIBUTION_URL=${20}
 
+# Optional: the OS of the image of the run, e.g. rocky:8.7, for the com.epam.cloud-pipeline.os label of the new image
+export CP_COMMIT_OS_LABEL=${21}
+
 export TASK_NAME="CommitPipelineRun"
 
 export RUNS_ROOT='/runs'

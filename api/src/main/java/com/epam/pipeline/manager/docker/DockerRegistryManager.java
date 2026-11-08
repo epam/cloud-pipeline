@@ -75,6 +75,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -328,6 +329,12 @@ public class DockerRegistryManager implements SecuredEntityManager {
                                                    final String tag) {
         final String token = getImageToken(registry, imageName);
         return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
+    }
+
+    public Map<String, String> getImageLabels(final DockerRegistry registry, final String imageName,
+                                              final String tag) {
+        final String token = getImageToken(registry, imageName);
+        return dockerClientFactory.getDockerClient(registry, token).getImageLabels(registry, imageName, tag);
     }
 
     public List<String> loadImageTags(DockerRegistry registry, Tool tool) {

@@ -2609,49 +2609,101 @@ fi
 echo "Setup Systemd"
 echo "-"
 
-# Force SystemD capability if the Kubernetes is requested
-if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
-    && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+function is_systemd_pid1 {
+    [ "$(cat /proc/1/comm 2>/dev/null)" == "systemd" ]
+}
 
-        # Make sure sysctl is available
-        _SYSCTL_INSTALL_COMMAND=
-        get_install_command_by_current_distr _SYSCTL_INSTALL_COMMAND "procps"
-        eval "$_SYSCTL_INSTALL_COMMAND"
+function prepare_systemd_container {
+    local _container_docker_env_exporting="export container=docker"
+    local _ignoring_chroot_env_exporting="export SYSTEMD_IGNORE_CHROOT=1"
+    local _removing_systemd_unit_problem_files_command='(cd /lib/systemd/system/sysinit.target.wants/; \
+    for i in *; do \
+      [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
+    done); \
+    rm -f /lib/systemd/system/multi-user.target.wants/*;\
+    rm -f /etc/systemd/system/*.wants/*;\
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*;\
+    rm -f /lib/systemd/system/anaconda.target.wants/*;'
 
-        _SYSTEMCTL_STATUS=$(systemctl &> /dev/null; $?)
-        if [ "$_SYSTEMCTL_STATUS" -eq 0 ]; then
-            echo "Systemd already active, skipping installation"
-        else
-            _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
-            _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
-            _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
-            for i in *; do \
-              [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
-            done); \
-            rm -f /lib/systemd/system/multi-user.target.wants/*;\
-            rm -f /etc/systemd/system/*.wants/*;\
-            rm -f /lib/systemd/system/local-fs.target.wants/*; \
-            rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-            rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-            rm -f /lib/systemd/system/basic.target.wants/*;\
-            rm -f /lib/systemd/system/anaconda.target.wants/*;'
+    echo $_container_docker_env_exporting >> /etc/cp_env.sh
+    eval "$_container_docker_env_exporting"
+    echo $_ignoring_chroot_env_exporting >> /etc/cp_env.sh
+    eval "$_ignoring_chroot_env_exporting"
+    eval "$_removing_systemd_unit_problem_files_command"
+}
 
-            echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
-            eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
-            echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
-            eval "$_IGNORING_CHROOT_ENV_EXPORTING"
-            eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
-            /usr/lib/systemd/systemd --system &
+# Systemd 219 (CentOS 7) may run as a background process. Newer versions refuse to run in the system mode
+# unless they are PID 1, so this fails on Rocky Linux 8 and later.
+function start_systemd_in_background {
+    /usr/lib/systemd/systemd --system &
+    local _systemd_pid=$!
 
-            # This directory does not exist by default
-            # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
-            # See: https://serverfault.com/a/925694
-            mkdir /run/systemd/system
+    # This directory does not exist by default
+    # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
+    # See: https://serverfault.com/a/925694
+    mkdir -p /run/systemd/system
+
+    local _systemd_wait
+    for _systemd_wait in $(seq 1 10); do
+        if systemctl list-units --no-legend --no-pager &> /dev/null; then
+            return 0
         fi
-else
-    echo "Systemd is not requested, skipping installation"
-fi
+        if ! kill -0 "$_systemd_pid" &> /dev/null; then
+            return 1
+        fi
+        sleep 1
+    done
+    return 1
+}
+
+function install_procps {
+    # Make sure sysctl is available
+    local _sysctl_install_command=
+    get_install_command_by_current_distr _sysctl_install_command "procps"
+    eval "$_sysctl_install_command"
+}
+
+function setup_systemd {
+    # procps has been installed here for any Rocky Linux and RHEL run, not only for the systemd ones,
+    # and later steps may use its commands (sysctl, ps, pgrep)
+    if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+        install_procps
+    fi
+
+    # Force SystemD capability if the Kubernetes is requested
+    if ! check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" && ! check_cp_cap "CP_CAP_KUBE"; then
+        echo "Systemd is not requested, skipping installation"
+        return 0
+    fi
+
+    if ! check_installed "systemctl" \
+        || { [ "$CP_OS" != "centos" ] && [ "$CP_OS" != "rocky" ] && [ "$CP_OS" != "rhel" ]; }; then
+        echo "[WARN] Systemd is requested (CP_CAP_SYSTEMD_CONTAINER or CP_CAP_KUBE), but it is supported only for CentOS, Rocky Linux and RHEL images with systemctl installed. It will not be set up for $CP_OS $CP_VER."
+        return 0
+    fi
+
+    if [ "$CP_OS" == "centos" ]; then
+        install_procps
+    fi
+
+    # Done for systemd as PID 1 as well, as before: an image committed from such a run boots with these
+    # units removed
+    prepare_systemd_container
+
+    if is_systemd_pid1; then
+        echo "Systemd is running as PID 1"
+    elif start_systemd_in_background; then
+        echo "Systemd is started as a background process"
+    else
+        echo "[WARN] Systemd is requested (CP_CAP_SYSTEMD_CONTAINER or CP_CAP_KUBE), but it is not running. PID 1 is '$(cat /proc/1/comm 2>/dev/null)', and systemd, started as a background process, exited or did not answer systemctl within 10 seconds. Services which need systemctl may not start, e.g. NICE DCV or Kubernetes."
+        echo "[WARN] Systemd runs as PID 1 when the run is started with init.sh. Check that the launch.pod.cmd.template.linux preference has an entry with init.sh for '$CP_OS', and that the OS of the image is known: its security scan found it, or the image it was committed from has one."
+    fi
+}
+
+setup_systemd
 
 ######################################################
 
