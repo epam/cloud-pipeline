@@ -72,6 +72,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
@@ -2006,6 +2007,14 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 ***
 
 ## Notable Bug fixes
+
+### A committed image of a user with a large UID writes hundreds of GB to the disk
+
+[#4767](https://github.com/epam/cloud-pipeline/issues/4767)
+
+Previously, a run owner with a large UID - e.g. one mapped from Active Directory - got a sparse `/var/log/lastlog` file of up to hundreds of GB in the container: the file keeps a record of each user at an offset that grows with the UID. A commit stored this file in full. The image still looked usual in the registry, as the zeros compress well, but every pull wrote the whole file to the node's disk: the launch took long, the disk was autoscaled for nothing, and a pause of such a run failed for lack of free disk space.
+Now, `lastlog`, `faillog` and `tallylog` are emptied in the running container just before a commit or a pause. An image committed before that keeps the file in a layer, so commit it again from a run of the image it was committed from.
+More details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#login-records).
 
 ### Detached configuration: the old name stays in the Library after a rename
 
