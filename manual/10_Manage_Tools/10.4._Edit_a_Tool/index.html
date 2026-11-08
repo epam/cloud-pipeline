@@ -590,6 +590,13 @@ At the same time, commit operation is available.</p>
 <p>In case, when "<strong>hard</strong>" limit is set more than <code>0</code> and user tries to commit some tool which container exceeds this limit, the following error will appear:<br />
 <img alt="CP_EditTool" src="../attachments/EditTool_27.png" /><br />
 Commit operation is unavailable.</p>
+<h5 id="login-records">Login records</h5>
+<p>Just before the commit, and before a run is paused, the login records of the container are emptied - <code>/var/log/lastlog</code>, <code>/var/log/faillog</code> and <code>/var/log/tallylog</code>, the ones that exist.</p>
+<p>These files keep a record of each user at an offset that grows with the user's UID. For a large UID - e.g. one mapped from Active Directory - they are sparse files of up to hundreds of GB. In the running container such a file takes almost no disk, but a commit stores it in full, and every pull of the image would write it out to the node's disk. So <code>lastlog</code> and similar commands show no earlier logins in a container of a committed image.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: an image, which was committed with such a file before these files were emptied, keeps it in one of its layers. A new commit from a run of that image only hides the file, and every pull still writes it out. To get a small image again, commit from a run of the image it was committed from - e.g. the original tool - not from a run of the large image.</p>
+<p><strong><em>Note</em></strong>: the <a href="#container-size-limits">container size limits</a> are checked before the commit, so they count these files at their full size. For a user with a large UID, a container may exceed a limit, while the committed image is small.</p>
+</blockquote>
 <h2 id="edit-a-tool-settings">Edit a Tool settings</h2>
 <p>Settings in this tab are applied to all Tool versions (i.e. these settings will be a default for all Tool version). They are saved as the settings of the <a href="#set-a-default-version">default version</a> of the Tool.</p>
 <ol>

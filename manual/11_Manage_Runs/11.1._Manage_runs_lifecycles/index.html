@@ -457,6 +457,7 @@
 <img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_6.png" /></li>
 </ol>
 <blockquote>
+<p><strong><em>Note</em></strong>: a pause commits the container, so the login records of the container (<code>/var/log/lastlog</code>, <code>/var/log/faillog</code>, <code>/var/log/tallylog</code>) are emptied before it, as before a commit - see <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#login-records">here</a>. A resumed run shows no earlier logins.</p>
 <p><strong><em>Note</em></strong>: Not always paused run could be resumed. <em>E.g. user may hit a situation of resource limits - instance type was available when run was initially launched, but at the moment of resume operation provider has no sufficient capacity for this type.</em>
 In such cases, run will be returned to the <code>Paused</code> state. User will be notified about that - by the hint message near the <strong>RESUME</strong> button:<br />
 <img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_12.png" /></p>
