@@ -73,6 +73,7 @@
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [NICE DCV does not start in an image committed from a desktop run](#nice-dcv-does-not-start-in-an-image-committed-from-a-desktop-run)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
@@ -2013,6 +2014,19 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
 Now, the folder and the library tree show the new name right after the rename.
+
+### NICE DCV does not start in an image committed from a desktop run
+
+[#4768](https://github.com/epam/cloud-pipeline/issues/4768)
+
+Previously, the start command of a run's pod was picked by the OS, which the security scan found for the run image (the `launch.pod.cmd.template.linux` system preference). If the scan of a committed version failed, or found no OS, the run of this version got the default command - without `systemd` as PID 1, even if the image it was committed from was started with it. Then the NICE DCV server could not be started, and the run reported "DCV server cannot be run" only after 30 minutes of retries, with no reason.
+Now:
+
+- such a version is started by the OS of the image it was committed from: a commit writes that OS into the `com.epam.cloud-pipeline.os` label of the new image, and the later commits keep it
+- if `systemd` is requested for a run (`CP_CAP_SYSTEMD_CONTAINER` or `CP_CAP_KUBE`), but it is not running, the run logs say so and why. The run sets up `systemd` only if it is requested: before, this step also ran for every Rocky Linux and RHEL run
+- in RPM-based images, the NICE DCV setup fails at once, with the reason, if the DCV server cannot be started, or fails after the start
+
+More details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
 
 ### The backup worker of the GitLab database always fails
 
