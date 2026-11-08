@@ -74,6 +74,7 @@
 - [Notable Bug fixes](#notable-bug-fixes)
     - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
@@ -2022,6 +2023,17 @@ More details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#login-
 
 Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
 Now, the folder and the library tree show the new name right after the rename.
+
+### NICE DCV setup reports a failure only after 30 minutes, with no reason
+
+[#4768](https://github.com/epam/cloud-pipeline/issues/4768)
+
+Previously, if the NICE DCV server could not be started - e.g. `systemd` was not running in the container, so `systemctl start dcvserver` failed - the `NiceDCVInitialization` task kept waiting for the server for 30 minutes (60 tries, 30 seconds apart), and then failed with "DCV server cannot be run", with no reason.
+Now, in RPM-based images:
+
+- if `systemd` is not running in the container, the setup fails at once, with the output of `systemctl`
+- if the start of the DCV server fails, while `systemd` runs, the setup logs the output of `systemctl` and waits, as the server's service is started again
+- the setup fails at the next try once `systemd` has marked the service as failed - after a failed start, or after the server has started and failed - with the service's status
 
 ### The backup worker of the GitLab database always fails
 
