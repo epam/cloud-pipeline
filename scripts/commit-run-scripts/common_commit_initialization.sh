@@ -73,6 +73,27 @@ commit_file() {
     pipe_exec "docker commit --pause=false ${CONTAINER_ID} $image_name > /dev/null" "$TASK_NAME"
 }
 
+# lastlog, faillog and tallylog keep a user's record at the offset of UID x record size. With a large UID,
+# e.g. one mapped from AD, they are sparse files of up to hundreds of GB, which take almost no disk in the container.
+# docker commit does not keep a file sparse, so the image would carry all of it, and every pull would write it out.
+# They only keep login records, so they are emptied in the running container before its first commit:
+# emptying them in a later layer would only hide them.
+empty_uid_indexed_logs() {
+    local _container_id="$1"
+    local _emptied_logs
+    _emptied_logs=$(docker exec "$_container_id" sh -c 'for _log in /var/log/lastlog /var/log/faillog /var/log/tallylog; do
+                                                           if [ -f "$_log" ] && [ ! -L "$_log" ] && [ -s "$_log" ]; then
+                                                               : > "$_log" || exit 1
+                                                               echo "$_log"
+                                                           fi
+                                                       done')
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "[WARN] Cannot empty lastlog, faillog and tallylog in the container. For a user with a large UID the image may be much larger on disk than its data." "$TASK_NAME"
+    elif [ -n "$_emptied_logs" ]; then
+        pipe_log_info "[INFO] Emptied in the container before the commit: $(echo $_emptied_logs)" "$TASK_NAME"
+    fi
+}
+
 configure_pip() {
     _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
         | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"

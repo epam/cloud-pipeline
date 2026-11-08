@@ -31,8 +31,9 @@ LATEST_IMAGE_NAME = REGISTRY + '/library/centos:latest'
 
 COMMON_COMMIT_INITIALIZATION_STUB = '''
 record() { printf '%s\\n' "$*" >> "$CALLS"; }
-commit_hook() { :; }
-commit_file() { :; }
+commit_hook() { record "commit_hook $*"; }
+empty_uid_indexed_logs() { record "empty_uid_indexed_logs $*"; }
+commit_file() { record "commit_file $*"; }
 check_last_exit_code() { :; }
 pipe_log_info() { record "log $1"; }
 pipe_log_warn() { record "log $1"; }
@@ -127,3 +128,12 @@ def test_commit_does_not_check_default_version_of_tool_with_latest_version(commi
     assert not [call for call in calls if call.startswith('commit_run.py idvs')]
     assert not [call for call in calls if call.startswith('docker tag')]
     assert 'commit_run.py ups 1 SUCCESS' in calls
+
+
+def test_commit_empties_uid_indexed_logs_after_pre_commit_hook_before_first_commit(commit):
+    calls = commit(latest_exists='True', default_version_set='')
+
+    empty_call = 'empty_uid_indexed_logs container'
+    assert empty_call in calls
+    assert calls.index('commit_hook container pre true false') < calls.index(empty_call) \
+        < calls.index('commit_file ' + FULL_NEW_IMAGE_NAME)
