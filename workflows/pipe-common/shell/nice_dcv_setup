@@ -157,19 +157,15 @@ EOF
 chmod +x /opt/dcv/extras/xfce4launch
 }
 
-# Prints a command output as one line for pipe_log_*, which put the text into a python string literal: so a backslash
-# or a double quote in it is escaped
+# Prints a command output as one line for pipe_log_*, which put the text into a python string literal, and
+# pipe_log_warn twice: so double quotes become single ones, and backslashes become slashes, which survive both
 function dcv_log_text {
-  printf '%s' "$*" | tr '\n' ' ' | tr -s ' ' | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' -e 's/ *$//'
+  printf '%s' "$*" | tr '\n' ' ' | tr -s ' ' | tr '"\\' "'/" | sed -e 's/ *$//'
 }
 
-# Prints a hint for a DCV server failure, if systemd is not running as PID 1: then systemctl cannot start it
-function dcv_systemd_hint {
-  local _pid1
-  _pid1="$(cat /proc/1/comm 2>/dev/null)"
-  if [ "$_pid1" != "systemd" ]; then
-    echo " Systemd is not running as PID 1 (PID 1 is '${_pid1}'), see the 'Setup Systemd' messages of the run log."
-  fi
+# Prints the name of PID 1, for the logs
+function dcv_pid1 {
+  cat /proc/1/comm 2>/dev/null
 }
 
 function run_dcv {
@@ -179,8 +175,13 @@ function run_dcv {
     local _dcv_start_output
     _dcv_start_output="$(systemctl start dcvserver 2>&1)"
     if [ $? -ne 0 ]; then
-      pipe_log_fail "[ERROR] DCV server cannot be started: $(dcv_log_text "$_dcv_start_output").$(dcv_systemd_hint)" "$DCV_INSTALL_TASK"
-      exit 1
+      # Without systemd, systemctl cannot start the server at all, so there is no point to wait
+      if ! systemctl show-environment &> /dev/null; then
+        pipe_log_fail "[ERROR] DCV server cannot be started, systemd is not running in the container (PID 1 is '$(dcv_pid1)'): $(dcv_log_text "$_dcv_start_output")" "$DCV_INSTALL_TASK"
+        exit 1
+      fi
+      # Otherwise systemd may start it again (Restart=always), the wait below stops once the unit has failed
+      pipe_log_warn "[WARNING] DCV server start has failed, waiting for systemd to start it again: $(dcv_log_text "$_dcv_start_output")" "$DCV_INSTALL_TASK"
     fi
   else
     service dbus start

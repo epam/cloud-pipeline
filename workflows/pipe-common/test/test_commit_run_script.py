@@ -29,11 +29,6 @@ NEW_IMAGE_NAME = 'library/centos:v3'
 FULL_NEW_IMAGE_NAME = REGISTRY + '/' + NEW_IMAGE_NAME
 LATEST_IMAGE_NAME = REGISTRY + '/library/centos:latest'
 
-# The real pipe_exec puts its text into a python string literal, where \' becomes ', and runs it with a shell
-PIPE_EXEC_STUB = r'''
-pipe_exec() { eval "$(printf '%s' "$1" | sed "s/\\\\'/'/g")"; }
-'''
-
 COMMON_COMMIT_INITIALIZATION_STUB = '''
 record() { printf '%s\\n' "$*" >> "$CALLS"; }
 commit_hook() { :; }
@@ -43,11 +38,9 @@ pipe_log_info() { record "log $1"; }
 pipe_log_warn() { record "log $1"; }
 pipe_log_success() { record "log $1"; }
 pipe_log_fail() { record "log $1"; }
-docker() {
-    record "docker $*"
-    [ "$1" != "commit" ] || record "docker commit arguments: $(printf '<%s>' "$@")"
-}
-''' + PIPE_EXEC_STUB
+pipe_exec() { eval "$1"; }
+docker() { record "docker $*"; }
+'''
 
 COMMIT_RUN_PY_STUB = '''#!/bin/bash
 shift
@@ -69,7 +62,7 @@ def commit(tmpdir):
     os.chmod(str(python_stub), stat.S_IRWXU)
     calls = tmpdir.join('calls')
 
-    def run(latest_exists, default_version_set, os_label=''):
+    def run(latest_exists, default_version_set):
         env = {
             'PATH': os.environ['PATH'],
             'CALLS': str(calls),
@@ -87,8 +80,7 @@ def commit(tmpdir):
             'FULL_NEW_IMAGE_NAME': FULL_NEW_IMAGE_NAME,
             'TASK_NAME': 'CommitPipelineRun',
             'STUB_IVE': latest_exists,
-            'STUB_IDVS': default_version_set,
-            'CP_COMMIT_OS_LABEL': os_label
+            'STUB_IDVS': default_version_set
         }
         with open(os.devnull, 'w') as devnull:
             subprocess.check_call(['bash', COMMIT_RUN_SCRIPT], env=env, stdout=devnull)
@@ -127,31 +119,6 @@ def test_commit_creates_latest_version_if_default_version_is_unknown(commit):
 
     assert 'docker tag ' + FULL_NEW_IMAGE_NAME + ' ' + LATEST_IMAGE_NAME in calls
     assert 'docker push ' + LATEST_IMAGE_NAME in calls
-
-
-def _final_commit(calls):
-    return [call for call in calls if call.startswith('docker commit --pause=false --change=')][0]
-
-
-def test_commit_labels_new_image_with_os_of_run_image(commit):
-    calls = commit(latest_exists='True', default_version_set='', os_label='rocky:8.7')
-
-    final_commit = 'docker commit arguments: <commit><--pause=false><--change=ENV'
-    arguments = [call for call in calls if call.startswith(final_commit)]
-    assert len(arguments) == 1
-    assert '<--change=LABEL com.epam.cloud-pipeline.os=rocky:8.7>' in arguments[0]
-
-
-def test_commit_does_not_label_new_image_without_os(commit):
-    calls = commit(latest_exists='True', default_version_set='')
-
-    assert 'LABEL' not in _final_commit(calls)
-
-
-def test_commit_does_not_label_new_image_with_malformed_os(commit):
-    calls = commit(latest_exists='True', default_version_set='', os_label="rocky:8' x")
-
-    assert 'LABEL' not in _final_commit(calls)
 
 
 def test_commit_does_not_check_default_version_of_tool_with_latest_version(commit):

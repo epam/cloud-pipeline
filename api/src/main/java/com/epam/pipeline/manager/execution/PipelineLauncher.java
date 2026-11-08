@@ -29,11 +29,13 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.container.RunContainerSpec;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -105,7 +107,7 @@ public class PipelineLauncher {
     private UserManager userManager;
 
     @Autowired
-    private ToolOSVersionResolver toolOSVersionResolver;
+    private ToolScanInfoManager toolScanInfoManager;
 
     @Value("${kube.namespace:default}")
     private String kubeNamespace;
@@ -184,15 +186,12 @@ public class PipelineLauncher {
                         windowsLaunchScriptUrl, pipelineCommand);
                 commandTemplate = null;
             } else {
-                final List<OSSpecificLaunchCommandTemplate> templates =
-                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX);
-                // The OS is resolved only if a template is picked by it: for a committed image it may take
-                // registry requests
-                final ToolOSVersion toolOSVersion = PodLaunchCommandHelper.hasOSSpecificTemplate(templates)
-                        ? toolOSVersionResolver.resolve(configuration.getDockerImage())
-                        : null;
+                final ToolOSVersion toolOSVersion = toolScanInfoManager
+                        .loadToolVersionScanInfoByImageName(configuration.getDockerImage())
+                        .map(ToolVersionScanResult::getToolOSVersion).orElse(null);
                 commandTemplate = PodLaunchCommandHelper.pickLaunchCommandTemplate(
-                        templates, toolOSVersion, configuration.getDockerImage());
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
+                        toolOSVersion, configuration.getDockerImage());
                 final String effectiveLaunchCommand = commandTemplate.getCommand();
                 Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
                 rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(

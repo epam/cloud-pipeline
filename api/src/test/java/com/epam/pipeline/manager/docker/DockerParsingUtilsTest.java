@@ -27,21 +27,13 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DockerParsingUtilsTest {
-
-    private static final String LABEL = "label";
-    private static final String CONTAINER_CONFIG_VALUE = "container-config";
-    private static final String CONFIG_VALUE = "config";
-    private static final String POD_NAME_LABEL = "io.kubernetes.pod.name";
-    private static final String POD_NAME = "pipeline-1";
     private static final String LATEST_DATE_ENTRY_JSON = "{\"2017-10-02T18:59:07.729529044Z\"}";
     private static final String EARLIEST_DATE_ENTRY_JSON = "\"2017-10-02T18:57:48.784338364Z\"}";
     private static final String SHORT_DATE_ENTRY_JSON = "{\"2017-10-02T18:58:48.784338Z\"}";
@@ -183,53 +175,5 @@ public class DockerParsingUtilsTest {
         Assert.assertEquals(3, result.stream().filter(s -> s.equals(RUN_AND_ARG_CMD_DOCKERFILE)).count());
 
         Assert.assertFalse(result.contains(POD_LAUNCH_CMD));
-    }
-
-    @Test
-    public void getLabelsShouldReadLabelsOfCommitChangesFromConfig() {
-        // A committed image: container_config has the labels of the container, config adds those of the commit
-        final Map<String, String> containerLabels = Collections.singletonMap(POD_NAME_LABEL, POD_NAME);
-        final Map<String, String> committedLabels = new HashMap<>(containerLabels);
-        committedLabels.put(LABEL, CONFIG_VALUE);
-        final RawImageDescriptionV2 image = new RawImageDescriptionV2();
-        image.setContainerConfig(new RawImageDescriptionV2.Config(containerLabels));
-        image.setConfig(new RawImageDescriptionV2.Config(committedLabels));
-
-        assertThat(DockerParsingUtils.getLabels(image))
-                .containsEntry(LABEL, CONFIG_VALUE)
-                .containsEntry(POD_NAME_LABEL, POD_NAME);
-    }
-
-    @Test
-    public void getLabelsShouldPreferConfigLabels() {
-        final RawImageDescriptionV2 image = new RawImageDescriptionV2();
-        image.setContainerConfig(
-                new RawImageDescriptionV2.Config(Collections.singletonMap(LABEL, CONTAINER_CONFIG_VALUE)));
-        image.setConfig(new RawImageDescriptionV2.Config(Collections.singletonMap(LABEL, CONFIG_VALUE)));
-
-        assertThat(DockerParsingUtils.getLabels(image)).containsEntry(LABEL, CONFIG_VALUE);
-    }
-
-    @Test
-    public void getLabelsShouldReadContainerConfigLabelsIfConfigHasNone() {
-        final RawImageDescriptionV2 image = new RawImageDescriptionV2();
-        image.setContainerConfig(
-                new RawImageDescriptionV2.Config(Collections.singletonMap(LABEL, CONTAINER_CONFIG_VALUE)));
-        image.setConfig(new RawImageDescriptionV2.Config(null));
-
-        assertThat(DockerParsingUtils.getLabels(image)).containsEntry(LABEL, CONTAINER_CONFIG_VALUE);
-    }
-
-    @Test
-    public void getLabelsShouldReadConfigLabelsIfThereIsNoContainerConfig() {
-        final RawImageDescriptionV2 image = new RawImageDescriptionV2();
-        image.setConfig(new RawImageDescriptionV2.Config(Collections.singletonMap(LABEL, CONFIG_VALUE)));
-
-        assertThat(DockerParsingUtils.getLabels(image)).containsEntry(LABEL, CONFIG_VALUE);
-    }
-
-    @Test
-    public void getLabelsShouldReturnNullIfImageHasNoLabels() {
-        assertThat(DockerParsingUtils.getLabels(new RawImageDescriptionV2())).isNull();
     }
 }

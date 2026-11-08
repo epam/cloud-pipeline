@@ -140,19 +140,4 @@ public class PodLaunchCommandHelperTest {
         Assert.assertFalse(PodLaunchCommandHelper.matchImage(CENTOS_SHORT_IMAGE_WITH_TAG,
                 CENTOS_FULL_IMAGE_WITH_TAG2));
     }
-
-    @Test
-    public void shouldFindOSSpecificTemplate() {
-        Assert.assertTrue(PodLaunchCommandHelper.hasOSSpecificTemplate(COMMAND_TEMPLATES));
-    }
-
-    @Test
-    public void shouldNotFindOSSpecificTemplateAmongDefaultAndDockerTemplates() {
-        Assert.assertFalse(PodLaunchCommandHelper.hasOSSpecificTemplate(Arrays.asList(
-                OSSpecificLaunchCommandTemplate.builder().os("*").command(COMMAND_FOR_ALL_IMAGES).build(),
-                OSSpecificLaunchCommandTemplate.builder().os("all").command(COMMAND_FOR_ALL_IMAGES).build(),
-                OSSpecificLaunchCommandTemplate.builder().command(COMMAND_FOR_DOCKER)
-                        .docker(ROCKY_SHORT_IMAGE_WITHOUT_TAG).build())));
-        Assert.assertFalse(PodLaunchCommandHelper.hasOSSpecificTemplate(null));
-    }
 }

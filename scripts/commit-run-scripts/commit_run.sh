@@ -37,17 +37,10 @@ check_last_exit_code $? "[ERROR] There are some troubles while clean up pipeline
                         "[INFO] Clean up for pipeline's container was successfully performed." \
                         "$CP_PYTHON_PATH $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
-# The OS of the image of the run, which picks the launch command of a run when the scan of the new image finds none.
-# Later commits keep the label, as docker keeps the labels of a container in an image committed from it.
-OS_LABEL_CHANGE=""
-if [[ "$CP_COMMIT_OS_LABEL" =~ ^[A-Za-z0-9._-]+:[A-Za-z0-9._-]*$ ]]; then
-    OS_LABEL_CHANGE="--change=\'LABEL com.epam.cloud-pipeline.os=${CP_COMMIT_OS_LABEL}\'"
-fi
-
 pipe_exec "docker commit --pause=false --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DATE= RUN_TIME= AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= AWS_DEFAULT_REGION= \
            CLUSTER_NAME= BUCKETS= MOUNT_OPTIONS= MOUNT_POINTS= OWNER= SSH_PASS= GIT_USER= GIT_TOKEN= cluster_role= \
            RESUMED_RUN= SINGLE_RUN= \
-           node_count= parent_id= \' ${OS_LABEL_CHANGE} ${tmp_container} ${FULL_NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
+           node_count= parent_id= \' ${tmp_container} ${FULL_NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
 
 check_last_exit_code $? "[ERROR] Error occurred while committing container" \
                         "[INFO] Container was successfully committed with name: ${FULL_NEW_IMAGE_NAME}" \

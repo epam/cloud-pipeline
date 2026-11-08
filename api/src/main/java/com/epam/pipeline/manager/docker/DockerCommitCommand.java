@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.docker;
 
 import lombok.Builder;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,12 +46,6 @@ public class DockerCommitCommand extends AbstractDockerCommand {
     private final String isPipelineAuth;
     private final String preCommitCommand;
     private final String postCommitCommand;
-    /**
-     * The OS of the image of the run, e.g. {@code rocky:8.7}: the commit writes it into the
-     * {@link com.epam.pipeline.manager.execution.ToolOSVersionResolver#OS_LABEL} label of the new image.
-     * Optional, so it is the last argument.
-     */
-    private final String osLabel;
 
     private final String runScriptUrl;
 
@@ -84,9 +77,6 @@ public class DockerCommitCommand extends AbstractDockerCommand {
         command.add(preCommitCommand);
         command.add(postCommitCommand);
         command.add(globalDistributionUrl);
-        if (StringUtils.isNotBlank(osLabel)) {
-            command.add(osLabel);
-        }
         return command;
     }
 }

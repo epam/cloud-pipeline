@@ -29,15 +29,6 @@ public final class PodLaunchCommandHelper {
     private PodLaunchCommandHelper() {
     }
 
-    /**
-     * @return whether any of the templates is picked by the OS of an image, so that the OS needs to be known
-     */
-    static boolean hasOSSpecificTemplate(final List<OSSpecificLaunchCommandTemplate> templates) {
-        return ListUtils.emptyIfNull(templates).stream()
-                .map(OSSpecificLaunchCommandTemplate::getOs)
-                .anyMatch(os -> StringUtils.isNotBlank(os) && !STAR_SIGN.equals(os) && !ALL_KEY_WORK.equals(os));
-    }
-
     static OSSpecificLaunchCommandTemplate pickLaunchCommandTemplate(
             final List<OSSpecificLaunchCommandTemplate> commandsByImage,
             final ToolOSVersion osVersion,
