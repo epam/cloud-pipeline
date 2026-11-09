@@ -174,7 +174,7 @@ public class KubernetesManager {
      * Returns docker container id for specified podId and docker image name
      *
      * @param podId       id of a kubernetes pod
-     * @param dockerImage docker image name from the pod
+     * @param dockerImage docker image name of the run, matched if the pod has no container named as a run one
      * @return docker container id
      */
     public String getContainerIdFromKubernetesPod(String podId, String dockerImage) {
@@ -186,14 +186,20 @@ public class KubernetesManager {
                     .getStatus()
                     .getContainerStatuses()
                     .stream()
-                    //find container with pipeline image
-                    .filter(containerStatus -> containerStatus.getImage().contains(dockerImage))
+                    .filter(containerStatus -> isRunContainer(containerStatus, dockerImage))
                     .findFirst();
             if (container.isPresent()) {
                 return container.get().getContainerID().replace(DOCKER_PREFIX, EMPTY);
             }
         }
         return null;
+    }
+
+    // a pod pinned to a digest reports no image tag, so a run container is matched by its name,
+    // or by its image for a container named otherwise
+    private boolean isRunContainer(final ContainerStatus containerStatus, final String dockerImage) {
+        return KubernetesConstants.PIPELINE_CONTAINER_NAME.equals(containerStatus.getName())
+                || StringUtils.contains(containerStatus.getImage(), dockerImage);
     }
 
     public String createDockerRegistrySecret(DockerRegistrySecret secret) {

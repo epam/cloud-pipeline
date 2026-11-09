@@ -73,7 +73,7 @@ class Event(object):
         self.machine_run = machine_run
         self.type = type
         self.status = status
-        str(self) = message
+        self.message = message
 
 
 class Settings(object):
@@ -325,7 +325,7 @@ class MachineRun(object):
             launch = (not results) or (not metadata_entity['data'][self.settings.last_processed_column].get('value', None))
             if launch and self.settings.configuration_id:
                 self.run_analysis(metadata_entity, run_folder)
-            failure_events = ['%s:%s' % (event.type, str(event))
+            failure_events = ['%s:%s' % (event.type, event.message)
                               for event in self.notifications
                               if event.status == EVENT_FAILURE and event.machine_run == self.machine_run]
             if failure_events:
@@ -519,7 +519,7 @@ class NGSSync(object):
             event_str += EVENT_PATTERN.format(**{'run': event.machine_run,
                                                  'event': event.type,
                                                  'status': event.status,
-                                                 'message': str(event),
+                                                 'message': event.message,
                                                  'api': api_link,
                                                  'run_id': str(self.settings.run_id)})
 

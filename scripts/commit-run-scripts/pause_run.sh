@@ -65,6 +65,8 @@ commit_file_and_stop_docker() {
     pipe_log_info "[INFO] Start commiting pipeline run" "$TASK_NAME"
     commit_hook ${CONTAINER_ID} "pre" false true ${PRE_COMMIT_COMMAND}
 
+    # Again, as the pre-commit hook may write to them
+    empty_uid_indexed_logs ${CONTAINER_ID}
     commit_file ${NEW_IMAGE_NAME}
     check_last_exit_code $? "[ERROR] Error occured while committing temporary container" \
                             "[INFO] Temporary container was successfully committed with name: ${NEW_IMAGE_NAME}" \
@@ -201,6 +203,9 @@ mkdir $COMMON_REPO_DIR
 cd $COMMON_REPO_DIR
 install_pipeline_code
 cd ..
+
+# Before the disk space check: the container size it reads counts a sparse file in full
+empty_uid_indexed_logs ${CONTAINER_ID}
 
 check_free_disc_space
 
