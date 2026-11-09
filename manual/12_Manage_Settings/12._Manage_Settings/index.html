@@ -695,6 +695,7 @@ System roles is one of the principal tool for managing security access to the ob
 </li>
 </ol>
 <blockquote>
+<p><strong><em>Note</em></strong>: the <strong><em>registration date</em></strong> and the <strong><em>first login date</em></strong> are exported in UTC, in the <code>yyyy-MM-dd HH:mm:ss</code> format. Their columns are always named <code>registrationDate UTC</code> and <code>firstLoginDate UTC</code>, whatever time zone the API server has.</p>
 <p><strong><em>Note</em></strong>: not all user's metadata have to be exported. Some of them may contains the sensitive data. To restrict the list of the metadata to export the following system preference should be used - <strong><code>misc.metadata.sensitive.keys</code></strong>. In this preference, all metadata keys that <strong><em>shouldn't be exported</em></strong> are being specified (i.e. if these metadata keys are specified in the preference, they will not be displayed at the export pop-up for selection).</p>
 <p>Example of that configured preference:<br />
 <img alt="CP_ManageSettings" src="../attachments/ManageSettings_25.png" /></p>

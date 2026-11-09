@@ -337,6 +337,8 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#configurations">Configurations</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#managing-queues-with-the-sge-command">Managing queues with the sge command</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a>
         <ul>
     <li class="toctree-l3"><a class="reference internal" href="#homogeneous-cluster">Homogeneous cluster</a>
@@ -451,6 +453,7 @@
 </ul>
 </li>
 <li><a href="#configurations">Configurations</a></li>
+<li><a href="#managing-queues-with-the-sge-command">Managing queues with the <code>sge</code> command</a></li>
 <li><a href="#examples">Examples</a><ul>
 <li><a href="#homogeneous-cluster">Homogeneous cluster</a></li>
 <li><a href="#hybrid-cluster">Hybrid cluster</a></li>
@@ -535,6 +538,52 @@ The autoscaler will detect such situations and replace weak addition workers wit
 </tr>
 </tbody>
 </table>
+<h2 id="managing-queues-with-the-sge-command">Managing queues with the <code>sge</code> command</h2>
+<p>In a running SGE cluster, the <code>sge</code> command adds grid engine queues and changes their autoscaling. Each queue has a <em>profile</em>: a shell file with the queue's autoscaling parameters, <code>/common/cap_scripts/sge_profile_&lt;queue&gt;_autoscaling.sh</code>.</p>
+<ul>
+<li>Run <code>sge</code> as <code>root</code> in the SSH terminal of the cluster's master run. In a worker run, or as another user, it prints the commands to use instead.</li>
+<li><code>sge</code> works in the runs of administrators, and of the users in a group or a role listed in the <code>ge.utility.allowed.groups</code> system preference: by default, <code>ROLE_ADMIN</code> and <code>ROLE_ADVANCED_USER</code>. It checks the run's owner, not the user who opened the SSH terminal.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sge list</code></td>
+<td>Lists the profiles, e.g. <code>Grid engine profile has been found: main.q</code>.</td>
+</tr>
+<tr>
+<td><code>sge create &lt;queue&gt;</code></td>
+<td>Creates a new queue with its profile, and opens the profile in a text editor. The name keeps only letters, digits and dots, in lower case, and gets <code>.q</code> at the end if it has none: <code>sge create TestProfile</code> creates <code>testprofile.q</code>.</td>
+</tr>
+<tr>
+<td><code>sge configure &lt;queue&gt;</code></td>
+<td>Opens the profile of an existing queue in a text editor.</td>
+</tr>
+<tr>
+<td><code>sge restart &lt;queue&gt;</code></td>
+<td>Restarts the autoscaler of the queue.</td>
+</tr>
+<tr>
+<td><code>sge export [&lt;queue&gt; ...] &lt;file&gt;</code></td>
+<td>Exports the queues and the parallel environments of the grid engine, and all the profiles or the ones named, into a <code>.tar.gz</code> file.</td>
+</tr>
+</tbody>
+</table>
+<p>The text editor is the one set in the <code>VISUAL</code> or <code>EDITOR</code> environment variable, or else <code>nano</code>, <code>vi</code> or <code>vim</code>. Without any of them, <code>sge</code> asks to install one, e.g. <code>yum install -y nano</code>.</p>
+<p>Once you save the profile and close the editor, <code>sge create</code> and <code>sge configure</code>:</p>
+<ol>
+<li>Print the changed lines, in the format of the <code>diff</code> command: <code>&lt;</code> before an old line, and <code>&gt;</code> before a new one. The commands do not need <code>diff</code> in the tool image.
+    If nothing has changed, they print <code>Grid engine &lt;queue&gt; profile has not been changed.</code>, and <code>sge configure</code> stops there.</li>
+<li>Check the new parameters. If a value is wrong, e.g. <code>Boolean parameter CP_CAP_AUTOSCALE has invalid value nontrue. Please specify true/false/yes/no/on/off.</code>, they print <code>Grid engine profile verification has failed. Reverting the changes...</code> and keep the profile as it was.</li>
+<li>Save the profile, unless the check has failed, and start the autoscaler of the queue again: <code>Grid engine &lt;queue&gt; autoscaling has been launched.</code></li>
+</ol>
+<p>After each <code>sge create</code> and <code>sge configure</code> that succeeds, all the profiles are exported to <code>~/.pipe/backups/sge_export_&lt;date and time&gt;.tar.gz</code>.
+The output of <code>sge</code> also goes to the <code>SGEProfiles</code> task of the run's log.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="homogeneous-cluster">Homogeneous cluster</h3>
 <p>In this example we will see how an autoscaled cluster behaves on different conditions.</p>
