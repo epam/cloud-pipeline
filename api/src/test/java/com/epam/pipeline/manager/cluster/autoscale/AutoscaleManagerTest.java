@@ -15,7 +15,6 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -92,6 +91,7 @@ public class AutoscaleManagerTest {
     private static final int NODEUP_GENERIC_FAILURE_EXIT_CODE = 1;
     private static final Long TEST_POOL_ID = 777L;
     private static final int POOL_WAIT_SEC = 300;
+    private static final long MILLIS_IN_SECOND = 1000L;
     private static final String POOL_PENDING_TAG = "POOL_PENDING";
 
     @Mock
@@ -365,7 +365,7 @@ public class AutoscaleManagerTest {
     public void testExclusivePoolRunTimesOutWhenPoolRemainsOccupied() {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
         when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
-        testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC + 1) * 1000L));
+        testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC + 1) * MILLIS_IN_SECOND));
         final Map<String, String> tags = new HashMap<>();
         tags.put(POOL_PENDING_TAG, "true");
         testRun.setTags(tags);
@@ -381,7 +381,7 @@ public class AutoscaleManagerTest {
     public void testExclusivePoolRunDoesNotTimeOutBeforeDeadline() {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
         when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
-        testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC / 2) * 1000L));
+        testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC / 2) * MILLIS_IN_SECOND));
         final Map<String, String> tags = new HashMap<>();
         tags.put(POOL_PENDING_TAG, "true");
         testRun.setTags(tags);
