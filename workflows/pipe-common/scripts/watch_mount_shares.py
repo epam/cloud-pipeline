@@ -74,6 +74,7 @@ MODIFY_EVENT = 'm'
 MOVED_FROM_EVENT = 'mf'
 MOVED_TO_EVENT = 'mt'
 DELETE_EVENT = 'd'
+RECORDED_EVENT_TYPES = ('created', 'modified', 'deleted')
 
 WATCHER_MEM_CONSUMPTION_BYTES = 1024
 WATCHERS_USAGE_MEMORY_RATE = int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_WATCHERS_MEM_CONSUMPTION_MAX_RATE', 100))
@@ -285,8 +286,9 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
             if type(event) is FileMovedEvent:
                 self._insert_event(event.src_path, MOVED_FROM_EVENT)
                 self._insert_event(event.dest_path, MOVED_TO_EVENT)
-            # TODO check if filtering could be applied at observer creation
-            elif event.event_type != 'closed':
+            # Only these events are recorded: watchdog also reports the file accesses ("opened", "closed",
+            # "closed_no_write"), and the first letter of "closed_no_write" is the code of a created file
+            elif event.event_type in RECORDED_EVENT_TYPES:
                 self._insert_event(event.src_path, event.event_type[:1])
 
     def check_timeout_and_dump(self):
@@ -414,7 +416,7 @@ class NFSMountWatcher:
             self._target_path_mapping[mnt_dest] = mnt_src
 
     def _remove_unmounted_watchers(self, latest_mounts_mapping):
-        for mnt_dest, mnt_src in self._target_path_mapping.items():
+        for mnt_dest, mnt_src in list(self._target_path_mapping.items()):
             if mnt_dest not in latest_mounts_mapping:
                 logging.warning(format_message('Removing observer from [{}]'.format(mnt_dest)))
                 if self.try_to_remove_path_from_observer(mnt_dest):
@@ -423,7 +425,7 @@ class NFSMountWatcher:
     def try_to_remove_path_from_observer(self, mnt_dest):
         try:
             if len(self._target_path_mapping.items()) > 1:
-                self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
+                self._event_observer.unschedule(ObservedWatch(mnt_dest, recursive=True))
             return True
         except OSError as e:
             logging.error(

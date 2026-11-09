@@ -29,6 +29,14 @@ import sys
 import types
 import unittest
 
+# The real watchdog, where it is installed: the observer test below checks the script against its API.
+try:
+    from watchdog.events import FileSystemEventHandler as _WatchdogEventHandler
+    from watchdog.observers.api import BaseObserver as _WatchdogObserver, EventEmitter as _WatchdogEmitter, \
+        ObservedWatch as _WatchdogObservedWatch
+except ImportError:
+    _WatchdogObservedWatch = None
+
 SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'scripts')
 sys.path.insert(0, SCRIPTS_DIR)
 
@@ -133,6 +141,82 @@ class ExecuteCommandOutputThatIsNotUtf8Test(unittest.TestCase):
                                                                              executable='/bin/bash')
         self.assertEqual(0, exit_code)
         self.assertEqual(self._EXPECTED, stderr)
+
+
+def _without_init(cls):
+    # An instance with no observer behind it. NFSMountWatcher is a classic class on Python 2: object.__new__ fails there
+    class _Instance(cls):
+        def __init__(self):
+            pass
+    return _Instance()
+
+
+class _FileEvent(object):
+
+    def __init__(self, event_type, src_path='/mnt/nfs/file.txt'):
+        self.is_directory = False
+        self.event_type = event_type
+        self.src_path = src_path
+
+
+class DispatchRecordsOnlyFileChangesTest(unittest.TestCase):
+    # watchdog 6 reports the file accesses too, and "closed_no_write" starts with "c", the code of a created file
+
+    def setUp(self):
+        self.handler = _without_init(wms.CloudBucketDumpingEventHandler)
+        self.handler._active_events = wms.OrderedDict()
+
+    def _recorded_events(self):
+        return [(path, event.event_type) for path, event in self.handler._active_events.items()]
+
+    def test_a_read_of_a_file_records_nothing(self):
+        for event_type in ['opened', 'closed_no_write', 'closed']:
+            self.handler.dispatch(_FileEvent(event_type))
+        self.assertEqual([], self._recorded_events())
+
+    def test_a_modification_is_recorded(self):
+        for event_type in ['opened', 'modified', 'closed']:
+            self.handler.dispatch(_FileEvent(event_type))
+        self.assertEqual([('/mnt/nfs/file.txt', wms.MODIFY_EVENT)], self._recorded_events())
+
+    def test_a_creation_and_a_deletion_are_recorded(self):
+        self.handler.dispatch(_FileEvent('created', '/mnt/nfs/new.txt'))
+        self.handler.dispatch(_FileEvent('deleted', '/mnt/nfs/old.txt'))
+        self.assertEqual([('/mnt/nfs/new.txt', wms.CREATE_EVENT), ('/mnt/nfs/old.txt', wms.DELETE_EVENT)],
+                         self._recorded_events())
+
+
+class RemoveUnmountedWatchersTest(unittest.TestCase):
+
+    def _watcher(self, target_path_mapping):
+        watcher = _without_init(wms.NFSMountWatcher)
+        watcher._target_path_mapping = target_path_mapping
+        return watcher
+
+    def test_removes_several_mounts_in_one_pass(self):
+        watcher = self._watcher({'/mnt/a': 'src-a', '/mnt/b': 'src-b', '/mnt/c': 'src-c'})
+        watcher.try_to_remove_path_from_observer = lambda mnt_dest: True
+
+        watcher._remove_unmounted_watchers({'/mnt/b': 'src-b'})
+
+        self.assertEqual({'/mnt/b': 'src-b'}, watcher._target_path_mapping)
+
+    @unittest.skipIf(_WatchdogObservedWatch is None, 'watchdog is not installed')
+    def test_unschedules_the_watch_of_a_removed_mount(self):
+        # The observer finds a watch by its path and recursive flag, and watchdog 6 takes the flag by keyword only
+        watcher = self._watcher({'/mnt/a': 'src-a', '/mnt/b': 'src-b'})
+        watcher._event_observer = _WatchdogObserver(_WatchdogEmitter)
+        for mnt_dest in ['/mnt/a', '/mnt/b']:
+            watcher._event_observer.schedule(_WatchdogEventHandler(), mnt_dest, recursive=True)
+        script_observed_watch = wms.ObservedWatch
+        wms.ObservedWatch = _WatchdogObservedWatch
+        try:
+            watcher._remove_unmounted_watchers({'/mnt/b': 'src-b'})
+        finally:
+            wms.ObservedWatch = script_observed_watch
+
+        self.assertEqual({'/mnt/b': 'src-b'}, watcher._target_path_mapping)
+        self.assertEqual(['/mnt/b'], [emitter.watch.path for emitter in watcher._event_observer.emitters])
 
 
 if __name__ == '__main__':
