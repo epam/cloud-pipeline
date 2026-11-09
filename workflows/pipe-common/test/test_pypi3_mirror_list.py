@@ -15,9 +15,9 @@
 # A Python 3 run installs pipe-common with the bundled Python 3.12 from the pypi3 mirror only, which is built from
 # deploy/dependencies/pypi3/requirements.txt: a pin of setup.py missing from that list fails every Python 3 run.
 # The same holds for the pins that the run scripts install with Python 3 from the mirror.
-# The list keeps the older versions of a package for the runs of older platform versions, and gets the version with
-# the known advisories fixed next to them. The Python 3 pins of this checkout use the newest version on the list:
-# a newer version added to the list fails this test until the pins move to it.
+# The list keeps the older versions of a package for the runs of older platform versions, and gets a version with
+# the known advisories fixed before the pins move to it. Once moved, a Python 3 pin must not go back below the version
+# it moved to for its known advisories (_PYTHON3_FIXED_VERSIONS); a newer pin, or a newer version on the list, is fine.
 
 import os
 import re
@@ -60,6 +60,22 @@ _ELSE = re.compile(r'^\s*else\b')
 _FI = re.compile(r'^\s*fi\b')
 _ONE_LINE_IF = re.compile(r';\s*fi\b')
 _PYTHON_VERSION_TEST = re.compile(r'\$\{?CP_PYTHON_VERSION\}?"?\s*==?\s*"?([23])\b')
+# The versions that the Python 3 pins moved to for their known advisories: no Python 3 pin may be older
+_PYTHON3_FIXED_VERSIONS = {
+    'httplib2': '0.32.1',
+    'idna': '3.20',
+    'oauthlib': '4.0.1',
+    'requests-oauthlib': '2.0.0',
+    'rsa': '4.9.1',
+    'certifi': '2026.10.23',
+    'pyasn1': '0.6.5',
+    'tornado': '6.6',
+    'urllib3': '2.8.0',
+    'pyjwt': '2.15.1',
+    'setuptools': '81.0.0',
+    'flask': '3.1.3',
+    'flask-httpauth': '4.8.1',
+}
 # The scripts that install pins with Python 3 today, and the packages they pin: the scan must find them all
 _RUN_SCRIPT_PYTHON3_PINS = {
     'scripts/pipeline-launch/launch.sh': {'setuptools'},
@@ -146,17 +162,19 @@ def _run_script_pins():
     return pins
 
 
-def _not_the_newest_on_the_mirror_list(pins):
-    # pins: (where, requirement). Returns the pins missing from the list, or older than the newest version on it.
-    mirror = _mirror_versions()
+def _run_script_python3_pins():
+    return [('{}:{}'.format(path, number), Requirement(pin))
+            for path, number, python, pin in _run_script_pins() if python == '3']
+
+
+def _below_the_fixed_version(pins):
+    # pins: (where, requirement). Returns the pins older than the version of _PYTHON3_FIXED_VERSIONS.
     problems = []
     for where, requirement in pins:
-        versions = mirror.get(canonicalize_name(requirement.name), set()) - {None}
+        fixed = _PYTHON3_FIXED_VERSIONS.get(canonicalize_name(requirement.name))
         pinned = _pinned_version(requirement)
-        if pinned not in versions:
-            problems.append('{} {}: not on the list'.format(where, requirement))
-        elif pinned < max(versions):
-            problems.append('{} {}: the list has {}'.format(where, requirement, max(versions)))
+        if fixed is not None and pinned is not None and pinned < Version(fixed):
+            problems.append('{} {}: below {}'.format(where, requirement, fixed))
     return problems
 
 
@@ -172,17 +190,20 @@ class TestPypi3MirrorList(object):
                 missing.append(str(requirement))
         assert not missing, 'missing from {}: {}'.format(_MIRROR_REQUIREMENTS, missing)
 
-    def test_pipe_common_pins_the_newest_version_on_the_mirror_list(self, monkeypatch):
-        pins = [('setup.py', requirement) for requirement in _pipe_common_linux_requirements(monkeypatch)
-                if _pinned_version(requirement) is not None]
-        problems = _not_the_newest_on_the_mirror_list(pins)
-        assert not problems, 'not the newest version on {}: {}'.format(_MIRROR_REQUIREMENTS, problems)
+    def test_mirror_list_has_every_python3_pin_of_the_run_scripts(self):
+        mirror = _mirror_versions()
+        missing = ['{} {}'.format(where, requirement) for where, requirement in _run_script_python3_pins()
+                   if _pinned_version(requirement) not in mirror.get(canonicalize_name(requirement.name), set())]
+        assert not missing, 'missing from {}: {}'.format(_MIRROR_REQUIREMENTS, missing)
 
-    def test_run_scripts_install_the_newest_python3_version_on_the_mirror_list(self):
-        pins = [('{}:{}'.format(path, number), Requirement(pin))
-                for path, number, python, pin in _run_script_pins() if python == '3']
-        problems = _not_the_newest_on_the_mirror_list(pins)
-        assert not problems, 'not the newest version on {}: {}'.format(_MIRROR_REQUIREMENTS, problems)
+    def test_pipe_common_python3_pins_are_not_below_the_fixed_versions(self, monkeypatch):
+        problems = _below_the_fixed_version([('setup.py', requirement)
+                                             for requirement in _pipe_common_linux_requirements(monkeypatch)])
+        assert not problems, 'below the versions with the known advisories fixed: {}'.format(problems)
+
+    def test_run_scripts_python3_pins_are_not_below_the_fixed_versions(self):
+        problems = _below_the_fixed_version(_run_script_python3_pins())
+        assert not problems, 'below the versions with the known advisories fixed: {}'.format(problems)
 
     def test_run_scripts_python3_pins_are_found(self):
         found = {}
