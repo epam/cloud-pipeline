@@ -868,6 +868,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_RESERVED_NODE_MISMATCH = "error.node.pool.reserved.node.mismatch";
     public static final String ERROR_NODE_POOL_RESERVATION_EXPIRED = "error.node.pool.reservation.expired";
     public static final String ERROR_NODE_POOL_FILTER_MISMATCH = "error.node.pool.filter.mismatch";
+    public static final String ERROR_NODE_POOL_ID_NO_LONGER_ACTIVE = "error.node.pool.id.no.longer.active";
+    public static final String INFO_NODE_POOL_ID_WAITING = "info.node.pool.id.waiting";
+    public static final String ERROR_NODE_POOL_ID_BUSY_WAIT_TIMEOUT = "error.node.pool.id.busy.wait.timeout";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";

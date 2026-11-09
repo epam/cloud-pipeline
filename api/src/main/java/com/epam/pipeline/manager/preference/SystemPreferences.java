@@ -686,6 +686,12 @@ public class SystemPreferences {
                     new CapacityReservationMonitorSettings(1),
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
                     isValidCapacityReservationMonitorSettings, true);
+    /**
+     * How long (seconds) the autoscaler waits for a CP_CAP_POOL_ID-bound run when its target pool is occupied
+     * by another run. {@code 0} means wait indefinitely. Default: 86400 (24 h).
+     */
+    public static final IntPreference CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC = new IntPreference(
+            "cluster.occupied.node.pool.wait.sec", 86400, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
