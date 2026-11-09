@@ -150,6 +150,9 @@ nav:
       - AWS:
         - Terraform: 'installation/native/aws/terraform/README.md'
         - AWS CloudFormation: 'installation/native/aws/cloud-formation/README.md'
+  - GitLab:
+    - GitLab versions: 'installation/gitlab/gitlab_versions.md'
+    - Upgrade GitLab 15.5 to 19.5: 'installation/gitlab/upgrade_gitlab_15_to_19.md'
   - Management:
     - Environments sync: 'operation/environments_sync/environments_sync.md'
   - Change Kubernetes certificates: 'operation/change_kube_certificates.md'

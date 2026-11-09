@@ -23,6 +23,7 @@ import {Alert, Icon, Button, Spin, message} from 'antd';
 import {Environment, LaunchFormInfo, ParameterGroup} from './index';
 import LaunchFormStore from './launch-form-store';
 import {getDockerImage} from '../../../../utils/get-docker-image';
+import {getToolDefaultVersion, LATEST_VERSION} from '../../../../utils/tool-default-version';
 import styles from './launch-form.css';
 import LoadTool from '../../../../models/tools/LoadTool';
 import LoadToolVersionSettings from '../../../../models/tools/LoadToolVersionSettings';
@@ -109,15 +110,10 @@ export default class LaunchForm extends React.Component {
 
   @computed
   get defaultTag () {
-    if (this.fotmStore.versions?.length) {
-      const latest = this.formStore.versions.find(v => v.version === 'latest');
-      const first = this.formStore.versions[0];
-      if (this.fotmStore.versions.length === 1) {
-        return first;
-      }
-      return latest;
-    }
-    return null;
+    return getToolDefaultVersion(
+      this.formStore.toolInfo,
+      this.formStore.versions.map(v => v.version)
+    ) || null;
   }
 
   @computed
@@ -180,11 +176,15 @@ export default class LaunchForm extends React.Component {
       this.formStore.error = `Error loading tool info. ${error}`;
       return;
     }
+    const toolVersion = toolInfo.value.version || getToolDefaultVersion(
+      toolInfo.value,
+      ((versions.value || {}).versions || []).map(v => v.version)
+    ) || LATEST_VERSION;
     this.formStore.initializeData({
       data,
       toolInfo: toolInfo.value,
       toolVersion: toolVersions.value
-        .find(({version}) => version === (toolInfo.value.version || 'latest')),
+        .find(({version}) => version === toolVersion),
       versions: versions.value
     });
   }
@@ -273,7 +273,8 @@ export default class LaunchForm extends React.Component {
           this.props.scanPolicy?.loaded ? this.props.scanPolicy.value : null,
           this.isAdmin,
           this.props.preferences,
-          this.dockerRegistry
+          this.dockerRegistry,
+          this.formStore.toolInfo
         );
       };
       const info = getVersionRunningInformation(

@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -71,6 +72,7 @@ public class FolderDaoTest extends AbstractJdbcTest {
     private static final String TEST_ENTITY_NAME_1 = "test_entity";
     private static final String TEST_MOUNT_POINT = "testMountPoint";
     private static final String TEST_MOUNT_OPTIONS = "testMountOptions";
+    private static final String TEST_ACCESS_POINT_ARN = "arn:aws:s3:us-east-1:123456789012:accesspoint/test-ap";
     private static final String DATA_KEY_1 = "tag";
     private static final String DATA_TYPE_1 = "string";
     private static final String DATA_VALUE_1 = "OWNER";
@@ -258,6 +260,7 @@ public class FolderDaoTest extends AbstractJdbcTest {
         assertEquals(storage.getMountPoint(), loadedStorages.get(0).getMountPoint());
         assertEquals(storage.getMountOptions(), loadedStorages.get(0).getMountOptions());
         assertEquals(storage.getOwner(), loadedStorages.get(0).getOwner());
+        assertEquals(TEST_ACCESS_POINT_ARN, ((S3bucketDataStorage) loadedStorages.get(0)).getAccessPointArn());
     }
 
     private RunConfiguration addConfiguration(Folder folder) {
@@ -276,6 +279,7 @@ public class FolderDaoTest extends AbstractJdbcTest {
                 TEST_DATASTORAGE, TEST_DATASTORAGE, DataStorageType.S3,
                 S3_TEST_DATASTORAGE_PATH, 1, 1, folder.getId(), TEST_MOUNT_POINT,
                 TEST_MOUNT_OPTIONS);
+        storageVO.setAccessPointArn(TEST_ACCESS_POINT_ARN);
         AbstractDataStorage storage = storageFactory.convertToDataStorage(storageVO, CloudProvider.AWS);
         storage.setOwner(TEST_USER);
         dataStorageDao.createDataStorage(storage);

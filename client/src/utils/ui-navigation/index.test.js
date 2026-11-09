@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {fetchGroupsAttributes} from './index';
+import UINavigation, {fetchGroupsAttributes} from './index';
 
 // A plain stand-in for the `preferences` store: only what fetchGroupsAttributes reads.
 const preferencesStub = (groupsUIPreferences) => ({
@@ -106,5 +106,32 @@ describe('fetchGroupsAttributes', () => {
       B: {'ui-home-page': 'library'}
     }, ['A', 'B']);
     expect(result.homePage).toBe('library');
+  });
+});
+
+function createUINavigation () {
+  const user = {loaded: false, fetchIfNeededOrWait: () => Promise.resolve()};
+  return new UINavigation(user, {});
+}
+
+describe('UINavigation utils.showOptionalParametersFilter', () => {
+  it('resolves the loaded launch form settings for the given keys', () => {
+    const uiNavigation = createUINavigation();
+    uiNavigation.launchForm = {
+      pipelines: {
+        'optional-parameters-filter': {overrides: {7: {default_value: true}}}
+      }
+    };
+    expect(uiNavigation.utils.showOptionalParametersFilter([7, 'pipeline']).pipelines)
+      .toEqual({enabled: true, defaultValue: true});
+    expect(uiNavigation.utils.showOptionalParametersFilter([8, 'other']).pipelines)
+      .toEqual({enabled: true, defaultValue: false});
+  });
+
+  it('hides the checkbox without launch form settings', () => {
+    const uiNavigation = createUINavigation();
+    uiNavigation.launchForm = undefined;
+    expect(uiNavigation.utils.showOptionalParametersFilter().tools)
+      .toEqual({enabled: false, defaultValue: undefined});
   });
 });

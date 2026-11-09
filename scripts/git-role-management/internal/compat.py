@@ -32,3 +32,11 @@ def to_bytes(value):
     if value is None or PY3_12:
         return value
     return value.encode('utf8')
+
+
+def to_str(value):
+    # The native str of either Python: e.g. cryptography returns bytes, which are the str of Python 2 and are
+    # decoded on Python 3, where JSON request bodies take no bytes.
+    if value is None or isinstance(value, str):
+        return value
+    return value.decode('utf8')

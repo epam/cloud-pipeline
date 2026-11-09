@@ -314,7 +314,7 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
             self.assertEqual(0, rc, 'block exited non-zero: out=%r err=%r' % (out, err))
             self.assertIn('-m pip install', invocations,
                           'resolved $CP_PYTHON_PATH was never used to install pipe-common: %r' % invocations)
-            self.assertIn('setuptools==68.0.0', invocations)
+            self.assertIn('setuptools==81.0.0', invocations)
             self.assertIn('--index-url http://test-mirror/simple --trusted-host test-mirror', invocations,
                           'the platform PyPI mirror args were not passed through to pip: %r' % invocations)
             self.assertTrue(os.path.exists(os.path.join(sync_home, 'watch_mount_shares.py')),
@@ -328,7 +328,7 @@ class NfsObserverPipeCommonInstallTest(unittest.TestCase):
             rc, out, err, invocations, _ = self._run_block(work_dir, '2')
             self.assertEqual(0, rc, 'block exited non-zero: out=%r err=%r' % (out, err))
             self.assertIn('setuptools==44.1.1', invocations)
-            self.assertNotIn('setuptools==68.0.0', invocations)
+            self.assertNotIn('setuptools==81.0.0', invocations)
         finally:
             shutil.rmtree(work_dir)
 
