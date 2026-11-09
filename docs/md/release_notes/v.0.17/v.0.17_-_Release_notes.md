@@ -2063,6 +2063,17 @@ With Python 3 (`CP_PYTHON_VERSION=3`), the grid engine profiles were not generat
 Now, the commands find the changes in Python, and print them as text, in the same format as before: `<` before an old line, and `>` before a new one. The profiles of the extra queues are generated with Python 3 too.
 See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
 
+### AWS: billing reports show the `S3 Standard` storage costs twice as high
+
+[#4742](https://github.com/epam/cloud-pipeline/issues/4742)
+
+Previously, the billing service added up all the prices it took from the AWS price list for a region and a storage class.
+In June 2026, AWS added an "Annotations" product to the `S3` price list in almost every region, and the billing service took it as one more `Standard` price. Since then, the billing reports showed the `S3 Standard` storage costs about twice as high as the AWS prices.
+The `EFS` storage costs also included the price of the `EFS Archive` storage class: $0.308 instead of $0.30 per GB-month in `us-east-1`.
+Now, the billing service takes only the storage prices it bills, and skips the price list products with an unknown volume type. The storage costs that were already calculated are not changed.
+
+Also, a price list that can't be loaded no longer stops the billing service. The service keeps the prices it loaded before, logs the error with its cause, and tries again at the next storage billing. The run billing and the other storage billings go on. If no prices were loaded yet, that storage billing is skipped for the day, and it is not written later. And if the billing service stops, its container stops too, so Kubernetes restarts it. Before, the container kept running without the service.
+
 ### The backup worker of the GitLab database always fails
 
 [#4618](https://github.com/epam/cloud-pipeline/issues/4618)
