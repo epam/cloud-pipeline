@@ -767,20 +767,32 @@ function install_private_packages {
 
 function install_python3_packages {
       local _install_path="$1"
-      local _tmp_install_dir="/tmp/"
-      rm -rf "${_install_path}/python3.12"
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
+      # The distro is unpacked next to its place and swapped in only when it is complete: a failed download or unpack
+      # keeps the python3.12, python3 and pip3 the image already has (e.g. a committed run, or a python:3.x image)
+      local _tmp_install_dir
+      _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")" || {
+            echo "[WARN] Unable to create a temporary folder in ${_install_path} for the python3 distro"
+            return 1
+      }
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
-      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
-
+      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
+            || [ ! -x "${_tmp_install_dir}/python3.12/bin/python3.12" ]; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL, keeping the python3 of the image"
+            return 1
+      fi
+      rm -rf "${_install_path}/python3.12"
+      mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"
       # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
       # an openssl folder (the previous python3.12.0 build) replaces it
-      if tar -tzf "${_tmp_install_dir}/python3.tgz" 2>/dev/null | grep '^openssl/' > /dev/null; then
+      if [ -d "${_tmp_install_dir}/openssl" ]; then
             rm -rf "${_install_path}/openssl"
+            mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
       fi
-      tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
-      rm -f "${_tmp_install_dir}/python3.tgz"
+      rm -rf "${_tmp_install_dir}"
 
       ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
       ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
