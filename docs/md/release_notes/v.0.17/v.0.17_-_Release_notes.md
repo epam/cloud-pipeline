@@ -2034,6 +2034,14 @@ More details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#login-
 Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
 Now, the folder and the library tree show the new name right after the rename.
 
+### AWS: a Route53 DNS record of an endpoint is reported as failed although Route53 has created it
+
+[#4741](https://github.com/epam/cloud-pipeline/issues/4741)
+
+Previously, the API read the status of a new Route53 DNS record once more after Route53 had already reported it as `INSYNC`. Route53 could still answer `PENDING` to that second read, and the API then reported the record as failed.
+So an endpoint with the **Sub-Domain** option came up only on the next EDGE sync, and the `CreateDNSRecord` task of the run logged "Failed to create DNS record". The error message also stated a timeout that had not happened.
+Now, the API uses the `INSYNC` status Route53 reported. If the record is still not `INSYNC` after `CP_API_DNS_ROUTE53_MAX_ATTEMPTS` retries, made `CP_API_DNS_ROUTE53_DELAY_SECONDS` apart, the request fails, and the message gives the attempts, the delay and the time waited.
+
 ### NICE DCV setup reports a failure only after 30 minutes, with no reason
 
 [#4768](https://github.com/epam/cloud-pipeline/issues/4768)
