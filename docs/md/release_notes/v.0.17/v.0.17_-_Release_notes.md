@@ -66,16 +66,24 @@
 - [GitLab 19 support](#gitlab-19-support)
 - [Rocky Linux 9.8 for the proxy and the backup workers](#rocky-linux-98-for-the-proxy-and-the-backup-workers)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [Pinning a run to the Docker image digest](#pinning-a-run-to-the-docker-image-digest)
+- [Default version of a tool](#default-version-of-a-tool)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
+    - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
+    - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
+    - [`sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3](#sge-create-and-sge-configure-fail-in-tools-without-diff-and-the-extra-sge-queues-fail-on-python-3)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
@@ -1897,6 +1905,8 @@ For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system
 The `optional-parameters-filter` launch form setting can now set the default state of the **Show optional parameters** checkbox, and override it for a single pipeline or tool.  
 For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#miscellaneous).
 
+***
+
 ## VS Code extension: the folder opened on connect
 
 On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
@@ -1961,7 +1971,97 @@ More details see [here](../../manual/13_Permissions/13._Permissions.md#pipeline-
 
 ***
 
+## Pinning a run to the Docker image digest
+
+Previously, the pod of a run was always created with the Docker image tag, e.g. `library/centos:7`. If the tag was moved to another image after the launch - e.g. while the run's node was still starting - the run could get another image than the one it was launched with.
+
+In **`v0.17`**, a run can be pinned to the exact image its tag points to at the launch. It is enabled by the system preference `launch.docker.image.pin.digest` (`false` by default):
+
+- a new run asks the registry for the digest of its image tag, stores it, and its pod pulls the image by the digest (`<registry>/<group>/<tool>@sha256:...`). The image name with the tag is kept in the `docker_image` annotation of the pod
+- if the digest cannot be obtained from the registry, the new run is launched with the tag, as before
+- a restarted run - e.g. a spot run restarted after its instance was reclaimed - asks the registry for nothing: it keeps the digest of the run it restarts, so it continues from the same image, even if the tag has been moved to another image since that run was launched
+- a rerun of a completed run, by the **RERUN** control or by `pipe run`, is a new run and not a restart: it asks the registry for the digest of the tag again, so it can get another image than the run it was rerun from
+- the digest is shown at the **Run logs** page (the **Instance** section), and by `pipe view-runs <run-id>`. It is also returned by the API as the `actualDockerImageDigest` field of a run
+- a paused run is always resumed with the tag, since the pause saves the container under it. The digest of such a run still names the image it was launched with, not the image saved by the pause
+
+The preference applies when a run is launched or restarted. The runs launched before the preference was enabled keep using the tag, and a restart of such a run uses the tag as well. Disabling the preference does not affect the runs that are already pinned, but a restart of a pinned run after that uses the tag.
+
+> **_Note_**: the previous API versions cannot find the container of a running pinned run. Before downgrading the API to such a version, disable the preference and wait until no pinned run is running - otherwise pausing, committing or limiting the network of such a run fails, and a failed pause fails the run and terminates its node. Paused pinned runs are safe: a previous version resumes them with the tag, as before.
+
+For more details see [here](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#launch).
+
+***
+
+## Default version of a tool
+
+Previously, the version of a tool, which was used if a version was not specified, was always the `latest` one. To make another version the default one, it had to be pushed again with the `latest` tag, and when a version was deleted, `latest` could still point to an old image.
+
+In **`v0.17`**, any version of a tool can be set as its default version. The default version is used in place of the `latest` one:
+
+- the **Run** button at the top of the tool page launches it, and the **Settings** tab of the tool shows and saves its settings
+- a version, which has no own settings, is launched from the GUI with the settings of the default version
+- a tool image specified without a version - via `pipe run -di`, in a pipeline configuration or in an API request - is launched with the default version
+- the version pickers of the launch form and of the versioned storage launch mark it as **default**
+- a commit gives the new version the settings of the default version of the tool, which the run was launched from, and doesn't push the `latest` version into a tool, which has a default version set
+
+Users with the **WRITE** permission for a tool set and unset the default version at the **Versions** tab of the tool. Until a default version is set, and once it is unset or deleted, the `latest` version is used, as before. The default version can also be managed via the API: `POST /tool/{id}/defaultVersion?version=<version>` sets it, `DELETE /tool/{id}/defaultVersion` removes it, and the tool returns it as the `defaultVersion` field.
+
+For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#set-a-default-version).
+
+***
+
 ## Notable Bug fixes
+
+### Users export: the names of the date columns depend on the API time zone
+
+[#4739](https://github.com/epam/cloud-pipeline/issues/4739)
+
+Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
+Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
+See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+
+### A committed image of a user with a large UID writes hundreds of GB to the disk
+
+[#4767](https://github.com/epam/cloud-pipeline/issues/4767)
+
+Previously, a run owner with a large UID - e.g. one mapped from Active Directory - got a sparse `/var/log/lastlog` file of up to hundreds of GB in the container: the file keeps a record of each user at an offset that grows with the UID. A commit stored this file in full. The image still looked usual in the registry, as the zeros compress well, but every pull wrote the whole file to the node's disk: the launch took long, the disk was autoscaled for nothing, and a pause of such a run failed for lack of free disk space.
+Now, `lastlog`, `faillog` and `tallylog` are emptied in the running container just before a commit or a pause. An image committed before that keeps the file in a layer, so commit it again from a run of the image it was committed from.
+More details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#login-records).
+
+### Detached configuration: the old name stays in the Library after a rename
+
+[#4756](https://github.com/epam/cloud-pipeline/issues/4756)
+
+Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
+Now, the folder and the library tree show the new name right after the rename.
+
+### AWS: a Route53 DNS record of an endpoint is reported as failed although Route53 has created it
+
+[#4741](https://github.com/epam/cloud-pipeline/issues/4741)
+
+Previously, the API read the status of a new Route53 DNS record once more after Route53 had already reported it as `INSYNC`. Route53 could still answer `PENDING` to that second read, and the API then reported the record as failed.
+So an endpoint with the **Sub-Domain** option came up only on the next EDGE sync, and the `CreateDNSRecord` task of the run logged "Failed to create DNS record". The error message also stated a timeout that had not happened.
+Now, the API uses the `INSYNC` status Route53 reported. If the record is still not `INSYNC` after `CP_API_DNS_ROUTE53_MAX_ATTEMPTS` retries, made `CP_API_DNS_ROUTE53_DELAY_SECONDS` apart, the request fails, and the message gives the attempts, the delay and the time waited.
+
+### NICE DCV setup reports a failure only after 30 minutes, with no reason
+
+[#4768](https://github.com/epam/cloud-pipeline/issues/4768)
+
+Previously, if the NICE DCV server could not be started - e.g. `systemd` was not running in the container, so `systemctl start dcvserver` failed - the `NiceDCVInitialization` task kept waiting for the server for 30 minutes (60 tries, 30 seconds apart), and then failed with "DCV server cannot be run", with no reason.
+Now, in RPM-based images:
+
+- if `systemd` is not running in the container, the setup fails at once, with the output of `systemctl`
+- if the start of the DCV server fails, while `systemd` runs, the setup logs the output of `systemctl` and waits, as the server's service is started again
+- the setup fails at the next try once `systemd` has marked the service as failed - after a failed start, or after the server has started and failed - with the service's status
+
+### `sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3
+
+[#4758](https://github.com/epam/cloud-pipeline/issues/4758)
+
+Previously, `sge create` and `sge configure` ran the `diff` command of the tool image to find the changes made to a grid engine profile. Many images have no `diff`: Rocky Linux 8 and 9, Red Hat UBI 8 and 9 and Amazon Linux 2023 among them. There, once the editor was closed, the commands failed with `Grid engine profiles management has failed.`, and the profile changes were lost.
+With Python 3 (`CP_PYTHON_VERSION=3`), the grid engine profiles were not generated when there were queues besides the default one: `sge create` failed in every image before the editor opened, and a cluster launched with extra queues, e.g. with `CP_CAP_SGE_QUEUE_NAME_1`, got no profiles at all. Also, `sge configure` printed the changes as `b'...'`.
+Now, the commands find the changes in Python, and print them as text, in the same format as before: `<` before an old line, and `>` before a new one. The profiles of the extra queues are generated with Python 3 too.
+See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
 
 ### AWS: billing reports show the `S3 Standard` storage costs twice as high
 
@@ -2017,6 +2117,14 @@ Now, the launch form shows its default value.
 
 Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
 Now, the alias is added to the run's tags alongside the tags set in the launch form.
+
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings and in the configuration selection dialog of the **Metadata** page.
 
 ### Restarted runs lose parameters and get an API token of another user
 

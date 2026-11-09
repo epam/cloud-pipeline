@@ -24,6 +24,7 @@ import whoAmI from '../../../../../models/user/WhoAmI';
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
 import LoadToolVersionSettings from '../../../../../models/tools/LoadToolVersionSettings';
+import {getTaglessImageVersion} from '../../../../../utils/tool-default-version';
 
 const DEFAULT_DOCKER_IMAGE = 'library/cellprofiler-web-api';
 
@@ -56,7 +57,7 @@ const fetchUserRequired = (specsFolder, resultsFolder) =>
   hasUserPlaceholder(resultsFolder) ||
   hasUserStoragePlaceholder(resultsFolder);
 
-export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'latest') {
+export async function getDockerImageInfo (dockerImage, dockerImageVersion) {
   if (!dockerImage) {
     throw new Error('Batch analysis: analysis tool not specified');
   }
@@ -74,7 +75,7 @@ export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'lat
     }
     const [
       tool,
-      version = 'latest'
+      version
     ] = toolAndVersion.split(':');
     dockerImageVersion = version;
     toolRequestPayload = [group, tool].filter(Boolean).join('/');
@@ -88,18 +89,19 @@ export async function getDockerImageInfo (dockerImage, dockerImageVersion = 'lat
     throw new Error(`tool ${dockerImage} not found`);
   }
   const toolInfo = toolRequest.value;
-  const toolSettings = new LoadToolVersionSettings(toolInfo.id, dockerImageVersion);
+  const toolVersion = dockerImageVersion || getTaglessImageVersion(toolInfo);
+  const toolSettings = new LoadToolVersionSettings(toolInfo.id, toolVersion);
   await toolSettings.fetch();
   if (toolSettings.error) {
     throw new Error(toolSettings.error);
   }
-  const info = (toolSettings.value || []).find(o => o.version === dockerImageVersion);
+  const info = (toolSettings.value || []).find(o => o.version === toolVersion);
   let versionSettings = {};
   if (info && info.settings && info.settings.length > 0) {
     versionSettings = info.settings[0].configuration;
   }
   return {
-    dockerImage: `${toolInfo.registry}/${toolInfo.image}:${dockerImageVersion}`,
+    dockerImage: `${toolInfo.registry}/${toolInfo.image}:${toolVersion}`,
     dockerImageWithoutVersion: `${toolInfo.registry}/${toolInfo.image}`,
     tool: toolInfo,
     settings: versionSettings
@@ -114,7 +116,7 @@ export async function getBatchAnalysisDockerImage (refresh = false) {
   } = settings || {};
   let {
     dockerImage = analysisDockerImage,
-    dockerImageVersion = 'latest'
+    dockerImageVersion
   } = batch;
   try {
     return getDockerImageInfo(dockerImage, dockerImageVersion);
