@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
@@ -33,16 +34,19 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineRun;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -64,6 +68,7 @@ public class ReassignHandlerTest {
     private final PipelineRunManager pipelineRunManager = mock(PipelineRunManager.class);
     private final MetadataManager metadataManager = mock(MetadataManager.class);
     private final IAMProfileVerifier iamProfileVerifier = mock(IAMProfileVerifier.class);
+    private final MessageHelper messageHelper = mock(MessageHelper.class);
 
     private final ReassignHandler reassignHandler = new ReassignHandler(
             autoscalerService,
@@ -71,7 +76,8 @@ public class ReassignHandlerTest {
             pipelineRunManager,
             new ArrayList<>(),
             metadataManager,
-            iamProfileVerifier);
+            iamProfileVerifier,
+            messageHelper);
 
     @Test
     public void shouldNotReassignWithCreateNewNodeParameter() {
@@ -189,6 +195,70 @@ public class ReassignHandlerTest {
     }
 
     @Test
+    public void shouldFailFastWhenThePoolsOwnNodeIsStructurallyIncompatible() {
+        final NodePool pool = activePool();
+
+        assertThatThrownBy(() -> tryReassignOnto(pool, poolIdParameter(ID), false))
+                .isInstanceOf(PoolReservationIncompatibleException.class);
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldFailFastWhenThePoolsOwnReservationHasExpired() {
+        final NodePool pool = inactivePool();
+        pool.setCapacityReservation(true);
+
+        assertThatThrownBy(() -> tryReassignOnto(pool, poolIdParameter(ID)))
+                .isInstanceOf(PoolReservationIncompatibleException.class);
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldFailFastWhenTheRunDoesNotSatisfyThePoolsOwnFilter() {
+        final NodePool pool = filteredPool(PoolInstanceFilterType.DOCKER_IMAGE);
+
+        assertThatThrownBy(() -> tryReassignOnto(pool, poolIdParameter(ID)))
+                .isInstanceOf(PoolReservationIncompatibleException.class);
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldNotFailFastOnAnOrFilterWhenASiblingFilterStillPasses() {
+        final NodePool pool = orFilteredPool(PoolInstanceFilterType.DOCKER_IMAGE, PoolInstanceFilterType.RUN_OWNER);
+        pool.setOwner(TEST_STRING);
+        doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
+
+        assertThat(tryReassignOnto(pool, poolIdParameter(ID))).isTrue();
+    }
+
+    @Test
+    public void shouldFailFastWhenEveryFilterOfAnOrFilterRejectsTheRun() {
+        final NodePool pool = orFilteredPool(PoolInstanceFilterType.DOCKER_IMAGE,
+                PoolInstanceFilterType.CONFIGURATION_ID);
+
+        assertThatThrownBy(() -> tryReassignOnto(pool, poolIdParameter(ID)))
+                .isInstanceOf(PoolReservationIncompatibleException.class);
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
+    public void shouldNotFailFastOnTheImagePreferringAttemptAloneWhenThePlainAttemptWouldStillSucceed() {
+        final NodePool pool = activePool();
+        doReturn(false).when(autoscalerService).requirementsMatchWithImages(any(), any());
+        doReturn(true).when(cloudFacade).reassignPoolNode(anyString(), anyLong(), any());
+
+        assertThat(tryReassignOnto(pool, poolIdParameter(ID))).isTrue();
+    }
+
+    @Test
+    public void shouldNotFailFastForAnotherPoolsNodeEvenWhenItIsStructurallyIncompatible() {
+        final NodePool pool = activePool();
+
+        assertThat(tryReassignOnto(pool, poolIdParameter(ID_2), false)).isFalse();
+        verify(cloudFacade, never()).reassignPoolNode(anyString(), anyLong(), any());
+    }
+
+    @Test
     public void shouldNotReassignAPlainNodeToARunExclusivelyBoundToAPool() {
         final PipelineRun pipelineRun = getPipelineRun(ID);
         pipelineRun.setPipelineRunParameters(poolIdParameter(ID_2));
@@ -241,13 +311,18 @@ public class ReassignHandlerTest {
     }
 
     private boolean tryReassignOnto(final NodePool pool, final List<PipelineRunParameter> parameters) {
+        return tryReassignOnto(pool, parameters, true);
+    }
+
+    private boolean tryReassignOnto(final NodePool pool, final List<PipelineRunParameter> parameters,
+                                    final boolean requirementsMatch) {
         final PipelineRun pipelineRun = getPipelineRun(ID);
         pipelineRun.setPipelineRunParameters(parameters);
         doReturn(Optional.of(pipelineRun)).when(pipelineRunManager).findRun(ID);
         final RunningInstance poolInstance = pool.toRunningInstance();
         poolInstance.getInstance().setNodeId(POOL_NODE_ID);
         doReturn(poolInstance).when(autoscalerService).getPreviousRunInstance(Mockito.anyString(), Mockito.any());
-        doReturn(true).when(autoscalerService).requirementsMatch(any(), any());
+        doReturn(requirementsMatch).when(autoscalerService).requirementsMatch(any(), any());
         final InstanceRequest request = new InstanceRequest();
         request.setInstance(new RunInstance());
         return reassignHandler.tryReassignNode(null, new HashSet<>(), new HashSet<>(),
@@ -278,6 +353,20 @@ public class ReassignHandlerTest {
         doReturn(type).when(filter).getType();
         final NodePool pool = inactivePool();
         pool.setFilter(new PoolFilter(PoolFilterOperator.AND, Collections.singletonList(filter)));
+        return pool;
+    }
+
+    /** A pool with one OR-combined filter per given type: no filter handler is registered here either. */
+    private static NodePool orFilteredPool(final PoolInstanceFilterType... types) {
+        final List<PoolInstanceFilter> filters = Arrays.stream(types)
+                .map(type -> {
+                    final PoolInstanceFilter filter = mock(PoolInstanceFilter.class);
+                    doReturn(type).when(filter).getType();
+                    return filter;
+                })
+                .collect(Collectors.toList());
+        final NodePool pool = inactivePool();
+        pool.setFilter(new PoolFilter(PoolFilterOperator.OR, filters));
         return pool;
     }
 

@@ -63,6 +63,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -342,6 +343,21 @@ public class AutoscaleManagerTest {
         autoscaleManagerCore.runAutoscaling(); // retry budget exceeded - same bound an ordinary nodeup uses
 
         verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunFailsImmediatelyWhenPoolsOwnNodeIsIncompatible() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        final String reason = "The run does not match the reserved instance of node pool 'ml-pool'.";
+        doThrow(new PoolReservationIncompatibleException(reason))
+                .when(reassignHandler).tryReassignNode(any(), any(), any(), any(), anyLong(), any(), any());
+
+        autoscaleManagerCore.runAutoscaling(); // a single tick - no retry budget spent on a certainty
+
+        verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), eq(reason));
         verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
     }
 

@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
@@ -63,19 +65,22 @@ public class ReassignHandler {
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
     private final MetadataManager metadataManager;
     private final IAMProfileVerifier iamProfileVerifier;
+    private final MessageHelper messageHelper;
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
                            final PipelineRunManager pipelineRunManager,
                            final List<PoolFilterHandler> filterHandlers,
                            final MetadataManager metadataManager,
-                           final IAMProfileVerifier iamProfileVerifier) {
+                           final IAMProfileVerifier iamProfileVerifier,
+                           final MessageHelper messageHelper) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
         this.metadataManager = metadataManager;
         this.iamProfileVerifier = iamProfileVerifier;
+        this.messageHelper = messageHelper;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -106,16 +111,19 @@ public class ReassignHandler {
 
         final Optional<Long> requiredPoolId = pipelineRun.flatMap(this::requiredPoolId);
 
-        // Try to find match with pre-pulled image
+        // Try to find match with pre-pulled image. Not the final word on this tick, so a required pool's own
+        // node failing it here does not yet fail the run - the plain attempt below may still take it.
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
                 autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
-                pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes);
+                pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes, false);
         if (reassignedWithMatchingImage) {
             return true;
         }
+        // The final, most permissive attempt this tick: a required pool's own node failing this one is
+        // reported as deterministic, since nothing looser remains to try.
         return attemptReassign(freeInstances,
                 autoscalerService::requirementsMatch, requiredInstance, runId, longId,
-                pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes);
+                pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes, true);
 
     }
 
@@ -151,18 +159,24 @@ public class ReassignHandler {
                                     final Optional<PipelineRun> pipelineRun,
                                     final Optional<Long> requiredPoolId,
                                     final Set<String> scheduledRuns,
-                                    final Set<String> reassignedNodes) {
+                                    final Set<String> reassignedNodes,
+                                    final boolean failFast) {
         return freeInstances.entrySet()
                 .stream()
                 .anyMatch(entry -> {
                     final String previousId = entry.getKey();
                     final RunningInstance previousInstance = entry.getValue();
+                    final Optional<NodePool> ownPool = failFast
+                            ? requiredPoolOf(previousInstance, requiredPoolId) : Optional.empty();
                     if (!matcher.apply(previousInstance, requiredInstance)) {
+                        ownPool.ifPresent(pool -> failIncompatible(
+                                MessageConstants.ERROR_NODE_POOL_RESERVED_NODE_MISMATCH, pool.getName()));
                         return false;
                     }
+                    ownPool.ifPresent(this::assertReservationNotExpired);
                     final boolean passedPoolFilter = Optional.ofNullable(previousInstance.getPool())
                             .map(pool -> matchesRequiredPool(pool.getId(), requiredPoolId)
-                                    && isReusable(pool) && matchesPoolFilter(pool, pipelineRun))
+                                    && isReusable(pool) && matchesPoolFilter(pool, pipelineRun, ownPool.isPresent()))
                             .orElse(!requiredPoolId.isPresent());
                     if (!passedPoolFilter) {
                         return false;
@@ -170,6 +184,30 @@ public class ReassignHandler {
                     return reassignInstance(runId, longId, scheduledRuns, reassignedNodes,
                             previousId, previousInstance, pipelineRun);
                 });
+    }
+
+    /**
+     * The required pool's own free node, if this one is it - the only node whose mismatch is this run's own
+     * fault rather than some other pool's unrelated business.
+     */
+    private Optional<NodePool> requiredPoolOf(final RunningInstance instance, final Optional<Long> requiredPoolId) {
+        return Optional.ofNullable(instance.getPool())
+                .filter(pool -> requiredPoolId.map(pool.getId()::equals).orElse(false));
+    }
+
+    /**
+     * Past its window, a capacity reservation pool's own node is as dead an end as a structural mismatch - no
+     * later tick makes it any less true.
+     */
+    private void assertReservationNotExpired(final NodePool pool) {
+        if (pool.isCapacityReservation() && pool.getEndDate() != null
+                && DateUtils.nowUTC().isAfter(pool.getEndDate())) {
+            failIncompatible(MessageConstants.ERROR_NODE_POOL_RESERVATION_EXPIRED, pool.getName());
+        }
+    }
+
+    private void failIncompatible(final String messageKey, final Object... args) {
+        throw new PoolReservationIncompatibleException(messageHelper.getMessage(messageKey, args));
     }
 
     private boolean matchesRequiredPool(final Long poolId, final Optional<Long> requiredPoolId) {
@@ -189,14 +227,19 @@ public class ReassignHandler {
      * Whether a pool's free node may take this run. A filter about whose runs the pool serves does not hold against
      * the pool's own owner, who reuses its nodes whatever it says; a filter about the run itself - its image, its
      * pipeline, its parameters - holds for the owner as for anyone else.
+     *
+     * <p>{@code failFast} is only ever true for the required pool's own node: there, a rejection is reported as
+     * deterministic rather than merely returned as {@code false}, since no later tick changes what the run's
+     * owner, image, pipeline or parameters are.
      */
-    private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun) {
+    private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun,
+                                      final boolean failFast) {
         final PoolFilter filter = pool.getFilter();
         if (filter == null || filter.isEmpty()) {
             return true;
         }
         return pipelineRun
-                .map(run -> matchRun(pool, filter, run))
+                .map(run -> matchRun(pool, filter, run, failFast))
                 .orElse(false);
     }
 
@@ -205,13 +248,34 @@ public class ReassignHandler {
                 && StringUtils.equalsIgnoreCase(pool.getOwner(), run.getOwner());
     }
 
-    private boolean matchRun(final NodePool pool, final PoolFilter filter, final PipelineRun run) {
+    /**
+     * The AND/OR combinator is the only place that knows the overall result, so it is the only place that may
+     * report a rejection as deterministic - a single failing filter under OR is not, while a sibling may yet
+     * pass; {@link #matchRunToFilter} itself never decides this.
+     */
+    private boolean matchRun(final NodePool pool, final PoolFilter filter, final PipelineRun run,
+                             final boolean failFast) {
         final List<PoolInstanceFilter> filters = filter.getFilters();
         switch (filter.getOperator()) {
-            case AND:
-                return filters.stream().allMatch(f -> matchRunToFilter(pool, f, run));
-            case OR:
-                return filters.stream().anyMatch(f -> matchRunToFilter(pool, f, run));
+            case AND: {
+                final Optional<PoolInstanceFilter> firstFailing = filters.stream()
+                        .filter(f -> !matchRunToFilter(pool, f, run))
+                        .findFirst();
+                if (firstFailing.isPresent() && failFast) {
+                    failIncompatible(MessageConstants.ERROR_NODE_POOL_FILTER_MISMATCH, pool.getName(),
+                            firstFailing.get().getType().name());
+                }
+                return !firstFailing.isPresent();
+            }
+            case OR: {
+                final boolean anyMatches = filters.stream()
+                        .anyMatch(f -> matchRunToFilter(pool, f, run));
+                if (!anyMatches && failFast) {
+                    failIncompatible(MessageConstants.ERROR_NODE_POOL_FILTER_MISMATCH, pool.getName(),
+                            filters.get(0).getType().name());
+                }
+                return anyMatches;
+            }
             default:
                 throw new IllegalArgumentException("Unsupported filter operator: " + filter.getOperator());
         }
