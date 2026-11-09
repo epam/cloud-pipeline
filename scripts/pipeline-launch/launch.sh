@@ -770,7 +770,9 @@ function install_python3_packages {
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
       # The distro is unpacked next to its place and swapped in only when it is complete: a failed download or unpack
-      # keeps the python3.12, python3 and pip3 the image already has (e.g. a committed run, or a python:3.x image)
+      # keeps the python3.12, python3 and pip3 the image already has (e.g. a committed run, or a python:3.x image).
+      # A folder left by an init that was killed during the download is removed first, so a commit doesn't keep it
+      rm -rf "${_install_path}"/.cp-python3.*
       local _tmp_install_dir
       _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")" || {
             echo "[WARN] Unable to create a temporary folder in ${_install_path} for the python3 distro"
@@ -784,8 +786,14 @@ function install_python3_packages {
             echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL, keeping the python3 of the image"
             return 1
       fi
+      # Not moved aside: on a committed image the old folder is in a lower layer, so a move would copy all of it.
+      # The new folder is in the container's own layer, next to its place, so moving it in is a plain rename
       rm -rf "${_install_path}/python3.12"
-      mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"
+      if ! mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to move the python3 distro into ${_install_path}/python3.12, the python3 and pip3 links are not changed"
+            return 1
+      fi
       # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
       # an openssl folder (the previous python3.12.0 build) replaces it
       if [ -d "${_tmp_install_dir}/openssl" ]; then

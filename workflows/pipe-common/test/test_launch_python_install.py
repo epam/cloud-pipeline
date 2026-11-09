@@ -15,11 +15,10 @@
 # Covers the Python 3.12 installation of scripts/pipeline-launch/launch.sh: what it replaces in the image, and what a
 # failed download or unpack leaves behind (what the image had, and no temporary folder). Runs the
 # install_python3_packages function of launch.sh with bash, a stub "wget" first on PATH, and a temporary folder in
-# place of /usr/local. Needs bash and tar.
+# place of /usr/local. Needs bash, mktemp, and tar with gzip.
 
 import os
 import shutil
-import stat
 import subprocess
 import tarfile
 import tempfile
@@ -180,6 +179,43 @@ class LaunchPythonInstallTest(unittest.TestCase):
         self._tarball_of(['python3.12/lib/python3.12/os.py', 'openssl/lib/from-distro'])
         self._stub_wget('cp "%s" "$4"\n' % self.tarball)
         self._fails_and_keeps_the_image()
+
+    def test_a_folder_left_by_a_killed_download_is_removed(self):
+        _write(self._path('.cp-python3.Ab12Cd', 'python3.tgz'), 'partial download')
+        self._image_has()
+        self._distro(with_openssl=False)
+        self._installs()
+        self.assertEqual([], [name for name in os.listdir(self.install_path) if name.startswith('.cp-python3.')])
+
+    def test_a_failed_move_leaves_the_links_of_the_image(self):
+        self._image_has()
+        self._distro(with_openssl=False)
+        # mv fails for the new python3.12 of the distro, e.g. on a full disk
+        _write(os.path.join(self.stub_bin, 'mv'),
+               '#!/bin/sh\n'
+               'case "$1" in */.cp-python3.*/python3.12) exit 1 ;; esac\n'
+               'exec %s "$@"\n' % (shutil.which('mv') or '/bin/mv'), executable=True)
+        out = self._install()
+        self.assertIn('RC=1', out)
+        self.assertIn('[WARN] Unable to move the python3 distro', out)
+        self.assertNotIn('Python3 distro is installed', out)
+        self.assertEqual('python3.11', os.readlink(self._path('bin', 'python3')))
+        self.assertFalse(os.path.islink(self._path('bin', 'pip3')))
+        self.assertEqual(['bin', 'openssl'], sorted(os.listdir(self.install_path)))
+
+    def test_a_dangling_python_link_of_the_image_is_replaced(self):
+        os.symlink(self._path('gone', 'python3.12'), self._path('python3.12'))
+        self._distro(with_openssl=False)
+        self._installs()
+        self.assertFalse(os.path.islink(self._path('python3.12')))
+        self.assertTrue(os.path.isfile(self._path('python3.12', 'bin', 'python3.12')))
+
+    def test_no_temporary_folder_fails_without_changes(self):
+        self.install_path = os.path.join(self.tmp, 'missing')
+        out = self._install()
+        self.assertIn('RC=1', out)
+        self.assertIn('[WARN] Unable to create a temporary folder', out)
+        self.assertFalse(os.path.exists(self.install_path))
 
     def test_a_failed_download_leaves_no_links_where_the_image_has_no_python(self):
         self._stub_wget('exit 8\n')
