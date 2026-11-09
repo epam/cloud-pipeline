@@ -15,12 +15,12 @@
  */
 
 import {stubApi} from '@test';
-import DataStorageDownloadArchive from './DataStorageDownloadArchive';
+import AsyncTaskCreate from './AsyncTaskCreate';
 
-test('DataStorageDownloadArchive posts {paths, archiveName} to' +
-  ' /datastorage/{id}/download/archive and returns the created task', async () => {
+test('AsyncTaskCreate posts the payload with its own type to /async-task/create' +
+  ' and returns the created task', async () => {
   const api = stubApi({
-    '/datastorage/7/download/archive': {
+    '/async-task/create': {
       id: 99,
       status: 'PENDING',
       params: {
@@ -31,15 +31,20 @@ test('DataStorageDownloadArchive posts {paths, archiveName} to' +
       }
     }
   });
-  const model = new DataStorageDownloadArchive(7);
-  const body = {paths: ['a.txt', 'folder/'], archiveName: 'archive-20261021-131302'};
+  const model = new AsyncTaskCreate();
+  const body = {
+    type: 'DOWNLOAD_ARCHIVE',
+    storageId: 7,
+    paths: ['a.txt', 'folder/'],
+    archiveName: 'archive-20261021-131302'
+  };
 
   await model.send(body);
 
   expect(api.calls).toHaveLength(1);
   expect(api.calls[0]).toEqual(expect.objectContaining({
     method: 'POST',
-    path: '/datastorage/7/download/archive'
+    path: '/async-task/create'
   }));
   expect(JSON.parse(api.calls[0].body)).toEqual(body);
   expect(model.value.status).toBe('PENDING');

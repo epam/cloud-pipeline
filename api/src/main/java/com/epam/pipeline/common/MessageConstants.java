@@ -1032,8 +1032,6 @@ public final class MessageConstants {
     public static final String ERROR_ASYNC_TASK_RESULT_INVALID = "error.async.task.result.invalid";
     public static final String ERROR_ASYNC_TASK_PAYLOAD_TYPE_MISMATCH =
             "error.async.task.payload.type.mismatch";
-    public static final String ERROR_ASYNC_TASK_ARCHIVE_PATHS_REQUIRED =
-            "error.async.task.archive.paths.required";
     public static final String ERROR_ASYNC_TASK_ARCHIVE_NAME_INVALID =
             "error.async.task.archive.name.invalid";
     public static final String ERROR_ASYNC_TASK_ARCHIVE_NOT_READY = "error.async.task.archive.not.ready";
@@ -1046,26 +1044,19 @@ public final class MessageConstants {
     public static final String ERROR_ASYNC_TASK_PAYLOAD_REQUIRED = "error.async.task.payload.required";
     public static final String ERROR_ASYNC_TASK_PAYLOAD_UNEXPECTED =
             "error.async.task.payload.unexpected";
-    public static final String ERROR_ASYNC_TASK_UNPACK_PATH_INVALID =
-            "error.async.task.unpack.path.invalid";
-    public static final String ERROR_ASYNC_TASK_UNPACK_PATH_NOT_CANONICAL =
-            "error.async.task.unpack.path.not.canonical";
     public static final String ERROR_ASYNC_TASK_NOTHING_TO_CONSUME =
             "error.async.task.nothing.to.consume";
-    public static final String ERROR_ASYNC_TASK_UNPACK_REQUEST_REQUIRED =
-            "error.async.task.unpack.request.required";
-    public static final String ERROR_ASYNC_TASK_UNPACK_SOURCE_STORAGE_REQUIRED =
-            "error.async.task.unpack.source.storage.required";
-    public static final String ERROR_ASYNC_TASK_UNPACK_SOURCE_PATH_REQUIRED =
-            "error.async.task.unpack.source.path.required";
-    public static final String ERROR_ASYNC_TASK_UNPACK_SOURCE_NOT_A_FILE =
-            "error.async.task.unpack.source.not.a.file";
-    public static final String ERROR_ASYNC_TASK_UNPACK_DESTINATION_STORAGE_REQUIRED =
-            "error.async.task.unpack.destination.storage.required";
-    public static final String ERROR_ASYNC_TASK_UNPACK_DESTINATION_PATH_REQUIRED =
-            "error.async.task.unpack.destination.path.required";
     public static final String ERROR_ASYNC_TASK_STATUS_NOT_REPORTABLE =
             "error.async.task.status.not.reportable";
+    public static final String ERROR_ASYNC_TASK_TYPE_NOT_SUPPORTED =
+            "error.async.task.type.not.supported";
+
+    public static final String ERROR_ASYNC_TASK_PARAMS_REQUIRED = "error.async.task.params.required";
+    public static final String ERROR_ASYNC_TASK_FIELD_REQUIRED = "error.async.task.field.required";
+    public static final String ERROR_ASYNC_TASK_PATH_INVALID = "error.async.task.path.invalid";
+    public static final String ERROR_ASYNC_TASK_PATH_NOT_CANONICAL =
+            "error.async.task.path.not.canonical";
+    public static final String ERROR_ASYNC_TASK_PATH_NOT_A_FILE = "error.async.task.path.not.a.file";
 
     private MessageConstants() {
         // no-op

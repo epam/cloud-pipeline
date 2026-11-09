@@ -68,7 +68,6 @@ public abstract class AbstractDataStorageControllerTest extends AbstractControll
     protected static final String DATASTORAGE_POLICY_URL = DATASTORAGE_URL + "/policy";
     protected static final String DATASTORAGE_DELETE_URL = BY_ID_URL + "/delete";
     protected static final String DATASTORAGE_RULE_URL = DATASTORAGE_URL + "/rule";
-    protected static final String UNPACK_ARCHIVE_URL = DATASTORAGE_URL + "/unpack/archive";
     protected static final String SAVE_RULE_URL = DATASTORAGE_RULE_URL + "/register";
     protected static final String LOAD_RULES_URL = DATASTORAGE_RULE_URL + "/load";
     protected static final String DELETE_RULES_URL = DATASTORAGE_RULE_URL + "/delete";

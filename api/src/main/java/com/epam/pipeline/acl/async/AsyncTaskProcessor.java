@@ -14,27 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.acl.async;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumable;
+import com.epam.pipeline.dto.async.AsyncTaskParams;
+import com.epam.pipeline.dto.async.AsyncTaskType;
 
-import java.util.List;
-
-/**
- * Which paths of a storage to pack into an archive. The paths are relative to the root of the storage,
- * as they are for {@code POST /datastorage/{id}/generateUrl}, and a trailing slash marks a folder.
- */
-@Getter
-@Setter
-@Builder(toBuilder = true)
-@NoArgsConstructor
-@AllArgsConstructor
-public class DownloadArchiveVO {
-
-    private List<String> paths;
-    private String archiveName;
+public interface AsyncTaskProcessor {
+    AsyncTaskType getType();
+    AsyncTaskParams prepare(AsyncTaskParams params);
+    AsyncTaskConsumable consume(AsyncTask params);
 }

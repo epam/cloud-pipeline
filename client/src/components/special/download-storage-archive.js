@@ -45,7 +45,7 @@ function archivableItems (selectedItems) {
 
 /**
  * Maps a data-storage selection to the `paths` array
- * `POST /datastorage/{id}/download/archive` expects. Unlike
+ * `POST /async-task/create` expects for a DOWNLOAD_ARCHIVE payload. Unlike
  * `itemsAvailableForDownload` in the storage browser's selection dropdown, this
  * keeps BOTH files and folders — folder support is the entire point of this
  * feature — and does not filter on `downloadable`, which is false for every
@@ -117,7 +117,7 @@ export function archiveActionAvailable (selectedItems) {
 }
 
 // What the server accepts as an archive name: `^[\w\-. ]+$`
-// (DataStorageDownloadArchiveManager). Anything else in a name built from a
+// (DownloadArchiveTaskProcessor). Anything else in a name built from a
 // selected item's own file name - brackets, an ampersand, a non-latin
 // letter - would be rejected on OK, so a generated default is folded through
 // this first.
@@ -230,7 +230,7 @@ export function defaultArchiveName (selectedItems = []) {
  * Validates a name the user typed. Its illegal-character half mirrors the
  * server's own rule exactly: built from `NAME_CHARACTERS` above, it is the
  * same character class as `SAFE_ARCHIVE_NAME` in
- * `DataStorageDownloadArchiveManager` - both `\w`s are ASCII `[A-Za-z0-9_]` -
+ * `DownloadArchiveTaskProcessor` - both `\w`s are ASCII `[A-Za-z0-9_]` -
  * so it can never disagree with the sanitiser that folds a generated default
  * through that same class either.
  *

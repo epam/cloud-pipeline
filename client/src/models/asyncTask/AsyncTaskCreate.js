@@ -16,9 +16,9 @@
 
 import RemotePost from '../basic/RemotePost';
 
-export default class DataStorageDownloadArchive extends RemotePost {
-  constructor (id) {
+export default class AsyncTaskCreate extends RemotePost {
+  constructor () {
     super();
-    this.url = `/datastorage/${id}/download/archive`;
+    this.url = '/async-task/create';
   }
 }

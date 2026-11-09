@@ -68,7 +68,7 @@ function archiveSizeOf (task) {
   return bytes;
 }
 
-// Mirrors the backend's own DataStorageDownloadArchiveManager.offeredArchiveName
+// Mirrors the backend's own DownloadArchiveTaskProcessor.offeredArchiveName
 // (StringUtils.endsWithIgnoreCase(requested, ".zip") ? requested : requested + ".zip"):
 // the displayed name gets the suffix appended unless it is already there,
 // case-insensitively, so what is shown here matches the file the user

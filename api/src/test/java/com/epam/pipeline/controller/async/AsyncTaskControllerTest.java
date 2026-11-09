@@ -22,6 +22,9 @@ import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskSortField;
 import com.epam.pipeline.controller.vo.async.AsyncTaskStatusVO;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskParams;
+import com.epam.pipeline.dto.async.DownloadArchiveParams;
+import com.epam.pipeline.dto.async.UnpackArchiveParams;
 import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
@@ -46,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -61,6 +65,7 @@ public class AsyncTaskControllerTest extends AbstractControllerTest {
 
     private static final String TASK_ID = "4f1a2c90-0000-4000-8000-000000000001";
     private static final String BASE_URL = SERVLET_PATH + "/async-task";
+    private static final String CREATE_URL = BASE_URL + "/create";
     private static final String FILTER_URL = BASE_URL + "/filter";
     private static final String NEXT_URL = BASE_URL + "/next";
     private static final String TASK_URL = BASE_URL + "/" + TASK_ID;
@@ -342,6 +347,67 @@ public class AsyncTaskControllerTest extends AbstractControllerTest {
     private AsyncTaskStatusVO capturedReport() {
         final ArgumentCaptor<AsyncTaskStatusVO> captor = ArgumentCaptor.forClass(AsyncTaskStatusVO.class);
         verify(mockAsyncTaskApiService).updateStatus(eq(TASK_ID), captor.capture());
+        return captor.getValue();
+    }
+
+    // ------------------------------------------------------------------ POST /create
+
+    @Test
+    public void shouldFailCreateForUnauthorizedUser() {
+        performUnauthorizedRequest(post(CREATE_URL));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldBindADownloadArchivePayloadByItsOwnType() throws Exception {
+        final AsyncTaskParams params = DownloadArchiveParams.builder()
+                .storageId(STORAGE_ID)
+                .paths(Collections.singletonList("data/"))
+                .archiveName("selection.zip")
+                .build();
+        doReturn(task(AsyncTaskStatus.PENDING)).when(mockAsyncTaskApiService).createAsyncTask(any());
+
+        performRequest(post(CREATE_URL).content(getObjectMapper().writeValueAsString(params)));
+
+        final DownloadArchiveParams received = (DownloadArchiveParams) captureCreated();
+        assertEquals(AsyncTaskType.DOWNLOAD_ARCHIVE, received.getType());
+        assertEquals(STORAGE_ID, received.getStorageId());
+        assertEquals(Collections.singletonList("data/"), received.getPaths());
+        assertEquals("selection.zip", received.getArchiveName());
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldBindAnUnpackArchivePayloadByItsOwnType() throws Exception {
+        final AsyncTaskParams params = UnpackArchiveParams.builder()
+                .sourceStorageId(STORAGE_ID)
+                .sourcePath(ARCHIVE_PATH)
+                .destinationStorageId(STORAGE_ID)
+                .destinationPath("extracted")
+                .overwrite(true)
+                .build();
+        doReturn(task(AsyncTaskStatus.PENDING)).when(mockAsyncTaskApiService).createAsyncTask(any());
+
+        performRequest(post(CREATE_URL).content(getObjectMapper().writeValueAsString(params)));
+
+        final UnpackArchiveParams received = (UnpackArchiveParams) captureCreated();
+        assertEquals(AsyncTaskType.UNPACK_ARCHIVE, received.getType());
+        assertEquals(ARCHIVE_PATH, received.getSourcePath());
+        assertEquals("extracted", received.getDestinationPath());
+        assertTrue(received.isOverwrite());
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldRefuseAPayloadOfAnUnknownType() {
+        performRequest(post(CREATE_URL).content("{\"type\": \"COPY_ARCHIVE\", \"sourcePath\": \"a.zip\"}"));
+
+        verify(mockAsyncTaskApiService, never()).createAsyncTask(any());
+    }
+
+    private AsyncTaskParams captureCreated() {
+        final ArgumentCaptor<AsyncTaskParams> captor = ArgumentCaptor.forClass(AsyncTaskParams.class);
+        verify(mockAsyncTaskApiService).createAsyncTask(captor.capture());
         return captor.getValue();
     }
 

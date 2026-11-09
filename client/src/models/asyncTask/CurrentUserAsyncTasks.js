@@ -18,7 +18,7 @@ import AsyncTaskFilter from './AsyncTaskFilter';
 import AsyncTaskLoad from './AsyncTaskLoad';
 import AsyncTaskCancel from './AsyncTaskCancel';
 import AsyncTaskConsume from './AsyncTaskConsume';
-import DataStorageDownloadArchive from '../dataStorage/DataStorageDownloadArchive';
+import AsyncTaskCreate from './AsyncTaskCreate';
 import {
   ACTIVE_STATUSES,
   ASYNC_TASK_TYPES,
@@ -168,7 +168,7 @@ class CurrentUserAsyncTasks {
     entriesForUser(userName).forEach(entry => this.startPolling(entry));
     let active = [];
     try {
-      active = await this.fetchActiveTasks();
+      active = await this.fetchActiveTasks(ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE);
     } catch (error) {
       // The browser keeps watching whatever it already knew about; a failed
       // sync costs this visit's knowledge of other machines, nothing more.
@@ -344,24 +344,33 @@ class CurrentUserAsyncTasks {
     this.listeners = this.listeners.filter(aListener => aListener !== listener);
   };
 
-  // The archive-download tasks the user has in progress *right now*, asked of
-  // the server: the only answer worth gating on, and the reason this store
-  // keeps no running total of its own. A task queued in another browser or
-  // another tab is in here and could not possibly be in anything local.
+  // The tasks the user has in progress *right now*, asked of the server: the
+  // only answer worth gating on, and the reason this store keeps no running
+  // total of its own. A task queued in another browser or another tab is in
+  // here and could not possibly be in anything local.
   //
-  // Two callers, both one-off rather than polled: `checkActiveTasksLimit`
-  // (below) counts them, and `restore` (above) starts watching them.
+  // Two callers, both one-off rather than polled, and they want different
+  // scopes - which is why the type is a parameter:
+  //
+  //  - `checkActiveTasksLimit` (below) counts them and passes NO type. The
+  //    server's `maxUserTasks` is one budget across every task type, so a
+  //    count of one type only would let the user past a cap the server then
+  //    enforces anyway.
+  //  - `restore` (above) passes DOWNLOAD_ARCHIVE, because what it does with
+  //    the answer is start watching and announcing. An unpack task has nothing
+  //    to hand over, so announcing one would offer a download that does not
+  //    exist.
   //
   // `ACTIVE_STATUSES`, the four active ones and nothing else. No
   // `page`/`pageSize` - this needs every match, and the cap means there are at
   // most a handful.
-  async fetchActiveTasks () {
+  async fetchActiveTasks (type) {
     await whoAmI.fetchIfNeededOrWait();
     const {userName} = whoAmI.loaded ? (whoAmI.value || {}) : {};
-    const body = {
-      type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE,
-      statuses: ACTIVE_STATUSES
-    };
+    const body = {statuses: ACTIVE_STATUSES};
+    if (type) {
+      body.type = type;
+    }
     // Sent when known, omitted otherwise, never sent as `undefined`. It is
     // ACL-guarded server-side anyway (ignored for a regular user, honoured for
     // an admin), but an admin must count their own tasks, not everyone's.
@@ -404,7 +413,7 @@ class CurrentUserAsyncTasks {
    * not be treated alike: being AT the cap blocks with a reason to show the
    * user, while a check that could not run at all must NOT block - the server
    * re-enforces this quota for real
-   * (DataStorageDownloadArchiveManager.assertUserQuota), so a momentary
+   * (AsyncTaskApiService.assertUserQuota), so a momentary
    * failure of this request is not allowed to be the thing that stops a
    * legitimate download.
    *
@@ -448,8 +457,13 @@ class CurrentUserAsyncTasks {
     if (!allowed) {
       throw new Error(reason);
     }
-    const request = new DataStorageDownloadArchive(storageId);
-    await request.send({paths, archiveName});
+    const request = new AsyncTaskCreate();
+    await request.send({
+      type: ASYNC_TASK_TYPES.DOWNLOAD_ARCHIVE,
+      storageId,
+      paths,
+      archiveName
+    });
     if (request.error) {
       throw new Error(request.error);
     }

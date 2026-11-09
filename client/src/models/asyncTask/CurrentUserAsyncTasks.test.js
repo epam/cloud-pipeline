@@ -409,6 +409,10 @@ describe('restore', () => {
     const body = JSON.parse(api.calls.find(c => c.path === FILTER_ROUTE).body);
     expect([...body.statuses].sort()).toEqual([...ACTIVE_STATUSES].sort());
     expect(body.owner).toBe(USER_NAME);
+    // Scoped to DOWNLOAD_ARCHIVE, unlike the quota count, because what this
+    // does with the answer is watch and announce: an unpack task has nothing
+    // to hand over, so announcing one would offer a download that is not there.
+    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
   });
 
   // A task that had already finished before start-up is not in the active
@@ -487,7 +491,9 @@ describe('fetchActiveTasks / fetchActiveTasksCount', () => {
     const call = api.calls.filter(c => c.path === FILTER_ROUTE).pop();
     const body = JSON.parse(call.body);
     expect(call.method).toBe('POST');
-    expect(body.type).toBe('DOWNLOAD_ARCHIVE');
+    // No type: `maxUserTasks` is one budget across every task type on the
+    // server, so a count of one type only would let the user past the cap.
+    expect(body).not.toHaveProperty('type');
     expect(body.owner).toBe(USER_NAME);
     // Order-independent: it is a set.
     expect([...body.statuses].sort()).toEqual([...ACTIVE_STATUSES].sort());
@@ -538,7 +544,7 @@ describe('checkActiveTasksLimit', () => {
 
   // A check that cannot run must not be the thing that stops a legitimate
   // download: the server enforces this quota itself
-  // (DataStorageDownloadArchiveManager.assertUserQuota).
+  // (AsyncTaskApiService.assertUserQuota).
   it('allows when the count request fails', async () => {
     await setMaxUserTasks(1);
     const api = stubApi();
@@ -561,7 +567,7 @@ describe('startArchiveDownload', () => {
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
       .rejects.toThrow(/1 archive download/);
     expect(
-      api.calls.some(c => c.path === '/datastorage/7/download/archive')
+      api.calls.some(c => c.path === '/async-task/create')
     ).toBe(false);
     expect(loadEntries()).toEqual([]);
   });
@@ -578,16 +584,21 @@ describe('startArchiveDownload', () => {
       owner: USER_NAME,
       params: {archiveName: 'archive-1'}
     };
-    api.reply('/datastorage/7/download/archive', createdTask);
+    api.reply('/async-task/create', createdTask);
     api.reply(taskRoute(99), createdTask);
     const store = newStore();
 
     const result = await store.startArchiveDownload(7, ['a/', 'b.txt'], 'archive-1');
 
-    const call = api.calls.find(c => c.path === '/datastorage/7/download/archive');
+    const call = api.calls.find(c => c.path === '/async-task/create');
     expect(call).toBeDefined();
     expect(call.method).toBe('POST');
-    expect(JSON.parse(call.body)).toEqual({paths: ['a/', 'b.txt'], archiveName: 'archive-1'});
+    expect(JSON.parse(call.body)).toEqual({
+      type: 'DOWNLOAD_ARCHIVE',
+      storageId: 7,
+      paths: ['a/', 'b.txt'],
+      archiveName: 'archive-1'
+    });
     expect(result).toEqual(createdTask);
   });
 
@@ -599,7 +610,7 @@ describe('startArchiveDownload', () => {
     stubWhoAmI(api);
     api.reply(FILTER_ROUTE, filterPage([]));
     const createdTask = {id: 99, status: 'PENDING', created: YESTERDAY(), owner: USER_NAME};
-    api.reply('/datastorage/7/download/archive', createdTask);
+    api.reply('/async-task/create', createdTask);
     api.reply(taskRoute(99), createdTask);
     const store = newStore();
 
@@ -621,14 +632,14 @@ describe('startArchiveDownload', () => {
       {id: 1, status: 'RUNNING'},
       {id: 2, status: 'PENDING'}
     ]));
-    api.reply('/datastorage/7/download/archive', {id: 99});
+    api.reply('/async-task/create', {id: 99});
     const store = newStore();
     expect(store.pollers.size).toBe(0);
 
     await expect(store.startArchiveDownload(7, ['a/'], 'archive-1'))
       .rejects.toThrow(/2 archive downloads/);
     expect(
-      api.calls.some(c => c.path === '/datastorage/7/download/archive')
+      api.calls.some(c => c.path === '/async-task/create')
     ).toBe(false);
   });
 });

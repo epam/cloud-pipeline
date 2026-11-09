@@ -19,9 +19,6 @@ package com.epam.pipeline.acl.datastorage;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
-import com.epam.pipeline.controller.vo.DownloadArchiveVO;
-import com.epam.pipeline.controller.vo.UnpackArchiveVO;
-import com.epam.pipeline.dto.async.AsyncTask;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
@@ -50,16 +47,12 @@ import com.epam.pipeline.entity.datastorage.tag.DataStorageObjectSearchByTagRequ
 import com.epam.pipeline.entity.datastorage.tag.DataStorageTagSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
-import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
-import com.epam.pipeline.manager.datastorage.DataStorageUnpackArchiveManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageEventsService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclRead;
 import com.epam.pipeline.manager.security.acl.storage.StorageAclReadAndWrite;
@@ -92,10 +85,6 @@ public class DataStorageApiService {
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
     private final Optional<StorageEventsService> eventsService;
-    private final DataStorageDownloadArchiveManager downloadArchiveManager;
-    private final DataStorageUnpackArchiveManager unpackArchiveManager;
-    private final StoragePermissionManager storagePermissionManager;
-    private final AuthManager authManager;
 
     @StorageAclRead
     public List<AbstractDataStorage> getDataStorages() {
@@ -218,34 +207,6 @@ public class DataStorageApiService {
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long id, final String path,
             String version, ContentDisposition contentDisposition) {
         return dataStorageManager.generateDataStorageItemUrl(id, path, version, contentDisposition);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public AsyncTask createDownloadArchiveTask(final Long id, final DownloadArchiveVO request) {
-        return downloadArchiveManager.createTask(id, request, authManager.getAuthorizedUser());
-    }
-
-    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
-    public AsyncTask createUnpackArchiveTask(final UnpackArchiveVO request) {
-        Assert.notNull(request, messageHelper.getMessage(
-                MessageConstants.ERROR_ASYNC_TASK_UNPACK_REQUEST_REQUIRED));
-        assertStoragePermission(request.getSourceStorageId(), AclPermission.READ_NAME,
-                MessageConstants.ERROR_ASYNC_TASK_UNPACK_SOURCE_STORAGE_REQUIRED);
-        assertStoragePermission(request.getDestinationStorageId(), AclPermission.WRITE_NAME,
-                MessageConstants.ERROR_ASYNC_TASK_UNPACK_DESTINATION_STORAGE_REQUIRED);
-        if (request.isDeleteSourceOnSuccess()) {
-            assertStoragePermission(request.getSourceStorageId(), AclPermission.WRITE_NAME,
-                    MessageConstants.ERROR_ASYNC_TASK_UNPACK_SOURCE_STORAGE_REQUIRED);
-        }
-        return unpackArchiveManager.createTask(request, authManager.getAuthorizedUser());
-    }
-
-    private void assertStoragePermission(final Long storageId, final String permission,
-                                         final String missingIdMessage) {
-        Assert.notNull(storageId, messageHelper.getMessage(missingIdMessage));
-        Assert.isTrue(storagePermissionManager.hasStoragePermission(storageId, permission),
-                messageHelper.getMessage(MessageConstants.ERROR_PERMISSION_IS_NOT_GRANTED,
-                        storageId, permission));
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER)

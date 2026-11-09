@@ -25,7 +25,14 @@ import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
-import com.epam.pipeline.manager.datastorage.DataStorageDownloadArchiveManager;
+import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.jupiter.api.Test;
@@ -37,6 +44,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,7 +73,13 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
     private AsyncTaskManager mockAsyncTaskManager;
 
     @Autowired
-    private DataStorageDownloadArchiveManager mockDownloadArchiveManager;
+    private PreferenceManager mockPreferenceManager;
+
+    @Autowired
+    private DataStorageManager mockDataStorageManager;
+
+    @Autowired
+    private StorageProviderManager mockStorageProviderManager;
 
     @Autowired
     private AuthManager mockAuthManager;
@@ -139,7 +153,6 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
 
         assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.consume(TASK_ID));
-        verify(mockDownloadArchiveManager, never()).consume(any());
     }
 
     @Test
@@ -268,13 +281,12 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockSecurityContext();
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(ANOTHER_SIMPLE_USER);
-        doReturn(DownloadArchiveConsumable.builder().url(ARCHIVE_URL).build())
-                .when(mockDownloadArchiveManager).consume(any());
+        mockArchiveReadyToHandOver();
 
         final AsyncTaskConsumeResult consumed = asyncTaskApiService.consume(TASK_ID);
 
         assertEquals(AsyncTaskType.DOWNLOAD_ARCHIVE, consumed.getType());
-        verify(mockDownloadArchiveManager).consume(any());
+        assertEquals(ARCHIVE_URL, ((DownloadArchiveConsumable) consumed.getResult()).getUrl());
     }
 
     @Test
@@ -289,8 +301,7 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
         mockUser(SIMPLE_USER);
         mockTaskOwnedBy(SIMPLE_USER, AsyncTaskType.UNPACK_ARCHIVE);
 
-        assertThrows(IllegalArgumentException.class, () -> asyncTaskApiService.consume(TASK_ID));
-        verify(mockDownloadArchiveManager, never()).consume(any());
+        assertThrows(UnsupportedOperationException.class, () -> asyncTaskApiService.consume(TASK_ID));
     }
 
     @Test
@@ -312,6 +323,20 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
      */
     private void asAdmin() {
         doReturn(true).when(mockAuthManager).isAdmin();
+    }
+
+    private void mockArchiveReadyToHandOver() {
+        doReturn(ArchiveTasksConfig.builder()
+                .tasks(ArchiveTasksConfig.Tasks.builder()
+                        .download(DownloadArchiveConfig.builder().destinationStorageId(ID).build())
+                        .build())
+                .build()).when(mockPreferenceManager)
+                .getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG);
+        doReturn(DatastorageCreatorUtils.getS3bucketDataStorage(ID, SIMPLE_USER))
+                .when(mockDataStorageManager).load(ID);
+        final DataStorageDownloadFileUrl url = new DataStorageDownloadFileUrl();
+        url.setUrl(ARCHIVE_URL);
+        doReturn(url).when(mockStorageProviderManager).generateDownloadURL(any(), any(), any(), any(), any());
     }
 
     private AsyncTaskStatusVO statusReport() {
