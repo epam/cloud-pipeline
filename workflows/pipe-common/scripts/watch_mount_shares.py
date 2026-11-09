@@ -37,6 +37,7 @@ import subprocess
 import shutil
 import signal
 import socket
+import sys
 import time
 from pipeline import PipelineAPI
 from watchdog.observers.inotify import InotifyObserver
@@ -113,16 +114,21 @@ def configure_kernel_param(key, value):
     execute_cmd_command_and_get_stdout_stderr('sysctl -w {}={} && sysctl -p'.format(key, value), silent=True)
 
 
+# Python 3 decodes the output of a command: "replace" keeps a byte that is not valid there from failing the command.
+# Python 2 returns the bytes as they are, and its Popen has no "errors".
+_DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
+
+
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
     # universal_newlines=True makes communicate() return str under both Python 2 and 3 - without it,
     # Python 3's Popen returns bytes, and every caller below (out.split(NEWLINE), stderr.rstrip(...))
     # treats the result as str.
     if executable:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             executable=executable, universal_newlines=True)
+                             executable=executable, universal_newlines=True, **_DECODING_ARGUMENTS)
     else:
         p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             universal_newlines=True)
+                             universal_newlines=True, **_DECODING_ARGUMENTS)
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)

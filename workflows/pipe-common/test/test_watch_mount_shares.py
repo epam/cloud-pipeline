@@ -23,6 +23,7 @@
 # interpreters without extra packages - run with `python -m unittest test_watch_mount_shares` (or
 # under pytest) from inside workflows/pipe-common/test.
 
+import locale
 import os
 import sys
 import types
@@ -45,9 +46,9 @@ def _stub_module(name, **attrs):
 # installed. Stub them out so importing the module under test doesn't drag in the full pipe-common
 # package tree (and its own, unrelated dependency chain) just to check subprocess output types.
 #
-# Saved so tearDownModule() below can restore sys.modules afterwards - left in place, a stub would
-# otherwise shadow a real "import pipeline"/"psutil"/"watchdog.*" in any test collected after this
-# one in the same process (pytest and unittest discovery both import every module into one process).
+# The stubs are removed again right after the import: pytest imports every test module before it runs
+# any, so a stub left in sys.modules would shadow a real "import pipeline"/"psutil"/"watchdog.*" in the
+# modules collected after this one. The script keeps the stub objects it has imported.
 _STUBBED_MODULE_NAMES = ['psutil', 'watchdog', 'watchdog.events', 'watchdog.observers',
                         'watchdog.observers.inotify', 'watchdog.observers.api', 'pipeline']
 _ORIGINAL_MODULES = dict((name, sys.modules.get(name)) for name in _STUBBED_MODULE_NAMES)
@@ -60,15 +61,14 @@ _stub_module('watchdog.observers.inotify', InotifyObserver=object)
 _stub_module('watchdog.observers.api', ObservedWatch=object)
 _stub_module('pipeline', PipelineAPI=object)
 
-import watch_mount_shares as wms  # noqa: E402  (must follow the sys.modules stubbing above)
-
-
-def tearDownModule():
-    for name, original in _ORIGINAL_MODULES.items():
-        if original is None:
-            sys.modules.pop(name, None)
+try:
+    import watch_mount_shares as wms  # noqa: E402  (must follow the sys.modules stubbing above)
+finally:
+    for _name, _original in _ORIGINAL_MODULES.items():
+        if _original is None:
+            sys.modules.pop(_name, None)
         else:
-            sys.modules[name] = original
+            sys.modules[_name] = _original
 
 
 class ExecuteCommandReturnsTextTest(unittest.TestCase):
@@ -114,6 +114,25 @@ class CurrentUtcTimeMillisTest(unittest.TestCase):
         millis = wms.current_utc_time_millis()
         self.assertGreater(millis, 1000000000000)
         self.assertLess(millis, 7000000000000)
+
+
+class ExecuteCommandOutputThatIsNotUtf8Test(unittest.TestCase):
+    # Python 3 decodes the output with the encoding of the locale and replaces a byte that is not valid there: with
+    # UTF-8, the encoding of the test containers, it is U+FFFD. Python 2 keeps the bytes.
+
+    _EXPECTED = b'caf\xe9\n'.decode(locale.getpreferredencoding(False), 'replace') \
+        if sys.version_info[0] >= 3 else 'caf\xe9\n'
+
+    def test_output_does_not_fail_the_command(self):
+        exit_code, stdout, _ = wms.execute_cmd_command_and_get_stdout_stderr(r"printf 'caf\351\n'", silent=True)
+        self.assertEqual(0, exit_code)
+        self.assertEqual(self._EXPECTED, stdout)
+
+    def test_output_does_not_fail_the_command_with_an_executable(self):
+        exit_code, _, stderr = wms.execute_cmd_command_and_get_stdout_stderr(r"printf 'caf\351\n' 1>&2", silent=True,
+                                                                             executable='/bin/bash')
+        self.assertEqual(0, exit_code)
+        self.assertEqual(self._EXPECTED, stderr)
 
 
 if __name__ == '__main__':
