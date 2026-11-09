@@ -400,6 +400,11 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 scheduledRuns.add(runId);
                 unLabelPendingRun(run);
                 createNodeForRun(tasks, runId, requiredInstance);
+            } catch (PoolReservationIncompatibleException e) {
+                log.error("Run {} can never be assigned to its required pool: {}", runId, e.getMessage());
+                pipelineRunManager.updateStateReasonMessageById(longId, e.getMessage());
+                pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
+                removeNodeUpTask(longId);
             } catch (Exception e) {
                 log.error("Failed to create node for run {}.", runId);
                 log.error("An error during pod processing: {}" + e.getMessage(), e);

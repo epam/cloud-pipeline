@@ -866,6 +866,9 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_INSTANCE_MISMATCH = "error.node.pool.instance.mismatch";
     public static final String ERROR_NODE_POOL_REGION_MISMATCH = "error.node.pool.region.mismatch";
     public static final String ERROR_CAPACITY_POOL_ID_INVALID = "error.capacity.pool.id.invalid";
+    public static final String ERROR_NODE_POOL_RESERVED_NODE_MISMATCH = "error.node.pool.reserved.node.mismatch";
+    public static final String ERROR_NODE_POOL_RESERVATION_EXPIRED = "error.node.pool.reservation.expired";
+    public static final String ERROR_NODE_POOL_FILTER_MISMATCH = "error.node.pool.filter.mismatch";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";
