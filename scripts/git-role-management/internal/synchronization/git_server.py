@@ -15,7 +15,7 @@
 from ..config import Config
 from ..api.preference_api import Preference
 from ..api.gitlab_api import GitLab, GitLabException
-from ..compat import urlparse, quote_plus, to_bytes
+from ..compat import urlparse, quote_plus, to_bytes, to_str
 import random
 from requests.exceptions import ConnectionError
 from cryptography.hazmat.primitives import serialization
@@ -757,4 +757,5 @@ class GitServer(object):
             encoding=serialization.Encoding.OpenSSH,
             format=serialization.PublicFormat.OpenSSH
         )
-        return private_key, public_key
+        # The keys go to JSON request bodies: the public one to GitLab, both to the metadata of the user
+        return to_str(private_key), to_str(public_key)
