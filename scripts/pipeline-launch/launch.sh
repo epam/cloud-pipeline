@@ -1931,7 +1931,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$CP_PYTHON_VERSION" == "2" ]; then
                   $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==44.1.1
             else
-                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==68.0.0
+                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==81.0.0
             fi
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?

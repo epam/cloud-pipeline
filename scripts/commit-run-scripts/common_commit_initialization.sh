@@ -146,7 +146,7 @@ install_pip() {
 install_pipeline_code() {
     echo "Installing pipeline packages and code"
     if [ "$CP_PYTHON_VERSION" == "3" ]; then
-        $CP_PYTHON_PATH -m pip install $CP_PIP3_EXTRA_ARGS -I -q setuptools==68.0.0
+        $CP_PYTHON_PATH -m pip install $CP_PIP3_EXTRA_ARGS -I -q setuptools==81.0.0
     else
         $CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
     fi
