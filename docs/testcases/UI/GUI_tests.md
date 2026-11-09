@@ -861,7 +861,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (152 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (155 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -943,6 +943,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4656_5**](Run_tools_in_sandbox/4656_digest_pinning/4656_5.md) | A run launched before the digest pinning is enabled keeps working with the tag |  |
 | [**4656_6**](Run_tools_in_sandbox/4656_digest_pinning/4656_6.md) | Disabling the digest pinning does not affect the runs that are already pinned |  |
 | [**4656_7**](Run_tools_in_sandbox/4656_digest_pinning/4656_7.md) | A rerun of a pinned run is pinned to the digest its tag points to at the rerun |  |
+| [**4781_1**](Run_tools_in_sandbox/4781_package_manager_timeouts/4781_1.md) | A stalled refresh of the package lists is stopped and tried once more |  |
+| [**4781_2**](Run_tools_in_sandbox/4781_package_manager_timeouts/4781_2.md) | A stalled yum call of the Cloud Pipeline repo setup is reported in the run log and tried again |  |
+| [**4781_3**](Run_tools_in_sandbox/4781_package_manager_timeouts/4781_3.md) | The package manager time limits do not affect a usual run start |  |
 | [**223**](Run_tools_in_sandbox/Launch_parameters/223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) | :white_check_mark: |
 | [**2234**](Run_tools_in_sandbox/Launch_parameters/2234.md) | "Custom" capabilities implementation | :white_check_mark: |
 | [**2295**](Run_tools_in_sandbox/Launch_parameters/2295.md) | "Custom" capabilities with configured job parameters | :white_check_mark: |
