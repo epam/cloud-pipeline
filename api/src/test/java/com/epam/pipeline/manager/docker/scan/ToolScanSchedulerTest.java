@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.scan.*;
+import com.epam.pipeline.exception.ToolScanExternalServiceException;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -52,6 +53,7 @@ import org.springframework.scheduling.TaskScheduler;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -70,6 +72,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     private static final String TEST_REPO = "repository";
     private static final String TEST_USER = "test";
     private static final String LATEST_VERSION = "latest";
+    private static final String DEFAULT_VERSION = "1.0";
     private static final String TEST_LAYER_REF = "testRef";
     private static final String TEST_LAYER_DIGEST = "testDigest";
     public static final long DOCKER_SIZE = 123456L;
@@ -206,6 +209,43 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                 .map(ToolVersionScanResult::getLastLayerRef);
         Assert.assertTrue(loadedRef.isPresent());
         Assert.assertEquals(TEST_LAYER_REF, loadedRef.get());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testScheduledToolScanFailureIsSavedForDefaultVersion() throws ToolScanExternalServiceException {
+        PreferenceManager preferenceManager = mock(PreferenceManager.class);
+        Whitebox.setInternalState(toolScanScheduler, PREFERENCE_MANAGER, preferenceManager);
+        Whitebox.setInternalState(core, PREFERENCE_MANAGER, preferenceManager);
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)).thenReturn(true);
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ALL_REGISTRIES))
+            .thenReturn(false);
+        when(toolScanManager.scanTool(Mockito.any(Tool.class), Mockito.anyString(), Mockito.anyBoolean()))
+            .thenThrow(new IllegalStateException());
+
+        registry.setPath(TEST_REPO);
+        registry.setOwner(TEST_USER);
+        registry.setSecurityScanEnabled(true);
+        dockerRegistryDao.createDockerRegistry(registry);
+
+        toolGroup.setName("testGroup");
+        toolGroup.setRegistryId(registry.getId());
+        toolGroup.setOwner(TEST_USER);
+        toolGroupDao.createToolGroup(toolGroup);
+
+        tool.setRegistryId(registry.getId());
+        tool.setToolGroupId(toolGroup.getId());
+        toolManager.create(tool, false);
+        when(mockClient.getImageTags(Mockito.anyString(), Mockito.anyString()))
+            .thenReturn(Arrays.asList(LATEST_VERSION, DEFAULT_VERSION));
+        toolManager.updateToolDefaultVersion(tool.getId(), DEFAULT_VERSION);
+
+        toolScanScheduler.scheduledToolScan();
+
+        Assert.assertEquals(ToolScanStatus.FAILED,
+                toolManager.loadToolVersionScan(tool.getId(), DEFAULT_VERSION).get().getStatus());
+        Assert.assertEquals(ToolScanStatus.NOT_SCANNED,
+                toolManager.loadToolVersionScan(tool.getId(), LATEST_VERSION).get().getStatus());
     }
 
     @Test
