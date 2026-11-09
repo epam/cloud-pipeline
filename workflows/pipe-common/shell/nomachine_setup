@@ -126,7 +126,7 @@ function config_nm {
   if [ "$CP_PYTHON_VERSION" == "2" ]; then
     $CP_PYTHON_PATH -m pip install -I $CP_PIP_EXTRA_ARGS flask
   else
-    $CP_PYTHON_PATH -m pip install -I $CP_PIP3_EXTRA_ARGS flask==2.3.3
+    $CP_PYTHON_PATH -m pip install -I $CP_PIP3_EXTRA_ARGS flask==3.1.3
   fi && \
   wget -q "${GLOBAL_DISTRIBUTION_URL}tools/nomachine/nomachine-common.tar.gz" -O nomachine-common.tar.gz && \
   mkdir -p nomachine-common/ /etc/nomachine/ && \
