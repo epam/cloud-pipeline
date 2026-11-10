@@ -428,6 +428,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (hadNodePending || hadPoolPending) {
                 pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), true);
             }
+            if (hadPoolPending) {
+                pipelineRunManager.updateStateReasonMessageById(run.getId(), null);
+            }
         }
 
         private void handleOccupiedPoolRun(final long longId, final String runId,

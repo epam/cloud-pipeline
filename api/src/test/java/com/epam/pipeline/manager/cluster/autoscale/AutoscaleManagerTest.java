@@ -72,6 +72,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -367,7 +368,7 @@ public class AutoscaleManagerTest {
         when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
         testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC + 1) * MILLIS_IN_SECOND));
         final Map<String, String> tags = new HashMap<>();
-        tags.put(POOL_PENDING_TAG, "true");
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
         testRun.setTags(tags);
 
         autoscaleManagerCore.runAutoscaling();
@@ -383,7 +384,7 @@ public class AutoscaleManagerTest {
         when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
         testRun.setStartDate(new Date(System.currentTimeMillis() - (POOL_WAIT_SEC / 2) * MILLIS_IN_SECOND));
         final Map<String, String> tags = new HashMap<>();
-        tags.put(POOL_PENDING_TAG, "true");
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
         testRun.setTags(tags);
 
         autoscaleManagerCore.runAutoscaling();
@@ -400,7 +401,7 @@ public class AutoscaleManagerTest {
                 .thenReturn(0);
         testRun.setStartDate(new Date(0));
         final Map<String, String> tags = new HashMap<>();
-        tags.put(POOL_PENDING_TAG, "true");
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
         testRun.setTags(tags);
 
         autoscaleManagerCore.runAutoscaling();
@@ -437,6 +438,21 @@ public class AutoscaleManagerTest {
         verify(cloudFacade, never()).scaleUpNode(any(), any(), any(), any());
         verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), eq(reason));
         verify(pipelineRunManager).updatePipelineStatusIfNotFinal(eq(TEST_RUN_ID), eq(TaskStatus.FAILURE));
+    }
+
+    @Test
+    public void testExclusivePoolRunClearsWaitingMessageWhenPoolBecomesAvailable() {
+        when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
+        when(reassignHandler.requiredPoolId(testRun)).thenReturn(Optional.of(TEST_POOL_ID));
+        when(reassignHandler.tryReassignNode(any(), any(), any(), any(), anyLong(), any(), any()))
+                .thenReturn(true);
+        final Map<String, String> tags = new HashMap<>();
+        tags.put(POOL_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+        testRun.setTags(tags);
+
+        autoscaleManagerCore.runAutoscaling();
+
+        verify(pipelineRunManager).updateStateReasonMessageById(eq(TEST_RUN_ID), isNull(String.class));
     }
 
     @Test
