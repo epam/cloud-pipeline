@@ -153,6 +153,7 @@ nav:
   - GitLab:
     - GitLab versions: 'installation/gitlab/gitlab_versions.md'
     - Upgrade GitLab 15.5 to 19.5: 'installation/gitlab/upgrade_gitlab_15_to_19.md'
+    - Upgrade GitLab 17.4 to 19.5: 'installation/gitlab/upgrade_gitlab_17_to_19.md'
   - Management:
     - Environments sync: 'operation/environments_sync/environments_sync.md'
   - Change Kubernetes certificates: 'operation/change_kube_certificates.md'
