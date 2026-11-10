@@ -79,18 +79,8 @@ export function archiveSelectionAvailable (item, options = {}) {
 }
 
 /**
- * Maps a data-storage selection to the `paths` array
- * `POST /async-task/create` expects for a DOWNLOAD_ARCHIVE payload. Unlike
- * `itemsAvailableForDownload` in the storage browser's selection dropdown, this
- * keeps BOTH files and folders — folder support is the entire point of this
- * feature — and does not filter on `downloadable`, which is false for every
- * folder.
- *
- * A folder's path comes back with a trailing `/`, a file's does not.
- * `DownloadArchiveVO`'s doc comment on the backend is explicit that the paths
- * are relative to the storage root "and a trailing slash marks a folder" — it
- * is the server's only signal of folder-ness, so getting this wrong silently
- * turns a folder into a (non-existent) file request.
+ * The `paths` of `POST /async-task/create` for the selected
+ * files and folders. A folder's path ends with `/`.
  *
  * @param {SelectedStorageItem[]} selectedItems
  * @returns {string[]}

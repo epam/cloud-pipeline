@@ -1056,17 +1056,8 @@ export default class DataStorage extends React.Component {
     this.setState({createFile: false});
   };
 
-  // The cap is checked against the server here, on the click itself, and
-  // the modal opens only if there is room - see `archiveDownloadAllowed`
-  // (utils/download-archive.js). The same check runs again inside
-  // `startArchiveDownload` when OK is pressed, since this modal can sit open
-  // for as long as the user likes - and this time, if the cap has since been
-  // hit, the modal stays open to show it rather than closing on the error.
-  // Invoked fire-and-forget from the selection dropdown's click handler, so
-  // it catches for itself: an escaping rejection would become an unhandled
-  // one and the click would look like it did nothing at all.
-  // `archiveDownloadAllowed` answers true for anything it cannot check, so
-  // this only ever hides a bug, never a refusal.
+  // Opens the archive-name modal when the user is under the active-download
+  // limit. Catches and logs its own errors.
   openDownloadArchiveModal = async () => {
     const {asyncTasks} = this.props;
     let allowed = true;
@@ -1088,9 +1079,7 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
-  // Returns the promise so the modal can tell a queued archive from a refused
-  // one: no try/catch here, since swallowing the rejection would close the
-  // modal on an error. The modal closes itself once this resolves.
+  // Throws when the request fails.
   submitDownloadArchive = async (name) => {
     const {asyncTasks, storageId} = this.props;
     const {selectedItems = []} = this.state;
@@ -2400,15 +2389,6 @@ export default class DataStorage extends React.Component {
       available: !this.isOmicsStore &&
         downloadItemsActionAvailable(itemsAvailableForDownload.length, {archiveSupported})
     };
-    // Carries no cap state. Clicking it counts the user's active tasks against
-    // the server (`openDownloadArchiveModal` above) and, at the cap, shows a
-    // message instead of opening the name modal; hitting the cap again after
-    // the name modal is already open leaves it open, showing the error,
-    // rather than closing it (`submitDownloadArchive` above). A hint here
-    // could only come from a background poll of the task list, which the
-    // notification tracker no longer keeps
-    // (models/asyncTask/CurrentUserAsyncTasks.js polls the user's own queued
-    // tasks one by one).
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',
@@ -2876,12 +2856,6 @@ export default class DataStorage extends React.Component {
       checked: this.showVersions,
       available: this.versionControlsEnabled
     };
-    // Opens a modal rather than toggling a view, so it carries no `checked`:
-    // a check mark on the right would be meaningless for an action with no
-    // on/off state. No icon either, like every other item in this menu.
-    // `available: true`: the task list is the user's own, across every
-    // storage, so there is no storage property that could make it
-    // inapplicable, omics stores included.
     const downloadsAction = {
       key: 'downloads',
       title: 'Show downloads',
@@ -3379,10 +3353,6 @@ export default class DataStorage extends React.Component {
         />
         <DownloadArchiveModal
           visible={this.state.downloadArchiveModalVisible}
-          // Built from the selection, so a single file or folder is offered
-          // its own name rather than a timestamp - see `defaultArchiveName`.
-          // The modal re-seeds its field whenever it becomes visible, so this
-          // being re-evaluated on every render costs nothing.
           defaultName={defaultArchiveName(this.state.selectedItems)}
           onCancel={this.closeDownloadArchiveModal}
           onSubmit={this.submitDownloadArchive}
