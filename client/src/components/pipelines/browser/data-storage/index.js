@@ -115,8 +115,8 @@ import handleDownloadArchive, {
   archivePathsFromSelection,
   archiveStorageSupported,
   defaultArchiveName
-} from '../../../special/download-storage-archive';
-import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
+} from './utils/download-archive';
+import DownloadArchiveModal from './components/download-archive-modal';
 import DownloadsModal from '../../../special/downloads/downloads-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
@@ -1058,7 +1058,7 @@ export default class DataStorage extends React.Component {
 
   // The cap is checked against the server here, on the click itself, and
   // the modal opens only if there is room - see `archiveDownloadAllowed`
-  // (special/download-storage-archive.js). The same check runs again inside
+  // (utils/download-archive.js). The same check runs again inside
   // `startArchiveDownload` when OK is pressed, since this modal can sit open
   // for as long as the user likes - and this time, if the cap has since been
   // hit, the modal stays open to show it rather than closing on the error.

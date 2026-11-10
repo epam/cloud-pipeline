@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Modal, Input, Button, Form} from 'antd';
-import {archiveNameError} from './download-storage-archive';
+import {archiveNameError} from '../utils/download-archive';
 
 // A small controlled "name this archive" modal. Not EditItemForm: that
 // component's nameShouldNotBeTheSameValidator rejects a submitted value equal
@@ -28,7 +28,7 @@ import {archiveNameError} from './download-storage-archive';
 // `SAFE_ARCHIVE_NAME` exactly — both `\w`s are ASCII `[A-Za-z0-9_]` — but its
 // empty-name half is deliberately stricter than the server: the server's own
 // answer to a blank name is to accept it and call the archive `archive.zip`
-// (`download-storage-archive.js` already says so, near `handleDownloadArchive`),
+// (`download-archive.js` already says so, near `handleDownloadArchive`),
 // and silently renaming what the user asked for is worse than asking them to
 // type something.
 export default class DownloadArchiveModal extends React.Component {
