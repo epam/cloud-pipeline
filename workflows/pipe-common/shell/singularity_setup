@@ -117,7 +117,7 @@ mkdir -p "$CP_SNGLRT_INSTALL_TEMP"
 
 pipe_log_info "Started Singularity setup\n-> Distribution URL: ${CP_SNGLRT_DISTR_URL}\n-> Install path: ${CP_SNGLRT_INSTALL_PATH}" "$SNGLRT_SETUP_TASK"
 
-wget -q "$CP_SNGLRT_DISTR_URL" -O "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz"
+wget --no-verbose "$CP_SNGLRT_DISTR_URL" -O "$CP_SNGLRT_INSTALL_TEMP/singularity.tgz"
 if [ $? -ne 0 ]; then
     pipe_log_fail "Cannot download singularity distribution from $CP_SNGLRT_DISTR_URL" "$SNGLRT_SETUP_TASK"
     exit 1

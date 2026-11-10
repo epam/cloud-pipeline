@@ -220,7 +220,7 @@ function download_distr() {
     wget --timeout=10 \
         --waitretry=1 \
         --tries=10 \
-        -q \
+        --no-verbose \
         "$_distr_url" \
         -O $_distr_file &> $_kube_install_log
     if [ $? -ne 0 ]; then
