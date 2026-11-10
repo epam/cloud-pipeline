@@ -153,7 +153,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Data_storages</b> (141 tests, 86 automated)</summary>
+<summary><b>Data_storages</b> (145 tests, 86 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -254,6 +254,10 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**EPMCMBIBPC-2603**](Data_storages/NFS_mount/EPMCMBIBPC-2603.md) | Validation of NFS storage creation with spaces in path | :white_check_mark: |
 | [**EPMCMBIBPC-2604**](Data_storages/NFS_mount/EPMCMBIBPC-2604.md) | Create files and folders with spaces in name | :white_check_mark: |
 | [**EPMCMBIBPC-2605**](Data_storages/NFS_mount/EPMCMBIBPC-2605.md) | Remove files and folders with spaces in name | :white_check_mark: |
+| [**4599_1**](Data_storages/NFS_mount/4599/4599_1.md) | Exclude NFS storage from file indexing by metadata attribute |  |
+| [**4599_2**](Data_storages/NFS_mount/4599/4599_2.md) | Resume NFS storage file indexing after removing the exclusion attribute |  |
+| [**4599_3**](Data_storages/NFS_mount/4599/4599_3.md) | NFS storage with Billing status=Exclude attribute isn't shown in the Billing report |  |
+| [**4599_4**](Data_storages/NFS_mount/4599/4599_4.md) | "Standard size" of an excluded NFS storage doesn't change after adding files and re-indexing |  |
 | [**EPMCMBIBPC-2401**](Data_storages/Shared_storages/EPMCMBIBPC-2401.md) | [MANUAL] Validation of shared bucket creation |  |
 | [**EPMCMBIBPC-2402**](Data_storages/Shared_storages/EPMCMBIBPC-2402.md) | [MANUAL] Check access to shared bucket |  |
 | [**EPMCMBIBPC-2403**](Data_storages/Shared_storages/EPMCMBIBPC-2403.md) | [MANUAL] Upload files on shared bucket |  |
@@ -412,7 +416,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Notifications</b> (18 tests, 13 automated)</summary>
+<summary><b>Notifications</b> (26 tests, 13 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -846,7 +850,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (139 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (155 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -914,6 +918,13 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4608_7**](Run_tools_in_sandbox/4608_capacity_retries/4608_7.md) | "Capacity retries" field in the Tool settings |  |
 | [**4608_8**](Run_tools_in_sandbox/4608_capacity_retries/4608_8.md) | "Capacity retries" limits the number of node-up attempts after `Insufficient instance capacity` |  |
 | [**4608_9**](Run_tools_in_sandbox/4608_capacity_retries/4608_9.md) | "Capacity retries" applies to every "Fallback node types" entry too |  |
+| [**4656_1**](Run_tools_in_sandbox/4656_digest_pinning/4656_1.md) | Docker image digest pinning is disabled by default |  |
+| [**4656_2**](Run_tools_in_sandbox/4656_digest_pinning/4656_2.md) | A run launched with the digest pinning enabled shows the docker image digest |  |
+| [**4656_3**](Run_tools_in_sandbox/4656_digest_pinning/4656_3.md) | Pause and resume of a run pinned to the docker image digest keep the run's changes |  |
+| [**4656_4**](Run_tools_in_sandbox/4656_digest_pinning/4656_4.md) | Commit of a run pinned to the docker image digest |  |
+| [**4656_5**](Run_tools_in_sandbox/4656_digest_pinning/4656_5.md) | A run launched before the digest pinning is enabled keeps working with the tag |  |
+| [**4656_6**](Run_tools_in_sandbox/4656_digest_pinning/4656_6.md) | Disabling the digest pinning does not affect the runs that are already pinned |  |
+| [**4656_7**](Run_tools_in_sandbox/4656_digest_pinning/4656_7.md) | A rerun of a pinned run is pinned to the digest its tag points to at the rerun |  |
 | [**223**](Run_tools_in_sandbox/Launch_parameters/223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) | :white_check_mark: |
 | [**2234**](Run_tools_in_sandbox/Launch_parameters/2234.md) | "Custom" capabilities implementation | :white_check_mark: |
 | [**2295**](Run_tools_in_sandbox/Launch_parameters/2295.md) | "Custom" capabilities with configured job parameters | :white_check_mark: |
@@ -967,6 +978,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**3971_2**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_2.md) | Mount rules: Mount Storages located in the same cloud region with instance |  |
 | [**3971_3**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_3.md) | Mount rules: check Mount Storages located in the certain region via pipe CLI |  |
 | [**3971_4**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_4.md) | Mount rules: check filter storages for cloud region in Launch confirmation |  |
+| [**4682_1**](Run_tools_in_sandbox/Launch_parameters/4682/4682_1.md) | "Show optional parameters" checkbox is checked by default on the pipeline launch form |  |
+| [**4682_2**](Run_tools_in_sandbox/Launch_parameters/4682/4682_2.md) | "Show optional parameters" checkbox overrides for a single pipeline |  |
+| [**4682_3**](Run_tools_in_sandbox/Launch_parameters/4682/4682_3.md) | "Show optional parameters" checkbox overrides for a single tool |  |
 | [**TC-PARAMETERS-6**](Run_tools_in_sandbox/Launch_parameters/SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration | :white_check_mark: |
 | [**1447**](Run_tools_in_sandbox/Limit_mounts/1447.md) | Displaying the CP_CAP_LIMIT_MOUNTS in a user-friendly manner | :white_check_mark: |
 | [**1480**](Run_tools_in_sandbox/Limit_mounts/1480.md) | Check limit mounts warnings | :white_check_mark: |
@@ -1088,7 +1102,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>System_Management</b> (27 tests, 17 automated)</summary>
+<summary><b>System_Management</b> (30 tests, 17 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -1113,6 +1127,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4024_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_1.md) | Audit mount events |  |
 | [**4024_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_2.md) | Audit run sharing event |  |
 | [**4039**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4039.md) | Data access audit - NFS |  |
+| [**4689_1**](System_Management/4689_group_ui_preferences_priority/4689_1.md) | Group with the higher priority sets the GUI settings |  |
+| [**4689_2**](System_Management/4689_group_ui_preferences_priority/4689_2.md) | Group without priority counts as priority 0 |  |
+| [**4689_3**](System_Management/4689_group_ui_preferences_priority/4689_3.md) | Groups with the same priority keep the preference order |  |
 | [**EPMCMBIBPC-3162**](System_Management/System_logging/EPMCMBIBPC-3162.md) | User authentication | :white_check_mark: |
 | [**EPMCMBIBPC-3163**](System_Management/System_logging/EPMCMBIBPC-3163.md) | User authentication. Unsuccessful attempt | :white_check_mark: |
 | [**EPMCMBIBPC-3164**](System_Management/System_logging/EPMCMBIBPC-3164.md) | User profile modifications | :white_check_mark: |
@@ -1139,10 +1156,23 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Tools</b> (50 tests, 30 automated)</summary>
+<summary><b>Tools</b> (62 tests, 30 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
+| [**4664_1**](Tools/4664_default_version/4664_1.md) | The latest version is used until a default version is set |  |
+| [**4664_10**](Tools/4664_default_version/4664_10.md) | Deleting a version of the same image removes the default version |  |
+| [**4664_11**](Tools/4664_default_version/4664_11.md) | A default version removed outside the platform |  |
+| [**4664_12**](Tools/4664_default_version/4664_12.md) | A commit into a tool with a default version doesn't create the latest version |  |
+| [**4664_13**](Tools/4664_default_version/4664_13.md) | Delete the default version of a tool without the latest version |  |
+| [**4664_2**](Tools/4664_default_version/4664_2.md) | Set a version as the default one |  |
+| [**4664_3**](Tools/4664_default_version/4664_3.md) | Unset the default version |  |
+| [**4664_4**](Tools/4664_default_version/4664_4.md) | Delete the default version |  |
+| [**4664_5**](Tools/4664_default_version/4664_5.md) | The default version in the version pickers |  |
+| [**4664_6**](Tools/4664_default_version/4664_6.md) | The default version controls depend on the permissions |  |
+| [**4664_7**](Tools/4664_default_version/4664_7.md) | A docker image without a tag is launched with the default version |  |
+| [**4664_8**](Tools/4664_default_version/4664_8.md) | A version without own settings is launched with the settings of the default version |  |
+| [**4664_9**](Tools/4664_default_version/4664_9.md) | The security messages name the default version |  |
 | [**EPMCMBIBPC-1296**](Tools/EPMCMBIBPC-1296.md) | Run tool with custom settings validation (EXECUTION DEFAULTS aren't filled) | :white_check_mark: |
 | [**EPMCMBIBPC-1404**](Tools/EPMCMBIBPC-1404.md) | Delete tool validation | :white_check_mark: |
 | [**EPMCMBIBPC-1407**](Tools/EPMCMBIBPC-1407.md) | Enable tool validation | :white_check_mark: |

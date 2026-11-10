@@ -1,11 +1,11 @@
 ---
 name: dev-sandbox
-description: Create, check, connect to, extend or remove a throw-away AWS sandbox for live testing (a Kubernetes 1.15 master on EC2, tagged to one developer, driven by scripts/sandbox.sh, and reached from local containers through a tunnel), run the platform's API, or its billing, search or monitoring service, locally against it, or check an AWS account and build the shared host image it starts from. Use when asked to test a change against a live cluster or live AWS, to run the API or another of the platform's services on this workstation against real Kubernetes and AWS, or to create, inspect or remove a sandbox.
+description: Create, check, connect to, extend or remove a throw-away AWS sandbox for live testing (a Kubernetes 1.15 master on EC2, tagged to one developer, driven by scripts/sandbox.sh, and reached from local containers through a tunnel), run the platform's API, its GUI, or its billing, search or monitoring service, locally against it, or check an AWS account and build the shared host image it starts from. Use when asked to test a change against a live cluster or live AWS, to run the API, the GUI or another of the platform's services on this workstation against real Kubernetes and AWS, or to create, inspect or remove a sandbox.
 ---
 
 # Dev sandbox
 
-`scripts/sandbox.sh <check|ami|up|connect|services|api|status|extend|down>`; `sandbox.sh help`
+`scripts/sandbox.sh <check|ami|up|connect|services|api|ui|status|extend|down>`; `sandbox.sh help`
 lists the options. Every command takes `--dry-run`, which prints the AWS calls instead of making
 them.
 `README.md` has the setup.
@@ -25,9 +25,12 @@ them.
   tunnel is open, and configures it: region, preferences, the master's registry and a tool.
   `--with billing,search,monitoring`, or `--with all`, runs those services too, with an
   Elasticsearch; billing bills a run only after the midnight, UTC, that follows it (`README.md` →
-  "Billing, search and monitoring"). `services` runs for 5 to 15 minutes, longer when it builds
-  jars; run it in the background. `--build` builds the jars again first; `services --stop` removes
-  its containers.
+  "Billing, search and monitoring"). `--pipe-common-from-checkout` serves the runs this checkout's
+  `workflows/pipe-common` in place of the published build's; run `services` without it to serve
+  the build's again. `services` runs for 5 to 15 minutes, longer when it builds jars; run it in the
+  background. `--build` builds the jars again first; `services --stop` removes its containers.
+  The master's registry takes a login, deletes, and notifies the API of pushes, as a deployment's
+  does (`README.md` → "The registry").
   The admin token is `admin-token.secret` in the local state, for scripts to read; the REST API is
   `https://api:9999/pipeline/restapi/` on the sandbox's network. **Call it with `sandbox.sh api
   <method> <path> [<json body>] [--jq <filter>]`**, which blanks out the secrets in the answer,
@@ -35,15 +38,19 @@ them.
   pauses and resumes it. **Read a log with `services --log [<container>]`** — the API's, or `db`,
   `elasticsearch`, `billing`, `search`, `monitoring` — which blanks out the tokens and credentials
   it holds, never with `docker logs`.
+- **`ui` runs this checkout's GUI against the API `services` runs**, at `http://localhost:3100/`,
+  and waits for its first compile, several minutes; run it in the background. Every request it
+  makes goes as the platform's admin, so its ports are on `127.0.0.1` only: run `ui --stop` once
+  the check is over. Its log holds no secret: `docker logs cp-sandbox-<name>-ui` is safe.
 - **A run's pod holds the developer's AWS credentials**, in its spec and its environment: never
   print either (`kubectl get pod -o yaml` or `-o json`, `kubectl describe pod`, `env` in it).
   Follow a run through `sandbox.sh api` and `services --log`. A committed image keeps the run's
-  API token in `/etc/cp_env.sh`, for anyone who can pull from the master's registry: commit only
-  when asked.
+  API token in `/etc/cp_env.sh`, for anyone with the master's registry's login: commit only when
+  asked.
 - **`down` and `ami --rebuild` list what they would remove and stop.** Pass `--yes` only after the
   person has confirmed that list.
-- **At every hand-back, name the sandboxes still running, with their tunnels and services**, as
-  you would a worktree left behind — `sandbox.sh status`.
+- **At every hand-back, name the sandboxes still running, with their tunnels, services and GUI**,
+  as you would a worktree left behind — `sandbox.sh status`.
 - **Never deploy, invoke, update or remove the reaper in `lambda/`**, which terminates expired
   instances of every owner: a person does that, as `README.md` → "The reaper" says.
 - **Never open `.env.sandbox.local`, `~/.aws`, or the `*.pem` and `*.secret` files in the local

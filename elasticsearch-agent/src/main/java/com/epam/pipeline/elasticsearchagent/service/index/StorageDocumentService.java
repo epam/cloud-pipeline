@@ -111,7 +111,8 @@ public class StorageDocumentService {
                                             final PermissionsContainer permissionsContainer,
                                             final String indexName,
                                             final String region) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath(), elasticsearchServiceClient.getVersion())
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE, mapper.getDocumentId(file),
+                elasticsearchServiceClient.getVersion())
                 .source(mapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer, getDocumentType(dataStorage), tagDelimiter, null));
     }

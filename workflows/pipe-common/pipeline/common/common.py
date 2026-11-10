@@ -14,6 +14,11 @@
 
 import platform
 import subprocess
+import sys
+
+# Python 3 decodes the output of a command: "replace" keeps a byte that is not valid there from failing the command.
+# Python 2 returns the bytes as they are, and its Popen has no "errors".
+_DECODING_ARGUMENTS = {'errors': 'replace'} if sys.version_info[0] >= 3 else {}
 
 
 class CmdError(RuntimeError):
@@ -38,10 +43,10 @@ def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=
         # a process in between, a daemon it spawns can hold these pipes open and communicate() never returns.
         with start_lock:
             p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable,
-                                 universal_newlines=True)
+                                 universal_newlines=True, **_DECODING_ARGUMENTS)
     else:
         p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable,
-                             universal_newlines=True)
+                             universal_newlines=True, **_DECODING_ARGUMENTS)
     out, err = p.communicate()
     if not silent and err:
         print(err)
@@ -58,7 +63,7 @@ def execute_cmd_command(command, silent=False, executable=None, start_lock=None)
 def get_cmd_command_output(command, executable=None):
     stdout, stderr = _get_stdout_and_stderr()
     p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable,
-                         universal_newlines=True)
+                         universal_newlines=True, **_DECODING_ARGUMENTS)
     out, err = p.communicate()
     if err:
         print(err)

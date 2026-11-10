@@ -65,6 +65,8 @@ commit_file_and_stop_docker() {
     pipe_log_info "[INFO] Start commiting pipeline run" "$TASK_NAME"
     commit_hook ${CONTAINER_ID} "pre" false true ${PRE_COMMIT_COMMAND}
 
+    # Again, as the pre-commit hook may write to them
+    empty_uid_indexed_logs ${CONTAINER_ID}
     commit_file ${NEW_IMAGE_NAME}
     check_last_exit_code $? "[ERROR] Error occured while committing temporary container" \
                             "[INFO] Temporary container was successfully committed with name: ${NEW_IMAGE_NAME}" \
@@ -149,9 +151,12 @@ export LAYERS_COUNT_TO_SQUASH=${13}
 
 
 export TASK_NAME="PausePipelineRun"
-if command -v python3 &>/dev/null; then
+# scripts/pipeline-launch/launch.sh installs the bundled python3.12 distro at this fixed
+# path on every run start - check for its presence rather than any system python3's version.
+export CP_PYTHON3_PATH="/usr/local/python3.12/bin/python3.12"
+if [ -x "$CP_PYTHON3_PATH" ]; then
     export CP_PYTHON_VERSION="3"
-    export CP_PYTHON_PATH=$(command -v python3)
+    export CP_PYTHON_PATH="$CP_PYTHON3_PATH"
 else
     export CP_PYTHON_VERSION="2"
     export CP_PYTHON_PATH=$(command -v python2)
@@ -198,6 +203,9 @@ mkdir $COMMON_REPO_DIR
 cd $COMMON_REPO_DIR
 install_pipeline_code
 cd ..
+
+# Before the disk space check: the container size it reads counts a sparse file in full
+empty_uid_indexed_logs ${CONTAINER_ID}
 
 check_free_disc_space
 

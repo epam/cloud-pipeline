@@ -24,6 +24,7 @@ import {
   getVisibleParameters,
   parametersToPayloadParams,
   parametersToConfigurationParams,
+  readParametersFromConfiguration,
   setNodeUpRetryCountValue,
   validateParameters
 } from './parameter-utilities';
@@ -232,5 +233,55 @@ describe('validateParameters', () => {
     it('requires a value when the configuration marks it required, as any other parameter', () => {
       expect(requiredErrorOf()).toBe('Required');
     });
+  });
+});
+
+describe('readParametersFromConfiguration, with an enum parameter under a condition', () => {
+  beforeEach(() => loadPreferences(false, []));
+
+  const read = (multiple, flag = 'true') => readParametersFromConfiguration({
+    parameters: {
+      FLAG: {type: 'boolean', value: flag}
+    },
+    conditional_parameters: {
+      'FLAG == true': {
+        RULES: {
+          type: 'string',
+          multiple,
+          value: multiple ? 'a,b,c' : 'b',
+          enum: ['a', 'b', 'c']
+        }
+      }
+    }
+  });
+  const rulesOf = (parameters) => parameters.find((p) => p.name === 'RULES');
+
+  it('sets the default value of a multi-select enum when the condition matches', async () => {
+    expect(rulesOf(await read(true)).value).toBe('a,b,c');
+  });
+
+  it('sets the default value of a single-select enum when the condition matches', async () => {
+    expect(rulesOf(await read(false)).value).toBe('b');
+  });
+
+  it('sets the default value of a multi-select enum when the condition starts to match',
+    async () => {
+      const parameters = (await read(true, 'false'))
+        .map((p) => (p.name === 'FLAG' ? {...p, value: true} : p));
+      const {parameters: validated} = validateParameters(parameters);
+      expect(rulesOf(validated).value).toBe('a,b,c');
+    });
+
+  it('keeps a multi-select enum the user cleared empty', async () => {
+    const parameters = (await read(true))
+      .map((p) => (p.name === 'RULES' ? {...p, value: ''} : p));
+    const {parameters: validated} = validateParameters(parameters);
+    expect(rulesOf(validated).value).toBe('');
+  });
+
+  it('hides the parameter, with no value, when the condition does not match', async () => {
+    const rules = rulesOf(await read(true, 'false'));
+    expect(rules.config.visible).toBe(false);
+    expect(rules.value).toBeUndefined();
   });
 });

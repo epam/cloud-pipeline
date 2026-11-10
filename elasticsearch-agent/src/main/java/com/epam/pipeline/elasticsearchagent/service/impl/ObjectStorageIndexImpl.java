@@ -326,7 +326,8 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
                                             final String indexName,
                                             final String region,
                                             final String content) {
-        return new IndexRequest(indexName, DOC_MAPPING_TYPE, file.getPath(), elasticsearchServiceClient.getVersion())
+        return new IndexRequest(indexName, DOC_MAPPING_TYPE, fileMapper.getDocumentId(file),
+                elasticsearchServiceClient.getVersion())
                 .source(fileMapper.fileToDocument(file, dataStorage, region,
                         permissionsContainer, getDocumentType(), tagDelimiter, content));
     }

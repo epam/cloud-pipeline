@@ -2,12 +2,13 @@
 # shellcheck source-path=SCRIPTDIR
 #
 # Tests of the sandbox scripts that need no AWS account: every command under --dry-run, the config
-# checks, the steps of connect, services and down on Docker with docker stubbed, the libraries and
-# the commands with AWS stubbed (in-tools-test.sh, check-test.sh, ami-test.sh, connect-test.sh and
-# services-test.sh, in the tools image), and the host scripts and the API container's entrypoint
-# with the commands they run stubbed (host-test.sh, services-host-test.sh and api-entrypoint-test.sh,
-# as root in containers of their own), and the reaper in lambda/ (its pytest tests, with EC2
-# stubbed, and cfn-lint over its template). Nothing here calls AWS.
+# checks, the steps of connect, services, ui and down on Docker with docker stubbed, the libraries
+# and the commands with AWS stubbed (in-tools-test.sh, check-test.sh, ami-test.sh, connect-test.sh
+# and services-test.sh, in the tools image), the host scripts and the containers' entrypoints with
+# the commands they run stubbed (host-test.sh, services-host-test.sh and api-entrypoint-test.sh, as
+# root in containers of their own), the registry's settings with the registry's image, and the
+# reaper in lambda/ (its pytest tests, with EC2 stubbed, and cfn-lint over its template). Nothing
+# here calls AWS.
 #
 # Usage: .agents/skills/dev-sandbox/scripts/test/sandbox-test.sh
 # Needs Docker. Runs on the host, so bash 3.2 like the other host scripts.
@@ -25,6 +26,8 @@ REPO_ROOT=$(git -C "$SKILL_DIR" rev-parse --show-toplevel)
 . "$SCRIPTS_DIR/lib/tunnel.sh"
 # shellcheck source=../lib/services.sh
 . "$SCRIPTS_DIR/lib/services.sh"
+# shellcheck source=../lib/ui.sh
+. "$SCRIPTS_DIR/lib/ui.sh"
 REAL_REPO_ROOT=$REPO_ROOT
 
 # Every case names its own config and state; a developer's own settings must not leak in.
@@ -48,11 +51,19 @@ SERVICES_HOST_TEST_IMAGE=python:3.12
 LAMBDA_TEST_IMAGE_REPOSITORY=cp-sandbox-lambda-test
 # A sandbox name no developer has, for the case that makes a real Docker network.
 NETWORK_SANDBOX=sandbox-test-$$
+# The registry settings of the platform's deployment, which services-host-test.sh compares with.
+DEPLOY_REGISTRY_CONFIG=deploy/docker/cp-docker-registry/v2.7.1/update_config.sh
+# The real registry the settings install-services.sh writes are tried with, on a network of its own.
+REGISTRY_TEST_CONTAINER=cp-sandbox-test-registry-$$
+REGISTRY_TEST_NETWORK=cp-sandbox-test-registry-$$
 mkdir -p "$SCRATCH_PARENT"
 SCRATCH=$(mktemp -d "$SCRATCH_PARENT/dev-sandbox-test.XXXXXX")
+REGISTRY_SETTINGS=$SCRATCH/registry-settings
 trap 'rm -rf "$SCRATCH"; docker rm --force "$(tunnel_container "$NETWORK_SANDBOX")" >/dev/null 2>&1 || true
   docker network rm "$(sandbox_network "$NETWORK_SANDBOX")" >/dev/null 2>&1 || true
-  docker volume rm "$(service_volume "$NETWORK_SANDBOX" db)" >/dev/null 2>&1 || true' EXIT
+  docker volume rm "$(service_volume "$NETWORK_SANDBOX" db)" >/dev/null 2>&1 || true
+  docker rm --force "$REGISTRY_TEST_CONTAINER" >/dev/null 2>&1 || true
+  docker network rm "$REGISTRY_TEST_NETWORK" >/dev/null 2>&1 || true' EXIT
 
 write_config() {   # write_config <file>: a complete config, with values nobody's account has
   cat >"$1" <<EOF
@@ -137,6 +148,16 @@ role_filter() {
 
 real_repo() {
   REPO_ROOT=$REAL_REPO_ROOT
+}
+
+# fake_client [<node_modules>]: the fake checkout's client/, with client/.nvmrc as the real one
+# has it, and with node_modules installed when asked. After fake_repo.
+fake_client() {
+  mkdir -p "$FAKE_REPO/client"
+  cp "$REAL_REPO_ROOT/$UI_NVMRC" "$FAKE_REPO/$UI_NVMRC"
+  if [ "${1-}" = node_modules ]; then
+    mkdir -p "$FAKE_REPO/client/node_modules"
+  fi
 }
 
 # host_stubbed <function> [args...]: runs a host function from lib/tunnel.sh or lib/services.sh
@@ -781,11 +802,39 @@ expect_output "java -Xmx2g -Djava.security.egd=file:/dev/./urandom -jar $STATE/d
 expect_output "psql -U pipeline -d pipeline, with: SELECT setval('pipeline.s_pipeline_run', 100000000, false)"
 expect_output "[dry-run] curl --request POST https://api:9999/pipeline/restapi/cloud/region"
 expect_output "[dry-run] curl --request POST https://api:9999/pipeline/restapi/dockerRegistry/register"
+expect_output '"userName":"pipe_admin","password":"<registry-password.secret>"'
+expect_output "[dry-run] java -jar $JWT_GENERATOR_JAR --private $STATE/dev-abcd/jwt-private-key.pem --expires 3600 ... >$STATE/dev-abcd/registry-token.secret"
+expect_output "cat >/etc/cp-sandbox/registry/notify-token.secret.part"
+expect_output "--notify-url https://10.0.0.5:9999/pipeline/restapi/dockerRegistry/notify --api-cert /opt/cp-sandbox/api-tls.crt"
+expect_output "ec2-user@i-0local 'sudo cat /etc/cp-sandbox/registry/password.secret'"
 expect_output "[dry-run] Nothing was configured."
 expect_no_output "$SECRET"
 [ -z "$(docker ps --all --quiet --filter label=cp-sandbox=dev-abcd)" ] || fail "a container was started"
 if docker volume inspect cp-sandbox-dev-abcd-db >/dev/null 2>&1; then fail "the database volume was created"; fi
 [ ! -e "$STATE/dev-abcd/api.jar" ] || fail "the jar was copied"
+end_case
+
+start_case "services --pipe-common-from-checkout --dry-run packs the checkout's pipe-common, copies it over SSH, and has the master serve it"
+fake_services_state dev-abcd
+sandbox services --dry-run --pipe-common-from-checkout
+expect_status 0
+expect_output "[dry-run] pack workflows/pipe-common of $REPO_ROOT into pipe-common.tar.gz"
+expect_output "ec2-user@i-0local"
+expect_output "cat >/opt/cp-sandbox/pipe-common.tar.gz.part && mv -f /opt/cp-sandbox/pipe-common.tar.gz.part /opt/cp-sandbox/pipe-common.tar.gz"
+expect_output "/opt/cp-sandbox/tool.Dockerfile https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/develop/cloud-pipeline.0.0.0.0.dryrun.tgz --notify-url https://10.0.0.5:9999/pipeline/restapi/dockerRegistry/notify --api-cert /opt/cp-sandbox/api-tls.crt --pipe-common /opt/cp-sandbox/pipe-common.tar.gz"
+expect_output "and pipe-common from this checkout."
+expect_no_output "$SECRET"
+end_case
+
+start_case "services hands --pipe-common-from-checkout to the tools image's services-master"
+fake_services_state dev-abcd
+fake_repo
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd --pipe-common-from-checkout
+real_repo
+expect_status 0
+expect "services-master hears of it, and services-prepare does not" \
+  "$(counted "in-tools.sh services-master --name dev-abcd --pipe-common-from-checkout|") $(counted 'services-prepare --name dev-abcd --docker-subnets  --pipe-common')" '1 0'
 end_case
 
 start_case "services builds what it needs, prepares the sandbox, then starts the database and the API on the network, and configures it from there"
@@ -796,7 +845,8 @@ host_stubbed cmd_services --name dev-abcd
 real_repo
 expect_status 0
 expect "the steps, in order" "$(in_order "in-tools.sh services-prepare --name dev-abcd --docker-subnets 172.18.0.0/16 |sandbox=|" \
-  "docker run --rm --entrypoint java" "docker volume create --label cp-sandbox=dev-abcd cp-sandbox-dev-abcd-db" \
+  "docker run --rm --entrypoint java" "in-tools.sh services-master --name dev-abcd|sandbox=|" \
+  "docker volume create --label cp-sandbox=dev-abcd cp-sandbox-dev-abcd-db" \
   "docker run --detach --name cp-sandbox-dev-abcd-db" "docker exec cp-sandbox-dev-abcd-db pg_isready -q -h 127.0.0.1 -U pipeline -d pipeline" \
   "docker run --detach --init --name cp-sandbox-dev-abcd-api" "in-tools.sh services-wait --name dev-abcd|sandbox=dev-abcd|" \
   "docker exec -i cp-sandbox-dev-abcd-db psql" "in-tools.sh services-configure --name dev-abcd|sandbox=dev-abcd|")" yes
@@ -814,6 +864,42 @@ expect "it has the checkout and the sandbox's state, read-only, and the config a
 expect "the sequences' SQL goes to the database" "$(calls 'sql: ')" "sql: SELECT setval('pipeline.s_pipeline_run', 123400000, false);"
 expect "the database is the PostgreSQL the platform's installer deploys" \
   "$(calls 'docker run --detach --name cp-sandbox-dev-abcd-db' | grep -c " postgres:$(sed -n 's/^PSG_VERSION=//p' "$REAL_REPO_ROOT/$DB_VERSION_FILE")\$" || true)" 1
+end_case
+
+start_case "services mints the registry's own token until an hour after the sandbox expires, and again once its expiry has moved past it"
+fake_services_state dev-abcd
+fake_repo
+sed -e 's/2020-01-01T00:00:00Z/2030-01-01T00:00:00Z/' "$STATE/dev-abcd/state.json" >"$STATE/dev-abcd/state.json.new"
+mv "$STATE/dev-abcd/state.json.new" "$STATE/dev-abcd/state.json"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+expect_status 0
+EXPIRES_2030=1893456000
+TOKEN_SECONDS=$(calls 'docker run --rm --entrypoint java' | grep -F -- '--expires' | grep -vF -- '--expires 2592000' |
+  sed -E 's/.*--expires ([0-9]+) .*/\1/')
+expect "the admin's token and the registry's are minted, the registry's for the admin too" \
+  "$(counted '--entrypoint java') $(counted '--claim user_id=1 --claim user_name=pipe_admin --claim role=ROLE_ADMIN --claim group=ADMIN')" '2 2'
+expect "the registry's token is valid until an hour after the sandbox expires" \
+  "$(($(date +%s) + TOKEN_SECONDS - EXPIRES_2030 - 3600 < 60 && $(date +%s) + TOKEN_SECONDS - EXPIRES_2030 - 3600 > -60))" 1
+# shellcheck disable=SC2012 # the mode, as ls shows it on macOS and Linux alike
+expect "it is its owner's only, and when it expires is kept beside it" \
+  "$(ls -l "$STATE/dev-abcd/registry-token.secret" | cut -c1-10) $(cat "$STATE/dev-abcd/registry-token.until")" \
+  "-rw------- $((EXPIRES_2030 + 3600))"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+expect "a second run mints the admin's token only" "$(counted '--entrypoint java')" 1
+sed -e 's/2030-01-01T00:00:00Z/2030-01-02T00:00:00Z/' "$STATE/dev-abcd/state.json" >"$STATE/dev-abcd/state.json.new"
+mv "$STATE/dev-abcd/state.json.new" "$STATE/dev-abcd/state.json"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+expect "after extend, the registry's token is minted again, for the new expiry" \
+  "$(counted '--entrypoint java') $(cat "$STATE/dev-abcd/registry-token.until")" "2 $((EXPIRES_2030 + 86400 + 3600))"
+fake_services_state dev-abcd
+rm "$STATE/dev-abcd/registry-token.until"
+FAKE_TUNNEL_STATE=running FAKE_NETWORK=1
+host_stubbed cmd_services --name dev-abcd
+expect "a sandbox past its expiry gets a token for an hour" "$(calls 'docker run --rm --entrypoint java' | grep -c -- '--expires 3600 ' || true)" 1
+real_repo
 end_case
 
 start_case "services --log shows the API's log, with the tokens, keys and credentials in it blanked out"
@@ -886,6 +972,126 @@ expect_status 0
 expect_output "[dry-run] curl --request GET https://api:9999/pipeline/restapi/run/7"
 expect_no_output "Authorization"
 expect_no_output "$SECRET"
+end_case
+
+start_case "ui runs the checkout's GUI on the sandbox's network, against its API, on 127.0.0.1 only, and waits for it to compile"
+fake_state dev-abcd
+printf 'header.payload.signature\n' >"$STATE/dev-abcd/admin-token.secret"
+fake_repo
+fake_client node_modules
+NODE_IMAGE=node:$(tr -d '[:space:]' <"$REAL_REPO_ROOT/$UI_NVMRC")
+FAKE_API_STATE=running FAKE_SERVICE_LOG=$(printf '%s\n' 'Starting the development server...' 'Compiled successfully!')
+host_stubbed cmd_ui --name dev-abcd
+expect_status 0
+expect "the container is labelled, with what it started from, on the network, its two ports published on 127.0.0.1 only" \
+  "$(calls 'docker run --detach --init' | grep -cE -- "^docker run --detach --init --name cp-sandbox-dev-abcd-ui --label cp-sandbox=dev-abcd --label cp-sandbox-role=ui --label cp-sandbox-config=[0-9a-f]{12} --network cp-sandbox-dev-abcd --publish 127.0.0.1:3100:3100 --publish 127.0.0.1:9199:9199 " || true)" 1
+expect "it runs npm start as the calling user, in client/, mounted from the checkout, in the Node image of client/.nvmrc, through the entrypoint" \
+  "$(calls 'docker run --detach --init' | grep -cF -- "--user $(id -u):$(id -g) --env HOME=/tmp --workdir $FAKE_REPO/client --volume $FAKE_REPO/client:$FAKE_REPO/client " || true) $(calls 'docker run --detach --init' | grep -cF -- "--volume $SKILL_DIR/docker/ui-entrypoint.sh:/usr/local/bin/ui-entrypoint.sh:ro" || true) $(calls 'docker run --detach --init' | grep -cE -- "--entrypoint bash $NODE_IMAGE /usr/local/bin/ui-entrypoint.sh npm start\$" || true)" \
+  '1 1 1'
+expect "the dev proxy forwards to the API on the network, trusting its certificate, and listens on every address of the container, as the dev server does, with polling for the mounted checkout" \
+  "$(calls 'docker run --detach --init' | grep -cF -- '--env SERVER=https://api:9999/pipeline/ --env PROXY_INSECURE=1 --env PROXY_TARGET=https://api:9999 --env PROXY_SERVER=http://localhost:9199/pipeline/ --env PROXY_HOST=0.0.0.0 --env PROXY_PORT=9199 ' || true) $(calls 'docker run --detach --init' | grep -cF -- ' --env HOST=0.0.0.0 --env PORT=3100 --env HTTPS=false --env CHOKIDAR_USEPOLLING=true --env BROWSER=none ' || true)" \
+  '1 1'
+expect "it answers the GUI's own origin alone, and every setting of the proxy is given, so that the checkout's client/.env files cannot send the token elsewhere" \
+  "$(calls 'docker run --detach --init' | grep -cF -- ' --env PROXY_CORS_ORIGIN=http://localhost:3100 --env PROXY_DISABLED= --env SKIP_DEV_PROXY= ' || true)" 1
+expect "the admin's token is mounted alone, read-only, for the entrypoint to read: neither the token nor the rest of the state is handed over" \
+  "$(calls 'docker run --detach --init' | grep -cF -- "--volume $STATE/dev-abcd/admin-token.secret:/run/cp-sandbox/admin-token.secret:ro --volume" || true) $(calls 'docker run --detach --init' | grep -cF -e "--volume $STATE/dev-abcd:" -e header.payload.signature -e PROXY_BEARER_TOKEN || true)" \
+  '1 0'
+expect "node_modules is there, so npm ci does not run; the log tells of the compile" \
+  "$(counted 'npm ci') $(counted 'docker logs cp-sandbox-dev-abcd-ui')" '0 1'
+expect_output "  gui    http://localhost:3100/, on 127.0.0.1 only: every request goes to the API as its admin"
+expect_output "  stop   sandbox.sh ui --stop"
+end_case
+
+start_case "ui installs client/node_modules with npm ci first, when it is missing"
+fake_state dev-abcd
+printf 'header.payload.signature\n' >"$STATE/dev-abcd/admin-token.secret"
+fake_repo
+fake_client
+FAKE_API_STATE=running FAKE_SERVICE_LOG='Compiled with warnings.'
+host_stubbed cmd_ui --name dev-abcd
+expect_status 0
+expect "npm ci runs as the calling user in the Node image, with npm's cache in the state root, before the dev server starts" \
+  "$(in_order "docker run --rm --user $(id -u):$(id -g) --volume $FAKE_REPO/client:$FAKE_REPO/client --volume $STATE/.npm-cache:$STATE/.npm-cache --env HOME=/tmp --env npm_config_cache=$STATE/.npm-cache --workdir $FAKE_REPO/client $NODE_IMAGE npm ci" \
+    'docker run --detach --init --name cp-sandbox-dev-abcd-ui') $([ -d "$STATE/.npm-cache" ] && echo made)" 'yes made'
+real_repo
+end_case
+
+start_case "ui leaves a GUI that runs with the same settings, and starts one that does not again"
+fake_state dev-abcd
+printf 'header.payload.signature\n' >"$STATE/dev-abcd/admin-token.secret"
+fake_repo
+fake_client node_modules
+FAKE_API_STATE=running FAKE_SERVICE_LOG='Compiled successfully!'
+host_stubbed cmd_ui --name dev-abcd
+CONFIG_LABEL=$(calls 'docker run --detach --init' | sed -E 's/.*--label cp-sandbox-config=([0-9a-f]{12}) .*/\1/')
+FAKE_API_STATE=running FAKE_STATES='ui=running' FAKE_CONFIGS="ui=$CONFIG_LABEL" FAKE_SERVICE_LOG='Compiled successfully!'
+host_stubbed cmd_ui --name dev-abcd
+expect_status 0
+expect "nothing is started or removed" "$(counted 'docker run')$(counted 'docker rm')" '00'
+expect_output "The GUI's container cp-sandbox-dev-abcd-ui is running already, on the same checkout and settings."
+FAKE_API_STATE=running FAKE_STATES='ui=running' FAKE_CONFIGS='ui=000000000000' FAKE_SERVICE_LOG='Compiled successfully!'
+host_stubbed cmd_ui --name dev-abcd
+expect "one with other settings, as from another checkout, is started again" \
+  "$(in_order 'docker rm --force cp-sandbox-dev-abcd-ui' 'docker run --detach --init --name cp-sandbox-dev-abcd-ui')" yes
+real_repo
+end_case
+
+start_case "ui needs the API that services runs, and its admin token, and starts nothing without them"
+fake_state dev-abcd
+fake_repo
+fake_client node_modules
+host_stubbed cmd_ui --name dev-abcd
+expect_status 1
+expect_output "sandbox dev-abcd runs no API here: run sandbox.sh services first"
+FAKE_API_STATE=running
+host_stubbed cmd_ui --name dev-abcd
+expect_status 1
+expect_output "sandbox dev-abcd has no admin-token.secret: run sandbox.sh services"
+expect "no container is started" "$(calls 'docker run')" ''
+real_repo
+end_case
+
+start_case "ui stops, with the end of the log, when the GUI does not compile, and leaves the dev server running"
+fake_state dev-abcd
+printf 'header.payload.signature\n' >"$STATE/dev-abcd/admin-token.secret"
+fake_repo
+fake_client node_modules
+FAKE_API_STATE=running FAKE_SERVICE_LOG=$(printf '%s\n' 'Compiled successfully!' 'Compiling...' 'Failed to compile.')
+FAKE_LOG="Module not found: Error: Can't resolve './missing'"
+host_stubbed cmd_ui --name dev-abcd
+expect_status 1
+expect "the end of its log is shown, and its container stays" \
+  "$(counted 'docker logs --tail 40 cp-sandbox-dev-abcd-ui') $(counted 'docker rm')" '1 0'
+expect_output "  | Module not found: Error: Can't resolve './missing'"
+expect_output "the GUI did not compile. Its dev server runs on in cp-sandbox-dev-abcd-ui, and compiles again when a file changes"
+FAKE_API_STATE=running FAKE_SERVICE_LOG=$(printf '%s\n' 'Failed to compile.' 'Compiling...' 'Compiled successfully!')
+host_stubbed cmd_ui --name dev-abcd
+expect "a compile that failed, then one that passed, is compiled" "$STATUS" 0
+FAKE_API_STATE=running FAKE_STATES='ui=exited' FAKE_SERVICE_LOG='Starting the development server...'
+host_stubbed cmd_ui --name dev-abcd
+expect_status 1
+expect_output "the GUI's dev server stopped, or did not compile in 20 minutes; its container cp-sandbox-dev-abcd-ui stays"
+real_repo
+end_case
+
+start_case "ui --stop removes the GUI's container"
+FAKE_STATES='ui=running'
+host_stubbed cmd_ui --name dev-abcd --stop
+expect_status 0
+expect "only that container goes" "$(calls 'docker rm' | paste -sd '|' -)" 'docker rm --force cp-sandbox-dev-abcd-ui'
+expect_output "Stopped the GUI of sandbox dev-abcd: removed the container cp-sandbox-dev-abcd-ui."
+host_stubbed cmd_ui --name dev-abcd --stop
+expect_output "Sandbox dev-abcd runs no GUI here."
+end_case
+
+start_case "ui --dry-run prints the dev server's container, and starts nothing"
+fake_state dev-abcd
+sandbox ui --dry-run
+expect_status 0
+expect_output "[dry-run] Sandbox dev-abcd runs no API here; without --dry-run, ui stops here."
+expect_output "[dry-run] docker run --detach --init --name cp-sandbox-dev-abcd-ui --label cp-sandbox=dev-abcd --label cp-sandbox-role=ui"
+expect_output "[dry-run] Nothing was started."
+[ -z "$(docker ps --all --quiet --filter label=cp-sandbox=dev-abcd)" ] || fail "a container was started"
 end_case
 
 start_case "services leaves an API that runs on the same jar and settings, and starts one that does not again"
@@ -1285,11 +1491,50 @@ end_case
 
 start_case "services-host-test.sh: the master's side of services, as root in a container of its own"
 OUTPUT=
-if OUTPUT=$(docker run --rm --user 0:0 --volume "$SKILL_DIR:$SKILL_DIR:ro" "$SERVICES_HOST_TEST_IMAGE" \
+mkdir -p "$REGISTRY_SETTINGS"
+if OUTPUT=$(docker run --rm --user 0:0 --volume "$SKILL_DIR:$SKILL_DIR:ro" \
+  --volume "$REPO_ROOT/$DEPLOY_REGISTRY_CONFIG:$REPO_ROOT/$DEPLOY_REGISTRY_CONFIG:ro" \
+  --env "DEPLOY_REGISTRY_CONFIG=$REPO_ROOT/$DEPLOY_REGISTRY_CONFIG" \
+  --volume "$REGISTRY_SETTINGS:/export" --env EXPORT_DIR=/export "$SERVICES_HOST_TEST_IMAGE" \
   bash "$TEST_DIR/services-host-test.sh" 2>&1); then
   printf '%s\n' "$OUTPUT" | sed 's/^/  /'
 else
   fail "services-host-test.sh failed"
+fi
+end_case
+
+start_case "the registry's settings, as install-services.sh leaves them, are ones the registry's image starts with: a login, deletes and notifications"
+OUTPUT=
+REGISTRY_IMAGE=$(sed -n 's/^REGISTRY_IMAGE=//p' "$SCRIPTS_DIR/host/install-services.sh")
+tools_image
+if [ ! -s "$REGISTRY_SETTINGS/config.yml" ]; then
+  fail "services-host-test.sh left no registry settings in $REGISTRY_SETTINGS"
+else
+  docker network create "$REGISTRY_TEST_NETWORK" >/dev/null
+  docker image inspect "$REGISTRY_IMAGE" >/dev/null 2>&1 || docker pull --quiet "$REGISTRY_IMAGE" >/dev/null
+  docker run --detach --name "$REGISTRY_TEST_CONTAINER" --network "$REGISTRY_TEST_NETWORK" \
+    --network-alias registry --volume "$REGISTRY_SETTINGS:/certs:ro" --env SSL_CERT_FILE=/certs/api.crt \
+    "$REGISTRY_IMAGE" /certs/config.yml >/dev/null
+  # registry_status [<curl args...>] <path>: the HTTP status the registry answers, from the network.
+  registry_status() {
+    docker run --rm --network "$REGISTRY_TEST_NETWORK" --entrypoint curl "$TOOLS_IMAGE" --silent \
+      --insecure --output /dev/null --write-out '%{http_code}' "$@" 2>/dev/null || true
+  }
+  # A made-up password, which services-host-test.sh made.
+  USER_ARGS=(--user "pipe_admin:$(cat "$REGISTRY_SETTINGS/password.secret")")
+  for _ in $(seq 1 30); do
+    [ "$(registry_status "${USER_ARGS[@]}" https://registry:5000/v2/)" != 200 ] || break
+    sleep 1
+  done
+  expect "the registry answers its user" "$(registry_status "${USER_ARGS[@]}" https://registry:5000/v2/)" 200
+  expect "and no one without the login" "$(registry_status https://registry:5000/v2/)" 401
+  expect "a delete is taken, not refused as unsupported (405): the manifest is just not there" \
+    "$(registry_status "${USER_ARGS[@]}" --request DELETE "https://registry:5000/v2/library/none/manifests/sha256:$(printf '0%.0s' $(seq 1 64))")" 404
+  OUTPUT=$(docker logs "$REGISTRY_TEST_CONTAINER" 2>&1 || true)
+  expect "it notifies the API at the URL given" \
+    "$(printf '%s\n' "$OUTPUT" | grep -c 'configuring endpoint cp-sandbox-api (https://10.0.0.8:9999/pipeline/restapi/dockerRegistry/notify), timeout=10s' || true)" 1
+  docker rm --force "$REGISTRY_TEST_CONTAINER" >/dev/null
+  docker network rm "$REGISTRY_TEST_NETWORK" >/dev/null
 fi
 end_case
 
