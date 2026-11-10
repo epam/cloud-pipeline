@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {render, screen, click, type, clear, keyDown, fn} from '@test';
-import DownloadArchiveModal from './download-storage-archive-modal';
+import DownloadArchiveModal from './download-archive-modal';
 
 // antd's Modal (rc-dialog) portals its content to a node it appends to
 // `document.body` itself, outside the container `render()` tracks, and only

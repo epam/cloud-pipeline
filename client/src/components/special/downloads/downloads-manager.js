@@ -439,7 +439,7 @@ class DownloadsManager extends React.Component {
 
   // No cap hint here or anywhere else: nothing counts active tasks any more,
   // and nothing can be queued from this modal. The cap is checked against the
-  // server where an archive is actually requested (download-storage-archive.js).
+  // server where an archive is actually requested (data-storage/utils/download-archive.js).
   render () {
     return (
       <div className={styles.container}>

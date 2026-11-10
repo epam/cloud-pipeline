@@ -17,20 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Modal, Input, Button, Form} from 'antd';
-import {archiveNameError} from './download-storage-archive';
+import {archiveNameError} from '../utils/download-archive';
 
-// A small controlled "name this archive" modal. Not EditItemForm: that
-// component's nameShouldNotBeTheSameValidator rejects a submitted value equal
-// to its `name` prop, which would make accepting the offered default — the
-// common case here — impossible, and its pattern validator allows `@`, which
-// the server's `^[\w\-. ]+$` rule does not. This modal validates instead with
-// `archiveNameError`. Its illegal-character half mirrors the server's own
-// `SAFE_ARCHIVE_NAME` exactly — both `\w`s are ASCII `[A-Za-z0-9_]` — but its
-// empty-name half is deliberately stricter than the server: the server's own
-// answer to a blank name is to accept it and call the archive `archive.zip`
-// (`download-storage-archive.js` already says so, near `handleDownloadArchive`),
-// and silently renaming what the user asked for is worse than asking them to
-// type something.
+// Asks for the archive name, and checks it with `archiveNameError`.
 export default class DownloadArchiveModal extends React.Component {
   static propTypes = {
     visible: PropTypes.bool,
@@ -51,11 +40,8 @@ export default class DownloadArchiveModal extends React.Component {
   };
 
   componentDidUpdate (prevProps) {
-    // Seed from `defaultName` whenever the modal BECOMES visible, the same
-    // trigger EditItemForm.componentDidUpdate uses — so reopening it offers a
-    // fresh timestamped default rather than whatever the user typed last time.
-    // `pending` resets too: a reopened modal must not still be showing the
-    // previous attempt's spinner.
+    // Each time the modal opens, the name starts from `defaultName` again, and
+    // `pending` is reset.
     if (!prevProps.visible && this.props.visible) {
       this.resetName();
     }
@@ -78,11 +64,11 @@ export default class DownloadArchiveModal extends React.Component {
     try {
       await this.props.onSubmit(name);
     } catch (error) {
-      // The caller has shown the error already; unlocking lets the user fix the name and retry.
+      // Unlocks the form, so the user can fix the name and try again.
       this.setState({pending: false});
       return;
     }
-    // `pending` stays set while the modal animates closed, so a late click queues nothing.
+    // `pending` stays set while the modal closes, so a second click is ignored.
     if (this.props.onCancel) {
       this.props.onCancel();
     }
@@ -100,12 +86,8 @@ export default class DownloadArchiveModal extends React.Component {
         closable={!pending}
         maskClosable={!pending}
         keyboard={!pending}
-        // antd 2.13.14's Modal builds its default footer from hardcoded Button
-        // props and never reads `okButtonProps`/`cancelButtonProps` (those are
-        // antd 3.x+ only - see node_modules/antd/lib/modal/Modal.js), so the OK
-        // button's disabled/loading state is driven through an explicit footer
-        // instead. `size="large"` matches that same default footer (Modal.js),
-        // so this modal's buttons look the same size as every other modal's.
+        // antd 2.13.14's Modal has no `okButtonProps`, so an explicit footer sets
+        // the OK button's disabled and loading state.
         footer={[
           <Button
             key="cancel"

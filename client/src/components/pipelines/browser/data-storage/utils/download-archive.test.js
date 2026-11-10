@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-import {fn, screen} from '@test';
+import {fn, restoreMocks, screen, spyOn} from '@test';
+import {message} from 'antd';
 import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
+  archiveDownloadAvailable,
   archiveNameError,
   archivePathsFromSelection,
+  archiveSelectionAvailable,
   archiveStorageSupported,
   defaultArchiveName
-} from './download-storage-archive';
+} from './download-archive';
 
 describe('archiveStorageSupported', () => {
   test.each([
@@ -50,6 +53,67 @@ describe('archiveStorageSupported', () => {
 
   test('prefers storageType over type', () => {
     expect(archiveStorageSupported({storageType: 'AZ', type: 'S3'})).toBe(false);
+  });
+});
+
+describe('archiveDownloadAvailable', () => {
+  const supported = {archiveSupported: true, downloadAllowed: true};
+
+  test('a supported storage this user may download from offers the archive', () => {
+    expect(archiveDownloadAvailable(supported)).toBe(true);
+  });
+
+  test('a storage this user may not download from offers no archive', () => {
+    expect(archiveDownloadAvailable({...supported, downloadAllowed: false})).toBe(false);
+  });
+
+  test('a storage without archive support offers no archive', () => {
+    expect(archiveDownloadAvailable({...supported, archiveSupported: false})).toBe(false);
+  });
+
+  test('knowing nothing about the storage offers no archive', () => {
+    expect(archiveDownloadAvailable()).toBe(false);
+    expect(archiveDownloadAvailable({})).toBe(false);
+  });
+});
+
+describe('archiveSelectionAvailable', () => {
+  const supported = {archiveSupported: true, downloadAllowed: true};
+
+  // No folder is downloadable, so without this a read-only user cannot select one.
+  test('a folder is selectable, even though no folder is downloadable', () => {
+    expect(archiveSelectionAvailable({path: 'sub', type: 'Folder'}, supported)).toBe(true);
+  });
+
+  test('a lowercase "folder" type counts too', () => {
+    expect(archiveSelectionAvailable({path: 'sub', type: 'folder'}, supported)).toBe(true);
+  });
+
+  test('a file is not selectable through this flag', () => {
+    expect(archiveSelectionAvailable({path: 'a.txt', type: 'File'}, supported)).toBe(false);
+  });
+
+  test('a lifecycle-archived file is not selectable through this flag either', () => {
+    const item = {path: 'cold.txt', type: 'File', downloadable: false, archived: true};
+    expect(archiveSelectionAvailable(item, supported)).toBe(false);
+  });
+
+  test('a delete-marker is not selectable', () => {
+    const item = {path: 'gone', type: 'Folder', deleteMarker: true};
+    expect(archiveSelectionAvailable(item, supported)).toBe(false);
+  });
+
+  test('an item with no path is not selectable - the ".." navigation row', () => {
+    expect(archiveSelectionAvailable({type: 'Folder'}, supported)).toBe(false);
+    expect(archiveSelectionAvailable(undefined, supported)).toBe(false);
+  });
+
+  test.each([
+    ['the storage cannot be archived', {...supported, archiveSupported: false}],
+    ['this user may not download from it', {...supported, downloadAllowed: false}],
+    ['nothing is known about the storage', undefined]
+  ])('nothing is selectable when %s', (_, options) => {
+    expect(archiveSelectionAvailable({path: 'sub', type: 'Folder'}, options)).toBe(false);
   });
 });
 
@@ -363,6 +427,10 @@ describe('archiveDownloadAllowed', () => {
 });
 
 describe('handleDownloadArchive', () => {
+  afterEach(() => {
+    restoreMocks();
+  });
+
   test('calls startArchiveDownload with the storage id, paths and name as given', async () => {
     const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
     await handleDownloadArchive(asyncTasks, 7, ['a.txt', 'b/'], 'my archive');
@@ -376,8 +444,6 @@ describe('handleDownloadArchive', () => {
     expect(asyncTasks.startArchiveDownload).not.toHaveBeenCalled();
   });
 
-  // Re-thrown (not swallowed) so the name-confirmation modal above it can
-  // tell a queued archive from a refused one and decide whether to close.
   test('a rejecting startArchiveDownload is re-thrown out of the helper', async () => {
     const error = new Error('too many active downloads');
     const asyncTasks = {
@@ -395,46 +461,34 @@ describe('handleDownloadArchive', () => {
     ).resolves.toBeUndefined();
   });
 
-  // The queued toast is an `info`, not a `success` - only the icon changes,
-  // but asserting it needs a double, since antd's own class names are off
-  // limits (rule 6) and module mocking is too (rule 2).
-  test('the queued toast goes through messageApi.info, not success', async () => {
+  test('the queued toast is an info toast', async () => {
     const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
-    const messageApi = {
-      info: fn(),
-      loading: fn().mockReturnValue(fn()),
-      success: fn(),
-      error: fn()
-    };
+    const info = spyOn(message, 'info');
+    const success = spyOn(message, 'success');
 
-    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
+    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive');
 
-    expect(messageApi.info).toHaveBeenCalledWith(
+    expect(info).toHaveBeenCalledWith(
       'Archive download has been queued. Follow its progress under "Show downloads".',
       5
     );
-    expect(messageApi.success).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
   });
 
-  // A failing `startArchiveDownload` still reports through `messageApi.error`,
-  // even though the same failure is now also re-thrown.
-  test('a failing startArchiveDownload reports through messageApi.error', async () => {
+  test('a failing startArchiveDownload shows an error toast', async () => {
     const asyncTasks = {
       startArchiveDownload: fn().mockRejectedValue(new Error('too many active downloads'))
     };
-    const messageApi = {
-      info: fn(),
-      loading: fn().mockReturnValue(fn()),
-      success: fn(),
-      error: fn()
-    };
+    const info = spyOn(message, 'info');
+    const success = spyOn(message, 'success');
+    const error = spyOn(message, 'error');
 
     await expect(
-      handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi)
+      handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive')
     ).rejects.toThrow('too many active downloads');
 
-    expect(messageApi.error).toHaveBeenCalledWith('too many active downloads', 5);
-    expect(messageApi.success).not.toHaveBeenCalled();
-    expect(messageApi.info).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith('too many active downloads', 5);
+    expect(success).not.toHaveBeenCalled();
+    expect(info).not.toHaveBeenCalled();
   });
 });
