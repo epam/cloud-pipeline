@@ -861,7 +861,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (152 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (155 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -996,6 +996,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**3971_2**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_2.md) | Mount rules: Mount Storages located in the same cloud region with instance |  |
 | [**3971_3**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_3.md) | Mount rules: check Mount Storages located in the certain region via pipe CLI |  |
 | [**3971_4**](Run_tools_in_sandbox/Launch_parameters/3971_cloud_region/3971_4.md) | Mount rules: check filter storages for cloud region in Launch confirmation |  |
+| [**4682_1**](Run_tools_in_sandbox/Launch_parameters/4682/4682_1.md) | "Show optional parameters" checkbox is checked by default on the pipeline launch form |  |
+| [**4682_2**](Run_tools_in_sandbox/Launch_parameters/4682/4682_2.md) | "Show optional parameters" checkbox overrides for a single pipeline |  |
+| [**4682_3**](Run_tools_in_sandbox/Launch_parameters/4682/4682_3.md) | "Show optional parameters" checkbox overrides for a single tool |  |
 | [**TC-PARAMETERS-6**](Run_tools_in_sandbox/Launch_parameters/SGE_Configuration/TC-PARAMETERS-6.md) | Autoscaling cluster configuration | :white_check_mark: |
 | [**1447**](Run_tools_in_sandbox/Limit_mounts/1447.md) | Displaying the CP_CAP_LIMIT_MOUNTS in a user-friendly manner | :white_check_mark: |
 | [**1480**](Run_tools_in_sandbox/Limit_mounts/1480.md) | Check limit mounts warnings | :white_check_mark: |
@@ -1121,7 +1124,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>System_Management</b> (27 tests, 17 automated)</summary>
+<summary><b>System_Management</b> (30 tests, 17 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -1146,6 +1149,9 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 | [**4024_1**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_1.md) | Audit mount events |  |
 | [**4024_2**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4024_2.md) | Audit run sharing event |  |
 | [**4039**](System_Management/3059-3075-4039_audit_pipe_mount_operation/4039.md) | Data access audit - NFS |  |
+| [**4689_1**](System_Management/4689_group_ui_preferences_priority/4689_1.md) | Group with the higher priority sets the GUI settings |  |
+| [**4689_2**](System_Management/4689_group_ui_preferences_priority/4689_2.md) | Group without priority counts as priority 0 |  |
+| [**4689_3**](System_Management/4689_group_ui_preferences_priority/4689_3.md) | Groups with the same priority keep the preference order |  |
 | [**EPMCMBIBPC-3162**](System_Management/System_logging/EPMCMBIBPC-3162.md) | User authentication | :white_check_mark: |
 | [**EPMCMBIBPC-3163**](System_Management/System_logging/EPMCMBIBPC-3163.md) | User authentication. Unsuccessful attempt | :white_check_mark: |
 | [**EPMCMBIBPC-3164**](System_Management/System_logging/EPMCMBIBPC-3164.md) | User profile modifications | :white_check_mark: |

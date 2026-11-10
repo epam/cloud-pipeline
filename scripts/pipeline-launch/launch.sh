@@ -666,11 +666,9 @@ function get_install_command_by_current_distr {
          { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"coreutils"* ]] && [ "$CP_OS" == "rocky" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/coreutils/coreutils-single/g" <<< "$_TOOLS_TO_INSTALL")"
-      fi
-      if [[ "$_TOOLS_TO_INSTALL" == *"procps"* ]] && [ "$CP_OS" == "rocky" ]; then
-            _TOOLS_TO_INSTALL="$(sed -e "s/procps/procps-ng/g" <<< "$_TOOLS_TO_INSTALL")"
+      # Rocky Linux and RHEL name it procps-ng
+      if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+            _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)procps\( \|$\)/ procps-ng /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
       local _TOOL_TO_CHECK=
@@ -678,6 +676,14 @@ function get_install_command_by_current_distr {
       for _TOOL_TO_CHECK in $_TOOLS_TO_INSTALL; do
             check_package_installed "$_TOOL_TO_CHECK"
             if [ $? -ne 0 ]; then
+                  # Rocky Linux and RHEL images may have coreutils-single instead of coreutils: it has the same
+                  # commands, and yum fails to install coreutils next to it. Checked with rpm itself, as
+                  # CP_IGNORE_INSTALLED_PACKAGES does not make coreutils installable next to it
+                  if [ "$_TOOL_TO_CHECK" == "coreutils" ] && \
+                     { [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
+                     check_installed "rpm" && rpm -q coreutils-single &> /dev/null; then
+                        continue
+                  fi
                   _TOOLS_TO_INSTALL_VERIFIED="$_TOOLS_TO_INSTALL_VERIFIED $_TOOL_TO_CHECK"
             fi
       done
@@ -767,20 +773,40 @@ function install_private_packages {
 
 function install_python3_packages {
       local _install_path="$1"
-      local _tmp_install_dir="/tmp/"
-      rm -rf "${_install_path}/python3.12"
       CP_PYTHON3_DISTRO_URL="${CP_PYTHON3_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/3/python3.12.tar.gz"}"
 
+      # The distro is unpacked next to its place and swapped in only when it is complete: a failed download or unpack
+      # keeps the python3.12, python3 and pip3 the image already has (e.g. a committed run, or a python:3.x image).
+      # A folder left by an init that was killed during the download is removed first, so a commit doesn't keep it
+      rm -rf "${_install_path}"/.cp-python3.*
+      local _tmp_install_dir
+      _tmp_install_dir="$(mktemp -d "${_install_path}/.cp-python3.XXXXXX")" || {
+            echo "[WARN] Unable to create a temporary folder in ${_install_path} for the python3 distro"
+            return 1
+      }
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
-      wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null
-
+      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+            || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
+            || [ ! -x "${_tmp_install_dir}/python3.12/bin/python3.12" ]; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to install the python3 distro from $CP_PYTHON3_DISTRO_URL, keeping the python3 of the image"
+            return 1
+      fi
+      # Not moved aside: on a committed image the old folder is in a lower layer, so a move would copy all of it.
+      # The new folder is in the container's own layer, next to its place, so moving it in is a plain rename
+      rm -rf "${_install_path}/python3.12"
+      if ! mv "${_tmp_install_dir}/python3.12" "${_install_path}/python3.12"; then
+            rm -rf "${_tmp_install_dir}"
+            echo "[WARN] Unable to move the python3 distro into ${_install_path}/python3.12, the python3 and pip3 links are not changed"
+            return 1
+      fi
       # The distro has its OpenSSL built in, and /usr/local/openssl may be the image's own: only a distro that brings
       # an openssl folder (the previous python3.12.0 build) replaces it
-      if tar -tzf "${_tmp_install_dir}/python3.tgz" 2>/dev/null | grep '^openssl/' > /dev/null; then
+      if [ -d "${_tmp_install_dir}/openssl" ]; then
             rm -rf "${_install_path}/openssl"
+            mv "${_tmp_install_dir}/openssl" "${_install_path}/openssl"
       fi
-      tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_install_path}"
-      rm -f "${_tmp_install_dir}/python3.tgz"
+      rm -rf "${_tmp_install_dir}"
 
       ln -sf "${_install_path}/python3.12/bin/python3.12" "${_install_path}/bin/python3"
       ln -sf "${_install_path}/python3.12/bin/pip3.12"    "${_install_path}/bin/pip3"
@@ -1931,7 +1957,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$CP_PYTHON_VERSION" == "2" ]; then
                   $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==44.1.1
             else
-                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==68.0.0
+                  $CP_PYTHON_PATH -m pip install $_PIPE_COMMON_PIP_ARGS -I -q setuptools==81.0.0
             fi
             download_file ${DISTRIBUTION_URL}pipe-common.tar.gz
             _DOWNLOAD_RESULT=$?

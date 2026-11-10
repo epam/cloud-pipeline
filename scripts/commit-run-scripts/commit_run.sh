@@ -19,6 +19,9 @@ SCRIPT_PATH="$SCRIPTS_DIR/common_commit_initialization.sh"
 
 commit_hook ${CONTAINER_ID} "pre" ${CLEAN_UP} ${STOP_PIPELINE} ${PRE_COMMIT_COMMAND}
 
+# commit_run_starter.sh has emptied them already. Again, as the pre-commit hook may write to them
+empty_uid_indexed_logs ${CONTAINER_ID}
+
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
                         "[INFO] Temporary container was successfully committed with name: $image_name" \

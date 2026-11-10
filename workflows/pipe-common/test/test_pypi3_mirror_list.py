@@ -14,8 +14,13 @@
 
 # A Python 3 run installs pipe-common with the bundled Python 3.12 from the pypi3 mirror only, which is built from
 # deploy/dependencies/pypi3/requirements.txt: a pin of setup.py missing from that list fails every Python 3 run.
+# The same holds for the pins that the run scripts install with Python 3 from the mirror.
+# The list keeps the older versions of a package for the runs of older platform versions, and gets a version with
+# the known advisories fixed before the pins move to it. Once moved, a Python 3 pin must not go back below the version
+# it moved to for its known advisories (_PYTHON3_FIXED_VERSIONS); a newer pin, or a newer version on the list, is fine.
 
 import os
+import re
 import runpy
 import sys
 
@@ -32,9 +37,53 @@ from packaging.version import Version
 
 _PIPE_COMMON_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 _SETUP_PY = os.path.join(_PIPE_COMMON_DIR, 'setup.py')
-_MIRROR_REQUIREMENTS = os.path.abspath(os.path.join(_PIPE_COMMON_DIR, '..', '..', 'deploy', 'dependencies', 'pypi3',
-                                                    'requirements.txt'))
+_REPO_DIR = os.path.abspath(os.path.join(_PIPE_COMMON_DIR, '..', '..'))
+_MIRROR_REQUIREMENTS = os.path.join(_REPO_DIR, 'deploy', 'dependencies', 'pypi3', 'requirements.txt')
 _LINUX = {'platform_system': 'Linux', 'sys_platform': 'linux', 'os_name': 'posix'}
+
+# The run, commit and pause scripts, the shell scripts of pipe-common and cp-dav pass a platform mirror as the index of
+# their pip installs: $CP_PIP3_EXTRA_ARGS the pypi3 one, $CP_PIP_EXTRA_ARGS the Python 2 one. $_PIPE_COMMON_PIP_ARGS of
+# launch.sh and $CP_PIP_PACKAGE_INDEX_ARGS of cp-dav are one or the other, by the branch of
+# `if [ "$CP_PYTHON_VERSION" == "<2|3>" ]` that the install is in. The pins are read from the line of the install
+# command only, not from its continuation lines.
+_RUN_SCRIPT_DIRS = ['scripts', os.path.join('workflows', 'pipe-common', 'shell'),
+                    os.path.join('deploy', 'docker', 'cp-dav')]
+_PYTHON3_INDEX = 'CP_PIP3_EXTRA_ARGS'
+_PYTHON2_INDEX = 'CP_PIP_EXTRA_ARGS'
+_MIRROR_PIP_INSTALL = re.compile(r'\bpip[\d.]*\s+install\b.*'
+                                 r'\$\{?(CP_PIP3_EXTRA_ARGS|CP_PIP_EXTRA_ARGS|_PIPE_COMMON_PIP_ARGS|'
+                                 r'CP_PIP_PACKAGE_INDEX_ARGS)\b')
+_PIN = re.compile(r'(?<![\w.\[-])([A-Za-z0-9][\w.-]*(?:\[[\w,.-]*\])?==[0-9][^\s"\'&;|)]*)')
+_IF = re.compile(r'^\s*if\s')
+_ELIF = re.compile(r'^\s*elif\s')
+_ELSE = re.compile(r'^\s*else\b')
+_FI = re.compile(r'^\s*fi\b')
+_ONE_LINE_IF = re.compile(r';\s*fi\b')
+_PYTHON_VERSION_TEST = re.compile(r'\$\{?CP_PYTHON_VERSION\}?"?\s*==?\s*"?([23])\b')
+# The versions that the Python 3 pins moved to for their known advisories: no Python 3 pin may be older
+_PYTHON3_FIXED_VERSIONS = {
+    'httplib2': '0.32.1',
+    'idna': '3.20',
+    'oauthlib': '4.0.1',
+    'requests-oauthlib': '2.0.0',
+    'rsa': '4.9.1',
+    'certifi': '2026.10.23',
+    'pyasn1': '0.6.5',
+    'tornado': '6.6',
+    'urllib3': '2.8.0',
+    'pyjwt': '2.15.1',
+    'setuptools': '81.0.0',
+    'flask': '3.1.3',
+    'flask-httpauth': '4.8.1',
+}
+# The scripts that install pins with Python 3 today, and the packages they pin: the scan must find them all
+_RUN_SCRIPT_PYTHON3_PINS = {
+    'scripts/pipeline-launch/launch.sh': {'setuptools'},
+    'scripts/commit-run-scripts/common_commit_initialization.sh': {'setuptools'},
+    'deploy/docker/cp-dav/init': {'setuptools'},
+    'workflows/pipe-common/shell/nice_dcv_setup': {'flask', 'flask-httpauth'},
+    'workflows/pipe-common/shell/nomachine_setup': {'flask'},
+}
 
 
 def _pinned_version(requirement):
@@ -67,6 +116,68 @@ def _mirror_versions():
     return versions
 
 
+def _python_versions(lines):
+    # The Python of each line, "2", "3" or None: the branch of `if [ "$CP_PYTHON_VERSION" == "<2|3>" ]` it is in.
+    # One entry per open "if": the Python of its "then" branch, and the Python of the branch the line is in.
+    branches = []
+    versions = []
+    for line in lines:
+        if _FI.match(line):
+            if branches:
+                branches.pop()
+        elif _IF.match(line) and not _ONE_LINE_IF.search(line):
+            test = _PYTHON_VERSION_TEST.search(line)
+            version = test.group(1) if test else None
+            branches.append([version, version])
+        elif _ELIF.match(line) and branches:
+            test = _PYTHON_VERSION_TEST.search(line)
+            # After an "elif", the "else" branch is no single Python
+            branches[-1] = [None, test.group(1) if test else None]
+        elif _ELSE.match(line) and branches:
+            branches[-1][1] = {'2': '3', '3': '2'}.get(branches[-1][0])
+        versions.append(next((current for _, current in reversed(branches) if current), None))
+    return versions
+
+
+def _run_script_pins():
+    # (path, line number, Python "2", "3" or None, pin) of each pin that the run scripts install from a mirror
+    pins = []
+    for script_dir in _RUN_SCRIPT_DIRS:
+        for root, _, files in os.walk(os.path.join(_REPO_DIR, script_dir)):
+            for name in sorted(files):
+                path = os.path.join(root, name)
+                with open(path, encoding='utf-8', errors='replace') as script:
+                    lines = script.read().splitlines()
+                if not any(_MIRROR_PIP_INSTALL.search(line) for line in lines):
+                    continue
+                relative_path = os.path.relpath(path, _REPO_DIR).replace(os.sep, '/')
+                for number, (line, version) in enumerate(zip(lines, _python_versions(lines)), start=1):
+                    install = _MIRROR_PIP_INSTALL.search(line)
+                    if not install or line.lstrip().startswith('#'):
+                        continue
+                    index = install.group(1)
+                    python = '3' if index == _PYTHON3_INDEX else '2' if index == _PYTHON2_INDEX else version
+                    pins.extend((relative_path, number, python, pin) for pin in _PIN.findall(line))
+    assert pins, 'no pinned pip install from a mirror in {}'.format(_RUN_SCRIPT_DIRS)
+    return pins
+
+
+def _run_script_python3_pins():
+    return [('{}:{}'.format(path, number), Requirement(pin))
+            for path, number, python, pin in _run_script_pins() if python == '3']
+
+
+def _below_the_fixed_version(pins):
+    # pins: (where, requirement). Returns the pins older than the version of _PYTHON3_FIXED_VERSIONS.
+    problems = []
+    for where, requirement in pins:
+        fixed = _PYTHON3_FIXED_VERSIONS.get(canonicalize_name(requirement.name))
+        pinned = _pinned_version(requirement)
+        if fixed is not None and pinned is not None and pinned < Version(fixed):
+            problems.append('{} {}: below {}'.format(where, requirement, fixed))
+    return problems
+
+
 class TestPypi3MirrorList(object):
 
     def test_mirror_list_has_every_linux_requirement_of_pipe_common(self, monkeypatch):
@@ -78,3 +189,31 @@ class TestPypi3MirrorList(object):
             if not versions or (pinned is not None and pinned not in versions):
                 missing.append(str(requirement))
         assert not missing, 'missing from {}: {}'.format(_MIRROR_REQUIREMENTS, missing)
+
+    def test_mirror_list_has_every_python3_pin_of_the_run_scripts(self):
+        mirror = _mirror_versions()
+        missing = ['{} {}'.format(where, requirement) for where, requirement in _run_script_python3_pins()
+                   if _pinned_version(requirement) not in mirror.get(canonicalize_name(requirement.name), set())]
+        assert not missing, 'missing from {}: {}'.format(_MIRROR_REQUIREMENTS, missing)
+
+    def test_pipe_common_python3_pins_are_not_below_the_fixed_versions(self, monkeypatch):
+        problems = _below_the_fixed_version([('setup.py', requirement)
+                                             for requirement in _pipe_common_linux_requirements(monkeypatch)])
+        assert not problems, 'below the versions with the known advisories fixed: {}'.format(problems)
+
+    def test_run_scripts_python3_pins_are_not_below_the_fixed_versions(self):
+        problems = _below_the_fixed_version(_run_script_python3_pins())
+        assert not problems, 'below the versions with the known advisories fixed: {}'.format(problems)
+
+    def test_run_scripts_python3_pins_are_found(self):
+        found = {}
+        unknown = []
+        for path, number, python, pin in _run_script_pins():
+            if python is None:
+                unknown.append('{}:{} {}'.format(path, number, pin))
+            elif python == '3':
+                found.setdefault(path, set()).add(canonicalize_name(Requirement(pin).name))
+        assert not unknown, 'no CP_PYTHON_VERSION branch tells which Python installs: {}'.format(unknown)
+        missing = {path: sorted(names - found.get(path, set()))
+                   for path, names in _RUN_SCRIPT_PYTHON3_PINS.items() if names - found.get(path, set())}
+        assert not missing, 'Python 3 pins not found: {}'.format(missing)

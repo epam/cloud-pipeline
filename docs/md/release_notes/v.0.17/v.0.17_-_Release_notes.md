@@ -75,13 +75,18 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
+    - [A committed image of a user with a large UID writes hundreds of GB to the disk](#a-committed-image-of-a-user-with-a-large-uid-writes-hundreds-of-gb-to-the-disk)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [NICE DCV setup reports a failure only after 30 minutes, with no reason](#nice-dcv-setup-reports-a-failure-only-after-30-minutes-with-no-reason)
+    - [`sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3](#sge-create-and-sge-configure-fail-in-tools-without-diff-and-the-extra-sge-queues-fail-on-python-3)
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
     - [Storage files are not indexed when an object key is longer than 512 bytes](#storage-files-are-not-indexed-when-an-object-key-is-longer-than-512-bytes)
     - [Launch form: a conditional multi-select enum parameter is shown empty](#launch-form-a-conditional-multi-select-enum-parameter-is-shown-empty)
     - [Launch: a run name alias replaces the run's custom and required tags](#launch-a-run-name-alias-replaces-the-runs-custom-and-required-tags)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
     - [Restarted runs lose parameters and get an API token of another user](#restarted-runs-lose-parameters-and-get-an-api-token-of-another-user)
     - [New nodes stop being created after failed restarts in another region](#new-nodes-stop-being-created-after-failed-restarts-in-another-region)
     - [Storage files indexing stops when a storage is deleted during the sync](#storage-files-indexing-stops-when-a-storage-is-deleted-during-the-sync)
@@ -2040,12 +2045,67 @@ For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#se
 
 ## Notable Bug fixes
 
+### Users export: the names of the date columns depend on the API time zone
+
+[#4739](https://github.com/epam/cloud-pipeline/issues/4739)
+
+Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
+Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
+See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+
+### A committed image of a user with a large UID writes hundreds of GB to the disk
+
+[#4767](https://github.com/epam/cloud-pipeline/issues/4767)
+
+Previously, a run owner with a large UID - e.g. one mapped from Active Directory - got a sparse `/var/log/lastlog` file of up to hundreds of GB in the container: the file keeps a record of each user at an offset that grows with the UID. A commit stored this file in full. The image still looked usual in the registry, as the zeros compress well, but every pull wrote the whole file to the node's disk: the launch took long, the disk was autoscaled for nothing, and a pause of such a run failed for lack of free disk space.
+Now, `lastlog`, `faillog` and `tallylog` are emptied in the running container just before a commit or a pause. An image committed before that keeps the file in a layer, so commit it again from a run of the image it was committed from.
+More details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#login-records).
+
 ### Detached configuration: the old name stays in the Library after a rename
 
 [#4756](https://github.com/epam/cloud-pipeline/issues/4756)
 
 Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
 Now, the folder and the library tree show the new name right after the rename.
+
+### AWS: a Route53 DNS record of an endpoint is reported as failed although Route53 has created it
+
+[#4741](https://github.com/epam/cloud-pipeline/issues/4741)
+
+Previously, the API read the status of a new Route53 DNS record once more after Route53 had already reported it as `INSYNC`. Route53 could still answer `PENDING` to that second read, and the API then reported the record as failed.
+So an endpoint with the **Sub-Domain** option came up only on the next EDGE sync, and the `CreateDNSRecord` task of the run logged "Failed to create DNS record". The error message also stated a timeout that had not happened.
+Now, the API uses the `INSYNC` status Route53 reported. If the record is still not `INSYNC` after `CP_API_DNS_ROUTE53_MAX_ATTEMPTS` retries, made `CP_API_DNS_ROUTE53_DELAY_SECONDS` apart, the request fails, and the message gives the attempts, the delay and the time waited.
+
+### NICE DCV setup reports a failure only after 30 minutes, with no reason
+
+[#4768](https://github.com/epam/cloud-pipeline/issues/4768)
+
+Previously, if the NICE DCV server could not be started - e.g. `systemd` was not running in the container, so `systemctl start dcvserver` failed - the `NiceDCVInitialization` task kept waiting for the server for 30 minutes (60 tries, 30 seconds apart), and then failed with "DCV server cannot be run", with no reason.
+Now, in RPM-based images:
+
+- if `systemd` is not running in the container, the setup fails at once, with the output of `systemctl`
+- if the start of the DCV server fails, while `systemd` runs, the setup logs the output of `systemctl` and waits, as the server's service is started again
+- the setup fails at the next try once `systemd` has marked the service as failed - after a failed start, or after the server has started and failed - with the service's status
+
+### `sge create` and `sge configure` fail in tools without `diff`, and the extra SGE queues fail on Python 3
+
+[#4758](https://github.com/epam/cloud-pipeline/issues/4758)
+
+Previously, `sge create` and `sge configure` ran the `diff` command of the tool image to find the changes made to a grid engine profile. Many images have no `diff`: Rocky Linux 8 and 9, Red Hat UBI 8 and 9 and Amazon Linux 2023 among them. There, once the editor was closed, the commands failed with `Grid engine profiles management has failed.`, and the profile changes were lost.
+With Python 3 (`CP_PYTHON_VERSION=3`), the grid engine profiles were not generated when there were queues besides the default one: `sge create` failed in every image before the editor opened, and a cluster launched with extra queues, e.g. with `CP_CAP_SGE_QUEUE_NAME_1`, got no profiles at all. Also, `sge configure` printed the changes as `b'...'`.
+Now, the commands find the changes in Python, and print them as text, in the same format as before: `<` before an old line, and `>` before a new one. The profiles of the extra queues are generated with Python 3 too.
+See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
+
+### AWS: billing reports show the `S3 Standard` storage costs twice as high
+
+[#4742](https://github.com/epam/cloud-pipeline/issues/4742)
+
+Previously, the billing service added up all the prices it took from the AWS price list for a region and a storage class.
+In June 2026, AWS added an "Annotations" product to the `S3` price list in almost every region, and the billing service took it as one more `Standard` price. Since then, the billing reports showed the `S3 Standard` storage costs about twice as high as the AWS prices.
+The `EFS` storage costs also included the price of the `EFS Archive` storage class: $0.308 instead of $0.30 per GB-month in `us-east-1`.
+Now, the billing service takes only the storage prices it bills, and skips the price list products with an unknown volume type. The storage costs that were already calculated are not changed.
+
+Also, a price list that can't be loaded no longer stops the billing service. The service keeps the prices it loaded before, logs the error with its cause, and tries again at the next storage billing. The run billing and the other storage billings go on. If no prices were loaded yet, that storage billing is skipped for the day, and it is not written later. And if the billing service stops, its container stops too, so Kubernetes restarts it. Before, the container kept running without the service.
 
 ### The backup worker of the GitLab database always fails
 
@@ -2090,6 +2150,14 @@ Now, the launch form shows its default value.
 
 Previously, if a run name alias was specified at launch, that alias became the only tag of the launched run - every custom and required tag set in the launch form was dropped.
 Now, the alias is added to the run's tags alongside the tags set in the launch form.
+
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings and in the configuration selection dialog of the **Metadata** page.
 
 ### Restarted runs lose parameters and get an API token of another user
 

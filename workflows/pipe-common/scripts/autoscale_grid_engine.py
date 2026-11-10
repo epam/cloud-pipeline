@@ -476,7 +476,7 @@ def get_daemon():
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                           cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
-        launch_adapter = SlurmLaunchAdapter()
+        launch_adapter = SlurmLaunchAdapter(queue=os.getenv('CP_CAP_SLURM_QUEUE_NAME'))
     elif grid_engine_type == GridEngineType.KUBE:
         kube_client = get_kube_client()
         resource_parser = KubeResourceParser()
