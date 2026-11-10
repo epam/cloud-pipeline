@@ -30,6 +30,7 @@ import {
 } from 'antd';
 import RoleRemove from '../../../models/user/RoleRemove';
 import EditRoleDialog from '../forms/EditRoleDialog';
+import {isRoleReadOnly} from '../forms/role-edit-permissions';
 import LoadingView from '../../special/LoadingView';
 import roleModel from '../../../utils/roleModel';
 import CreateGroupDialog from './create-group-dialog';
@@ -328,9 +329,11 @@ export default class GroupsManagement extends React.Component {
           onClose={this.closeEditGroupDialog}
           role={this.state.editableGroup}
           readOnly={
-            !this.isAdmin &&
-            !this.isUsersAdmin &&
-            !roleModel.writeAllowed(this.state.editableGroup)
+            isRoleReadOnly({
+              admin: this.isAdmin,
+              usersAdmin: this.isUsersAdmin,
+              role: this.state.editableGroup
+            })
           }
           predefined={predefined}
         />

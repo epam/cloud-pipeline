@@ -43,6 +43,8 @@ import static org.mockito.Mockito.doReturn;
 
 public class RoleApiServiceTest extends AbstractAclTest {
 
+    private static final String GROUP_NAME = "ROLE_GROUP";
+
     private final RoleVO roleVO = UserCreatorUtils.getRoleVO();
     private final ExtendedRole extendedRole = getExtendedRole();
     private final ExtendedRole adminRole = getAdminRole(1L);
@@ -50,6 +52,8 @@ public class RoleApiServiceTest extends AbstractAclTest {
     private final Role role = UserCreatorUtils.getRole("role", ID, ANOTHER_SIMPLE_USER);
     private final Role anotherRole = UserCreatorUtils.getRole("anotherRole", ID_2, ANOTHER_SIMPLE_USER);
     private final List<Role> roleList = mutableListOf(role, anotherRole);
+    private final Role group = UserCreatorUtils.getRole(GROUP_NAME, ID, ANOTHER_SIMPLE_USER);
+    private final Role predefinedRole = getPredefinedRole(ID_2);
 
     @Autowired
     private RoleApiService roleApiService;
@@ -185,11 +189,76 @@ public class RoleApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldUpdateRoleWhenPermissionIsGranted() {
-        initAclEntity(role, AclPermission.WRITE);
-        doReturn(role).when(mockRoleManager).load(eq(role.getId()));
-        doReturn(role).when(mockRoleManager).update(role.getId(), roleVO);
+        final RoleVO groupVO = getRoleVO("group", false, ID_2);
+        initAclEntity(group, AclPermission.WRITE);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(group).when(mockRoleManager).update(group.getId(), groupVO);
 
-        assertThat(roleApiService.updateRole(ID, roleVO)).isEqualTo(role);
+        assertThat(roleApiService.updateRole(ID, groupVO)).isEqualTo(group);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyRenameRoleWhenPermissionIsGranted() {
+        final RoleVO groupVO = getRoleVO("renamed", false, null);
+        initAclEntity(group, AclPermission.WRITE);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(group).when(mockRoleManager).update(group.getId(), groupVO);
+
+        assertThrows(AccessDeniedException.class, () -> roleApiService.updateRole(ID, groupVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyChangeUserDefaultWhenPermissionIsGranted() {
+        final RoleVO groupVO = getRoleVO(GROUP_NAME, true, null);
+        initAclEntity(group, AclPermission.WRITE);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(group).when(mockRoleManager).update(group.getId(), groupVO);
+
+        assertThrows(AccessDeniedException.class, () -> roleApiService.updateRole(ID, groupVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdatePredefinedRoleWhenPermissionIsGranted() {
+        final RoleVO predefinedRoleVO = getRoleVO(predefinedRole.getName(), false, ID);
+        initAclEntity(predefinedRole, AclPermission.WRITE);
+        doReturn(predefinedRole).when(mockRoleManager).load(eq(predefinedRole.getId()));
+        doReturn(predefinedRole).when(mockRoleManager).update(predefinedRole.getId(), predefinedRoleVO);
+
+        assertThrows(AccessDeniedException.class,
+            () -> roleApiService.updateRole(predefinedRole.getId(), predefinedRoleVO));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyUpdateRoleWithoutBodyWhenPermissionIsGranted() {
+        initAclEntity(group, AclPermission.WRITE);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+
+        assertThrows(AccessDeniedException.class, () -> roleApiService.updateRole(ID, null));
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDenyUpdateAdminRoleForUserAdmin() {
+        final RoleVO adminRoleVO = getRoleVO(adminRole.getName(), false, null);
+        doReturn(adminRole).when(mockRoleManager).load(eq(adminRole.getId()));
+        doReturn(adminRole).when(mockRoleManager).update(adminRole.getId(), adminRoleVO);
+        initAclEntity(UserCreatorUtils.getRole(adminRole.getName(), adminRole.getId(), ANOTHER_SIMPLE_USER));
+
+        assertThrows(AccessDeniedException.class, () -> roleApiService.updateRole(adminRole.getId(), adminRoleVO));
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldRenameRoleForUserAdmin() {
+        final RoleVO groupVO = getRoleVO("renamed", true, null);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(group).when(mockRoleManager).update(group.getId(), groupVO);
+
+        assertThat(roleApiService.updateRole(ID, groupVO)).isEqualTo(group);
     }
 
     @Test
@@ -273,6 +342,46 @@ public class RoleApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldAssignRoleWhenPermissionIsGranted() {
+        initAclEntity(group, AclPermission.WRITE);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
+
+        assertThat(roleApiService.assignRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyAssignRoleWhenReadPermissionIsGranted() {
+        initAclEntity(group, AclPermission.READ);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(extendedRole).when(mockRoleManager).assignRole(ID, TEST_LONG_LIST);
+
+        assertThrows(AccessDeniedException.class, () -> roleApiService.assignRole(ID, TEST_LONG_LIST));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyAssignPredefinedRoleWhenPermissionIsGranted() {
+        initAclEntity(predefinedRole, AclPermission.WRITE);
+        doReturn(predefinedRole).when(mockRoleManager).load(eq(predefinedRole.getId()));
+        doReturn(extendedRole).when(mockRoleManager).assignRole(predefinedRole.getId(), TEST_LONG_LIST);
+
+        assertThrows(AccessDeniedException.class,
+            () -> roleApiService.assignRole(predefinedRole.getId(), TEST_LONG_LIST));
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldAssignPredefinedRoleForUserAdmin() {
+        doReturn(predefinedRole).when(mockRoleManager).load(eq(predefinedRole.getId()));
+        doReturn(extendedRole).when(mockRoleManager).assignRole(predefinedRole.getId(), TEST_LONG_LIST);
+
+        assertThat(roleApiService.assignRole(predefinedRole.getId(), TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldRemoveRoleForAdmin() {
         doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
@@ -297,6 +406,51 @@ public class RoleApiServiceTest extends AbstractAclTest {
         doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
 
         assertThrows(AccessDeniedException.class, () -> roleApiService.removeRole(ID, TEST_LONG_LIST));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldRemoveRoleWhenPermissionIsGranted() {
+        initAclEntity(group, AclPermission.WRITE);
+        doReturn(group).when(mockRoleManager).load(eq(group.getId()));
+        doReturn(extendedRole).when(mockRoleManager).removeRole(ID, TEST_LONG_LIST);
+
+        assertThat(roleApiService.removeRole(ID, TEST_LONG_LIST)).isEqualTo(extendedRole);
+    }
+
+    @Test
+    @WithMockUser(roles = USER_ADMIN_ROLE)
+    public void shouldDenyRemoveAdminRoleForUserAdmin() {
+        doReturn(adminRole).when(mockRoleManager).load(eq(adminRole.getId()));
+        doReturn(adminRole).when(mockRoleManager).removeRole(adminRole.getId(), TEST_LONG_LIST);
+        initAclEntity(UserCreatorUtils.getRole(adminRole.getName(), adminRole.getId(), ANOTHER_SIMPLE_USER));
+
+        assertThrows(AccessDeniedException.class, () -> roleApiService.removeRole(adminRole.getId(), TEST_LONG_LIST));
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldDenyRemovePredefinedRoleWhenPermissionIsGranted() {
+        initAclEntity(predefinedRole, AclPermission.WRITE);
+        doReturn(predefinedRole).when(mockRoleManager).load(eq(predefinedRole.getId()));
+        doReturn(extendedRole).when(mockRoleManager).removeRole(predefinedRole.getId(), TEST_LONG_LIST);
+
+        assertThrows(AccessDeniedException.class,
+            () -> roleApiService.removeRole(predefinedRole.getId(), TEST_LONG_LIST));
+    }
+
+    private static RoleVO getRoleVO(final String name, final boolean userDefault, final Long storageId) {
+        final RoleVO vo = new RoleVO();
+        vo.setName(name);
+        vo.setUserDefault(userDefault);
+        vo.setDefaultStorageId(storageId);
+        return vo;
+    }
+
+    private static Role getPredefinedRole(final Long id) {
+        final Role predefined = UserCreatorUtils.getRole("ROLE_STORAGE_MANAGER", id, ANOTHER_SIMPLE_USER);
+        predefined.setPredefined(true);
+        return predefined;
     }
 
     private static ExtendedRole getExtendedRole() {

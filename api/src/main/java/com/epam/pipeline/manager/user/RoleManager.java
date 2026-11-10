@@ -197,14 +197,15 @@ public class RoleManager implements SecuredEntityManager {
         return roleDao.loadExtendedRole(roleId);
     }
 
+    public static String formatName(final String name) {
+        final String formattedName = name.toUpperCase();
+        return formattedName.startsWith(Role.ROLE_PREFIX) ? formattedName : Role.ROLE_PREFIX + formattedName;
+    }
+
     private String getValidName(final String name) {
         Assert.isTrue(StringUtils.isNotBlank(name),
                 messageHelper.getMessage(MessageConstants.ERROR_ROLE_NAME_REQUIRED));
-        String formattedName = name.toUpperCase();
-        if (!formattedName.startsWith(Role.ROLE_PREFIX)) {
-            formattedName = Role.ROLE_PREFIX + formattedName;
-        }
-        return formattedName;
+        return formatName(name);
     }
 
     @Override
