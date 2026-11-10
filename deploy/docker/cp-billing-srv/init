@@ -35,4 +35,14 @@ function sig_handler {
 }
 trap 'kill $! ; sig_handler' SIGTERM
 tail -F $BILLING_RUNTIME_LOG &
-wait "$!"
+TAIL_PID="$!"
+
+# The container ends with the agent, so that Kubernetes restarts a failed agent instead of
+# keeping a container that only tails its log
+wait "$APP_PID"
+APP_EXIT_CODE="$?"
+# Let tail print the agent's last log lines
+sleep 1
+kill "$TAIL_PID"
+echo "Billing agent (PID $APP_PID) exited with code $APP_EXIT_CODE"
+exit "$APP_EXIT_CODE"

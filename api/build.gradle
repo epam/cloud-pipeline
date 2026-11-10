@@ -162,7 +162,6 @@ dependencies {
     // Kubernetes
     implementation 'io.fabric8:kubernetes-client:3.0.3'
     implementation 'io.fabric8:kubernetes-model:3.0.3'
-    testImplementation 'io.fabric8:openshift-client:2.2.7'
 
     // Lombok
     implementation 'org.projectlombok:lombok:1.18.36'

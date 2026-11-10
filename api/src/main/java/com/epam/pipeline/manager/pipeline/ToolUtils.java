@@ -25,9 +25,23 @@ import java.util.regex.Pattern;
 public interface ToolUtils {
     Pattern REPOSITORY_AND_IMAGE = Pattern.compile("^(.*)\\/(.*\\/.*)$");
     String TAG_DELIMITER = ":";
+    String DIGEST_DELIMITER = "@";
+    String PATH_DELIMITER = "/";
 
     static String getImageWithoutTag(final String imageWithTag) {
         return imageWithTag.split(TAG_DELIMITER)[0];
+    }
+
+    /**
+     * Replaces the tag of an image with a digest, e.g. registry:443/group/tool:tag with
+     * registry:443/group/tool@sha256:... A registry port is not mistaken for a tag.
+     */
+    static String getImageWithDigest(final String imageWithTag, final String digest) {
+        final int tagStart = imageWithTag.lastIndexOf(TAG_DELIMITER);
+        final String image = tagStart > imageWithTag.lastIndexOf(PATH_DELIMITER)
+                ? imageWithTag.substring(0, tagStart)
+                : imageWithTag;
+        return image + DIGEST_DELIMITER + digest;
     }
 
     static String getImageTag(final String imageWithTag) {

@@ -36,8 +36,7 @@ import DownloadsManager from './downloads-manager';
 // `width="80%"` is the house's convention for a wide modal (e.g.
 // settings/system-management/system-jobs/system-job-log.js). The explicit
 // `footer` is how this codebase gets a single-button footer out of antd
-// 2.13.14 - download-storage-archive-modal.js documents the same pattern for
-// its own Cancel/OK footer.
+// 2.13.14.
 class DownloadsModal extends React.Component {
   // A callback ref, not `React.createRef()`: this app is React 15
   // (client/AGENTS.md), and `createRef` is a 16.3 addition.

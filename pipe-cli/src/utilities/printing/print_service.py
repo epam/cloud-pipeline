@@ -127,6 +127,10 @@ class PrettyTablePrintService(PrintService):
         run_main_info_table.add_row(['ID:', run_model.identifier])
         run_main_info_table.add_row(['Pipeline:', run_model.pipeline])
         run_main_info_table.add_row(['Version:', run_model.version])
+        if run_model.docker_image:
+            run_main_info_table.add_row(['Docker image:', run_model.docker_image])
+        if run_model.docker_image_digest:
+            run_main_info_table.add_row(['Docker image digest:', run_model.docker_image_digest])
         if run_model.owner is not None:
             run_main_info_table.add_row(['Owner:', run_model.owner])
         if run_model.endpoints is not None and len(run_model.endpoints) > 0:
@@ -323,6 +327,8 @@ class JsonPrintService(PrintService):
             'id': run_model.identifier,
             'pipeline': run_model.pipeline,
             'version': run_model.version,
+            'dockerImage': run_model.docker_image,
+            'dockerImageDigest': run_model.docker_image_digest,
             'owner': run_model.owner,
             'endpoints': list(run_model.endpoints) if run_model.endpoints else [],
             'scheduled': run_model.scheduled_date,

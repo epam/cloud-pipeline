@@ -89,7 +89,7 @@ describe('DownloadsModal', () => {
   // only detaches it synchronously on unmount when `visible` is already
   // `false` - otherwise it first re-renders the dialog closed and detaches
   // from that transition's `afterClose`, which never fires in jsdom (no
-  // real CSS animations). See download-storage-archive-modal.test.jsx's own
+  // real CSS animations). See data-storage/components/download-archive-modal.test.jsx's own
   // copy of this comment. So every test that opens the modal closes it
   // again before the suite's own `afterEach(cleanup)` unmounts it, through
   // `renderWithStores` into the same container rather than a hand-rolled

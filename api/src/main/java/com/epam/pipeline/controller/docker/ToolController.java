@@ -365,6 +365,32 @@ public class ToolController extends AbstractRestController {
         return Result.success(toolApiService.loadToolVersionSettings(toolId, version));
     }
 
+    @PostMapping(value = "/tool/{toolId}/defaultVersion")
+    @ResponseBody
+    @Operation(
+            summary = "Sets a tool version, which is used in place of the latest one.",
+            description = "Sets a tool version, which is used in place of the latest one: f.i. it is launched, "
+                    + "if a tool image is specified without a tag. The version shall exist in a docker registry.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<Tool> updateToolDefaultVersion(@PathVariable final Long toolId,
+                                                 @RequestParam final String version) {
+        return Result.success(toolApiService.updateToolDefaultVersion(toolId, version));
+    }
+
+    @DeleteMapping(value = "/tool/{toolId}/defaultVersion")
+    @ResponseBody
+    @Operation(
+            summary = "Removes a tool default version, so that the latest version is used again.",
+            description = "Removes a tool default version, so that the latest version is used again.")
+    @ApiResponses(
+            value = {@ApiResponse(description = API_STATUS_DESCRIPTION)
+            })
+    public Result<Tool> deleteToolDefaultVersion(@PathVariable final Long toolId) {
+        return Result.success(toolApiService.deleteToolDefaultVersion(toolId));
+    }
+
     @RequestMapping(value = "/tool/symlink", method= RequestMethod.POST)
     @ResponseBody
     @Operation(
