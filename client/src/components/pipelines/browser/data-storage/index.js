@@ -106,9 +106,7 @@ import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
-import handleDownloadItems, {
-  downloadItemsActionAvailable
-} from '../../../special/download-storage-items';
+import handleDownloadItems from '../../../special/download-storage-items';
 import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
 import handleDownloadArchive, {
   archiveActionAvailable,
@@ -118,8 +116,8 @@ import handleDownloadArchive, {
   archiveSelectionAvailable,
   archiveStorageSupported,
   defaultArchiveName
-} from '../../../special/download-storage-archive';
-import DownloadArchiveModal from '../../../special/download-storage-archive-modal';
+} from './utils/download-archive';
+import DownloadArchiveModal from './components/download-archive-modal';
 import DownloadsModal from '../../../special/downloads/downloads-modal';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
@@ -135,6 +133,7 @@ import {
   checkStorageDownloadAllowed,
   checkStorageOperationsEnabled,
   downloadableStorageItems,
+  downloadItemsActionAvailable,
   partialGenerateUrlHint,
   partialRemoveHint,
   removableStorageItems,
@@ -350,10 +349,6 @@ export default class DataStorage extends React.Component {
       preferences.dataSharingEnabled;
   }
 
-  /**
-   * Whether the archive worker can read this storage at all - the storage's
-   * type, and nothing about the user.
-   */
   get archiveStorageTypeSupported () {
     return !this.isOmicsStore &&
       archiveStorageSupported(this.storage.info, this.fileShareMount);
@@ -1086,17 +1081,8 @@ export default class DataStorage extends React.Component {
     this.setState({createFile: false});
   };
 
-  // The cap is checked against the server here, on the click itself, and
-  // the modal opens only if there is room - see `archiveDownloadAllowed`
-  // (special/download-storage-archive.js). The same check runs again inside
-  // `startArchiveDownload` when OK is pressed, since this modal can sit open
-  // for as long as the user likes - and this time, if the cap has since been
-  // hit, the modal stays open to show it rather than closing on the error.
-  // Invoked fire-and-forget from the selection dropdown's click handler, so
-  // it catches for itself: an escaping rejection would become an unhandled
-  // one and the click would look like it did nothing at all.
-  // `archiveDownloadAllowed` answers true for anything it cannot check, so
-  // this only ever hides a bug, never a refusal.
+  // Opens the archive-name modal when the user is under the active-download
+  // limit. Catches and logs its own errors.
   openDownloadArchiveModal = async () => {
     const {asyncTasks} = this.props;
     let allowed = true;
@@ -1118,9 +1104,7 @@ export default class DataStorage extends React.Component {
     this.setState({downloadsModalVisible: false});
   };
 
-  // Returns the promise so the modal can tell a queued archive from a refused
-  // one: no try/catch here, since swallowing the rejection would close the
-  // modal on an error. The modal closes itself once this resolves.
+  // Throws when the request fails.
   submitDownloadArchive = async (name) => {
     const {asyncTasks, storageId} = this.props;
     const {selectedItems = []} = this.state;
@@ -2164,8 +2148,6 @@ export default class DataStorage extends React.Component {
 
   selectAll = (type) => {
     const selectedItems = this.items.filter(item => {
-      // The same predicate the row's own checkbox goes through, so "Select
-      // page" can never select a row that has no checkbox to unselect it with.
       if (!storageItemSelectionAvailable(item)) {
         return false;
       }
@@ -2424,15 +2406,6 @@ export default class DataStorage extends React.Component {
       available: !this.isOmicsStore &&
         downloadItemsActionAvailable(itemsAvailableForDownload.length, {archiveSupported})
     };
-    // Carries no cap state. Clicking it counts the user's active tasks against
-    // the server (`openDownloadArchiveModal` above) and, at the cap, shows a
-    // message instead of opening the name modal; hitting the cap again after
-    // the name modal is already open leaves it open, showing the error,
-    // rather than closing it (`submitDownloadArchive` above). A hint here
-    // could only come from a background poll of the task list, which the
-    // notification tracker no longer keeps
-    // (models/asyncTask/CurrentUserAsyncTasks.js polls the user's own queued
-    // tasks one by one).
     const downloadArchiveAction = {
       key: Keys.downloadArchive,
       title: 'Download archive',
@@ -2913,12 +2886,6 @@ export default class DataStorage extends React.Component {
       checked: this.showVersions,
       available: this.versionControlsEnabled
     };
-    // Opens a modal rather than toggling a view, so it carries no `checked`:
-    // a check mark on the right would be meaningless for an action with no
-    // on/off state. No icon either, like every other item in this menu.
-    // `available: true`: the task list is the user's own, across every
-    // storage, so there is no storage property that could make it
-    // inapplicable, omics stores included.
     const downloadsAction = {
       key: 'downloads',
       title: 'Show downloads',
@@ -3416,10 +3383,6 @@ export default class DataStorage extends React.Component {
         />
         <DownloadArchiveModal
           visible={this.state.downloadArchiveModalVisible}
-          // Built from the selection, so a single file or folder is offered
-          // its own name rather than a timestamp - see `defaultArchiveName`.
-          // The modal re-seeds its field whenever it becomes visible, so this
-          // being re-evaluated on every render costs nothing.
           defaultName={defaultArchiveName(this.state.selectedItems)}
           onCancel={this.closeDownloadArchiveModal}
           onSubmit={this.submitDownloadArchive}

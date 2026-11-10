@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import {fn, screen} from '@test';
+import {fn, restoreMocks, screen, spyOn} from '@test';
+import {message} from 'antd';
 import handleDownloadArchive, {
   archiveActionAvailable,
   archiveDownloadAllowed,
@@ -24,7 +25,7 @@ import handleDownloadArchive, {
   archiveSelectionAvailable,
   archiveStorageSupported,
   defaultArchiveName
-} from './download-storage-archive';
+} from './download-archive';
 
 describe('archiveStorageSupported', () => {
   test.each([
@@ -66,7 +67,7 @@ describe('archiveDownloadAvailable', () => {
     expect(archiveDownloadAvailable({...supported, downloadAllowed: false})).toBe(false);
   });
 
-  test('a storage the archive worker cannot read offers no archive', () => {
+  test('a storage without archive support offers no archive', () => {
     expect(archiveDownloadAvailable({...supported, archiveSupported: false})).toBe(false);
   });
 
@@ -426,6 +427,10 @@ describe('archiveDownloadAllowed', () => {
 });
 
 describe('handleDownloadArchive', () => {
+  afterEach(() => {
+    restoreMocks();
+  });
+
   test('calls startArchiveDownload with the storage id, paths and name as given', async () => {
     const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
     await handleDownloadArchive(asyncTasks, 7, ['a.txt', 'b/'], 'my archive');
@@ -439,8 +444,6 @@ describe('handleDownloadArchive', () => {
     expect(asyncTasks.startArchiveDownload).not.toHaveBeenCalled();
   });
 
-  // Re-thrown (not swallowed) so the name-confirmation modal above it can
-  // tell a queued archive from a refused one and decide whether to close.
   test('a rejecting startArchiveDownload is re-thrown out of the helper', async () => {
     const error = new Error('too many active downloads');
     const asyncTasks = {
@@ -458,46 +461,34 @@ describe('handleDownloadArchive', () => {
     ).resolves.toBeUndefined();
   });
 
-  // The queued toast is an `info`, not a `success` - only the icon changes,
-  // but asserting it needs a double, since antd's own class names are off
-  // limits (rule 6) and module mocking is too (rule 2).
-  test('the queued toast goes through messageApi.info, not success', async () => {
+  test('the queued toast is an info toast', async () => {
     const asyncTasks = {startArchiveDownload: fn().mockResolvedValue({id: 1})};
-    const messageApi = {
-      info: fn(),
-      loading: fn().mockReturnValue(fn()),
-      success: fn(),
-      error: fn()
-    };
+    const info = spyOn(message, 'info');
+    const success = spyOn(message, 'success');
 
-    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi);
+    await handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive');
 
-    expect(messageApi.info).toHaveBeenCalledWith(
+    expect(info).toHaveBeenCalledWith(
       'Archive download has been queued. Follow its progress under "Show downloads".',
       5
     );
-    expect(messageApi.success).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
   });
 
-  // A failing `startArchiveDownload` still reports through `messageApi.error`,
-  // even though the same failure is now also re-thrown.
-  test('a failing startArchiveDownload reports through messageApi.error', async () => {
+  test('a failing startArchiveDownload shows an error toast', async () => {
     const asyncTasks = {
       startArchiveDownload: fn().mockRejectedValue(new Error('too many active downloads'))
     };
-    const messageApi = {
-      info: fn(),
-      loading: fn().mockReturnValue(fn()),
-      success: fn(),
-      error: fn()
-    };
+    const info = spyOn(message, 'info');
+    const success = spyOn(message, 'success');
+    const error = spyOn(message, 'error');
 
     await expect(
-      handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive', messageApi)
+      handleDownloadArchive(asyncTasks, 7, ['a.txt'], 'my archive')
     ).rejects.toThrow('too many active downloads');
 
-    expect(messageApi.error).toHaveBeenCalledWith('too many active downloads', 5);
-    expect(messageApi.success).not.toHaveBeenCalled();
-    expect(messageApi.info).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith('too many active downloads', 5);
+    expect(success).not.toHaveBeenCalled();
+    expect(info).not.toHaveBeenCalled();
   });
 });

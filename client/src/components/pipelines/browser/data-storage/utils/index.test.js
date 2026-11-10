@@ -17,13 +17,16 @@
 import {
   checkStorageDownloadAllowed,
   downloadableStorageItems,
+  downloadItemsActionAvailable,
+  MAX_DOWNLOAD_ITEMS,
+  MIN_DOWNLOAD_ITEMS,
   partialGenerateUrlHint,
   partialRemoveHint,
   removableStorageItems,
   removeConfirmTitle,
   restorableStorageItems,
   storageItemSelectionAvailable
-} from './utils';
+} from './index';
 
 describe('storageItemSelectionAvailable', () => {
   const row = (flags = {}) => ({
@@ -93,6 +96,41 @@ describe('checkStorageDownloadAllowed', () => {
   test('an unknown storage or download state allows no download', () => {
     expect(checkStorageDownloadAllowed(undefined, true)).toBe(false);
     expect(checkStorageDownloadAllowed({}, undefined)).toBe(false);
+  });
+});
+
+describe('downloadItemsActionAvailable', () => {
+  it.each([
+    [0, false],
+    [1, true],
+    [2, true],
+    [3, true],
+    [4, false],
+    [10, false]
+  ])('%s items answer %s', (count, expected) => {
+    expect(downloadItemsActionAvailable(count)).toBe(expected);
+  });
+
+  // Where "Download archive" is offered nowhere, plain Download covers every
+  // selection size.
+  it.each([
+    [0, false],
+    [1, true],
+    [4, true],
+    [10, true]
+  ])('%s items answer %s when archives are not supported', (count, expected) => {
+    expect(downloadItemsActionAvailable(count, {archiveSupported: false})).toBe(expected);
+  });
+
+  it('keeps the upper bound when archives are supported', () => {
+    expect(downloadItemsActionAvailable(4, {archiveSupported: true})).toBe(false);
+  });
+});
+
+describe('MIN_DOWNLOAD_ITEMS / MAX_DOWNLOAD_ITEMS', () => {
+  it('pins the selection bounds the plain Download item is offered for', () => {
+    expect(MIN_DOWNLOAD_ITEMS).toBe(1);
+    expect(MAX_DOWNLOAD_ITEMS).toBe(3);
   });
 });
 

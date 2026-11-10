@@ -43,8 +43,7 @@ function getMetadataEntryValueString (entry) {
 }
 
 /**
- * Whether a row gets a checkbox, and whether "Select page" picks it up.
- * A row is worth selecting when at least one selection action can use it.
+ * Whether a row can be selected: at least one selection action works on it.
  *
  * @param {{selectable: boolean, downloadable: boolean, editable: boolean,
  *   shareAvailable: boolean, archiveSelectable: boolean}} item
@@ -72,6 +71,26 @@ export function storageItemSelectionAvailable (item) {
  */
 export function checkStorageDownloadAllowed (info, downloadEnabled) {
   return !!info && !info.sensitive && !!downloadEnabled;
+}
+
+export const MIN_DOWNLOAD_ITEMS = 1;
+export const MAX_DOWNLOAD_ITEMS = 3;
+
+/**
+ * Whether the plain "Download" selection item is offered for `count` files:
+ * at least `MIN_DOWNLOAD_ITEMS`, and, where "Download archive" is offered, at
+ * most `MAX_DOWNLOAD_ITEMS`.
+ * @param {number} count
+ * @param {{archiveSupported: boolean}} [options] whether "Download archive"
+ * is offered on this storage
+ * @returns {boolean}
+ */
+export function downloadItemsActionAvailable (count, options = {}) {
+  const {archiveSupported = true} = options;
+  if (count < MIN_DOWNLOAD_ITEMS) {
+    return false;
+  }
+  return !archiveSupported || count <= MAX_DOWNLOAD_ITEMS;
 }
 
 /**
