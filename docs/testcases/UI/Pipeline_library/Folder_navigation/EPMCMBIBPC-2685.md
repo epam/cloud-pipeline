@@ -18,7 +18,7 @@ Test verifies that a non-admin user without permissions sees a locked folder and
 | 9 | Click on the pipeline created at step 13 of the [EPMCMBIBPC-2684](EPMCMBIBPC-2684.md) case | **RELEASE**, **RUN** buttons don't display |
 | 10 | Click on the pipeline version | <li> **RUN** button doesn't display <li> **Upload**, **Rename**, **Delete**, **Edit** buttons for `README.MD` don't display |
 | 11 | Repeat step 3 |  |
-| 12 | Click on the storage created at step 15 of the [EPMCMBIBPC-2684](EPMCMBIBPC-2684.md) case | <li> **+ Create v**, **Upload** buttons don't display <li> **Show file versions** checkbox doesn't display |
+| 12 | Click on the storage created at step 15 of the [EPMCMBIBPC-2684](EPMCMBIBPC-2684.md) case | <li> **+ Create v**, **Upload** buttons don't display <li> **Show file versions** item in the grid-menu doesn't display |
 | 13 | Repeat step 3 |  |
 | 14 | Click on the configuration created at step 17 of the [EPMCMBIBPC-2684](EPMCMBIBPC-2684.md) case | <li> **+ ADD**, **Run**, **Save** buttons don't display <li> **Name** field is disabled |
 | 15 | Repeat step 3 |  |

@@ -406,12 +406,11 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Layouts</b> (2 tests, 0 automated)</summary>
+<summary><b>Layouts</b> (1 tests, 0 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
 | [**1504**](Layouts/1504.md) | [MANUAL] Check layout in Groups/Roles membership view |  |
-| [**1505**](Layouts/1505.md) | [MANUAL] Check layout in the Billing Reports - near discounts links |  |
 
 </details>
 
@@ -492,7 +491,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Pipeline_library</b> (206 tests, 150 automated)</summary>
+<summary><b>Pipeline_library</b> (203 tests, 150 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -850,7 +849,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Run_tools_in_sandbox</b> (155 tests, 75 automated)</summary>
+<summary><b>Run_tools_in_sandbox</b> (148 tests, 75 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |
@@ -1156,7 +1155,7 @@ This page lists all UI test cases from [docs/testcases/UI](.), grouped by folder
 </details>
 
 <details>
-<summary><b>Tools</b> (62 tests, 30 automated)</summary>
+<summary><b>Tools</b> (63 tests, 30 automated)</summary>
 
 | Case ID | Description/name | Automated |
 | --- | --- | :---: |

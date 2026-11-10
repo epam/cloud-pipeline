@@ -17,4 +17,4 @@ Test verifies that a non-admin user without permissions sees a locked Project's 
 | 8 | Close the pop-up |  |
 | 9 | Click on the **Method-Configurations** folder | **Upload metadata**, **+ Create v** buttons don't display |
 | 10 | Repeat step 3 |  |
-| 11 | Click on the `{Project_name}-storage` storage | <li> **+ Create v**, **Upload** buttons don't display <li> **Show file versions** checkbox doesn't display |
+| 11 | Click on the `{Project_name}-storage` storage | <li> **+ Create v**, **Upload** buttons don't display <li> **Show file versions** item in the grid-menu doesn't display |

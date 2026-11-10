@@ -20,4 +20,4 @@ Test verifies that checking **Show file versions** on a versioned storage reveal
 | 11 | Click **OK** button |  |
 | 12 | Click **Upload** button |  |
 | 13 | Select a file and confirm the upload in the appeared pop-up window |  |
-| 14 | Set the **Show file versions** checkbox | <li> the **Show file versions** checkbox is checked <li> `+` buttons are displayed in front of all files |
+| 14 | Click the **Grid menu** in the right upper corner and set the **Show file versions** item | `+` buttons are displayed in front of all files |

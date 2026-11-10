@@ -7,4 +7,4 @@ Test verifies that **Clear selection** unchecks all selected items.
 
 | Steps | Actions | Expected results |
 | :---: | --- | --- |
-| 1 | Click the **Selection actions** button, then click **Clear selection** | <li> the checkboxes in front of all files and folders become unchecked <li> the **Selection actions** button doesn't display <li> the **Select page** button becomes enabled again |
+| 1 | Click the **N selected items** button, then click **Clear selection** | <li> the checkboxes in front of all files and folders become unchecked <li> the **N selected items** button doesn't display <li> the **Select page** button becomes enabled again |
