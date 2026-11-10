@@ -7,7 +7,7 @@ Test verifies launching a GridEngine cluster: the master/worker setup tasks and 
 | 1 | Repeat steps 1-8 of the [EPMCMBIBPC-975](EPMCMBIBPC-975.md) case |  |
 | 2 | Save the CPU count for the selected node type |  |
 | 3 | Set the **Enable GridEngine** checkbox |  |
-| 4 | Click **OK** button | The name of the **Configure cluster** control becomes **GridEngine Cluster (1 child node)** |
+| 4 | Click **OK** button | The name of the **Configure cluster** control becomes **GridEngine Cluster (1 child node), LFS** |
 | 5 | Expand the **Advanced** section |  |
 | 6 | Set the **Start idle** checkbox |  |
 | 7 | Click **Launch** button |  |

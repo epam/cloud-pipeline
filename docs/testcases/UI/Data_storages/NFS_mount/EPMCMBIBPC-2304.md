@@ -9,7 +9,7 @@ Test verifies that creating an NFS mount with an invalid storage path is rejecte
 | :---: | --- | --- |
 | 1 | Open library |  |
 | 2 | Hover over **+ Create v** button |  |
-| 3 | Select **Storages** -> **Create new NFS mount** |  |
+| 3 | Select **Storages** -> **Create new FS mount** |  |
 | 4 | Specify the storage path value as `{NFS_MOUNT_PREFIX}/` |  |
 | 5 | Click **Create** button |  |
 | 6 | Specify the storage path value as `{NFS_MOUNT_PREFIX}/.` |  |

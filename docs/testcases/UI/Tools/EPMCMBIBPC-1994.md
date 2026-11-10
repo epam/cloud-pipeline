@@ -13,7 +13,7 @@ Test verifies that a re-enabled tool with no scanned versions can still be launc
 | 4 | Select the **shell** tool |  |
 | 5 | Click the gear icon in the right upper corner |  |
 | 6 | Click **Delete tool** in the appeared list |  |
-| 7 | Click **OK** button in the appeared pop-up |  |
+| 7 | Click **Delete** button in the appeared pop-up |  |
 | 8 | Click the gear icon in the right upper corner |  |
 | 9 | Click **+ Enable tool** in the appeared list |  |
 | 10 | Specify the name of the tool removed at steps 6-7 (`shell`) into the **Image** field in the appeared pop-up |  |

@@ -14,7 +14,7 @@ Test verifies that a large `cluster.docker.extra_multi` preference triggers a di
 | 4 | Select tool |  |
 | 5 | Hover over the **v** button near the **Run** button -> click **Custom settings** |  |
 | 6 | On the appeared page expand the **Exec environment** section |  |
-| 7 | Specify an instance in the **Instance type** field if it's unset |  |
+| 7 | Specify an instance in the **Node type** field if it's unset |  |
 | 8 | Input `15` into the **Disk (Gb)** field |  |
 | 9 | Expand the **Advanced** section |  |
 | 10 | In the **Price type** dropdown list select **On-demand** |  |

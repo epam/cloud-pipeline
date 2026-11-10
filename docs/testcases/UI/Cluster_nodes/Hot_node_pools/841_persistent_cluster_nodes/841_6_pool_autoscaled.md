@@ -16,7 +16,7 @@ Perform [_841\_1_](841_1_pool_creation.md) case
 | 6 | Set the value `70` for the **Scale Up Threshold** field | |
 | 7 | Set the value `30` for the **Scale Down Threshold** field | |
 | 8 | Set the value `3` for the **Scale Step** field | |
-| 9 | Click the **SAVE** button | At the panel of the pool created at step 19 of [_841\_1_](841_1_pool_creation.md) case, the label appears `AUTOSCALED (2-4 NODES)` |
+| 9 | Click the **SAVE** button | At the panel of the pool created at step 19 of [_841\_1_](841_1_pool_creation.md) case, the label appears `AUTOSCALED (2 - 4 NODES)` |
 | 10 | Repeat steps 2-13 of [_841\_2_](841_2_pool_usage.md) case | |
 | 11 | Repeat steps 2-13 of [_841\_2_](841_2_pool_usage.md) case | |
 | 12 | Open the **Cluster state** page | |

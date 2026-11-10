@@ -9,7 +9,7 @@ Test verifies creating an NFS mount whose storage path contains spaces.
 | :---: | --- | --- |
 | 1 | Open library |  |
 | 2 | Hover over **+ Create v** button |  |
-| 3 | Select **Storages** -> **Create new NFS mount** |  |
+| 3 | Select **Storages** -> **Create new FS mount** |  |
 | 4 | Specify the **Storage path** value in the form `{NFS_MOUNT_PREFIX}/{PATH WITH SPACES}` |  |
 | 5 | Input a valid value in the **Alias** field |  |
 | 6 | Input a valid value in the **Description** field |  |
