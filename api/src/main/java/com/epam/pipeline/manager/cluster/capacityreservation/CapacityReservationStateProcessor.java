@@ -61,9 +61,9 @@ import java.util.Optional;
  * is a date and a zone, not the reservation. The request moves to the next candidate zone, then slides its start
  * by {@value #SLIDE_WINDOW_STEP_DAYS} day and starts over, releasing whatever the abandoned attempt had bought. It
  * fails once no zone can take it, once its window has no room left for the commitment, or when the provider cannot
- * be paid. A {@link CapacityReservationType#CAPACITY_BLOCK} refusal fails outright instead - it named one exact
- * offering rather than a window to search, so there is nothing to slide to; trying a different offering is a new
- * request, not a retry of this one.
+ * be paid. A refused {@link CapacityReservationType#CAPACITY_BLOCK} request fails at once instead. It named one
+ * exact offering, not a window to search, so there is nothing to slide to. Another offering means a new request,
+ * not a retry of this one.
  */
 @Service
 @Slf4j
@@ -186,11 +186,12 @@ public class CapacityReservationStateProcessor {
     }
 
     /**
-     * Submits the request, or adopts what an earlier attempt already bought. For
-     * {@link CapacityReservationType#CAPACITY_BLOCK}, the provider's purchase call is attempted at most once ever:
-     * it gives no idempotency token of its own, so an uncertain outcome is never retried by calling it again -
-     * only {@link #isAwaitingPurchaseConfirmation} may run on later ticks, until the grace period it allows
-     * elapses, at which point the request fails rather than risk a second purchase.
+     * Submits the request, or adopts what an earlier attempt already bought.
+     *
+     * <p>For {@link CapacityReservationType#CAPACITY_BLOCK} the purchase call is made at most once. The provider
+     * has no idempotency token for it, so an unclear outcome is never retried by calling it again. Later ticks
+     * only run {@link #isAwaitingPurchaseConfirmation}, until its grace period is over. Then the request fails,
+     * instead of taking the risk of a second purchase.
      */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void submit(final CapacityReservation reservation) {
@@ -251,10 +252,10 @@ public class CapacityReservationStateProcessor {
     }
 
     /**
-     * Whether a {@link CapacityReservationType#CAPACITY_BLOCK} purchase attempt is still within the window this
-     * gives it to be confirmed found by {@link CapacityReservationCloudFacade#findSubmitted} before giving up.
-     * {@code attempt} is the only record that an attempt happened at all - it is otherwise always 0 for this type,
-     * since it never slides to another candidate.
+     * Tells whether a {@link CapacityReservationType#CAPACITY_BLOCK} purchase attempt may still be confirmed.
+     * The grace period is the time {@link CapacityReservationCloudFacade#findSubmitted} gets to find the purchase
+     * before the platform gives up. {@code attempt} is the only sign that an attempt was made at all. For this
+     * type it is otherwise always 0, because such a request never slides to another candidate.
      */
     private boolean isAwaitingPurchaseConfirmation(final CapacityReservation reservation) {
         return CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()
@@ -327,8 +328,8 @@ public class CapacityReservationStateProcessor {
     }
 
     /**
-     * A {@link CapacityReservationType#CAPACITY_BLOCK} refusal fails outright - it named one exact offering, so
-     * there is no next zone or date to try. Every other type still slides.
+     * A refused {@link CapacityReservationType#CAPACITY_BLOCK} request fails at once. It named one exact
+     * offering, so there is no next zone or date to try. Every other type still slides.
      */
     private void refuseOrSlide(final CapacityReservation reservation, final String reason) {
         if (CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()) {
@@ -423,10 +424,9 @@ public class CapacityReservationStateProcessor {
     }
 
     /**
-     * A capacity block is never cancelled here - the provider reclaims it on its own at this same fixed end, and
-     * {@link com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService#cancel} refuses
-     * any attempt to cancel one regardless of caller, so calling it would only fail this otherwise ordinary
-     * cleanup.
+     * A capacity block is never cancelled here. The provider reclaims it on its own at the same fixed end date.
+     * Also {@link com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService#cancel}
+     * refuses to cancel a capacity block for any caller, so the call would only break this ordinary cleanup.
      */
     private void finishIfEnded(final CapacityReservation reservation) {
         if (reservation.getEndDate() == null) {

@@ -174,8 +174,8 @@ public class CapacityReservationApprovalService {
     }
 
     /**
-     * A retry asking for no more than what the origin was already approved for is not a bigger ask, so it may
-     * inherit that approval too - only asking for longer than the origin needs a fresh decision.
+     * A retry that asks for no more than the origin was approved for is not a bigger ask, so it may reuse that
+     * approval. Only a retry that asks for a longer duration needs a new decision.
      */
     private static boolean isNoLongerThanOrigin(final Long originDuration, final Long retryDuration) {
         return originDuration != null && retryDuration != null && retryDuration <= originDuration;

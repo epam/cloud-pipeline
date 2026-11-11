@@ -88,10 +88,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * AWS implementation of {@link CapacityReservationCloudService}, over the EC2 future-dated capacity reservation
- * API.
+ * AWS implementation of {@link CapacityReservationCloudService}, over the EC2 future-dated
+ * and ML capacity block reservation API.
  *
- * <p>What it asks of AWS, and what it makes of the answers:
+ * <p>What it does in AWS:
  * <ul>
  *   <li><b>Submits</b> a request as a future-dated reservation - {@code InstanceMatchCriteria=targeted},
  *       {@code DeliveryPreference=incremental}, committed for the duration the request names - under a client token
@@ -114,9 +114,6 @@ import java.util.stream.Collectors;
  * never arrived. The caller then retries the same client token rather than paying for a second reservation. A
  * definitive refusal is passed on as it is, including insufficient capacity, which AWS reports with a server-side
  * status but which refuses this configuration rather than failing the call.
- *
- * <p>AWS will not assess a future-dated request made less than {@link #MINIMUM_LEAD_DAYS} days ahead, which is what
- * {@link #getMinimumLead()} reports to the monitor.
  */
 @Service
 @Slf4j
@@ -229,11 +226,13 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * Buys the exact offering named on the reservation - no window, no zone to pick, since the offering already
-     * fixed both. Unlike {@link #createFutureDated}, AWS gives this call no idempotency token of its own: the tag
-     * {@link #tags(CapacityReservation)} attaches is the only way a lost reply can later be told apart from a
-     * purchase that never happened, and {@link #findByClientToken} is how a caller must check that before ever
-     * calling this again for the same reservation.
+     * Buys the exact offering named on the reservation. There is no window and no zone to pick, because the
+     * offering already fixes both.
+     *
+     * <p>Unlike {@link #createFutureDated}, this AWS call takes no idempotency token. The tag that
+     * {@link #tags(CapacityReservation)} puts on the purchase is the only way to tell a lost reply from a
+     * purchase that never happened. So a caller must first check with {@link #findByClientToken}, before it
+     * calls this method again for the same reservation.
      */
     @Override
     public CloudCapacityReservation purchaseCapacityBlock(final CapacityReservation reservation) {
@@ -283,12 +282,10 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * Ends the reservation at AWS - except a capacity block, which this refuses outright rather than attempting:
-     * AWS gives no cancel call for one at all, so there is nothing this could do but fail, and failing here rather
-     * than silently doing nothing is what makes a caller's mistake visible instead of masking it. The human-facing
-     * cancel path already refuses a purchased capacity block before ever reaching here; a caller that still reaches
-     * this method for one - such as automatic cleanup at the end of its fixed window - must check the type itself
-     * and not call this at all, since AWS already reclaims the block on its own.
+     * Ends the reservation at AWS. A capacity block is refused right away, because AWS has no cancel call for
+     * one and this method could only fail. A caller that may still reach this method for a capacity block, for
+     * example automatic cleanup, must check the type itself and not call the method at all. AWS reclaims the
+     * block on its own.
      */
     @Override
     public void cancel(final CapacityReservation reservation) {
@@ -406,8 +403,8 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * Searches AWS's current capacity block offerings. Nothing here is paid for or committed to - a browse failure
-     * is reported as it comes, not retried as uncertain the way {@link #createFutureDated} is.
+     * Searches the capacity block offerings AWS sells now. Nothing is paid for or committed to here, so a failed
+     * search is reported as it comes. It is not retried as uncertain, the way {@link #createFutureDated} is.
      */
     @Override
     public List<CapacityBlockOffering> listCapacityBlockOfferings(final AbstractCloudRegion region,
@@ -431,7 +428,7 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * Lists the instance types AWS currently sells as capacity blocks in a region - the EC2 equivalent of
+     * Lists the instance types a region sells as capacity blocks now. Same as
      * {@code aws ec2 describe-instance-types --filters "Name=supported-usage-class,Values=capacity-block"}.
      */
     @Override
@@ -464,9 +461,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * AWS sells capacity blocks only in 1-day steps up to {@value #ONE_DAY_STEP_MAX_DAYS} days, then 7-day steps up
-     * to {@value #SEVEN_DAY_STEP_MAX_DAYS} days. Checked here, before a request is built, rather than left for AWS's
-     * own refusal to explain.
+     * AWS sells capacity blocks in 1-day steps up to {@value #ONE_DAY_STEP_MAX_DAYS} days, and in 7-day steps up
+     * to {@value #SEVEN_DAY_STEP_MAX_DAYS} days. This is checked here, before the request is built, so the user
+     * gets a clear message instead of a bare AWS refusal.
      */
     static void validateCapacityBlockDuration(final Integer hours) {
         Assert.isTrue(hours != null && hours % HOURS_PER_DAY == 0 && isValidCapacityBlockDurationDays(
@@ -484,8 +481,9 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * AWS sells a capacity block for at most {@value #MAX_CAPACITY_BLOCK_INSTANCE_COUNT} instances in one offering.
-     * Checked here, before a request is built, rather than left for AWS's own refusal to explain.
+     * AWS sells at most {@value #MAX_CAPACITY_BLOCK_INSTANCE_COUNT} instances in one capacity block offering.
+     * This is checked here, before the request is built, so the user gets a clear message instead of a bare AWS
+     * refusal.
      */
     static void validateCapacityBlockInstanceCount(final Integer instanceCount) {
         Assert.isTrue(instanceCount != null && instanceCount >= 1
@@ -495,8 +493,8 @@ public class AwsCapacityReservationService implements CapacityReservationCloudSe
     }
 
     /**
-     * A search needs a start date to look from, and AWS only sells a capacity block starting up to
-     * {@value #MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS} weeks in advance.
+     * A search must have a start date to look from. AWS sells a capacity block that starts no more than
+     * {@value #MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS} weeks from now.
      */
     static void validateCapacityBlockStartDateRange(final LocalDateTime startDateRange) {
         final LocalDateTime latestStartDate = DateUtils.nowUTC().plusWeeks(MAX_CAPACITY_BLOCK_START_DATE_LEAD_WEEKS);

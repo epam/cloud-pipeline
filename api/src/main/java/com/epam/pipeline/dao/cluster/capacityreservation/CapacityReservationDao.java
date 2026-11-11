@@ -49,10 +49,10 @@ import java.util.function.Consumer;
  * JDBC DAO here does. Writes come in two shapes:
  * <ul>
  *   <li>{@link #update(CapacityReservation)} - writes every column that can change, from the caller's copy.</li>
- *   <li>{@link #updateRetry(CapacityReservation)} - writes only what another attempt chooses: its reason, its
- *       dates, its zone and its attempt count, and only while the row still carries the status the caller's copy
- *       showed, so those fields never land on a reservation another transaction has already moved on. It answers
- *       whether it wrote.</li>
+ *   <li>{@link #updateRetry(CapacityReservation)} - writes only the columns a new attempt picks: the reason, the
+ *       dates, the zone and the attempt count. It writes them only if the row still has the status the caller's
+ *       copy had. This way the columns never land on a reservation that another transaction has already moved
+ *       on. The method returns whether it wrote anything.</li>
  * </ul>
  *
  * <p>The requested window a request was created with is never written again: it is the envelope every later

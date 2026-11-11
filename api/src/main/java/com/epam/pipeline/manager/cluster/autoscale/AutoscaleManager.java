@@ -333,7 +333,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 final PipelineRun run = pipelineRunManager.findRun(longId)
                         .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longId));
                 final Optional<Long> requiredPoolId = reassignHandler.requiredPoolId(run);
-                // Pool-bound runs use a time-based timeout; skip the attempt-count budget for them.
+                // A pool-bound run waits by time, not by attempt count. So skip the attempt budget for it.
                 int retryCount = nodeUpAttempts.getOrDefault(longId, 0); // TODO: should we lock here?
                 if (!requiredPoolId.isPresent() && retryCount >= getNodeUpRetryCount(run, nodeUpRetryCount)) {
                     log.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
@@ -366,7 +366,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     }
                 }
                 if (requiredPoolId.isPresent()) {
-                    // No free node matched this cycle, but the run is bound to a specific pool — wait for it.
+                    // No free node matched this cycle. The run is bound to one pool, so wait for that pool.
                     handleOccupiedPoolRun(longId, runId, run, requiredPoolId.get());
                     return;
                 }

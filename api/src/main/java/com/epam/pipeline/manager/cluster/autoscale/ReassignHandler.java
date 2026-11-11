@@ -111,16 +111,16 @@ public class ReassignHandler {
 
         final Optional<Long> requiredPoolId = pipelineRun.flatMap(this::requiredPoolId);
 
-        // Try to find match with pre-pulled image. Not the final word on this tick, so a required pool's own
-        // node failing it here does not yet fail the run - the plain attempt below may still take it.
+        // Try to find match with pre-pulled image. This is not the last attempt on this tick, so a required
+        // pool's own node that fails here does not fail the run yet. The plain attempt below may still take it.
         final boolean reassignedWithMatchingImage = attemptReassign(freeInstances,
                 autoscalerService::requirementsMatchWithImages, requiredInstance, runId, longId,
                 pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes, false);
         if (reassignedWithMatchingImage) {
             return true;
         }
-        // The final, most permissive attempt this tick: a required pool's own node failing this one is
-        // reported as deterministic, since nothing looser remains to try.
+        // The last and most permissive attempt on this tick. Nothing looser is left to try, so a required
+        // pool's own node that fails here is reported as a final answer.
         return attemptReassign(freeInstances,
                 autoscalerService::requirementsMatch, requiredInstance, runId, longId,
                 pipelineRun, requiredPoolId, scheduledRuns, reassignedNodes, true);
@@ -128,10 +128,10 @@ public class ReassignHandler {
     }
 
     /**
-     * A run naming a pool via {@code CP_CAP_POOL_ID} is exclusively bound to it: only that pool's own free
-     * nodes may take it, never an unrelated node or a different pool's - the opposite of every other run's
-     * free pick of any matching pool or plain node. {@link AutoscaleManager} reads this too, to keep such a
-     * run from ever falling through to a generic on-demand/spot node when this method can't satisfy it.
+     * A run that names a pool with {@code CP_CAP_POOL_ID} is bound to that pool only. Just the free nodes of
+     * that pool may take it - never a plain node and never a node of another pool. Any other run is free to
+     * take any matching pool or plain node. {@link AutoscaleManager} reads this as well, so such a run never
+     * falls through to a generic on-demand or spot node when this method cannot place it.
      */
     public Optional<Long> requiredPoolId(final PipelineRun run) {
         return run.getPipelineRunParameters().stream()
@@ -187,8 +187,8 @@ public class ReassignHandler {
     }
 
     /**
-     * The required pool's own free node, if this one is it - the only node whose mismatch is this run's own
-     * fault rather than some other pool's unrelated business.
+     * Returns the required pool if this free node belongs to it. Only such a node tells something about this
+     * run. A node of any other pool is simply not this run's business.
      */
     private Optional<NodePool> requiredPoolOf(final RunningInstance instance, final Optional<Long> requiredPoolId) {
         return Optional.ofNullable(instance.getPool())
@@ -196,8 +196,8 @@ public class ReassignHandler {
     }
 
     /**
-     * Past its window, a capacity reservation pool's own node is as dead an end as a structural mismatch - no
-     * later tick makes it any less true.
+     * A capacity reservation pool whose window has passed is a dead end, just like a node that does not match.
+     * No later tick changes that.
      */
     private void assertReservationNotExpired(final NodePool pool) {
         if (pool.isCapacityReservation() && pool.getEndDate() != null
@@ -228,9 +228,9 @@ public class ReassignHandler {
      * the pool's own owner, who reuses its nodes whatever it says; a filter about the run itself - its image, its
      * pipeline, its parameters - holds for the owner as for anyone else.
      *
-     * <p>{@code failFast} is only ever true for the required pool's own node: there, a rejection is reported as
-     * deterministic rather than merely returned as {@code false}, since no later tick changes what the run's
-     * owner, image, pipeline or parameters are.
+     * <p>{@code failFast} is true only for a node of the required pool. For such a node a rejection is reported
+     * as a final answer, not just returned as {@code false}. The run's owner, image, pipeline and parameters
+     * stay the same on every later tick, so the answer cannot change.
      */
     private boolean matchesPoolFilter(final NodePool pool, final Optional<PipelineRun> pipelineRun,
                                       final boolean failFast) {
@@ -249,9 +249,9 @@ public class ReassignHandler {
     }
 
     /**
-     * The AND/OR combinator is the only place that knows the overall result, so it is the only place that may
-     * report a rejection as deterministic - a single failing filter under OR is not, while a sibling may yet
-     * pass; {@link #matchRunToFilter} itself never decides this.
+     * Combines the filters with AND or OR. Only this method knows the overall result, so only this method may
+     * report a rejection as a final answer. Under OR one failing filter means nothing, because another filter
+     * may still pass. {@link #matchRunToFilter} never decides this on its own.
      */
     private boolean matchRun(final NodePool pool, final PoolFilter filter, final PipelineRun run,
                              final boolean failFast) {

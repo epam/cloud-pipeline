@@ -340,7 +340,7 @@ public class ReassignHandlerTest {
         return pool;
     }
 
-    /** A pool that is active now - its window has not passed, unlike {@link #inactivePool()}. */
+    /** A pool that is active now. Its window has not passed yet, unlike {@link #inactivePool()}. */
     private static NodePool activePool() {
         final NodePool pool = inactivePool();
         pool.setEndDate(DateUtils.nowUTC().plusDays(1));
@@ -356,7 +356,7 @@ public class ReassignHandlerTest {
         return pool;
     }
 
-    /** A pool with one OR-combined filter per given type: no filter handler is registered here either. */
+    /** A pool with one filter per given type, combined with OR. No filter handler is registered here either. */
     private static NodePool orFilteredPool(final PoolInstanceFilterType... types) {
         final List<PoolInstanceFilter> filters = Arrays.stream(types)
                 .map(type -> {

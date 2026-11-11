@@ -669,9 +669,10 @@ public class SystemPreferences {
                                    isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
 
     /**
-     * Per {@link CapacityReservationType}, the instance types the cloud provider is allowed to reserve capacity
-     * for - comma-separated {@link org.springframework.util.AntPathMatcher} patterns against the instance type
-     * name, same format as {@link #CLUSTER_ALLOWED_INSTANCE_TYPES}. A type with no entry has no restriction.
+     * The instance types the platform may reserve capacity for, per {@link CapacityReservationType}. The value
+     * is a comma-separated list of {@link org.springframework.util.AntPathMatcher} patterns for the instance
+     * type name, in the same format as {@link #CLUSTER_ALLOWED_INSTANCE_TYPES}. A reservation type with no entry
+     * has no restriction.
      */
     public static final ObjectPreference<Map<CapacityReservationType, String>>
             CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new ObjectPreference<>(
@@ -687,8 +688,8 @@ public class SystemPreferences {
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
                     isValidCapacityReservationMonitorSettings, true);
     /**
-     * How long (seconds) the autoscaler waits for a CP_CAP_POOL_ID-bound run when its target pool is occupied
-     * by another run. {@code 0} means wait indefinitely. Default: 86400 (24 h).
+     * How long, in seconds, the autoscaler waits for a run bound with CP_CAP_POOL_ID while its pool is taken by
+     * another run. {@code 0} means wait without a limit. Default: 86400 (24 hours).
      */
     public static final IntPreference CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC = new IntPreference(
             "cluster.occupied.node.pool.wait.sec", 86400, CLUSTER_GROUP, isGreaterThanOrEquals(0));

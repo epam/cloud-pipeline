@@ -22,8 +22,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * One instance type a region currently sells as a capacity block, with enough of its specification - as AWS's
- * {@code DescribeInstanceTypes} answers it - for a user to tell the offered types apart before searching
+ * One instance type a region sells as a capacity block. It carries the part of the specification that AWS
+ * {@code DescribeInstanceTypes} returns, so a user can tell the offered types apart before searching
  * {@link CapacityBlockOffering}s for one of them.
  */
 @Data

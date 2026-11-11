@@ -45,8 +45,9 @@ import java.util.List;
  *
  * <p>Reading is a list and a single reservation; writing is the two decisions a human makes about a request -
  * approving one that waits for it, and cancelling one that is no longer wanted. Creation belongs to the node pool
- * endpoint, since a reservation only ever exists for a pool. {@code offerings} and {@code instance-types} stand
- * apart from the rest: they search AWS's capacity block catalogue before any reservation or pool exists.
+ * endpoint, since a reservation only ever exists for a pool. {@code offerings} and {@code instance-types} are
+ * different from the rest. They search the AWS capacity block catalogue, and they work before any reservation or
+ * pool exists.
  *
  * <p>Every method delegates to {@link CapacityReservationApiService}, which is where the authorization is.
  */

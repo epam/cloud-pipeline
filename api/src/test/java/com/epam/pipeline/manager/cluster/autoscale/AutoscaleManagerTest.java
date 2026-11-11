@@ -169,7 +169,7 @@ public class AutoscaleManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_DISABLE_REASSIGN))
                 .thenReturn(false);
 
-        // Every run in this suite is an ordinary one; the pool-exclusive tests below override this.
+        // By default every run here is an ordinary one. The pool-bound tests below override this.
         when(reassignHandler.requiredPoolId(any())).thenReturn(Optional.empty());
         when(nodePoolManager.find(anyLong())).thenReturn(Optional.empty());
         when(messageHelper.getMessage(any(), (Object[]) any())).thenReturn("test message");

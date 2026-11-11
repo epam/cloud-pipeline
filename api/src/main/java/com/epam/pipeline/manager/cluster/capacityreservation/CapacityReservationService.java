@@ -71,12 +71,12 @@ import java.util.Set;
  *
  * <p>The human decisions live here too. {@link #approve(Long)} succeeds only while the request is waiting for one -
  * the monitor re-approves a sliding request itself, and a second human approval would drop the provider's last
- * answer from it. {@link #cancel(Long)} gives the capacity back and empties the pool - except a capacity block
- * already purchased, which it refuses outright, since no provider lets one be given back once bought.
- * {@link #onPoolDeletion} is the opposite direction: deleting a pool deletes its reservation, and a reservation
- * that has not ended yet is given up first - which it refuses to do unless the request is still waiting for
- * approval or the caller insists, and which inherits {@link #cancel(Long)}'s own refusal for a purchased capacity
- * block, so such a pool cannot be deleted either until it ends on its own.
+ * answer from it. {@link #cancel(Long)} gives the capacity back and empties the pool. It refuses a capacity block
+ * that is already purchased, because no provider takes a bought block back. {@link #onPoolDeletion} works the
+ * other way round: deleting a pool deletes its reservation, and a reservation that has not ended yet is given up
+ * first - which it refuses to do unless the request is still waiting for approval or the caller insists. It also
+ * inherits the refusal of {@link #cancel(Long)}, so a pool with a purchased capacity block cannot be deleted
+ * until the block ends on its own.
  */
 @Service
 @Slf4j
@@ -293,7 +293,7 @@ public class CapacityReservationService {
                 .instancePlatform(StringUtils.defaultIfBlank(request.getInstancePlatform(),
                         CapacityReservation.DEFAULT_INSTANCE_PLATFORM));
         if (CapacityReservationType.CAPACITY_BLOCK == request.getReservationType()) {
-            // the offering names an exact slot, not a window to search, so what was asked for is already granted
+            // the offering is an exact slot, not a window to search, so the requested dates are already final
             reservation.capacityBlockOfferingId(request.getCapacityBlockOfferingId())
                     .availabilityZone(request.getAvailabilityZone())
                     .startDate(request.getRequestedStartDate())

@@ -52,11 +52,11 @@ import java.util.Optional;
  *       id.</li>
  * </ul>
  *
- * <p>A capacity block purchase carries that same token, but only as a tag on what it buys - AWS's purchase call
- * takes no idempotency token of its own, so {@link #findSubmitted} answering present is the only thing standing
- * between a lost reply and paying for the block twice. Nothing may call {@code create} for one a second time on
- * the strength of a failure alone; only {@link #findSubmitted} answering empty, after however long the caller has
- * decided is long enough to trust that answer, says it is safe to.
+ * <p>A capacity block purchase carries the same token, but only as a tag on what it buys. The AWS purchase call
+ * takes no idempotency token. So {@link #findSubmitted} is the only protection against a lost reply and paying
+ * for the block twice. A failure alone is never a reason to call {@code create} for a capacity block again. It is
+ * safe to call it again only when {@link #findSubmitted} returns empty, and only after the caller has waited long
+ * enough to trust that answer.
  *
  * <p>{@link #isSupported(CloudProvider)} answers whether a provider can reserve capacity at all, which is what
  * keeps a reservation-backed pool from being created where it could never be delivered.
@@ -142,8 +142,8 @@ public class CapacityReservationCloudFacade {
     }
 
     /**
-     * Searches a region's current capacity block offerings. There is no {@link CapacityReservation} yet to read a
-     * provider from, so the region's own is used instead.
+     * Searches the capacity block offerings of a region. There is no {@link CapacityReservation} yet to read the
+     * provider from, so the provider of the region is used instead.
      */
     public List<CapacityBlockOffering> listCapacityBlockOfferings(final AbstractCloudRegion region,
                                                                    final CapacityBlockOfferingRequest request) {

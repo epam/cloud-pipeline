@@ -559,24 +559,27 @@ public class PipelineRunManager {
     }
 
     /**
-     * A run naming a pool via {@link #CP_CAP_POOL_ID} can be rejected here, immediately, for the things
-     * knowable without waiting for a live free node: the pool doesn't exist, or the run explicitly asked for
-     * an instance type or region the pool's own nodes don't provide (every node in a pool is provisioned
-     * alike, from the pool's own static config, so this needs no live node to check). Plain field
-     * comparisons only - deliberately not reusing {@code AutoscalerService}'s default-filling
-     * (`configurationToInstance`), since a run that didn't explicitly ask for a type or region has nothing
-     * concrete to compare and must not be rejected on a platform default it never requested. A pool that
-     * merely has no free node *right now*, or whose filter the run doesn't match, is not checked here -
-     * those stay the asynchronous, retry-bounded autoscaler's job ({@code ReassignHandler}), since "no free
-     * node yet" is often transient (a reservation pool is legitimately empty before its window starts) and
-     * filter-matching lives there, not here.
+     * Rejects a run that names a pool with {@link #CP_CAP_POOL_ID} right away, for the things that are known
+     * without a live free node. Two cases: the pool does not exist, or the run explicitly asked for an instance
+     * type or a region that the pool's nodes do not provide. Every node of a pool is created the same way, from
+     * the static config of the pool, so no live node is needed to check this.
      *
-     * <p>Once the pool passes every check above, its own launch configuration - set only for a shareable
-     * pool, see {@code NodePoolLaunchConfigBuilder} - is applied to {@code configuration}: it names the
-     * pool's own node selector (`pool_id`) and is the authoritative source for it, overriding whatever
-     * {@code podAssignPolicy} the caller supplied, the same way the launch form already does for a pool it
-     * offers. Every other pool type has no launch configuration, so this step is a no-op for them and
-     * today's default/caller-supplied policy is untouched.
+     * <p>These are plain field comparisons. The default-filling of {@code AutoscalerService}
+     * ({@code configurationToInstance}) is not reused on purpose: a run that did not ask for a type or a region
+     * has nothing concrete to compare, and it must not be rejected because of a platform default it never
+     * requested.
+     *
+     * <p>Two things are not checked here: a pool that has no free node right now, and a pool whose filter the
+     * run does not match. Both stay the job of the autoscaler ({@code ReassignHandler}), which works
+     * asynchronously and limits the retries. "No free node yet" is often temporary - a reservation pool is
+     * legitimately empty before its window starts - and filter matching lives there, not here.
+     *
+     * <p>Once the pool passes every check above, the launch configuration of the pool is applied to
+     * {@code configuration}. Only a shareable pool has one, see {@code NodePoolLaunchConfigBuilder}. It names
+     * the node selector of the pool ({@code pool_id}) and is the authoritative source for it, so it overrides
+     * any {@code podAssignPolicy} the caller sent. The launch form already works the same way for a pool it
+     * offers. Every other pool type has no launch configuration, so this step does nothing for them and the
+     * default or caller-supplied policy stays as it is.
      */
     private void checkCapacityPoolCompatibility(final PipelineConfiguration configuration) {
         final PipeConfValueVO poolIdParam = MapUtils.emptyIfNull(configuration.getParameters()).get(CP_CAP_POOL_ID);

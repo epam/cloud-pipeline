@@ -182,9 +182,9 @@ public class NodePoolValidator {
     }
 
     /**
-     * A capacity block names an exact offering rather than a window to search - there is no size or lead-time
-     * policy to check against, since AWS's own 1-64 instance-count and 8-week lead limits are already enforced
-     * when the offering was searched for, not here.
+     * A capacity block names an exact offering, not a window to search. So there is no size or lead-time policy
+     * to check here. The AWS limits - 1 to 64 instances, and a start no more than 8 weeks away - are already
+     * checked when the offering is searched for.
      */
     private void validateCapacityBlockPurchase(final CapacityReservationRequest request) {
         Assert.isTrue(StringUtils.isNotBlank(request.getCapacityBlockOfferingId()),

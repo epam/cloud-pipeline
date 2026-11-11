@@ -40,8 +40,9 @@ import java.util.List;
  *   <li>{@link #load(Long)} - readable by whoever may read the node pool the reservation backs.</li>
  *   <li>{@link #approve(Long)} - administrators only: an approval commits the platform to paying for capacity.</li>
  *   <li>{@link #cancel(Long)} - the owner of that node pool, or an administrator.</li>
- *   <li>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} - open to the same role
- *       that may create a reservation-backed pool, since there is no pool yet to check a permission against.</li>
+ *   <li>{@link #listCapacityBlockOfferings} and {@link #listCapacityBlockInstanceTypes} - allowed for the same
+ *       role that may create a reservation-backed pool. There is no pool yet, so there is nothing to check a
+ *       permission against.</li>
  * </ul>
  *
  * <p>A reservation is not created here. One exists only as part of the node pool it backs, so it is created with

@@ -597,8 +597,8 @@ public class PipelineRunManagerLaunchTest {
 
     @Test
     public void launchPipelineDoesNotCheckInstanceTypeWhenTheRunDoesNotRequestOne() {
-        // configuration.getInstanceType() is null by default in this fixture - nothing to compare,
-        // so a pool with any instance type must not be rejected on the platform's behalf.
+        // configuration.getInstanceType() is null in this fixture, so there is nothing to compare.
+        // A pool with any instance type must be accepted then.
         setPoolIdParameter(configuration, String.valueOf(ID_2));
         doReturn(Optional.of(poolWithInstanceType("other.type"))).when(nodePoolManager).find(ID_2);
 

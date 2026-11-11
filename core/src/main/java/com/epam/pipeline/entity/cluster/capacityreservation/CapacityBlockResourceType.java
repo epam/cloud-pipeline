@@ -19,15 +19,15 @@ package com.epam.pipeline.entity.cluster.capacityreservation;
 /**
  * What a {@link CapacityReservationType#CAPACITY_BLOCK} offering or reservation is made of.
  *
- * <p>AWS keeps no discriminator of its own - a {@code CapacityBlockOffering} simply carries one of two field pairs,
- * {@code instanceType}/{@code instanceCount} or {@code ultraserverType}/{@code ultraserverCount}. This is the
- * platform's own classification of which pair applies.
+ * <p>AWS has no field for this. A {@code CapacityBlockOffering} just carries one of two field pairs:
+ * {@code instanceType}/{@code instanceCount}, or {@code ultraserverType}/{@code ultraserverCount}. This enum is
+ * the platform's own way to say which pair applies.
  *
  * <ul>
  *   <li>{@link #INSTANCE} - a block of ordinary instances. The only kind the platform submits today.</li>
- *   <li>{@link #ULTRASERVER} - a block of whole UltraServers. A purchased UltraServer block's
- *       {@code capacityReservationIds} is a list, not the single id a {@link CapacityReservation} holds, so
- *       supporting it needs more than this constant. Rejected wherever it is checked.</li>
+ *   <li>{@link #ULTRASERVER} - a block of whole UltraServers. A purchased UltraServer block returns
+ *       {@code capacityReservationIds} as a list, while a {@link CapacityReservation} holds a single id. So this
+ *       constant alone is not enough to support it, and it is rejected wherever it is checked.</li>
  * </ul>
  */
 public enum CapacityBlockResourceType {

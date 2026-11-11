@@ -25,13 +25,13 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * What to search AWS's current capacity block offerings for - no reservation exists yet, so this stands apart from
- * {@link com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest}, which asks for a specific pool's
- * capacity rather than searching a catalogue.
+ * Search criteria for the capacity block offerings AWS sells now. No reservation exists at this point. This is
+ * why the request is separate from {@link com.epam.pipeline.controller.vo.cluster.pool.CapacityReservationRequest},
+ * which asks for the capacity of one specific pool instead of searching a catalogue.
  *
- * <p>{@code resourceType} is left unset (read as {@link CapacityBlockResourceType#INSTANCE}) or set to it
- * explicitly - that is the only value accepted today. {@link CapacityBlockResourceType#ULTRASERVER} exists on the
- * field only so this shape need not change again once it is supported.
+ * <p>{@code resourceType} may be unset or set to {@link CapacityBlockResourceType#INSTANCE}. Unset means the same
+ * thing. That is the only accepted value today. The field also allows
+ * {@link CapacityBlockResourceType#ULTRASERVER}, so the request does not have to change once it is supported.
  */
 @Data
 @Builder(toBuilder = true)
@@ -47,8 +47,8 @@ public class CapacityBlockOfferingRequest {
     private Integer instanceCount;
 
     /**
-     * The date to start looking from - required, unlike {@link #endDateRange}, since a search with no earliest
-     * date to search from is not a search AWS can answer.
+     * The date to start looking from. Required, unlike {@link #endDateRange}: AWS cannot answer a search that
+     * has no earliest date.
      */
     private LocalDateTime startDateRange;
     private LocalDateTime endDateRange;

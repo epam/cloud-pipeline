@@ -32,16 +32,16 @@ import org.springframework.util.Assert;
 import java.util.List;
 
 /**
- * Lets a user search what AWS currently has for sale as capacity blocks, before any node pool or reservation
- * request exists to search on behalf of.
+ * Lets a user search the capacity blocks AWS has for sale. It works before any node pool or reservation request
+ * exists.
  *
- * <p>{@link #listOfferings} answers a concrete search - instance type, count, duration and the date to start
- * looking from - with the exact offerings, zones and up-front prices AWS would sell today. {@link #listInstanceTypes}
- * answers the question a search needs answered first: which instance types a region even sells as capacity blocks,
- * since most instance types never are.
+ * <p>{@link #listOfferings} takes a concrete search - instance type, count, duration and the date to start looking
+ * from. It answers with the offerings, zones and up-front prices AWS sells today. {@link #listInstanceTypes}
+ * answers the first question such a search needs: which instance types a region sells as capacity blocks at all.
+ * Most instance types never are.
  *
- * <p>Only {@link CapacityBlockResourceType#INSTANCE} is accepted; {@link CapacityBlockResourceType#ULTRASERVER} is
- * rejected here, before either reaches a provider.
+ * <p>Only {@link CapacityBlockResourceType#INSTANCE} is accepted. {@link CapacityBlockResourceType#ULTRASERVER} is
+ * rejected here, before the request reaches a provider.
  */
 @Service
 @RequiredArgsConstructor

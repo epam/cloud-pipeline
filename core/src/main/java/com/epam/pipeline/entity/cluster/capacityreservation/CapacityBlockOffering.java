@@ -25,11 +25,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * One capacity block AWS currently has for sale, as answered by {@code DescribeCapacityBlockOfferings}.
+ * One capacity block AWS has for sale, as returned by {@code DescribeCapacityBlockOfferings}.
  *
- * <p>Nothing here is a commitment yet - the window, zone and price are AWS's answer to a search, fixed only once
- * {@link #getOfferingId()} is purchased. A purchase must reference this id exactly as returned; the platform does
- * not negotiate a different window, zone or count for it.
+ * <p>Nothing here is a commitment yet. The window, the zone and the price are just the answer to a search. They
+ * become final when {@link #getOfferingId()} is purchased. A purchase must use that id exactly as returned. The
+ * platform cannot ask for another window, zone or count for the same offering.
  */
 @Data
 @Builder

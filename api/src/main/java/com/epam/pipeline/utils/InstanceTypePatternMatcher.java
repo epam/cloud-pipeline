@@ -27,8 +27,8 @@ public interface InstanceTypePatternMatcher {
     AntPathMatcher MATCHER = new AntPathMatcher();
 
     /**
-     * Matches an instance type name against a comma-separated list of Ant-style patterns, the format
-     * shared by {@code cluster.allowed.instance.types} and {@code cluster.capacity.reservation.instance.families}.
+     * Matches an instance type name against a comma-separated list of Ant-style patterns. This is the format
+     * of {@code cluster.allowed.instance.types} and {@code cluster.capacity.reservation.instance.families}.
      * A blank pattern list means no restriction.
      */
     static boolean matches(final String instanceType, final String patterns) {
