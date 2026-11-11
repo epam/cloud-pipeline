@@ -308,7 +308,8 @@ class ToolSynchronizer(object):
         if self.create_dir_if_not_exists(registry_cert_folder) is False:
             print_warn_message('Unable to create certs dir for [{}] registry!'.format(registry_url))
             return
-        with open('{}/ca.crt'.format(registry_cert_folder), 'w') as cert_file:
+        # The API sends the certificate as a file: its content is bytes
+        with open('{}/ca.crt'.format(registry_cert_folder), 'wb') as cert_file:
             cert_file.write(certificate)
 
     def create_dir_if_not_exists(self, dirname):
