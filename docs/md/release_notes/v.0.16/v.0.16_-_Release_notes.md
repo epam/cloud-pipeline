@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [A run stays at its start for good when `apt-get update` stalls](#a-run-stays-at-its-start-for-good-when-apt-get-update-stalls)
 
 ***
 
@@ -912,3 +913,15 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### A run stays at its start for good when `apt-get update` stalls
+
+[#4781](https://github.com/epam/cloud-pipeline/issues/4781)
+
+Previously, the `apt-get`, `yum` and `apk` calls of the launch script at the start of a run had no time limit. The apt of Ubuntu 22.04, Ubuntu 24.04 and Debian 12 can stall in `apt-get update` for good after it retries a download with a delay ([LP: #2003851](https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851)), e.g. behind a proxy with a short `CP_REPO_ACCESS_TIMEOUT_SEC`. Such a run never finished its start, and its node was billed until someone stopped the run.
+Now, these calls of the launch script have a time limit:
+
+- a refresh of the package lists is stopped after `CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC` seconds (600 by default), and is tried once more
+- an install or an upgrade of packages is stopped after `CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC` seconds (3600 by default)
+
+A call that is stopped logs a `[WARN]` line in the run log and fails, and the run handles it as any other failure of that call: e.g. the Cloud Pipeline repo setup tries again, and then removes the repo. `0` means no limit, and so does a value that is not a whole number of seconds, with a `[WARN]` line. Set the variables as run parameters, or for all runs in the `launch.env.properties` preference. An image with no usable `timeout` command (e.g. an old busybox) runs the calls with no limit, as before. The setup scripts of the capabilities (e.g. SGE, Slurm, Docker in Docker, NICE DCV) still call the package managers with no limit.
