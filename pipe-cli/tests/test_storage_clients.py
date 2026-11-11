@@ -215,3 +215,17 @@ class TestAzureTransfers(object):
         assert kwargs['max_concurrency'] == 2
         assert callable(kwargs['progress_hook'])
         assert destination.read_bytes() == b'abc'
+
+
+def test_azure_progress_skips_a_late_smaller_total():
+    reported = []
+    with patch.object(azure.ProgressPercentage, '__init__', return_value=None), \
+            patch.object(azure.ProgressPercentage, '__call__', side_effect=reported.append):
+        progress = azure.AzureProgressPercentage('file', 10)
+        # Two transfer threads report their totals out of order
+        progress(4)
+        progress(7)
+        progress(6)
+        progress(10)
+
+    assert reported == [4, 3, 3]

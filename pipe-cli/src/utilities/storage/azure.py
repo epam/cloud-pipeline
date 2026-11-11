@@ -48,10 +48,15 @@ class AzureProgressPercentage(ProgressPercentage):
     def __init__(self, filename, size):
         super(AzureProgressPercentage, self).__init__(filename, size)
         self._total_bytes = 0
+        self._total_lock = Lock()
 
     def __call__(self, bytes_amount):
-        newest_bytes = bytes_amount - self._total_bytes
-        self._total_bytes = bytes_amount
+        # azure-storage-blob reports the transferred total from several threads: a late, smaller total is skipped
+        with self._total_lock:
+            newest_bytes = bytes_amount - self._total_bytes
+            if newest_bytes <= 0:
+                return
+            self._total_bytes = bytes_amount
         super(AzureProgressPercentage, self).__call__(newest_bytes)
 
     @staticmethod

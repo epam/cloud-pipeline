@@ -322,6 +322,22 @@ class TestGsUploadManager(object):
         assert [name for name in server.objects if name != 'big.json'] == []
         assert progress.total == len(content)
 
+    def test_uploads_large_parts_by_resumable_uploads(self, fake_gcs, tmp_path, monkeypatch):
+        # The parts of a real composite upload are 150 MB or more: google-cloud-storage sends them by resumable
+        # uploads, which read, tell and seek the part reader
+        from google.cloud.storage import blob as blob_module
+        client, server = fake_gcs
+        content = _content(1000)
+        monkeypatch.setattr(blob_module, '_MAX_MULTIPART_SIZE', 50)
+        monkeypatch.setenv(gs.CP_CLI_GCP_MULTIPART_THRESHOLD, '100')
+        monkeypatch.setenv(gs.CP_CLI_GCP_MULTIPART_CHUNKSIZE, '300')
+        monkeypatch.setenv(gs.CP_CLI_GCP_MAX_CONCURRENCY, '3')
+
+        self._upload(client, tmp_path, content, 'big.bin')
+
+        assert server.objects['big.bin'] == content
+        assert server.upload_types == ['resumable'] * 4
+
 
 class TestGsUploadStreams(object):
 
@@ -572,3 +588,20 @@ def test_download_resumes_after_the_retry_deadline_of_the_library():
 
     assert destination.getvalue() == content
     assert calls == [None, 30]
+
+
+def test_download_does_not_resume_after_the_retry_deadline_of_an_error_response():
+    from google.api_core.exceptions import RetryError, ServiceUnavailable
+    blob = _FailingBlob(_content(100), failures=0, chunk=30)
+    calls = []
+
+    def download_to_file(file_obj, start=None, end=None, **kwargs):
+        calls.append(start)
+        raise RetryError('Timeout of 120.0s exceeded', ServiceUnavailable('503 Service Unavailable'))
+
+    blob.download_to_file = download_to_file
+
+    with pytest.raises(RetryError):
+        gs._download_blob(blob, io.BytesIO(), 100)
+
+    assert calls == [None]

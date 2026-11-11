@@ -394,7 +394,7 @@ def _download_blob(blob, file_obj, size, progress_callback=None, start=None, end
     Downloads a blob, or its byte range from start to end inclusive, to a file object.
 
     The download resumes from the last written byte, if it fails with a network error, or google-cloud-storage
-    gives up its own retries of such an error. It fails after CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS such failures.
+    gives up its own retries of such an error (but not of an error response, e.g. 503). It fails after CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS such failures.
     The progress callback is called every PROGRESS_CHUNK_SIZE.
 
     Only the public API of google-cloud-storage is used.
@@ -426,6 +426,8 @@ def _download_blob(blob, file_obj, size, progress_callback=None, start=None, end
                 raise RuntimeError('Download of %s has stopped at %s bytes of %s.'
                                    % (blob.name, offset + bytes_transferred, offset + size))
         except (RequestException, RetryError) as e:
+            if isinstance(e, RetryError) and not isinstance(e.cause, (RequestException, ConnectionError)):
+                raise
             remaining_attempts -= 1
             if not remaining_attempts:
                 raise RuntimeError('Resumable download has failed after %s sequential resumes. '
