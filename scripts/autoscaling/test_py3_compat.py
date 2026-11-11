@@ -12,41 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Exercises the api-pod-side cluster-command scripts (issue #4589 Phase 4, extended in Phases 5-6)
-# under whichever interpreter runs it. There was no test runner in this package before. Requires the
-# same third-party packages requirements.txt lists, pinned to versions confirmed importable under
-# Python 3.12 (deploy/docker/cp-api-srv/Dockerfile's pip3 install steps carry the same pins) - azure's
-# unversioned meta-package in particular resolves to a track2 (azure-core-based) azure-mgmt-network
-# under Python 3 unless pinned, which raises different exceptions than the msrestazure-based
-# ResourceManagementClient/ComputeManagementClient this code expects - plus pykube/pytz/PyJWT/luigi,
-# which workflows/pipe-common's own imports pull in transitively. Install into an isolated virtualenv,
-# never the interpreter running the rest of the toolchain.
+# The cluster scripts that the API pod runs (nodeup, nodedown, node_reassign, terminate_node) on Python 3:
+# `python3 -m unittest test_py3_compat` from inside scripts/autoscaling. Requires the packages of
+# requirements.txt, with the versions that the pip3 install steps of deploy/docker/cp-api-srv/Dockerfile use.
+# azure-mgmt-network in particular must be pinned: an unpinned one is the azure-core based generation, which raises
+# other exceptions than the msrestazure based clients these scripts expect. It also requires pipe-common's
+# dependencies (pykube-ng, pytz, PyJWT, luigi), as the scripts import the pipeline package. Install them into an
+# isolated virtualenv or container.
 
 import os
 import re
 import sys
 import unittest
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+import importlib.util
+from unittest import mock
 
-try:
-    import importlib.util
 
-    def _load_module_from_path(name, path):
-        spec = importlib.util.spec_from_file_location(name, path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-except ImportError:
-    # importlib.util doesn't exist under Python 2 - this test file itself needs to run under
-    # either interpreter, same as the scripts it exercises.
-    import imp
-
-    def _load_module_from_path(name, path):
-        return imp.load_source(name, path)
+def _load_module_from_path(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 AUTOSCALING_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.join(AUTOSCALING_DIR, '..', '..')
@@ -65,11 +52,9 @@ GENERIC_AND_AWS_MODULES = {
     'aws_terminate_node': 'aws/terminate_node.py',
 }
 
-# Files this diff touched for Python 2/3 compatibility - checked by DictViewIndexingRegressionTest
-# below for the exact bug pattern (dict.items()/.values()/.keys() subscripted or handed to a
-# caller expecting a list) that both the original grep sweep and the first pass of this test file
-# missed: dict.items()[i] and dict.values() are legal, list-returning calls under Python 2, but
-# Python 3's dict views support neither indexing nor implicit list conversion.
+# The cluster scripts and the pipe-common modules they use, checked by DictViewIndexingRegressionTest below for
+# dict.items()/.values()/.keys() subscripted or handed to a caller expecting a list: these calls return lists on
+# Python 2, but the dict views of Python 3 support neither indexing nor an implicit list conversion.
 PY3_COMPAT_TOUCHED_FILES = [
     os.path.join(AUTOSCALING_DIR, relative_path) for relative_path in [
         'nodeup.py', 'nodedown.py', 'node_reassign.py', 'terminate_node.py',
@@ -93,10 +78,10 @@ def load_module(name, relative_path):
 
 class ImportUnderCurrentInterpreterTest(unittest.TestCase):
     # Regression test: nodedown.py had a bare `print e` statement - a SyntaxError under Python 3
-    # that only surfaces when something actually tries to compile/import the file, not from a
-    # grep. The azure/*.py scripts are deliberately excluded here: they authenticate against the
+    # that only surfaces when something actually tries to compile/import the file.
+    # The azure/*.py scripts are deliberately excluded here: they authenticate against the
     # Azure CLI/SDK at true module level (not inside a function), so importing them for real
-    # always attempts live Azure auth - unrelated to Python 2/3 compatibility. They're covered
+    # always attempts live Azure auth - unrelated to Python 3 compatibility. They're covered
     # instead by AzureNodeupTagsTest below, which mocks that module-level auth before importing.
     def test_generic_and_aws_scripts_import_cleanly(self):
         for name, relative_path in GENERIC_AND_AWS_MODULES.items():
@@ -161,7 +146,7 @@ class AwsNodeupNetworksConfigTest(unittest.TestCase):
     # `ec2.describe_subnets(SubnetIds=allowed_networks.values())`. dict.values() is a list under
     # Python 2 (which boto3's own client-side parameter validation accepts) but a non-list
     # `dict_values` view under Python 3, which boto3 rejects with ParamValidationError before
-    # ever making a request - confirmed live. A bare MagicMock ec2 client would not catch this (it
+    # ever making a request. A bare MagicMock ec2 client would not catch this (it
     # accepts any argument type), so this asserts on the captured call's argument type instead.
     def setUp(self):
         self.aws_nodeup = load_module('aws_nodeup_networks_config_test', 'aws/nodeup.py')
@@ -181,27 +166,20 @@ class AwsNodeupNetworksConfigTest(unittest.TestCase):
 
 
 class AwsNodeupVersionCompatTest(unittest.TestCase):
-    # Regression test (issue #4589 Phase 5): aws/nodeup.py's boto3-retry-config workaround
-    # imported `from distutils.version import LooseVersion` unconditionally. distutils was
-    # removed from the Python 3.12 stdlib - this only kept working by accident here because
-    # setuptools' deprecated `_distutils_hack` shim re-registers a `distutils` module at
-    # interpreter startup, which is not something to depend on. awsprovider.py already
-    # established the fix (prefer packaging.version.Version, fall back to distutils.version for
-    # Python 2) for the identical import; this proves aws/nodeup.py's import no longer hard-fails
-    # when distutils is unavailable, by blocking it outright rather than relying on that shim's
-    # presence. packaging is installed here, so this doesn't exercise the Python-2 fallback branch
-    # itself - that branch is unchanged from awsprovider.py's own, already-proven-in-production one.
+    # Regression test: aws/nodeup.py's boto3-retry-config workaround imported
+    # `from distutils.version import LooseVersion` unconditionally. Python 3.12 has no distutils: it would only
+    # work while the `_distutils_hack` shim of setuptools provides one. The script now takes
+    # packaging.version.Version, as awsprovider.py of pipe-common does. The test blocks distutils outright.
     def test_imports_without_distutils_available(self):
         with mock.patch.dict(sys.modules, {'distutils': None, 'distutils.version': None}):
             load_module('aws_nodeup_no_distutils', 'aws/nodeup.py')
 
 
 class AwsNodeupReplaceDockerImagesTest(unittest.TestCase):
-    # Regression test (issue #4589): replace_docker_images() called
+    # Regression test: replace_docker_images() called
     # `jwt.decode(api_token, verify=False)` - PyJWT 2.x (the Python 3 pin) dropped the `verify`
-    # kwarg entirely (TypeError at call time, not an import-time failure a grep sweep would
-    # catch). Fixed to `options={"verify_signature": False}`, which both PyJWT 1.x (Python 2)
-    # and 2.x (Python 3) accept. Signs the test token with HS256 purely because that's the
+    # kwarg entirely (TypeError at call time, not at import). It is now
+    # `options={"verify_signature": False}`. Signs the test token with HS256 purely because that's the
     # simplest algorithm to construct without a real RSA keypair - production signs with RS512
     # (JwtTokenGenerator.java), but that's irrelevant to what's under test here: decoding with
     # verify_signature off never checks the token's actual algorithm against the `algorithms=`
@@ -238,7 +216,9 @@ class NodeupRetryCountTest(unittest.TestCase):
                 mock.patch.object(nodeup.utils, 'pipe_log'), \
                 mock.patch.object(nodeup.utils, 'get_autoscale_preference', return_value='600'), \
                 mock.patch.object(nodeup.autoscaling, 'create_cloud_provider', return_value=cloud_provider), \
-                mock.patch.object(nodeup.kubeprovider, 'KubeProvider'):
+                mock.patch.object(nodeup.kubeprovider, 'KubeProvider') as kube_provider, \
+                mock.patch('sys.stdout'):
+            kube_provider.return_value.verify_regnode.return_value = 'node-1'
             nodeup.main()
 
         num_rep = cloud_provider.check_instance.call_args[0][2]
@@ -255,13 +235,11 @@ class NodeupRetryCountTest(unittest.TestCase):
 
 
 class DictViewIndexingRegressionTest(unittest.TestCase):
-    # Regression test for the exact bug class fresh-eyes review caught in the first pass of this
-    # diff: dict.items()/.values()/.keys() subscripted with [i], or handed somewhere a list is
+    # dict.items()/.values()/.keys() subscripted with [i], or handed somewhere a list is
     # required without an explicit list(...) conversion first. Valid, list-returning Python 2;
-    # a Python 3 dict view supports neither. A static check across every file this diff touched
-    # for Python 2/3 compatibility, rather than one test per call site - the same pattern was
-    # copy-pasted six times across two packages, and a purely behavioral test would need six
-    # separately-mocked reproductions to cover them all.
+    # a Python 3 dict view supports neither. A static check across the files of
+    # PY3_COMPAT_TOUCHED_FILES, rather than one test per call site: the same pattern was in
+    # six places of two packages.
     def test_no_touched_file_subscripts_or_bare_passes_a_dict_view(self):
         offending = []
         for path in PY3_COMPAT_TOUCHED_FILES:
@@ -294,7 +272,7 @@ class AzureNodeupTagsTest(unittest.TestCase):
 
 
 class AzureNodeupOsProfileTest(unittest.TestCase):
-    # Regression test (issue #4774): get_os_profile() passed the user data script, a str, to base64.b64encode(),
+    # Regression test: get_os_profile() passed the user data script, a str, to base64.b64encode(),
     # which takes bytes under Python 3 (TypeError), so no Azure node could be created.
     def test_custom_data_is_the_user_data_script_in_base64(self):
         import base64
@@ -304,8 +282,7 @@ class AzureNodeupOsProfileTest(unittest.TestCase):
         profile = azure_nodeup.get_os_profile('az-node', 'ssh-rsa AAAA', 'pipeline', user_data_script,
                                               'computer_name')
 
-        # Text: str on Python 3, str or unicode on Python 2
-        self.assertIsInstance(profile['custom_data'], (str, type(u'')))
+        self.assertIsInstance(profile['custom_data'], str)
         self.assertEqual(base64.b64decode(profile['custom_data']), user_data_script.encode('utf-8'))
         self.assertEqual(profile['computer_name'], 'az-node')
 
@@ -398,8 +375,8 @@ class UnverifiedKubeClientTest(unittest.TestCase):
 class AzureClusterScriptsImportTest(unittest.TestCase):
     # Regression test, same class as ImportUnderCurrentInterpreterTest above but for the
     # azure/*.py scripts, which that test deliberately excludes (see its comment) - catches a
-    # SyntaxError/ImportError under Python 3 (e.g. nodedown.py's historic bare `print e`) that a
-    # grep sweep would miss. nodeup.py is covered by the two test classes above already
+    # SyntaxError/ImportError under Python 3 (e.g. nodedown.py's former bare `print e`).
+    # nodeup.py is covered by the two test classes above already
     # importing it; this fills in the other three.
     def test_nodedown_node_reassign_and_terminate_node_import_cleanly(self):
         load_azure_module('azure_nodedown_import_test', 'azure/nodedown.py')

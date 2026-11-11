@@ -22,10 +22,7 @@ import sys
 import tempfile
 import unittest
 
-try:
-    from unittest import mock
-except ImportError:
-    import mock
+from unittest import mock
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_DIR = os.path.dirname(THIS_DIR)
@@ -49,11 +46,11 @@ class ModulesCompileUnderCurrentInterpreterTest(unittest.TestCase):
 
 class ResolveMountsBytesCompatTest(unittest.TestCase):
     """
-    Regression test for issue #4531: subprocess.check_output() returns bytes under Python 3 and
-    str under Python 2. resolve_mounts() used to split() the raw check_output() result directly,
+    Regression test: subprocess.check_output() returns bytes under Python 3. resolve_mounts() used to split() the
+    raw check_output() result directly,
     which raises TypeError under Python 3 ("a bytes-like object is required, not 'str'").
-    resolve_mounts() uses no instance state, so it is called unbound rather than constructing a
-    real Synchronization (whose __init__ makes live API calls).
+    resolve_mounts() uses no instance state, so the test makes an instance without running the __init__ of
+    Synchronization, which makes live API calls.
     """
 
     SAMPLE_OUTPUT = (
@@ -63,11 +60,7 @@ class ResolveMountsBytesCompatTest(unittest.TestCase):
     )
 
     def _resolve_mounts_under_root(self, root_dir, mount_output):
-        # Synchronization.resolve_mounts(None, root_dir) would call an unbound method with a
-        # non-instance first argument - Python 2 new-style classes reject that with a TypeError
-        # ("must be called with Synchronization instance as first argument"); Python 3 has no such
-        # check and would silently let it through. __new__ bypasses __init__ (which makes live API
-        # calls) while still producing a real instance, so this works under both.
+        # __new__ bypasses __init__ (which makes live API calls) while still producing a real instance.
         instance = Synchronization.__new__(Synchronization)
         with mock.patch('internal.synchronization.synchronization.subprocess.check_output',
                          return_value=mount_output):
@@ -79,7 +72,7 @@ class ResolveMountsBytesCompatTest(unittest.TestCase):
         self.assertIn('/dav-mount/other', mounts)
 
     def test_str_output_does_not_raise(self):
-        # Covers Python 2, where check_output() already returns str - must keep working unchanged.
+        # A str output keeps working too.
         mounts = self._resolve_mounts_under_root('/dav-mount', self.SAMPLE_OUTPUT)
         self.assertIn('/dav-mount/nfsserver', mounts)
         self.assertIn('/dav-mount/other', mounts)
