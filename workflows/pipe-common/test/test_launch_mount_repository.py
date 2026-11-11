@@ -90,7 +90,8 @@ def mount_repository(tmpdir):
 def test_the_permission_check_runs_with_the_python_of_pipe_common(mount_repository):
     output, calls = mount_repository('0')
 
-    assert calls == ['cp-python3.12 /opt/common/scripts/check_pipeline_permission.py --pipeline_id 42 --permission WRITE',
+    assert calls == ['cp-python3.12 /opt/common/scripts/check_pipeline_permission.py '
+                     '--pipeline_id 42 --permission WRITE',
                      'gitfs %s %s -o log=%s/gitfs.log,allow_other=true'
                      % (GIT_REPO, mount_repository.mount, mount_repository.log_dir)]
     assert 'INFO: GitFs is installed. Will try to mount git repository.' in output
@@ -100,5 +101,6 @@ def test_the_permission_check_runs_with_the_python_of_pipe_common(mount_reposito
 def test_the_repository_is_not_mounted_without_the_write_permission(mount_repository):
     output, calls = mount_repository('1')
 
-    assert calls == ['cp-python3.12 /opt/common/scripts/check_pipeline_permission.py --pipeline_id 42 --permission WRITE']
+    assert calls == ['cp-python3.12 /opt/common/scripts/check_pipeline_permission.py '
+                     '--pipeline_id 42 --permission WRITE']
     assert 'INFO: User is not allowed to modify GIT repository.' in output

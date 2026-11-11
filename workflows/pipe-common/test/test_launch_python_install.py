@@ -47,6 +47,35 @@ def _write(path, content, executable=False):
         os.chmod(path, 0o755)
 
 
+# wget -q --no-check-certificate <url> -O <file>, or curl -s -k -f <url> -o <file>: records its arguments, and runs the
+# body with $URL and $OUT
+DOWNLOADER_STUB = '''#!/bin/sh
+for arg in "$@"; do
+    case "$prev" in -O|-o) OUT="$arg" ;; esac
+    case "$arg" in http://*|https://*) URL="$arg" ;; esac
+    prev="$arg"
+done
+echo "%s $*" >> "%s"
+%s
+'''
+# What the install and the Python block call, besides the bash builtins and the stubs
+TOOLS = ['rm', 'mktemp', 'tar', 'gzip', 'mv', 'ln', 'cp']
+
+
+def _stub_downloader(stub_bin, name, body, log):
+    _write(os.path.join(stub_bin, name), DOWNLOADER_STUB % (name, log, body), executable=True)
+
+
+def _hermetic_path(tmp, *first):
+    # Only the tools that the script needs: a python3.12 of the host is not in this PATH
+    tools = os.path.join(tmp, 'tools')
+    if not os.path.isdir(tools):
+        os.makedirs(tools)
+        for tool in TOOLS:
+            os.symlink(shutil.which(tool), os.path.join(tools, tool))
+    return os.pathsep.join(list(first) + [tools])
+
+
 class LaunchPythonInstallTest(unittest.TestCase):
 
     def setUp(self):
@@ -56,6 +85,8 @@ class LaunchPythonInstallTest(unittest.TestCase):
         self.stub_bin = os.path.join(self.tmp, 'stub-bin')
         os.makedirs(self.stub_bin)
         self.tarball = os.path.join(self.tmp, 'python3.12.tar.gz')
+        self.downloads = os.path.join(self.tmp, 'downloads')
+        self._stub_curl('exit 22\n')
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -73,11 +104,17 @@ class LaunchPythonInstallTest(unittest.TestCase):
         if with_openssl:
             files.append('openssl/lib/from-distro')
         self._tarball_of(files)
-        self._stub_wget('cp "%s" "$4"\n' % self.tarball)
+        self._stub_wget('cp "%s" "$OUT"\n' % self.tarball)
 
     def _stub_wget(self, body):
-        # wget -q <url> -O <file>
-        _write(os.path.join(self.stub_bin, 'wget'), '#!/bin/sh\n' + body, executable=True)
+        _stub_downloader(self.stub_bin, 'wget', body, self.downloads)
+
+    def _stub_curl(self, body):
+        _stub_downloader(self.stub_bin, 'curl', body, self.downloads)
+
+    def _downloads(self):
+        with open(self.downloads) as f:
+            return f.read().splitlines()
 
     def _image_has(self):
         # E.g. a python:3.x image committed from an earlier run: its own python3 and pip3 in /usr/local/bin, and the
@@ -92,7 +129,7 @@ class LaunchPythonInstallTest(unittest.TestCase):
     def _install(self):
         script = _function_source('install_python3_packages') \
             + '\ninstall_python3_packages "%s"\necho "RC=$?"\n' % self.install_path
-        env = {'PATH': self.stub_bin + os.pathsep + os.environ.get('PATH', ''),
+        env = {'PATH': _hermetic_path(self.tmp, self.stub_bin),
                'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/'}
         proc = subprocess.run([BASH, '-c', script], env=env, capture_output=True, text=True)
         return proc.stdout
@@ -173,13 +210,13 @@ class LaunchPythonInstallTest(unittest.TestCase):
     def test_a_corrupt_tarball_keeps_the_python_of_the_image(self):
         # E.g. an error page of a proxy, saved with a success status
         self._image_has()
-        self._stub_wget('echo "<html>Access denied</html>" > "$4"\n')
+        self._stub_wget('echo "<html>Access denied</html>" > "$OUT"\n')
         self._fails_and_keeps_the_image()
 
     def test_a_tarball_without_the_python_keeps_the_python_and_the_openssl_of_the_image(self):
         self._image_has()
         self._tarball_of(['python3.12/lib/python3.12/os.py', 'openssl/lib/from-distro'])
-        self._stub_wget('cp "%s" "$4"\n' % self.tarball)
+        self._stub_wget('cp "%s" "$OUT"\n' % self.tarball)
         self._fails_and_keeps_the_image()
 
     def test_a_folder_left_by_a_killed_download_is_removed(self):
@@ -218,6 +255,33 @@ class LaunchPythonInstallTest(unittest.TestCase):
         self.assertIn('RC=1', out)
         self.assertIn('[WARN] Unable to create a temporary folder', out)
         self.assertFalse(os.path.exists(self.install_path))
+
+    def test_the_distro_is_downloaded_from_the_global_distribution_url_without_a_certificate_check(self):
+        # As the other downloads of launch.sh do: e.g. for a distribution URL with an internal CA
+        self._distro(with_openssl=False)
+        self._installs()
+        downloads = self._downloads()
+        self.assertEqual(1, len(downloads))
+        self.assertTrue(downloads[0].startswith('wget -q --no-check-certificate '
+                                                'https://dist.example.com/tools/python/3/python3.12.tar.gz -O '),
+                        downloads)
+
+    def test_curl_downloads_the_distro_if_wget_fails(self):
+        # E.g. an image without wget
+        self._distro(with_openssl=False)
+        self._stub_wget('exit 127\n')
+        self._stub_curl('cp "%s" "$OUT"\n' % self.tarball)
+        self._installs()
+        self.assertTrue(self._downloads()[1].startswith(
+            'curl -s -k -f https://dist.example.com/tools/python/3/python3.12.tar.gz -o '), self._downloads())
+        with open(self._path('python3.12', 'bin', 'python3.12')) as f:
+            self.assertIn('distro', f.read())
+
+    def test_a_failed_download_with_wget_and_curl_keeps_the_python_of_the_image(self):
+        self._image_has()
+        self._stub_wget('exit 8\n')
+        self._fails_and_keeps_the_image()
+        self.assertEqual(['wget', 'curl'], [call.split()[0] for call in self._downloads()])
 
     def test_a_failed_download_leaves_no_links_where_the_image_has_no_python(self):
         self._stub_wget('exit 8\n')
@@ -270,9 +334,10 @@ class LaunchPythonSelectionTest(unittest.TestCase):
         shutil.rmtree(self.tmp)
 
     def _download(self, succeeds):
-        # wget -q <url> -O <file>
-        _write(os.path.join(self.stub_bin, 'wget'),
-               '#!/bin/sh\n' + ('cp "%s" "$4"\n' % self.tarball if succeeds else 'exit 8\n'), executable=True)
+        downloads = os.path.join(self.tmp, 'downloads')
+        _stub_downloader(self.stub_bin, 'wget', 'cp "%s" "$OUT"\n' % self.tarball if succeeds else 'exit 8\n',
+                         downloads)
+        _stub_downloader(self.stub_bin, 'curl', 'exit 22\n', downloads)
 
     def _select(self, extra_env=None):
         script = _function_source('install_python3_packages') \
@@ -282,7 +347,7 @@ class LaunchPythonSelectionTest(unittest.TestCase):
             + 'echo "CP_PYTHON_PATH=$CP_PYTHON_PATH"\n' \
             + 'echo "CP_PYTHON2_PATH=$CP_PYTHON2_PATH"\n' \
             + 'echo "PATH=$PATH"\n'
-        env = {'PATH': os.pathsep.join([self.stub_bin, self.image_bin, os.environ.get('PATH', '')]),
+        env = {'PATH': _hermetic_path(self.tmp, self.stub_bin, self.image_bin),
                'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/',
                'STUB_CALLS': self.calls}
         env.update(extra_env or {})
@@ -342,7 +407,7 @@ class LaunchPythonSelectionTest(unittest.TestCase):
         self._download(succeeds=False)
         # A python3 of another version does not do: pipe-common requires Python 3.12
         _write(os.path.join(self.image_bin, 'python3'), '#!/bin/sh\n', executable=True)
-        proc, values = self._select({'PATH': os.pathsep.join([self.stub_bin, self.image_bin, '/usr/bin', '/bin'])})
+        proc, values = self._select()
         self.assertEqual(1, proc.returncode, proc.stdout + proc.stderr)
         self.assertIn('[ERROR] Python 3.12 environment not found, exiting.', proc.stdout)
         self.assertEqual('1', values['EXIT_INIT'])
@@ -377,37 +442,59 @@ class LaunchGlobalDistributionUrlTest(unittest.TestCase):
         self.assertIn('\nconfigure_package_manager\n', main_flow)
         self.assertIn('\ninstall_python3_packages "/usr/local"\n', main_flow)
 
+    def _downloaded_urls(self, env):
+        tmp = tempfile.mkdtemp()
+        try:
+            stub_bin = os.path.join(tmp, 'stub-bin')
+            downloads = os.path.join(tmp, 'downloads')
+            for name in ('wget', 'curl'):
+                _stub_downloader(stub_bin, name, 'echo "$URL" >> "%s.urls"\nexit 8\n' % downloads, downloads)
+            os.makedirs(os.path.join(tmp, 'usr-local'))
+            subprocess.run([BASH, '-c', _function_source('install_python3_packages')
+                            + 'install_python3_packages "%s"\n' % os.path.join(tmp, 'usr-local')],
+                           env=dict({'PATH': _hermetic_path(tmp, stub_bin)}, **env), capture_output=True, text=True)
+            with open(downloads + '.urls') as f:
+                return f.read().splitlines()
+        finally:
+            shutil.rmtree(tmp)
+
     def test_the_distribution_is_downloaded_from_the_global_distribution_url(self):
-        out = subprocess.run([BASH, '-c', _function_source('install_python3_packages')
-                              + 'function mktemp { return 1; }\ninstall_python3_packages /nowhere\n'
-                              + 'echo "URL=$CP_PYTHON3_DISTRO_URL"\n'],
-                             env={'PATH': os.environ.get('PATH', ''), 'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/'},
-                             capture_output=True, text=True).stdout
-        self.assertIn('URL=https://dist.example.com/tools/python/3/python3.12.tar.gz', out)
+        # By wget, and by curl once more, as wget fails here
+        self.assertEqual(['https://dist.example.com/tools/python/3/python3.12.tar.gz'] * 2,
+                         self._downloaded_urls({'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/'}))
 
     def test_cp_python3_distro_url_sets_another_location(self):
-        out = subprocess.run([BASH, '-c', _function_source('install_python3_packages')
-                              + 'function mktemp { return 1; }\ninstall_python3_packages /nowhere\n'
-                              + 'echo "URL=$CP_PYTHON3_DISTRO_URL"\n'],
-                             env={'PATH': os.environ.get('PATH', ''), 'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/',
-                                  'CP_PYTHON3_DISTRO_URL': 'https://mirror.example.com/python3.12.0.tar.gz'},
-                             capture_output=True, text=True).stdout
-        self.assertIn('URL=https://mirror.example.com/python3.12.0.tar.gz', out)
+        mirror = 'https://mirror.example.com/python3.12.0.tar.gz'
+        self.assertEqual([mirror] * 2, self._downloaded_urls({'GLOBAL_DISTRIBUTION_URL': 'https://dist.example.com/',
+                                                              'CP_PYTHON3_DISTRO_URL': mirror}))
 
 
 class LaunchPipMirrorTest(unittest.TestCase):
     # With CP_REPO_ENABLED, pip of the run installs from the Python 3 mirror of the platform (pypi3)
 
-    def _configure(self, env):
+    def _run(self, env):
         script = _function_source('configure_package_manager_pip') + 'configure_package_manager_pip\n' \
             + 'echo "ARGS=$CP_PIP_EXTRA_ARGS"\n'
-        out = subprocess.run([BASH, '-c', script], env=dict({'PATH': os.environ.get('PATH', '')}, **env),
-                             capture_output=True, text=True).stdout
+        return subprocess.run([BASH, '-c', script], env=dict({'PATH': os.environ.get('PATH', '')}, **env),
+                              capture_output=True, text=True).stdout
+
+    def _configure(self, env):
+        out = self._run(env)
         return dict(line.split('=', 1) for line in out.splitlines() if line.startswith('ARGS='))['ARGS'].split()
+
+    def test_the_python2_mirror_parameter_is_reported_as_ignored(self):
+        python2_mirror = 'http://py2.example.com/tools/python/pypi/simple'
+        out = self._run({'GLOBAL_DISTRIBUTION_URL': '', 'CP_REPO_PYPI_BASE_URL_DEFAULT': python2_mirror})
+        self.assertIn('[WARN] CP_REPO_PYPI_BASE_URL_DEFAULT (%s) is ignored' % python2_mirror, out)
+        out = self._run({'GLOBAL_DISTRIBUTION_URL': '', 'CP_REPO_PYPI_BASE_URL_DEFAULT': python2_mirror,
+                         'CP_REPO_PYPI3_BASE_URL_DEFAULT': 'https://pypi.example.com/simple'})
+        self.assertNotIn('[WARN]', out)
+        self.assertNotIn('[WARN]', self._run({'GLOBAL_DISTRIBUTION_URL': ''}))
 
     def test_the_mirror_of_a_regional_bucket_is_its_website_endpoint(self):
         args = self._configure({'GLOBAL_DISTRIBUTION_URL': 'https://cp-dist.s3.eu-central-1.amazonaws.com/'})
-        self.assertEqual(['--index-url', 'http://cp-dist.s3-website.eu-central-1.amazonaws.com/tools/python/pypi3/simple',
+        self.assertEqual(['--index-url',
+                          'http://cp-dist.s3-website.eu-central-1.amazonaws.com/tools/python/pypi3/simple',
                           '--trusted-host', 'cp-dist.s3-website.eu-central-1.amazonaws.com'], args)
 
     def test_the_public_mirror_is_the_default(self):
@@ -437,6 +524,33 @@ class LaunchPipMirrorTest(unittest.TestCase):
         install = install[:install.index('\nfi\n')]
         self.assertIn('$CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==81.0.0', install)
         self.assertIn('$CP_PYTHON_PATH -m pip install $CP_PIP_EXTRA_ARGS . -q -I', install)
+
+
+
+class LaunchPipeCliBinaryTest(unittest.TestCase):
+    # The pipe-el6 build (CentOS 6) is no longer published: a run that asks for it gets the pipe build
+
+    def _downloaded(self, env):
+        text = _launch_text()
+        start = text.index('            CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"\n')
+        end = text.index('\n', text.index('download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"', start))
+        script = 'function download_file { echo "DOWNLOAD=$1"; }\n' + text[start:end + 1]
+        return subprocess.run([BASH, '-c', script], env=dict({'PATH': os.environ.get('PATH', ''),
+                                                             'DISTRIBUTION_URL': 'https://cp.example.com/'}, **env),
+                              capture_output=True, text=True).stdout
+
+    def test_pipe_is_installed_by_default(self):
+        self.assertIn('DOWNLOAD=https://cp.example.com/pipe\n', self._downloaded({}))
+
+    def test_pipe_el6_falls_back_to_pipe(self):
+        out = self._downloaded({'CP_PIPELINE_CLI_BINARY_NAME': 'pipe-el6'})
+        self.assertIn("[WARN] The pipe-el6 build of the 'pipe' CLI (CentOS 6) is no longer published", out)
+        self.assertIn('DOWNLOAD=https://cp.example.com/pipe\n', out)
+
+    def test_another_binary_name_is_kept(self):
+        out = self._downloaded({'CP_PIPELINE_CLI_BINARY_NAME': 'pipe-custom'})
+        self.assertIn('DOWNLOAD=https://cp.example.com/pipe-custom\n', out)
+        self.assertNotIn('[WARN]', out)
 
 
 if __name__ == '__main__':

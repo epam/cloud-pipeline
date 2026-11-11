@@ -413,6 +413,9 @@ function upgrade_installed_packages {
 function configure_package_manager_pip {
     # The Python 3 mirror (pypi3): pip runs with the platform's Python 3.12 only
     if [ -z "$CP_REPO_PYPI3_BASE_URL_DEFAULT" ]; then
+        if [ "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+            echo "[WARN] CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_BASE_URL_DEFAULT) is ignored: it sets the mirror of the Python 2 packages. Use CP_REPO_PYPI3_BASE_URL_DEFAULT for a Python 3 mirror"
+        fi
         # Converts regional s3 endpoints
         # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
         # to regional website s3 endpoints
@@ -897,7 +900,10 @@ function install_python3_packages {
             return 1
       }
       echo "Getting python3 distro from $CP_PYTHON3_DISTRO_URL"
-      if ! wget -q "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+      # As download_file does: curl if there is no wget, and no certificate check, e.g. for a distribution URL with
+      # an internal CA, or an image with no CA certificates
+      if ! { wget -q --no-check-certificate "${CP_PYTHON3_DISTRO_URL}" -O "${_tmp_install_dir}/python3.tgz" &>/dev/null \
+                  || curl -s -k -f "${CP_PYTHON3_DISTRO_URL}" -o "${_tmp_install_dir}/python3.tgz" &>/dev/null; } \
             || ! tar -zxf "${_tmp_install_dir}/python3.tgz" -C "${_tmp_install_dir}" \
             || [ ! -x "${_tmp_install_dir}/python3.12/bin/python3.12" ]; then
             rm -rf "${_tmp_install_dir}"
@@ -1660,6 +1666,10 @@ if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
             log "Installing 'pipe' CLI"
             echo "-"
             CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+            if [ "$CP_PIPELINE_CLI_BINARY_NAME" == "pipe-el6" ]; then
+                  echo "[WARN] The pipe-el6 build of the 'pipe' CLI (CentOS 6) is no longer published, the 'pipe' build is installed instead. It needs glibc 2.17 or later"
+                  CP_PIPELINE_CLI_BINARY_NAME="pipe"
+            fi
             download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
             if [ $? -ne 0 ]; then
                   echo "[ERROR] 'pipe' CLI download failed. Exiting"
