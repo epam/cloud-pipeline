@@ -9,6 +9,7 @@
     - [Killing excessive workers](#killing-excessive-workers)
     - [Preventing deadlocks](#preventing-deadlocks)
 - [Configurations](#configurations)
+- [Managing queues with the `sge` command](#managing-queues-with-the-sge-command)
 - [Examples](#examples)
     - [Homogeneous cluster](#homogeneous-cluster)
     - [Hybrid cluster](#hybrid-cluster)
@@ -83,6 +84,33 @@ The autoscaler will detect such situations and replace weak addition workers wit
 | `CP_CAP_AUTOSCALE_PRICE_TYPE`               | Cluster additional worker instance price type. Defaults to master instance price type. |
 | `CP_CAP_SGE_MASTER_CORES`                   | The number of cores that master run can use for job submissions. If set to 0 then no jobs will be executed on the master. Defaults to all the master instance cores. |
 | `CP_CAP_SGE_WORKER_FREE_CORES`              | The number of cores that all worker and master runs have to reserve from job submissions. Defaults to 0 which means that all instance cores will be used for job submissions. |
+
+## Managing queues with the `sge` command
+
+In a running SGE cluster, the `sge` command adds grid engine queues and changes their autoscaling. Each queue has a *profile*: a shell file with the queue's autoscaling parameters, `/common/cap_scripts/sge_profile_<queue>_autoscaling.sh`.
+
+- Run `sge` as `root` in the SSH terminal of the cluster's master run. In a worker run, or as another user, it prints the commands to use instead.
+- `sge` works in the runs of administrators, and of the users in a group or a role listed in the `ge.utility.allowed.groups` system preference: by default, `ROLE_ADMIN` and `ROLE_ADVANCED_USER`. It checks the run's owner, not the user who opened the SSH terminal.
+
+| Command | Description |
+| ------- | ----------- |
+| `sge list` | Lists the profiles, e.g. `Grid engine profile has been found: main.q`. |
+| `sge create <queue>` | Creates a new queue with its profile, and opens the profile in a text editor. The name keeps only letters, digits and dots, in lower case, and gets `.q` at the end if it has none: `sge create TestProfile` creates `testprofile.q`. |
+| `sge configure <queue>` | Opens the profile of an existing queue in a text editor. |
+| `sge restart <queue>` | Restarts the autoscaler of the queue. |
+| `sge export [<queue> ...] <file>` | Exports the queues and the parallel environments of the grid engine, and all the profiles or the ones named, into a `.tar.gz` file. |
+
+The text editor is the one set in the `VISUAL` or `EDITOR` environment variable, or else `nano`, `vi` or `vim`. Without any of them, `sge` asks to install one, e.g. `yum install -y nano`.
+
+Once you save the profile and close the editor, `sge create` and `sge configure`:
+
+1. Print the changed lines, in the format of the `diff` command: `<` before an old line, and `>` before a new one. The commands do not need `diff` in the tool image.
+    If nothing has changed, they print `Grid engine <queue> profile has not been changed.`, and `sge configure` stops there.
+2. Check the new parameters. If a value is wrong, e.g. `Boolean parameter CP_CAP_AUTOSCALE has invalid value nontrue. Please specify true/false/yes/no/on/off.`, they print `Grid engine profile verification has failed. Reverting the changes...` and keep the profile as it was.
+3. Save the profile, unless the check has failed, and start the autoscaler of the queue again: `Grid engine <queue> autoscaling has been launched.`
+
+After each `sge create` and `sge configure` that succeeds, all the profiles are exported to `~/.pipe/backups/sge_export_<date and time>.tar.gz`.
+The output of `sge` also goes to the `SGEProfiles` task of the run's log.
 
 ## Examples
 

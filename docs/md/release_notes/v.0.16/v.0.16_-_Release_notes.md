@@ -72,6 +72,19 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
+    - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
+    - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [Vulnerable dependencies of the SSH web terminal](#vulnerable-dependencies-of-the-ssh-web-terminal)
+    - [The NFS mount observer of the WebDAV service does not start](#the-nfs-mount-observer-of-the-webdav-service-does-not-start)
+    - [`sge create` and `sge configure` fail in tools without `diff`](#sge-create-and-sge-configure-fail-in-tools-without-diff)
+    - [Vulnerable dependencies of the FS Browser client](#vulnerable-dependencies-of-the-fs-browser-client)
+    - [Node reporter: package versions with known security advisories](#node-reporter-package-versions-with-known-security-advisories)
+    - [The distribution build passes when the Linux build of the `pipe` CLI fails](#the-distribution-build-passes-when-the-linux-build-of-the-pipe-cli-fails)
+    - [Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects](#slurm-clusters-and-rocky-linux-runs-the-munge-key-is-readable-by-all-users-and-other-defects)
+    - [A run stays at its start for good when `apt-get update` stalls](#a-run-stays-at-its-start-for-good-when-apt-get-update-stalls)
+    - [The node logger and the search services do not use the docker registry login or prefix](#the-node-logger-and-the-search-services-do-not-use-the-docker-registry-login-or-prefix)
+    - [A failed backup copy removes a good backup](#a-failed-backup-copy-removes-a-good-backup)
     - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
 
 ***
@@ -914,6 +927,118 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
 
+### Users export: the names of the date columns depend on the API time zone
+
+[#4739](https://github.com/epam/cloud-pipeline/issues/4739)
+
+Previously, the users export named its date columns after the default time zone of the API server, while the dates are written in UTC. So with another zone set for the API, the names did not match the data, e.g. `registrationDate Europe/Berlin`. And on an API image whose system names the zone `Etc/UTC`, as Rocky Linux 9 does, a script that looks for `registrationDate UTC` did not find the column.
+Now, the columns are always named `registrationDate UTC` and `firstLoginDate UTC`.
+See details in [12. Manage Settings](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+### AWS: a Route53 DNS record of an endpoint is reported as failed although Route53 has created it
+
+[#4741](https://github.com/epam/cloud-pipeline/issues/4741)
+
+Previously, the API read the status of a new Route53 DNS record once more after Route53 had already reported it as `INSYNC`. Route53 could still answer `PENDING` to that second read, and the API then reported the record as failed.
+So an endpoint with the **Sub-Domain** option came up only on the next EDGE sync, and the `CreateDNSRecord` task of the run logged "Failed to create DNS record". The error message also stated a timeout that had not happened.
+Now, the API uses the `INSYNC` status Route53 reported. If the record is still not `INSYNC` after `CP_API_DNS_ROUTE53_MAX_ATTEMPTS` retries, made `CP_API_DNS_ROUTE53_DELAY_SECONDS` apart, the request fails, and the message gives the attempts, the delay and the time waited.
+### Launch form: the "Add system parameter" dialog drops the selected parameters
+
+[#4740](https://github.com/epam/cloud-pipeline/issues/4740)
+
+Previously, the **Add system parameter** dialog cleared the selected parameters and the search string each time the form behind it was redrawn, e.g. while the launch form was still loading.
+So after **OK**, only the parameters selected after the last redraw were added, with no message, and a run could be launched without the others.
+Now, the dialog keeps the selection and the search string while it is open, and clears them only when it is opened again. The same applies to this dialog in the tool settings.
+### AWS: billing reports show the `S3 Standard` storage costs twice as high
+
+[#4742](https://github.com/epam/cloud-pipeline/issues/4742)
+
+Previously, the billing service added up all the prices it took from the AWS price list for a region and a storage class.
+In June 2026, AWS added an "Annotations" product to the `S3` price list in almost every region, and the billing service took it as one more `Standard` price. Since then, the billing reports showed the `S3 Standard` storage costs about twice as high as the AWS prices.
+The `EFS` storage costs also included the price of the `EFS Archive` storage class: $0.308 instead of $0.30 per GB-month in `us-east-1`.
+Now, the billing service takes only the storage prices it bills, and skips the price list products with an unknown volume type. The storage costs that were already calculated are not changed.
+
+Also, a price list that can't be loaded no longer stops the billing service. The service keeps the prices it loaded before, logs the error with its cause, and tries again at the next storage billing. The run billing and the other storage billings go on. If no prices were loaded yet, that storage billing is skipped for the day, and it is not written later. And if the billing service stops, its container stops too, so Kubernetes restarts it. Before, the container kept running without the service.
+### Detached configuration: the old name stays in the Library after a rename
+
+[#4756](https://github.com/epam/cloud-pipeline/issues/4756)
+
+Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
+Now, the folder and the library tree show the new name right after the rename.
+### Vulnerable dependencies of the SSH web terminal
+
+Previously, `npm audit` reported 27 known vulnerabilities in the dependencies of the SSH web terminal (`wetty`, a part of the `cp-edge` service): 3 critical, 16 high, 6 moderate and 2 low. The critical ones were in `minimist` (used by `optimist`) and in `proxy-addr` (used by `express`).
+Now, the dependencies are updated: `express` 5.3.0, `engine.io` 6.6.11, `ws` 8.21.3 and `socket.io-parser` 4.2.7 for `socket.io` 4.8.1, `vite` 7.3.7, and `minimist` 0.2.4 for `optimist`. `node-pty` is pinned to 1.0.0. The `eslint` tooling (the `lint` script and its packages) is removed from `wetty`: it was not used to build or run the terminal. At the time of this change, `npm audit` reports no vulnerabilities. The terminal works as before.
+### The NFS mount observer of the WebDAV service does not start
+
+Previously, the NFS mount observer of the WebDAV service (`cp-dav`) never started, for two reasons. Its cron job did not get the environment of the service, so it looked for the observer script in a wrong folder. And the image did not have the `pipeline`, `psutil` and `watchdog` Python packages, which the observer imports. So the file changes made via WebDAV in the mounts that the observer watches - the `nfs4` and `lustre` mounts by default (`CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES`) - were not recorded, and were not copied to the storage set by `CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET`.
+Now, the cron job reads the environment of the service, and the service installs the `pipe-common` package with its dependencies at start, as a run does. By default, the packages come from the public mirror `http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple`. To use another mirror, set `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT` in the `cp-config-global` config map. The cron job starts the observer within a minute after these installs, unless `CP_CAP_NFS_MNT_OBSERVER_DISABLED` is set, and only if the download of `pipe-common.tar.gz` and both `pip` installs succeed.
+### `sge create` and `sge configure` fail in tools without `diff`
+
+[#4758](https://github.com/epam/cloud-pipeline/issues/4758)
+
+Previously, `sge create` and `sge configure` ran the `diff` command of the tool image to find the changes made to a grid engine profile. Many images have no `diff`: Rocky Linux 8 and 9, Red Hat UBI 8 and 9 and Amazon Linux 2023 among them. There, once the editor was closed, the commands failed with `Grid engine profiles management has failed.`, and the profile changes were lost.
+Now, the commands find the changes in Python, and print them in the same format as before: `<` before an old line, and `>` before a new one.
+See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
+### Vulnerable dependencies of the FS Browser client
+
+Previously, `npm audit` reported 283 known vulnerabilities in the dependencies of the FS Browser web client: 10 critical, 127 high, 123 moderate and 23 low. Many of them were in its development server (`webpack-dev-server` 3.2.1 and its dependencies, such as `node-forge`, `http-proxy-middleware`, `webpack-dev-middleware` and `sockjs`), which is not used to build the client, and in `react-dev-utils` 9 and `semver` 6.0.0.
+Now, the development server (the `npm start` script) is removed from the client, `react-dev-utils` is updated to 11.0.4 and `@babel/core` to 7.29.7, and the unused `semver` 6.0.0 pin is removed. At the time of this change, `npm audit` reports 205: 11 critical, 86 high, 103 moderate and 5 low. They come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and `raml2html`. Two advisories among them are new: they are in `immer` 8.0.1, which `react-dev-utils` 11.0.4 brings. The client is built with `npm run build`, as before. The built client has the same content: only the hash in the name of its main script file changes.
+### Node reporter: package versions with known security advisories
+
+[#4775](https://github.com/epam/cloud-pipeline/issues/4775)
+
+Previously, the image of the node reporter service (`cp-node-reporter`), which serves the open files and GPU statistics of the cluster nodes, installed `Flask` 2.2.2, `Werkzeug` 2.2.2, `gunicorn` 20.1.0, `cryptography` 43.0.3 and `pyOpenSSL` 24.2.1. These versions have known security advisories.
+Now, the image installs `Flask` 3.1.3, `Werkzeug` 3.1.9, `gunicorn` 23.0.0, `cryptography` 50.0.2 and `pyOpenSSL` 26.4.0, which have these advisories fixed. The statistics that the node reporter serves are not changed. The other packages of the image, which it gets from `pipe-common` (e.g. `urllib3` 1.25.9 and `requests` 2.22.0), are not changed.
+### The distribution build passes when the Linux build of the `pipe` CLI fails
+
+[#4735](https://github.com/epam/cloud-pipeline/issues/4735)
+
+Previously, `pipe-cli/build_linux.sh`, which builds the Linux binary and tarball of the `pipe` CLI, ended with exit code 0, even if a build in its Docker containers (of `pipe-omics` or of `pipe`) failed. So the `pipe-cli:buildLinux` Gradle task, and the distribution build that runs it, passed without a new `pipe`: the distribution got the `pipe` binary and tarball left from an earlier build, or none. `pipe-cli/mount/build_mount.sh`, which builds a standalone `pipe-fuse` binary, had the same problem.
+Now, when a build container ends with an error, the scripts print which build failed, and end with the exit code of the container. The `pipe-cli:buildLinux` task then fails, after it restores `pipe-cli/src/version.py`.
+Please note: a container ends with the code of its last step (the `tar` of the `pipe` tarball, the `chmod` of `pipe-omics`, the PyInstaller run of `pipe-fuse`). So a failed earlier step is still not reported, if the last step works, e.g. on the files left from an earlier build.
+### Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects
+
+[#4776](https://github.com/epam/cloud-pipeline/issues/4776)
+
+Previously, the `MUNGE` key of a `Slurm` cluster in the shared folder of the cluster (`$SHARED_FOLDER/.slurm/munge.key`) was readable by all users of the cluster, as the shared folder gives all users read access to new files.
+This is a security issue: anyone who can read the key can forge `MUNGE` credentials, e.g. as `root`, and run `Slurm` jobs as that user.
+Now, the key in the shared folder is readable by `root` only. A cluster launched before the update keeps its key: relaunch such a cluster to get a new key.
+
+The following defects are also fixed:
+
+- **Rocky Linux runs**: the base packages install replaced `coreutils` with `coreutils-single`. On an image with the full `coreutils` package, `yum` failed on the conflict, and the run could not install its base packages. Also, a `procps-ng` package requested in `CP_CAP_EXTRA_PKG` was renamed to `procps-ng-ng`, which `yum` could not find.
+  Now, `coreutils` is not installed next to `coreutils-single`, and `procps` is installed as `procps-ng` on Rocky Linux and RHEL.
+- **Environment modules** (`CP_CAP_MODULES`): on the RPM-based images, the build did not install `make`, and the build of the `Tcl` modules did not install `gcc`. On images with bash 4.4 or later (e.g. Rocky Linux 8 and 9, Ubuntu 18.04 and later), the `Tcl` modules build could not enter the sources folder. On Rocky Linux 8, `Lmod` (`CP_CAP_MODULES_TYPE=lmod`) asked for packages that Rocky Linux 8 does not have, without the `PowerTools` repository that has the others.
+  Now, `make` and `gcc` are installed, the build enters the sources folder, and `Lmod` on Rocky Linux 8 enables the `PowerTools` repository and installs only the packages it has.
+- **Slurm autoscaling**: the worker nodes that the autoscaler added to a queue did not get the name of the queue, so they joined the queue only if the `launch.system.parameters` preference passed the queue name to the workers. Also, the autoscaler rounded the memory request of a job down to whole GiB, e.g. `--mem 500M` was counted as 0 GiB, and `--mem-per-cpu` was rounded down for each CPU.
+  Now, the added workers get the name of their queue, and the memory request of a job is rounded up to whole GiB once, after it is multiplied by the number of CPUs or GPUs.
+- **Slurm queues**: the additional queues of a cluster were not configured if the shared folder of the cluster (`SHARED_FOLDER`) was not `/common`, as they looked for the `Slurm` configuration in `/common/.slurm`.
+  Now, they use the configuration in the shared folder of the cluster.
+### A run stays at its start for good when `apt-get update` stalls
+
+[#4781](https://github.com/epam/cloud-pipeline/issues/4781)
+
+Previously, the `apt-get`, `yum` and `apk` calls of the launch script at the start of a run had no time limit. The apt of Ubuntu 22.04, Ubuntu 24.04 and Debian 12 can stall in `apt-get update` for good after it retries a download with a delay ([LP: #2003851](https://bugs.launchpad.net/ubuntu/+source/apt/+bug/2003851)), e.g. behind a proxy with a short `CP_REPO_ACCESS_TIMEOUT_SEC`. Such a run never finished its start, and its node was billed until someone stopped the run.
+Now, these calls of the launch script have a time limit:
+
+- a refresh of the package lists is stopped after `CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC` seconds (600 by default), and is tried once more
+- an install or an upgrade of packages is stopped after `CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC` seconds (3600 by default)
+
+A call that is stopped logs a `[WARN]` line in the run log and fails, and the run handles it as any other failure of that call: e.g. the Cloud Pipeline repo setup tries again, and then removes the repo. `0` means no limit, and so does a value that is not a whole number of seconds, with a `[WARN]` line. Set the variables as run parameters, or for all runs in the `launch.env.properties` preference. An image with no usable `timeout` command (e.g. an old busybox) runs the calls with no limit, as before. The setup scripts of the capabilities (e.g. SGE, Slurm, Docker in Docker, NICE DCV) still call the package managers with no limit.
+### The node logger and the search services do not use the docker registry login or prefix
+
+Previously, the pods of the node logger (`cp-node-logger`) and of the search ELK cluster from the optional `cp-search-elk-set.yaml` manifest had no image pull secret. So, if the platform images came from a docker registry that needs a login (`CP_DOCKER_DIST_USER` and `CP_DOCKER_DIST_PASS` are set), these pods could not pull their images. Also, the separate search service for the NFS files, from the optional `cp-search-srv-nfs-only-dpl.yaml` manifest, always pulled `lifescience/cloud-pipeline:search-<version>`, even if `CP_COMMON_DISTR_DOCKER_PREFIX` pointed to another repository.
+Now, the node logger and the search ELK cluster pods use the `cp-distr-docker-registry-secret` secret, as the other services do, and the separate search service takes its image from `CP_COMMON_DISTR_DOCKER_PREFIX`, as the main search service does. The installer creates this secret only if a registry login is set. If the secret does not exist, the images are pulled without a login.
+### A failed backup copy removes a good backup
+
+Previously, when a backup worker (`cp-bkp-worker-*`) failed to copy the backups to a storage, it still cleaned the outdated backups in that storage. A failed copy may leave a partial date folder, and the cleaning counted it among the backups to keep (`CP_BKP_FILES_COUNT`, 10 by default). So each failed copy could remove a good backup.
+Now, if the copy to a storage fails, the worker does not clean that storage, and goes on with the next storage of `CP_BKP_STORAGE_LIST`. The administrators are notified of the failure, as before.
+
+Please note:
+
+- the good backups are kept only while the copies keep failing, and a storage whose copies keep failing is not cleaned at all
+- the partial date folder of a failed copy is not removed. The cleaning after the next successful copy counts it, and removes one good backup for each such folder. So delete the date folders of the failed copies from the storage before the next successful copy
+- the cleaning removes the backups that `pipe storage ls` lists first. On AWS, these are the oldest ones, but the listing is not ordered on GCP ([#4233](https://github.com/epam/cloud-pipeline/issues/4233))
 ### `pipe storage cp` and `mv` fail with a file list on Windows and macOS
 
 [#4764](https://github.com/epam/cloud-pipeline/issues/4764)

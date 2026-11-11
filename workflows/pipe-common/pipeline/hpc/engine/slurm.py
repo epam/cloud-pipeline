@@ -159,10 +159,12 @@ class SlurmGridEngine(GridEngine):
             # --mem-per-cpu 200M -> MinMemoryCPU=200M
             # --mem-per-gpu 200M -> MemPerTres=gres:gpu:200
             mem_per_tres = self._parse_tres(job_dict.get('MemPerTres', 'gres:gpu:0'))
-            mem_per_node = self._parse_mem(job_dict.get('MinMemoryNode', '0M'))
-            mem_per_cpu = self._parse_mem(job_dict.get('MinMemoryCPU', '0M'))
-            mem_per_gpu = self._parse_mem(mem_per_tres.get('gpu', '0') + 'M')
-            job_mem = max(mem_per_node, mem_per_cpu * job_cpu, mem_per_gpu * job_gpu)
+            # In bytes, rounded up to GiB once: rounding each per CPU or per GPU value first would add up to a GiB
+            # for each CPU or GPU of the job
+            mem_per_node = self._parse_mem_bytes(job_dict.get('MinMemoryNode', '0M'))
+            mem_per_cpu = self._parse_mem_bytes(job_dict.get('MinMemoryCPU', '0M'))
+            mem_per_gpu = self._parse_mem_bytes(mem_per_tres.get('gpu', '0') + 'M')
+            job_mem = self._to_gibibytes(max(mem_per_node, mem_per_cpu * job_cpu, mem_per_gpu * job_gpu))
 
             for task_idx in range(num_tasks):
                 job_id = root_job_id + '_' + str(task_idx)
@@ -208,22 +210,28 @@ class SlurmGridEngine(GridEngine):
             ]
         }
 
+    _MEM_MODIFIERS = {
+        'k': 1000, 'm': 1000 ** 2, 'g': 1000 ** 3, 't': 1000 ** 4,
+        'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4,
+    }
+
     def _parse_mem(self, mem_request):
+        return self._to_gibibytes(self._parse_mem_bytes(mem_request))
+
+    def _parse_mem_bytes(self, mem_request):
         if not mem_request:
             return 0
-        modifiers = {
-            'k': 1000, 'm': 1000 ** 2, 'g': 1000 ** 3, 't': 1000 ** 4,
-            'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4,
-        }
-        if mem_request[-1] in modifiers:
+        if mem_request[-1] in SlurmGridEngine._MEM_MODIFIERS:
             number = int(mem_request[:-1])
-            modifier = modifiers[mem_request[-1]]
+            modifier = SlurmGridEngine._MEM_MODIFIERS[mem_request[-1]]
         else:
             number = int(mem_request)
             modifier = 1
-        size_in_bytes = number * modifier
-        size_in_gibibytes = int(math.ceil(size_in_bytes / modifiers['G']))
-        return size_in_gibibytes
+        return number * modifier
+
+    def _to_gibibytes(self, size_in_bytes):
+        # Python 2 divides integers to an integer, which rounds 500M down to 0
+        return int(math.ceil(size_in_bytes / float(SlurmGridEngine._MEM_MODIFIERS['G'])))
 
     def _parse_nodelist(self, nodelist):
         if nodelist == "(null)":
@@ -285,13 +293,17 @@ class SlurmJobValidator(GridEngineJobValidator):
 
 class SlurmLaunchAdapter(GridEngineLaunchAdapter):
 
-    def __init__(self):
-        pass
+    def __init__(self, queue=None):
+        self._queue = queue
 
     def get_worker_init_task_name(self):
         return 'SLURMWorkerSetup'
 
     def get_worker_launch_params(self):
-        return {
+        params = {
             'CP_CAP_SLURM': 'false'
         }
+        # An additional worker joins the nodeset of its queue by the feature of the queue name (slurm_setup_worker)
+        if self._queue:
+            params['CP_CAP_SLURM_QUEUE_NAME'] = self._queue
+        return params
