@@ -63,8 +63,10 @@ RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
 
-# Python 3.12, the only Python of this image: the build a job container installs (scripts/pipeline-launch/launch.sh).
-# /usr/bin/python3 stays the system one, for dnf.
+# Python 3.12, the only Python of this image: the platform's self-contained Python 3.12 distribution, the Python that
+# pipe-common requires. /usr/bin/python3 stays the system one, for dnf.
+# pip installs without -I: this Python has no packages of the OS, so pip can replace a version that an earlier step
+# installed, and one version of each package stays.
 ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
 RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     tar -xzf python3.tgz -C /usr/local/ && \
@@ -73,8 +75,8 @@ RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
     ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
 
 # AWS - specific packages
-RUN pip3 install -I  boto3==1.34.69 \
-                     botocore==1.34.69
+RUN pip3 install boto3==1.34.69 \
+                 botocore==1.34.69
 
 # Azure - specific packages. azure-mgmt-* stay on the msrestazure-based generation: current (track2, azure-core-based)
 # releases of azure-mgmt-resource/compute/network dropped get_client_from_auth_file()/get_client_from_cli_profile()
@@ -84,18 +86,24 @@ RUN pip3 install -I  boto3==1.34.69 \
 # accessTokens.json, see init-api) instead of an auth file: the node scripts then call get_client_from_cli_profile().
 # 2.29.2 is the last release that reads accessTokens.json. It needs the "distutils" module, which Python 3.12 has
 # no more: setuptools provides it (pipe-common installs setuptools below).
-RUN pip3 install -I  azure-common==1.1.18 \
-                     azure-mgmt-resource==2.0.0 \
-                     azure-mgmt-compute==4.5.1 \
-                     azure-mgmt-network==2.0.0 \
-                     azure-cli-core==2.29.2
+# No release that reads accessTokens.json accepts the dependency versions of pipe-common, so these conflicts are
+# accepted, and "pip check" reports them: azure-cli-core 2.29.2 requires paramiko<3, psutil~=5.8 and
+# requests~=2.25.1, and pipe-common installs paramiko 5.0.0, psutil 7.2.2 and requests 2.34.2. The node scripts do not
+# use the paramiko or psutil parts of azure-cli-core. Checked to work in this image with these versions: the Azure
+# clients of a CLI login (get_client_from_cli_profile) and of an auth file (get_client_from_auth_file), boto3,
+# googleapiclient, and the --help of the 12 cluster scripts of /opt/api/scripts.
+RUN pip3 install azure-common==1.1.18 \
+                 azure-mgmt-resource==2.0.0 \
+                 azure-mgmt-compute==4.5.1 \
+                 azure-mgmt-network==2.0.0 \
+                 azure-cli-core==2.29.2
 
 # GCP - specific packages
-RUN pip3 install -I  google-api-core==1.32.0 \
-                     google-api-python-client==1.12.11 \
-                     google-auth==1.35.0 \
-                     google-auth-httplib2==0.1.0 \
-                     googleapis-common-protos==1.52.0
+RUN pip3 install google-api-core==1.32.0 \
+                 google-api-python-client==1.12.11 \
+                 google-auth==1.35.0 \
+                 google-auth-httplib2==0.1.0 \
+                 googleapis-common-protos==1.52.0
 
 # API distribution
 ARG CP_API_DIST_URL=""
@@ -115,13 +123,16 @@ RUN mkdir -p /tmp/pipe-temp && \
     cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
     cd /tmp/pipe-temp/ && \
     unzip -qq pipeline.jar && \
-    pip3 install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
+    pip3 install /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
     cd / && \
     rm -rf /tmp/pipe-temp
 
-# Since 2.35.2, git refuses to work in a repository owned by another user. The API runs git as root
-# in the folders of the mounted storages (the pipeline.local.path.transfer.script), which may belong to the storage user
-RUN git config --system --add safe.directory '*'
+# Since 2.35.2, git refuses to work in a repository that belongs to another user, and the git 1.8 of CentOS 7 did not.
+# The API mounts the NFS storages under /opt/api/file-systems (data.storage.nfs.root.mount.point), and their folders
+# may belong to other users: e.g. the script of pipeline.local.path.transfer.script, which a deployment provides,
+# runs git as root there. Only these folders are trusted: a trailing "/*" matches every path under the folder
+# (git 2.46 or later; Rocky Linux 9.8 has 2.52).
+RUN git config --system --add safe.directory '/opt/api/file-systems/*'
 
 # Install projects templates
 ADD folder-templates /opt/api/folder-templates

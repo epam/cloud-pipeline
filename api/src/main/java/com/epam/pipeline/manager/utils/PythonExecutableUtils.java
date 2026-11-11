@@ -28,9 +28,8 @@ public final class PythonExecutableUtils {
     private static final String DEFAULT_PYTHON_EXECUTABLE = "python3";
 
     /**
-     * Resolves the Python interpreter that scripts running inside the api pod itself shall use,
-     * as scripts/pipeline-launch/launch.sh does for job containers: CP_PYTHON_PATH, if set by the
-     * pod's entrypoint, or "python3" otherwise.
+     * Resolves the Python interpreter that the scripts the API runs inside its own pod shall use:
+     * CP_PYTHON_PATH, which the entrypoint of the pod (init-api) sets, or "python3" if it is not set.
      */
     public static String getPythonExecutable() {
         return resolvePythonExecutable(System.getenv(CP_PYTHON_PATH));
