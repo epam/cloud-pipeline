@@ -47,6 +47,9 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_available_storages(self):
         return self.api.load_available_storages()
 
+    def load_storages_with_lifecycle(self, lifecycle_type):
+        return self.api.load_storages_with_lifecycle(lifecycle_type)
+
     def load_storage(self, datastorage_id):
         return self.api.find_datastorage(datastorage_id)
 
