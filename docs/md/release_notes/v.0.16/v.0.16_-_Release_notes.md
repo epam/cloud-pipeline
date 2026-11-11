@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [A failed backup copy removes a good backup](#a-failed-backup-copy-removes-a-good-backup)
 
 ***
 
@@ -912,3 +913,14 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### A failed backup copy removes a good backup
+
+Previously, when a backup worker (`cp-bkp-worker-*`) failed to copy the backups to a storage, it still cleaned the outdated backups in that storage. A failed copy may leave a partial date folder, and the cleaning counted it among the backups to keep (`CP_BKP_FILES_COUNT`, 10 by default). So each failed copy could remove a good backup.
+Now, if the copy to a storage fails, the worker does not clean that storage, and goes on with the next storage of `CP_BKP_STORAGE_LIST`. The administrators are notified of the failure, as before.
+
+Please note:
+
+- the good backups are kept only while the copies keep failing, and a storage whose copies keep failing is not cleaned at all
+- the partial date folder of a failed copy is not removed. The cleaning after the next successful copy counts it, and removes one good backup for each such folder. So delete the date folders of the failed copies from the storage before the next successful copy
+- the cleaning removes the backups that `pipe storage ls` lists first. On AWS, these are the oldest ones, but the listing is not ordered on GCP ([#4233](https://github.com/epam/cloud-pipeline/issues/4233))
