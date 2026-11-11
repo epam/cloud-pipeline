@@ -75,6 +75,7 @@
     - [Users export: the names of the date columns depend on the API time zone](#users-export-the-names-of-the-date-columns-depend-on-the-api-time-zone)
     - [Launch form: the "Add system parameter" dialog drops the selected parameters](#launch-form-the-add-system-parameter-dialog-drops-the-selected-parameters)
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
+    - [Vulnerable dependencies of the SSH web terminal](#vulnerable-dependencies-of-the-ssh-web-terminal)
 
 ***
 
@@ -953,3 +954,7 @@ Also, a price list that can't be loaded no longer stops the billing service. The
 
 Previously, after a detached configuration was renamed in the **Edit configuration info** pop-up, the folder that holds the configuration and the library tree kept showing the old name until a page reload. A rename by the configuration page title had the same problem for a configuration inside a folder.
 Now, the folder and the library tree show the new name right after the rename.
+### Vulnerable dependencies of the SSH web terminal
+
+Previously, `npm audit` reported 27 known vulnerabilities in the dependencies of the SSH web terminal (`wetty`, a part of the `cp-edge` service): 3 critical, 16 high, 6 moderate and 2 low. The critical ones were in `minimist` (used by `optimist`) and in `proxy-addr` (used by `express`).
+Now, the dependencies are updated: `express` 5.3.0, `engine.io` 6.6.11, `ws` 8.21.3 and `socket.io-parser` 4.2.7 for `socket.io` 4.8.1, `vite` 7.3.7, and `minimist` 0.2.4 for `optimist`. `node-pty` is pinned to 1.0.0. The `eslint` tooling (the `lint` script and its packages) is removed from `wetty`: it was not used to build or run the terminal. At the time of this change, `npm audit` reports no vulnerabilities. The terminal works as before.
