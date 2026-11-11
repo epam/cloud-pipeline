@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
 
 ***
 
@@ -912,3 +913,10 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### `pipe storage cp` and `mv` fail with a file list on Windows and macOS
+
+[#4764](https://github.com/epam/cloud-pipeline/issues/4764)
+
+Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--file-list` option failed in the Windows and macOS builds of the `pipe` CLI with the `a bytes-like object is required, not 'str'` error, as these builds run on Python 3. In the Linux build, the commands failed if a path in the list had non-ASCII characters. In all builds, a blank line in the list made them fail.
+Now, all builds read the file list as UTF-8 text, with or without a byte order mark, and skip blank lines. As in a folder transfer, paths with non-ASCII characters follow the `--on-unsafe-chars` option, and are skipped by default.
