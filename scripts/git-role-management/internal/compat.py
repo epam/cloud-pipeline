@@ -14,9 +14,9 @@
 
 import sys
 
-# Matches workflows/pipe-common/setup.py's _PY3_12 gate: this platform only ever runs CPython 2.7
-# or the 3.12 the cp-api-srv/cp-git-sync images install (see CP_PYTHON_VERSION), never another 3.x.
-PY3_12 = sys.version_info >= (3, 12)
+# The platform runs Python 3 only (the 3.12 of the cp-api-srv image, which the cp-git-sync service runs too): the
+# Python 2 branches below are never taken.
+PY3 = sys.version_info[0] >= 3
 
 try:
     from urllib.parse import urlparse, quote_plus
@@ -29,7 +29,7 @@ def to_bytes(value):
     # Python 2 keeps these fields as byte strings throughout this package, and other code
     # compares/hashes them as such; Python 3 keeps native str, since encoding here would
     # silently turn e.g. a dict key or a comparison target into bytes.
-    if value is None or PY3_12:
+    if value is None or PY3:
         return value
     return value.encode('utf8')
 
