@@ -154,7 +154,7 @@ class ToolOperations(object):
         tool_info_table.add_row(['Group:', group])
         tool_info_table.add_row(['Registry:', registry_model.path])
         tool_info_table.add_row(['Image:', registry_model.path + '/' + tool_model.image + ':' + version])
-        tool_info_table.add_row(['Size:', (str(int(size) / MB) + ' MB') if size else size])
+        tool_info_table.add_row(['Size:', (str(int(size) // MB) + ' MB') if size else size])
         click.echo(tool_info_table)
         click.echo()
 

@@ -107,3 +107,12 @@ class TestNtlmProxyConfiguration(object):
 
         assert Config.instance().initialized
         assert 'NTLM' not in capsys.readouterr().err
+
+
+def test_ssh_help_example_keeps_the_variable_for_the_run():
+    result = CliRunner().invoke(pipe.ssh, ['--help'])
+
+    assert result.exit_code == 0
+    # The backslash keeps the local shell from expanding the variable: the run prints its own host name
+    assert 'pipe ssh pipeline-12345 echo \\$HOSTNAME' in result.output
+    assert 'pipe ssh 12345 echo \\$HOSTNAME' in result.output
