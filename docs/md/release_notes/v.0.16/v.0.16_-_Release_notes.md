@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [Vulnerable dependencies of the SSH web terminal](#vulnerable-dependencies-of-the-ssh-web-terminal)
 
 ***
 
@@ -912,3 +913,8 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### Vulnerable dependencies of the SSH web terminal
+
+Previously, `npm audit` reported 27 known vulnerabilities in the dependencies of the SSH web terminal (`wetty`, a part of the `cp-edge` service): 3 critical, 16 high, 6 moderate and 2 low. The critical ones were in `minimist` (used by `optimist`) and in `proxy-addr` (used by `express`).
+Now, the dependencies are updated: `express` 5.3.0, `engine.io` 6.6.11, `ws` 8.21.3 and `socket.io-parser` 4.2.7 for `socket.io` 4.8.1, `vite` 7.3.7, and `minimist` 0.2.4 for `optimist`. `node-pty` is pinned to 1.0.0. The `eslint` tooling (the `lint` script and its packages) is removed from `wetty`: it was not used to build or run the terminal. At the time of this change, `npm audit` reports no vulnerabilities. The terminal works as before.
