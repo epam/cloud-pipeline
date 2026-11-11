@@ -71,3 +71,5 @@ spec:
         - name: cp-cloud-credentials
           secret:
             secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

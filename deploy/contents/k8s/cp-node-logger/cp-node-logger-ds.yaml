@@ -31,3 +31,5 @@ spec:
       - name: kubelet-log
         hostPath:
           path: /var/log/kubelet
+      imagePullSecrets:
+      - name: cp-distr-docker-registry-secret
