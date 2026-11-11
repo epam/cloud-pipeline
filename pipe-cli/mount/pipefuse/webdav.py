@@ -23,6 +23,7 @@ import easywebdav
 import pytz
 import time
 from dateutil.tz import tzlocal
+from future.utils import binary_type
 from requests import cookies
 
 from pipefuse import fuseutils
@@ -126,7 +127,11 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
 
     def prop_value(self, elem, name, default=None):
         child = self.get_elem_value(elem, name)
-        return default if child is None or child.text is None else unquote(child.text).decode('utf8')
+        if child is None or child.text is None:
+            return default
+        value = unquote(child.text)
+        # Python 2 unquotes into bytes, Python 3 into text
+        return value.decode('utf8') if isinstance(value, binary_type) else value
 
     def prop_exists(self, elem, name):
         return self.get_elem_value(elem, name) is not None
@@ -167,7 +172,12 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
         if end < offset:
             end = offset
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
-        self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
+        self._send('PUT', remote_path, (200, 201, 204), data=bytes(data), headers=headers)
+
+    def upload(self, buf, path):
+        # easywebdav's upload checks for basestring, which Python 3 does not have.
+        # The callers pass a list or a bytearray, and bytes([]) is '[]' on Python 2.
+        self._send('PUT', path, (200, 201, 204), data=bytes(bytearray(buf)))
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
