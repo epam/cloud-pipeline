@@ -35,7 +35,7 @@ function run_task {
     local _VERSION=$3
     local _TASK_NAME=$4
 
-    TASK_CMD="${CP_PYTHON2_PATH} ${_SCRIPT} --pipeline ${_PIPELINE} --version ${_VERSION}  --task ${_TASK_NAME}"
+    TASK_CMD="${CP_PYTHON_PATH} ${_SCRIPT} --pipeline ${_PIPELINE} --version ${_VERSION}  --task ${_TASK_NAME}"
     pipe_exec "${TASK_CMD}" "${_TASK_NAME}"
     _result=$?
     if [[ ${_result} -ne 0 ]]; then

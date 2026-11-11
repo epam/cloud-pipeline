@@ -16,7 +16,7 @@ import argparse
 import os
 import time
 import sys
-import urlparse
+from urllib.parse import urlparse
 from pipeline import PipelineAPI, Logger, SampleSheetParser
 
 SAMPLE_ID = "Sample_ID"
@@ -47,7 +47,7 @@ class RunAnalyticalPipelinesTask(object):
                                                                    analysis_folder, machine_run_folder)
         failed_runs = self.__wait_runs_completion(launched_runs)
         if failed_runs:
-            for sample, run_id in failed_runs.iteritems():
+            for sample, run_id in failed_runs.items():
                 Logger.fail('Processing failed for sample "%s". Check run %d logs for more information.' %
                             (sample, run_id), task_name=self.task)
             sys.exit(1)
@@ -67,7 +67,7 @@ class RunAnalyticalPipelinesTask(object):
         return run['id']
 
     def __fetch_reads(self, sample, analysis_folder, machine_run_folder):
-        run_folder_name = urlparse.urlparse(machine_run_folder).path
+        run_folder_name = urlparse(machine_run_folder).path
         read_folder = self.__get_path_without_trailing_slash(analysis_folder) + \
                       self.__get_path_without_trailing_slash(run_folder_name) + \
                       '/PipelineInputData/FASTQ/'
@@ -80,7 +80,7 @@ class RunAnalyticalPipelinesTask(object):
         finished = {}
         failed = {}
         while True:
-            for sample, run_id in launched_runs.iteritems():
+            for sample, run_id in launched_runs.items():
                 current_status = self.api.load_run(run_id)['status']
                 Logger.info('Processing sample: %s. Run %d status is %s.' % (sample, run_id, current_status),
                             task_name=self.task)
