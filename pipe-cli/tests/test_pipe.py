@@ -104,7 +104,7 @@ class TestViewPipes(object):
         assert_storage_rules(actual_pipe.storage_rules, expected.storage_rules)
         assert_permissions(actual_permissions, expected_permissions)
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_view_pipes(self, mock):
         expected = [build_pipeline_model(identifier=pipeline_id, name=pipeline_name,
                                          created_date=server_date, repository=repo,
@@ -166,7 +166,7 @@ class TestViewRuns(object):
         assert_tasks(actual_pipe.tasks, expected_pipe.tasks)
 
     @patch('src.api.pipeline.Pipeline.get')
-    @requests_mock.mock()
+    @requests_mocked
     def test_view_runs(self, get_mock, list_mock):
         status = "ANY"
         date_from = None
@@ -213,7 +213,7 @@ class TestViewRuns(object):
 
 class TestViewCluster(object):
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_view_cluster(self, mock):
         addresses = [build_address_model(address=node_ip, address_type="internalIP"),
                      build_address_model(address=node_name, address_type="Hostname")]
@@ -236,7 +236,7 @@ class TestViewCluster(object):
             assert actual.created == expected.created
             assert_addresses(actual.addresses, expected.addresses)
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_view_cluster_for_node(self, mock):
         addresses = [build_address_model(address=node_ip, address_type="internalIP"),
                      build_address_model(address=node_name, address_type="Hostname")]
@@ -289,7 +289,7 @@ class TestRun(object):
     quiet = False
     config = None
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_pipeline_run_with_parameters(self, mock):
         price = build_instance_price(instance_type=instance_type, instance_disk=instance_disk)
         mock.get(mocked_url('pipeline/find?id={}'.format(pipeline_name)),
@@ -310,7 +310,7 @@ class TestRun(object):
         assert actual_stdout.version == v_1
         assert_instance_price(actual_stdout.price, price)
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_pipeline_run(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(pipeline_name)),
                  text=mock_pipe(pipeline_id, pipeline_name, raw_date, v_1))
@@ -327,7 +327,7 @@ class TestRun(object):
         expected_stdout = "Pipeline run scheduled with RunId: {}\n".format(run_id)
         assert actual_stdout == expected_stdout
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_run_with_missing_args(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(pipeline_name)),
                  text=mock_pipe(pipeline_id, pipeline_name, raw_date, v_1))
@@ -345,7 +345,7 @@ class TestRun(object):
                                               self.quiet, None, None, False))
         assert actual_stdout == expected_stdout
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_run_with_parameters_info(self, mock):
         mock.get(mocked_url('pipeline/find?id={}'.format(pipeline_name)),
                  text=mock_pipe(pipeline_id, pipeline_name, raw_date, v_1))
@@ -371,7 +371,7 @@ class TestRun(object):
 class TestStop(object):
 
     @patch('src.api.pipeline.Pipeline.get')
-    @requests_mock.mock()
+    @requests_mocked
     def test_pipeline_stop(self, mock_get, mock):
         pipeline_run_model = build_run_model(identifier=run_id, status="RUNNING", version=v_1)
         mock.post(mocked_url('run/{}/status'.format(run_id)),
@@ -387,7 +387,7 @@ class TestStop(object):
 
 class TestTerminateNode(object):
 
-    @requests_mock.mock()
+    @requests_mocked
     def test_terminate_node(self, mock):
         addresses = [build_address_model(address=node_ip, address_type="internalIP"),
                      build_address_model(address=node_name, address_type="Hostname")]

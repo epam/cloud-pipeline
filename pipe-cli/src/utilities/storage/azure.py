@@ -28,7 +28,6 @@ from src.utilities.storage.storage_usage import StorageUsageAccumulator
 from urllib.request import urlopen
 
 from azure.core.credentials import AzureSasCredential, AzureNamedKeyCredential
-from azure.core.pipeline.transport import RequestsTransport
 from azure.storage.blob import (
     BlobServiceClient, BlobPrefix,
     generate_account_sas, AccountSasPermissions, ResourceTypes,
@@ -446,19 +445,18 @@ class _RefreshingBlobServiceClient:
         self._sas_credential = AzureSasCredential(sas)
         account_url = 'https://{}.blob.core.windows.net'.format(account_name)
         proxy_config = StorageOperations.get_proxy_config(account_url)
-        transport = self._make_transport(proxy_config)
-        kwargs = dict(transport=transport) if transport is not None else {}
+        # azure-core takes the proxies from the keyword arguments of the client: a transport's own proxies are ignored
+        proxies = self._resolve_proxies(proxy_config)
+        kwargs = dict(proxies=proxies) if proxies else {}
         self._client = BlobServiceClient(account_url, credential=self._sas_credential, **kwargs)
 
     @staticmethod
-    def _make_transport(proxy_config):
+    def _resolve_proxies(proxy_config):
         if not proxy_config:
             return None
         if isinstance(proxy_config, dict):
-            proxies = proxy_config
-        else:
-            proxies = {'http': proxy_config, 'https': proxy_config}
-        return RequestsTransport(proxies=proxies)
+            return proxy_config
+        return {'http': proxy_config, 'https': proxy_config}
 
     def _ensure_fresh(self):
         with self._lock:
