@@ -38,6 +38,7 @@
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
 - [pipe-common requires Python 3.12](#pipe-common-requires-python-312)
+- [Runs on Python 3.12](#runs-on-python-312)
 
 ***
 
@@ -713,7 +714,7 @@ On a deployment that is updated, not installed anew, the parameter is offered in
 
 ## pipe-common requires Python 3.12
 
-`pipe-common` is the `pipeline` Python package of the platform. Every run installs it, and the platform scripts of a run use it, e.g. for the storage mounts, the data transfers, the cluster setup and the grid engine autoscaler. The platform services that run Python scripts install it as well.
+`pipe-common` is the `pipeline` Python package of the platform. Every run installs it, and the platform scripts of a run use it, e.g. for the storage mounts, the data transfers, the cluster setup and the grid engine autoscaler. The platform services that run Python scripts install it as well. A run installs it with the platform's Python 3.12, see [Runs on Python 3.12](#runs-on-python-312).
 
 Now, `pipe-common` runs on Python 3 only, and requires Python 3.12 or later. `pip` no longer installs it for Python 2.  
 Its dependencies moved to the Python 3 versions that have the known security advisories fixed:
@@ -729,6 +730,38 @@ The Python 3 package mirror of the platform (`tools/python/pypi3/simple` in the 
 The SGE autoscaler now rounds the memory request of a job up to whole GiB, as the Slurm autoscaler does. Previously, it rounded the request down, e.g. `-l ram=500M` counted as 0 GiB and `-l ram=1500M` as 1 GiB.
 
 Please note: a user script that imports the `pipeline` package, or a package that it brings, must run on Python 3.12, and work with these versions. E.g., the APIs of `luigi` 3, `PyJWT` 2 and `click` 8 differ from the versions that were installed before.
+
+## Runs on Python 3.12
+
+Previously, a run took Python 2 for the platform's scripts and the `pipeline` package (`pipe-common`): Miniconda2, if `CP_CAP_INSTALL_PRIVATE_DEPS` was set, or else the `python2` of the tool image, or the one from the OS repositories. `CP_PYTHON2_PATH` pointed to it.
+
+Now, the runs use Python 3.12 only, as `pipe-common` requires it (see [pipe-common requires Python 3.12](#pipe-common-requires-python-312)):
+
+- When a run starts, it installs the platform's Python 3.12 distribution into `/usr/local/python3.12`, and links `/usr/local/bin/python3` and `/usr/local/bin/pip3` to it. It no longer looks for Python 2, or installs it. The distribution is downloaded from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL` (by default, the public Cloud Pipeline bucket). The new `CP_PYTHON3_DISTRO_URL` parameter sets another location.
+- If the download fails, the run keeps the `/usr/local/python3.12` of the tool image (e.g. of a committed run), or uses a `python3.12` that the image has in `PATH`. If the image has neither, the run fails at startup. A failed download changes nothing in the image.
+- `CP_PYTHON_PATH` points to this Python 3.12. `pipe-common`, the platform's scripts and the shell commands of a run (e.g. `pipe_log`, the cluster and grid engine setup, the NICE DCV and NoMachine desktops) run with it.
+- `CP_PYTHON2_PATH` is kept for the user scripts that call it. It points to the same Python 3.12, so such a script must run on Python 3.
+- `/usr/local/python3.12/bin` goes before the folders of the tool image in `PATH`, for the command of the run and for its SSH sessions. So `python3`, `pip3` and the commands of the packages installed with them (e.g. `luigi`) are the platform's ones, even if the image has its own `python3` earlier in `PATH` (e.g. `/opt/conda/bin`) or in `/usr/local/bin` (e.g. the `python` images from Docker Hub). `python` and `pip` are not linked: they stay the ones of the image. To call the Python of the image, use its full path (e.g. `/opt/conda/bin/python3`) or its version (e.g. `python3.11`). To call the platform's Python, use `$CP_PYTHON_PATH`.
+- The run replaces the `/usr/local/python3.12` of the tool image, if it has one, with its own. It keeps the `/usr/local/openssl` of the image, unless the distribution has one of its own: `python3.12.tar.gz` has none, the previous `python3.12.0.tar.gz` has one.
+- The `CP_CAP_INSTALL_PRIVATE_DEPS` and `CP_CONDA_DISTRO_URL` parameters no longer have an effect. A run with `CP_CAP_INSTALL_PRIVATE_DEPS` set to `true` logs a warning about it.
+- When the platform's package repositories are used (`CP_REPO_ENABLED`), `pip` installs from the Python 3 package mirror (`tools/python/pypi3/simple` of `GLOBAL_DISTRIBUTION_URL`). The new `CP_REPO_PYPI3_BASE_URL_DEFAULT` and `CP_REPO_PYPI3_TRUSTED_HOST_DEFAULT` parameters set another mirror. They replace `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT`, which no longer have an effect: they set the mirror of the Python 2 packages.
+- The NICE DCV desktop installs Flask 3.1.3 and Flask-HTTPAuth 4.8.1, and the NoMachine desktop installs Flask 3.1.3, for this Python 3.12.
+- The **Python** and **Luigi** pipeline templates, and the data loader system pipeline, run their scripts with `$CP_PYTHON_PATH` instead of `python`. So do the demo pipelines.
+- On CentOS 8 and Rocky Linux 8 and 9, the names of the packages that a run installs (e.g. from `CP_CAP_EXTRA_PKG`) are no longer changed from `python` to `python2`. E.g. `python3-devel` was installed as `python23-devel`, which does not exist.
+
+Committing and pausing a run also run Python code: on the node host, outside the container of the run. If the node host has no Python 3.12 in `/usr/local/python3.12`, these operations install it there, from the `tools/python/3/python3.12.tar.gz` file of `GLOBAL_DISTRIBUTION_URL`. They install `pipe-common` with this Python 3.12, from the Python 3 package mirror. The `python` and `pip` of the node host are no longer used.
+
+The distribution is CPython 3.12.16 with OpenSSL 3.5.9, built in the `manylinux2014` image (`glibc` 2.17), with OpenSSL, libffi, SQLite, ncurses, libedit, xz, bzip2, zlib and libuuid built into it. So its modules, but `crypt`, load in any tool image with `glibc` 2.17 or later, whatever other libraries the image has. These features do not work in all the tool images:
+
+- **`crypt` needs `libcrypt.so.1`.** On Rocky Linux 9 and RHEL 9, it comes from the `libxcrypt-compat` package.
+- **`ssl` needs the CA certificates of the image.** Minimal Debian and Ubuntu images have none until the `ca-certificates` package is installed. `pip` and `requests` work without them: they trust their own CA bundle.
+
+For more details see [Image requirements](../../manual/10_Manage_Tools/10.3._Add_a_Tool.md#image-requirements).
+
+Please note:
+
+- a pipeline that runs a Python script with `python`, and imports the `pipeline` package there, must run it with `$CP_PYTHON_PATH` now. E.g. a pipeline that was created from the **Python** or **Luigi** template of an earlier version
+- the `pipeline` package is installed for the platform's Python 3.12 only. The `python` of a tool image, e.g. the Python 2 of CentOS 7, no longer has it
 
 ***
 
@@ -1069,8 +1102,8 @@ Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--fil
 Now, all builds read the file list as UTF-8 text, with or without a byte order mark, and skip blank lines. As in a folder transfer, paths with non-ASCII characters follow the `--on-unsafe-chars` option, and are skipped by default.
 ### The pipeline repository is not mounted in a run when `python` is not the Python of the platform
 
-Previously, if the image of a pipeline run has `gitfs`, the run mounts the repository of the pipeline to `/code-repository/<pipeline name>` (`REPOSITORY_MOUNT`), if the user has the **WRITE** permission for the pipeline. The run checked this permission with the `python` that was first on `PATH`, not with the Python of the platform environment of the run (`CP_PYTHON2_PATH`). If that `python` could not run the check - e.g. there was no `python`, or it had no `pipeline` package of the platform - the run logged "User is not allowed to modify GIT repository." and did not mount the repository.
-Now, the permission check runs with `CP_PYTHON2_PATH`.
+Previously, if the image of a pipeline run has `gitfs`, the run mounts the repository of the pipeline to `/code-repository/<pipeline name>` (`REPOSITORY_MOUNT`), if the user has the **WRITE** permission for the pipeline. The run checked this permission with the `python` that was first on `PATH`, not with the Python of the platform environment of the run. If that `python` could not run the check - e.g. there was no `python`, or it had no `pipeline` package of the platform - the run logged "User is not allowed to modify GIT repository." and did not mount the repository.
+Now, the permission check runs with the Python of the platform, `CP_PYTHON_PATH` (see [Runs on Python 3.12](#runs-on-python-312)).
 ### `pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds
 
 [#4725](https://github.com/epam/cloud-pipeline/issues/4725)
