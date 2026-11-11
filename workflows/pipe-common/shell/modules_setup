@@ -68,7 +68,7 @@ tar -zxf modules.tar.gz
 _MODULES_INSTALL_RESULT=1
 if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
     if [[ "$IS_RPM_BASED" = 0 ]]; then
-        yum -y -q install tcl-devel less
+        yum -y -q install tcl-devel less gcc make
         _MODULES_INSTALL_RESULT=$?
     else
         apt-get install tcl-dev less -y -qq
@@ -80,7 +80,9 @@ if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
         exit 1
     fi
 
-    cd modules*
+    # Only the sources folder: "modules*" also matches modules.tar.gz, and bash 4.4+ (e.g. Rocky Linux 8)
+    # refuses cd with two arguments
+    cd modules*/
 
     # Install modules
     MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local/modules}"
@@ -105,8 +107,17 @@ if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
 
 elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     if [[ "$IS_RPM_BASED" = 0 ]]; then
-        yum install -y -q lua lua-bitop lua-devel lua-filesystem \
-        lua-json lua-lpeg lua-posix lua-term tcl4 tcl-devel less gcc
+        if [ "$CP_OS" == "centos" ]; then
+          _rpm_lmod_extra_pkgs="lua-bitop lua-term tcl4"
+        fi
+        # Rocky Linux 8 has lua-devel, lua-filesystem and lua-posix in its PowerTools repository, which its
+        # images have disabled
+        if [ "$CP_OS" == "rocky" ] && yum repolist all 2>/dev/null | grep -q "^powertools "; then
+          _rpm_lmod_yum_opts="--enablerepo=powertools"
+        fi
+        yum install -y -q $_rpm_lmod_yum_opts lua lua-devel lua-filesystem \
+                          lua-json lua-lpeg lua-posix tcl-devel \
+                          less gcc make $_rpm_lmod_extra_pkgs
         _MODULES_INSTALL_RESULT=$?
     else
         apt install make tcl-dev rsync lua5.2 lua-bitop lua-filesystem lua-json lua-lpeg lua-posix lua-term less gcc  -y

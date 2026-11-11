@@ -81,6 +81,7 @@
     - [Vulnerable dependencies of the FS Browser client](#vulnerable-dependencies-of-the-fs-browser-client)
     - [Node reporter: package versions with known security advisories](#node-reporter-package-versions-with-known-security-advisories)
     - [The distribution build passes when the Linux build of the `pipe` CLI fails](#the-distribution-build-passes-when-the-linux-build-of-the-pipe-cli-fails)
+    - [Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects](#slurm-clusters-and-rocky-linux-runs-the-munge-key-is-readable-by-all-users-and-other-defects)
 
 ***
 
@@ -991,3 +992,21 @@ Now, the image installs `Flask` 3.1.3, `Werkzeug` 3.1.9, `gunicorn` 23.0.0, `cry
 Previously, `pipe-cli/build_linux.sh`, which builds the Linux binary and tarball of the `pipe` CLI, ended with exit code 0, even if a build in its Docker containers (of `pipe-omics` or of `pipe`) failed. So the `pipe-cli:buildLinux` Gradle task, and the distribution build that runs it, passed without a new `pipe`: the distribution got the `pipe` binary and tarball left from an earlier build, or none. `pipe-cli/mount/build_mount.sh`, which builds a standalone `pipe-fuse` binary, had the same problem.
 Now, when a build container ends with an error, the scripts print which build failed, and end with the exit code of the container. The `pipe-cli:buildLinux` task then fails, after it restores `pipe-cli/src/version.py`.
 Please note: a container ends with the code of its last step (the `tar` of the `pipe` tarball, the `chmod` of `pipe-omics`, the PyInstaller run of `pipe-fuse`). So a failed earlier step is still not reported, if the last step works, e.g. on the files left from an earlier build.
+### Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects
+
+[#4776](https://github.com/epam/cloud-pipeline/issues/4776)
+
+Previously, the `MUNGE` key of a `Slurm` cluster in the shared folder of the cluster (`$SHARED_FOLDER/.slurm/munge.key`) was readable by all users of the cluster, as the shared folder gives all users read access to new files.
+This is a security issue: anyone who can read the key can forge `MUNGE` credentials, e.g. as `root`, and run `Slurm` jobs as that user.
+Now, the key in the shared folder is readable by `root` only. A cluster launched before the update keeps its key: relaunch such a cluster to get a new key.
+
+The following defects are also fixed:
+
+- **Rocky Linux runs**: the base packages install replaced `coreutils` with `coreutils-single`. On an image with the full `coreutils` package, `yum` failed on the conflict, and the run could not install its base packages. Also, a `procps-ng` package requested in `CP_CAP_EXTRA_PKG` was renamed to `procps-ng-ng`, which `yum` could not find.
+  Now, `coreutils` is not installed next to `coreutils-single`, and `procps` is installed as `procps-ng` on Rocky Linux and RHEL.
+- **Environment modules** (`CP_CAP_MODULES`): on the RPM-based images, the build did not install `make`, and the build of the `Tcl` modules did not install `gcc`. On images with bash 4.4 or later (e.g. Rocky Linux 8 and 9, Ubuntu 18.04 and later), the `Tcl` modules build could not enter the sources folder. On Rocky Linux 8, `Lmod` (`CP_CAP_MODULES_TYPE=lmod`) asked for packages that Rocky Linux 8 does not have, without the `PowerTools` repository that has the others.
+  Now, `make` and `gcc` are installed, the build enters the sources folder, and `Lmod` on Rocky Linux 8 enables the `PowerTools` repository and installs only the packages it has.
+- **Slurm autoscaling**: the worker nodes that the autoscaler added to a queue did not get the name of the queue, so they joined the queue only if the `launch.system.parameters` preference passed the queue name to the workers. Also, the autoscaler rounded the memory request of a job down to whole GiB, e.g. `--mem 500M` was counted as 0 GiB, and `--mem-per-cpu` was rounded down for each CPU.
+  Now, the added workers get the name of their queue, and the memory request of a job is rounded up to whole GiB once, after it is multiplied by the number of CPUs or GPUs.
+- **Slurm queues**: the additional queues of a cluster were not configured if the shared folder of the cluster (`SHARED_FOLDER`) was not `/common`, as they looked for the `Slurm` configuration in `/common/.slurm`.
+  Now, they use the configuration in the shared folder of the cluster.
