@@ -27,8 +27,9 @@ import pytest
 SHELL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'shell')
 # Python scripts without the .py suffix, which the shell commands run with $CP_PYTHON_PATH
 PYTHON_SCRIPTS = ['spark_setup_ui']
-# "python", "python2", "pip" or "pip2" as a command: at the start of a line, of a quoted command or a substitution
-PYTHON_COMMAND = re.compile(r'(?:^\s*|[;&|`]\s*|\$\(\s*|"\s*)(?:python2?|pip2?)(?=\s|$)')
+# "python", "python2", "python3", "pip", "pip2" or "pip3" as a command: at the start of a line, of a quoted command or
+# a substitution
+PYTHON_COMMAND = re.compile(r'(?:^\s*|[;&|`]\s*|\$\(\s*|"\s*)(?:python[23]?|pip[23]?)(?=\s|$)')
 
 PIPELINE_STUB = '''import os
 
@@ -97,6 +98,20 @@ def run_command(tmpdir):
         return proc, logged.read().splitlines() if logged.check() else []
 
     return run
+
+
+@pytest.mark.parametrize('line,found', [
+    ('python script.py', True),
+    ('    python3 -c "print(1)"', True),
+    ('VALUE=$(pip3 install flask)', True),
+    ('pipe_exec "python2 script.py" Task', True),
+    ('cmd && pip install x', True),
+    ('$CP_PYTHON_PATH -m pip install flask', False),
+    ('yum install -y python3-devel python3', False),
+    ('echo "Installing pip"', False),
+])
+def test_the_python_command_check_finds_python_commands(line, found):
+    assert bool(PYTHON_COMMAND.search(line)) == found
 
 
 def test_no_shell_command_calls_python2_or_the_python_first_on_path():

@@ -112,8 +112,9 @@ def test_the_run_is_stopped_with_the_python_of_pipe_common(commit):
     assert not [call for call in calls if call.startswith('python ')]
 
 
-# "python", "python2", "pip" or "pip2" as a command: at the start of a line, of a quoted command or a substitution
-_PYTHON_COMMAND = re.compile(r'(?:^\s*|[;&|`]\s*|\$\(\s*|"\s*)(?:python2?|pip2?)(?=\s|$)')
+# "python", "python2", "python3", "pip", "pip2" or "pip3" as a command: at the start of a line, of a quoted command or
+# a substitution
+_PYTHON_COMMAND = re.compile(r'(?:^\s*|[;&|`]\s*|\$\(\s*|"\s*)(?:python[23]?|pip[23]?)(?=\s|$)')
 
 
 def test_no_commit_script_calls_the_python_first_on_path():
