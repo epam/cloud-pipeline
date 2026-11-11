@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects](#slurm-clusters-and-rocky-linux-runs-the-munge-key-is-readable-by-all-users-and-other-defects)
 
 ***
 
@@ -912,3 +913,22 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### Slurm clusters and Rocky Linux runs: the MUNGE key is readable by all users, and other defects
+
+[#4776](https://github.com/epam/cloud-pipeline/issues/4776)
+
+Previously, the `MUNGE` key of a `Slurm` cluster in the shared folder of the cluster (`$SHARED_FOLDER/.slurm/munge.key`) was readable by all users of the cluster, as the shared folder gives all users read access to new files.
+This is a security issue: anyone who can read the key can forge `MUNGE` credentials, e.g. as `root`, and run `Slurm` jobs as that user.
+Now, the key in the shared folder is readable by `root` only. A cluster launched before the update keeps its key: relaunch such a cluster to get a new key.
+
+The following defects are also fixed:
+
+- **Rocky Linux runs**: the base packages install replaced `coreutils` with `coreutils-single`. On an image with the full `coreutils` package, `yum` failed on the conflict, and the run could not install its base packages. Also, a `procps-ng` package requested in `CP_CAP_EXTRA_PKG` was renamed to `procps-ng-ng`, which `yum` could not find.
+  Now, `coreutils` is not installed next to `coreutils-single`, and `procps` is installed as `procps-ng` on Rocky Linux and RHEL.
+- **Environment modules** (`CP_CAP_MODULES`): on the RPM-based images, the build did not install `make`, and the build of the `Tcl` modules did not install `gcc`. On images with bash 4.4 or later (e.g. Rocky Linux 8 and 9, Ubuntu 18.04 and later), the `Tcl` modules build could not enter the sources folder. On Rocky Linux 8, `Lmod` (`CP_CAP_MODULES_TYPE=lmod`) asked for packages that Rocky Linux 8 does not have, without the `PowerTools` repository that has the others.
+  Now, `make` and `gcc` are installed, the build enters the sources folder, and `Lmod` on Rocky Linux 8 enables the `PowerTools` repository and installs only the packages it has.
+- **Slurm autoscaling**: the worker nodes that the autoscaler added to a queue did not get the name of the queue, so they joined the queue only if the `launch.system.parameters` preference passed the queue name to the workers. Also, the autoscaler rounded the memory request of a job down to whole GiB, e.g. `--mem 500M` was counted as 0 GiB, and `--mem-per-cpu` was rounded down for each CPU.
+  Now, the added workers get the name of their queue, and the memory request of a job is rounded up to whole GiB once, after it is multiplied by the number of CPUs or GPUs.
+- **Slurm queues**: the additional queues of a cluster were not configured if the shared folder of the cluster (`SHARED_FOLDER`) was not `/common`, as they looked for the `Slurm` configuration in `/common/.slurm`.
+  Now, they use the configuration in the shared folder of the cluster.
