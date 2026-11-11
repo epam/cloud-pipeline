@@ -36,16 +36,21 @@ from urllib.parse import urlparse
 
 import base64
 import hashlib
+import importlib
+import mimetypes
 from dataclasses import dataclass
 from io import BytesIO
 
 import click
 from google.auth.transport.requests import AuthorizedSession
-from google.cloud.storage import Client, Blob
+from google.cloud.storage import Client
 from google.oauth2.credentials import Credentials
-from google import resumable_media
-from google.resumable_media import DataCorruption
-from google.resumable_media.requests import Download
+
+try:
+    # google-cloud-storage 3.0 and later have the resumable media code and its exceptions inside
+    from google.cloud.storage.exceptions import DataCorruption
+except ImportError:
+    from google.resumable_media import DataCorruption
 
 from src.api.data_storage import DataStorage
 from src.config import Config
@@ -100,27 +105,13 @@ def _multipart_upload(upload_client, filename, bucket, key, config):
         raise
 
 
-def _multipart_download(download_client, bucket, key, filename, object_size, config, callback=None):
+def _multipart_download(download_client, filename, object_size, config, callback=None):
     """Replaces s3transfer.MultipartDownloader — sequential range download."""
     with open(filename, 'wb') as f:
         offset = 0
         while offset < object_size:
             end = min(offset + config.multipart_chunksize - 1, object_size - 1)
-            response = download_client.get_object(Bucket=bucket, Key=key,
-                                                  Range='bytes=%d-%d' % (offset, end))
-            body = response['Body']
-            if hasattr(body, 'read'):
-                while True:
-                    chunk = body.read()
-                    if not chunk:
-                        break
-                    f.write(chunk)
-                    if callback:
-                        callback(len(chunk))
-            else:
-                f.write(body)
-                if callback:
-                    callback(len(body))
+            download_client.download_range(f, start=offset, end=end, callback=callback)
             offset = end + 1
 
 
@@ -128,6 +119,8 @@ KB = 1024
 MB = KB * KB
 CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
 CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
+DEFAULT_RESUMABLE_DOWNLOAD_ATTEMPTS = 100
+PROGRESS_CHUNK_SIZE = 5 * MB
 CP_CLI_GCP_MULTIPART_THRESHOLD = 'CP_CLI_GCP_MULTIPART_THRESHOLD'
 CP_CLI_GCP_MULTIPART_CHUNKSIZE = 'CP_CLI_GCP_MULTIPART_CHUNKSIZE'
 CP_CLI_GCP_MAX_CONCURRENCY = 'CP_CLI_GCP_MAX_CONCURRENCY'
@@ -155,7 +148,7 @@ class S3TransferUploadClient(metaclass=ABCMeta):
 class S3TransferDownloadClient(metaclass=ABCMeta):
 
     @abstractmethod
-    def get_object(self, Bucket, Key, Range, *args, **kwargs):
+    def download_range(self, file_obj, start, end, callback=None):
         pass
 
 
@@ -230,17 +223,11 @@ class GsCompositeUploadClient(S3TransferUploadClient):
 
 class GsRangeDownloadClient(S3TransferDownloadClient):
 
-    def __init__(self, bucket, path, client, blob_object):
-        self._bucket = bucket
-        self._path = path
-        self._gcp = client
-        self._blob_object = blob_object if blob_object else self._blob_object
+    def __init__(self, blob):
+        self._blob = blob
 
-    def get_object(self, Bucket, Key, Range, *args, **kwargs):
-        start, end = Range.split('=')[1].split('-')
-        start = int(start)
-        end = int(end) if end else None
-        return {'Body': self._blob_object.get_content_stream(start=start, end=end)}
+    def download_range(self, file_obj, start, end, callback=None):
+        _download_blob(self._blob, file_obj, size=end - start + 1, progress_callback=callback, start=start, end=end)
 
 
 class _OutputStreamMixin(object):
@@ -278,7 +265,7 @@ class _ProgressOutputStream(_OutputStreamMixin):
     def write(self, data):
         self._stream.write(data)
         self._bytes_transferred += len(data)
-        current_chunk = self._bytes_transferred / self._progress_chunk_size
+        current_chunk = self._bytes_transferred // self._progress_chunk_size
         if current_chunk > self._progress_chunk:
             self._progress_chunk = current_chunk
             if self._progress_callback:
@@ -291,145 +278,113 @@ class _ProgressOutputStream(_OutputStreamMixin):
                 self._progress_callback(self._bytes_transferred - self._reported_bytes_transferred)
 
 
-class _ResumableIterReader:
+class _ProgressInputStream(object):
 
-    def __init__(self, get_iter, start, end, size, attempts):
-        self._get_iter = get_iter
-        self._start = start
-        self._end = end
-        self._size = size
-        self._total_attempts = attempts
-        self._attempts = self._total_attempts
-        self._bytes_transferred = 0
-        self._iter = None
-        self._need_resume = True
-        self._null = b''
+    def __init__(self, stream, progress_callback):
+        """
+        Input stream wrapper that reports the uploading progress, as google-cloud-storage reads the stream.
+
+        google-cloud-storage seeks the stream back to resend a chunk: the bytes that are read again are
+        not reported twice.
+
+        :param stream: Wrapping stream. It shall support tell().
+        :param progress_callback: Progress callback, it gets the number of the newly read bytes.
+        """
+        self._stream = stream
+        self._progress_callback = progress_callback
+        self._reported_position = stream.tell()
 
     def read(self, *args, **kwargs):
-        while self._bytes_transferred < self._size and self._attempts:
-            try:
-                if self._need_resume:
-                    self._iter = self._get_iter(self._start + self._bytes_transferred, self._end)
-                    self._need_resume = False
-                try:
-                    chunk = next(self._iter)
-                    self._bytes_transferred += len(chunk)
-                    return chunk
-                except StopIteration:
-                    return self._null
-            except RequestException as e:
-                self._attempts -= 1
-                self._need_resume = True
-                if not self._attempts:
-                    raise RuntimeError('Resumable download has failed after %s sequential resumes. '
-                                       'You can alter the number of allowed resumes using %s environment variable. '
-                                       'Original error: %s.'
-                                       % (self._total_attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
-        return self._null
-
-
-def _do_nothing(*args, **kwargs):
-    pass
-
-
-class _StreamingDownloadMixin(Blob):
-    """
-    Blob download mixin that allows to generate blob content streams.
-    """
-
-    def get_content_stream(self, start=None, end=None):
-        download_url = self._get_download_url()
-        headers = _get_encryption_headers(self._encryption_key)
-        headers["accept-encoding"] = "gzip"
-
-        transport = self._get_transport(None)
-
-        def get_iter(start, end):
-            # We should set not null stream parameter to be able to use iter_content later.
-            # It's ok to set any not null value since we also override _write_to_stream method.
-            download = Download(download_url, stream=42, headers=headers, start=start, end=end)
-            download._write_to_stream = _do_nothing
-            response = download.consume(transport)
-            return response.iter_content(chunk_size=resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE,
-                                         decode_unicode=False)
-
-        return _ResumableIterReader(get_iter, start, end, self._size, self._attempts)
-
-
-class _ResumableDownloadProgressMixin(Blob):
-    """
-    Blob download mixin that resumes a download in case of any low-level error and
-    provides support for downloading progress callbacks.
-    """
-
-    def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
-        stream = _ProgressOutputStream(file_obj, progress_callback=self._progress_callback,
-                                       progress_chunk_size=self._progress_chunk_size)
-        remaining_attempts = self._attempts
-        while stream.bytes_transferred < self._size and remaining_attempts:
-            try:
-                download = Download(
-                    download_url, stream=stream, headers=headers,
-                    start=stream.bytes_transferred, end=end
-                )
-                download.consume(transport)
-            except RequestException as e:
-                remaining_attempts -= 1
-                if not remaining_attempts:
-                    raise RuntimeError('Resumable download has failed after %s sequential resumes. '
-                                       'You can alter the number of allowed resumes using %s environment variable. '
-                                       'Original error: %s.'
-                                       % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
-        stream.close()
-        self.reload()
-
-
-class _UploadProgressMixin(Blob):
-    """
-    Blob upload mixin that provides support for uploading progress callbacks.
-    """
-
-    def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
-        upload, transport = self._initiate_resumable_upload(
-            client,
-            stream,
-            content_type,
-            size,
-            num_retries,
-            predefined_acl=predefined_acl,
-            chunk_size=self.chunk_size
-        )
-
-        response = None
-        bytes_uploaded = 0
-        while not upload.finished:
-            response = upload.transmit_next_chunk(transport)
-            chunk_bytes_uploaded = upload.bytes_uploaded - bytes_uploaded
-            bytes_uploaded = upload.bytes_uploaded
+        data = self._stream.read(*args, **kwargs)
+        position = self._stream.tell()
+        if position > self._reported_position:
             if self._progress_callback:
-                self._progress_callback(chunk_bytes_uploaded)
+                self._progress_callback(position - self._reported_position)
+            self._reported_position = position
+        return data
 
-        return response
+    def tell(self):
+        return self._stream.tell()
+
+    def seek(self, *args, **kwargs):
+        return self._stream.seek(*args, **kwargs)
 
 
-class _CustomBlob(_StreamingDownloadMixin, _ResumableDownloadProgressMixin, _UploadProgressMixin, Blob):
-    PROGRESS_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
-    DEFAULT_RESUME_ATTEMPTS = 100
+def _resumable_download_attempts():
+    return int(os.environ.get(CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS) or DEFAULT_RESUMABLE_DOWNLOAD_ATTEMPTS)
 
-    def __init__(self, size, progress_callback, attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
-        """
-        Custom blob that supports uploading / downloading progress callbacks, implements resumable download strategy
-        and allows blob content streaming using several blob mixins.
 
-        :param size: Total size of the uploading / downloading blob.
-        :param attempts: Maximum number of download sequential resumes before failing. Defaults to
-        DEFAULT_RESUME_ATTEMPTS and can be overridden with CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS environment variable.
-        """
-        self._size = size
-        self._progress_callback = progress_callback
-        self._attempts = int(os.environ.get(CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS) or attempts)
-        self._progress_chunk_size = _CustomBlob.PROGRESS_CHUNK_SIZE
-        super(_CustomBlob, self).__init__(*args, **kwargs)
+def _download_blob(blob, file_obj, size, progress_callback=None, start=None, end=None):
+    """
+    Downloads a blob, or its byte range from start to end inclusive, to a file object.
+
+    The download resumes from the last written byte, if it fails with a network error. It fails after
+    CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS such failures. The progress callback is called every PROGRESS_CHUNK_SIZE.
+
+    Only the public API of google-cloud-storage is used: it retries the failed requests by itself as well.
+
+    :param blob: Downloading blob.
+    :param file_obj: Destination file object.
+    :param size: Number of the bytes to download: the blob size, or the range size.
+    :param progress_callback: Progress callback, it gets the number of the newly written bytes.
+    :param start: The first byte of the range, or None for the whole blob.
+    :param end: The last byte of the range, or None for the rest of the blob.
+    """
+    if not size:
+        blob.download_to_file(file_obj, start=start, end=end)
+        return
+    stream = _ProgressOutputStream(file_obj, progress_callback=progress_callback,
+                                   progress_chunk_size=PROGRESS_CHUNK_SIZE)
+    attempts = _resumable_download_attempts()
+    remaining_attempts = attempts
+    offset = start or 0
+    while stream.bytes_transferred < size and remaining_attempts:
+        bytes_transferred = stream.bytes_transferred
+        try:
+            if bytes_transferred:
+                # A checksum covers the whole blob, it cannot check a resumed part
+                blob.download_to_file(stream, start=offset + bytes_transferred, end=end, checksum=None)
+            else:
+                blob.download_to_file(stream, start=start, end=end)
+            if stream.bytes_transferred == bytes_transferred:
+                raise RuntimeError('Download of %s has stopped at %s bytes of %s.'
+                                   % (blob.name, offset + bytes_transferred, offset + size))
+        except RequestException as e:
+            remaining_attempts -= 1
+            if not remaining_attempts:
+                raise RuntimeError('Resumable download has failed after %s sequential resumes. '
+                                   'You can alter the number of allowed resumes using %s environment variable. '
+                                   'Original error: %s.'
+                                   % (attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, str(e)))
+    stream.close()
+
+
+def _upload_blob_from_file(blob, file_obj, progress_callback=None, size=None, content_type=None):
+    blob.upload_from_file(_ProgressInputStream(file_obj, progress_callback), size=size, content_type=content_type)
+
+
+def _upload_blob_from_filename(blob, filename, progress_callback=None):
+    # As blob.upload_from_filename does: the content type is guessed from the file name
+    content_type, _ = mimetypes.guess_type(filename)
+    with open(filename, 'rb') as file_obj:
+        _upload_blob_from_file(blob, file_obj, progress_callback=progress_callback,
+                               size=os.fstat(file_obj.fileno()).st_size, content_type=content_type)
+
+
+# google-cloud-storage reads a downloading response in chunks of this size. It is a module constant: of
+# google-resumable-media before google-cloud-storage 3.0, and of google-cloud-storage itself since then.
+_DOWNLOAD_CHUNK_SIZE_MODULES = ['google.cloud.storage._media.requests._request_helpers',
+                                'google.resumable_media.requests._request_helpers']
+
+
+def _set_download_chunk_size(chunk_size):
+    for module_name in _DOWNLOAD_CHUNK_SIZE_MODULES:
+        try:
+            module = importlib.import_module(module_name)
+        except ImportError:
+            continue
+        if hasattr(module, '_SINGLE_GET_CHUNK_SIZE'):
+            module._SINGLE_GET_CHUNK_SIZE = chunk_size
 
 
 class GsManager:
@@ -437,14 +392,6 @@ class GsManager:
     def __init__(self, client, events=None):
         self.client = client
         self.events = events
-
-    def custom_blob(self, bucket, blob_name, progress_callback, size):
-        return _CustomBlob(
-            size=size,
-            progress_callback=progress_callback,
-            name=blob_name,
-            bucket=bucket
-        )
 
 
 class GsListingManager(GsManager, AbstractListingManager):
@@ -774,20 +721,13 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         self._replace_default_download_chunk_size(self._buffering)
         transfer_config = self._get_transfer_config(io_threads)
         self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
+        bucket = self.client.bucket(source_wrapper.bucket.path)
+        blob = bucket.blob(source_key)
         if size > transfer_config.multipart_threshold:
-            bucket = self.client.bucket(source_wrapper.bucket.path)
-            blob = self.custom_blob(bucket, source_key, None, size)
-            download_client = GsRangeDownloadClient(source_wrapper.bucket.path, to_string(destination_key), self.client,
-                                                    blob_object=blob)
-            _multipart_download(download_client, source_wrapper.bucket.path, source_key,
-                                to_string(destination_key), size, transfer_config, callback=progress_callback)
+            _multipart_download(GsRangeDownloadClient(blob), to_string(destination_key), size, transfer_config,
+                                callback=progress_callback)
         else:
-            bucket = self.client.bucket(source_wrapper.bucket.path)
-            if StorageOperations.file_is_empty(size):
-                blob = bucket.blob(source_key)
-            else:
-                blob = self.custom_blob(bucket, source_key, progress_callback, size)
-            self._download_to_file(blob, to_string(destination_key))
+            self._download_to_file(blob, to_string(destination_key), size, progress_callback)
         if clean:
             self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             blob.delete()
@@ -805,16 +745,16 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             transfer_config.max_concurrency = max(io_threads, 1)
         return transfer_config
 
-    def _download_to_file(self, blob, destination_key):
+    def _download_to_file(self, blob, destination_key, size, progress_callback):
         try:
             with open(destination_key, "wb", buffering=self._buffering) as file_obj:
-                blob.download_to_file(file_obj)
+                _download_blob(blob, file_obj, size, progress_callback=progress_callback)
         except DataCorruption:
             os.remove(destination_key)
             raise
 
     def _replace_default_download_chunk_size(self, chunk_size):
-        resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE = chunk_size
+        _set_download_chunk_size(chunk_size)
 
 
 class GsDownloadStreamManager(GsManager, AbstractTransferManager):
@@ -844,18 +784,15 @@ class GsDownloadStreamManager(GsManager, AbstractTransferManager):
             progress_callback = None
         self._replace_default_download_chunk_size(self._buffering)
         self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
-        bucket = self.client.bucket(source_wrapper.bucket.path)
-        if StorageOperations.file_is_empty(size):
-            blob = bucket.blob(source_key)
-        else:
-            blob = self.custom_blob(bucket, source_key, progress_callback, size)
-        blob.download_to_file(destination_wrapper.get_output_stream(destination_key))
+        blob = self.client.bucket(source_wrapper.bucket.path).blob(source_key)
+        _download_blob(blob, destination_wrapper.get_output_stream(destination_key), size,
+                       progress_callback=progress_callback)
         if clean:
             self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             blob.delete()
 
     def _replace_default_download_chunk_size(self, chunk_size):
-        resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE = chunk_size
+        _set_download_chunk_size(chunk_size)
 
 
 class GsUploadManager(GsManager, AbstractTransferManager):
@@ -902,10 +839,9 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             _multipart_upload(upload_client, to_string(source_key), destination_wrapper.bucket.path,
                               destination_key, transfer_config)
         else:
-            bucket = self.client.bucket(destination_wrapper.bucket.path)
-            blob = self.custom_blob(bucket, destination_key, progress_callback, size)
+            blob = self.client.bucket(destination_wrapper.bucket.path).blob(destination_key)
             blob.metadata = destination_tags
-            blob.upload_from_filename(to_string(source_key))
+            _upload_blob_from_filename(blob, to_string(source_key), progress_callback=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
@@ -973,10 +909,10 @@ class GSUploadStreamManager(GsManager, AbstractTransferManager):
             progress_callback = None
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
-        bucket = self.client.bucket(destination_wrapper.bucket.path)
-        blob = self.custom_blob(bucket, destination_key, progress_callback, size)
+        blob = self.client.bucket(destination_wrapper.bucket.path).blob(destination_key)
         blob.metadata = destination_tags
-        blob.upload_from_file(_SourceUrlIO(source_wrapper.get_input_stream(source_key)))
+        _upload_blob_from_file(blob, _SourceUrlIO(source_wrapper.get_input_stream(source_key)),
+                               progress_callback=progress_callback)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
                             tags=destination_tags)
 
