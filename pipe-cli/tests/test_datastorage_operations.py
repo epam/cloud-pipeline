@@ -92,3 +92,43 @@ def test_mvtodir_moves_a_storage_to_a_folder_by_path():
 
     load.assert_called_once_with('parent/child')
     mvtodir.assert_called_once_with('storage', 7)
+
+
+def _transfer_returns(module_path):
+    import ast
+    with open(module_path) as module_file:
+        tree = ast.parse(module_file.read())
+    for cls in (node for node in tree.body if isinstance(node, ast.ClassDef)):
+        for method in (node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == 'transfer'):
+            for node in ast.walk(method):
+                if isinstance(node, ast.Return) and node.value is not None:
+                    yield cls.name
+
+
+def test_transfer_managers_return_nothing():
+    # A returned transfer result makes the CLI save the object tags with the batch tag API of the platform,
+    # which this version of the API does not have
+    storage_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src', 'utilities',
+                               'storage')
+    for module in ['s3.py', 'gs.py', 'azure.py', 'local.py']:
+        assert list(_transfer_returns(os.path.join(storage_dir, module))) == [], module
+
+
+def test_transfer_makes_no_tag_api_calls():
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock, patch
+    from src.utilities import datastorage_operations
+
+    manager = MagicMock()
+    manager.transfer.return_value = None
+    destination = MagicMock()
+    destination.is_local.return_value = False
+    transfer_params = SimpleNamespace(manager=manager, source_wrapper=MagicMock(), destination_wrapper=destination,
+                                      clean=True, quiet=True, tags=(), io_threads=None)
+    items = [('File', '/data/file%d' % i, 'file%d' % i, 1) for i in range(150)]
+
+    with patch.object(datastorage_operations, 'DataStorage') as data_storage:
+        DataStorageOperations._transfer_items(items, transfer_params)
+
+    assert manager.transfer.call_count == 150
+    assert data_storage.mock_calls == []

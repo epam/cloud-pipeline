@@ -246,7 +246,9 @@ class TestGsUploadManager(object):
         content = _content(1024)
         progress = _Progress()
 
-        self._upload(client, tmp_path, content, 'folder/file.json', tags=('key=value',), progress=progress)
+        result = self._upload(client, tmp_path, content, 'folder/file.json', tags=('key=value',), progress=progress)
+
+        assert result is None
 
         assert server.objects['folder/file.json'] == content
         assert server.upload_types == ['multipart']

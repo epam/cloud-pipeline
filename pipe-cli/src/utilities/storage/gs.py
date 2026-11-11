@@ -59,7 +59,7 @@ from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsMod
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import AbstractRestoreManager, AbstractListingManager, StorageOperations, \
-    AbstractDeleteManager, AbstractTransferManager, UploadResult, TransferResult
+    AbstractDeleteManager, AbstractTransferManager
 
 
 
@@ -660,8 +660,6 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         if clean:
             self.events.put(DataAccessEvent(source_blob.name, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_blob.delete()
-        return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
-                              tags=destination_tags)
 
     def _destination_tags(self, source_wrapper, full_path, raw_tags):
         tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
@@ -844,8 +842,6 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             _upload_blob_from_filename(blob, to_string(source_key), progress_callback=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
-        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
-                            tags=destination_tags)
 
     def _get_transfer_config(self, size, io_threads):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
@@ -913,8 +909,6 @@ class GSUploadStreamManager(GsManager, AbstractTransferManager):
         blob.metadata = destination_tags
         _upload_blob_from_file(blob, _SourceUrlIO(source_wrapper.get_input_stream(source_key)),
                                progress_callback=progress_callback)
-        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
-                            tags=destination_tags)
 
 
 class GsTemporaryCredentials:
