@@ -37,6 +37,7 @@
 - [Access to the pipeline repositories for the pipeline roles](#access-to-the-pipeline-repositories-for-the-pipeline-roles)
 - [GitLab 19 support](#gitlab-19-support)
 - [VS Code extension: the folder opened on connect](#vs-code-extension-the-folder-opened-on-connect)
+- [Python 3.12 in the node images](#python-312-in-the-node-images)
 
 ***
 
@@ -709,6 +710,22 @@ Other fixes keep the platform working with the new GitLab versions:
 On connect to a run, the Cloud Pipeline Remote extension for VS Code and Cursor opens the home folder of the user it connects as.  
 In the current version, a run can ask for another folder, e.g. a project folder in the image. For that, set the new system parameter **`CP_VSCODE_WORKSPACE_DIR`** to the absolute path of the folder - at launch, or as a default parameter of a tool. The extension opens this folder for any user who connects to the run, if the user can open it. Otherwise, the extension shows a warning with the reason, and opens the home folder, as before.  
 On a deployment that is updated, not installed anew, the parameter is offered in the list of system parameters only after an admin adds it to the **`launch.system.parameters`** preference. Until then, it can be set as a regular parameter of a run.
+
+## Python 3.12 in the node images
+
+The node images are the cloud images that the compute nodes start from. `deploy/infra/build-infra.sh` builds the AWS and Azure images, with the `install-common-node.sh` and `install-gpu-node.sh` scripts in `deploy/infra/aws` and `deploy/infra/az`. `deploy/infra/gcp` has such scripts for GCP, but `build-infra.sh` does not build GCP images.
+
+Previously, the AWS and GCP scripts installed Python 2 (`python`) and its `pip` (`get-pip.py` 2.7). The Azure scripts installed `python`.
+
+Now, these scripts no longer install Python 2 or its `pip`:
+
+- The AWS images (common and GPU) have the platform's Python 3.12 distribution in `/usr/local/python3.12`, from the `tools/python/3/python3.12.tar.gz` file of the public Cloud Pipeline bucket. This is the Python 3.12 that the commit and the pause of a run use on the node host, see [Runs on Python 3.12](#runs-on-python-312). In `/usr/bin`, `python3` and `pip3` are linked to it only if the base image has no `python3` of its own. The distribution is installed only if it runs (`import ssl` and `pip`). If it cannot be downloaded or does not run, the image is still built, without Python 3.12, and the install script logs an error.
+- The Azure and GCP images do not get Python 3.12.
+- If the machine that builds the images has no `aws`, `build-infra.sh` installs the AWS CLI with `python3` and `pip` from the packages of the OS. Where the OS does not allow `pip` to install into its Python (PEP 668, e.g. Ubuntu 24.04), this fails: install the AWS CLI on such a machine before the build.
+
+The Python 2 that the base image has stays. On Amazon Linux 2, `yum`, `cloud-init` and the AWS CLI v1 run on it, and the install script calls this AWS CLI to tag the instance when it is done. On CentOS 7, `yum` and the Azure VM agent run on it.
+
+Please note: only the images that are built anew change.
 
 ***
 
