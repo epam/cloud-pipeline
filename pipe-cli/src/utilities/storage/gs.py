@@ -54,7 +54,7 @@ from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsMod
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import AbstractRestoreManager, AbstractListingManager, StorageOperations, \
-    AbstractDeleteManager, AbstractTransferManager
+    AbstractDeleteManager, AbstractTransferManager, UploadResult, TransferResult
 
 
 
@@ -699,7 +699,8 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
                              DataAccessEvent(destination_path, DataAccessType.WRITE, storage=destination_wrapper.bucket)])
         source_bucket.copy_blob(source_blob, destination_bucket, destination_path, client=self.client)
         destination_blob = destination_bucket.blob(destination_path)
-        destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
+        destination_tags = self._destination_tags(source_wrapper, full_path, tags)
+        destination_blob.metadata = destination_tags
         destination_blob.patch()
         # Transfer between buckets in GCP is almost an instant operation.
         # Therefore, the progress bar can be updated only once.
@@ -712,6 +713,8 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         if clean:
             self.events.put(DataAccessEvent(source_blob.name, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_blob.delete()
+        return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
+                              tags=destination_tags)
 
     def _destination_tags(self, source_wrapper, full_path, raw_tags):
         tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
@@ -891,19 +894,22 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             progress_callback = None
         transfer_config = self._get_transfer_config(size, io_threads)
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
-        if size > transfer_config.multipart_threshold:
+        destination_tags = StorageOperations.generate_tags(tags, source_key)
+        if size is not None and size > transfer_config.multipart_threshold:
             upload_client = GsCompositeUploadClient(destination_wrapper.bucket.path, destination_key,
-                                                    StorageOperations.generate_tags(tags, source_key),
+                                                    destination_tags,
                                                     self.client, progress_callback)
             _multipart_upload(upload_client, to_string(source_key), destination_wrapper.bucket.path,
                               destination_key, transfer_config)
         else:
             bucket = self.client.bucket(destination_wrapper.bucket.path)
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
-            blob.metadata = StorageOperations.generate_tags(tags, source_key)
+            blob.metadata = destination_tags
             blob.upload_from_filename(to_string(source_key))
         if clean:
             source_wrapper.delete_item(source_key)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
     def _get_transfer_config(self, size, io_threads):
         multipart_threshold, multipart_chunksize = self._get_adjusted_parameters(size,
@@ -971,6 +977,8 @@ class GSUploadStreamManager(GsManager, AbstractTransferManager):
         blob = self.custom_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = destination_tags
         blob.upload_from_file(_SourceUrlIO(source_wrapper.get_input_stream(source_key)))
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class GsTemporaryCredentials:

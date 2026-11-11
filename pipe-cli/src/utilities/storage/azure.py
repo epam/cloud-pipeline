@@ -39,7 +39,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager
+    AbstractDeleteManager, UploadResult, TransferResult
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
@@ -252,6 +252,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         if clean:
             self.events.put(DataAccessEvent(full_path, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_service.blob_client(source_wrapper.bucket.path, full_path).delete_blob()
+        return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
+                              tags=destination_tags)
 
     def _wait_for_copying(self, destination_bucket, destination_path, full_path):
         for _ in range(0, TransferBetweenAzureBucketsManager._POLLS_ATTEMPTS):
@@ -340,6 +342,8 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
                                     max_concurrency=max_connections)
         if clean:
             source_wrapper.delete_item(source_key)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class _SourceUrlIO(io.BytesIO):
@@ -381,6 +385,8 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         blob_client = self.service.blob_client(destination_wrapper.bucket.path, destination_key)
         blob_client.upload_blob(_SourceUrlIO(source_key), overwrite=True, metadata=destination_tags,
                                 max_concurrency=max_connections)
+        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=None,
+                            tags=destination_tags)
 
 
 class AzureTemporaryCredentials:
