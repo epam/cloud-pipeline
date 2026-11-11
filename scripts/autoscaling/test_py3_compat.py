@@ -260,6 +260,23 @@ class AzureNodeupTagsTest(unittest.TestCase):
         self.assertEqual(tags, {'a': '1', 'b': '2'})
 
 
+class AzureNodeupOsProfileTest(unittest.TestCase):
+    # Regression test (issue #4774): get_os_profile() passed the user data script, a str, to base64.b64encode(),
+    # which takes bytes under Python 3 (TypeError), so no Azure node could be created.
+    def test_custom_data_is_the_user_data_script_in_base64(self):
+        import base64
+        azure_nodeup = load_azure_module('azure_nodeup_os_profile_test', 'azure/nodeup.py')
+        user_data_script = '#!/bin/bash\necho "init"\n'
+
+        profile = azure_nodeup.get_os_profile('az-node', 'ssh-rsa AAAA', 'pipeline', user_data_script,
+                                              'computer_name')
+
+        # Text: str on Python 3, str or unicode on Python 2
+        self.assertIsInstance(profile['custom_data'], (str, type(u'')))
+        self.assertEqual(base64.b64decode(profile['custom_data']), user_data_script.encode('utf-8'))
+        self.assertEqual(profile['computer_name'], 'az-node')
+
+
 class AzureClusterScriptsImportTest(unittest.TestCase):
     # Regression test, same class as ImportUnderCurrentInterpreterTest above but for the
     # azure/*.py scripts, which that test deliberately excludes (see its comment) - catches a
