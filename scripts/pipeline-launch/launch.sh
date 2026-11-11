@@ -366,11 +366,84 @@ function check_python_module_installed {
       return $?
 }
 
+# Time limits of the apt-get, yum and apk calls: a call that hangs fails, and its caller's retries take over.
+# E.g. "apt-get update" can stall for good after a delayed retry (Launchpad bug 2003851, seen with the apt of Ubuntu
+# 22.04, 24.04 and Debian 12; apt 3.0.3 fixes one cause only).
+# - CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC: a refresh of the package lists, 600 by default, tried once more on a timeout
+# - CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC: an install or an upgrade, 3600 by default
+# 0 means no limit. At the limit the call gets TERM, and KILL 60 s later where timeout takes -k. GNU timeout signals
+# the whole process group (e.g. the apt download methods; dpkg runs in its own session), busybox the command only.
+
+# Whether "timeout SECS COMMAND" works (GNU coreutils, busybox 1.30+; older busybox takes "-t SECS"), and with -k
+# (not in busybox 1.30). Checked once
+function check_pkg_manager_timeout_supported {
+      if [ -z "$_CP_PKG_MANAGER_TIMEOUT_SUPPORTED" ]; then
+            _CP_PKG_MANAGER_TIMEOUT_SUPPORTED=false
+            _CP_PKG_MANAGER_TIMEOUT_KILL_ARGS=
+            if check_installed "timeout"; then
+                  if timeout -k 1 10 true >/dev/null 2>&1; then
+                        _CP_PKG_MANAGER_TIMEOUT_SUPPORTED=true
+                        _CP_PKG_MANAGER_TIMEOUT_KILL_ARGS="-k 60"
+                  elif timeout 10 true >/dev/null 2>&1; then
+                        _CP_PKG_MANAGER_TIMEOUT_SUPPORTED=true
+                  fi
+            fi
+            if [ "$_CP_PKG_MANAGER_TIMEOUT_SUPPORTED" != "true" ]; then
+                  echo "[WARN] No usable timeout command, the package manager calls run with no time limit" >&2
+            fi
+      fi
+      [ "$_CP_PKG_MANAGER_TIMEOUT_SUPPORTED" == "true" ]
+}
+
+# Runs the command (the arguments after the first) with a limit of $1 seconds. Sets CP_PKG_MANAGER_TIMED_OUT
+function run_pkg_manager_with_timeout {
+      local _timeout_sec="$1"
+      shift
+      CP_PKG_MANAGER_TIMED_OUT=false
+      if ! [[ "$_timeout_sec" =~ ^[0-9]+$ ]]; then
+            echo "[WARN] The time limit '$_timeout_sec' is not a number of seconds, '$*' runs with no limit" >&2
+            "$@"
+            return $?
+      fi
+      if [ "$_timeout_sec" -eq 0 ] || ! check_pkg_manager_timeout_supported; then
+            "$@"
+            return $?
+      fi
+      local _start_sec=$SECONDS
+      timeout $_CP_PKG_MANAGER_TIMEOUT_KILL_ARGS "$_timeout_sec" "$@"
+      local _result=$?
+      # GNU timeout exits with 124, busybox with the status of the stopped command
+      if [ "$_result" -eq 124 ] || { [ "$_result" -ne 0 ] && [ $((SECONDS - _start_sec)) -ge "$_timeout_sec" ]; }; then
+            CP_PKG_MANAGER_TIMED_OUT=true
+            echo "[WARN] '$*' did not finish in $_timeout_sec seconds and was stopped" >&2
+      fi
+      return $_result
+}
+
+# Refreshes the package lists (the arguments are the command). Tried once more on a timeout: the apt stall depends on
+# when the downloads fail, so the next refresh usually passes
+function run_pkg_manager_update {
+      local _timeout_sec="${CP_PKG_MANAGER_UPDATE_TIMEOUT_SEC:-600}"
+      run_pkg_manager_with_timeout "$_timeout_sec" "$@"
+      local _result=$?
+      if [ "$CP_PKG_MANAGER_TIMED_OUT" == "true" ]; then
+            echo "[WARN] Refreshing the package lists once more: $*" >&2
+            run_pkg_manager_with_timeout "$_timeout_sec" "$@"
+            _result=$?
+      fi
+      return $_result
+}
+
+# Installs or upgrades packages (the arguments are the command)
+function run_pkg_manager_install {
+      run_pkg_manager_with_timeout "${CP_PKG_MANAGER_INSTALL_TIMEOUT_SEC:-3600}" "$@"
+}
+
 function upgrade_installed_packages {
       local _UPGRADE_COMMAND_TEXT=
-      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
-      check_installed "yum" && { _UPGRADE_COMMAND_TEXT="yum update -q -y";  };
-      check_installed "apk" && { _UPGRADE_COMMAND_TEXT="apk update -q 1>/dev/null && apk upgrade -q 1>/dev/null";  };
+      check_installed "apt-get" && { _UPGRADE_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; run_pkg_manager_update apt-get update -y -qq --allow-insecure-repositories; run_pkg_manager_install apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confdef\" -o Dpkg::Options::=\"--force-confold\" upgrade";  };
+      check_installed "yum" && { _UPGRADE_COMMAND_TEXT="run_pkg_manager_install yum update -q -y";  };
+      check_installed "apk" && { _UPGRADE_COMMAND_TEXT="run_pkg_manager_update apk update -q 1>/dev/null && run_pkg_manager_install apk upgrade -q 1>/dev/null";  };
       eval "$_UPGRADE_COMMAND_TEXT"
       return $?
 }
@@ -537,7 +610,7 @@ function configure_package_manager {
             sed -i '/deb http:\/\/deb.debian.org\/debian jessie-updates main/d' /etc/apt/sources.list
             mkdir -p /etc/apt/apt.conf.d/
             echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
-            apt-get update -y --allow-insecure-repositories
+            run_pkg_manager_update apt-get update -y --allow-insecure-repositories
       fi
 
       # Add a Cloud Pipeline repo, which contains the required runtime packages
@@ -560,16 +633,24 @@ function configure_package_manager {
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/yum.repos.d/cuda.repo
 
+                        CP_PKG_MANAGER_TIMED_OUT=false
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
-                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
+                        run_pkg_manager_install yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
 
                         if [ $? -ne 0 ]; then
+                              # The timeout warning went to the yum log
+                              if [ "$CP_PKG_MANAGER_TIMED_OUT" == "true" ]; then
+                                    echo "[WARN] (attempt: $_CP_REPO_RETRY_ITER) yum did not finish in time and was stopped, see /var/log/yum.cp.log"
+                              fi
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                               rm -f /etc/yum.repos.d/cloud-pipeline.repo
                         else
                               # If the CP repo was configured correctly - allow others fail
                               if ! check_installed "yum-config-manager"; then
-                                    yum --disablerepo=* --enablerepo=cloud-pipeline install yum-utils -y -q >> /var/log/yum.cp.log 2>&1
+                                    run_pkg_manager_install yum --disablerepo=* --enablerepo=cloud-pipeline install yum-utils -y -q >> /var/log/yum.cp.log 2>&1
+                                    if [ "$CP_PKG_MANAGER_TIMED_OUT" == "true" ]; then
+                                          echo "[WARN] yum did not finish in time and was stopped, see /var/log/yum.cp.log"
+                                    fi
                               fi
                               yum-config-manager --save --setopt=\*.skip_if_unavailable=true >> /var/log/yum.cp.log 2>&1
                               # Disable "fastermirror" as it slows down the installtion and is not needed during the CP repo usage
@@ -617,8 +698,8 @@ function configure_package_manager {
                         # todo: Remove these dependencies because their installation requires internet access
                         if ! check_installed curl || ! check_installed gpg; then
                             echo "Installing additional dependencies using default apt repos..."
-                            apt-get update -qq -y --allow-insecure-repositories && \
-                            apt-get install curl apt-transport-https gnupg -y -qq
+                            run_pkg_manager_update apt-get update -qq -y --allow-insecure-repositories && \
+                            run_pkg_manager_install apt-get install curl apt-transport-https gnupg -y -qq
                         fi
 
                         if check_cp_cap CP_CAP_OFFLINE; then
@@ -631,7 +712,7 @@ function configure_package_manager {
                         sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
                         curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                         sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
-                        apt-get update -qq -y --allow-insecure-repositories
+                        run_pkg_manager_update apt-get update -qq -y --allow-insecure-repositories
 
                         if [ $? -ne 0 ]; then
                             echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
@@ -691,16 +772,16 @@ function get_install_command_by_current_distr {
       if [ -z "$_TOOLS_TO_INSTALL_VERIFIED" ]; then
             _INSTALL_COMMAND_TEXT=
       else
-            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
-            check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; run_pkg_manager_update apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive run_pkg_manager_install apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apk" && { _INSTALL_COMMAND_TEXT="run_pkg_manager_update apk update -q 1>/dev/null; run_pkg_manager_install apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
                   # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
                   if [ "$CP_REPO_ENABLED" == "true" ] && \
                      [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
                      [ "$CP_VER" == "7" ]; then
-                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && run_pkg_manager_install yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
-                        _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
+                        _INSTALL_COMMAND_TEXT="yum clean all -q && run_pkg_manager_install yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   fi
             fi
       fi
