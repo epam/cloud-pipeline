@@ -4,7 +4,7 @@ Storage Lifecycle Service is a python application to manage and execute storage 
 
 ## Requirements
 
-- Python 3.7
+- Python 3.12
 - attrs 21.2.0 
 - dataclasses 0.6
 - schedule 1.1.0 

@@ -13,25 +13,24 @@
 # limitations under the License.
 
 FROM rockylinux/rockylinux:9.8
-# bzip2 unpacks micromamba, gcc builds the C extensions of the packages that come as sources, procps-ng provides pgrep for liveness.sh
+# gcc builds the C extensions of the packages that come as sources, procps-ng provides pgrep for liveness.sh,
+# libxcrypt-compat provides libcrypt.so.1, which the crypt module of the Python 3.12 below links
 RUN dnf install -y \
                 wget \
                 unzip \
                 gcc \
-                bzip2 \
-                procps-ng
+                procps-ng \
+                libxcrypt-compat && \
+    dnf clean all
 
-# Python 3.6, the python3 of the Ubuntu 18.04 image this one replaces: the pipe-common and sls pins are for it.
-# Rocky Linux 9 has no Python 3.6 package, so it comes from conda-forge, via micromamba. Its bin goes first in PATH,
-# as the python3 and pip of the steps below and of start.sh; /usr/bin/python3 stays the system one, for dnf.
-ENV MAMBA_ROOT_PREFIX=/opt/local/mamba
-ENV CP_SLS_PYTHON_HOME=$MAMBA_ROOT_PREFIX/envs/sls
-ENV PATH=$CP_SLS_PYTHON_HOME/bin:$PATH
-RUN mkdir -p $MAMBA_ROOT_PREFIX && \
-    cd $MAMBA_ROOT_PREFIX && \
-    curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && \
-    bin/micromamba create -y --prefix $CP_SLS_PYTHON_HOME -c conda-forge python=3.6 pip && \
-    bin/micromamba clean -a -y
+# Python 3.12, the version pipe-common requires: the platform's Python 3.12 distribution. Its python3 and pip3 in
+# /usr/local/bin are the ones of the steps below and of start.sh; /usr/bin/python3 stays the system one, for dnf.
+ARG CP_PYTHON3_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/python/3/python3.12.tar.gz"
+RUN wget -q $CP_PYTHON3_DIST_URL -O python3.tgz && \
+    tar -xzf python3.tgz -C /usr/local/ && \
+    rm -f python3.tgz && \
+    ln -sf /usr/local/python3.12/bin/python3.12 /usr/local/bin/python3 && \
+    ln -sf /usr/local/python3.12/bin/pip3.12 /usr/local/bin/pip3
 RUN python3 -m pip install --upgrade pip && python3 -m pip install setuptools_rust
 
 # API distribution
@@ -63,8 +62,10 @@ RUN cd /tmp && \
     chown -R root:root sls && chmod -R 777 sls && \
     rm -rf /tmp/*
 
+# pip, not "setup.py install": since setuptools 80.1, "setup.py install" no longer runs easy_install, so it would
+# install the sls package without its dependencies
 RUN cd $CP_SLS_HOME/sls && \
-    python3 setup.py install
+    python3 -m pip install .
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
