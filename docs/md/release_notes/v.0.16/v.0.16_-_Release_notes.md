@@ -85,6 +85,7 @@
     - [A run stays at its start for good when `apt-get update` stalls](#a-run-stays-at-its-start-for-good-when-apt-get-update-stalls)
     - [The node logger and the search services do not use the docker registry login or prefix](#the-node-logger-and-the-search-services-do-not-use-the-docker-registry-login-or-prefix)
     - [A failed backup copy removes a good backup](#a-failed-backup-copy-removes-a-good-backup)
+    - [`pipe storage cp` and `mv` fail with a file list on Windows and macOS](#pipe-storage-cp-and-mv-fail-with-a-file-list-on-windows-and-macos)
 
 ***
 
@@ -1038,3 +1039,9 @@ Please note:
 - the good backups are kept only while the copies keep failing, and a storage whose copies keep failing is not cleaned at all
 - the partial date folder of a failed copy is not removed. The cleaning after the next successful copy counts it, and removes one good backup for each such folder. So delete the date folders of the failed copies from the storage before the next successful copy
 - the cleaning removes the backups that `pipe storage ls` lists first. On AWS, these are the oldest ones, but the listing is not ordered on GCP ([#4233](https://github.com/epam/cloud-pipeline/issues/4233))
+### `pipe storage cp` and `mv` fail with a file list on Windows and macOS
+
+[#4764](https://github.com/epam/cloud-pipeline/issues/4764)
+
+Previously, the `pipe storage cp` and `pipe storage mv` commands with the `--file-list` option failed in the Windows and macOS builds of the `pipe` CLI with the `a bytes-like object is required, not 'str'` error, as these builds run on Python 3. In the Linux build, the commands failed if a path in the list had non-ASCII characters. In all builds, a blank line in the list made them fail.
+Now, all builds read the file list as UTF-8 text, with or without a byte order mark, and skip blank lines. As in a folder transfer, paths with non-ASCII characters follow the `--on-unsafe-chars` option, and are skipped by default.
