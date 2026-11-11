@@ -80,6 +80,7 @@
     - [`sge create` and `sge configure` fail in tools without `diff`](#sge-create-and-sge-configure-fail-in-tools-without-diff)
     - [Vulnerable dependencies of the FS Browser client](#vulnerable-dependencies-of-the-fs-browser-client)
     - [Node reporter: package versions with known security advisories](#node-reporter-package-versions-with-known-security-advisories)
+    - [The distribution build passes when the Linux build of the `pipe` CLI fails](#the-distribution-build-passes-when-the-linux-build-of-the-pipe-cli-fails)
 
 ***
 
@@ -983,3 +984,10 @@ Now, the development server (the `npm start` script) is removed from the client,
 
 Previously, the image of the node reporter service (`cp-node-reporter`), which serves the open files and GPU statistics of the cluster nodes, installed `Flask` 2.2.2, `Werkzeug` 2.2.2, `gunicorn` 20.1.0, `cryptography` 43.0.3 and `pyOpenSSL` 24.2.1. These versions have known security advisories.
 Now, the image installs `Flask` 3.1.3, `Werkzeug` 3.1.9, `gunicorn` 23.0.0, `cryptography` 50.0.2 and `pyOpenSSL` 26.4.0, which have these advisories fixed. The statistics that the node reporter serves are not changed. The other packages of the image, which it gets from `pipe-common` (e.g. `urllib3` 1.25.9 and `requests` 2.22.0), are not changed.
+### The distribution build passes when the Linux build of the `pipe` CLI fails
+
+[#4735](https://github.com/epam/cloud-pipeline/issues/4735)
+
+Previously, `pipe-cli/build_linux.sh`, which builds the Linux binary and tarball of the `pipe` CLI, ended with exit code 0, even if a build in its Docker containers (of `pipe-omics` or of `pipe`) failed. So the `pipe-cli:buildLinux` Gradle task, and the distribution build that runs it, passed without a new `pipe`: the distribution got the `pipe` binary and tarball left from an earlier build, or none. `pipe-cli/mount/build_mount.sh`, which builds a standalone `pipe-fuse` binary, had the same problem.
+Now, when a build container ends with an error, the scripts print which build failed, and end with the exit code of the container. The `pipe-cli:buildLinux` task then fails, after it restores `pipe-cli/src/version.py`.
+Please note: a container ends with the code of its last step (the `tar` of the `pipe` tarball, the `chmod` of `pipe-omics`, the PyInstaller run of `pipe-fuse`). So a failed earlier step is still not reported, if the last step works, e.g. on the files left from an earlier build.
