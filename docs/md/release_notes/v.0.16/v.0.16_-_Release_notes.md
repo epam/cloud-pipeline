@@ -79,6 +79,7 @@
     - [The NFS mount observer of the WebDAV service does not start](#the-nfs-mount-observer-of-the-webdav-service-does-not-start)
     - [`sge create` and `sge configure` fail in tools without `diff`](#sge-create-and-sge-configure-fail-in-tools-without-diff)
     - [Vulnerable dependencies of the FS Browser client](#vulnerable-dependencies-of-the-fs-browser-client)
+    - [Node reporter: package versions with known security advisories](#node-reporter-package-versions-with-known-security-advisories)
 
 ***
 
@@ -976,3 +977,9 @@ See details in [Appendix C. Working with autoscaled cluster runs](../../manual/A
 
 Previously, `npm audit` reported 283 known vulnerabilities in the dependencies of the FS Browser web client: 10 critical, 127 high, 123 moderate and 23 low. Many of them were in its development server (`webpack-dev-server` 3.2.1 and its dependencies, such as `node-forge`, `http-proxy-middleware`, `webpack-dev-middleware` and `sockjs`), which is not used to build the client, and in `react-dev-utils` 9 and `semver` 6.0.0.
 Now, the development server (the `npm start` script) is removed from the client, `react-dev-utils` is updated to 11.0.4 and `@babel/core` to 7.29.7, and the unused `semver` 6.0.0 pin is removed. At the time of this change, `npm audit` reports 205: 11 critical, 86 high, 103 moderate and 5 low. They come from the build and test tools: webpack 4 with its loaders and plugins, PostCSS, `react-dev-utils`, Babel, Jest, ESLint and `raml2html`. Two advisories among them are new: they are in `immer` 8.0.1, which `react-dev-utils` 11.0.4 brings. The client is built with `npm run build`, as before. The built client has the same content: only the hash in the name of its main script file changes.
+### Node reporter: package versions with known security advisories
+
+[#4775](https://github.com/epam/cloud-pipeline/issues/4775)
+
+Previously, the image of the node reporter service (`cp-node-reporter`), which serves the open files and GPU statistics of the cluster nodes, installed `Flask` 2.2.2, `Werkzeug` 2.2.2, `gunicorn` 20.1.0, `cryptography` 43.0.3 and `pyOpenSSL` 24.2.1. These versions have known security advisories.
+Now, the image installs `Flask` 3.1.3, `Werkzeug` 3.1.9, `gunicorn` 23.0.0, `cryptography` 50.0.2 and `pyOpenSSL` 26.4.0, which have these advisories fixed. The statistics that the node reporter serves are not changed. The other packages of the image, which it gets from `pipe-common` (e.g. `urllib3` 1.25.9 and `requests` 2.22.0), are not changed.
