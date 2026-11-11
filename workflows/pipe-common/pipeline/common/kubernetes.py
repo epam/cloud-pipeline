@@ -18,10 +18,34 @@ try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
     from pykube.http import HTTPError
+    from pykube.http import KubernetesHTTPAdapter
     from pykube.objects import Pod
     from pykube.objects import Event
 except ImportError:
     raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
+
+
+class _UnverifiedKubernetesHTTPAdapter(KubernetesHTTPAdapter):
+    """
+    pykube-ng sets the CA of the cluster config for each request, so session.verify = False of a client has no effect.
+    This adapter keeps it, as pykube 0.15 did on Python 2.
+    """
+
+    def _setup_request_certificates(self, config, request, kwargs):
+        verify = kwargs.get('verify')
+        super(_UnverifiedKubernetesHTTPAdapter, self)._setup_request_certificates(config, request, kwargs)
+        if verify is False:
+            kwargs['verify'] = False
+
+
+def get_unverified_kube_client(config):
+    """
+    Returns a Kubernetes client which does not verify the certificate of the Kubernetes API.
+    requests still verifies it if REQUESTS_CA_BUNDLE is set: CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE=true clears it.
+    """
+    client = HTTPClient(config, http_adapter=_UnverifiedKubernetesHTTPAdapter(config))
+    client.session.verify = False
+    return client
 
 
 class PodModel:
@@ -43,8 +67,7 @@ class Kubernetes:
         # Thus connection to the kube master fails, as it is self signed
         if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
             os.environ['REQUESTS_CA_BUNDLE'] = ''
-        self.__kube_api = HTTPClient(KubeConfig.from_service_account())
-        self.__kube_api.session.verify = False
+        self.__kube_api = get_unverified_kube_client(KubeConfig.from_service_account())
 
     def get_pod(self, run_id):
         pods = Pod.objects(self.__kube_api).filter(selector={'runid': run_id})

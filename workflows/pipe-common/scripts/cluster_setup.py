@@ -26,6 +26,7 @@ try:
     from pykube.objects import Event
 except ImportError:
     raise RuntimeError('pykube is not installed. KubernetesJobTask requires pykube.')
+from pipeline.common.kubernetes import get_unverified_kube_client
 
 
 class Task:
@@ -58,8 +59,7 @@ class Kubernetes:
         # Thus connection to the kube master fails, as it is self signed
         if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
             os.environ['REQUESTS_CA_BUNDLE'] = ''
-        self.__kube_api = HTTPClient(KubeConfig.from_service_account())
-        self.__kube_api.session.verify = False
+        self.__kube_api = get_unverified_kube_client(KubeConfig.from_service_account())
 
     def get_pod(self, run_id):
         pods = Pod.objects(self.__kube_api).filter(selector={'runid': run_id})

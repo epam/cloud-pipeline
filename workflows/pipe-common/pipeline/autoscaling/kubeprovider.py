@@ -16,6 +16,7 @@ from time import sleep
 
 import pykube
 from pipeline.autoscaling import utils
+from pipeline.common.kubernetes import get_unverified_kube_client
 import re
 import os
 
@@ -32,10 +33,9 @@ class KubeProvider(object):
         if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
             os.environ['REQUESTS_CA_BUNDLE'] = ''
         try:
-            self.api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+            self.api = get_unverified_kube_client(pykube.KubeConfig.from_service_account())
         except Exception:
-            self.api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
-        self.api.session.verify = False
+            self.api = get_unverified_kube_client(pykube.KubeConfig.from_file("~/.kube/config"))
 
     def get_nodename(self, nodename):
         node = pykube.Node.objects(self.api).filter(field_selector={'metadata.name': nodename})
