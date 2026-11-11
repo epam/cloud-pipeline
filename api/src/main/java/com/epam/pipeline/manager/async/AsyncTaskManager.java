@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.async.AsyncTaskFilterVO;
 import com.epam.pipeline.controller.vo.async.AsyncTaskSortField;
 import com.epam.pipeline.dto.async.AsyncTask;
+import com.epam.pipeline.dto.async.AsyncTaskConsumeResult;
 import com.epam.pipeline.dto.async.AsyncTaskParams;
 import com.epam.pipeline.dto.async.AsyncTaskResult;
 import com.epam.pipeline.dto.async.AsyncTaskStatus;
@@ -33,7 +34,6 @@ import com.epam.pipeline.repository.async.AsyncTaskRepository;
 import com.epam.pipeline.repository.async.AsyncTaskSpecification;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,13 +46,14 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.controller.vo.async.AsyncTaskSortField.CREATED;
 
 @Service
-@RequiredArgsConstructor
 public class AsyncTaskManager {
     private static final String RESULT_FIELD = "result";
     private static final String ERROR_MESSAGE_FIELD = "errorMessage";
@@ -61,15 +62,46 @@ public class AsyncTaskManager {
     private final AsyncTaskMapper asyncTaskMapper;
     private final MessageHelper messageHelper;
     private final ObjectMapper objectMapper;
+    private final Map<AsyncTaskType, AsyncTaskProcessor> processorsByType;
 
+    public AsyncTaskManager(final AsyncTaskRepository repository,
+                            final AsyncTaskMapper asyncTaskMapper,
+                            final MessageHelper messageHelper,
+                            final ObjectMapper objectMapper,
+                            final List<AsyncTaskProcessor> processors) {
+        this.repository = repository;
+        this.asyncTaskMapper = asyncTaskMapper;
+        this.messageHelper = messageHelper;
+        this.objectMapper = objectMapper;
+        this.processorsByType = processors.stream()
+                .collect(Collectors.toUnmodifiableMap(AsyncTaskProcessor::getType, Function.identity()));
+    }
+
+    /**
+     * Queues what the processor of the requested type makes of the request.
+     *
+     * <p>A type with no processor registered is refused here: it has nothing to judge the request
+     * against, and queueing it would leave a task no executor claims.</p>
+     */
     @Transactional(propagation = Propagation.REQUIRED)
-    public AsyncTask create(final AsyncTaskType type, final String owner, final AsyncTaskParams params) {
-        Assert.notNull(type, messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_TYPE_REQUIRED));
+    public AsyncTask create(final String owner, final AsyncTaskParams params) {
+        Assert.notNull(params, messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_PARAMS_REQUIRED));
+        final AsyncTaskProcessor processor = processorsByType.get(params.getType());
+        Assert.notNull(processor, messageHelper.getMessage(
+                MessageConstants.ERROR_ASYNC_TASK_TYPE_NOT_SUPPORTED, params.getType()));
+        final AsyncTaskParams prepared = processor.prepare(params);
+        return queue(owner, prepared);
+    }
+
+    /**
+     * The payload carries its own type, so the queued task takes it from there - the two cannot
+     * disagree.
+     */
+    private AsyncTask queue(final String owner, final AsyncTaskParams params) {
         Assert.hasText(owner, messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_OWNER_REQUIRED));
-        assertPayloadMatches(type, params == null ? null : params.getType());
         final LocalDateTime now = DateUtils.nowUTC();
         final AsyncTaskEntity entity = AsyncTaskEntity.builder()
-                .type(type)
+                .type(params.getType())
                 .owner(owner)
                 .status(AsyncTaskStatus.PENDING)
                 .params(params)
@@ -165,6 +197,18 @@ public class AsyncTaskManager {
         Assert.isTrue(entity.getStatus().isActive(), messageHelper.getMessage(
                 MessageConstants.ERROR_ASYNC_TASK_ALREADY_FINISHED, id, entity.getStatus()));
         return asyncTaskMapper.toDto(entity);
+    }
+
+    /**
+     * Hands over what a finished task produced, through the processor of its type. A type with no
+     * processor registered is unsupported, which is a different answer from a supported type that
+     * produces nothing to hand over - the processor itself says that.
+     */
+    public AsyncTaskConsumeResult consume(final AsyncTask task) {
+        final AsyncTaskProcessor processor = processorsByType.get(task.getType());
+        Assert.notNull(processor, messageHelper.getMessage(
+                MessageConstants.ERROR_ASYNC_TASK_TYPE_NOT_SUPPORTED, task.getType()));
+        return AsyncTaskConsumeResult.of(processor.consume(task));
     }
 
     private List<AsyncTask> toDto(final List<AsyncTaskEntity> entities) {

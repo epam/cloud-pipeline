@@ -33,17 +33,16 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.security.acl.AclExpressions;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AsyncTaskApiService {
 
     private final AsyncTaskManager asyncTaskManager;
@@ -51,23 +50,6 @@ public class AsyncTaskApiService {
     private final AuthManager authManager;
     private final CheckPermissionHelper permissionHelper;
     private final MessageHelper messageHelper;
-    private final Map<AsyncTaskType, AsyncTaskProcessor> asynchProcessorsByType;
-
-    public AsyncTaskApiService(final AsyncTaskManager asyncTaskManager,
-                               final List<AsyncTaskProcessor> creationProcessors,
-                               final PreferenceManager preferenceManager,
-                               final AuthManager authManager,
-                               final CheckPermissionHelper permissionHelper,
-                               final MessageHelper messageHelper) {
-
-        this.asyncTaskManager = asyncTaskManager;
-        this.preferenceManager = preferenceManager;
-        this.authManager = authManager;
-        this.permissionHelper = permissionHelper;
-        this.messageHelper = messageHelper;
-        this.asynchProcessorsByType = creationProcessors.stream().
-                collect(Collectors.toUnmodifiableMap(AsyncTaskProcessor::getType, Function.identity()));
-    }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public PagedResult<List<AsyncTask>> loadByFilter(final AsyncTaskFilterVO filter) {
@@ -81,14 +63,9 @@ public class AsyncTaskApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTask createAsyncTask(final AsyncTaskParams params) {
-        Assert.notNull(params, messageHelper.getMessage(MessageConstants.ERROR_ASYNC_TASK_PARAMS_REQUIRED));
-        final AsyncTaskProcessor processor = asynchProcessorsByType.get(params.getType());
-        Assert.notNull(processor, messageHelper.getMessage(
-                MessageConstants.ERROR_ASYNC_TASK_TYPE_NOT_SUPPORTED, params.getType()));
-        final AsyncTaskParams prepared = processor.prepare(params);
         final String owner = authManager.getAuthorizedUser();
         assertUserQuota(owner);
-        return asyncTaskManager.create(prepared.getType(), owner, prepared);
+        return asyncTaskManager.create(owner, params);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
@@ -99,11 +76,7 @@ public class AsyncTaskApiService {
 
     @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
     public AsyncTaskConsumeResult consume(final String id) {
-        final AsyncTask task = loadTaskIfHasAccess(id);
-        AsyncTaskProcessor consumer = asynchProcessorsByType.get(task.getType());
-        Assert.notNull(consumer, messageHelper.getMessage(
-                MessageConstants.ERROR_ASYNC_TASK_NOTHING_TO_CONSUME, task.getId(), task.getType()));
-        return AsyncTaskConsumeResult.of(consumer.consume(task));
+        return asyncTaskManager.consume(loadTaskIfHasAccess(id));
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)

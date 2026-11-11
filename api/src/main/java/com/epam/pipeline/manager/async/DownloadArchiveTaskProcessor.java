@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl.async;
+package com.epam.pipeline.manager.async;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;

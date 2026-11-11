@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl.async;
+package com.epam.pipeline.manager.async;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.async.AsyncTask;
@@ -48,6 +48,7 @@ public class DownloadArchiveTaskProcessorTest {
 
     private static final Long STORAGE_ID = 1L;
     private static final Long ARCHIVE_STORAGE_ID = 9L;
+    private static final Long RECORDED_STORAGE_ID = 7L;
     private static final String TASK_ID = "4f1a2c90-0000-4000-8000-000000000001";
     private static final String OWNER = "USER";
     private static final String URL = "https://bucket.s3.amazonaws.com/archives/selection.zip";
@@ -164,6 +165,44 @@ public class DownloadArchiveTaskProcessorTest {
         Mockito.verify(storageProviderManager).generateDownloadURL(Mockito.any(),
                 Mockito.eq("archives/" + TASK_ID + ".zip"), Mockito.isNull(), Mockito.any(),
                 Mockito.eq("archive.zip"));
+    }
+
+    @Test
+    public void shouldOfferTheRequestedNameWithTheArchiveExtension() {
+        // What the browser saves the download as. The name a caller asked for is kept, and the
+        // extension added where it is missing, so the file still arrives as a zip.
+        final AsyncTask task = task(AsyncTaskStatus.SUCCESS);
+        task.setParams(DownloadArchiveParams.builder()
+                .storageId(STORAGE_ID)
+                .paths(List.of("data/"))
+                .archiveName("selection")
+                .build());
+        Mockito.when(storageProviderManager.generateDownloadURL(Mockito.any(), Mockito.any(),
+                Mockito.isNull(), Mockito.any(), Mockito.any())).thenReturn(signedUrl());
+
+        processor.consume(task);
+
+        Mockito.verify(storageProviderManager).generateDownloadURL(Mockito.any(), Mockito.any(),
+                Mockito.isNull(), Mockito.any(), Mockito.eq("selection.zip"));
+    }
+
+    @Test
+    public void shouldTakeTheArchiveFromTheStorageTheTaskRecorded() {
+        // Where the archive actually is: the executor reports the storage it wrote to, and the
+        // configured destination is only the fallback for a task that reported none. Reading the
+        // configured one regardless would sign a link to a key that is not there.
+        final AsyncTask task = task(AsyncTaskStatus.SUCCESS);
+        task.setResult(DownloadArchiveResult.builder()
+                .storageId(RECORDED_STORAGE_ID)
+                .path("archives/" + TASK_ID + ".zip")
+                .build());
+        Mockito.when(storageProviderManager.generateDownloadURL(Mockito.any(), Mockito.any(),
+                Mockito.isNull(), Mockito.any(), Mockito.any())).thenReturn(signedUrl());
+
+        processor.consume(task);
+
+        Mockito.verify(dataStorageManager).load(RECORDED_STORAGE_ID);
+        Mockito.verify(dataStorageManager, Mockito.never()).load(ARCHIVE_STORAGE_ID);
     }
 
     @Test

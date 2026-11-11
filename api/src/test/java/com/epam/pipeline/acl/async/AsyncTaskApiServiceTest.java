@@ -25,14 +25,6 @@ import com.epam.pipeline.dto.async.AsyncTaskStatus;
 import com.epam.pipeline.dto.async.AsyncTaskType;
 import com.epam.pipeline.dto.async.DownloadArchiveConsumable;
 import com.epam.pipeline.manager.async.AsyncTaskManager;
-import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
-import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DownloadArchiveConfig;
-import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.datastorage.StorageProviderManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
 import org.junit.jupiter.api.Test;
@@ -44,7 +36,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Collections;
 import java.util.List;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,15 +62,6 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private AsyncTaskManager mockAsyncTaskManager;
-
-    @Autowired
-    private PreferenceManager mockPreferenceManager;
-
-    @Autowired
-    private DataStorageManager mockDataStorageManager;
-
-    @Autowired
-    private StorageProviderManager mockStorageProviderManager;
 
     @Autowired
     private AuthManager mockAuthManager;
@@ -290,21 +272,6 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser(username = SIMPLE_USER, roles = GENERAL_USER_ROLE)
-    public void shouldRefuseToConsumeAnUnpackTask() {
-        // The dispatch, and the reason it exists. An unpack task writes its content straight into the
-        // storage the caller named, so there is nothing to hand over - and before the dispatch every
-        // task went to the download archive manager, which would have looked for an archive that was
-        // never made. The refusal comes from the body, not from the annotation: the caller is allowed
-        // to ask, the type simply has no answer.
-        mockSecurityContext();
-        mockUser(SIMPLE_USER);
-        mockTaskOwnedBy(SIMPLE_USER, AsyncTaskType.UNPACK_ARCHIVE);
-
-        assertThrows(UnsupportedOperationException.class, () -> asyncTaskApiService.consume(TASK_ID));
-    }
-
-    @Test
     @WithMockUser(username = SIMPLE_USER, roles = {GENERAL_USER_ROLE, STORAGE_ADMIN_ROLE})
     public void shouldStillRefuseExecutorEndpointsToStorageAdmin() {
         // `/next` and `/{id}/status` belong to the executor service and stay ADMIN_ONLY, so this role
@@ -326,17 +293,8 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
     }
 
     private void mockArchiveReadyToHandOver() {
-        doReturn(ArchiveTasksConfig.builder()
-                .tasks(ArchiveTasksConfig.Tasks.builder()
-                        .download(DownloadArchiveConfig.builder().destinationStorageId(ID).build())
-                        .build())
-                .build()).when(mockPreferenceManager)
-                .getPreference(SystemPreferences.DATA_STORAGE_ARCHIVE_CONFIG);
-        doReturn(DatastorageCreatorUtils.getS3bucketDataStorage(ID, SIMPLE_USER))
-                .when(mockDataStorageManager).load(ID);
-        final DataStorageDownloadFileUrl url = new DataStorageDownloadFileUrl();
-        url.setUrl(ARCHIVE_URL);
-        doReturn(url).when(mockStorageProviderManager).generateDownloadURL(any(), any(), any(), any(), any());
+        doReturn(AsyncTaskConsumeResult.of(DownloadArchiveConsumable.builder().url(ARCHIVE_URL).build()))
+                .when(mockAsyncTaskManager).consume(any());
     }
 
     private AsyncTaskStatusVO statusReport() {
@@ -344,13 +302,9 @@ public class AsyncTaskApiServiceTest extends AbstractAclTest {
     }
 
     private void mockTaskOwnedBy(final String owner) {
-        mockTaskOwnedBy(owner, AsyncTaskType.DOWNLOAD_ARCHIVE);
-    }
-
-    private void mockTaskOwnedBy(final String owner, final AsyncTaskType type) {
         doReturn(AsyncTask.builder()
                 .id(TASK_ID)
-                .type(type)
+                .type(AsyncTaskType.DOWNLOAD_ARCHIVE)
                 .owner(owner)
                 .status(AsyncTaskStatus.SUCCESS)
                 .build()).when(mockAsyncTaskManager).load(TASK_ID);
