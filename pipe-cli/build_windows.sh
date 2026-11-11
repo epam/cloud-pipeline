@@ -15,6 +15,12 @@
 
 CP_PYINSTALL_WIN64_DOCKER="${CP_PYINSTALL_WIN64_DOCKER:-lifescience/cloud-pipeline:pyinstaller-win64-py312}"
 docker pull $CP_PYINSTALL_WIN64_DOCKER
+if [ $? -ne 0 ]; then
+    echo "Unable to pull $CP_PYINSTALL_WIN64_DOCKER image, it will be rebuilt"
+    docker build "$PIPE_CLI_SOURCES_DIR/docker/win64-py312" -t $CP_PYINSTALL_WIN64_DOCKER
+fi
+
+export PIPE_CLI_BUILD_VERSION="${PIPE_CLI_BUILD_VERSION:-0}"
 
 cd $PIPE_CLI_SOURCES_DIR
 PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
@@ -96,11 +102,11 @@ sed -i '/__component_version__/d' $version_file
 echo "__component_version__='${PIPE_COMMIT_HASH}'" >> $version_file
 
 cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
-pip install -r /pipe-cli/requirements.txt && \
+pip install -r /pipe-cli/requirements.txt -c /pipe-cli/constraints.txt && \
 pip install pywin32==306 && \
 cd /pipe-cli/mount && \
 cp libfuse/dokanfuse1.dll.1.5.0.3000 libfuse/dokanfuse1.dll.frozen && \
-pip install -r /pipe-cli/mount/requirements.txt && \
+pip install -r /pipe-cli/mount/requirements.txt -c /pipe-cli/constraints.txt && \
 pip install 'setuptools==68.2.2' && \
 pyinstaller --paths "/pipe-cli/mount" \
             --paths "/pipe-cli" \

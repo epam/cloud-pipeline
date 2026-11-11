@@ -19,6 +19,8 @@
 #   the shared libraries and the glibc symbol versions it needs, in the bundle or in the image
 # - the executables of the one-folder bundle (pipe, pipe-fuse, pipe-omics) start and print their help
 # - the one-file binary and the one-folder bundle print their version
+# - the one-file binary unpacks itself into ~/.pipe/tmp, and removes its files there on exit; it falls back to the
+#   default temporary folder, if it cannot create ~/.pipe/tmp
 #
 # Usage: check_linux_bundle.sh <dist dir> [docker image]
 #   <dist dir>     - the folder with dist-file/pipe and dist-folder/pipe.tar.gz
@@ -92,6 +94,21 @@ fi
 
 "$_check_dir/pipe/pipe" --version || exit 1
 cp /dist/dist-file/pipe "$_check_dir/pipe-one-file" && "$_check_dir/pipe-one-file" --version || exit 1
+
+_check_home=$(mktemp -d)
+HOME="$_check_home" "$_check_dir/pipe-one-file" --version > /dev/null || exit 1
+if [ ! -d "$_check_home/.pipe/tmp" ] || [ "$(ls -A "$_check_home/.pipe/tmp")" ]; then
+    echo "[ERROR] The one-file binary did not unpack itself into ~/.pipe/tmp, or left its files there"
+    exit 1
+fi
+# ~/.pipe keeps the configuration, so only ~/.pipe/tmp is made unusable: a file in its place
+_check_home=$(mktemp -d)
+mkdir "$_check_home/.pipe" && touch "$_check_home/.pipe/tmp"
+if ! HOME="$_check_home" "$_check_dir/pipe-one-file" --version > /dev/null; then
+    echo "[ERROR] The one-file binary does not fall back to the default temporary folder without ~/.pipe/tmp"
+    exit 1
+fi
+echo "The one-file binary unpacks itself into ~/.pipe/tmp, or into the default temporary folder without it"
 EOL
 _CHECK_EXIT_CODE=$?
 

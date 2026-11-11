@@ -18,6 +18,13 @@ cd $PIPE_CLI_SOURCES_DIR
 PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
 cd -
 
+# The one-file binary unpacks itself into this folder at run time. The bootloader expands "~" in it
+# (see pyinstaller/build_bootloader.sh). build.gradle passes it as "\~/.pipe/tmp", which keeps the shell from expanding it.
+_PIPE_CLI_RUNTIME_TMP_DIR='~/.pipe/tmp'
+if [ "$PIPE_CLI_RUNTIME_TMP_DIR" ]; then
+    _PIPE_CLI_RUNTIME_TMP_DIR="${PIPE_CLI_RUNTIME_TMP_DIR#\\}"
+fi
+
 # The bundles are built on CentOS 7 (see docker/pipe-cli-builder-centos7): PyInstaller bundles every library but
 # glibc, so they run on glibc 2.17 or later. The bundles built on Rocky Linux 8 (docker/pipe-cli-builder,
 # lifescience/cloud-pipeline:pipe-cli-rocky8-py312) need glibc 2.28.
@@ -100,7 +107,13 @@ fi
 ###
 # Setup common dependencies
 ###
-pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+# constraints.txt pins every package, so each build bundles the same versions
+pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
+
+###
+# Setup the bootloader that resolves the runtime-tmpdir of the one-file binary
+###
+bash ${PIPE_CLI_SOURCES_DIR}/pyinstaller/build_bootloader.sh || exit 1
 
 ###
 # Build pipe fuse
@@ -113,8 +126,8 @@ else
 fi
 cp ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.\${libfuse_version} ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen
 
-pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
-pip install 'setuptools==68.2.2'
+pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
+pip install 'setuptools==68.2.2' || exit 1
 cd $PIPE_MOUNT_SOURCES_DIR && \
 pyinstaller \
                                 --paths "${PIPE_MOUNT_SOURCES_DIR}" \
@@ -133,6 +146,7 @@ pyinstaller \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
+                                --runtime-tmpdir '$_PIPE_CLI_RUNTIME_TMP_DIR' \
                                 --distpath /tmp/mount/dist \
                                 --add-data "${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen:libfuse" \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
@@ -183,6 +197,7 @@ function build_pipe {
                                     --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
                                     -y \
                                     --clean \
+                                    --runtime-tmpdir '$_PIPE_CLI_RUNTIME_TMP_DIR' \
                                     --distpath \$distpath \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
                                     --add-data /tmp/pipe-omics/dist/pipe-omics:pipe-omics \

@@ -29,13 +29,13 @@ export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib"
 export CFLAGS="-I$(brew --prefix openssl@1.1)/include"
 export PKG_CONFIG_PATH="$(brew --prefix openssl@1.1)/lib/pkgconfig"
 export TMP_MOUNT_BIN=$(pwd)/tmp/mount/dist
-arch -arm64 python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+arch -arm64 python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 
 
 ###
 # Build pipe fuse
 ###
-arch -arm64 python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+arch -arm64 python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt -c ${PIPE_CLI_SOURCES_DIR}/constraints.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 arch -arm64 pyinstaller \
                                 --target-arch arm64 \

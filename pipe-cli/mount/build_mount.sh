@@ -15,14 +15,22 @@
 # limitations under the License.
 
 _BUILD_SCRIPT_NAME=/tmp/build_mnt_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:pipe-cli-centos7-py312"
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-lifescience/cloud-pipeline:pipe-cli-centos7-py312}"
+_PIPE_CLI_SOURCES_DIR="$(cd "$PIPE_MOUNT_SOURCES_DIR/.." && pwd)"
+
+# The one-file binary unpacks itself into this folder at run time, see build_linux.sh
+_PIPE_CLI_RUNTIME_TMP_DIR='~/.pipe/tmp'
+if [ "$PIPE_CLI_RUNTIME_TMP_DIR" ]; then
+    _PIPE_CLI_RUNTIME_TMP_DIR="${PIPE_CLI_RUNTIME_TMP_DIR#\\}"
+fi
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
 ###
 # Setup common dependencies
 ###
-pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt -c ${_PIPE_CLI_SOURCES_DIR}/constraints.txt || exit 1
+bash ${_PIPE_CLI_SOURCES_DIR}/pyinstaller/build_bootloader.sh || exit 1
 
 ###
 # Build pipe
@@ -40,6 +48,7 @@ pyinstaller \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
+                                --runtime-tmpdir '$_PIPE_CLI_RUNTIME_TMP_DIR' \
                                 --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py \
                                 --onefile
@@ -47,7 +56,7 @@ EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null
 docker run -i --rm \
-           -v $PIPE_MOUNT_SOURCES_DIR:$PIPE_MOUNT_SOURCES_DIR \
+           -v $_PIPE_CLI_SOURCES_DIR:$_PIPE_CLI_SOURCES_DIR \
            -v $PIPE_CLI_LINUX_DIST_DIR:$PIPE_CLI_LINUX_DIST_DIR \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            --env PIPE_MOUNT_SOURCES_DIR=$PIPE_MOUNT_SOURCES_DIR \
