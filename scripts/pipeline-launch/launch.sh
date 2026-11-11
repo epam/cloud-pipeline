@@ -1955,7 +1955,7 @@ command -v gitfs >/dev/null 2>&1 && { GITFS_INSTALL=1;  };
 
 if [ $GITFS_INSTALL -ne 0 ] && [ ! -z "$GIT_REPO" ];
 then
-    python $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
+    $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/check_pipeline_permission.py --pipeline_id ${PIPELINE_ID} --permission 'WRITE'
     _IS_ALLOWED=$?
     if [ $_IS_ALLOWED -ne 0 ];
     then
