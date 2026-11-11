@@ -72,6 +72,7 @@
     - [The backup worker of the GitLab database always fails](#the-backup-worker-of-the-gitlab-database-always-fails)
     - [AWS: `pipe storage` commands fail for a storage registered by an S3 access point alias](#aws-pipe-storage-commands-fail-for-a-storage-registered-by-an-s3-access-point-alias)
     - [VS Code extension: the run owner's home folder is not opened on connect](#vs-code-extension-the-run-owners-home-folder-is-not-opened-on-connect)
+    - [`pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds](#pipe-storage-mount-webdav-mounts-and-extended-attributes-fail-in-the-windows-and-macos-builds)
 
 ***
 
@@ -912,3 +913,18 @@ See details in [8.1. Create and edit storage](../../manual/08_Manage_Data_Storag
 
 Previously, on connect to a run as the run owner, the Cloud Pipeline Remote extension for VS Code and Cursor always opened `/home/<user name>`, even if the run owner's home folder (the `OWNER_HOME` environment variable of the run) was another one.
 Now, the extension opens the folder from `OWNER_HOME` for the run owner, and `/home/<user name>` only if `OWNER_HOME` is not set or cannot be read. The folder opened for `root` (`/root`) and for other users (`/home/<user name>`) is not changed.
+
+### `pipe storage mount`: WebDAV mounts and extended attributes fail in the Windows and macOS builds
+
+[#4725](https://github.com/epam/cloud-pipeline/issues/4725)
+
+Previously, the Windows and macOS builds of the `pipe` CLI, which run on Python 3, had these issues in `pipe storage mount`:
+
+- in a storage mounted over WebDAV:
+    - listing a folder, or getting the status of a file, always failed, so such a mount could not be used
+    - creating a file, or truncating it to a smaller size, failed
+    - the data written into a file was sent as its text representation, e.g. `bytearray(b'...')`, so the file got corrupted
+- the extended attributes of the files in a mounted `S3` storage, which are kept as the object tags, could not be set or read: `setfattr` and `getfattr` failed
+
+In the Linux build, extended attributes with non-ASCII characters in their values failed in the same way.
+Now, the files in a storage mounted over WebDAV can be listed, created, written and truncated in the Python 3 builds too, and the extended attribute values are kept in the storage as UTF-8 text, in all builds.
