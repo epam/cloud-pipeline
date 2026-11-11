@@ -405,7 +405,7 @@ class CurrentUserAsyncTasks {
 
   /**
    * The cap check both entry points share - the "Download archive" click
-   * (components/special/download-storage-archive.js) and
+   * (components/pipelines/browser/data-storage/utils/download-archive.js) and
    * `startArchiveDownload` below, which is the last gate before the request
    * goes out and so cannot be skipped by a modal left open for ten minutes.
    *
