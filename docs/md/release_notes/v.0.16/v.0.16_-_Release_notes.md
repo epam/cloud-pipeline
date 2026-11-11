@@ -77,6 +77,7 @@
     - [Detached configuration: the old name stays in the Library after a rename](#detached-configuration-the-old-name-stays-in-the-library-after-a-rename)
     - [Vulnerable dependencies of the SSH web terminal](#vulnerable-dependencies-of-the-ssh-web-terminal)
     - [The NFS mount observer of the WebDAV service does not start](#the-nfs-mount-observer-of-the-webdav-service-does-not-start)
+    - [`sge create` and `sge configure` fail in tools without `diff`](#sge-create-and-sge-configure-fail-in-tools-without-diff)
 
 ***
 
@@ -963,3 +964,10 @@ Now, the dependencies are updated: `express` 5.3.0, `engine.io` 6.6.11, `ws` 8.2
 
 Previously, the NFS mount observer of the WebDAV service (`cp-dav`) never started, for two reasons. Its cron job did not get the environment of the service, so it looked for the observer script in a wrong folder. And the image did not have the `pipeline`, `psutil` and `watchdog` Python packages, which the observer imports. So the file changes made via WebDAV in the mounts that the observer watches - the `nfs4` and `lustre` mounts by default (`CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES`) - were not recorded, and were not copied to the storage set by `CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET`.
 Now, the cron job reads the environment of the service, and the service installs the `pipe-common` package with its dependencies at start, as a run does. By default, the packages come from the public mirror `http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple`. To use another mirror, set `CP_REPO_PYPI_BASE_URL_DEFAULT` and `CP_REPO_PYPI_TRUSTED_HOST_DEFAULT` in the `cp-config-global` config map. The cron job starts the observer within a minute after these installs, unless `CP_CAP_NFS_MNT_OBSERVER_DISABLED` is set, and only if the download of `pipe-common.tar.gz` and both `pip` installs succeed.
+### `sge create` and `sge configure` fail in tools without `diff`
+
+[#4758](https://github.com/epam/cloud-pipeline/issues/4758)
+
+Previously, `sge create` and `sge configure` ran the `diff` command of the tool image to find the changes made to a grid engine profile. Many images have no `diff`: Rocky Linux 8 and 9, Red Hat UBI 8 and 9 and Amazon Linux 2023 among them. There, once the editor was closed, the commands failed with `Grid engine profiles management has failed.`, and the profile changes were lost.
+Now, the commands find the changes in Python, and print them in the same format as before: `<` before an old line, and `>` before a new one.
+See details in [Appendix C. Working with autoscaled cluster runs](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md#managing-queues-with-the-sge-command).
