@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationMonitorSettings;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationPolicy;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.ArchiveTasksConfig;
@@ -694,8 +695,18 @@ public class SystemPreferences {
                                    new TypeReference<List<CapacityReservationPolicy>>() {}, CLUSTER_GROUP,
                                    isNullOrValidJson(new TypeReference<List<CapacityReservationPolicy>>() {}), true);
 
-    public static final StringPreference CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new StringPreference(
-            "cluster.capacity.reservation.instance.families", "c,m,r,i,t,g", CLUSTER_GROUP, pass);
+    /**
+     * The instance types the platform may reserve capacity for, per {@link CapacityReservationType}. The value
+     * is a comma-separated list of {@link org.springframework.util.AntPathMatcher} patterns for the instance
+     * type name, in the same format as {@link #CLUSTER_ALLOWED_INSTANCE_TYPES}. A reservation type with no entry
+     * has no restriction.
+     */
+    public static final ObjectPreference<Map<CapacityReservationType, String>>
+            CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES = new ObjectPreference<>(
+                    "cluster.capacity.reservation.instance.families",
+                    Collections.singletonMap(CapacityReservationType.FUTURE_DATED, "c*,m*,r*,i*,t*,g*"),
+                    new TypeReference<Map<CapacityReservationType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CapacityReservationType, String>>() {}));
 
     public static final ObjectPreference<CapacityReservationMonitorSettings>
             CLUSTER_CAPACITY_RESERVATION_MONITOR_SETTINGS = new ObjectPreference<>(
@@ -703,6 +714,12 @@ public class SystemPreferences {
                     new CapacityReservationMonitorSettings(1),
                     new TypeReference<CapacityReservationMonitorSettings>() {}, CLUSTER_GROUP,
                     isValidCapacityReservationMonitorSettings, true);
+    /**
+     * How long, in seconds, the autoscaler waits for a run bound with CP_CAP_POOL_ID while its pool is taken by
+     * another run. {@code 0} means wait without a limit. Default: 86400 (24 hours).
+     */
+    public static final IntPreference CLUSTER_OCCUPIED_NODE_POOL_WAIT_SEC = new IntPreference(
+            "cluster.occupied.node.pool.wait.sec", 86400, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_REASSIGN_DISK_DELTA = new IntPreference("cluster.reassign.disk.delta",
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",

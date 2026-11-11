@@ -106,6 +106,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
     private static final long FOREIGN_REGION_ID = 999_999L;
     private static final String FOREIGN_OWNER = "intruder";
     private static final String FOREIGN_INSTANCE_TYPE = "p5.48xlarge";
+    private static final String OFFERING_ID = "cbr-0123456789abcdef0";
 
     @Autowired
     private NodePoolManager poolManager;
@@ -151,6 +152,7 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         when(instanceOfferManager.isToolInstanceAllowed(any(), any(), anyBoolean())).thenReturn(true);
         givenVcpusPerInstance(INSTANCE_VCPUS);
         setPolicies("[]");
+        resetInstanceTypePatterns();
     }
 
     @Test
@@ -182,6 +184,33 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         givenVcpusPerInstance(MIN_VCPUS / INSTANCE_COUNT);
 
         assertThat(poolManager.create(reservationPoolVO()).getId()).isNotNull();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldPersistACapacityBlockReservationRegardlessOfTheProvidersVcpuMinimum() {
+        givenVcpusPerInstance(SMALL_INSTANCE_VCPUS);
+
+        final NodePool created = poolManager.create(capacityBlockPoolVO());
+
+        assertThat(created.getId()).isNotNull();
+        final CapacityReservation reservation = reservationDao.findByNodePoolId(created.getId())
+                .orElseThrow(AssertionError::new);
+        assertThat(reservation.getCapacityBlockOfferingId()).isEqualTo(OFFERING_ID);
+        assertThat(reservation.getAvailabilityZone()).isEqualTo(ZONE);
+        assertThat(reservation.getStartDate()).isEqualTo(reservation.getRequestedStartDate());
+        assertThat(reservation.getEndDate()).isEqualTo(reservation.getRequestedEndDate());
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectACapacityBlockReservationWithoutAnOfferingId() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.getCapacityReservationRequest().setCapacityBlockOfferingId(null);
+
+        assertThatThrownBy(() -> poolManager.create(vo))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("offering");
     }
 
     @Test
@@ -433,19 +462,53 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldNotMistakeALongerFamilyPrefixForASupportedOne() {
+    public void shouldAllowALongerFamilyNameThatMatchesTheWildcardPrefix() {
         final NodePoolVO vo = reservationPoolVO();
         vo.setInstanceType("trn1.32xlarge");
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldAllowAFamilyAnAdministratorHasEnabled() {
+        setInstanceTypePattern(CapacityReservationType.FUTURE_DATED, "c*,m*,r*,i*,t*,g*,p*");
+        final NodePoolVO vo = reservationPoolVO();
+        vo.setInstanceType("p5.48xlarge");
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldAllowACapacityBlockForAnInstanceTypeNotCoveredByTheFutureDatedPattern() {
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.setInstanceType(FOREIGN_INSTANCE_TYPE);
+
+        final NodePool created = poolManager.create(vo);
+
+        assertThat(reservationDao.findByNodePoolId(created.getId()).isPresent()).isTrue();
+    }
+
+    @Test
+    @WithMockUser(username = OWNER)
+    public void shouldRejectACapacityBlockThatDoesNotMatchItsOwnConfiguredPattern() {
+        setInstanceTypePattern(CapacityReservationType.CAPACITY_BLOCK, "p5.4xlarge");
+        final NodePoolVO vo = capacityBlockPoolVO();
 
         assertThatThrownBy(() -> poolManager.create(vo)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @WithMockUser(username = OWNER)
-    public void shouldAllowAFamilyAnAdministratorHasEnabled() {
-        setInstanceFamilies("c,m,r,i,t,g,p");
-        final NodePoolVO vo = reservationPoolVO();
-        vo.setInstanceType("p5.48xlarge");
+    public void shouldAllowACapacityBlockThatMatchesItsOwnConfiguredPattern() {
+        setInstanceTypePattern(CapacityReservationType.CAPACITY_BLOCK, "p5.4xlarge");
+        final NodePoolVO vo = capacityBlockPoolVO();
+        vo.setInstanceType("p5.4xlarge");
 
         final NodePool created = poolManager.create(vo);
 
@@ -899,11 +962,16 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         preferenceManager.update(Collections.singletonList(preference));
     }
 
-    private void setInstanceFamilies(final String families) {
+    private void setInstanceTypePattern(final CapacityReservationType type, final String pattern) {
         final Preference preference =
                 SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES.toPreference();
-        preference.setValue(families);
+        preference.setValue("{\"" + type + "\": \"" + pattern + "\"}");
         preferenceManager.update(Collections.singletonList(preference));
+    }
+
+    private void resetInstanceTypePatterns() {
+        preferenceManager.update(Collections.singletonList(
+                SystemPreferences.CLUSTER_CAPACITY_RESERVATION_INSTANCE_FAMILIES.toPreference()));
     }
 
     @Test
@@ -1047,6 +1115,20 @@ public class CapacityReservationCreationTest extends AbstractManagerTest {
         request.setRequestedStartDate(start);
         request.setRequestedEndDate(start.plusDays(WINDOW_DAYS));
         request.setCommitmentDuration(COMMITMENT_DURATION);
+        vo.setCapacityReservationRequest(request);
+        return vo;
+    }
+
+    private NodePoolVO capacityBlockPoolVO() {
+        final NodePoolVO vo = basePoolVO();
+        final CapacityReservationRequest request = new CapacityReservationRequest();
+        request.setReservationType(CapacityReservationType.CAPACITY_BLOCK);
+        final LocalDateTime start = DateUtils.nowUTC().plusDays(LEAD_DAYS);
+        request.setRequestedStartDate(start);
+        request.setRequestedEndDate(start.plusSeconds(COMMITMENT_DURATION));
+        request.setCommitmentDuration(COMMITMENT_DURATION);
+        request.setCapacityBlockOfferingId(OFFERING_ID);
+        request.setAvailabilityZone(ZONE);
         vo.setCapacityReservationRequest(request);
         return vo;
     }

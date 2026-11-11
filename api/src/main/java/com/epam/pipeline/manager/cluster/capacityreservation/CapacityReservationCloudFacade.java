@@ -16,9 +16,14 @@
 
 package com.epam.pipeline.manager.cluster.capacityreservation;
 
+import com.epam.pipeline.controller.vo.cluster.capacityreservation.CapacityBlockOfferingRequest;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockInstanceTypeInfo;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityBlockOffering;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservation;
 import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationStatus;
+import com.epam.pipeline.entity.cluster.capacityreservation.CapacityReservationType;
 import com.epam.pipeline.entity.cluster.capacityreservation.CloudCapacityReservation;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.capacityreservation.cloud.CapacityReservationCloudService;
@@ -46,6 +51,12 @@ import java.util.Optional;
  *   <li>{@link #cancel} releases what an unconfirmed submission bought, even though the platform never learned its
  *       id.</li>
  * </ul>
+ *
+ * <p>A capacity block purchase carries the same token, but only as a tag on what it buys. The AWS purchase call
+ * takes no idempotency token. So {@link #findSubmitted} is the only protection against paying for the block
+ * twice after a lost reply. A failure alone is never a reason to call {@code create} for a block again. It is
+ * safe to call it again only when {@link #findSubmitted} returns empty, and only after the caller has waited long
+ * enough to trust that answer.
  *
  * <p>{@link #isSupported(CloudProvider)} answers whether a provider can reserve capacity at all, which is what
  * keeps a reservation-backed pool from being created where it could never be delivered.
@@ -79,7 +90,10 @@ public class CapacityReservationCloudFacade {
 
     public CloudCapacityReservation create(final CapacityReservation reservation) {
         reservation.setClientToken(clientToken(reservation));
-        return serviceFor(reservation).createFutureDated(reservation);
+        final CapacityReservationCloudService service = serviceFor(reservation);
+        return CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()
+                ? service.purchaseCapacityBlock(reservation)
+                : service.createFutureDated(reservation);
     }
 
     public LocalDateTime earliestAcceptedStart(final CapacityReservation reservation) {
@@ -127,9 +141,26 @@ public class CapacityReservationCloudFacade {
         return services.containsKey(provider);
     }
 
+    /**
+     * Searches the capacity block offerings of a region. There is no {@link CapacityReservation} yet to read the
+     * provider from, so the provider of the region is used instead.
+     */
+    public List<CapacityBlockOffering> listCapacityBlockOfferings(final AbstractCloudRegion region,
+                                                                   final CapacityBlockOfferingRequest request) {
+        return serviceFor(region.getProvider()).listCapacityBlockOfferings(region, request);
+    }
+
+    public List<CapacityBlockInstanceTypeInfo> listCapacityBlockInstanceTypes(final AbstractCloudRegion region) {
+        return serviceFor(region.getProvider()).listCapacityBlockInstanceTypes(region);
+    }
+
     private CapacityReservationCloudService serviceFor(final CapacityReservation reservation) {
-        return Optional.ofNullable(services.get(reservation.getCloudProvider()))
+        return serviceFor(reservation.getCloudProvider());
+    }
+
+    private CapacityReservationCloudService serviceFor(final CloudProvider provider) {
+        return Optional.ofNullable(services.get(provider))
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Capacity reservations are not supported for " + reservation.getCloudProvider()));
+                        "Capacity reservations are not supported for " + provider));
     }
 }

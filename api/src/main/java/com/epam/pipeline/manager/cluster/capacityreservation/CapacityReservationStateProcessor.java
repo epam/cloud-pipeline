@@ -57,10 +57,13 @@ import java.util.Optional;
  * as it was for the next cycle - which is why a reservation the request abandons is released only once the database
  * has accepted the move away from it.
  *
- * <p>A refusal is not the end of a request: what a provider refuses is a date and a zone, not the reservation. The
- * request moves to the next candidate zone, then slides its start by {@value #SLIDE_WINDOW_STEP_DAYS} day and
- * starts over, releasing whatever the abandoned attempt had bought. It fails once no zone can take it, once its
- * window has no room left for the commitment, or when the provider cannot be paid.
+ * <p>A refusal is not the end of a {@link CapacityReservationType#FUTURE_DATED} request: what a provider refuses
+ * is a date and a zone, not the reservation. The request moves to the next candidate zone, then slides its start
+ * by {@value #SLIDE_WINDOW_STEP_DAYS} day and starts over, releasing whatever the abandoned attempt had bought. It
+ * fails once no zone can take it, once its window has no room left for the commitment, or when the provider cannot
+ * be paid. A refused {@link CapacityReservationType#CAPACITY_BLOCK} request fails at once instead. It named one
+ * exact offering, not a window to search, so there is nothing to slide to. Another offering means a new request,
+ * not a retry of this one.
  */
 @Service
 @Slf4j
@@ -70,6 +73,8 @@ public class CapacityReservationStateProcessor {
     static final int SLIDE_WINDOW_STEP_DAYS = 1;
 
     static final Duration SUBMISSION_MARGIN = Duration.ofHours(1);
+
+    static final Duration PURCHASE_CONFIRMATION_GRACE_PERIOD = Duration.ofMinutes(5);
 
     private final CapacityReservationService reservationService;
     private final CapacityReservationStatusService statusService;
@@ -127,7 +132,7 @@ public class CapacityReservationStateProcessor {
             case DELAYED:
                 log.debug("Capacity reservation {} came back {} from its submission; asking for another date or "
                         + "zone", reservation.getId(), state);
-                slideOrFail(reservation, submitted.getStateReason());
+                refuseOrSlide(reservation, submitted.getStateReason());
                 break;
             case PAYMENT_FAILED:
                 fail(reservation, submitted.getStateReason());
@@ -166,7 +171,7 @@ public class CapacityReservationStateProcessor {
             case FAILED:
             case CANCELLED:
             case DELAYED:
-                slideOrFail(reservation, cloud.getStateReason());
+                refuseOrSlide(reservation, cloud.getStateReason());
                 break;
             case PAYMENT_FAILED:
                 fail(reservation, cloud.getStateReason());
@@ -180,20 +185,40 @@ public class CapacityReservationStateProcessor {
         }
     }
 
+    /**
+     * Submits the request, or adopts what an earlier attempt already bought.
+     *
+     * <p>For {@link CapacityReservationType#CAPACITY_BLOCK} the purchase call is made at most once. The provider
+     * has no idempotency token for it, so an unclear outcome is never retried by calling it again. A later tick
+     * only looks the purchase up with {@link CapacityReservationCloudFacade#findSubmitted}, and
+     * {@link #isAwaitingPurchaseConfirmation} says whether it is still worth waiting. Once
+     * {@link #PURCHASE_CONFIRMATION_GRACE_PERIOD} is over, the request fails instead of taking the risk of a
+     * second purchase.
+     */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void submit(final CapacityReservation reservation) {
-        if (CapacityReservationType.FUTURE_DATED != reservation.getReservationType()) {
-            statusService.transition(reservation, CapacityReservationStatus.PURCHASE_FAILED,
-                    reservation.getReservationType() + " reservations are not supported yet");
-            return;
-        }
         final CloudCapacityReservation submitted;
+        boolean purchaseAttempted = false;
         try {
             final Optional<CloudCapacityReservation> existing = cloudFacade.findSubmitted(reservation);
             if (existing.isPresent()) {
                 submitted = existing.get();
+            } else if (isAwaitingPurchaseConfirmation(reservation)) {
+                log.debug("Capacity reservation {} has an unconfirmed purchase attempt from less than {} ago; "
+                        + "not purchasing again yet", reservation.getId(), PURCHASE_CONFIRMATION_GRACE_PERIOD);
+                return;
+            } else if (CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()
+                    && reservation.getAttempt() > 0) {
+                statusService.transition(reservation, CapacityReservationStatus.FAILED, String.format(
+                        "Could not confirm within %s whether the capacity block was purchased; not attempting to "
+                                + "purchase it again. Check the cloud provider directly before submitting a new "
+                                + "request.", PURCHASE_CONFIRMATION_GRACE_PERIOD));
+                return;
             } else {
-                adjustReservation(reservation);
+                if (CapacityReservationType.FUTURE_DATED == reservation.getReservationType()) {
+                    adjustReservation(reservation);
+                }
+                purchaseAttempted = true;
                 submitted = cloudFacade.create(reservation);
             }
         } catch (CapacityReservationNoCandidateException e) {
@@ -202,6 +227,9 @@ public class CapacityReservationStateProcessor {
         } catch (CapacityReservationSubmissionUncertainException e) {
             log.warn("Submission of capacity reservation {} did not complete and will be retried: {}",
                     reservation.getId(), e.getMessage());
+            if (purchaseAttempted && CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()) {
+                reservation.setAttempt(reservation.getAttempt() + 1);
+            }
             statusService.recordRetry(reservation, e.getMessage());
             return;
         } catch (Exception e) {
@@ -223,6 +251,20 @@ public class CapacityReservationStateProcessor {
         });
         Optional.ofNullable(submitted.getEndDate()).ifPresent(reservation::setEndDate);
         processSubmitted(reservation, submitted);
+    }
+
+    /**
+     * Tells whether a {@link CapacityReservationType#CAPACITY_BLOCK} purchase attempt may still be confirmed.
+     * The grace period is the time {@link CapacityReservationCloudFacade#findSubmitted} gets to find the purchase
+     * before the platform gives up. {@code attempt} is the only sign that an attempt was made at all. For this
+     * type it is otherwise always 0, because such a request never slides to another candidate.
+     */
+    private boolean isAwaitingPurchaseConfirmation(final CapacityReservation reservation) {
+        return CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()
+                && reservation.getAttempt() > 0
+                && Optional.ofNullable(reservation.getUpdated())
+                        .map(updated -> updated.isAfter(DateUtils.nowUTC().minus(PURCHASE_CONFIRMATION_GRACE_PERIOD)))
+                        .orElse(false);
     }
 
     /**
@@ -285,6 +327,18 @@ public class CapacityReservationStateProcessor {
                     }
                     reservation.setGrantedCommitmentDuration(granted);
                 });
+    }
+
+    /**
+     * A refused {@link CapacityReservationType#CAPACITY_BLOCK} request fails at once. It named one exact
+     * offering, so there is no next zone or date to try. Every other type still slides.
+     */
+    private void refuseOrSlide(final CapacityReservation reservation, final String reason) {
+        if (CapacityReservationType.CAPACITY_BLOCK == reservation.getReservationType()) {
+            fail(reservation, reason);
+        } else {
+            slideOrFail(reservation, reason);
+        }
     }
 
     /**
@@ -371,12 +425,19 @@ public class CapacityReservationStateProcessor {
         }
     }
 
+    /**
+     * A capacity block is never cancelled here. The provider reclaims it on its own at the same fixed end date.
+     * Also {@link com.epam.pipeline.manager.cloud.aws.capacityreservation.AwsCapacityReservationService#cancel}
+     * refuses to cancel a capacity block for any caller, so the call would only break this ordinary cleanup.
+     */
     private void finishIfEnded(final CapacityReservation reservation) {
         if (reservation.getEndDate() == null) {
             return;
         }
         if (!DateUtils.nowUTC().isBefore(reservation.getEndDate())) {
-            cloudFacade.cancel(reservation);
+            if (CapacityReservationType.CAPACITY_BLOCK != reservation.getReservationType()) {
+                cloudFacade.cancel(reservation);
+            }
             statusService.transition(reservation, CapacityReservationStatus.FINISHED, null);
             reservationService.deactivatePool(reservation);
         }

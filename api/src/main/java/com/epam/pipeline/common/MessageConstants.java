@@ -794,12 +794,16 @@ public final class MessageConstants {
             "error.capacity.reservation.not.terminal";
     public static final String ERROR_CAPACITY_RESERVATION_ILLEGAL_TRANSITION =
             "error.capacity.reservation.illegal.transition";
+    public static final String ERROR_CAPACITY_RESERVATION_BLOCK_NOT_CANCELLABLE =
+            "error.capacity.reservation.block.not.cancellable";
     public static final String ERROR_CAPACITY_RESERVATION_SPOT_NOT_SUPPORTED =
             "error.capacity.reservation.spot.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_REQUIRED =
             "error.capacity.reservation.type.required";
     public static final String ERROR_CAPACITY_RESERVATION_TYPE_NOT_SUPPORTED =
             "error.capacity.reservation.type.not.supported";
+    public static final String ERROR_CAPACITY_RESERVATION_OFFERING_ID_REQUIRED =
+            "error.capacity.reservation.offering.id.required";
     public static final String ERROR_CAPACITY_RESERVATION_DATES_REQUIRED =
             "error.capacity.reservation.dates.required";
     public static final String ERROR_CAPACITY_RESERVATION_START_DATE_IN_PAST =
@@ -822,6 +826,18 @@ public final class MessageConstants {
             "error.capacity.reservation.platform.not.supported";
     public static final String ERROR_CAPACITY_RESERVATION_FAMILY_NOT_SUPPORTED =
             "error.capacity.reservation.family.not.supported";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_REGION_REQUIRED =
+            "error.capacity.block.offering.region.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_TYPE_REQUIRED =
+            "error.capacity.block.offering.instance.type.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_INSTANCE_COUNT_REQUIRED =
+            "error.capacity.block.offering.instance.count.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_DURATION_REQUIRED =
+            "error.capacity.block.offering.duration.required";
+    public static final String ERROR_CAPACITY_BLOCK_OFFERING_START_DATE_REQUIRED =
+            "error.capacity.block.offering.start.date.required";
+    public static final String ERROR_CAPACITY_BLOCK_RESOURCE_TYPE_NOT_SUPPORTED =
+            "error.capacity.block.resource.type.not.supported";
     public static final String ERROR_NODE_POOL_MISSING_PRICE_TYPE = "error.node.pool.missing.price.type";
     public static final String ERROR_NODE_POOL_MISSING_REGION = "error.node.pool.missing.region";
     public static final String ERROR_NODE_POOL_MISSING_INSTANCE_TYPE = "error.node.pool.missing.instance.type";
@@ -838,6 +854,15 @@ public final class MessageConstants {
     public static final String ERROR_NODE_POOL_ZONE_NOT_CONFIGURED = "error.node.pool.zone.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_CONFIGURED = "error.node.pool.subnet.not.configured";
     public static final String ERROR_NODE_POOL_SUBNET_NOT_IN_NETWORKS = "error.node.pool.subnet.not.in.networks";
+    public static final String ERROR_NODE_POOL_INSTANCE_MISMATCH = "error.node.pool.instance.mismatch";
+    public static final String ERROR_NODE_POOL_REGION_MISMATCH = "error.node.pool.region.mismatch";
+    public static final String ERROR_CAPACITY_POOL_ID_INVALID = "error.capacity.pool.id.invalid";
+    public static final String ERROR_NODE_POOL_RESERVED_NODE_MISMATCH = "error.node.pool.reserved.node.mismatch";
+    public static final String ERROR_NODE_POOL_RESERVATION_EXPIRED = "error.node.pool.reservation.expired";
+    public static final String ERROR_NODE_POOL_FILTER_MISMATCH = "error.node.pool.filter.mismatch";
+    public static final String ERROR_NODE_POOL_ID_NO_LONGER_ACTIVE = "error.node.pool.id.no.longer.active";
+    public static final String INFO_NODE_POOL_ID_WAITING = "info.node.pool.id.waiting";
+    public static final String ERROR_NODE_POOL_ID_BUSY_WAIT_TIMEOUT = "error.node.pool.id.busy.wait.timeout";
 
     // Users import events
     public static final String EVENT_USER_CREATED = "user.import.event.user.created";

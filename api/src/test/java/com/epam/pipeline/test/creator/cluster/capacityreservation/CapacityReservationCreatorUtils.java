@@ -38,6 +38,7 @@ public final class CapacityReservationCreatorUtils {
     public static final String CLIENT_TOKEN = "cp-capacity-reservation-1-0";
     public static final String STATUS_REASON = "Capacity unavailable for the requested date";
     public static final long GRANTED_COMMITMENT_DURATION = 864000L;
+    public static final String CAPACITY_BLOCK_OFFERING_ID = "cbr-0123456789abcdef0";
     private static final int REQUEST_LEAD_DAYS = 7;
     private static final int REQUEST_WINDOW_DAYS = 60;
 
@@ -81,6 +82,16 @@ public final class CapacityReservationCreatorUtils {
         reservation.setEndDate(reservation.getRequestedStartDate().plusSeconds(COMMITMENT_DURATION));
         reservation.setAttempt(1);
         reservation.setGrantedCommitmentDuration(GRANTED_COMMITMENT_DURATION);
+        return reservation;
+    }
+
+    public static CapacityReservation getCapacityBlockReservation(final Long nodePoolId) {
+        final CapacityReservation reservation = getReservation(nodePoolId);
+        reservation.setReservationType(CapacityReservationType.CAPACITY_BLOCK);
+        reservation.setCapacityBlockOfferingId(CAPACITY_BLOCK_OFFERING_ID);
+        reservation.setAvailabilityZone(AVAILABILITY_ZONE);
+        reservation.setStartDate(reservation.getRequestedStartDate());
+        reservation.setEndDate(reservation.getRequestedEndDate());
         return reservation;
     }
 }

@@ -139,6 +139,7 @@ public class NotificationParameterManager {
         parameters.put("endDate", reservation.getEndDate());
         parameters.put("availabilityZone", reservation.getAvailabilityZone());
         parameters.put("owner", reservation.getOwner());
+        parameters.put("capacityBlockOfferingId", reservation.getCapacityBlockOfferingId());
         return parameters;
     }
 

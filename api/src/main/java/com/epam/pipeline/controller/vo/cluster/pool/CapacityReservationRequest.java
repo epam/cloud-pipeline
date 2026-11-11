@@ -54,6 +54,19 @@ public class CapacityReservationRequest {
 
     private Long originId;
 
+    /**
+     * The offering a {@link CapacityReservationType#CAPACITY_BLOCK} request buys. It is one of the ids returned by
+     * {@code POST /cluster/capacity-reservation/offerings}. Not used for
+     * {@link CapacityReservationType#FUTURE_DATED}, which has no offering.
+     */
+    private String capacityBlockOfferingId;
+
+    /**
+     * The zone of a {@link CapacityReservationType#CAPACITY_BLOCK} offering. The offering already fixes it, so it
+     * is known up front. For {@link CapacityReservationType#FUTURE_DATED} the platform picks the zone itself.
+     */
+    private String availabilityZone;
+
     @JsonIgnore
     private Long nodePoolId;
     @JsonIgnore
