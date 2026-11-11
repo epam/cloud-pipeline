@@ -19,6 +19,7 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      terminationGracePeriodSeconds: 600
       containers:
         - name: cp-gitlab-db
           image: postgres:${GITLAB_DATABASE_VERSION}
